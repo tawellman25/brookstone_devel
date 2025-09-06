@@ -1,0 +1,13 @@
+<?php
+
+use Drupal\Core\Asset\LibraryDiscoveryInterface;
+
+/**
+ * Implements hook_page_attachments_alter().
+ */
+function wo_actions_page_attachments_alter(array &$attachments) {
+  // Check for the presence of VBO form by looking for a class or ID.
+  if (!empty($attachments['#children']) && strpos($attachments['#children'], 'views-bulk-operations-form') !== FALSE) {
+    $attachments['#attached']['library'][] = 'wo_actions/custom_vbo_modal';
+  }
+}

@@ -1,0 +1,60 @@
+ 
+{% if attributes -%}
+  <div{{ attributes }}>
+{% endif %}
+   
+  {% if title %}
+    <h3>{{ title }}</h3>
+  {% endif %}
+  <div class="map-layout map-layout-wrapper clearfix">
+    <div class="map-action-mobile clearfix">
+      <div class="control-search"><a class="btn-theme-small" href="#">{{ "Search Filters"|t }}</a></div>
+      <div class="control-map">
+        <div class="control-current-map"><a href="#" class="sew-current-map"></a></div>
+        <div class="control-reset-map"><a href="#" class="btn-theme-small sew-reset-map">{{'Reset Map'|t}}</a></div>
+        <div class="control-open-map-listtings">
+          <a href="#" class="btn-theme-small sew-open-map">{{'Open Map'}}</a>
+          <a href="#" class="btn-theme-small sew-open-listings d-none">{{'Open Listings'}}</a>
+        </div>
+      </div>
+    </div>
+    <div class="main-listing-wrapper d-lg-block">
+      <div class="map-action clearfix d-none d-md-none d-sm-none d-xs-none d-lg-block">
+        <div class="control-search"><a class="btn-theme-small" href="#">{{ "Search Filters"|t }}</a></div>
+        <div class="control-map">
+          <div class="control-hover-show-map pretty p-switch p-fill">
+            <input type="checkbox" id="hover-show-map"/>
+            <div class="state">
+                <label>{{'Hover Show Map'|t}}</label>
+            </div>
+          </div>
+          <div class="control-reset-map"><a href="#" class="sew-reset-map btn-theme-small">{{'Reset Map'|t}}</a></div>
+          <div class="control-current-map"><a href="#" class="sew-current-map"></a></div>
+        </div>  
+      </div>  
+
+      <div class="listing-items sew-view-grid-inner lg-block-grid-{{ class_grid.items_lg }} md-block-grid-{{class_grid.items_md}} sm-block-grid-{{class_grid.items_sm}} xs-block-grid-{{class_grid.items_xs}}" data-drupal-views-infinite-scroll-content-wrapper-sewloadmorelistings>
+        {% set i = 0 %}
+        {% for row in rows %}
+            <div class="item-columns">
+              <div class="listing-item-wrapper" data-marker="{{i}}">{{ row.content|raw }}</div>
+            </div>
+        {% set i = i + 1 %}
+        {% endfor %}
+      </div>
+    </div>  
+    <div class="main-map-wrapper d-none d-md-none d-sm-none d-xs-none d-lg-block">
+      <div id="listing-main-map" class="listing-main-map"></div>
+    </div>
+  </div>  
+  
+{% if attributes -%}
+    </div>
+{% endif %}
+
+
+<script type="text/javascript">
+  jQuery(document).ready(function(){
+    map_init();
+  });
+</script>

@@ -1,0 +1,23 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\flag\Entity\Flag;
+use Drupal\flag\FlagServiceInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ */
+function contract_residential_entity_view_mode_alter(&$view_mode, EntityInterface $entity, $context) {
+  // Check if the entity is of the type 'contracts' and bundle 'residential'
+  if ($entity->getEntityTypeId() == 'contracts' && $entity->bundle() == 'residential') {
+    $user = \Drupal::currentUser();
+    
+    // Check if the user has any of the specific roles
+    if ($user->hasRole('site_admin') || $user->hasRole('administration') || $user->hasRole('administrator')) {
+      // Change the view mode for users with the specified roles
+      $view_mode = 'admin'; // Replace 'actual_custom_view_mode' with your view mode machine name
+    }
+  }
+}

@@ -1,0 +1,817 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\flag\Entity\Flag;
+use Drupal\flag\FlagServiceInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\Messenger\MessengerInterface;
+
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for snow_rmoval wo_tasks_list entities.
+ */
+function wo_snow_removal_wo_tasks_list_update(EntityInterface $entity) {
+    if ($entity->hasField('field_completed') && !$entity->get('field_completed')->isEmpty() && !$entity->get('field_completed')->value) {
+        // Just call the operation function without setting field_completed or saving the entity here.
+        wo_snow_removal_handle_wo_tasks_list_operations($entity);
+    }
+}
+
+/**
+ * Handles operations after saving a snow_rmoval wo_tasks_list entity.
+ */
+function wo_snow_removal_handle_wo_tasks_list_operations(EntityInterface $entity) {
+  if ($entity->bundle() === 'snow_removal' && !$entity->get('field_completed')->value) {
+    $work_order_id = $entity->get('field_work_order')->target_id;
+    $flag_service = \Drupal::service('flag');
+    $flag = Flag::load('work_order_timer'); // Ensure 'work_order_timer' is your correct flag ID
+
+    // Load the flagging by properties, including the work order ID.
+    $flaggings = \Drupal::entityTypeManager()->getStorage('flagging')->loadByProperties([
+      'flag_id' => $flag->id(),
+      'entity_id' => $work_order_id,
+      'entity_type' => 'work_order',
+    ]);
+
+    foreach ($flaggings as $flagging) {
+      // Here you could add logic to verify the correct flagging based on 'field_wo_timer_entered' or other criteria
+      if ($flagging->hasField('field_wo_timer_entered') && !$flagging->get('field_wo_timer_entered')->isEmpty()) {
+        // Unflag the work order
+        $flag_service->unflag($flag, $flagging->getFlaggable());
+      }
+    }
+
+    $work_order = \Drupal::entityTypeManager()->getStorage('work_order')->load($work_order_id);
+    $current_user_id = \Drupal::currentUser()->id();
+
+    // Set the status of the WO to Complete.
+    $work_order->set('field_status', ['target_id' => 1097]); // Ensure this matches your taxonomy term ID for "Complete".
+    $work_order->save();
+
+    // Get the current Unix timestamp.
+    $currentTimestamp = time();
+
+    // Get the current date/time in UTC.
+    $now = new DrupalDateTime('now', 'UTC');
+
+    // Format the date for storage.
+    $nowFormatted = $now->format('Y-m-d\TH:i:s');
+
+    // Create a new 'scheduling' entity
+    $scheduling = \Drupal::entityTypeManager()->getStorage('scheduling')->create([
+      'type' => 'work_order', // The bundle name for 'wo_status_updates'
+      'field_work_order' => $work_order->id(),
+      'field_assigned_to' => $current_user_id, // Use 'user' id for current user.
+      'field_scheduled_date_and_time' => [
+        'value' => $nowFormatted,
+        'end_value' => $nowFormatted, // If you want it to be an instant event, set end_value to the same as value
+      ],
+      'field_scheduling_note' => ['value' => 'Teammate completed tasks and system set it as scheduled for today.'],
+      'uid' => $current_user_id,
+    ]);
+
+    // Save the new 'wo_status_updates' entity
+    $scheduling->save();    
+
+    // Create a new 'wo_complete_info' entity with the current date and completion status.
+    $wo_complete_info = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->create([
+        'type' => 'snow_removal', // The bundle name for 'wo_complete_info'
+        'field_work_order' => $work_order->id(),
+        'field_date_completed' => $currentTimestamp,
+        'field_how_many_trucks_taken' => 1, // Set trucks to 1 because every truck creates it's own WOs.
+        'field_those_on_crew' => $current_user_id,
+        'field_work_order_completed' => TRUE, // or 1, assuming this means the work order is completed.
+        'field_signed_off_by' => $current_user_id,
+    ]);
+
+    // Save the new entity.
+    $wo_complete_info->save();
+    
+    // Create a new 'wo_status_updates' entity
+    $wo_status_updates = \Drupal::entityTypeManager()->getStorage('wo_status_updates')->create([
+        'type' => 'update', // The bundle name for 'wo_status_updates'
+        'field_status_of_wo' => $work_order->id(),
+        'field_status' => ['target_id' => 1097], // Use 'target_id' for entity reference fields.
+        'field_status_change_note' => ['value' => 'Teammate completed tasks and system clocked them out then completed WO.'],
+        'uid' => $current_user_id,
+    ]);
+
+    // Save the new 'wo_status_updates' entity
+    $wo_status_updates->save();
+
+    $entity->set('field_completed', TRUE);
+
+    // Use try-catch to safely attempt saving the entity and catch any potential exceptions.
+    try {
+        $entity->save();
+        \Drupal::logger('wo_snow_removal')->notice('wo_tasks_list entity ID @id marked as completed and saved.', ['@id' => $entity->id()]);
+    } catch (\Exception $e) {
+        \Drupal::logger('wo_snow_removal')->error('Error saving wo_tasks_list entity ID @id: @message', ['@id' => $entity->id(), '@message' => $e->getMessage()]);
+    }
+
+    // Redirect the user to the 'work_order' page after completing the tasks.
+    $work_order_url = \Drupal\Core\Url::fromRoute('entity.work_order.canonical', ['work_order' => $work_order_id])->toString();
+    $response = new RedirectResponse($work_order_url);
+    $response->send();
+  }
+}
+
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_snow_removal_entity_presave(EntityInterface $entity) {
+  // Initialize $grand_total at the start.
+  $grand_total = 0;
+  $salt_subtotal = 0;
+  $mag_subtotal = 0;
+  $atv_subtotal = 0;
+  $labor_subtotal = 0;
+  $plow_subtotal = 0;
+  $snowRemovalRate = 0;
+  $shovelingMinutes = 0;
+  $shovelingTime = 0;
+  $trucks = 0;
+  $totalTrip = 0;
+
+  // Check if it's a Work Order entity of the 'snow_removal' bundle.
+  if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'snow_removal') {
+
+      // Check if the Work Order is marked as 'Complete'.
+      $statusTermId = $entity->get('field_status')->target_id ?? 0;
+      if ($statusTermId != 1097) {
+          //If the Work Order is not 'Complete', exit the function early to avoid performing further calculations.
+          return;
+      }
+      
+      // The Work Order is 'Complete'; you can now proceed with further calculations.
+      // Initialize variables to ensure they're defined before use.
+
+      $config_pages_loader = \Drupal::service('config_pages.loader');
+      $business_settings = $config_pages_loader->load('business_setting');
+      
+      if ($business_settings) {
+          // Fetch the configured minimums and fees.
+          $saltRate = $business_settings->get('field_salt_rate')->value;
+          $bagIncrements = $business_settings->get('field_min_bag_increment')->value;
+          $saltBagSize = $business_settings->get('field_salt_pounds_per_bag')->value;
+          $magRate = $business_settings->get('field_mag_chloride_rate')->value;
+          $magMin = $business_settings->get('field_mag_minimum_gallons')->value;
+          $minAllottedTime = $business_settings->get('field_shoveling_minimum')->value; // Assume this is in minutes for the calculation.
+          $atvRate = $business_settings->get('field_atv_and_sprayer_charge')->value;
+          $hourlyRate = $business_settings->get('field_snow_removal_labor')->value;
+          $shovelingMin = $business_settings->get('field_shoveling_minimum')->value;
+                    
+          
+          // Get values from functions
+          $snowRemovalRate = get_per_push_rate_from_latest_contract($entity->id());
+          $shovelingIncluded = get_shoveling_included_value_from_latest_contract($entity->id());
+          $pushValue = get_push_value_for_snow_removal($entity->id());
+          $saltUsed = get_salt_used_for_snow_removal($entity->id());
+          $magUsed = get_mag_used_for_snow_removal($entity->id());
+          $timeSpent = get_hours_for_snow_removal($entity->id()); // Total hours of all men that clocked in.
+          $shovelingMinutes = get_shoveling_value_for_snow_removal($entity->id());
+          $trucks = $entity->get('field_trucks')->value;
+
+          // Calculate Labor.
+          $totalTime = $entity->get('field_total_time')->value;
+          $shovelingTime = round($shovelingMinutes / 60, 2);
+          
+          // Calculate Salt Costs
+          $salt_subtotal = calculate_salt_cost($saltUsed, $saltBagSize, $saltRate, $bagIncrements);
+          
+          // Calculate Mag Costs
+          $mag_subtotal = calculate_mag_cost($magUsed, $magRate, $magMin);
+
+          // Total Chemical Costs
+          $chemical_subtotal = $salt_subtotal + $mag_subtotal;
+          $entity->set('field_material_chemical_total', $chemical_subtotal);
+
+          // Assuming $hourlyRate is the charge per hour.
+          // Assuming $shovelingIncluded is a boolean field with 1 representing "Included"
+          // If shoveling labor is included in the contract, labor costs are covered.
+          // If shoveling labor is not included in the contract, calculate the labor cost.
+          if ($shovelingIncluded == 1){
+            $labor_subtotal = 0;
+          } else {
+              if ($shovelingTime <= $minAllottedTime) {
+                // If the actual time spent is less than the minimum allotted time,
+                // charge based on the minimum allotted time.
+                $labor_subtotal = $hourlyRate * $minAllottedTime;
+              } else {
+                // If the actual time spent is more than the minimum allotted time,
+                // charge based on the actual time spent.
+                $labor_subtotal = $hourlyRate * $shovelingTime;
+              }
+          }
+
+          $entity->set('field_labor_total', $labor_subtotal);
+          
+          // Assuming $snowRemovalRate is the charge per "push" of snow removal on contract.
+          $plow_subtotal = $pushValue * $snowRemovalRate;
+          $entity->set('field_task_rate', $plow_subtotal);
+
+      }
+
+      // Make sure materials is a positive number and add to grand total.
+      if ($plow_subtotal > 0) {
+          $grand_total += $plow_subtotal;
+      }
+
+      // Make sure materials is a positive number and add to grand total.
+      if ($chemical_subtotal > 0) {
+          $grand_total += $chemical_subtotal;
+      }
+
+      // Labor from above
+      // Make sure Labor is a positive number and add to grand total.
+      if ($labor_subtotal > 0) {
+          $grand_total += $labor_subtotal;
+      }
+    
+      // Trip Fee from above
+      // Make sure Trip Fee is a positive number and add to grand total.
+      // if ($totalTrip > 0) {
+      //     $grand_total += $totalTrip;
+      // }
+
+      // Rental Fees
+      // Now, add the Equipment Rental Fees from related 'wo_rental_equipment' entities.
+      $rental_fee_total = get_snow_removal_total_rental_fees($entity->id());
+      
+      // Set the rental fee total on the entity regardless of grand total.
+      $entity->set('field_rental_total', $rental_fee_total);
+
+      // Convert hours to a numerical value, if necessary, and add to grand total.
+      if ($rental_fee_total > 0) {
+          $grand_total += $rental_fee_total;
+      }
+
+      // Office Adjust Total as needed for invoicing
+      $billingAdjustment = $entity->get('field_billing_adjustment')->value;
+      $grand_total += $billingAdjustment;
+
+      // Future calculations can modify $grand_total as needed.
+      // Set 'field_wo_total' with the final $grand_total value.
+      if ($grand_total > 0) {
+          $entity->set('field_wo_total', $grand_total);
+      }
+  }
+}
+
+/**
+* Implements hook_entity_insert() for work_order entities.
+*/
+function wo_snow_removal_entity_insert(EntityInterface $entity) {
+  // Check if it's the right entity type and bundle.
+  if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'snow_removal') {
+    // Perform actions specific to when a new work order of the 'snow_removal' bundle is created.
+    _wo_snow_removal_handle_work_order($entity, 'insert');
+  }
+}
+
+/**
+* Implements hook_entity_update() for work_order entities.
+*/
+function wo_snow_removal_entity_update(EntityInterface $entity) {
+  // Check if it's the right entity type and bundle.
+  if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'snow_removal') {
+      // Perform actions specific to when a work order of the 'snow_removal' bundle is updated.
+      _wo_snow_removal_handle_work_order($entity, 'update');
+  }
+}
+
+/**
+* A helper function to process work orders on insert or update.
+* 
+* @param \Drupal\Core\Entity\EntityInterface $entity
+*   The entity being inserted or updated.
+* @param string $operation
+*   The operation being performed ('insert' or 'update').
+*/
+function _wo_snow_removal_handle_work_order(EntityInterface $entity, $operation) {
+  // Shared logic to handle both insert and update operations.
+  // You can use the $operation parameter if you need to distinguish between inserts and updates.
+
+  // Check if the Work Order is marked as 'Complete'.
+  $statusTermId = $entity->get('field_status')->target_id ?? 0;
+  
+  if ($statusTermId != 1097) {
+      //If the Work Order is not 'Complete', exit the function early to avoid performing further calculations.
+      return;
+  }        
+  
+  // Get Work Order Complete Info
+  $workOrderId = $entity->id();
+  $saltUsed = 0;
+  $magUsed = 0;
+  $currentSeasonValue = '';
+  $signOffDateFormated = null;
+  $signOffBy = 1;
+  
+  // Load 'wo_complete_info' entities by '$workOrderId'.
+  $woSignOffInfoEntities = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->loadByProperties([
+      'field_work_order' => $workOrderId,
+      'type' => 'snow_removal',
+  ]);
+  $woSignOffInfo = reset($woSignOffInfoEntities);
+
+  if (!empty($woSignOffInfo)) {
+      // Get needed Info for Property Snow Removal Info
+      $woSignOffInfoTimestamp = $woSignOffInfo->get('field_date_completed')->value;
+      $signOffDate = DrupalDateTime::createFromTimestamp($woSignOffInfoTimestamp);
+      $signOffDate->setTimezone(new \DateTimeZone('UTC'));
+      $signOffDateFormated = $signOffDate->format('Y-m-d\TH:i:s');
+      $signOffBy = $woSignOffInfo->get('field_signed_off_by')->target_id;
+      $saltUsed = get_salt_used_for_snow_removal($workOrderId);
+      $magUsed = get_mag_used_for_snow_removal($workOrderId);
+
+  }
+
+  // Get Property ID from Work Order
+  $propertyId = $entity->get('field_property')->target_id ?? null;
+
+  // Load 'property_snow_removal_info' entities by 'field_property'.
+  $propertySnowRemovalInfo = \Drupal::entityTypeManager()->getStorage('property_snow_removal_info')->loadByProperties([
+      'field_property' => $propertyId,
+      'type' => 'information',
+  ]);
+  
+  // Set Property Fertilizing Info - Last Applied Information.
+  if (!empty($propertySnowRemovalInfo)) {
+      // Get the first entity (assuming there's only one) from the loaded entities.
+      $snowRemovalInfoEntity = reset($propertySnowRemovalInfo);
+      
+      if ($snowRemovalInfoEntity) {
+          $snowRemovalInfoEntity->set('field_snow_removal_last_salt_amt', $saltUsed);
+
+          // Only set 'field_snow_last_mag_amount' if $magUsed is greater than zero
+          if ($magUsed > 0) {
+            $snowRemovalInfoEntity->set('field_snow_last_mag_amount', $magUsed);
+          } else {
+              // If $magUsed is zero, you might want to clear the field or leave it unchanged.
+              // Uncomment the line below if you want to clear the field:
+              // $snowRemovalInfoEntity->set('field_snow_last_mag_amount', null);
+          }
+        
+          $snowRemovalInfoEntity->set('field_snow_removal_last_plowed', $signOffDateFormated);
+          $snowRemovalInfoEntity->set('field_snow_removal_last_plow_by', $signOffBy);
+      }
+      // Save the updated Property Fertilizing Info entity.
+      $snowRemovalInfoEntity->save();
+  }
+}
+
+/**
+ * Retrieves the per push rate from the latest Contract associated with the Property referenced in the given Work Order.
+ *
+ * @param int $workOrderId
+ *   The ID of the Work Order entity.
+ *
+ * @return float
+ *   The per push rate from the latest Contract, or 0 if not found or invalid input.
+ */
+function get_per_push_rate_from_latest_contract($workOrderId) {
+  // Input validation
+  if (!is_numeric($workOrderId) || $workOrderId < 1) {
+    \Drupal::logger('wo_snow_removal')->error('Invalid Work Order ID: @id', ['@id' => $workOrderId]);
+    return 0.0;
+  }
+
+  $workOrder = \Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId);
+  if (!$workOrder || !$workOrder->hasField('field_property')) {
+    \Drupal::logger('wo_snow_removal')->error('Work Order not found or does not have field_property: @id', ['@id' => $workOrderId]);
+    return 0.0;
+  }
+
+  // Load the referenced Property entity
+  $propertyId = $workOrder->get('field_property')->target_id;
+  if (!$propertyId) {
+    \Drupal::logger('wo_snow_removal')->error('Property ID not found for Work Order: @id', ['@id' => $workOrderId]);
+    return 0.0;
+  }
+
+  // Find the latest contract for this property using an entity query
+  $query = \Drupal::entityQuery('contracts')
+    ->accessCheck(FALSE) // Assuming you want to skip access checks
+    ->condition('field_property', $propertyId)
+    ->condition('type', 'snow_removal') // Replace 'snow_removal' with the actual bundle name if different
+    ->sort('created', 'DESC')
+    ->range(0, 1); // Get only the latest one
+
+  $contractIds = $query->execute();
+  
+  if (empty($contractIds)) {
+    \Drupal::logger('wo_snow_removal')->error('No contracts found for Property ID: @id', ['@id' => $propertyId]);
+    return 0.0;
+  }
+
+  $latestContract = \Drupal::entityTypeManager()->getStorage('contracts')->load(reset($contractIds));
+
+  if (!$latestContract || !$latestContract->hasField('field_per_push_rate')) {
+    \Drupal::logger('wo_snow_removal')->error('Latest contract does not have field_per_push_rate for Property ID: @id', ['@id' => $propertyId]);
+    return 0.0;
+  }
+
+  // Retrieve the field_per_push_rate value
+  $perPushRate = $latestContract->get('field_per_push_rate')->value;
+
+  // Ensure the value is a float
+  return (float) $perPushRate;
+}
+
+/**
+ * Retrieves the shoveling labor included value from the latest Contract associated with the Property referenced in the given Work Order.
+ *
+ * @param int $workOrderId
+ *   The ID of the Work Order entity.
+ *
+ * @return int
+ *   The shoveling included boolean value from the latest Contract, or 0 if not found or invalid input.
+ */
+function get_shoveling_included_value_from_latest_contract($workOrderId) {
+  // Input validation
+  if (!is_numeric($workOrderId) || $workOrderId < 1) {
+    \Drupal::logger('wo_snow_removal')->error('Invalid Work Order ID: @id', ['@id' => $workOrderId]);
+    return 0;  // Changed to return 0 instead of 0.0
+  }
+
+  $workOrder = \Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId);
+  if (!$workOrder || !$workOrder->hasField('field_property')) {
+    \Drupal::logger('wo_snow_removal')->error('Work Order not found or does not have field_property: @id', ['@id' => $workOrderId]);
+    return 0;
+  }
+
+  // Load the referenced Property entity
+  $propertyId = $workOrder->get('field_property')->target_id;
+  if (!$propertyId) {
+    \Drupal::logger('wo_snow_removal')->error('Property ID not found for Work Order: @id', ['@id' => $workOrderId]);
+    return 0;
+  }
+
+  // Find the latest contract for this property using an entity query
+  $query = \Drupal::entityQuery('contracts')
+    ->accessCheck(FALSE) // Assuming this is intended to bypass access checks
+    ->condition('field_property', $propertyId)
+    ->condition('type', 'snow_removal')
+    ->sort('created', 'DESC')
+    ->range(0, 1); // Get only the latest one
+
+  $contractIds = $query->execute();
+  
+  if (empty($contractIds)) {
+    \Drupal::logger('wo_snow_removal')->error('No contracts found for Property ID: @id', ['@id' => $propertyId]);
+    return 0;
+  }
+
+  $latestContract = \Drupal::entityTypeManager()->getStorage('contracts')->load(reset($contractIds));
+
+  // Check if the contract was loaded successfully and has the required field
+  if (!$latestContract || !$latestContract->hasField('field_shoveling_labor_included')) {
+    \Drupal::logger('wo_snow_removal')->error('Latest contract does not have field_shoveling_labor_included for Property ID: @id', ['@id' => $propertyId]);
+    return 0;
+  }
+
+  // Retrieve the field_shoveling_labor_included value
+  $shovelingIncluded = $latestContract->get('field_shoveling_labor_included')->value;
+
+  // Ensure the value is an integer
+  return (int) $shovelingIncluded;
+}
+
+/**
+* Retrieves the calculation factor from the taxonomy term referenced by the snow removal task's push field.
+*
+* @param int $workOrderId
+*   The work order entity ID.
+*
+* @return float
+*   The calculation factor stored within the referenced taxonomy term, or 0 if not found or invalid input.
+*/
+function get_push_value_for_snow_removal($workOrderId) {
+  // Input validation
+  if (!is_numeric($workOrderId) || $workOrderId < 1) {
+    \Drupal::logger('wo_snow_removal')->error('Invalid Work Order ID: @id', ['@id' => $workOrderId]);
+    return 0.0; // Return 0 as float
+  }
+
+  $workOrder = \Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId);
+  if (!$workOrder) {
+    \Drupal::logger('wo_snow_removal')->error('Work Order not found: @id', ['@id' => $workOrderId]);
+    return 0.0;
+  }
+
+  // Query for the latest wo_tasks_list entity of type 'snow_removal' linked to the work order
+  $query = \Drupal::entityQuery('wo_tasks_list')
+    ->accessCheck(FALSE) // Add this line to explicitly disable access checks  
+    ->condition('field_work_order', $workOrderId)
+    ->condition('type', 'snow_removal')
+    ->sort('created', 'DESC')
+    ->range(0, 1); // Get only the most recent
+
+  $taskListIds = $query->execute();
+
+  if (empty($taskListIds)) {
+    return 0.0; // No tasks found
+  }
+
+  // Load the task list entity
+  $taskList = \Drupal::entityTypeManager()->getStorage('wo_tasks_list')->load(reset($taskListIds));
+
+  if ($taskList && $taskList->hasField('field_snow_plowed_pushes')) {
+    $pushReferences = $taskList->get('field_snow_plowed_pushes')->referencedEntities();
+
+    if (!empty($pushReferences)) {
+      // Assuming there is only one term referenced
+      $pushTerm = reset($pushReferences);
+
+      if ($pushTerm && $pushTerm->hasField('field_calculation_factor')) {
+        return (float) $pushTerm->get('field_calculation_factor')->value;
+      }
+    }
+  }
+
+  // Log an error if we can't find the calculation factor or if there's an issue with the field
+  \Drupal::logger('wo_snow_removal')->error('Could not find calculation factor for Work Order ID: @id', ['@id' => $workOrderId]);
+  return 0.0;
+}
+
+
+/**
+* Retrieves the Time Shoveling(minutes) value used for snow_removal from related wo_tasks_list entity.
+*
+* @param int $workOrderId
+*   The work order entity ID.
+*
+* @return int
+*   The pounds value used for snow_removal tasks.
+*/
+function get_shoveling_value_for_snow_removal($workOrderId) {
+  // Input validation
+  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+    return 0;
+}
+
+$latestShovelMinutes = 0;
+
+// Load wo_tasks_list entity that is referenced by the given work order.
+$woTaskListEntity = \Drupal::entityTypeManager()->getStorage('wo_tasks_list')->loadByProperties([
+    'field_work_order' => $workOrderId,
+]);
+
+if (!empty($woTaskListEntity)) {
+    foreach ($woTaskListEntity as $entity) {
+        // Check if the entity is part of the 'snow_removal' bundle.
+        if ($entity->bundle() === 'snow_removal') {
+            $minutes = $entity->get('field_time_shoveling')->value;
+            if ($minutes > $latestShovelMinutes) {
+              $latestShovelMinutes = $minutes;
+            }
+        }
+    }
+}
+
+return $latestShovelMinutes;
+}
+
+
+
+/**
+* Calculates the total Rented Equipment fees for a given Work Order.
+*/
+function get_snow_removal_total_rental_fees($workOrderId) {
+  $database = \Drupal::database();
+  
+  // Query the dedicated field storage table for 'field_receipt_total_cost'.
+  $query = $database->select('wo_rental_equipment__field_receipt_total_cost', 'rental_fees');
+  
+  // Join the entity base table to access the Work Order reference.
+  // This assumes 'field_rented_for' is the correct entity reference field name.
+  $query->join('wo_rental_equipment__field_rented_for', 'work_order', 'rental_fees.entity_id = work_order.entity_id');
+  
+  // Filter by the Work Order ID.
+  $query->condition('work_order.field_rented_for_target_id', $workOrderId);
+  
+  // Sum the rental fee values.
+  $query->addExpression('SUM(rental_fees.field_receipt_total_cost_value)', 'total_rental_fee');
+  
+  // Execute the query and fetch the result.
+  $result = $query->execute()->fetchField();
+  
+  return $result ? $result : 0;
+}
+
+/**
+* Retrieves the Salt pounds value used for snow_removal from related wo_tasks_list entity.
+*
+* @param int $workOrderId
+*   The work order entity ID.
+*
+* @return int
+*   The pounds value used for snow_removal tasks.
+*/
+function get_salt_used_for_snow_removal($workOrderId) {
+
+  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+      return 0;
+  }
+
+  $latestSaltUsed = 0;
+
+  // Load wo_tasks_list entity that is referenced by the given work order.
+  $woTaskListEntity = \Drupal::entityTypeManager()->getStorage('wo_tasks_list')->loadByProperties([
+      'field_work_order' => $workOrderId,
+  ]);
+
+  if (!empty($woTaskListEntity)) {
+      foreach ($woTaskListEntity as $entity) {
+          // Check if the entity is part of the 'snow_removal' bundle.
+          if ($entity->bundle() === 'snow_removal') {
+              $pounds = $entity->get('field_pounds_of_salt')->value;
+              if ($pounds > $latestSaltUsed) {
+                $latestSaltUsed = $pounds;
+              }
+          }
+      }
+  }
+
+  return $latestSaltUsed;
+}
+
+/**
+* Retrieves the Mag Chloride gallons value used for snow_removal from the related wo_tasks_list entity.
+*
+* @param int $workOrderId
+*   The work order entity ID.
+*
+* @return int
+*   The gallons value used for snow_removal Mag Chloride.
+*/
+function get_mag_used_for_snow_removal($workOrderId) {
+
+  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+      return 0;
+  }
+
+  $magGallonsUsed = 0;
+
+  // Load wo_tasks_list entity that reference the given work order.
+  $magUsedEntity = \Drupal::entityTypeManager()->getStorage('wo_tasks_list')->loadByProperties([
+      'field_work_order' => $workOrderId,
+  ]);
+
+  if (!empty($magUsedEntity)) {
+      foreach ($magUsedEntity as $entity) {
+          // Check if the entity is part of the 'snow_removal' bundle.
+          if ($entity->bundle() === 'snow_removal') {
+              $gallons = $entity->get('field_snow_mag_gallons')->value;
+              if ($gallons > $magGallonsUsed) {
+                  $magGallonsUsed = $gallons;
+              }
+          }
+      }
+  }
+
+  return $magGallonsUsed;
+}
+
+/**
+* Retrieves the Hours clocked in for snow_removal from related wo_time_clock entities.
+*
+* @param int $workOrderId
+*   The work order entity ID.
+*
+* @return int
+*   The total hours for snow_removal Work Order.
+*/
+function get_hours_for_snow_removal($workOrderId) {
+
+  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+      return 0;
+  }
+
+  $hoursSpent = 0;
+
+  // Load wo_time_clock entities that reference the given work order.
+  $woTimeClockEntities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
+      'field_work_order' => $workOrderId,
+  ]);
+
+  foreach ($woTimeClockEntities as $entity) {
+      // Check if the entity is part of the 'snow_removal' bundle.
+      if ($entity->bundle() === 'entry') {
+          // Sum the gallons used.
+          $hours = $entity->get('field_total_time')->value; // Adjust 'field_total_time' that is a Number(decimal).
+          $hoursSpent += $hours;
+      }
+  }
+
+  return $hoursSpent;
+}
+
+function get_men_for_snow_removal($workOrderId) {
+
+  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+      return 0;
+  }
+
+  // Use an Entity Query to find the latest 'wo_complete_info' entity for the given work order.
+  $query = \Drupal::entityQuery('wo_complete_info')
+      ->accessCheck(FALSE) // Enforce access checks
+      ->condition('field_work_order', $workOrderId)
+      ->sort('field_date_completed', 'DESC') // Adjust 'field_completed_date' to your actual date field name.
+      ->range(0, 1); // Limit to the latest entity.
+
+  $result = $query->execute();
+
+  if (empty($result)) {
+      return 0; // Return early if no entities are found.
+  }
+
+  $latestEntityId = reset($result);
+  $latestEntity = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load($latestEntityId);
+
+  // Assuming 'field_those_on_crew' is a list of 'uid' values.
+  $totalMen = $latestEntity->get('field_those_on_crew')->count();// Count the list of them on site.
+  
+  return $totalMen;
+}
+
+function get_trucks_for_snow_removal($workOrderId) {
+
+  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+      return 0;
+  }
+
+  // Use an Entity Query to find the latest 'wo_complete_info' entity for the given work order.
+  $query = \Drupal::entityQuery('wo_complete_info')
+      ->accessCheck(FALSE) // Enforce access checks
+      ->condition('field_work_order', $workOrderId)
+      ->sort('field_date_completed', 'DESC') // Adjust 'field_completed_date' to your actual date field name.
+      ->range(0, 1); // Limit to the latest entity.
+
+  $result = $query->execute();
+
+  if (empty($result)) {
+      return 0; // Return early if no entities are found.
+  }
+
+  $latestEntityId = reset($result);
+  $latestEntity = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load($latestEntityId);
+
+  // Assuming 'field_those_on_crew' is a list of 'uid' values.
+  $trucksSelected = $latestEntity->get('field_how_many_trucks_taken')->value;// The select list is 1 number off
+  $totalTrucks = $trucksSelected;
+
+  return $totalTrucks;
+}
+
+/**
+ * Calculates the cost of salt based on usage, bag size, rate, and increment.
+ *
+ * @param float $saltUsed Amount of salt used in pounds
+ * @param float $saltBagSize Size of each bag in pounds
+ * @param float $saltRate Rate per bag
+ * @param int $bagIncrements Number of increments per bag (e.g., 2 for half bags)
+ * @return float The cost for the salt used
+ */
+function calculate_salt_cost($saltUsed, $saltBagSize, $saltRate, $bagIncrements) {
+  if ($saltUsed <= 0) {
+      return 0;
+  }
+
+  if ($bagIncrements <= 0) {
+      throw new \InvalidArgumentException("Salt bag increment must be a positive number.");
+  }
+  if ($saltBagSize <= 0) {
+      throw new \InvalidArgumentException("Salt bag size must be a positive number.");
+  }
+
+  $calculatedBags = $saltUsed / ($saltBagSize / $bagIncrements);
+  
+  // If under the increment size, use exact amount; otherwise, round to nearest increment
+  $saltBags = max(1 / $bagIncrements, round($calculatedBags, 0) / $bagIncrements);
+  
+  return $saltRate * $saltBags;
+}
+
+/**
+* Calculates the cost of magnesium chloride based on usage, rate, and minimum.
+*
+* @param float $magUsed Amount of mag used in gallons
+* @param float $magRate Rate per gallon
+* @param float $magMin Minimum charge in gallons
+* @return float The cost for the magnesium chloride used
+*/
+function calculate_mag_cost($magUsed, $magRate, $magMin) {
+  if ($magUsed == 0) {
+      return 0;
+  } elseif ($magUsed <= $magMin) {
+      return $magRate * $magMin;
+  } else {
+      return $magRate * $magUsed;
+  }
+}

@@ -1,0 +1,117 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_material_item_subtotal_entity_presave(EntityInterface $entity) {
+    if ($entity->getEntityTypeId() === 'wo_material_list_item') {
+        \Drupal::logger('wo_material_item_subtotal')->notice('Entity presave hook called for entity type: @type', ['@type' => $entity->getEntityTypeId()]);
+
+        // Skip recalculations if the bypass flag is set.
+        if (property_exists($entity, 'bypass_recalculation') && $entity->bypass_recalculation) {
+            \Drupal::logger('wo_material_item_subtotal')->notice('Recalculation bypassed for cloned item ID: @id', ['@id' => $entity->id()]);
+            return;
+        }
+
+        // Perform recalculations for non-cloned items.
+        if ($entity->hasField('field_material_type') && $entity->get('field_material_type')->value == 'stocked_item') {
+            if ($entity->hasField('field_parts_used') && !$entity->get('field_parts_used')->isEmpty()) {
+                $parts_used = $entity->get('field_parts_used')->first()->entity;
+
+                if ($parts_used && $parts_used->hasField('field_cost_integer')) {
+                    $cost = $parts_used->get('field_cost_integer')->value;
+                    if ($entity->hasField('field_material_cost') && $entity->get('field_material_cost')->isEmpty()) {
+                        $entity->set('field_material_cost', $cost);
+                    }
+                }
+            }
+        }
+
+        // Calculate subtotal and markup if applicable.
+        if ($entity->hasField('field_material_cost') && $entity->hasField('field_quantity')) {
+            $material_cost = $entity->get('field_material_cost')->value;
+            $quantity = $entity->get('field_quantity')->value;
+
+            if (!empty($material_cost) && !empty($quantity)) {
+                $subtotal = $material_cost * $quantity;
+                if ($entity->hasField('field_subtotal')) {
+                    $entity->set('field_subtotal', $subtotal);
+                }
+
+                // Add markup calculation if configuration exists.
+                $config_pages = \Drupal::service('config_pages.loader');
+                $markup_array = $config_pages->getValue('business_setting', 'field_markup');
+                $markup_value = isset($markup_array[0]['value']) ? (float) $markup_array[0]['value'] : 1.0;
+
+                if (!empty($markup_value) && is_numeric($markup_value)) {
+                    $subtotal_with_markup = $subtotal * $markup_value;
+                    if ($entity->hasField('field_subtotal_w_markup')) {
+                        $entity->set('field_subtotal_w_markup', $subtotal_with_markup);
+                    }
+                }
+            }
+        }
+
+        // New logic for redirect setup.
+        if (!$entity->isNew()) {
+            \Drupal::logger('wo_material_item_subtotal')->notice('Entity is not new, skipping redirect setup.');
+            return; // Early exit if not a new entity.
+        }
+
+        // Retrieve the ID of the WO Material List this item belongs to.
+        if ($entity->hasField('field_list_id')) {
+            $list_id = $entity->get('field_list_id')->target_id;
+            \Drupal::logger('wo_material_item_subtotal')->notice('field_list_id: @id', ['@id' => $list_id ?? 'Not Set']);
+
+            if ($list_id) {
+                $redirect_url = Url::fromRoute('entity.wo_material_list.canonical', ['wo_material_list' => $list_id])->toString();
+                \Drupal::service('session')->set('redirect_url', $redirect_url);
+                \Drupal::service('session')->set('new_item_message', 'A new material item was added to this list.');
+                
+                \Drupal::logger('wo_material_item_subtotal')->notice('Redirect URL set: @url', ['@url' => $redirect_url]);
+            } else {
+                \Drupal::logger('wo_material_item_subtotal')->notice('No valid list_id found for redirect.');
+            }
+        } else {
+            \Drupal::logger('wo_material_item_subtotal')->notice('field_list_id field does not exist on entity.');
+        }
+    }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function wo_material_item_subtotal_entity_insert(EntityInterface $entity) {
+    if ($entity->getEntityTypeId() === 'wo_material_list_item') {
+        \Drupal::logger('wo_material_item_subtotal')->notice('Entity insert hook called for entity type: @type', ['@type' => $entity->getEntityTypeId()]);
+
+        $redirect_url = \Drupal::service('session')->get('redirect_url');
+        \Drupal::logger('wo_material_item_subtotal')->notice('Redirect URL from session: @url', ['@url' => $redirect_url ?? 'Not Set']);
+
+        if ($redirect_url) {
+            // Retrieve the message.
+            $new_item_message = \Drupal::service('session')->get('new_item_message');
+            
+            // Remove session data to avoid reuse.
+            \Drupal::service('session')->remove('redirect_url');
+            \Drupal::service('session')->remove('new_item_message');
+            
+            // Add the message to the messenger service.
+            if ($new_item_message) {
+                \Drupal::messenger()->addMessage($new_item_message, 'status');
+            }
+
+            // Redirect to the WO Material List's canonical route.
+            \Drupal::logger('wo_material_item_subtotal')->notice('Redirecting to: @url', ['@url' => $redirect_url]);
+            $response = new RedirectResponse($redirect_url, 302);
+            $response->send();
+            exit; // Ensure no further output is sent.
+        } else {
+            \Drupal::logger('wo_material_item_subtotal')->notice('No redirect URL found in session, skipping redirect.');
+        }
+    }
+}

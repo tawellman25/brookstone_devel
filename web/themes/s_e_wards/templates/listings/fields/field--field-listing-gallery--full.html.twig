@@ -1,0 +1,9 @@
+<div class="gallery-popup--listing gallery-carousel-center owl-carousel">
+   {%- for item in items -%}
+      <div class="item">{{ item.content }}
+         <a href="{{file_url(item.content['#item'].entity.uri.value|image_style('large') )}}" class="image-popup" title="{{ item.content['#item'].title }}">
+            <i class="icon la la-arrows"></i>
+         </a>
+      </div>
+  {% endfor %}
+</div> 

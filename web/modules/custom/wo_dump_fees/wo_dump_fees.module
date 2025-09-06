@@ -1,0 +1,77 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\config_pages\ConfigPagesLoaderInterface;
+use Drupal\eck\EckEntityInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_dump_fees_entity_presave(EntityInterface $entity) {
+    // Initialize $dump_total at the start.
+    $dump_total = 0;
+    $dumpRecieptTotal = 0;
+    $dumpingRate = 0;
+    
+    // Check if it's a Work Order entity of the 'Fertilizing' bundle.
+    if ($entity->getEntityTypeId() === 'wo_material_dumping' && $entity->bundle() === 'load') {
+
+        $workOrderId = $entity->get('field_work_order')->target_id ?? null;
+
+        // Initialize variables to ensure they're defined before use.
+
+        $config_pages_loader = \Drupal::service('config_pages.loader');
+        $business_settings = $config_pages_loader->load('business_setting');
+        
+        if ($business_settings) {
+            // Fetch the configured minimums and fees.
+            $fullLoadRate = $business_settings->get('field_full_load_fee')->value;
+            $halfLoadRate = $business_settings->get('field_1_2_load_fee')->value;
+            $quarterLoadRate = $business_settings->get('field_1_4_load_fee')->value;
+            
+            // Get values from wo_material_dumping enitity
+            $dumpRecieptFee = $entity->get('field_dump_fee')->value;
+            $dumpLoadSize = $entity->get('field_load_s_amount')->value;
+            $whereDumped = $entity->get('field_where_was_it_dumped')->target_id;
+            $numberOfLoads = $entity->get('field_dumping_how_many_full_load')->value;
+                       
+            // Dumping Rate
+            if ($numberOfLoads > 1){
+                $dumpingRate = $fullLoadRate * $numberOfLoads;
+            } else {
+                if ($dumpLoadSize == 'quarter_load') {
+                    $dumpingRate = $quarterLoadRate;
+                } elseif ($dumpLoadSize == 'half_load') {
+                    $dumpingRate = $halfLoadRate;
+                } elseif ($dumpLoadSize == 'full_load') {
+                    $dumpingRate = $fullLoadRate;
+                } else {
+                    $dumpingRate = 0;
+                }
+            }
+        }
+
+        // Enter Dumping rate and add to total
+        if ($dumpingRate > 0) {
+            $entity->set('field_dump_rate', $dumpingRate);
+            $dump_total += $dumpingRate;
+        }
+
+        // Enter Fertilizing Charge
+        if ($dumpRecieptFee > 0) {
+            $dump_total += $dumpRecieptFee;
+        }
+
+        // Office Adjust Total as needed for invoicing
+        $billingAdjustment = $entity->get('field_billing_adjustment')->value;
+        $dump_total += $billingAdjustment;
+
+        // Future calculations can modify $dump_total as needed.
+        // Set 'field_total' with the final $dump_total value.
+        if ($dump_total > 0) {
+            $entity->set('field_dump_total', $dump_total);
+        }
+    }
+}
+

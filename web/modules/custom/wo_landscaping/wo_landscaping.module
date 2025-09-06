@@ -1,0 +1,257 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\config_pages\ConfigPagesLoaderInterface;
+use Drupal\eck\EckEntityInterface;
+use Drupal\views\Views;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_landscaping_entity_presave(EntityInterface $entity) {
+    // Initialize $grand_total at the start.
+    $grand_total = 0;
+    $trucks = 0;
+    $totalTrip = 0;
+    $labor_subtotal = 0;
+
+    // Check if it's a Work Order entity of the 'Landscaping' bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'landscaping') {
+
+        // Check if the Work Order is marked as 'Complete'.
+        $statusTermId = $entity->get('field_status')->target_id ?? 0;
+        if ($statusTermId != 1097) {
+            //If the Work Order is not 'Complete', exit the function early to avoid performing further calculations.
+            return;
+        }
+        
+        // The Work Order is 'Complete'; you can now proceed with further calculations.
+        // Initialize variables to ensure they're defined before use.
+
+        $config_pages_loader = \Drupal::service('config_pages.loader');
+        $business_settings = $config_pages_loader->load('business_setting');
+        
+        if ($business_settings) {
+            // Fetch the configured minimums and fees.
+            $hourlyRate = $business_settings->get('field_maintenance_crew_labor')->value;
+            $hourlyBillingIncrement = $business_settings->get('field_hour_billing_increment')->value;
+            $hourlyMinimum = $business_settings->get('field_general_minimum_time')->value;
+            
+            $timeSpent = get_hours_for_landscaping($entity->id()); // Total hours of all man that clocked in.
+            $menTotal = get_men_for_landscaping($entity->id()); // Total men on site for this person clocked in.
+
+            $totalTime = $timeSpent;
+
+            if ($totalTime > $hourlyMinimum) {
+                // figure the time by increments
+                $totalMinutes = $totalTime * 60;
+                $totalTimeIncrements = ceil($totalMinutes / $hourlyBillingIncrement);
+                $hourlyIncrement = $hourlyBillingIncrement / 60;
+                $hourlyRateIncrement = $hourlyRate * $hourlyIncrement;
+                $labor_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
+    
+            } else {
+                $labor_subtotal = $hourlyRate * $hourlyMinimum;
+            }
+            
+            $entity->set('field_total_time', $totalTime);
+            $entity->set('field_labor_total', $labor_subtotal);
+        }
+
+        $workOrderId = $entity->id();
+
+        // Labor from above
+        // Make sure Labor is a positive number and add to grand total.
+        if ($labor_subtotal > 0) {
+            $grand_total += $labor_subtotal;
+        }
+
+        // Calculate costs.
+        // Material Costs
+        $material_subtotal = get_total_landscaping_material_list_price($workOrderId); // Total materials with markup of all material lists.
+
+        // Make sure materials is a positive number and add to grand total.
+        if ($material_subtotal > 0) {
+            $entity->set('field_material_chemical_total', $material_subtotal);
+            $grand_total += $material_subtotal;
+        }
+
+        // Trip Fee Calculated in the wo_sign_off and saved to work_order's field_trip_fee
+        $totalTrip = $entity->get('field_trip_fee')->value;
+
+        // Make sure Trip is a positive number and add to grand total.
+        if ($totalTrip > 0) {
+            $grand_total += $totalTrip;
+        }
+        
+        //Rental Fees
+        // Now, add the Equipment Rental Fees from related 'wo_rental_equipment' entities.
+        $rental_fee_total = get_landscaping_total_rental_fees($workOrderId);
+  
+
+        // Make sure Rental is a positive number and add to grand total.
+        if ($rental_fee_total > 0) {
+            // Set the rental fee total on the entity regardless of grand total.
+            $entity->set('field_rental_total', $rental_fee_total);
+            $grand_total += $rental_fee_total;
+        }
+
+        // Office Adjust Total as needed for invoicing
+        $billingAdjustment = $entity->get('field_billing_adjustment')->value;
+        $grand_total += $billingAdjustment;
+
+        // Future calculations can modify $grand_total as needed.
+        // Set 'field_total' with the final $grand_total value.
+        if ($grand_total > 0) {
+            $entity->set('field_wo_total', $grand_total);
+        }
+    }
+}
+
+/**
+ * Calculates the total Materials for a given Work Order.
+ */
+function get_total_landscaping_material_list_price($workOrderId) {
+    $database = \Drupal::database();
+
+    // Start by selecting from the table that contains subtotal values.
+    $query = $database->select('wo_material_list_item__field_subtotal_w_markup', 'subtotal');
+    
+    // Join to link the subtotal values to their respective material list items.
+    $query->join('wo_material_list_item', 'items', 'subtotal.entity_id = items.id');
+    
+    // Join to link each material list item to its material list via the reference field.
+    // Adjust the join condition based on your actual data model.
+    $query->join('wo_material_list_item__field_list_id', 'list_id', 'items.id = list_id.entity_id');
+    
+    // Then, join to the material list to work order reference table.
+    // This assumes there's a direct relationship table or field connecting material lists to work orders.
+    $query->join('wo_material_list__field_work_order', 'work_order', 'list_id.field_list_id_target_id = work_order.entity_id');
+    
+    // Filter by the work order ID.
+    $query->condition('work_order.field_work_order_target_id', $workOrderId);
+    
+    // Specify the field to sum for the total.
+    $query->addExpression('SUM(subtotal.field_subtotal_w_markup_value)', 'total_subtotal_w_markup');
+    
+    // Execute the query and fetch the result.
+    $result = $query->execute()->fetchField();
+
+    return $result ? $result : 0;
+}
+
+/**
+ * Calculates the total Rented Equipment fees for a given Work Order.
+ */
+function get_landscaping_total_rental_fees($workOrderId) {
+    $database = \Drupal::database();
+    
+    // Query the dedicated field storage table for 'field_receipt_total_cost'.
+    $query = $database->select('wo_rental_equipment__field_receipt_total_cost', 'rental_fees');
+    
+    // Join the entity base table to access the Work Order reference.
+    // This assumes 'field_rented_for' is the correct entity reference field name.
+    $query->join('wo_rental_equipment__field_rented_for', 'work_order', 'rental_fees.entity_id = work_order.entity_id');
+    
+    // Filter by the Work Order ID.
+    $query->condition('work_order.field_rented_for_target_id', $workOrderId);
+    
+    // Sum the rental fee values.
+    $query->addExpression('SUM(rental_fees.field_receipt_total_cost_value)', 'total_rental_fee');
+    
+    // Execute the query and fetch the result.
+    $result = $query->execute()->fetchField();
+    
+    return $result ? $result : 0;
+}
+
+/**
+ * Retrieves the Hours clocked in for landscaping from related wo_time_clock entities.
+ *
+ * @param int $workOrderId
+ *   The work order entity ID.
+ *
+ * @return int
+ *   The total hours for landscaping Work Order.
+ */
+function get_hours_for_landscaping($workOrderId) {
+
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    $hoursSpent = 0;
+
+    // Load wo_time_clock entities that reference the given work order.
+    $woTimeClockEntities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
+        'field_work_order' => $workOrderId,
+    ]);
+
+    foreach ($woTimeClockEntities as $entity) {
+        // Check if the entity is part of the 'landscaping' bundle.
+        if ($entity->bundle() === 'entry') {
+            // Sum the gallons used.
+            $hours = $entity->get('field_total_time')->value; // Adjust 'field_total_time' that is a Number(decimal).
+            $hoursSpent += $hours;
+        }
+    }
+
+    return $hoursSpent;
+}
+
+function get_men_for_landscaping($workOrderId) {
+
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    // Use an Entity Query to find the latest 'wo_complete_info' entity for the given work order.
+    $query = \Drupal::entityQuery('wo_complete_info')
+        ->accessCheck(FALSE) // Enforce access checks
+        ->condition('field_work_order', $workOrderId)
+        ->sort('field_date_completed', 'DESC') // Adjust 'field_completed_date' to your actual date field name.
+        ->range(0, 1); // Limit to the latest entity.
+
+    $result = $query->execute();
+
+    if (empty($result)) {
+        return 0; // Return early if no entities are found.
+    }
+
+    $latestEntityId = reset($result);
+    $latestEntity = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load($latestEntityId);
+
+    // Assuming 'field_those_on_crew' is a list of 'uid' values.
+    $totalMen = $latestEntity->get('field_those_on_crew')->count();// Count the list of them on site.
+    
+    return $totalMen;
+}
+
+function get_trucks_for_landscaping($workOrderId) {
+
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    // Use an Entity Query to find the latest 'wo_complete_info' entity for the given work order.
+    $query = \Drupal::entityQuery('wo_complete_info')
+        ->accessCheck(FALSE) // Enforce access checks
+        ->condition('field_work_order', $workOrderId)
+        ->sort('field_date_completed', 'DESC') // Adjust 'field_completed_date' to your actual date field name.
+        ->range(0, 1); // Limit to the latest entity.
+
+    $result = $query->execute();
+
+    if (empty($result)) {
+        return 0; // Return early if no entities are found.
+    }
+
+    $latestEntityId = reset($result);
+    $latestEntity = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load($latestEntityId);
+
+    // Assuming 'field_those_on_crew' is a list of 'uid' values.
+    $trucksSelected = $latestEntity->get('field_how_many_trucks_taken')->value;// The select list is 1 number off
+    $totalTrucks = $trucksSelected;
+
+    return $totalTrucks;
+}

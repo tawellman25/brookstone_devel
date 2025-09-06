@@ -1,0 +1,43 @@
+<?php
+
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_alter().
+ */
+function custom_user_redirect_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  // Target user creation forms.
+  if ($form_id == 'user_register_form' || $form_id == 'user_form') {
+    $form['actions']['submit']['#submit'][] = 'custom_user_redirect_form_submit';
+  }
+}
+
+/**
+ * Custom submit handler to redirect after user creation.
+ */
+function custom_user_redirect_form_submit($form, FormStateInterface $form_state) {
+  $user = $form_state->getFormObject()->getEntity();
+  $uid = $user->id();
+  $roles = $user->getRoles();
+
+  // Load all profile types from the Profile module.
+  $profile_types = \Drupal::entityTypeManager()
+    ->getStorage('profile_type')
+    ->loadMultiple();
+
+  // Find the matching profile type based on allowed roles.
+  foreach ($profile_types as $profile_type) {
+    $allowed_roles = $profile_type->get('roles'); // Array of role IDs from "Allowed roles".
+    $profile_type_id = $profile_type->id(); // e.g., 'customer_profile'.
+
+    // Check if any of the user's roles match the allowed roles.
+    if (!empty(array_intersect($roles, $allowed_roles))) {
+      // Redirect to /user/[uid]/[profile_type_id].
+      $form_state->setRedirectUrl(\Drupal\Core\Url::fromUserInput("/user/$uid/$profile_type_id"));
+      return;
+    }
+  }
+
+  // Fallback to default user edit form if no match is found.
+  $form_state->setRedirect('entity.user.edit_form', ['user' => $uid]);
+}

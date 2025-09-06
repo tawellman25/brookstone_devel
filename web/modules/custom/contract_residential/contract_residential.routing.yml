@@ -1,0 +1,192 @@
+contract_residential.create_contracts:
+  path: '/residential_contract/create/{property_id}'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\ContractResidentialController::startWorkflow'
+    _title: 'Start Residential Contract Workflow'
+  requirements:
+    _permission: 'create contracts entities of bundle residential'
+  options:
+    parameters:
+      property_id:
+        type: 'entity:properties' # This specifies the property entity type.
+
+contract_residential.create_aerating_work_order:
+  path: '/contract/{contract_id}/aerating_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\AeratingWorkOrderController::createAeratingWorkOrder'
+    _title: 'Create Aerating Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+
+contract_residential.create_aspen_twig_gall_work_order:
+  path: '/contract/{contract_id}/aspen_twig_gall_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\AspenTwigGallWorkOrderController::createAspenTwigGallWorkOrder'
+    _title: 'Create Aspen Twig Gall Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_christmas_decorations_work_order:
+  path: '/contract/{contract_id}/christmas_decorations_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\ChristmasDecorationsWorkOrderController::createChristmasDecorationsWorkOrder'
+    _title: 'Create Christmas Decorations Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_cooley_spruce_gall_work_order:
+  path: '/contract/{contract_id}/cooley_spruce_gall_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\CooleySpruceGallWorkOrderController::createCooleySpruceGallWorkOrder'
+    _title: 'Create Cooley Spruce Gall Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_deciduous_bore_work_order:
+  path: '/contract/{contract_id}/deciduous_bore_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\DeciduousBoreWorkOrderController::createDeciduousBoreWorkOrder'
+    _title: 'Create Deciduous Bore Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_deer_prevention_put_up_work_order:
+  path: '/contract/{contract_id}/deer_prevention_put_up_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\DeerPreventionPutUpWorkOrderController::createDeerPreventionPutUpWorkOrder'
+    _title: 'Create Deer Prevention Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_deer_prevention_take_down_work_order:
+  path: '/contract/{contract_id}/deer_prevention_take_down_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\DeerPreventionTakeDownWorkOrderController::createDeerPreventionTakeDownWorkOrder'
+    _title: 'Create Deer Prevention Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_dethatching_work_order:
+  path: '/contract/{contract_id}/dethatching_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\DethatchingWorkOrderController::createDethatchingWorkOrder'
+    _title: 'Create Dethatching Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_dormant_oil_work_order:
+  path: '/contract/{contract_id}/dormant_oil_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\DormantOilWorkOrderController::createDormantOilWorkOrder'
+    _title: 'Create Dormant Oil Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_fall_cleanup_work_order:
+  path: '/contract/{contract_id}/fall_cleanup_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\FallCleanupWorkOrderController::createFallCleanupWorkOrder'
+    _title: 'Create Fall Cleanup Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_pre_emergent_work_order:
+  path: '/contract/{contract_id}/pre_emergent_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\PreEmergentWorkOrderController::createPreEmergentWorkOrder'
+    _title: 'Create Pre-emergent Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_fertilizing_spring_work_order:
+  path: '/contract/{contract_id}/fertilizing_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\FertilizingSpringWorkOrderController::createFertilizingSpringWorkOrder'
+    _title: 'Create Fertilizing Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_fertilizing_summer_work_order:
+  path: '/contract/{contract_id}/fertilizing_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\FertilizingSummerWorkOrderController::createFertilizingSummerWorkOrder'
+    _title: 'Create Fertilizing Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_fertilizing_fall_work_order:
+  path: '/contract/{contract_id}/fertilizing_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\FertilizingFallWorkOrderController::createFertilizingFallWorkOrder'
+    _title: 'Create Fertilizing Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_fertilizing_trees_and_shrubs_work_order:
+  path: '/contract/{contract_id}/fertilizing_trees_and_shrubs_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\FertilizingTreeShrubWorkOrderController::createFertilizingTreeShrubWorkOrder'
+    _title: 'Create Fertilizing Trees and Shrubs Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_grub_prevention_work_order:
+  path: '/contract/{contract_id}/grub_prevention_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\GrubPreventionWorkOrderController::createGrubPreventionWorkOrder'
+    _title: 'Create Grub Prevention Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_pinion_pine_ips_beetle_work_order:
+  path: '/contract/{contract_id}/pinion_pine_ips_beetle_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\PinionPineIpsBeetleWorkOrderController::createPinionPineIpsBeetleWorkOrder'
+    _title: 'Create Pinion Pine Ips Beetle Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_spring_cleanup_work_order:
+  path: '/contract/{contract_id}/spring_cleanup_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\SpringCleanupWorkOrderController::createSpringCleanupWorkOrder'
+    _title: 'Create Spring Cleanup Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_summer_pruning_work_order:
+  path: '/contract/{contract_id}/summer_pruning_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\SummerPruningWorkOrderController::createSummerPruningWorkOrder'
+    _title: 'Create Summer Pruning Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+
+
+contract_residential.create_trunk_bore_work_order:
+  path: '/contract/{contract_id}/trunk_bore_wo/create'
+  defaults:
+    _controller: '\Drupal\contract_residential\Controller\TrunkBoreWorkOrderController::createTrunkBoreWorkOrder'
+    _title: 'Create Trunk Bore Work Order from Contract'
+  requirements:
+    _permission: 'create work_order entities'
+    contract_id: \d+

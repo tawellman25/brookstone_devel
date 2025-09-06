@@ -1,0 +1,43 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for the 'property' entity type.
+ */
+function property_full_address_entity_presave(Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->getEntityType()->id() === 'properties' && $entity->bundle() === 'property') {
+    if ($entity->hasField('field_zipcode_reference') && !$entity->get('field_zipcode_reference')->isEmpty()) {
+      $zipcode_reference_id = $entity->get('field_zipcode_reference')->target_id;
+      $zipcode_entity = \Drupal::entityTypeManager()->getStorage('zipcodes')->load($zipcode_reference_id);
+      
+      if ($zipcode_entity) {
+        // Assuming the zipcode itself is stored in a field on the 'zipcode' entity.
+        $zipcode = $zipcode_entity->get('field_zipcode')->value; // Adjust 'field_zipcode' if necessary.
+
+        if (!$zipcode_entity->get('field_city')->isEmpty()) {
+          $city_entity = $zipcode_entity->get('field_city')->first()->get('entity')->getTarget()->getValue();
+          $city_name = $city_entity->get('field_city_name')->value;
+        } else {
+          $city_name = '';
+        }
+
+        if (!$zipcode_entity->get('field_state')->isEmpty()) {
+          $state_entity = $zipcode_entity->get('field_state')->first()->get('entity')->getTarget()->getValue();
+          $state_name = $state_entity->get('field_state_name')->value;
+        } else {
+          $state_name = '';
+        }
+        
+        if ($entity->hasField('field_street_address') && !$entity->get('field_street_address')->isEmpty()) {
+          $street_address = $entity->get('field_street_address')->value;
+          // Append the zipcode to the full address.
+          $full_address = $street_address . ', ' . $city_name . ', ' . $state_name . ' ' . $zipcode;
+          
+          // Set the full address in the field_full_address field.
+          $entity->set('field_full_address', $full_address);
+        }
+      }
+    }
+  }
+}

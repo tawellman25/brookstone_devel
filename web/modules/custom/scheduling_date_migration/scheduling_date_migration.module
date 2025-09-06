@@ -1,0 +1,202 @@
+<?php
+
+/**
+ * @file
+ * Contains scheduling_date_migration.module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function scheduling_date_migration_install() {
+  if (!\Drupal::moduleHandler()->moduleExists('smart_date')) {
+    throw new \Exception('Smart Date module is required for this migration.');
+  }
+
+  $batch = [
+    'title' => t('Migrating scheduling work_order dates'),
+    'operations' => [
+      ['scheduling_date_migration_batch_process', []],
+    ],
+    'finished' => 'scheduling_date_migration_batch_finished',
+  ];
+  batch_set($batch);
+
+  // Process immediately if running via CLI.
+  if (PHP_SAPI === 'cli') {
+    drush_backend_batch_process();
+  }
+}
+
+/**
+ * Batch process callback to migrate scheduling entities.
+ */
+function scheduling_date_migration_batch_process(&$context) {
+  if (!isset($context['sandbox']['total'])) {
+    $context['sandbox']['total'] = \Drupal::entityTypeManager()
+      ->getStorage('scheduling')
+      ->getQuery()
+      ->condition('type', 'work_order')
+      ->accessCheck(FALSE)
+      ->count()
+      ->execute();
+    $context['sandbox']['progress'] = 0;
+    $context['sandbox']['batch_size'] = 250;
+    $context['results']['processed'] = 0;
+  }
+
+  $query = \Drupal::entityTypeManager()
+    ->getStorage('scheduling')
+    ->getQuery()
+    ->condition('type', 'work_order')
+    ->range($context['sandbox']['progress'], $context['sandbox']['batch_size'])
+    ->accessCheck(FALSE);
+  $entity_ids = $query->execute();
+
+  if (empty($entity_ids)) {
+    $context['finished'] = 1;
+    return;
+  }
+
+  $entities = \Drupal::entityTypeManager()
+    ->getStorage('scheduling')
+    ->loadMultiple($entity_ids);
+
+  // Define timezones.
+  $source_tz = new \DateTimeZone('UTC');
+  $target_tz = new \DateTimeZone('America/Denver');
+
+  foreach ($entities as $entity) {
+    if (
+      $entity->hasField('field_scheduled_date_and_time') &&
+      $entity->hasField('field_date') &&
+      !$entity->get('field_scheduled_date_and_time')->isEmpty()
+    ) {
+      // Retrieve the first (and only) item.
+      $old_item = $entity->get('field_scheduled_date_and_time')->first();
+      $new_field = $entity->get('field_date');
+
+      // Retrieve the raw stored values.
+      $old_values = $old_item->getValue();
+
+      // Determine if the event is all day.
+      // We mark it as all-day if either:
+      //   - There is no end value and the time part of start equals "06:00:00" or "07:00:00", OR
+      //   - The start and end values are exactly the same.
+      $is_all_day = 0;
+      $start_time = substr($old_item->value, 11, 8);
+      if ((empty($old_item->end_value) && ($start_time === '06:00:00' || $start_time === '07:00:00')) ||
+          (!empty($old_item->end_value) && $old_item->value === $old_item->end_value)) {
+        $is_all_day = 1;
+      }
+      // Alternatively, check the stored DB value if available.
+      elseif (isset($old_values['field_scheduled_date_and_time_all_day'])) {
+        $is_all_day = (int) $old_values['field_scheduled_date_and_time_all_day'];
+      }
+      // Or fallback to checking the property.
+      elseif (isset($old_item->all_day)) {
+        $is_all_day = (int) $old_item->all_day;
+      }
+
+      try {
+        // Create a DateTime object from the stored start value (assumed UTC).
+        $start_datetime = new \DateTime($old_item->value, $source_tz);
+      }
+      catch (\Exception $e) {
+        \Drupal::logger('scheduling_date_migration')->error('Invalid start date for entity @id: @message', [
+          '@id' => $entity->id(),
+          '@message' => $e->getMessage(),
+        ]);
+        continue;
+      }
+
+      if ($is_all_day === 1) {
+        // For all-day events:
+        // Convert stored UTC time to America/Denver.
+        $start_local = clone $start_datetime;
+        $start_local->setTimezone($target_tz);
+        // Set local time to midnight.
+        $start_local->setTime(0, 0, 0);
+        // Get the UTC timestamp corresponding to local midnight.
+        $start_value = $start_local->getTimestamp();
+
+        // Instead of trying to recalc the end time via setTime (which can be affected by DST),
+        // explicitly add 86,399 seconds (i.e. 23:59:59) to the start timestamp.
+        $end_value = $start_value + 86399;
+      }
+      else {
+        // For timed events, use the stored UTC start value.
+        $start_value = $start_datetime->getTimestamp();
+
+        if (!empty($old_item->end_value)) {
+          try {
+            $end_datetime = new \DateTime($old_item->end_value, $source_tz);
+            $end_value = $end_datetime->getTimestamp();
+          }
+          catch (\Exception $e) {
+            \Drupal::logger('scheduling_date_migration')->error('Invalid end date for entity @id: @message', [
+              '@id' => $entity->id(),
+              '@message' => $e->getMessage(),
+            ]);
+            $end_value = (clone $start_datetime)->modify('+1 hour')->getTimestamp();
+          }
+        }
+        else {
+          $end_value = (clone $start_datetime)->modify('+1 hour')->getTimestamp();
+        }
+      }
+
+      // Calculate duration in minutes.
+      $duration = (int) round(($end_value - $start_value) / 60);
+
+      // Set the Smart Date field values.
+      $new_field->setValue([
+        'value' => $start_value,
+        'end_value' => $end_value,
+        'duration' => $duration,
+        'timezone' => 'America/Denver',
+      ]);
+
+      try {
+        $entity->save();
+        $context['results']['processed']++;
+      }
+      catch (\Exception $e) {
+        \Drupal::logger('scheduling_date_migration')->error('Failed to save entity @id: @message', [
+          '@id' => $entity->id(),
+          '@message' => $e->getMessage(),
+        ]);
+      }
+    }
+    $context['sandbox']['progress']++;
+  }
+
+  $context['message'] = t('Processed @progress of @total entities.', [
+    '@progress' => $context['sandbox']['progress'],
+    '@total' => $context['sandbox']['total'],
+  ]);
+  $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['total'];
+}
+
+/**
+ * Batch finished callback.
+ */
+function scheduling_date_migration_batch_finished($success, $results, $operations) {
+  if ($success) {
+    \Drupal::logger('scheduling_date_migration')
+      ->notice('Successfully migrated @count scheduling work_order entities.', [
+        '@count' => $results['processed'] ?? 0,
+      ]);
+    \Drupal::messenger()->addStatus(t('Date migration completed successfully for @count entities.', [
+      '@count' => $results['processed'] ?? 0,
+    ]));
+  }
+  else {
+    $error_operation = reset($operations);
+    \Drupal::logger('scheduling_date_migration')
+      ->error('An error occurred during migration in operation: @operation.', [
+        '@operation' => print_r($error_operation, TRUE),
+      ]);
+    \Drupal::messenger()->addError(t('Date migration failed. Check the logs for details.'));
+  }
+}

@@ -1,0 +1,108 @@
+{#
+/**
+ * @file
+ * Default theme implementation to display a view of unformatted rows.
+ *
+ * Available variables:
+ * - title: The title of this group of rows. May be empty.
+ * - rows: A list of the view's row items.
+ *   - attributes: The row's HTML attributes.
+ *   - content: The row's content.
+ * - view: The view object.
+ * - default_row_class: A flag indicating whether default classes should be
+ *   used on rows.
+ *
+ * @see template_preprocess_views_view_unformatted()
+ *
+ * @ingroup themeable
+ */
+#}
+{% if title %}
+  <h3>{{ title }}</h3>
+{% endif %}
+
+
+{% if taxonomy_id == 'listing_category' or taxonomy_id == 'listing_locations' or taxonomy_id == 'amenities' %} {# Taxonomy Listing Category, Location #}
+   
+  {% if attributes -%}
+    <div{{ attributes }}>
+  {% endif %}
+     
+    {% if title %}
+      <h3>{{ title }}</h3>
+    {% endif %}
+    <div class="sew-listings-map-page">
+      <div class="listings-map-3 map-layout-wrapper">
+        <div class="half-map-layout-1 clearfix">
+          <div class="map-action-mobile clearfix">
+            <div class="control-search-link"><a class="btn-theme-small" href="{{ path('<front>') }}{{sew_theme_setting('listing_search_action')}}">{{ "Search Page"|t }}</a></div>
+            <div class="control-map">
+              <div class="control-reset-map"><a href="#" class="btn-theme-small sew-reset-map">{{'Reset Map'|t}}</a></div>
+              <div class="control-open-map-listtings">
+                <a href="#" class="btn-theme-small sew-open-map">{{'Open Map'}}</a>
+                <a href="#" class="btn-theme-small sew-open-listings d-none">{{'Open Listings'}}</a>
+              </div>
+            </div>
+          </div>
+          
+          <div class="main-listing-wrapper d-lg-block">
+            <div class="map-action clearfix d-none d-md-none d-sm-none d-lg-block">
+              <div class="control-search-2" style="float:left;"><a href="{{ path('<front>') }}{{sew_theme_setting('listing_search_action')}}">{{ "Search Filters Page"|t }}</a></div>
+              <div class="control-map">
+                <div class="control-hover-show-map pretty p-switch p-fill">
+                  <input type="checkbox" id="hover-show-map"/>
+                  <div class="state">
+                      <label>{{'Hover Show Map'|t}}</label>
+                  </div>
+                </div>
+                <div class="control-reset-map"><a href="#" class="sew-reset-map"><i class="la la-map-marker"></i>{{'Reset Map'|t}}</a></div>
+              </div>  
+            </div>  
+
+            <div class="listing-items sew-view-grid-inner lg-block-grid-3 md-block-grid-3 sm-block-grid-2 xs-block-grid-2" data-drupal-views-infinite-scroll-content-wrapper-sewloadmorelistings>
+              {% set i = 0 %}
+              {% for row in rows %}
+                  <div class="item-columns">
+                    <div class="listing-item-wrapper" data-marker="{{i}}">{{ row.content|raw }}</div>
+                  </div>
+              {% set i = i + 1 %}
+              {% endfor %}
+            </div>
+          </div> 
+
+          <div class="main-map-wrapper d-none d-md-none d-sm-none d-xs-none d-lg-block">
+            <div id="listing-main-map" class="listing-main-map"></div>
+          </div>
+        </div>  
+      </div>  
+    </div>
+  {% if attributes -%}
+      </div>
+  {% endif %}
+
+
+  <script type="text/javascript">
+    jQuery(document).ready(function(){
+      map_init();
+    });
+  </script>
+
+
+{% else %} {# End Taxonomy Listing Category, Location  #}
+
+  {% set i = 0 %}
+  <div class="categories-view-content view-content-wrap post-style-grid box">
+    {% for row in rows %}
+      {% set i = i + 1 %}
+      {% if i % 2 == 1 %} 
+        <div class="row">
+      {% endif %} 
+        <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+          {{ row.content }}
+        </div>
+      {% if (i % 2 == 0 or i == rows|length)  %} 
+        </div>
+      {% endif %} 
+    {% endfor %}
+  </div>
+{% endif %}

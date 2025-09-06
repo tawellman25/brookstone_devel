@@ -1,0 +1,56 @@
+id: migrate_comments_to_wo_notes
+label: 'Migrate Work Order Comments to WO Notes'
+migration_group: work_order_notes_migration
+
+source:
+  plugin: content_entity:comment
+  entity_type: comment
+  bundle: work_order_notes
+  batch_size: 25
+  ids:
+    id:
+      type: integer
+
+process:
+  bundle:
+    plugin: default_value
+    default_value: note
+
+  entity_type:
+    plugin: default_value
+    default_value: wo_notes
+
+  field_note_subject: 
+    plugin: get
+    source: subject
+
+  field_note_text:
+    plugin: get
+    source: comment_body
+
+  field_note_text/format:
+    plugin: default_value
+    default_value: full_html
+
+  field_work_order:
+    plugin: get
+    source: entity_id
+
+  uid:
+    plugin: get
+    source: uid
+
+  created:
+    plugin: get
+    source: created
+
+destination:
+  plugin: entity:wo_notes
+  default_bundle: note
+  ids:
+    id:
+      type: integer
+
+migration_dependencies:
+  required: {}
+  optional: {}

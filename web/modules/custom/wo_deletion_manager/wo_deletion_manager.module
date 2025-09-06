@@ -1,0 +1,12 @@
+<?php
+
+use Drupal\eck\Entity\EckEntity;
+use Drupal\wo_deletion_manager\WorkOrderDeletionManager;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+
+/**
+ * Implements hook_entity_delete().
+ */
+function wo_deletion_manager_entity_delete(\Drupal\Core\Entity\EntityInterface $entity) {
+    \Drupal::service('wo_deletion_manager.work_order_deletion_manager')->deleteAssociatedTasks($entity);
+  }

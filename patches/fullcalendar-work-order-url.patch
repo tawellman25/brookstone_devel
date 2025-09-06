@@ -1,0 +1,26 @@
+diff --git a/src/Plugin/views/style/FullcalendarStyle.php b/src/Plugin/views/style/FullcalendarStyle.php
+index abc1234..def5678 100644
+--- a/src/Plugin/views/style/FullcalendarStyle.php
++++ b/src/Plugin/views/style/FullcalendarStyle.php
+@@ -544,6 +544,11 @@ class FullCalendar extends StylePluginBase {
+     $time_class = 'fc-event-now';
+   }
+
+   $editable = $entity->access('update', NULL, TRUE)->isAllowed();
++
++  $url = $entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty() && $entity->get('field_work_order')->entity
++    ? '/work_order/' . $entity->get('field_work_order')->entity->id()
++    : $entity->toUrl('canonical', ['language' => $this->languageManager->getCurrentLanguage()])->toString();
++
+   $event = [
+     'id' => $entity->id(),
+     'eid' => $event_start_end['eid'],
+@@ -556,7 +561,7 @@ class FullCalendar extends StylePluginBase {
+     'type' => $event_start_end['type'],
+     'className' => $class . ' ' . $time_class,
+     'title' => strip_tags(htmlspecialchars_decode($title, ENT_QUOTES)),
+-    'url' => $entity->toUrl('canonical', ['language' => $this->languageManager->getCurrentLanguage()])->toString(),
++    'url' => $url,
+   ];
+
+   if (!empty($this->eventColors)) {

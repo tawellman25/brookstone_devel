@@ -1,0 +1,216 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\config_pages\ConfigPagesLoaderInterface;
+use Drupal\eck\EckEntityInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_dethatching_entity_presave(EntityInterface $entity) {
+    // Initialize $grand_total at the start.
+    $grand_total = 0;
+    $atv_subtotal = 0;
+    $labor_subtotal = 0;
+    $trucks = 0;
+    $totalTrip = 0;
+
+    // Check if it's a Work Order entity of the 'Dethatching' bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'dethatching') {
+        
+        // Check if the Work Order is marked as 'Complete'.
+        $statusTermId = $entity->get('field_status')->target_id ?? 0;
+        if ($statusTermId != 1097) {
+            //If the Work Order is not 'Complete', exit the function early to avoid performing further calculations.
+            return;
+        }
+
+        $propertyId = $entity->get('field_property')->target_id ?? null;
+
+        // Proceed if the property ID is available.
+        if ($propertyId) {
+            $lawnSqFt = null;
+
+            // If 'field_current_turf_sq_footage' is not set, try to fetch and set it.
+            if ($entity->get('field_current_turf_sq_footage')->isEmpty()) {
+                // Load 'property_landscape_details' entities by 'field_property'.
+                $propertyLandscapeDetails = \Drupal::entityTypeManager()->getStorage('property_landscape_details')->loadByProperties([
+                    'field_property' => $propertyId,
+                ]);
+
+                if (!empty($propertyLandscapeDetails)) {
+                    $detailsEntity = reset($propertyLandscapeDetails);
+                    if ($detailsEntity && !$detailsEntity->get('field_turf_sq_footage')->isEmpty()) {
+                        $lawnSqFt = $detailsEntity->get('field_turf_sq_footage')->value;
+                        // Update the Work Order entity's 'field_current_turf_sq_footage' with the fetched square footage.
+                        $entity->set('field_current_turf_sq_footage', $lawnSqFt);
+                    }
+                }
+            } else {
+                // If 'field_current_turf_sq_footage' already has a value, use it directly.
+                $lawnSqFt = $entity->get('field_current_turf_sq_footage')->value;
+            }
+
+            // Calculate the rate if square footage is determined.
+            $task_rate = calculateDethatchingCost($lawnSqFt);
+            $entity->set('field_task_rate', $task_rate);
+            if ($task_rate > 0) {
+                $grand_total += $task_rate;
+            }
+        }
+        
+        $timeSpent = get_hours_for_dethatching($entity->id()); // Total hours of all man that clocked in.
+
+        $trucks = $entity->get('field_trucks')->value;
+
+        // Calculate Labor.
+        $totalTime = $entity->get('field_total_time')->value;
+        
+        // Now, add the Dumping Fees from related 'wo_material_dumping' entities.
+        $dump_fee_total = get_total_dethatching_dumping_fees($entity->id());
+        
+        // Convert hours to a numerical value, if necessary, and add to grand total.
+        if ($dump_fee_total > 0) {
+            // Set the dump fee total on the entity regardless of grand total.
+            $entity->set('field_dump_fee_total', $dump_fee_total);
+            $grand_total += $dump_fee_total;
+        }
+
+        // Now, add the Equipment Rental Fees from related 'wo_rental_equipment' entities.
+        $rental_fee_total = get_total_dethatching_rental_fees($entity->id());
+        
+        if ($rental_fee_total > 0) {
+            // Set the rental fee total on the entity regardless of grand total.
+            $entity->set('field_rental_total', $rental_fee_total);
+            $grand_total += $rental_fee_total;
+        }
+
+        // Future calculations can modify $grand_total as needed.
+        // Set 'field_total' with the final $grand_total value.
+        if ($grand_total > 0) {
+            $entity->set('field_wo_total', $grand_total);
+        }
+    }
+}
+
+/**
+ * Calculates the total Rented Equipment fees for a given Work Order.
+ */
+function get_total_dethatching_rental_fees($workOrderId) {
+    $database = \Drupal::database();
+    
+    // Query the dedicated field storage table for 'field_receipt_total_cost'.
+    $query = $database->select('wo_rental_equipment__field_receipt_total_cost', 'rental_fees');
+    
+    // Join the entity base table to access the Work Order reference.
+    // This assumes 'field_rented_for' is the correct entity reference field name.
+    $query->join('wo_rental_equipment__field_rented_for', 'work_order', 'rental_fees.entity_id = work_order.entity_id');
+    
+    // Filter by the Work Order ID.
+    $query->condition('work_order.field_rented_for_target_id', $workOrderId);
+    
+    // Sum the rental fee values.
+    $query->addExpression('SUM(rental_fees.field_receipt_total_cost_value)', 'total_rental_fee');
+    
+    // Execute the query and fetch the result.
+    $result = $query->execute()->fetchField();
+    
+    return $result ? $result : 0;
+}
+
+/**
+ * Calculates the total dumping fees for a given Work Order.
+ */
+function get_total_dethatching_dumping_fees($workOrderId) {
+    $database = \Drupal::database();
+    
+    // Query the dedicated field storage table for 'field_dump_fee'.
+    $query = $database->select('wo_material_dumping__field_dump_fee', 'dump_fees');
+    
+    // Join the entity base table to access the Work Order reference.
+    // This assumes 'field_work_order' is the correct entity reference field name.
+    $query->join('wo_material_dumping__field_work_order', 'work_order', 'dump_fees.entity_id = work_order.entity_id');
+    
+    // Filter by the Work Order ID.
+    $query->condition('work_order.field_work_order_target_id', $workOrderId);
+    
+    // Sum the dump fee values.
+    $query->addExpression('SUM(dump_fees.field_dump_fee_value)', 'total_dump_fee');
+    
+    // Execute the query and fetch the result.
+    $result = $query->execute()->fetchField();
+    
+    return $result ? $result : 0;
+}
+
+/**
+ * Calculate the Dethatching cost based on square footage.
+ */
+function calculateDethatchingCost($squareFootage) {
+    $config_pages_loader = \Drupal::service('config_pages.loader');
+    $config_page = $config_pages_loader->load('business_setting'); // Ensure 'business_setting' matches the exact machine name of your config page.
+    if (!$config_page) {
+        return 0;
+    }
+
+    $rateEntities = $config_page->get('field_dethatching_pricing')->referencedEntities();
+    if (empty($rateEntities)) {
+        return 0;
+    }
+
+    $rates = [];
+    foreach ($rateEntities as $entity) {
+        $breakpoint = $entity->get('field_max_sq_ft')->value;
+        $rate = $entity->get('field_rate')->value;
+        $rates[$breakpoint] = $rate;
+    }
+
+    ksort($rates);
+
+    $task_rate = 0;
+    foreach ($rates as $breakpoint => $rate) {
+        if ($squareFootage <= $breakpoint) {
+            $task_rate = $rate;
+            break;
+        }
+    }
+
+    if ($task_rate === 0) {
+    }
+
+    return $task_rate;
+}
+
+/**
+ * Retrieves the Hours clocked in for aerating from related wo_time_clock entities.
+ *
+ * @param int $workOrderId
+ *   The work order entity ID.
+ *
+ * @return int
+ *   The total hours for dethatching Work Order.
+ */
+function get_hours_for_dethatching($workOrderId) {
+
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    $hoursSpent = 0;
+
+    // Load wo_time_clock entities that reference the given work order.
+    $woTimeClockEntities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
+        'field_work_order' => $workOrderId,
+    ]);
+
+    foreach ($woTimeClockEntities as $entity) {
+        // Check if the entity is part of the 'pre-emergent' bundle.
+        if ($entity->bundle() === 'entry') {
+            // Sum the gallons used.
+            $hours = $entity->get('field_total_time')->value; // Adjust 'field_total_time' that is a Number(decimal).
+            $hoursSpent += $hours;
+        }
+    }
+
+    return $hoursSpent;
+}

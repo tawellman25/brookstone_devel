@@ -1,0 +1,40 @@
+{% if sew_theme_setting('map_source') == 'google' or sew_theme_setting('map_source') == '' %}
+  {{ attach_library('s_e_wards/listing_init.gmap') }}
+{% endif %} 
+{{ attach_library('s_e_wards/listing_init') }}
+
+<div class="sew-body-wrapper sew-listings-full-page-2 clearfix">
+	<div class="body-page sew-body-page">
+	   {% include header_skin %}
+		
+		<div role="main" class="main main-page">
+
+			{% if page.help %}
+				<div class="help sew-help-region">
+					<div class="container">
+						<div class="row">
+							<div class="content-inner col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12 ">
+								{{ page.help }}
+							</div>
+						</div>
+					</div>
+				</div>
+			{% endif %}
+			
+			<div class="clearfix"></div>
+			
+			<div id="content" class="content content-full content-main-full">
+				<div class="container">
+					{% if page.content %}
+						<div class="content-main">
+							{{ page.content }}
+						</div>
+					{% endif %}
+				</div>
+			</div>
+
+		</div>
+	</div>
+	{% include directory ~ '/templates/page/footer.html.twig' %}
+</div>
+

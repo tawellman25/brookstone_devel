@@ -1,0 +1,11 @@
+wo_snow_removal.create_work_order:
+  path: '/wo-snow-removal/create/{property_id}'
+  defaults:
+    _controller: '\Drupal\wo_snow_removal\Controller\WOSnowRemovalTaskController::startWorkflow'
+    _title: 'Start Snow Removal Workflow'
+  requirements:
+    _custom_access: '\Drupal\wo_snow_removal\Controller\WOSnowRemovalTaskController::customAccessCheck'
+  options:
+    parameters:
+      property_id:
+        type: 'entity:properties' # This specifies the property entity type.

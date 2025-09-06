@@ -1,0 +1,279 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_presave() for wo_status_update entities.
+ */
+function wo_sign_off_entity_presave(EntityInterface $entity) {
+  // Set allowed bundles for this presave.
+  $allowedBundles = ['complete', 'landscape_crew', 'clean_up_crew', 'fertilizing_crew', 'irrigation_crew', 'spray_crew'];
+  
+  // Check if the entity type is 'wo_complete_info' and bundle is allowed.
+  if ($entity->getEntityTypeId() !== 'wo_complete_info' || !in_array($entity->bundle(), $allowedBundles)) {
+    return;
+  }
+
+  // Get the work order ID from the reference field.
+  $work_order_id = $entity->get('field_work_order')->target_id ?? NULL;
+  if (!$work_order_id) {
+    \Drupal::logger('wo_sign_off')->error('No work order referenced in wo_complete_info ID: @id', ['@id' => $entity->id()]);
+    return;
+  }
+
+  // Load the work order entity.
+  $work_order = \Drupal::entityTypeManager()->getStorage('work_order')->load($work_order_id);
+  if (!$work_order) {
+    \Drupal::logger('wo_sign_off')->error('Failed to load work order with ID: @id', ['@id' => $work_order_id]);
+    return;
+  }
+
+  $current_user = \Drupal::currentUser();
+
+  // Check if the work order is marked as canceled.
+  $is_canceled = $entity->hasField('field_canceled') && $entity->get('field_canceled')->value;
+  if ($is_canceled) {
+    // Get the cancellation reason from field_canceled_why, if available.
+    $cancel_reason = $entity->hasField('field_canceled_why') && !$entity->get('field_canceled_why')->isEmpty() 
+      ? $entity->get('field_canceled_why')->value 
+      : '';
+    // Update status to Canceled (term ID 1098) and log.
+    update_work_order_status($work_order, $current_user, 1098, 'Work Order canceled by crew due to customer request', $cancel_reason);
+    $work_order->save();
+
+    // Prepare email notification.
+    $to = 'wo_notices@brookstoneoutdoors.com'; // Replace with your desired email if different.
+    $subject = "Work Order #$work_order_id Canceled";
+    $user_name = $current_user->id() ? ($current_user->getDisplayName() ?: $current_user->getAccountName()) : 'Unknown User';
+    // Build absolute URL for the work order.
+    $base_url = \Drupal::request()->getSchemeAndHttpHost();
+    $work_order_url = "$base_url/work_order/$work_order_id";
+    $html_body = [
+      "<p style=\"font-family: Arial, sans-serif; font-size: 14px; margin: 0 0 10px 0;\">Work Order #$work_order_id has been canceled by $user_name.</p>",
+      "<p style=\"font-family: Arial, sans-serif; font-size: 14px; margin: 0 0 10px 0;\">Cancellation Reason: " . ($cancel_reason ?: 'No reason provided') . "</p>",
+      "<p style=\"font-family: Arial, sans-serif; font-size: 14px; margin: 0 0 10px 0;\">Please review the work order: <a href=\"$work_order_url\">View Work Order</a></p>",
+    ];
+    $plain_body = [
+      "Work Order #$work_order_id has been canceled by $user_name.",
+      "",
+      "Cancellation Reason: " . ($cancel_reason ?: 'No reason provided'),
+      "",
+      "Please review the work order: $work_order_url",
+    ];
+
+    $params = [
+      'subject' => $subject,
+      'body' => $html_body,
+      'plain' => $plain_body,
+    ];
+
+    $mail_manager = \Drupal::service('plugin.manager.mail');
+    $result = $mail_manager->mail('wo_sign_off', 'work_order_canceled', $to, 'en', $params, NULL, TRUE);
+
+    if ($result['result']) {
+      \Drupal::logger('wo_sign_off')->info('Cancellation email sent for Work Order ID: @id to @to', [
+        '@id' => $work_order_id,
+        '@to' => $to,
+      ]);
+    } else {
+      \Drupal::logger('wo_sign_off')->error('Failed to send cancellation email for Work Order ID: @id to @to', [
+        '@id' => $work_order_id,
+        '@to' => $to,
+      ]);
+    }
+
+    return; // Exit early to prevent any further field updates.
+  }
+
+  // If not canceled, proceed with Complete status and field calculations.
+  $workOrderStatus = $work_order->get('field_status')->value;
+  if ($workOrderStatus != 1097) {
+    update_work_order_status($work_order, $current_user, 1097, 'Teammate Completed Work Order');
+  }
+
+  // Calculate trip fee.
+  $excludedTripBundles = [
+    'sprinkler_start_up', 'sprinkler_winterizing'
+  ];
+  if (!in_array($work_order->bundle(), $excludedTripBundles)) {
+    $propertyId = $work_order->get('field_property')->target_id ?? NULL;
+    $trucks = $entity->get('field_how_many_trucks_taken')->value ?? 0;
+    if ($propertyId && $work_order->hasField('field_trip_fee')) {
+      $tripFee = get_trip_fee_for_property($propertyId);
+      $work_order->set('field_trip_fee', $tripFee * $trucks);
+    }
+
+    if ($work_order->hasField('field_trucks')) {
+      $work_order->set('field_trucks', $trucks);
+    }
+  }
+
+  // Calculate hours for eligible bundles.
+  $excludedBundles = [
+    'dethatching', 'lawn_mowing', 'landscaping', 'sprinkler_repair', 'sprinkler_check_up',
+    'sprinkler_start_up', 'sprinkler_winterizing', 'sprinkler_installation', 'sprinkler_design',
+    'in_house_tasks', 'christmas_decorations', 'misc_services'
+  ];
+  if (!in_array($work_order->bundle(), $excludedBundles)) {
+    $totalMen = $entity->get('field_those_on_crew')->count() ?: 0;
+    $timeSpent = 0;
+
+    $woTimeClockEntities = \Drupal::entityTypeManager()
+      ->getStorage('wo_time_clock')
+      ->loadByProperties([
+        'field_work_order' => $work_order_id,
+        'type' => 'entry',
+      ]);
+
+    foreach ($woTimeClockEntities as $timeEntity) {
+      $timeSpent += $timeEntity->get('field_total_time')->value ?? 0;
+    }
+
+    if ($work_order->hasField('field_total_time')) {
+      $work_order->set('field_total_time', $timeSpent * $totalMen);
+    }
+  }
+
+  // Save the work order with updated fields.
+  $work_order->save();
+}
+
+/**
+ * Implements hook_mail().
+ */
+function wo_sign_off_mail($key, &$message, $params) {
+  if ($key === 'work_order_canceled') {
+    $message['subject'] = $params['subject'] ?? 'Work Order Cancellation';
+    // Use HTML body if available, otherwise fall back.
+    $message['body'] = is_array($params['body']) ? $params['body'] : [$params['body']];
+    // Join HTML body for Mime Mail rendering.
+    $message['mimemail']['text'] = implode('', $params['body']);
+    // Plain text fallback for non-HTML clients.
+    $message['plain'] = is_array($params['plain']) ? implode("\n", $params['plain']) : $params['plain'];
+    $message['headers']['Content-Type'] = 'text/html; charset=UTF-8';
+  }
+}
+
+/**
+ * Helper function to update work order status and create a status update log.
+ *
+ * @param EntityInterface $work_order The work order entity.
+ * @param \Drupal\Core\Session\AccountInterface $current_user The current user.
+ * @param int $status_id The taxonomy term ID for the status.
+ * @param string $base_note The base status change note.
+ * @param string $additional_note Optional additional note (e.g., cancellation reason).
+ */
+function update_work_order_status(EntityInterface $work_order, $current_user, $status_id, $base_note, $additional_note = '') {
+  // Only update if the current status is different.
+  if ($work_order->get('field_status')->value != $status_id) {
+    // Combine base note with additional note, if provided.
+    $note = $base_note;
+    if (!empty($additional_note)) {
+      $note .= ': ' . $additional_note;
+    }
+    $wo_status_updates = \Drupal::entityTypeManager()
+      ->getStorage('wo_status_updates')
+      ->create([
+        'type' => 'update',
+        'field_status_of_wo' => $work_order->id(),
+        'field_status' => $status_id,
+        'field_status_change_note' => ['value' => $note],
+        'uid' => $current_user->id(),
+      ]);
+    $wo_status_updates->save();
+
+    // Update the work order's status.
+    if ($work_order->hasField('field_status')) {
+      $work_order->set('field_status', $status_id);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_update() for updating wo_complete_info entities.
+ */
+function wo_sign_off_entity_update(EntityInterface $entity) {
+  // Check if the entity type is 'wo_complete_info'.
+  if ($entity->getEntityTypeId() === 'wo_complete_info') {
+    $work_order_id = $entity->get('field_work_order')->target_id ?? NULL;
+    if ($work_order_id) {
+      $work_order = \Drupal::entityTypeManager()->getStorage('work_order')->load($work_order_id);
+      if ($work_order) {
+        $work_order->save();
+      } else {
+        \Drupal::logger('wo_sign_off')->error('Work order not found for ID: @id', ['@id' => $work_order_id]);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_delete() for wo_complete_info entities.
+ */
+function wo_sign_off_entity_delete(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'wo_complete_info') {
+    return;
+  }
+
+  $work_order_id = $entity->get('field_work_order')->target_id ?? NULL;
+  if (!$work_order_id) {
+    return;
+  }
+
+  $work_order = \Drupal::entityTypeManager()->getStorage('work_order')->load($work_order_id);
+  if (!$work_order) {
+    \Drupal::logger('wo_sign_off')->error('Work order not found for ID: @id when attempting to revert status', ['@id' => $work_order_id]);
+    return;
+  }
+
+  // Fields to clear.
+  $fields_to_clear = [
+    'field_total_time' => NULL,
+    'field_trucks' => 0,
+    'field_labor_total' => NULL,
+    'field_material_chemical_total' => NULL,
+    'field_die_total' => NULL,
+    'field_atv_total' => NULL,
+    'field_trip_fee' => NULL,
+    'field_rental_total' => NULL,
+    'field_wo_total' => NULL,
+  ];
+
+  foreach ($fields_to_clear as $field_name => $value) {
+    if ($work_order->hasField($field_name)) {
+      $work_order->set($field_name, $value);
+    }
+  }
+
+  // Revert status to In Progress (1092).
+  $current_user = \Drupal::currentUser();
+  update_work_order_status($work_order, $current_user, 1092, 'Work Order "Sign Off" was deleted. Clearing all totals and setting it back to "In Progress"');
+
+  // Save the work order.
+  $work_order->save();
+
+  \Drupal::logger('wo_sign_off')->info('Work Order status updated to In Progress due to deletion of wo_complete_info with ID: @id', ['@id' => $entity->id()]);
+}
+
+/**
+ * Helper function to retrieve the trip fee for a given property ID.
+ *
+ * @param int $propertyId The ID of the property.
+ * @return float The calculated trip fee based on property's zipcode, or 0 if data is not available.
+ */
+function get_trip_fee_for_property($propertyId) {
+  $tripFee = 0;
+  if ($propertyId) {
+    $propertyEntity = \Drupal::entityTypeManager()->getStorage('properties')->load($propertyId);
+    if ($propertyEntity) {
+      $zipcodeId = $propertyEntity->get('field_zipcode_reference')->target_id ?? NULL;
+      if ($zipcodeId) {
+        $zipcodeEntity = \Drupal::entityTypeManager()->getStorage('zipcodes')->load($zipcodeId);
+        if ($zipcodeEntity) {
+          $tripFee = $zipcodeEntity->get('field_trip_fee')->value ?? 0;
+        }
+      }
+    }
+  }
+  return $tripFee;
+}

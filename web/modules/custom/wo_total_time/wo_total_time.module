@@ -1,0 +1,71 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_total_time_entity_presave(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'wo_time_clock') {
+    // Existing logic for calculating total time.
+    if ($entity->hasField('field_start_time') && $entity->hasField('field_end_time')) {
+      $startTime = $entity->get('field_start_time')->date;
+      $endTime = $entity->get('field_end_time')->date;
+
+      if ($startTime && $endTime) {
+        $timeDifference = $endTime->getTimestamp() - $startTime->getTimestamp();
+        $hours = round($timeDifference / 3600, 2);
+        if ($entity->hasField('field_total_time')) {
+          $entity->set('field_total_time', $hours);
+        }
+      }
+      elseif ($entity->hasField('field_total_time')) {
+        $entity->set('field_total_time', NULL);
+      }
+    }
+
+    // Debug: Capture request and entity details.
+    $request = \Drupal::request();
+    $route = $request->get('_route') ?: 'No route';
+    $method = $request->getMethod();
+    $current_user = \Drupal::currentUser()->id();
+    $teammate_id = $entity->hasField('field_teammate') && !$entity->get('field_teammate')->isEmpty() ? $entity->get('field_teammate')->target_id : 'None';
+    $original_uid = $entity->getOwnerId();
+
+    \Drupal::logger('wo_total_time')->notice('Presave Debug: Route=@route, Method=@method, IsNew=@is_new, CurrentUser=@current, Teammate=@teammate, OriginalUID=@uid', [
+      '@route' => $route,
+      '@method' => $method,
+      '@is_new' => $entity->isNew() ? 'Yes' : 'No',
+      '@current' => $current_user,
+      '@teammate' => $teammate_id,
+      '@uid' => $original_uid,
+    ]);
+
+    // Simplified manual entry check: Any POST request for now.
+    $is_manual_entry = $request->getMethod() === 'POST';
+
+    if ($is_manual_entry && $entity->hasField('field_teammate') && !$entity->get('field_teammate')->isEmpty()) {
+      $teammate_id = $entity->get('field_teammate')->target_id;
+      if ($teammate_id && $teammate_id != $entity->getOwnerId()) {
+        $entity->setOwnerId($teammate_id);
+        \Drupal::logger('wo_total_time')->notice('UID updated from @old to @new for manual entry', [
+          '@old' => $original_uid,
+          '@new' => $teammate_id,
+        ]);
+      }
+      else {
+        \Drupal::logger('wo_total_time')->notice('No UID change needed: Teammate=@teammate, OriginalUID=@uid', [
+          '@teammate' => $teammate_id,
+          '@uid' => $original_uid,
+        ]);
+      }
+    }
+    else {
+      \Drupal::logger('wo_total_time')->notice('Not updating UID: ManualEntry=@manual, TeammateExists=@teammate', [
+        '@manual' => $is_manual_entry ? 'Yes' : 'No',
+        '@teammate' => $teammate_id === 'None' ? 'No' : 'Yes',
+      ]);
+    }
+  }
+}

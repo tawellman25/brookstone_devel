@@ -1,0 +1,227 @@
+<?php
+
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\OpenModalDialogCommand;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Defines supported Material bundles for price updates.
+ */
+const MATERIAL_PRICE_UPDATE_BUNDLES = ['irrigation'];
+
+/**
+ * Implements hook_page_attachments().
+ */
+function material_page_attachments(array &$attachments) {
+  $attachments['#attached']['library'][] = 'material/material';
+  \Drupal::logger('material')->notice('Material library attached.');
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function material_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  // Log form ID for debugging.
+  \Drupal::logger('material')->notice('Form ID: @id', ['@id' => $form_id]);
+
+  // Check for the irrigation bundle form.
+  if ($form_id !== 'material-irrigation-edit-form') {
+    return;
+  }
+
+  \Drupal::logger('material')->notice('Form alter triggered for irrigation form: @id', ['@id' => $form_id]);
+
+  // Add custom submit handler and Ajax callback.
+  $form['actions']['submit']['#submit'][] = 'material_form_submit_handler';
+  $form['actions']['submit']['#ajax'] = [
+    'callback' => 'material_open_price_confirm_modal',
+    'event' => 'click',
+    'progress' => [
+      'type' => 'throbber',
+      'message' => t('Checking price update...'),
+    ],
+  ];
+
+  // Prevent default submission.
+  $form['actions']['submit']['#submit'] = [];
+}
+
+/**
+ * Custom submit handler to store form state.
+ */
+function material_form_submit_handler($form, FormStateInterface $form_state) {
+  \Drupal::logger('material')->notice('Submit handler triggered for form: @id', ['@id' => $form_state->getFormObject()->getFormId()]);
+  $form_state->setTemporaryValue('material_form_state', $form_state);
+}
+
+/**
+ * Ajax callback to open the price confirmation modal.
+ */
+function material_open_price_confirm_modal($form, FormStateInterface $form_state) {
+  \Drupal::logger('material')->notice('Opening price confirm modal.');
+  $response = new AjaxResponse();
+  $entity = $form_state->getFormObject()->getEntity();
+
+  // Verify entity type and bundle.
+  if ($entity->getEntityTypeId() !== 'material' || !in_array($entity->bundle(), MATERIAL_PRICE_UPDATE_BUNDLES)) {
+    \Drupal::logger('material')->warning('Invalid entity type or bundle: @type/@bundle.', [
+      '@type' => $entity->getEntityTypeId(),
+      '@bundle' => $entity->bundle(),
+    ]);
+    return $response;
+  }
+
+  // Get cost field value.
+  $cost = NULL;
+  if ($entity->hasField('field_cost_integer') && !$entity->get('field_cost_integer')->isEmpty()) {
+    $cost = $entity->get('field_cost_integer')->value;
+  } else {
+    \Drupal::logger('material')->warning('Cost field missing or empty for Material entity: @id.', [
+      '@id' => $entity->id() ?? 'new',
+    ]);
+  }
+
+  // Load Business Setting config page.
+  $business_setting = \Drupal::service('config_pages.loader')->load('business_setting');
+  if (!$business_setting) {
+    \Drupal::logger('material')->warning('Failed to load business_setting config page.');
+    return $response;
+  }
+
+  // Get markup field value.
+  $markup = NULL;
+  if ($business_setting->hasField('field_markup') && !$business_setting->get('field_markup')->isEmpty()) {
+    $markup = $business_setting->get('field_markup')->value;
+  } else {
+    \Drupal::logger('material')->warning('Markup field missing or empty in business_setting.');
+  }
+
+  // Check if we can proceed with calculation.
+  $proposed_price = NULL;
+  if ($cost > 0 && $markup > 0) {
+    $proposed_price = $cost * $markup;
+    // Round if field_installed_price is integer.
+    $field_definition = $entity->getFieldDefinition('field_installed_price');
+    if ($field_definition && $field_definition->getType() === 'integer') {
+      $proposed_price = round($proposed_price);
+    }
+  } else {
+    \Drupal::logger('material')->warning('Cannot calculate price. Cost: @cost, Markup: @markup.', [
+      '@cost' => $cost ?? 'null',
+      '@markup' => $markup ?? 'null',
+    ]);
+  }
+
+  // Show modal even if calculation fails (for debugging).
+  $modal_content = [
+    '#type' => 'container',
+    '#markup' => $proposed_price !== NULL
+      ? t('Do you want to update the Installed Price to @price based on the cost (@cost) and markup (@markup)?', [
+          '@price' => number_format($proposed_price, 2),
+          '@cost' => $cost,
+          '@markup' => $markup,
+        ])
+      : t('Unable to calculate price. Check cost and markup values.'),
+  ];
+
+  $modal_options = [
+    'buttons' => [
+      [
+        'text' => t('Yes, update price'),
+        'class' => ['button', 'button--primary'],
+        'ajax' => [
+          'callback' => 'material_confirm_price_update',
+          'event' => 'click',
+        ],
+      ],
+      [
+        'text' => t('No, skip'),
+        'class' => ['button'],
+        'ajax' => [
+          'callback' => 'material_skip_price_update',
+          'event' => 'click',
+        ],
+      ],
+    ],
+  ];
+
+  if ($proposed_price === NULL) {
+    $modal_options['buttons'][0]['attributes'] = ['disabled' => 'disabled'];
+  }
+
+  $response->addCommand(new OpenModalDialogCommand(
+    t('Confirm Price Update'),
+    $modal_content,
+    [
+      'width' => '400',
+      'dialogClass' => 'material-price-confirm-modal',
+      'buttons' => $modal_options['buttons'],
+    ]
+  ));
+
+  $form_state->setTemporaryValue('proposed_price', $proposed_price);
+  \Drupal::logger('material')->notice('Modal opened. Proposed price: @price, Cost: @cost, Markup: @markup.', [
+    '@price' => $proposed_price ?? 'null',
+    '@cost' => $cost ?? 'null',
+    '@markup' => $markup ?? 'null',
+  ]);
+
+  return $response;
+}
+
+/**
+ * Ajax callback for confirming price update.
+ */
+function material_confirm_price_update($form, FormStateInterface $form_state) {
+  \Drupal::logger('material')->notice('Price update confirmed.');
+  $response = new AjaxResponse();
+  $original_form_state = $form_state->getTemporaryValue('material_form_state');
+
+  if (!$original_form_state) {
+    \Drupal::logger('material')->error('Form state not found for price update confirmation.');
+    return $response;
+  }
+
+  $entity = $original_form_state->getFormObject()->getEntity();
+  $proposed_price = $form_state->getTemporaryValue('proposed_price');
+
+  if ($entity->hasField('field_installed_price') && $proposed_price !== NULL) {
+    $entity->set('field_installed_price', $proposed_price);
+    $entity->save();
+    \Drupal::messenger()->addStatus(t('Installed Price updated to @price.', [
+      '@price' => number_format($proposed_price, 2),
+    ]));
+    \Drupal::logger('material')->notice('Installed Price set to @price for Material entity: @id.', [
+      '@price' => $proposed_price,
+      '@id' => $entity->id() ?? 'new',
+    ]);
+  } else {
+    \Drupal::logger('material')->warning('Cannot update price. Installed price field missing or proposed price invalid for Material entity: @id.', [
+      '@id' => $entity->id() ?? 'new',
+    ]);
+  }
+
+  $response->addCommand(new \Drupal\material\Ajax\UpdatePriceConfirmCommand());
+  return $response;
+}
+
+/**
+ * Ajax callback for skipping price update.
+ */
+function material_skip_price_update($form, FormStateInterface $form_state) {
+  \Drupal::logger('material')->notice('Price update skipped.');
+  $response = new AjaxResponse();
+  $original_form_state = $form_state->getTemporaryValue('material_form_state');
+
+  if (!$original_form_state) {
+    \Drupal::logger('material')->error('Form state not found for price update skip.');
+    return $response;
+  }
+
+  $entity = $original_form_state->getFormObject()->getEntity();
+  $entity->save();
+  \Drupal::messenger()->addStatus(t('Price update skipped.'));
+
+  $response->addCommand(new \Drupal\material\Ajax\UpdatePriceConfirmCommand());
+  return $response;
+}

@@ -1,0 +1,895 @@
+.post-block{
+  background: $white;
+  .post-image {
+    overflow: hidden;
+    a{
+      position: relative;
+      display: block;
+    }
+    img{
+      width: 100%;
+      @include transition(all 0.4s);
+    }
+    &:hover{
+      a:before, a:after{
+        @include scale(1);
+      }
+    }
+  }
+  .post-title{
+    margin-bottom: 5px;
+    a{
+      font-family: $font-second;
+      display: block;
+      line-height: 24px;
+      font-weight: 500;
+      font-size: 16px;
+      color: $black;
+      text-transform: none;
+      word-wrap: break-word;
+      &:hover, &:active, &:before{
+        color: $theme_color;
+      }
+    }
+  }
+  .post-content{
+    @include clearfix();
+  }
+  .post-meta{
+    font-size: 13px;
+    font-weight: 400;
+    color: #999999;
+    margin: 0;
+    @include clearfix();
+    font-family: $font-second;
+    .post-categories{
+       margin-bottom: 0;
+    }   
+  }
+  .post-created{
+    position: relative;
+  } 
+  .post-description{
+    margin-top: 15px;
+  }
+  .post-comment{
+    text-transform: none;
+    position: relative;
+  }
+  .post-categories{
+    position: relative;
+    margin-bottom: 10px;
+    display: inline-block;
+    a{
+      color: $theme_color;
+      padding: 0;
+      display: inline-block;
+      margin-right: 5px;
+      font-size: 11px;
+      font-weight: 500;
+      @include transition(all 0.35s);
+      line-height: 1.5;
+      &:hover{
+        text-decoration: underline;
+      }
+    }   
+  }
+  .post-body{
+    line-height: 30px;
+  }
+  .content-after{
+    padding: 10px 0 0;
+  }
+}
+
+.post-block-2{
+  position: relative;
+  margin-bottom: 30px;
+  .post-image{
+    position: relative;
+    z-index: 1;
+    .item-image{
+      a{
+        display: block;
+        &:after{
+          content: '';
+          background: -moz-linear-gradient(top, rgba(18, 31, 48, 0.1) 20%,rgba(0, 0, 0, 0.85) 100%);
+          background: -webkit-gradient(linear, left top,left bottom,color-stop(80%,rgba(18, 31, 48, 0.1)),color-stop(100%,rgba(0, 0, 0, 0.85)));
+          background: -webkit-linear-gradient(top, rgba(18, 31, 48, 0.1) 20%,rgba(0, 0, 0, 0.85) 100%);
+          background: -o-linear-gradient(top, rgba(18, 31, 48, 0.1) 20%,rgba(0, 0, 0, 0.85) 100%);
+          background: -ms-linear-gradient(top, rgba(18, 31, 48, 0.1) 20%,rgba(0, 0, 0, 0.85) 100%);
+          background: linear-gradient(to bottom, rgba(18, 31, 48, 0.1) 20%,rgba(0, 0, 0, 0.85) 100%);
+          position: absolute;
+          top: 0;
+          left: 0;
+          @include size(100%, 100%);
+          z-index: 10;
+        }
+      } 
+    }
+    .content-inner{
+      position: absolute;
+      bottom: 30px;
+      left: 0;
+      width: 100%;
+      padding: 20px;
+      z-index: 11;
+      text-align: center;
+      .post-title{
+        font-size: 18px;
+        margin-bottom: 4px;
+        a{
+          color: $white;
+          font-weight: 500;
+          &:hover{
+            color: $theme_color;
+          }
+        }
+      }
+      .post-created{
+        color: rgba(255, 255, 255, 0.6);
+      }
+    }
+  }
+  .post-content{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    z-index: 11;
+    .post-categories{
+      display: inline-block;
+      background: $white;
+      padding: 2px 15px;
+      font-family: $font-second;
+      margin: 0;
+    }
+  }
+}
+
+.export-tips{
+  text-align: center!important;
+  background: none;
+  .post-image{
+    @include size(120px, 120px);
+    border: 5px solid $white;
+    @include border-radius(50%);
+    display: inline-block;
+  }
+  .post-content{
+    border: none;
+  }
+}
+
+.post-footer{
+  margin-top: 25px;
+  .item-list{
+    ul{
+      li{
+        margin-bottom: 15px!important;
+        &:last-child{
+          border: none;
+          margin-bottom: 0!important;
+        }
+        .post-block{
+          background: transparent!important;
+          .post-title{
+            font-size: 14px;
+            a{
+              color: $white;
+              font-weight: 400;
+              &:hover{
+                color: $theme_color;
+              }
+            }
+          }
+          .post-meta{
+            color: rgba(255, 255, 255, 0.8);
+            .post-categories{
+              font-size: 12px;
+              a{
+                font-size: 10px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.owl-carousel{
+  .post-block{
+    margin-bottom: 0!important;
+  }
+}
+
+.gallery-post{
+  position: relative;
+  display: block;
+  width: 100%;
+  &:after{
+    content: "";
+    @include size(100%, 100%);
+    @include transition(all 0.35s);
+    top: 0;
+    left: 0;
+    position: absolute;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9;
+    @include opacity(0);
+  }
+  .images{
+    overflow: hidden;
+    position: relative;
+    img{
+      @include transition(all 5s);
+    }
+  }
+  a.zoomGallery{ 
+    position: absolute;
+    @include size(32px, 32px);
+    top: 50%;
+    left: 50%;
+    margin-top: -16px;
+    margin-left: -16px;
+    z-index: 99;
+    color: $white;
+    font-size: 30px;
+    line-height: 1;
+    @include opacity(0);
+    @media(max-width: 680px){
+      display: none;
+    }
+  }
+  &:hover{
+    &:after{
+      @include opacity(1);
+    }
+    a.zoomGallery{
+      @include opacity(1);
+    }
+  }
+}
+
+//Post skin dark
+.style-dark{
+  .post-block{
+    background: $nocolor;
+    .post-title{
+      background: $nocolor;
+      a{
+        color: $white;
+        &:hover{
+          color: $theme_color;
+        }
+      }
+    }
+  }
+}
+
+
+//------------------------- Horizontal post -------------------------------
+.post-style-horizontal{
+  .post-block{
+    @include clearfix();
+  }
+}
+
+//------------------------- Grid post -------------------------------
+.post-style-grid{
+  .post-block{
+    margin: 0 0 30px;
+    background: $white;
+    text-align: left;
+    position: relative;
+    &:after{
+      content: '';
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 0;
+      z-index: -1;
+      height: 50px;
+      border-radius: 50%;
+      box-shadow: 0 10px 14px 0 rgba(0, 0, 0, 0.08);
+      @include transition(all .3s ease);
+    }
+    .post-categories{
+      margin: 0;
+    }
+    .post-body{
+      margin-top: 5px;
+    }
+    .post-content{
+      background: $white;
+      position: relative;
+      border-top: 0;
+      padding: 20px 25px;
+      border: 1px solid $border-color;
+      border-top: none;
+    }
+  }
+}
+
+.node--view-mode-full{
+  .post-thumbnail{
+    margin-bottom: 10px;
+    iframe{
+      min-height: 400px;
+    }
+  }
+  .post-title{
+    margin: 0;
+  }
+  .post-categories{
+    padding-bottom: 0;
+    margin-bottom: 5px;
+  }
+}
+.node-detail{
+  padding-bottom: 35px;
+  iframe{
+    width: 100%;
+    display: block;
+  }
+  .post-thumbnail.post-gallery{
+    overflow: hidden;
+    .owl-nav{
+      @include opacity(1);
+      .owl-prev{
+        margin-left: 100px;
+      }
+      .owl-next{
+        margin-right: 100px;
+      }
+    }
+  }
+  .post-title{
+    margin-top: 10px;
+    font-size: 24px; 
+  }
+  .post-meta{
+    margin-bottom: 20px;
+  }
+  .field--name-field-tags{
+    margin-top: 20px;
+    .field__item{
+      float: left;
+      margin-right: 10px;
+      font-weight: 400;
+      text-transform: uppercase;
+      font-size: 14px;
+     a{
+        background: #f5f5f5;
+        padding: 2px 15px;
+        @include border-radius(3px);
+        &:hover, &:focus, &:active{
+          background: $theme_color;
+          color: $white;
+        }
+     }
+    }
+  }
+}
+
+.categories-view-content{
+  &.layout-grid, &.layout-masonry{
+    .post-block{
+      margin-bottom: 30px;
+      text-align: left;
+      .post-categories{
+        margin: 0;
+        h2, h3, h4{
+          margin: 0;
+          line-height: 1;
+        }
+      }
+      .post-title{
+        padding: 0;
+      }
+      .post-meta{
+        margin-top: 0;
+      }
+      .post-body{
+        padding: 10px 0 15px;
+      }
+      .post-content{
+        padding: 15px;
+        border: 1px solid $border-color;
+        border-top: 0;
+      }
+    }
+  }
+  &.layout-list{
+    .post-block{
+      @include clearfix();
+      margin-bottom: 0;
+       .post-thumbnail{
+          width: 45%;
+          float: left;
+          @include media-breakpoint-down(xs){
+            width: 100%;
+          }
+       }
+       .post-title{
+          padding: 0;
+          margin: 0;
+        }
+       .post-content{
+        width: 55%;
+        float: left;
+        padding-left: 30px;
+        @include media-breakpoint-down(xs){
+          width: 100%;
+        }
+        .post-categories{
+          line-height: 1;
+          padding-bottom: 0;
+          margin-bottom: 0;
+          h2{
+            margin: 0;
+          }
+        }
+       }
+    }
+  }
+}
+
+//------------------ Display post list ---------------------
+.post-style-list{
+  ul > li{
+    margin-bottom: 30px!important;
+  }
+  .post-block{
+    clear: both;
+    .post-image{
+      width: 40%;
+      float: left;
+      @include media-breakpoint-down(xs){
+        width: 100%;
+      }
+      img{
+        height: auto;
+        width: 100%;
+      }
+    }
+    .post-meta{
+      margin-top: 2px;
+    }
+    .post-title{
+      a{
+        font-size: 18px;
+      }
+    }
+    .post-content{
+      padding-top: 5px;
+      width: 60%;
+      padding-left: 15px;
+      float: left;
+      @include media-breakpoint-down(xs){
+        width: 100%;
+        padding-left: 0;
+      }
+    }
+    .post-title{
+      padding-top: 0;
+    }
+    &.no-image{
+      .post-content{
+        width: 100%;
+        padding-left: 0;
+      }
+    }
+  }
+}
+
+.post-list-small{
+  background: $white;
+  border: 1px solid $border-color;
+  padding: 20px;
+  .item-list{
+    ul{
+      li{
+        margin-bottom: 20px!important;
+        &:last-child{
+          margin-bottom: 0!important;
+        }
+      }
+    }
+  }
+  .post-block{
+    clear: both;
+    background: none;
+    .post-image{
+      width: 100px;
+      float: left;
+     
+      img{
+        height: auto;
+        width: 100%;
+      }
+    }
+    .post-content{
+      padding-left: 115px;
+      
+    }
+    .post-title{
+      padding-top: 0;
+      margin: 0;
+      a{
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+.post-list-small-2{
+  .item-list{
+    ul{
+      li{
+        margin-bottom: 20px!important;
+        &:last-child{
+          margin-bottom: 0!important;
+        }
+      }
+    }
+  }
+  .post-block{
+    clear: both;
+    background: none;
+    .post-title{
+      padding: 0;
+      margin: 0;
+      a{
+        font-size: 16px;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+.post-list-small-3{
+  .item-list{
+    ul{
+      li{
+        margin-bottom: 20px!important;
+        &:last-child{
+          margin-bottom: 0!important;
+        }
+      }
+    }
+  }
+  .post-block{
+    clear: both;
+    background: none;
+    .post-image{
+      width: 80px;
+      float: left;
+      img{
+        height: auto;
+        width: 100%;
+      }
+    }
+    .post-content{
+      padding-left: 90px;
+      
+    }
+    .post-title{
+      padding: 0;
+      margin: 0;
+      a{
+        font-size: 14px;
+        line-height: 20px;
+      }
+    }
+  }
+}
+
+.team-block{
+  &.team-v1{
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+    background: transparent;
+    background: $white;
+    @include box-shadow(0 6px 10px rgba(0, 0, 0, 0.08));
+    .team-image{
+      position: relative; 
+      background: transparent;
+      .socials-team{
+        z-index: 9;
+        width: auto;
+        padding: 10px 0;
+        @include opacity(0);
+        @include transition(all 0.15s); 
+        text-align: center;
+        background: $theme_color;
+        position: absolute;
+        top: -20px;
+        right: 10px;
+        z-index: 9;
+        width: 30px;
+        @include border-radius(6px);
+        a{
+          text-align: center;
+          color: $white;
+          font-size: 14px;
+          margin: 0 8px;
+          display: block;
+          &:hover, &:focus, &:active{
+            color: #ccc;
+          }
+        }
+      }
+      .item-image{
+        position: relative;
+        &:after{
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          @include size(100%, 100%);
+          background: rgba(0, 0, 0, 0.2);
+          @include opacity(0);
+          z-index: 1;
+          @include transition(all 0.35s);
+        }
+      }
+    }
+    .team-content{
+      background: transparent;
+      position: relative;
+      text-align: left;
+      padding: 10px 20px 0;
+      .team-name{
+        font-size: 16px;
+        font-weight: 500;
+        margin: 0;
+        line-height: 20px;
+        padding: 20px 0 0;
+        font-family: $font-second;
+      }
+      .team-job{
+        font-size: 13px;
+        color: #808080;
+        padding: 0 0 15px;
+      }
+    }
+    .team-skills{
+      padding: 0 20px 20px;
+      .progress-label{
+        font-weight: 500!important;
+        color: #666666; 
+        font-size: 12px;
+      }
+      .progress{
+        margin-bottom: 11px!important;
+        height: 2px!important;
+        .progress-bar span{
+          top: -4px!important;
+        }
+        .percentage{
+          font-size: 11px!important;
+          top: -20px;
+        }
+      }
+    }
+    &:hover{
+      .team-image{
+        .item-image{
+          &:after{
+            @include opacity(1);
+          }
+        }
+        .socials-team{
+          @include opacity(1);
+          top: 10px;
+        }
+      }
+    }
+  }
+  &.team-v2{
+    padding: 20px;
+    background: $white;
+    border: 1px solid $border-color;
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+    background: $white;
+    .team-image{
+      position: relative; 
+      background: transparent;
+      @include size(150px, 150px);
+      display: inline-block;
+      @include border-radius(50%); 
+      border: 1px solid $border-color;
+      overflow: hidden;
+      .item-image{
+        position: relative;
+        &:after{
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          @include size(100%, 100%);
+          background: rgba(0, 0, 0, 0.2);
+          @include opacity(0);
+          z-index: 1;
+          @include transition(all 0.35s);
+        }
+      }
+    }
+    .team-content{
+      background: transparent;
+      position: relative;
+      text-align: center;
+      .socials-team{
+        z-index: 9;
+        padding: 5px 0 0;
+        @include transition(all 0.15s); 
+        text-align: center;
+        a{
+          text-align: center;
+          color: $theme_color;
+          font-size: 14px;
+          margin: 0 6px;
+          &:hover{
+            color: lighten($theme_color, 15%);
+          }
+        }
+      }
+      .team-name{
+        font-size: 16px;
+        font-weight: 500;
+        margin: 0;
+        line-height: 20px;
+        padding: 10px 0 0;
+        font-family: $font-second;
+      }
+      .team-job{
+        font-size: 13px;
+        color: #808080;
+        padding: 0 0 15px;
+      }
+    }
+    .team-skills{
+      .progress-label{
+        color: #838383;
+      }
+      .progress{
+        margin-bottom: 11px!important;
+        height: 2px!important;
+        .progress-bar span{
+          top: -4px!important;
+        }
+        .percentage{
+          font-size: 11px!important;
+          top: -20px;
+        }
+      }
+    }
+    &:hover{
+      .team-image{
+        .item-image{
+          &:after{
+            @include opacity(1);
+          }
+        }
+        .socials-team{
+          @include opacity(1);
+          top: 10px;
+        }
+      }
+    }
+  }
+}
+
+.team-carousel{
+  .team-block{
+    margin-bottom: 10px;
+  }
+}
+
+.team-list{
+  .team-block{
+    .team-image{
+      width: 35%;
+      float: left;
+    }
+    .team-content{
+      padding-left: 30px;
+      width: 65%;
+      float: left;
+      .team-body{
+        display: block!important;
+        visibility: visible!important;
+        padding: 10px 0;
+      }
+    }
+  }
+}
+
+//----------------- Display post slider ------------------------
+.post-slider{
+  &.post-block{
+    position: relative;
+    .image{
+      .item-image{
+        a{
+          display: block;
+          &:after{
+            content: '';
+            @include size(100%, 100%);
+            background: -moz-linear-gradient(top, rgba(0,0,0,0) 15%,rgba(0,0,0,0.9) 100%);
+            background: -webkit-gradient(linear, left top,left bottom,color-stop(85%,rgba(0,0,0,0)),color-stop(100%,rgba(0,0,0,0.9)));
+            background: -webkit-linear-gradient(top, rgba(0,0,0,0) 15%,rgba(0,0,0,0.9) 100%);
+            background: -o-linear-gradient(top, rgba(0,0,0,0) 15%,rgba(0,0,0,0.9) 100%);
+            background: -ms-linear-gradient(top, rgba(0,0,0,0) 15%,rgba(0,0,0,0.9) 100%);
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 15%,rgba(0,0,0,0.9) 100%);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+          }
+        }
+        img{
+          @include transition(all 6s);
+        }
+      }
+    }
+    .post-meta-wrap{
+      width: 100%;
+      padding: 30px 30px;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      z-index: 9;
+      @include transition(all 0.35s);
+      @include media-breakpoint-down(sm){
+        padding: 20px;
+      }
+      .post-title{ 
+        padding: 0 0 2px;
+        a{
+          font-size: 18px;
+          color: $white;
+          font-weight: 500;
+          line-height: 24px;
+          @include media-breakpoint-down(sm){
+            font-size: 16px;
+          }
+          &:hover{
+            color: $theme_color!important;
+          }
+        }
+      }  
+    }
+    .post-body{
+      margin-top: 0;
+      line-height: 24px;
+      color: rgba(255, 255, 255, 0.85);
+      @include media-breakpoint-down(sm){
+        display: none;
+      }
+    }
+    .post-meta{
+       color: $white;
+    }
+    .post-categories{
+      @include transition(all 0.35s);
+      margin-bottom: 6px;
+      a{
+        font-size: 12px;
+        color: $white;
+        font-weight: 500;
+        background: $theme_color;
+        padding: 2px 10px;
+        font-family: $font-second;
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+wo_material_list_management.add_item_modal:
+  path: '/wo-material-list/{parent_id}/add-item'
+  defaults:
+    _form: 'Drupal\wo_material_list_management\Form\MaterialListItemForm'
+    _title: 'Add Material Item'
+  requirements:
+    _permission: 'access content'
+  options:
+    parameters:
+      parent_id:
+        type: 'entity:wo_material_list'
+    modal_page:
+      modal: TRUE
+      modal_options:
+        width: 800
+        height: auto
+
+wo_material_list_management.clone_items_modal:
+  path: '/wo_material_list/{wo_material_list}/clone-modal'
+  defaults:
+    _form: '\Drupal\wo_material_list_management\Form\CloneItemsModalForm'
+    _title: 'Select target material list'
+  requirements:
+    _permission: 'access content'

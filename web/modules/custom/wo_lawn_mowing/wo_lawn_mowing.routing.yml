@@ -1,0 +1,11 @@
+wo_lawn_mowing.create_work_order:
+  path: '/wo-lawn-mowing/create/{property_id}'
+  defaults:
+    _controller: '\Drupal\wo_lawn_mowing\Controller\WOLawnMowingTaskController::startWorkflow'
+    _title: 'Start Lawn Mowing Workflow'
+  requirements:
+    _custom_access: '\Drupal\wo_lawn_mowing\Controller\WOLawnMowingTaskController::customAccessCheck'
+  options:
+    parameters:
+      property_id:
+        type: 'entity:properties' # This specifies the property entity type.

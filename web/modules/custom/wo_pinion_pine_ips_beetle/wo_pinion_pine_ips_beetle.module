@@ -1,0 +1,348 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\config_pages\ConfigPagesLoaderInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\Queue\QueueFactory;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_pinion_pine_ips_beetle_entity_presave(EntityInterface $entity) {
+    $grand_total = 0;
+    $chemical_subtotal = 0;
+    $sprayer_subtotal = 0;
+    $labor_subtotal = 0;
+    $trucks = 0;
+    $totalTrip = 0;
+
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'pinion_pine_ips_beetle') {
+        $statusTermId = $entity->get('field_status')->target_id ?? 0;
+        if ($statusTermId != 1097) {
+            return;
+        }
+
+        $config_pages_loader = \Drupal::service('config_pages.loader');
+        $business_settings = $config_pages_loader->load('business_setting');
+        
+        if ($business_settings) {
+            $aspenTwigGallRate = $business_settings->get('field_ips_beetle_rate')->value;
+            $minAllottedTime = $business_settings->get('field_ips_beetle_min_time')->value;
+            $sprayerRate = $business_settings->get('field_tree_sprayer_rate')->value;
+            $hourlyRate = $business_settings->get('field_spray_crew_labor')->value;
+            
+            $gallonsUsed = get_largest_gallons_used_for_pinion_pine_ips_beetle($entity->id());
+            $timeSpent = get_hours_for_pinion_pine_ips_beetle($entity->id());
+            $trucks = $entity->get('field_trucks')->value;
+            $totalTime = $entity->get('field_total_time')->value;
+            
+            $chemical_subtotal = $gallonsUsed * $aspenTwigGallRate;
+            $entity->set('field_material_chemical_total', $chemical_subtotal);
+
+            $hoursPerBlock = 4;
+            $blocksUsed = ceil($timeSpent / $hoursPerBlock);
+            $multipleSprayer = $blocksUsed * $trucks;
+            $sprayer_subtotal = $multipleSprayer * $sprayerRate;
+            $entity->set('field_atv_total', $sprayer_subtotal);
+
+            if ($timeSpent <= $minAllottedTime) {
+                $labor_subtotal = $hourlyRate * $minAllottedTime;
+            } else {
+                $labor_subtotal = $hourlyRate * $timeSpent;
+            }
+            $entity->set('field_labor_total', $labor_subtotal);
+        }
+
+        if ($labor_subtotal > 0) {
+            $grand_total += $labor_subtotal;
+        }
+        if ($chemical_subtotal > 0) {
+            $grand_total += $chemical_subtotal;
+        }
+        $totalTrip = $entity->get('field_trip_fee')->value;
+        if ($totalTrip > 0) {
+            $grand_total += $totalTrip;
+        }
+        if ($sprayer_subtotal > 0) {
+            $grand_total += $sprayer_subtotal;
+        }
+        $billingAdjustment = $entity->get('field_billing_adjustment')->value;
+        $grand_total += $billingAdjustment;
+
+        if ($grand_total > 0) {
+            $entity->set('field_wo_total', $grand_total);
+        }
+    }
+}
+
+/**
+ * Implements hook_entity_insert() for wo_complete_info entities.
+ */
+function wo_pinion_pine_ips_beetle_entity_insert(EntityInterface $entity) {
+    if ($entity->getEntityTypeId() === 'wo_complete_info' && $entity->bundle() === 'spray_crew') {
+        $work_order = $entity->get('field_work_order')->entity;
+        if ($work_order && $work_order->bundle() === 'pinion_pine_ips_beetle' && $work_order->get('field_status')->target_id == 1097) {
+            _wo_pinion_pine_ips_beetle_handle_work_order($work_order, 'insert');
+        }
+    }
+}
+
+/**
+ * Implements hook_entity_update() for wo_complete_info entities.
+ */
+function wo_pinion_pine_ips_beetle_entity_update(EntityInterface $entity) {
+    if ($entity->getEntityTypeId() === 'wo_complete_info' && $entity->bundle() === 'spray_crew') {
+        $work_order = $entity->get('field_work_order')->entity;
+        if ($work_order && $work_order->bundle() === 'pinion_pine_ips_beetle' && $work_order->get('field_status')->target_id == 1097) {
+            _wo_pinion_pine_ips_beetle_handle_work_order($work_order, 'update');
+        }
+    }
+}
+
+/**
+ * A helper function to process work orders.
+ * 
+ * @return bool
+ *   TRUE if processing succeeded, FALSE if wo_complete_info was not found.
+ */
+function _wo_pinion_pine_ips_beetle_handle_work_order(EntityInterface $entity, $operation) {
+    $statusTermId = $entity->get('field_status')->target_id ?? 0;
+    if ($statusTermId != 1097) {
+        return true;
+    }
+
+    $workOrderId = $entity->id();
+    $gallonsUsed = 0;
+    $treesSprayed = 0;
+    $signOffDateFormatted = null;
+    $signOffBy = null;
+
+    \Drupal::entityTypeManager()->getStorage('wo_complete_info')->resetCache();
+
+    $query = \Drupal::entityQuery('wo_complete_info')
+        ->accessCheck(FALSE)
+        ->condition('field_work_order', $workOrderId)
+        ->condition('type', 'spray_crew')
+        ->sort('field_date_completed', 'DESC')
+        ->range(0, 1);
+    $result = $query->execute();
+
+    if (!empty($result)) {
+        $woSignOffInfo = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load(reset($result));
+        if ($woSignOffInfo) {
+            $woSignOffInfoTimestamp = $woSignOffInfo->get('field_date_completed')->value;
+            $signOffBy = $woSignOffInfo->get('field_signed_off_by')->target_id;
+            if ($woSignOffInfoTimestamp) {
+                $signOffDate = DrupalDateTime::createFromTimestamp($woSignOffInfoTimestamp);
+                $signOffDate->setTimezone(new \DateTimeZone('UTC'));
+                $signOffDateFormatted = $signOffDate->format('Y-m-d\TH:i:s');
+            }
+            $gallonsUsed = get_largest_gallons_used_for_pinion_pine_ips_beetle($workOrderId);
+        } else {
+            \Drupal::messenger()->addWarning(t('No valid wo_complete_info found for Pinyon Pine Ips Beetle work order #@id.', ['@id' => $workOrderId]));
+            return false;
+        }
+    } else {
+        \Drupal::messenger()->addWarning(t('No wo_complete_info entities found for Pinyon Pine Ips Beetle work order #@id.', ['@id' => $workOrderId]));
+        return false;
+    }
+
+    $sprayingConditionsEntities = \Drupal::entityTypeManager()->getStorage('wo_spraying_conditions')->loadByProperties([
+        'field_work_order' => $workOrderId,
+        'type' => 'tree_spraying',
+    ]);
+    if (!empty($sprayingConditionsEntities)) {
+        $latest_entity = null;
+        $latest_changed = 0;
+        $latest_id = 0;
+        foreach ($sprayingConditionsEntities as $conditionEntity) {
+            if (!$conditionEntity->get('field_how_many_trees')->isEmpty()) {
+                $changed = $conditionEntity->getChangedTime();
+                $id = $conditionEntity->id();
+                if ($changed > $latest_changed || ($changed == $latest_changed && $id > $latest_id)) {
+                    $latest_changed = $changed;
+                    $latest_id = $id;
+                    $latest_entity = $conditionEntity;
+                }
+            }
+        }
+        if ($latest_entity && $latest_entity->get('field_how_many_trees')->value >= 0) {
+            $treesSprayed = $latest_entity->get('field_how_many_trees')->value;
+        }
+    }
+
+    $propertyId = $entity->get('field_property')->target_id ?? null;
+    if (!$propertyId) {
+        \Drupal::messenger()->addWarning(t('Property not set for Pinyon Pine Ips Beetle work order #@id.', ['@id' => $workOrderId]));
+        return true;
+    }
+
+    $propertySprayingInfo = \Drupal::entityTypeManager()->getStorage('property_spraying_info')->loadByProperties([
+        'field_property' => $propertyId,
+        'type' => 'ips_beetle',
+    ]);
+    
+    if (empty($propertySprayingInfo)) {
+        $sprayingInfoEntity = \Drupal::entityTypeManager()->getStorage('property_spraying_info')->create([
+            'type' => 'ips_beetle',
+            'field_property' => $propertyId,
+        ]);
+    } else {
+        $sprayingInfoEntity = reset($propertySprayingInfo);
+    }
+
+    if ($sprayingInfoEntity && ($signOffBy || $signOffDateFormatted || $gallonsUsed > 0)) {
+        if ($gallonsUsed > 0) {
+            $sprayingInfoEntity->set('field_last_amount_applied', $gallonsUsed);
+        }
+        if ($signOffDateFormatted) {
+            $sprayingInfoEntity->set('field_last_applied_date', $signOffDateFormatted);
+        }
+        if ($signOffBy) {
+            $sprayingInfoEntity->set('field_last_applied_by', $signOffBy);
+        }
+        
+        \Drupal::logger('wo_debug')->notice('Updating spraying_info for WO @id, Property @pid, Gallons: @gal, Date: @date, By: @by', [
+            '@id' => $workOrderId,
+            '@pid' => $propertyId,
+            '@gal' => $gallonsUsed,
+            '@date' => $signOffDateFormatted,
+            '@by' => $signOffBy,
+        ]);
+
+        $sprayingInfoEntity->save();
+    } else {
+        \Drupal::messenger()->addWarning(t('Skipping property_spraying_info update for WO #@id due to missing valid data.', ['@id' => $workOrderId]));
+    }
+
+    $propertyLandscapeDetails = \Drupal::entityTypeManager()->getStorage('property_landscape_details')->loadByProperties([
+        'field_property' => $propertyId,
+    ]);
+    if (!empty($propertyLandscapeDetails) && $treesSprayed >= 0) {
+        $landscapeDetailsEntity = reset($propertyLandscapeDetails);
+        if ($landscapeDetailsEntity) {
+            $landscapeDetailsEntity->set('field_number_of_trees_pinyon', $treesSprayed);
+            $landscapeDetailsEntity->save();
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Calculates the total Rented Equipment fees for a given Work Order.
+ */
+function get_pinion_pine_ips_beetle_total_rental_fees($workOrderId) {
+    $database = \Drupal::database();
+    $query = $database->select('wo_rental_equipment__field_receipt_total_cost', 'rental_fees');
+    $query->join('wo_rental_equipment__field_rented_for', 'work_order', 'rental_fees.entity_id = work_order.entity_id');
+    $query->condition('work_order.field_rented_for_target_id', $workOrderId);
+    $query->addExpression('SUM(rental_fees.field_receipt_total_cost_value)', 'total_rental_fee');
+    $result = $query->execute()->fetchField();
+    return $result ? $result : 0;
+}
+
+/**
+ * Retrieves the largest gallons value used for Pinyon Pine Ips Beetle.
+ */
+function get_largest_gallons_used_for_pinion_pine_ips_beetle($workOrderId) {
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    $largestGallonsUsed = 0;
+    $chemicalsUsedEntities = \Drupal::entityTypeManager()->getStorage('wo_chemicals_used')->loadByProperties([
+        'field_work_order' => $workOrderId,
+    ]);
+
+    if (!empty($chemicalsUsedEntities)) {
+        foreach ($chemicalsUsedEntities as $entity) {
+            if ($entity->bundle() === 'pinion_pine_ips_beetle') {
+                $gallons = $entity->get('field_total_gallons_applied')->value ?? 0;
+                if ($gallons > $largestGallonsUsed) {
+                    $largestGallonsUsed = $gallons;
+                }
+            }
+        }
+    }
+
+    return $largestGallonsUsed;
+}
+
+/**
+ * Retrieves the Hours clocked in for Pinyon Pine Ips Beetle.
+ */
+function get_hours_for_pinion_pine_ips_beetle($workOrderId) {
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    $hoursSpent = 0;
+    $woTimeClockEntities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
+        'field_work_order' => $workOrderId,
+    ]);
+
+    foreach ($woTimeClockEntities as $entity) {
+        if ($entity->bundle() === 'entry') {
+            $hours = $entity->get('field_total_time')->value ?? 0;
+            $hoursSpent += $hours;
+        }
+    }
+
+    return $hoursSpent;
+}
+
+/**
+ * Retrieves the number of crew members for a Pinyon Pine Ips Beetle work order.
+ */
+function get_men_for_pinion_pine_ips_beetle($workOrderId) {
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    $query = \Drupal::entityQuery('wo_complete_info')
+        ->accessCheck(FALSE)
+        ->condition('field_work_order', $workOrderId)
+        ->condition('type', 'spray_crew')
+        ->sort('field_date_completed', 'DESC')
+        ->range(0, 1);
+    $result = $query->execute();
+
+    if (empty($result)) {
+        return 0;
+    }
+
+    $latestEntityId = reset($result);
+    $latestEntity = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load($latestEntityId);
+    $totalMen = $latestEntity->get('field_those_on_crew')->count() ?? 0;
+    
+    return $totalMen;
+}
+
+/**
+ * Retrieves the number of trucks used for a Pinyon Pine Ips Beetle work order.
+ */
+function get_trucks_for_pinion_pine_ips_beetle($workOrderId) {
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    $query = \Drupal::entityQuery('wo_complete_info')
+        ->accessCheck(FALSE)
+        ->condition('field_work_order', $workOrderId)
+        ->condition('type', 'spray_crew')
+        ->sort('field_date_completed', 'DESC')
+        ->range(0, 1);
+    $result = $query->execute();
+
+    if (empty($result)) {
+        return 0;
+    }
+
+    $latestEntityId = reset($result);
+    $latestEntity = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load($latestEntityId);
+    $trucksSelected = $latestEntity->get('field_how_many_trucks_taken')->value ?? 0;
+
+    return $trucksSelected;
+}

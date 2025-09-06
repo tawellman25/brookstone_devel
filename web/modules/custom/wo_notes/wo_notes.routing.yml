@@ -1,0 +1,12 @@
+wo_notes.work_order_note_add:
+  path: '/work-order/{work_order}/note/add'
+  defaults:
+    _form: '\Drupal\wo_notes\Form\WorkOrderNoteAddForm'
+    _title: 'Add Work Order Note'
+  requirements:
+    _entity_access: 'work_order.view'
+    work_order: \d+
+  options:
+    parameters:
+      work_order:
+        type: entity:work_order

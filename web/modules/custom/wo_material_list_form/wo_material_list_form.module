@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * @file
+ * Module file for the WO Material List Form.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_material_list_form_entity_presave(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'wo_material_list_item' && $entity->hasField('field_list_id') && !$entity->get('field_list_id')->target_id) {
+    $parent_list = \Drupal::routeMatch()->getParameter('wo_material_list');
+    if ($parent_list) {
+      $entity->set('field_list_id', ['target_id' => $parent_list->id()]);
+    }
+  }
+}

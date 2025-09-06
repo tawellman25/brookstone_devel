@@ -1,0 +1,95 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter() for the Office Administration SOP entity form.
+ */
+function sop_office_admin_form_sop_office_administration_form_alter(array &$form, FormStateInterface $form_state) {
+  \Drupal::logger('sop_office_admin')->notice('Form alter hook triggered for Office Administration SOP form.');
+  $form['#validate'][] = 'sop_office_admin_validate_sop_code';
+}
+
+/**
+ * Custom validation for Office Administration SOP form to ensure unique SOP Code.
+ */
+function sop_office_admin_validate_sop_code($form, FormStateInterface $form_state) {
+  \Drupal::logger('sop_office_admin')->notice('Validating SOP Code for bundle: @bundle', ['@bundle' => $form_state->getFormObject()->getEntity()->bundle()]);
+  $entity = $form_state->getFormObject()->getEntity();
+  $bundle = $entity->bundle();
+
+  if ($bundle !== 'office_administration') {
+    $form_state->setErrorByName('field_sop_code', t('Invalid SOP bundle.'));
+    \Drupal::logger('sop_office_admin')->error('Invalid bundle: @bundle', ['@bundle' => $bundle]);
+    return;
+  }
+
+  $prefix = 'ADM';
+  $query = \Drupal::entityQuery('sop')
+    ->condition('type', $bundle)
+    ->sort('field_sop_code', 'DESC')
+    ->range(0, 1)
+    ->accessCheck(FALSE);
+  $result = $query->execute();
+  $next_number = 1;
+  if (!empty($result)) {
+    $latest_sop_id = reset($result);
+    $latest_sop = \Drupal::entityTypeManager()->getStorage('sop')->load($latest_sop_id);
+    $latest_code = $latest_sop->get('field_sop_code')->value;
+    \Drupal::logger('sop_office_admin')->notice('Latest SOP Code: @code', ['@code' => $latest_code]);
+    if (preg_match('/SOP-ADM-(\d+)/', $latest_code, $matches)) {
+      $next_number = (int) $matches[1] + 1;
+    }
+  }
+
+  $sop_code = sprintf('SOP-%s-%03d', $prefix, $next_number);
+  \Drupal::logger('sop_office_admin')->notice('Generated SOP Code: @code', ['@code' => $sop_code]);
+
+  $query = \Drupal::entityQuery('sop')
+    ->condition('type', $bundle)
+    ->condition('field_sop_code', $sop_code)
+    ->accessCheck(FALSE);
+  if (!$entity->isNew()) {
+    $query->condition('id', $entity->id(), '<>');
+  }
+  $result = $query->execute();
+  if (!empty($result)) {
+    $form_state->setErrorByName('field_sop_code', t('The generated SOP Code %code is already in use. Please try again or contact an administrator.', ['%code' => $sop_code]));
+    return;
+  }
+
+  $form_state->setValue('field_sop_code', [$sop_code]);
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function sop_office_admin_entity_presave(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'sop' && $entity->bundle() === 'office_administration') {
+    \Drupal::logger('sop_office_admin')->notice('Presave hook triggered for Office Administration SOP: @id', ['@id' => $entity->id() ?: 'new']);
+    $bundle = $entity->bundle();
+    $prefix = 'ADM';
+
+    $query = \Drupal::entityQuery('sop')
+      ->condition('type', $bundle)
+      ->sort('field_sop_code', 'DESC')
+      ->range(0, 1)
+      ->accessCheck(FALSE);
+    $result = $query->execute();
+    $next_number = 1;
+    if (!empty($result)) {
+      $latest_sop_id = reset($result);
+      $latest_sop = \Drupal::entityTypeManager()->getStorage('sop')->load($latest_sop_id);
+      $latest_code = $latest_sop->get('field_sop_code')->value;
+      \Drupal::logger('sop_office_admin')->notice('Latest SOP Code in presave: @code', ['@code' => $latest_code]);
+      if (preg_match('/SOP-ADM-(\d+)/', $latest_code, $matches)) {
+        $next_number = (int) $matches[1] + 1;
+      }
+    }
+
+    $sop_code = sprintf('SOP-%s-%03d', $prefix, $next_number);
+    \Drupal::logger('sop_office_admin')->notice('Setting SOP Code in presave: @code', ['@code' => $sop_code]);
+    $entity->set('field_sop_code', $sop_code);
+  }
+}

@@ -1,0 +1,128 @@
+<?php
+
+namespace Drupal\contract_residential\Plugin\Action;
+
+use Drupal\Core\Session\AccountInterface;
+use Drupal\views_bulk_operations\Action\ViewsBulkOperationsActionBase;
+use Drupal\Core\Messenger\MessengerTrait;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Creates a fall_cleanup work order.
+ *
+ * @Action(
+ *   id = "create_fall_cleanup_work_order_action",
+ *   label = @Translation("Create Fall Cleanup Work Order"),
+ *   category = @Translation("Custom"),
+ *   confirm = TRUE
+ * )
+ */
+class CreateFallCleanupWorkOrderAction extends ViewsBulkOperationsActionBase {
+  use MessengerTrait;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function execute(EntityInterface $entity = NULL) {
+    if ($entity && $entity->getEntityTypeId() === 'contracts') {
+      // Retrieve necessary services.
+      $entity_type_manager = \Drupal::service('entity_type.manager');
+      $messenger = \Drupal::messenger();
+      $current_user = \Drupal::currentUser();
+
+      // Extract contract ID.
+      $contract_id = $entity->id();
+
+      // Load the Contract entity.
+      $contract = $entity_type_manager->getStorage('contracts')->load($contract_id);
+      if (!$contract) {
+        $messenger->addError('Contract not found.');
+        return;
+      }
+
+      // Load the referenced Fall Cleanup entity.
+      $fall_cleanup_id = $contract->get('field_fall_cleanup')->target_id;
+      $fall_cleanup_section = $entity_type_manager->getStorage('contract_sections')->load($fall_cleanup_id);
+      if (!$fall_cleanup_section) {
+        $messenger->addError('Referenced Fall Cleanup entity not found.');
+        return;
+      }
+
+      // Check if a work order already exists.
+      if (!$fall_cleanup_section->get('field_work_order')->isEmpty()) {
+        $messenger->addError("A Fall Cleanup Work Order already exists for this Contract #$contract_id.");
+        return;
+      }
+
+      // Get the value of the 'field_estimate' field from the Fall Cleanup entity & Extract the last number.
+      $estimate_text = $fall_cleanup_section->get('field_estimate')->value;
+      // Check if the estimate text is not null and matches the pattern.
+      if ($estimate_text !== null) {
+        // Check if the estimate text contains a hyphen.
+        if (strpos($estimate_text, '-') !== false) {
+          // If the estimate text contains a hyphen, use the second number as the estimated price.
+          preg_match('/(\d+)\s*-\s*(\d+)/', $estimate_text, $matches);
+          if (!empty($matches)) {
+            $contract_estimate = (float) $matches[2];
+          } else {
+            // If the pattern match fails, set the estimated price to 0.0.
+            $contract_estimate = 0.0;
+          }
+        } else {
+          // If the estimate text does not contain a hyphen, use the entire text as the estimated price.
+          $contract_estimate = (float) $estimate_text;
+        }
+      } else {
+        // If the estimate text is null, set the estimated price to 0.0.
+        $contract_estimate = 0.0;
+      }
+
+
+      // Load the Property referenced in the Contract.
+      $property_id = $contract->get('field_property')->target_id;
+      $property = $entity_type_manager->getStorage('properties')->load($property_id);
+      if (!$property) {
+        $messenger->addError('Referenced Property not found.');
+        return;
+      }
+
+      // Create a new Fall Cleanup Work Order.
+      $work_order = $entity_type_manager->getStorage('work_order')->create([
+        'type' => 'fall_cleanup',
+        'uid' => $current_user->id(),
+        'created' => time(),
+        'field_service' => 413,
+        'field_property' => $property_id,
+        'field_contract' => $contract_id,
+        'field_status' => 1089,
+        'field_invoiced' => 0,
+        'field_estimated_price' => $contract_estimate,
+        'field_work_todo_description' => [
+          'value' => "<p>" . date('Y') . " - Fall Cleanup as described</p>",
+          'format' => 'full_html',
+        ],
+      ]);
+      $work_order->save();
+
+      // Get the ID of the created work_order.
+      $work_order_id = $work_order->id();
+
+      // Set the value of the Contract Section's 'field_work_order' reference field to the ID of the created work_order.
+      $fall_cleanup_section->set('field_work_order', $work_order_id);
+      $fall_cleanup_section->save();
+
+      // Display success message.
+      $messenger->addMessage($this->t("Fall Cleanup work order created for Contract #$contract_id."));
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
+    return $object->access('update', $account, $return_as_object);
+  }
+
+}
+

@@ -1,0 +1,369 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\config_pages\ConfigPagesLoaderInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\Queue\QueueFactory;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_weed_spraying_entity_presave(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'work_order' || $entity->bundle() !== 'weed_spraying' || ($entity->get('field_status')->target_id ?? 0) != 1097) {
+    return;
+  }
+
+  $workOrderId = $entity->id();
+  if (!is_numeric($workOrderId) || $workOrderId < 1) {
+    return;
+  }
+
+  $grand_total = 0;
+  $chemical_subtotal = 0;
+  $labor_subtotal = 0;
+  $totalTrip = 0;
+
+  $config_pages_loader = \Drupal::service('config_pages.loader');
+  $business_settings = $config_pages_loader->load('business_setting');
+
+  if ($business_settings) {
+    $minSprayFee = $business_settings->get('field_minimum_spray_fee')->value ?? 0;
+    $minAllottedTime = $business_settings->get('field_spray_minimum_allotted_tim')->value ?? 0;
+    $minGallon = $business_settings->get('field_spray_minimum_gallon')->value ?? 0;
+    $additionalGallonRate = $business_settings->get('field_additional_per_gallon_fee')->value ?? 0;
+    $hourlyRate = $business_settings->get('field_spray_crew_labor')->value ?? 0;
+    $hourlyBillingIncrement = $business_settings->get('field_hour_billing_increment')->value ?? 0;
+    $sprayMinTrip = $business_settings->get('field_spray_trip_minimum')->value ?? 0;
+
+    $gallonsUsed = get_largest_gallons_used_for_weed_spraying($workOrderId);
+    $timeSpent = get_hours_for_weed_spraying($workOrderId);
+
+    if ($gallonsUsed > $minGallon) {
+      $chemical_subtotal = ($gallonsUsed - $minGallon) * $additionalGallonRate;
+    }
+    $entity->set('field_material_chemical_total', $chemical_subtotal);
+
+    if ($timeSpent > $minAllottedTime) {
+      $extraHours = $timeSpent - $minAllottedTime;
+      $additionalIncrements = ceil($extraHours / $hourlyBillingIncrement);
+      $labor_subtotal = ($hourlyRate * $hourlyBillingIncrement) * $additionalIncrements;
+    }
+    $entity->set('field_labor_total', $labor_subtotal);
+
+    if ($sprayMinTrip > 0) {
+      $totalTrip = $sprayMinTrip;
+      $entity->set('field_trip_fee', $sprayMinTrip);
+    } else {
+      $totalTrip = $entity->get('field_trip_fee')->value ?? 0;
+    }
+
+    if ($minSprayFee > 0) {
+      $entity->set('field_task_rate', $minSprayFee);
+      $grand_total += $minSprayFee;
+    }
+
+    if ($chemical_subtotal > 0) {
+      $grand_total += $chemical_subtotal;
+    }
+
+    if ($labor_subtotal > 0) {
+      $grand_total += $labor_subtotal;
+    }
+
+    if ($totalTrip > 0) {
+      $grand_total += $totalTrip;
+    }
+
+    $billingAdjustment = $entity->get('field_billing_adjustment')->value ?? 0;
+    $grand_total += $billingAdjustment;
+
+    if ($grand_total > 0) {
+      $entity->set('field_wo_total', $grand_total);
+    }
+  }
+
+  // Process property_spraying_info
+  $gallonsUsed = get_largest_gallons_used_for_weed_spraying($workOrderId);
+  $signOffDateFormatted = null;
+  $signOffBy = null;
+
+  $query = \Drupal::entityQuery('wo_complete_info')
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $workOrderId)
+    ->sort('field_date_completed', 'DESC')
+    ->range(0, 1);
+  $result = $query->execute();
+
+  if (!empty($result)) {
+    $woSignOffInfo = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load(reset($result));
+    if ($woSignOffInfo) {
+      $woSignOffInfoTimestamp = $woSignOffInfo->get('field_date_completed')->value;
+      $signOffBy = $woSignOffInfo->get('field_signed_off_by')->target_id;
+      if ($woSignOffInfoTimestamp) {
+        $signOffDate = DrupalDateTime::createFromTimestamp($woSignOffInfoTimestamp);
+        $signOffDate->setTimezone(new \DateTimeZone('UTC'));
+        $signOffDateFormatted = $signOffDate->format('Y-m-d\TH:i:s');
+      }
+    }
+  }
+
+  if (!$signOffDateFormatted) {
+    $current_time = new DrupalDateTime('now', new \DateTimeZone('UTC'));
+    $signOffDateFormatted = $current_time->format('Y-m-d\TH:i:s');
+    $signOffBy = \Drupal::currentUser()->id();
+  }
+
+  $propertyId = $entity->get('field_property')->target_id ?? null;
+  if ($propertyId) {
+    $propertySprayingInfo = \Drupal::entityTypeManager()->getStorage('property_spraying_info')->loadByProperties([
+      'field_property' => $propertyId,
+      'type' => 'weed_spraying',
+    ]);
+
+    $sprayingInfoEntity = empty($propertySprayingInfo) ? \Drupal::entityTypeManager()->getStorage('property_spraying_info')->create([
+      'type' => 'weed_spraying',
+      'field_property' => $propertyId,
+    ]) : reset($propertySprayingInfo);
+
+    if ($sprayingInfoEntity && ($signOffBy || $signOffDateFormatted || $gallonsUsed > 0)) {
+      if ($gallonsUsed > 0) {
+        $sprayingInfoEntity->set('field_last_amount_applied', $gallonsUsed);
+      }
+      if ($signOffDateFormatted) {
+        $sprayingInfoEntity->set('field_last_applied_date', $signOffDateFormatted);
+      }
+      if ($signOffBy) {
+        $sprayingInfoEntity->set('field_last_applied_by', $signOffBy);
+      }
+      $sprayingInfoEntity->save();
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function wo_weed_spraying_entity_insert(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'weed_spraying' && ($entity->get('field_status')->target_id ?? 0) == 1097) {
+    $queue = \Drupal::service('queue')->get('wo_weed_spraying_queue');
+    $queue->createItem([
+      'work_order_id' => $entity->id(),
+      'operation' => 'insert',
+      'attempts' => 0,
+    ]);
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function wo_weed_spraying_entity_update(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'weed_spraying' && ($entity->get('field_status')->target_id ?? 0) == 1097) {
+    $queue = \Drupal::service('queue')->get('wo_weed_spraying_queue');
+    $queue->createItem([
+      'work_order_id' => $entity->id(),
+      'operation' => 'update',
+      'attempts' => 0,
+    ]);
+  }
+}
+
+/**
+ * Implements hook_queue_info().
+ */
+function wo_weed_spraying_queue_info() {
+  return [
+    'wo_weed_spraying_queue' => [
+      'title' => t('Weed Spraying Work Order Queue'),
+      'description' => t('Queue for processing Weed Spraying work order updates.'),
+    ],
+  ];
+}
+
+/**
+ * Process the Weed Spraying queue.
+ */
+function wo_weed_spraying_process_queue($queue_name, $item) {
+  if ($queue_name !== 'wo_weed_spraying_queue') {
+    return;
+  }
+
+  $workOrderId = $item->data['work_order_id'];
+  $operation = $item->data['operation'];
+  $attempts = $item->data['attempts'] ?? 0;
+  $max_attempts = 3;
+
+  if (!is_numeric($workOrderId) || $workOrderId < 1) {
+    return;
+  }
+
+  $workOrder = \Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId);
+  if (!$workOrder || $workOrder->bundle() !== 'weed_spraying' || ($workOrder->get('field_status')->target_id ?? 0) != 1097) {
+    return;
+  }
+
+  $result = _wo_weed_spraying_handle_work_order($workOrder, $operation);
+  if (!$result && $attempts < $max_attempts) {
+    $queue = \Drupal::service('queue')->get('wo_weed_spraying_queue');
+    $queue->createItem([
+      'work_order_id' => $workOrderId,
+      'operation' => $operation,
+      'attempts' => $attempts + 1,
+    ]);
+    sleep(1);
+  }
+}
+
+/**
+ * Helper function to process work orders.
+ */
+function _wo_weed_spraying_handle_work_order(EntityInterface $entity, $operation) {
+  $workOrderId = $entity->id();
+  if (!is_numeric($workOrderId) || $workOrderId < 1 || ($entity->get('field_status')->target_id ?? 0) != 1097) {
+    return true;
+  }
+
+  $gallonsUsed = get_largest_gallons_used_for_weed_spraying($workOrderId);
+  $signOffDateFormatted = null;
+  $signOffBy = null;
+
+  $query = \Drupal::entityQuery('wo_complete_info')
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $workOrderId)
+    ->condition('type', 'spray_crew')
+    ->sort('field_date_completed', 'DESC')
+    ->range(0, 1);
+  $result = $query->execute();
+
+  if (!empty($result)) {
+    $woSignOffInfo = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load(reset($result));
+    if ($woSignOffInfo) {
+      $woSignOffInfoTimestamp = $woSignOffInfo->get('field_date_completed')->value;
+      $signOffBy = $woSignOffInfo->get('field_signed_off_by')->target_id;
+      if ($woSignOffInfoTimestamp) {
+        $signOffDate = DrupalDateTime::createFromTimestamp($woSignOffInfoTimestamp);
+        $signOffDate->setTimezone(new \DateTimeZone('UTC'));
+        $signOffDateFormatted = $signOffDate->format('Y-m-d\TH:i:s');
+      }
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+
+  $propertyId = $entity->get('field_property')->target_id ?? null;
+  if (!$propertyId) {
+    return true;
+  }
+
+  $propertySprayingInfo = \Drupal::entityTypeManager()->getStorage('property_spraying_info')->loadByProperties([
+    'field_property' => $propertyId,
+    'type' => 'weed_spraying',
+  ]);
+
+  $sprayingInfoEntity = empty($propertySprayingInfo) ? \Drupal::entityTypeManager()->getStorage('property_spraying_info')->create([
+    'type' => 'weed_spraying',
+    'field_property' => $propertyId,
+  ]) : reset($propertySprayingInfo);
+
+  if ($sprayingInfoEntity && ($signOffBy || $signOffDateFormatted || $gallonsUsed > 0)) {
+    if ($gallonsUsed > 0) {
+      $sprayingInfoEntity->set('field_last_amount_applied', $gallonsUsed);
+    }
+    if ($signOffDateFormatted) {
+      $sprayingInfoEntity->set('field_last_applied_date', $signOffDateFormatted);
+    }
+    if ($signOffBy) {
+      $sprayingInfoEntity->set('field_last_applied_by', $signOffBy);
+    }
+    $sprayingInfoEntity->save();
+  }
+
+  return true;
+}
+
+/**
+ * Retrieves the largest gallons value used for weed_spraying.
+ */
+function get_largest_gallons_used_for_weed_spraying($workOrderId) {
+  if (!is_numeric($workOrderId) || $workOrderId < 1) {
+    return 0;
+  }
+
+  $query = \Drupal::entityQuery('wo_chemicals_used')
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $workOrderId)
+    ->condition('type', 'weed_spraying');
+  $ids = $query->execute();
+
+  if (empty($ids)) {
+    return 0;
+  }
+
+  $entities = \Drupal::entityTypeManager()->getStorage('wo_chemicals_used')->loadMultiple($ids);
+  $largestGallonsUsed = 0;
+
+  foreach ($entities as $entity) {
+    $gallons = $entity->get('field_total_gallons_applied')->value ?? 0;
+    if ($gallons > $largestGallonsUsed) {
+      $largestGallonsUsed = $gallons;
+    }
+  }
+
+  return $largestGallonsUsed;
+}
+
+/**
+ * Retrieves the hours clocked in for Weed Spraying.
+ */
+function get_hours_for_weed_spraying($workOrderId) {
+  if (!is_numeric($workOrderId) || $workOrderId < 1) {
+    return 0;
+  }
+
+  $query = \Drupal::entityQuery('wo_time_clock')
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $workOrderId)
+    ->condition('type', 'entry');
+  $ids = $query->execute();
+
+  if (empty($ids)) {
+    return 0;
+  }
+
+  $entities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadMultiple($ids);
+  $hoursSpent = 0;
+
+  foreach ($entities as $entity) {
+    $hoursSpent += $entity->get('field_total_time')->value ?? 0;
+  }
+
+  return $hoursSpent;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for wo_complete_info.
+ */
+function wo_weed_spraying_form_wo_complete_info_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
+  $form['#submit'][] = 'wo_weed_spraying_wo_complete_info_submit';
+}
+
+/**
+ * Custom submit handler to trigger work order save.
+ */
+function wo_weed_spraying_wo_complete_info_submit($form, FormStateInterface $form_state) {
+  $entity = $form_state->getFormObject()->getEntity();
+  if ($entity->getEntityTypeId() === 'wo_complete_info' && $entity->bundle() === 'spray_crew') {
+    $work_order = $entity->get('field_work_order')->entity;
+    if ($work_order && $work_order->bundle() === 'weed_spraying' && ($work_order->get('field_status')->target_id ?? 0) == 1097) {
+      $queue = \Drupal::service('queue')->get('wo_weed_spraying_queue');
+      $queue->createItem([
+        'work_order_id' => $work_order->id(),
+        'operation' => 'update',
+        'attempts' => 0,
+      ]);
+    }
+  }
+}

@@ -1,0 +1,272 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\config_pages\ConfigPagesLoaderInterface;
+use Drupal\eck\EckEntityInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_aerating_entity_presave(EntityInterface $entity) {
+    // Initialize $grand_total at the start.
+    $grand_total = 0;
+
+    // Check if it's a Work Order entity of the 'aerating' bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'aerating') {
+        
+        $propertyId = $entity->get('field_property')->target_id ?? null;
+
+        // Proceed if the property ID is available.
+        if ($propertyId) {
+            $lawnSqFt = null;
+
+            // If 'field_current_turf_sq_footage' is not set, try to fetch and set it.
+            if ($entity->get('field_current_turf_sq_footage')->isEmpty()) {
+                // Load 'property_landscape_details' entities by 'field_property'.
+                $propertyLandscapeDetails = \Drupal::entityTypeManager()->getStorage('property_landscape_details')->loadByProperties([
+                    'field_property' => $propertyId,
+                ]);
+
+                if (!empty($propertyLandscapeDetails)) {
+                    $detailsEntity = reset($propertyLandscapeDetails);
+                    if ($detailsEntity && !$detailsEntity->get('field_turf_sq_footage')->isEmpty()) {
+                        $lawnSqFt = $detailsEntity->get('field_turf_sq_footage')->value;
+                        // Update the Work Order entity's 'field_current_turf_sq_footage' with the fetched square footage.
+                        $entity->set('field_current_turf_sq_footage', $lawnSqFt);
+                    }
+                }
+            } else {
+                // If 'field_current_turf_sq_footage' already has a value, use it directly.
+                $lawnSqFt = $entity->get('field_current_turf_sq_footage')->value;
+            }
+
+            // Calculate the rate if square footage is determined.
+            if ($lawnSqFt !== null) {
+                // Check if 'field_task_rate' needs updating.
+                if ($entity->get('field_task_rate')->isEmpty() /* condition to update rate even if set */) {
+                    $task_rate = calculateAerationCost($lawnSqFt);
+                    $entity->set('field_task_rate', $task_rate);
+                    $grand_total += $task_rate;
+                }
+
+                
+                }
+            }
+
+            // Office Adjust Total as needed for invoicing
+            $billingAdjustment = $entity->get('field_billing_adjustment')->value;
+            $grand_total += $billingAdjustment;
+
+            // Future calculations can modify $grand_total as needed.
+            // Set 'field_total' with the final $grand_total value.
+            if ($grand_total > 0) {
+                $entity->set('field_wo_total', $grand_total);
+
+        }
+    }
+}
+
+/**
+ * Implements hook_entity_insert() for work_order entities.
+ */
+function wo_aerating_entity_insert(EntityInterface $entity) {
+    // Check if it's the right entity type and bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'fertilizing') {
+      // Perform actions specific to when a new work order of the 'fertilizing' bundle is created.
+      _wo_aerating_handle_work_order($entity, 'insert');
+    }
+  }
+  
+/**
+ * Implements hook_entity_update() for work_order entities.
+ */
+function wo_aerating_entity_update(EntityInterface $entity) {
+    // Check if it's the right entity type and bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'fertilizing') {
+        // Perform actions specific to when a work order of the 'fertilizing' bundle is updated.
+        _wo_aerating_handle_work_order($entity, 'update');
+    }
+}
+
+/**
+ * A helper function to process work orders on insert or update.
+ * 
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The entity being inserted or updated.
+ * @param string $operation
+ *   The operation being performed ('insert' or 'update').
+ */
+function _wo_aerating_handle_work_order(EntityInterface $entity, $operation) {
+    // Shared logic to handle both insert and update operations.
+    // You can use the $operation parameter if you need to distinguish between inserts and updates.
+
+    // Check if the Work Order is marked as 'Complete'.
+    $statusTermId = $entity->get('field_status')->target_id ?? 0;
+    
+    if ($statusTermId != 1097) {
+        //If the Work Order is not 'Complete', exit the function early to avoid performing further calculations.
+        return;
+    }        
+    
+    // Get Work Order Complete Info
+    $workOrderId = $entity->id();
+
+    $signOffDateFormated = null;
+    $signOffBy = 1;
+    
+    // Load 'wo_complete_info' entities by '$workOrderId'.
+    $woSignOffInfoEntities = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->loadByProperties([
+        'field_work_order' => $workOrderId,
+        'type' => 'clean_up_crew',
+    ]);
+    $woSignOffInfo = reset($woSignOffInfoEntities);
+
+    if (!empty($woSignOffInfo)) {
+        // Get needed Info for Property Aerating Info
+        $woSignOffInfoTimestamp = $woSignOffInfo->get('field_date_completed')->value;
+        $signOffDate = DrupalDateTime::createFromTimestamp($woSignOffInfoTimestamp);
+        $signOffDate->setTimezone(new \DateTimeZone('UTC'));
+        $signOffDateFormated = $signOffDate->format('Y-m-d\TH:i:s');
+        $signOffBy = $woSignOffInfo->get('field_signed_off_by')->target_id;
+
+        // Get Property ID from Work Order
+        $propertyId = $entity->get('field_property')->target_id ?? null;
+
+        // If needed, enter the sign off info here.
+
+    }
+}
+
+/**
+ * Calculate the aeration cost based on square footage.
+ */
+function calculateAerationCost($squareFootage) {
+    $config_pages_loader = \Drupal::service('config_pages.loader');
+    $config_page = $config_pages_loader->load('business_setting'); // Ensure 'business_setting' matches the exact machine name of your config page.
+    if (!$config_page) {
+        \Drupal::logger('aeration_calculation')->notice('Config page not found.');
+        return 0;
+    }
+
+    $rateEntities = $config_page->get('field_aeration_pricing')->referencedEntities();
+    if (empty($rateEntities)) {
+        \Drupal::logger('aeration_calculation')->notice('No rate entities found.');
+        return 0;
+    }
+
+    $rates = [];
+    foreach ($rateEntities as $entity) {
+        $breakpoint = $entity->get('field_max_sq_ft')->value;
+        $rate = $entity->get('field_rate')->value;
+        $rates[$breakpoint] = $rate;
+    }
+
+    ksort($rates);
+    \Drupal::logger('aeration_calculation')->notice('Sorted rates: ' . print_r($rates, TRUE));
+
+    $task_rate = 0;
+    foreach ($rates as $breakpoint => $rate) {
+        if ($squareFootage <= $breakpoint) {
+            $task_rate = $rate;
+            \Drupal::logger('aeration_calculation')->notice("Match found: Square Footage = $squareFootage, Breakpoint = $breakpoint, Rate = $rate");
+            break;
+        }
+    }
+
+    if ($task_rate === 0) {
+        \Drupal::logger('aeration_calculation')->notice("No matching rate found for square footage: $squareFootage");
+    }
+
+    return $task_rate;
+}
+
+/**
+ * Retrieves the Hours clocked in for aerating from related wo_time_clock entities.
+ *
+ * @param int $workOrderId
+ *   The work order entity ID.
+ *
+ * @return int
+ *   The total hours for aerating Work Order.
+ */
+function get_hours_for_aerating($workOrderId) {
+
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    $hoursSpent = 0;
+
+    // Load wo_time_clock entities that reference the given work order.
+    $woTimeClockEntities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
+        'field_work_order' => $workOrderId,
+    ]);
+
+    foreach ($woTimeClockEntities as $entity) {
+        // Check if the entity is part of the 'pre-emergent' bundle.
+        if ($entity->bundle() === 'entry') {
+            // Sum the gallons used.
+            $hours = $entity->get('field_total_time')->value; // Adjust 'field_total_time' that is a Number(decimal).
+            $hoursSpent += $hours;
+        }
+    }
+
+    return $hoursSpent;
+}
+
+function get_men_for_aerating($workOrderId) {
+
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    // Use an Entity Query to find the latest 'wo_complete_info' entity for the given work order.
+    $query = \Drupal::entityQuery('wo_complete_info')
+        ->accessCheck(FALSE) // Enforce access checks
+        ->condition('field_work_order', $workOrderId)
+        ->sort('field_date_completed', 'DESC') // Adjust 'field_completed_date' to your actual date field name.
+        ->range(0, 1); // Limit to the latest entity.
+
+    $result = $query->execute();
+
+    if (empty($result)) {
+        return 0; // Return early if no entities are found.
+    }
+
+    $latestEntityId = reset($result);
+    $latestEntity = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load($latestEntityId);
+
+    // Assuming 'field_those_on_crew' is a list of 'uid' values.
+    $totalMen = $latestEntity->get('field_those_on_crew')->count();// Count the list of them on site.
+    
+    return $totalMen;
+}
+
+function get_trucks_for_aerating($workOrderId) {
+
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    // Use an Entity Query to find the latest 'wo_complete_info' entity for the given work order.
+    $query = \Drupal::entityQuery('wo_complete_info')
+        ->accessCheck(FALSE) // Enforce access checks
+        ->condition('field_work_order', $workOrderId)
+        ->sort('field_date_completed', 'DESC') // Adjust 'field_completed_date' to your actual date field name.
+        ->range(0, 1); // Limit to the latest entity.
+
+    $result = $query->execute();
+
+    if (empty($result)) {
+        return 0; // Return early if no entities are found.
+    }
+
+    $latestEntityId = reset($result);
+    $latestEntity = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load($latestEntityId);
+
+    // Assuming 'field_those_on_crew' is a list of 'uid' values.
+    $trucksSelected = $latestEntity->get('field_how_many_trucks_taken')->value;// The select list is 1 number off
+    $totalTrucks = $trucksSelected;
+
+    return $totalTrucks;
+}

@@ -1,0 +1,166 @@
+<?php
+
+use Drupal\flag\FlaggingInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
+
+/**
+ * Implements hook_flagging_insert().
+ */
+function wo_timer_flag_update_flagging_insert(FlaggingInterface $flagging) {
+    // Check if the flag is 'work_order_timer' and the entity is of type 'work_order'.
+    if ($flagging->getFlagId() === 'work_order_timer' && $flagging->getFlaggable()->getEntityTypeId() === 'work_order') {
+      // Load the current user
+      $current_user = \Drupal::currentUser();
+
+      // Load the flagged work_order entity
+      $work_order = $flagging->getFlaggable();
+
+
+      // Check if the current status is not 'In Progress' (1092)
+      if ($work_order->get('field_status')->target_id != 1092) {
+            // Update the 'field_status' of the work_order entity to 'In Progress'
+            //$work_order->set('field_status', 1092); // Term ID for 'In Progress'
+            //$work_order->save();
+
+            // Create a new 'wo_status_updates' entity
+            $wo_status_updates = \Drupal::entityTypeManager()
+            ->getStorage('wo_status_updates')
+            ->create([
+                'type' => 'update', // The bundle name for 'wo_status_updates'
+                'field_status_of_wo' => $work_order->id(),
+                'field_status' => 1092, // The taxonomy term ID for 'In Progress'
+                'field_status_change_note' => ['value' => 'Teammate Clocked In'],
+                'uid' => $current_user->id(),
+            ]);
+
+            // Save the new 'wo_status_updates' entity
+            $wo_status_updates->save();
+        }
+
+      // Create a new 'wo_time_clock' entity
+      $wo_time_clock = \Drupal::entityTypeManager()
+        ->getStorage('wo_time_clock')
+        ->create([
+          'type' => 'entry',
+          'field_work_order' => $flagging->getFlaggable()->id(),
+          'field_notes' => 'Start time entered through system',
+          'field_start_time' => DrupalDateTime::createFromTimestamp(time(), new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s'),
+          'uid' => $current_user->id(),
+          'field_teammate' => $current_user->id(),
+        ]);
+  
+      // Save the new 'wo_time_clock' entity and get its ID
+      $wo_time_clock->save();
+      $wo_time_clock_id = $wo_time_clock->id();
+  
+      // Update the 'field_wo_timer_entered' field in the 'work_order_timer' flag
+      $flagging->set('field_wo_timer_entered', $wo_time_clock_id);
+      $flagging->save();
+    }
+  }
+
+/**
+ * Implements hook_flagging_delete().
+ */
+function wo_timer_flag_update_flagging_delete(FlaggingInterface $flagging) {
+    // Check if the unflagged entity is a 'work_order' and the flag is 'work_order_timer'.
+    if ($flagging->getFlagId() === 'work_order_timer' && $flagging->getFlaggable()->getEntityTypeId() === 'work_order') {
+      // Retrieve the associated 'wo_time_clock' entity.
+      $wo_time_clock_id = $flagging->field_wo_timer_entered->target_id;
+      $wo_time_clock = \Drupal::entityTypeManager()
+        ->getStorage('wo_time_clock')
+        ->load($wo_time_clock_id);
+  
+      if ($wo_time_clock) {
+        // Update the 'field_end_time'.
+        $wo_time_clock->set('field_end_time', DrupalDateTime::createFromTimestamp(time(), new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s'));
+  
+        // Add a new entry to the 'field_notes' multi-value field.
+        $wo_time_clock->get('field_notes')->appendItem('End Time entered by system');
+        
+        // Save the updated entity.
+        $wo_time_clock->save();
+      }
+    }
+  }
+
+/**
+ * Implements hook_preprocess_flag().
+ */
+function wo_timer_flag_update_preprocess_flag(&$variables) {
+  $flag = $variables['flag'] ?? NULL;
+  // Check if the flag is the "work_order_timer" flag.
+  if ($flag && $flag->id() === 'work_order_timer') {
+    // Get the flag service and current user.
+    $flag_service = \Drupal::service('flag');
+    $current_user = \Drupal::currentUser();
+    $entity = $variables['flaggable'] ?? NULL;
+
+    // Determine flag state.
+    $is_flagged = FALSE;
+    if (isset($variables['attributes']['href'])) {
+      $href = $variables['attributes']['href'];
+      // If the URL contains "/unflag/", the entity is flagged.
+      if (strpos($href, '/flag/unflag/work_order_timer/') !== FALSE) {
+        $is_flagged = TRUE;
+      }
+    } elseif ($entity && $entity->getEntityTypeId() === 'work_order') {
+      // Use the flag service to check if the entity is flagged by the current user.
+      $is_flagged = $flag_service->getFlagging($flag, $entity, $current_user) !== NULL;
+    }
+
+    // Set the CSS class based on flag state.
+    $flag_state_class = $is_flagged ? 'flag-state-flagged' : 'flag-state-unflagged';
+
+    // Set the link text for accessibility.
+    $link_text = $is_flagged ? 'Clock Out' : 'Clock In';
+
+    // Ensure link_text is set with visually-hidden span and icon span.
+    $variables['link_text'] = [
+      '#type' => 'inline_template',
+      '#template' => '<span class="visually-hidden">{{ link_text }}</span><span class="flag-timer-icon {{ flag_state_class }}" aria-hidden="true"></span>',
+      '#context' => [
+        'link_text' => $link_text,
+        'flag_state_class' => $flag_state_class,
+      ],
+    ];
+
+    // Set the title attribute and provide fallback for template.
+    $variables['title'] = $link_text;
+    $variables['link_text_raw'] = $link_text;
+
+    // Add custom CSS classes without overwriting existing ones.
+    if (!isset($variables['attributes']['class'])) {
+      $variables['attributes']['class'] = [];
+    }
+    $variables['attributes']['class'] = array_unique(array_merge(
+      $variables['attributes']['class'],
+      [
+        'flag',
+        'flag-work-order-timer',
+        'js-flag-work-order-timer-' . ($entity ? $entity->id() : 'unknown'),
+        $is_flagged ? 'action-unflag' : 'action-flag',
+        'flag-timer-icon',
+        $flag_state_class,
+      ]
+    ));
+
+    // Attach the custom CSS library.
+    $variables['#attached']['library'][] = 'wo_timer_flag_update/flag-timer';
+
+    // Debug: Log the flag state, classes, link text, and template context.
+    \Drupal::logger('wo_timer_flag_update')->notice('Flag state for work_order_timer: ' . ($is_flagged ? 'Flagged' : 'Unflagged') . ' | Classes: ' . implode(', ', $variables['attributes']['class']) . ' | Link text: ' . $link_text . ' | Rendered link_text: ' . print_r($variables['link_text'], TRUE) . ' | Template context: ' . print_r(['title' => $variables['title'], 'link_text_raw' => $variables['link_text_raw']], TRUE));
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function wo_timer_flag_update_module_implements_alter(&$implementations, $hook) {
+  if ($hook === 'preprocess_flag' && isset($implementations['wo_timer_flag_update'])) {
+    // Move wo_timer_flag_update to the end to run last.
+    $group = $implementations['wo_timer_flag_update'];
+    unset($implementations['wo_timer_flag_update']);
+    $implementations['wo_timer_flag_update'] = $group;
+  }
+}

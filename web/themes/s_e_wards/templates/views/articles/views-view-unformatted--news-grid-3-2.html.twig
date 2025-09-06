@@ -1,0 +1,25 @@
+{% if attributes -%}
+   <div{{ attributes }}>
+{% endif %}
+   <div class="news-grid-3-2">
+      {% for row in rows|batch(5) %}
+         {% set k = 0 %}
+         {% for column in row %} 
+            {% set k = k + 1 %}
+            {% if k <= 2 %}
+               {% if k == 1 %}<div class="posts-large lg-block-grid-2 md-block-grid-2 sm-block-grid-2 xs-block-grid-2">{% endif %}
+                  <div class="item-columns post-item">{{ column.content }}</div>
+               {% if k == 2 or k == row|length %}</div>{% endif %}
+            {% else %}
+               {% if k == 3 %} <div class="post-small lg-block-grid-3 md-block-grid-3 sm-block-grid-1 xs-block-grid-1"> {% endif %}
+                  <div class="post-item">{{ column.content }}</div>
+               {% if k == 5 or k == row|length %}</div>{% endif %}
+            {% endif %}
+         {% endfor %}
+      {% endfor %}
+   </div>   
+{% if attributes -%}
+    </div>
+{% endif %}
+
+

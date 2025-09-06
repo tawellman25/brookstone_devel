@@ -1,0 +1,111 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter() for the Sprinkler Maintenance SOP entity form.
+ */
+function sop_sprinkler_maintenance_form_sop_sprinkler_maintenance_form_alter(array &$form, FormStateInterface $form_state) {
+  \Drupal::logger('sop_sprinkler_maintenance')->notice('Form alter hook triggered for Sprinkler Maintenance SOP form.');
+  $form['#validate'][] = 'sop_sprinkler_maintenance_validate_sop_code';
+}
+
+/**
+ * Custom validation for Sprinkler Maintenance SOP form.
+ */
+function sop_sprinkler_maintenance_validate_sop_code($form, FormStateInterface $form_state) {
+  \Drupal::logger('sop_sprinkler_maintenance')->notice('Validating SOP form for bundle: @bundle, is_new: @is_new', [
+    '@bundle' => $form_state->getFormObject()->getEntity()->bundle(),
+    '@is_new' => $form_state->getFormObject()->getEntity()->isNew() ? 'yes' : 'no'
+  ]);
+  $entity = $form_state->getFormObject()->getEntity();
+  $bundle = $entity->bundle();
+
+  if ($bundle !== 'sprinkler_maintenance') {
+    $form_state->setErrorByName('field_sop_code', t('Invalid SOP bundle: @bundle.', ['@bundle' => $bundle]));
+    \Drupal::logger('sop_sprinkler_maintenance')->error('Invalid bundle: @bundle', ['@bundle' => $bundle]);
+    return;
+  }
+
+  // Validate field_service is not empty for new entities.
+  if ($entity->isNew() && $entity->get('field_service')->isEmpty()) {
+    $form_state->setErrorByName('field_service', t('Service field is required for new Sprinkler Maintenance SOPs.'));
+    \Drupal::logger('sop_sprinkler_maintenance')->error('field_service is empty for new SOP.');
+  }
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function sop_sprinkler_maintenance_entity_presave(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'sop' && $entity->bundle() === 'sprinkler_maintenance') {
+    \Drupal::logger('sop_sprinkler_maintenance')->notice('Presave hook triggered for Sprinkler Maintenance SOP: @id, is_new: @is_new', [
+      '@id' => $entity->id() ?: 'new',
+      '@is_new' => $entity->isNew() ? 'yes' : 'no'
+    ]);
+
+    // Only set SOP Code for new entities.
+    if ($entity->isNew()) {
+      // Get field_service value (Taxonomy reference, using term's field_sop_code).
+      if ($entity->get('field_service')->isEmpty()) {
+        \Drupal::logger('sop_sprinkler_maintenance')->error('field_service is empty for SOP ID @id.', ['@id' => $entity->id() ?: 'new']);
+        throw new \Exception(t('Service field is required for new Sprinkler Maintenance SOPs.'));
+      }
+      $service_term = $entity->get('field_service')->entity;
+      if (!$service_term || !$service_term->hasField('field_sop_code') || $service_term->get('field_sop_code')->isEmpty()) {
+        \Drupal::logger('sop_sprinkler_maintenance')->error('Invalid or missing field_sop_code in taxonomy term for SOP ID @id.', ['@id' => $entity->id() ?: 'new']);
+        throw new \Exception(t('Invalid Service field value for new Sprinkler Maintenance SOPs.'));
+      }
+      $service = $service_term->get('field_sop_code')->value;
+      // Sanitize service code to ensure valid prefix (uppercase, alphanumeric).
+      $prefix = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $service));
+
+      $next_number = 1;
+
+      // Query sprinkler_maintenance SOPs with matching field_service.
+      $query = \Drupal::entityQuery('sop')
+        ->condition('type', 'sprinkler_maintenance')
+        ->condition('field_service', $entity->get('field_service')->target_id)
+        ->sort('field_sop_code', 'DESC')
+        ->accessCheck(FALSE);
+      $result = $query->execute();
+      \Drupal::logger('sop_sprinkler_maintenance')->notice('Presave query result count for service @service: @count', ['@service' => $service, '@count' => count($result)]);
+
+      if (!empty($result)) {
+        $latest_sop_id = reset($result);
+        $latest_sop = \Drupal::entityTypeManager()->getStorage('sop')->load($latest_sop_id);
+        if ($latest_sop && $latest_sop->bundle() === 'sprinkler_maintenance') {
+          $latest_code = $latest_sop->get('field_sop_code')->value;
+          \Drupal::logger('sop_sprinkler_maintenance')->notice('Latest SOP Code in presave for SOP ID @id: @code', ['@id' => $latest_sop_id, '@code' => $latest_code]);
+          if ($latest_code && preg_match('/SOP-' . preg_quote($prefix, '/') . '-(\d{3})/', $latest_code, $matches)) {
+            $next_number = (int) $matches[1] + 1;
+          }
+        } else {
+          \Drupal::logger('sop_sprinkler_maintenance')->warning('Retrieved SOP ID @id is not in sprinkler_maintenance bundle.', ['@id' => $latest_sop_id]);
+        }
+      }
+
+      $sop_code = sprintf('SOP-%s-%03d', $prefix, $next_number);
+      \Drupal::logger('sop_sprinkler_maintenance')->notice('Setting SOP Code in presave: @code', ['@code' => $sop_code]);
+
+      // Check for uniqueness.
+      $query = \Drupal::entityQuery('sop')
+        ->condition('type', 'sprinkler_maintenance')
+        ->condition('field_sop_code', $sop_code)
+        ->accessCheck(FALSE);
+      $result = $query->execute();
+      if (!empty($result)) {
+        \Drupal::logger('sop_sprinkler_maintenance')->error('Duplicate SOP Code: @code', ['@code' => $sop_code]);
+        throw new \Exception(t('The generated SOP Code %code is already in use.', ['%code' => $sop_code]));
+      }
+
+      $entity->set('field_sop_code', $sop_code);
+    } else {
+      \Drupal::logger('sop_sprinkler_maintenance')->notice('Existing SOP ID @id, preserving existing code: @code', [
+        '@id' => $entity->id(),
+        '@code' => $entity->get('field_sop_code')->value ?: 'none'
+      ]);
+    }
+  }
+}

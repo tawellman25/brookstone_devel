@@ -1,0 +1,41 @@
+<?php
+
+use Drupal\Core\Field\FieldItemListInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function custom_date_all_day_entity_presave(\Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'scheduling' && $entity->hasField('field_scheduled_date_and_time')) {
+    $items = $entity->get('field_scheduled_date_and_time');
+    foreach ($items as $item) {
+      $start = $item->value;
+      $end = $item->end_value;
+      $all_day = ($start && (!$end || 
+        (substr($start, 11) === '07:00:00' && substr($end, 11) === '06:59:59') || 
+        ($start === $end)));
+      $item->all_day = $all_day ? 1 : 0;
+    }
+  }
+}
+
+/**
+ * Implements hook_field_widget_form_alter().
+ */
+function custom_date_all_day_field_widget_form_alter(&$element, &$form_state, $context) {
+  if ($context['field_definition']->getName() === 'field_scheduled_date_and_time') {
+    $element['all_day'] = [
+      '#type' => 'hidden',
+      '#default_value' => $element['#default_value']['all_day'] ?? 0,
+    ];
+    if (isset($element['all_day_checkbox'])) {
+      $element['all_day']['#value_callback'] = function ($element, $input, &$form_state) {
+        $trigger = $form_state->getTriggeringElement();
+        if ($trigger && $trigger['#name'] === 'field_scheduled_date_and_time[0][all_day_checkbox]') {
+          return (int) $form_state->getValue(['field_scheduled_date_and_time', 0, 'all_day_checkbox']);
+        }
+        return $element['#default_value'];
+      };
+    }
+  }
+}

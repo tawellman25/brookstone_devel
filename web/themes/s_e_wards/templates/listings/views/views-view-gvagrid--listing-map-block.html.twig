@@ -1,0 +1,51 @@
+{% if sew_theme_setting('map_source') == 'google' or sew_theme_setting('map_source') == '' %}
+  {{ attach_library('s_e_wards/listing_init.gmap') }}
+{% endif %} 
+{{ attach_library('s_e_wards/listing_init') }}
+
+{% if attributes -%}
+  <div{{ attributes }}>
+{% endif %}
+   
+  {% if title %}
+    <h3>{{ title }}</h3>
+  {% endif %}
+  
+  <div class="listings-map-page sew-listings-map-page">
+    <div class="map-layout-full clearfix">
+      <div class="main-listing-wrapper">
+      
+        <div class="map-action clearfix">
+          <div class="control-search-link"><a href="{{base_url}}{{sew_theme_setting('listing_search_action')}}">{{ "Search Page"|t }}</a></div>
+          <div class="control-map">
+            <div class="control-reset-map"><a href="#" class="sew-reset-map"><i class="la la-map-marker"></i>{{'Reset Map'|t}}</a></div>
+            <div class="control-current-map"><a href="#" class="sew-current-map"></a></div>
+          </div>  
+        </div>  
+
+        <div class="d-none listing-items sew-view-grid-inner lg-block-grid-{{ class_grid.items_lg }} md-block-grid-{{class_grid.items_md}} sm-block-grid-{{class_grid.items_sm}} xs-block-grid-{{class_grid.items_xs}}" data-drupal-views-infinite-scroll-content-wrapper-sewloadmorelistings>
+          {% set i = 0 %}
+          {% for row in rows %}
+              <div class="item-columns">
+                <div class="listing-item-wrapper" data-marker="{{i}}">{{ row.content|raw }}</div>
+              </div>
+          {% set i = i + 1 %}
+          {% endfor %}
+        </div>
+      </div>  
+      <div class="main-map-wrapper">
+        <div id="listing-main-map" class="listing-main-map"></div>
+      </div>
+    </div>  
+  </div>  
+  
+{% if attributes -%}
+    </div>
+{% endif %}
+
+
+<script type="text/javascript">
+  jQuery(document).ready(function(){
+    map_init();
+  });
+</script>

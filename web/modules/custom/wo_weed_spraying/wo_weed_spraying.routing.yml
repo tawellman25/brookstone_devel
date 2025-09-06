@@ -1,0 +1,11 @@
+wo_weed_spraying.create_weed_spraying_work_order:
+  path: '/work-order/{property_id}/weed-spray/create'
+  defaults:
+    _controller: '\Drupal\wo_weed_spraying\Controller\WeedSprayWorkOrderController::startWorkflow'
+    _title: 'Start Weed Spraying Workflow'
+  requirements:
+    _permission: 'create work_order entities'
+  options:
+    parameters:
+      property_id:
+        type: 'entity:properties' # This specifies the property entity type.

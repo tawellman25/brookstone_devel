@@ -1,0 +1,454 @@
+<?php
+
+/**
+ * @file
+ * Functions to support theming in the SE Wards theme.
+ */
+
+use Drupal\Core\Template\Attribute;
+use Drupal\block\Entity\Block;
+use Drupal\Core\Url;
+use Drupal\taxonomy\Entity\Term;
+
+$theme_path = \Drupal::service('extension.list.theme')->getPath('s_e_wards');
+
+include_once $theme_path . '/includes/functions.php';
+include_once $theme_path . '/includes/form.php';
+include_once $theme_path . '/includes/menu.php';
+include_once $theme_path . '/includes/oembed.php';
+include_once $theme_path . '/includes/override.php';
+include_once $theme_path . '/includes/contact.php';
+include_once $theme_path . '/customize/fonts.php';
+
+
+function s_e_wards_preprocess_page(&$variables) {
+  global $base_url;
+ 
+  $theme_path = \Drupal::service('extension.list.theme')->getPath('s_e_wards');
+  $variables['sticky_menu'] = theme_get_setting('sticky_menu');
+
+  $variables['preloader'] = theme_get_setting('preloader');
+ 
+  $variables['theme_path'] = $base_url . '/' . $theme_path;
+  $variables['base_url'] = $base_url;
+  $base_url_language = $base_url;
+  
+  $languagesAll = \Drupal::languageManager()->getLanguages();
+  if(count($languagesAll) > 1){
+    $lang_default = \Drupal::languageManager()->getDefaultLanguage()->getId();
+    $lang_current = \Drupal::languageManager()->getCurrentLanguage()->getId();
+    if($lang_default != $lang_current){
+      $base_url_language = $base_url . '/' . $lang_current;
+    }
+  }
+  $variables['base_url_language'] = $base_url_language; 
+
+  $variables['footer_first_size'] = theme_get_setting('footer_first_size');
+  $variables['footer_second_size'] = theme_get_setting('footer_second_size');
+  $variables['footer_third_size'] = theme_get_setting('footer_third_size');
+  $variables['footer_four_size'] = theme_get_setting('footer_four_size');
+
+  //Header setting -----------
+  $header = 'header';
+  if(theme_get_setting('default_header')){
+    $header = theme_get_setting('default_header');
+  }
+
+  if(isset($variables['sew_header']) && $variables['sew_header'] && $variables['sew_header']!='_none' ){
+    $header = $variables['sew_header'];
+  }
+  
+  if(file_exists($theme_path . '/templates/page/' . trim($header) . '.html.twig')){
+    $variables['header_skin'] = $variables['directory'] . '/templates/page/' . trim($header) . '.html.twig';
+  }else{
+    $variables['header_skin'] = $variables['directory'] . '/templates/page/header.html.twig';
+  }
+
+  $custom_account = '';
+  $user = \Drupal::currentUser();
+  $user_picture = '';
+  if($uid = $user->id()){
+    $custom_account = t('Howdy,') . " <a class=\"link-user\" href=\"{$base_url}/user/\"><span>{$user->getAccountName()}</span></a>";
+    $user = \Drupal\user\Entity\User::load($uid);
+    if (!empty($user->user_picture) && $user->user_picture->isEmpty() === FALSE) {
+      $user_picture = $user->user_picture->entity->getFileUri();
+    }
+  }
+  $variables['user_picture'] = $user_picture;
+  $variables['custom_account'] = $custom_account;
+
+}
+
+function s_e_wards_preprocess_image(&$variables) {
+  if (isset($variables['attributes']['width']) && isset($variables['attributes']['height'])) {
+    unset($variables['attributes']['width']);
+    unset($variables['attributes']['height']);
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for HTML document templates.
+ *
+ * Adds body classes if certain regions have content.
+ */
+function s_e_wards_preprocess_html(&$variables) {
+  global $theme, $base_url;
+  global $parent_root;
+
+  $theme_path = \Drupal::service('extension.list.theme')->getPath('s_e_wards');
+
+  if(theme_get_setting('enable_panel') == '1' ){
+    $current_url = $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+    $current_url = preg_replace('/([?&])sews=[^&]+(&|$)/','$2',$current_url);
+    if(strpos($current_url, '?')){
+       $current_url .= '&';
+    }
+    else{ 
+       $current_url .= '?';
+    }
+    $variables['current_url'] = $current_url;
+  }
+
+  $tmp_logo = theme_get_setting('logo');
+
+  $variables['site_logo'] = $tmp_logo['url'];
+
+  $variables['theme_path'] = $base_url . '/' . $theme_path;
+
+
+  if(theme_get_setting('customize_css') ){
+    $custom_style  = preg_replace( '!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', theme_get_setting('customize_css') );
+    $custom_style = str_replace( array( "\r\n", "\r", "\n", "\t", '  ', '   ', '    ' ), '', $custom_style );
+    $variables['customize_css'] =  $custom_style;
+  }
+
+  //--- Customize sewardsthemer ---
+  $customize_styles = '';
+  $json = '';
+
+  ob_start();
+  $json = \Drupal::config('sewardsthemer.settings')->get('sewards_customize');
+  
+  $variables['links_google_fonts'] = s_e_wards_links_typography_font($json);
+  require_once($theme_path . '/customize/dynamic_style.php');
+  $customize_styles = ob_get_clean();
+  $customize_styles  = preg_replace( '!/\*[^*]*\*+([^/][^*]*\*+)*/!', '', $customize_styles );
+  $customize_styles = str_replace( array( "\r\n", "\r", "\n", "\t", '  ', '   ', '    ' ), '', $customize_styles );
+
+  $variables['customize_styles'] = $customize_styles;
+
+  //Form customize 
+  $user = \Drupal::currentUser();
+
+  if(theme_get_setting('enable_customize') == 1 &&  \Drupal::moduleHandler()->moduleExists('sewardsthemer') && ($user->hasPermission('administer sewards_customize') || $user->hasPermission('administer sewards_customize preview')) ){
+    $url_customize_save = Url::fromRoute('sewardsthemer.admin.customize_save', array(), array('absolute' => TRUE))->toString();
+    $variables['#attached']['drupalSettings']['sewards_customize']['save'] = $url_customize_save;  
+    $url_customize_preview = Url::fromRoute('sewardsthemer.admin.customize_preview', array(), array('absolute' => TRUE))->toString();
+    $variables['#attached']['drupalSettings']['sewards_customize']['preview'] = $url_customize_preview;  
+    $variables['#attached']['library'][] = 'sewardsthemer/customize';
+ 
+    $variables['#attached']['drupalSettings']['sewards_customize']['json'] = $json;
+
+    $variables['addon_template'] = '';
+    $variables['save_customize_permission'] = 'hidden';
+    $variables['fonts'] = s_e_wards_render_option_font();
+    $variables['patterns'] = s_e_wards_options_patterns();
+    if(file_exists($theme_path . '/templates/addon/skins.html.twig')){
+      $variables['addon_template'] = $theme_path . '/templates/addon/skins.html.twig';
+    }
+
+    if($user->hasPermission('administer sewards_customize')){
+      $variables['save_customize_permission'] = 'show';
+    }
+
+    $current_url = $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+    $current_url = preg_replace('/([?&])sews=[^&]+(&|$)/','$2',$current_url);
+    if(strpos($current_url, '?')){
+       $current_url .= '&';
+    }
+    else{
+       $current_url .= '?';
+    }
+    $variables['current_url'] = $current_url;
+  }
+  
+  //---- End customize sewards themer ---
+
+  $skin = 'default';
+  $skin = theme_get_setting('theme_skin');
+  if(isset($_GET['sews']) && $_GET['sews']){
+    $skin = $_GET['sews'];
+  }
+  if(empty($skin)){
+    $skin = 'default';
+  }
+  $variables['#attached']['library'][] = 's_e_wards/s_e_wards.skin.' . $skin;
+
+  // Add information about the number of sidebars.
+  if (!empty($variables['page']['sidebar_first']) && !empty($variables['page']['sidebar_second'])) {
+    $variables['attributes']['class'][] = 'layout-two-sidebars';
+  }
+  elseif (!empty($variables['page']['sidebar_first'])) {
+    $variables['attributes']['class'][] = 'layout-one-sidebar';
+    $variables['attributes']['class'][] = 'layout-sidebar-first';
+  }
+  elseif (!empty($variables['page']['sidebar_second'])) {
+    $variables['attributes']['class'][] = 'layout-one-sidebar';
+    $variables['attributes']['class'][] = 'layout-sidebar-second';
+  }
+  else {
+    $variables['attributes']['class'][] = 'layout-no-sidebars';
+  }
+
+  $variables['attributes']['class'][] = theme_get_setting('site_layout');
+
+  if(theme_get_setting('preloader') == '1'){
+    $variables['preloader'] = 1;
+  }else{
+    $variables['preloader'] = 0;
+  }
+
+  $variables['attributes']['class'][] = theme_get_setting('sticky_menu') ? 'header-sticky' : 'header-no-sticky';
+
+  $variables['#attached']['drupalSettings']['listing_setting']['map_source'] = theme_get_setting('map_source') ? theme_get_setting('map_source') : 'google';
+  $variables['#attached']['drupalSettings']['listing_setting']['mapbox_access_token'] = theme_get_setting('mapbox_access_token') ? theme_get_setting('mapbox_access_token') : 'pk.eyJ1IjoibmFtY3QiLCJhIjoiY2tnOHFwdHBsMGdodTJ5bHNwbnF5Mm5mciJ9.VNYZ-1YeH6oUe-2RvRGbyw';
+  $variables['#attached']['drupalSettings']['listing_setting']['mapbox_id_style'] = theme_get_setting('mapbox_id_style') ? theme_get_setting('mapbox_id_style') : 'streets-v11';
+  $variables['#attached']['drupalSettings']['listing_setting']['map_center_latitude'] = theme_get_setting('map_center_latitude');
+  $variables['#attached']['drupalSettings']['listing_setting']['map_center_longitude'] = theme_get_setting('map_center_longitude');
+  $variables['#attached']['drupalSettings']['listing_setting']['map_zoom'] = theme_get_setting('map_zoom') ? theme_get_setting('map_zoom') : '13';
+  $variables['#attached']['drupalSettings']['listing_setting']['google_map_style'] = theme_get_setting('google_map_style');
+}
+
+function s_e_wards_library_info_build() {
+  $api_key = theme_get_setting('google_key');
+  if(empty($api_key)) $api_key = 'AIzaSyBWk2I6T6psDLCXg8CDVFSEXvigfNU1V-E';
+  $libraries = [];
+  $theme_path = \Drupal::service('extension.list.theme')->getPath('s_e_wards');
+  $libraries['s_e_wards.gmap_api'] = [
+    'version' => '1.x',
+    'js' => [
+        'https://maps.googleapis.com/maps/api/js?key='.$api_key.'&libraries=places' => [
+            'type' => 'external',
+        ],
+        'vendor/gmap3.js' => [],
+        'vendor/jquery.ui.map.min.js' => [],
+    ],
+  ];
+  return $libraries;
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for maintenance-page.html.twig.
+ */
+function s_e_wards_preprocess_maintenance_page(&$variables) {
+  if (!$variables['db_is_active']) {
+    $variables['site_name'] = '';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for block.html.twig.
+ */
+function s_e_wards_preprocess_block(&$variables) {
+  // Add a clearfix class to system branding blocks.
+
+  if ($variables['plugin_id'] == 'system_branding_block') {
+    $variables['attributes']['class'][] = 'clearfix';
+    $tmp_logo = theme_get_setting('logo');
+    $variables['setting_logo'] = $tmp_logo['use_default'];
+  }
+} 
+
+function s_e_wards_preprocess_block__system_breadcrumb_block(&$variables){
+  $styles = array();
+  $bg_image = base_path() . \Drupal::service('extension.list.theme')->getPath('s_e_wards') . '/images/breadcrumb.jpg';
+  $bg_color = '#F6F6F6';
+  $bg_position = 'center center';
+  $bg_repeat = 'no-repeat';
+  $text_style = 'text-light';
+  
+  if (!empty($variables['elements']['#id'])) {
+    $block = Block::load($variables['elements']['#id']);
+    if($variables['plugin_id'] == 'system_breadcrumb_block'){
+      $_id = $variables['elements']['#id'];
+      $breadcrumb_background_color = $block->getThirdPartySetting('sewardsthemer', 'breadcrumb_background_color');
+      $breadcrumb_background_position = $block->getThirdPartySetting('sewardsthemer', 'breadcrumb_background_position');
+      $breadcrumb_background_repeat = $block->getThirdPartySetting('sewardsthemer', 'breadcrumb_background_repeat');
+      $breadcrumb_color_style = $block->getThirdPartySetting('sewardsthemer', 'breadcrumb_color_style');
+      $breadcrumb_background_image_path = \Drupal::config('sewardsthemer.settings')->get('breadcrumb_background_image_path_' . $_id);
+      if($breadcrumb_color_style){
+        $text_style = $breadcrumb_color_style;
+      }
+      if($breadcrumb_background_color){
+        $bg_color = $breadcrumb_background_color;
+      }
+      if($breadcrumb_background_position){
+        $bg_position = $breadcrumb_background_position;
+      }
+      if($breadcrumb_background_repeat){
+        $bg_repeat = $breadcrumb_background_repeat;
+      }
+      if($breadcrumb_background_image_path){
+        $bg_image = \Drupal::service('file_url_generator')->generateAbsoluteString($breadcrumb_background_image_path);
+      }
+    }
+  }
+
+  $variables['attributes']['class'][] = $text_style;
+  $styles[] = "background-color: {$bg_color};";
+  if($bg_image){
+    $styles[] = "background-image: url('{$bg_image}');";
+  }
+  $styles[] = "background-position: {$bg_position};";
+  $styles[] = "background-repeat: {$bg_repeat};";
+  $variables['custom_style'] = implode('', $styles);
+
+  //Breadcrumb title
+  $title = '';
+  $request = \Drupal::request();
+  $title = '';
+  if ($route = $request->attributes->get(\Drupal\Core\Routing\RouteObjectInterface::ROUTE_OBJECT)) {
+    $title = \Drupal::service('title_resolver')->getTitle($request, $route);
+  } 
+   $variables['breadcrumb_title'] = $title;
+  if(($node = \Drupal::routeMatch()->getParameter('node'))){
+    if(is_object($node)){
+      if($node->getType() == 'article'){
+        $variables['breadcrumb_title'] = t('Blog');
+        $variables['custom_classes'] = 'hidden-breadcrumb-links';
+      }else if($node->getType() == 'portfolio'){
+        $variables['breadcrumb_title'] = t('Portfolio');
+        $variables['custom_classes'] = 'hidden-breadcrumb-links';
+      }else if($node->getType() == 'service'){
+        $variables['breadcrumb_title'] = t('Service');
+        $variables['custom_classes'] = 'hidden-breadcrumb-links';
+      }else if($node->getType() == 'team'){
+        $variables['breadcrumb_title'] = t('Team');
+        $variables['custom_classes'] = 'hidden-breadcrumb-links';
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for page templates.
+ */
+function s_e_wards_preprocess_page_title(&$variables) {
+  // Since the title and the shortcut link are both block level elements,
+  // positioning them next to each other is much simpler with a wrapper div.
+  if (!empty($variables['title_suffix']['add_or_remove_shortcut']) && $variables['title']) {
+    // Add a wrapper div using the title_prefix and title_suffix render
+    // elements.
+    $variables['title_prefix']['shortcut_wrapper'] = array(
+      '#markup' => '<div class="shortcut-wrapper clearfix">',
+      '#weight' => 100,
+    );
+    $variables['title_suffix']['shortcut_wrapper'] = array(
+      '#markup' => '</div>',
+      '#weight' => -99,
+    );
+    // Make sure the shortcut link is the first item in title_suffix.
+    $variables['title_suffix']['add_or_remove_shortcut']['#weight'] = -100;
+  }
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK_alter() for form templates.
+ */
+function s_e_wards_theme_suggestions_form_alter(array &$suggestions, array $variables) {
+  if ($variables['element']['#form_id'] == 'search_block_form') {
+    $suggestions[] = 'form__search_block_form';
+  }
+}
+
+
+function s_e_wards_theme_suggestions_page_alter(array &$suggestions, array $variables) {
+  if ($node = \Drupal::request()->attributes->get('node')) {
+    if(is_object($node)){
+      if($node->hasField('sew_node_layout')){
+        $layout = $node->get('sew_node_layout')->value;
+        if($layout){
+          array_splice($suggestions, 1, 0, 'page__layout__' . $layout);
+        }else{
+          array_splice($suggestions, 1, 0, 'page__node__' . $node->getType());
+        } 
+      }else{
+        array_splice($suggestions, 1, 0, 'page__node__' . $node->getType());
+      }
+    }else{
+      array_splice($suggestions, 1, 0, 'page__layout__container_no_sidebar');
+    }
+  } 
+
+  $view_display_id = \Drupal::routeMatch()->getParameter('display_id');
+  if($view_display_id){
+    array_splice($suggestions, 1, 0, 'page__view__' . $view_display_id);
+  }
+
+  if (\Drupal::routeMatch()->getRouteName() == 'entity.taxonomy_term.canonical' && $tid = \Drupal::routeMatch()->getRawParameter('taxonomy_term')) {
+    $term = Term::load($tid);
+    array_splice($suggestions, 1, 0, 'page__taxonomy__' . $term->bundle());
+  }
+  $node = \Drupal::routeMatch()->getParameter('node_preview'); 
+  if (!empty($node)){
+    array_splice($suggestions, 1, 0, 'page__node__' . $node->getType());         
+  }
+}
+
+function s_e_wards_theme_suggestions_field_alter(&$suggestions, $variables) {
+  $suggestions[] = 'field__' . 
+  $variables['element']['#field_name'] . '__' . 
+  $variables['element']['#view_mode'];
+}
+
+function s_e_wards_preprocess_views_view(&$variables){
+  global $base_url;
+  $view = $variables['view'];
+  $variables['attributes']['class'][]="sew-view";
+  if(is_numeric(strpos($view->current_display, 'page'))){
+    $variables['attributes']['class'][] = "view-page";
+  } 
+  $variables['base_url'] = $base_url;
+  
+  $current_uri = \Drupal::request()->getRequestUri();
+  $url = \Drupal::service('path.current')->getPath();
+  $arg = explode('/', $url);
+  $tid = 0;
+  $taxonomy_id = '';
+  if ((isset($arg[1]) && $arg[1] ==  "taxonomy") && (isset($arg[2]) && $arg[2] == "term") && isset($arg[3]) && is_numeric($arg[3]) ) {
+    $tid = $arg[3];
+    $term = Term::load($tid);
+    if($term->bundle()){
+      $taxonomy_id = $term->bundle();
+    }
+  }
+  $variables['taxonomy_id'] = $taxonomy_id;
+  if(!count($variables['rows']) && ($taxonomy_id == 'listing_category' || $taxonomy_id == 'listing_locations' || $taxonomy_id == 'amenities')){
+    $listing_search_action = $base_url . 'listings';
+    $language =  \Drupal::languageManager()->getCurrentLanguage()->getID();
+    $languagesAll =  \Drupal::languageManager()->getLanguages();
+    if(count($languagesAll) > 1){
+      if(theme_get_setting('listing_search_action' . $language)){
+        $listing_search_action = $base_url . theme_get_setting('listing_search_action' . $language);
+      }
+    }else{
+      if(theme_get_setting('listing_search_action')){
+        $listing_search_action = $base_url . theme_get_setting('listing_search_action');
+      }
+    }
+    $empty = '<div class="listings-map-1">';
+      $empty .= '<div class="listings-map-1"> ';
+        $empty .= '<div class="half-map-layout-1 clearfix">';
+          $empty .= '<div class="main-listing-wrapper">';
+            $empty .= '<div class="map-action clearfix"><div class="control-search"><a href="' . $listing_search_action . '">' . t('Search Page') .'</a></div></div>';  
+            $empty .= '<div class="listing-items sew-view-grid-inner"><div class="alert alert-warning">No found results</div></div>';
+          $empty .= '</div>';  
+          $empty .= '<div class="main-map-wrapper">';
+            $empty .= '<div id="listing-main-map" class="listing-main-map"></div>';
+         $empty .= '</div>';
+        $empty .= '</div>  ';
+      $empty .= '</div>  ';
+    $empty .= '<script>map_init();</script>';
+    $variables['empty'] = $empty;
+  }
+}

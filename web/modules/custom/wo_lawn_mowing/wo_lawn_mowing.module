@@ -1,0 +1,502 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\flag\Entity\Flag;
+use Drupal\flag\FlagServiceInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for wo_tasks_list entities.
+ */
+function wo_lawn_mowing_wo_tasks_list_presave(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'wo_tasks_list' && $entity->bundle() === 'lawn_mowing') {
+    
+    // Helper function to perform calculation and set field value.
+    $setTimeField = function($entity, $menField, $minutesField, $timeField) {
+      if ($entity->hasField($menField) && 
+          $entity->hasField($minutesField) && 
+          $entity->hasField($timeField)) {
+        
+        $men = $entity->get($menField)->value;
+        $minutes = $entity->get($minutesField)->value;
+
+        // Ensure both values are numeric and greater than zero.
+        if (is_numeric($men) && $men > 0 && is_numeric($minutes) && $minutes > 0) {
+          $totalTime = $men * $minutes;
+        }
+        else {
+          // If men or minutes are zero or not numeric, set totalTime to 0.
+          $totalTime = 0;
+        }
+
+        // Set the calculated value to the time field.
+        $entity->set($timeField, $totalTime);
+      }
+    };
+
+    // Edging task.
+    $setTimeField($entity, 'field_mowing_edging_men', 'field_mowing_edging_minutes', 'field_mowing_edging_time');
+    
+    // Debris task.
+    $setTimeField($entity, 'field_mowing_debris_men', 'field_mowing_debris_minutes', 'field_mowing_debris_time');
+    
+    // Trash task.
+    $setTimeField($entity, 'field_mowing_trash_men', 'field_mowing_trash_minutes', 'field_mowing_trash_time');
+    
+    // Other tasks.
+    $setTimeField($entity, 'field_mowing_other_men', 'field_mowing_other_minutes', 'field_mowing_other_time');
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for wo_tasks_list entities.
+ */
+function wo_lawn_mowing_wo_tasks_list_update(EntityInterface $entity) {
+  if ($entity->hasField('field_completed') && !$entity->get('field_completed')->isEmpty() && !$entity->get('field_completed')->value) {
+    // Call the operation function without setting field_completed or saving the entity here.
+    wo_lawn_mowing_handle_wo_tasks_list_operations($entity);
+  }
+}
+
+/**
+ * Handles operations after saving a wo_tasks_list entity.
+ */
+function wo_lawn_mowing_handle_wo_tasks_list_operations(EntityInterface $entity) {
+  if ($entity->bundle() === 'lawn_mowing' && !$entity->get('field_completed')->value) {
+    $work_order_id = $entity->get('field_work_order')->target_id;
+    $flag_service = \Drupal::service('flag');
+    $flag = Flag::load('work_order_timer'); // Ensure 'work_order_timer' is your correct flag ID
+
+    // Load the flagging by properties, including the work order ID.
+    $flaggings = \Drupal::entityTypeManager()->getStorage('flagging')->loadByProperties([
+      'flag_id' => $flag->id(),
+      'entity_id' => $work_order_id,
+      'entity_type' => 'work_order',
+    ]);
+
+    foreach ($flaggings as $flagging) {
+      // Add logic here to verify the correct flagging based on 'field_wo_timer_entered' or other criteria.
+      if ($flagging->hasField('field_wo_timer_entered') && !$flagging->get('field_wo_timer_entered')->isEmpty()) {
+        // Unflag the work order.
+        $flag_service->unflag($flag, $flagging->getFlaggable());
+      }
+    }
+
+    $work_order = \Drupal::entityTypeManager()->getStorage('work_order')->load($work_order_id);
+    $current_user_id = \Drupal::currentUser()->id();
+
+    // Set the status of the Work Order to Complete.
+    $work_order->set('field_status', ['target_id' => 1097]); // Ensure this matches your taxonomy term ID for "Complete".
+    $work_order->save();
+
+    // Get the current Unix timestamp.
+    $currentTimestamp = time();
+
+    // Create a new 'wo_complete_info' entity with the current date and completion status.
+    $wo_complete_info = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->create([
+      'type' => 'lawn_mowing', // The bundle name for 'wo_complete_info'.
+      'field_work_order' => $work_order->id(),
+      'field_date_completed' => $currentTimestamp,
+      'field_work_order_completed' => TRUE, // or 1, assuming this means the work order is completed.
+      'field_signed_off_by' => $current_user_id,
+    ]);
+    $wo_complete_info->save();
+    
+    // Create a new 'wo_status_updates' entity.
+    $wo_status_updates = \Drupal::entityTypeManager()->getStorage('wo_status_updates')->create([
+      'type' => 'update', // The bundle name for 'wo_status_updates'.
+      'field_status_of_wo' => $work_order->id(),
+      'field_status' => ['target_id' => 1097], // Use 'target_id' for entity reference fields.
+      'field_status_change_note' => ['value' => 'Teammate completed tasks and system clocked them out then completed WO.'],
+      'uid' => $current_user_id,
+    ]);
+    $wo_status_updates->save();
+
+    $entity->set('field_completed', TRUE);
+
+    // Get needed Property Lawn Mowing Info.
+    $propertyId = $work_order->get('field_property')->target_id;
+    $propertyLawnMaintenance = \Drupal::entityTypeManager()->getStorage('property_lawn_maintenance')->loadByProperties([
+      'field_property' => $propertyId,
+      'type' => 'lawn_maintenance_info',
+    ]);
+
+    $signOffDate = DrupalDateTime::createFromTimestamp($currentTimestamp);
+    $signOffDateFormated = $signOffDate->format('Y-m-d\TH:i:s');
+
+    // Set Property Lawn Mowing Info - Last Mowed Information.
+    if (!empty($propertyLawnMaintenance)) {
+      $propertyLawnMaintenance = reset($propertyLawnMaintenance);
+      $propertyLawnMaintenance->set('field_mowing_last_mowed', $signOffDateFormated);
+      $propertyLawnMaintenance->set('field_mowing_last_mowed_by', $current_user_id);
+      $propertyLawnMaintenance->save();
+    }
+
+    // Continue updating the wo_tasks_list entity.
+    try {
+      $entity->save();
+      \Drupal::logger('wo_lawn_mowing')->notice('wo_tasks_list entity ID @id marked as completed and saved.', ['@id' => $entity->id()]);
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('wo_lawn_mowing')->error('Error saving wo_tasks_list entity ID @id: @message', ['@id' => $entity->id(), '@message' => $e->getMessage()]);
+    }
+
+    // Note: The redirect has been removed here.
+  }
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_lawn_mowing_entity_presave(EntityInterface $entity) {
+  // Initialize variables.
+  $grand_total = 0;
+  $labor_subtotal = 0;
+  $mow_subtotal = 0;
+  $lawnMowingRate = 0;
+  $edgingMinutes = 0;
+  $debrisMinutes = 0;
+  $trashMinutes = 0;
+  $trucks = 0;
+  $totalTrip = 0;
+
+  // Process only Work Order entities of the 'lawn_mowing' bundle.
+  if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'lawn_mowing') {
+      $statusTermId = $entity->get('field_status')->target_id ?? 0;
+      if ($statusTermId != 1097) {
+          return;
+      }
+      
+      $propertyId = $entity->get('field_property')->target_id ?? null;
+      $config_pages_loader = \Drupal::service('config_pages.loader');
+      $business_settings = $config_pages_loader->load('business_setting');
+      
+      if ($business_settings) {
+          $atvRate = $business_settings->get('field_atv_and_sprayer_charge')->value;
+          $hourlyRate = $business_settings->get('field_maintenance_crew_labor')->value;
+          $hourlyBillingIncrement = $business_settings->get('field_hour_billing_increment')->value;
+          
+          // Hourly Minimums.
+          $edgingMin = $business_settings->get('field_edging_minimum_time')->value;
+          $debrisMin = $business_settings->get('field_debris_minimum_time')->value;
+          $trashMin = $business_settings->get('field_trash_minimum_time')->value;
+          $otherMin = $business_settings->get('field_other_minimum_time')->value;
+          
+          $timeSpent = get_hours_for_lawn_mowing($entity->id());
+          $lawnMowingRate = get_mow_rate_for_lawn_mowing($entity->id());
+          $taskData = get_lawn_mowing_task_data($entity->id());
+          $edgingMinutes = $taskData['edging_minutes'];
+          $debrisMinutes = $taskData['debris_minutes'];
+          $trashMinutes = $taskData['trash_minutes'];
+          $otherMinutes = $taskData['trash_minutes'];
+          $menTotal = $taskData['men_on_site'];
+          $partialMow = $taskData['partial_mow'];
+          $totalTime = $timeSpent * $menTotal;
+          
+          // Convert minutes to hours.
+          $edgingTime = $edgingMinutes / 60;
+          $debrisTime = $debrisMinutes / 60;
+          $trashTime = $trashMinutes / 60;
+          $otherTime = $otherMinutes / 60;
+          $incrementInMinutes = $hourlyBillingIncrement * 60;
+          
+          // Calculate fees.
+          if ($edgingTime > $edgingMin) {
+              $totalTimeIncrements = ceil($edgingMinutes / $incrementInMinutes);
+              $hourlyRateIncrement = $hourlyRate * $hourlyBillingIncrement;
+              $edging_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
+          }
+          else {
+              $edging_subtotal = $hourlyRate * $edgingMin;
+          }
+          
+          if ($debrisTime > $debrisMin) {
+              $totalTimeIncrements = ceil($debrisMinutes / $incrementInMinutes);
+              $hourlyRateIncrement = $hourlyRate * $hourlyBillingIncrement;
+              $debris_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
+          }
+          else {
+              $debris_subtotal = $hourlyRate * $debrisMin;
+          }
+          
+          if ($trashTime > $trashMin) {
+              $totalTimeIncrements = ceil($trashMinutes / $incrementInMinutes);
+              $hourlyRateIncrement = $hourlyRate * $hourlyBillingIncrement;
+              $trash_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
+          }
+          else {
+              $trash_subtotal = $hourlyRate * $trashMin;
+          }
+          
+          if ($otherTime > $otherMin) {
+              $totalTimeIncrements = ceil($otherMinutes / $incrementInMinutes);
+              $hourlyRateIncrement = $hourlyRate * $hourlyBillingIncrement;
+              $other_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
+          }
+          else {
+              $other_subtotal = $hourlyRate * $otherMin;
+          }
+          
+          $labor_subtotal = $trash_subtotal + $debris_subtotal + $edging_subtotal + $other_subtotal;
+      }
+      
+      if ($labor_subtotal > 0) {
+        $entity->set('field_labor_total', $labor_subtotal);
+      }
+      
+      if ($partialMow == 0) {
+        $mowValue = 1;
+      }
+      else if ($partialMow == 1) {
+        $mowValue = 0.5;
+      }
+      else {
+        $mowValue = 0;
+      }
+      $mow_subtotal = $mowValue * $lawnMowingRate;
+      $entity->set('field_task_rate', $mow_subtotal);
+
+      if ($timeSpent > 0) {
+        $entity->set('field_crew_lead_time', $timeSpent);
+      }
+      
+      if ($menTotal > 0) {
+        $entity->set('field_number_men_on_crew', $menTotal);
+      }
+      
+      if ($totalTime > 0) {
+          $entity->set('field_total_time', $totalTime);
+      }
+      
+      if ($mow_subtotal > 0) {
+          $grand_total += $mow_subtotal;
+      }
+      
+      if ($labor_subtotal > 0) {
+          $grand_total += $labor_subtotal;
+      }
+      
+      $billingAdjustment = $entity->get('field_billing_adjustment')->value;
+      $grand_total += $billingAdjustment;
+      
+      if ($grand_total > 0) {
+          $entity->set('field_wo_total', $grand_total);
+      }
+  }
+}
+
+/**
+ * Implements hook_entity_insert() for work_order entities.
+ */
+function wo_lawn_mowing_entity_insert(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'lawn_mowing') {
+    _wo_lawn_mowing_handle_work_order($entity, 'insert');
+  }
+}
+
+/**
+ * Implements hook_entity_update() for work_order entities.
+ */
+function wo_lawn_mowing_entity_update(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'lawn_mowing') {
+    _wo_lawn_mowing_handle_work_order($entity, 'update');
+  }
+}
+
+/**
+ * Helper function to process work orders on insert or update.
+ */
+function _wo_lawn_mowing_handle_work_order(EntityInterface $entity, $operation) {
+  static $prevent_recursion = FALSE;
+  if ($prevent_recursion) {
+    return;
+  }
+  
+  $statusTermId = $entity->get('field_status')->target_id ?? 0;
+  if ($statusTermId != 1097) {
+    return;
+  }
+  
+  $workOrderId = $entity->id();
+  $signOffDateFormated = null;
+  $signOffBy = 1;
+  
+  $woSignOffInfoEntities = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->loadByProperties([
+    'field_work_order' => $workOrderId,
+    'type' => 'lawn_mowing',
+  ]);
+  $woSignOffInfo = reset($woSignOffInfoEntities);
+  
+  if (!empty($woSignOffInfo)) {
+    $woSignOffInfoTimestamp = $woSignOffInfo->get('field_date_completed')->value;
+    $signOffDate = DrupalDateTime::createFromTimestamp($woSignOffInfoTimestamp);
+    $signOffDate->setTimezone(new \DateTimeZone('UTC'));
+    $signOffDateFormated = $signOffDate->format('Y-m-d\TH:i:s');
+    $signOffBy = $woSignOffInfo->get('field_signed_off_by')->target_id;
+  }
+  
+  $propertyId = $entity->get('field_property')->target_id ?? null;
+  $propertyLawnMowingInfo = \Drupal::entityTypeManager()->getStorage('property_lawn_maintenance')->loadByProperties([
+    'field_property' => $propertyId,
+    'type' => 'lawn_maintenance_info',
+  ]);
+  
+  if (!empty($propertyLawnMowingInfo)) {
+    $lawnMowingInfoEntity = reset($propertyLawnMowingInfo);
+    if ($lawnMowingInfoEntity) {
+      $lawnMowingInfoEntity->set('field_mowing_last_mowed', $signOffDateFormated);
+      $lawnMowingInfoEntity->set('field_mowing_last_mowed_by', $signOffBy);
+    }
+    $lawnMowingInfoEntity->save();
+  }
+}
+
+/**
+ * Retrieves various lawn mowing task values from the related wo_tasks_list entity.
+ *
+ * @param int $workOrderId
+ *   The work order entity ID.
+ *
+ * @return array An associative array containing task data.
+ */
+function get_lawn_mowing_task_data($workOrderId) {
+  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+    return ['edging_minutes' => 0, 'debris_minutes' => 0, 'trash_minutes' => 0, 'men_on_site' => 0, 'partial_mow' => 0];
+  }
+
+  $query = \Drupal::entityQuery('wo_tasks_list')
+    ->condition('field_work_order', $workOrderId)
+    ->condition('type', 'lawn_mowing')
+    ->accessCheck(FALSE)
+    ->execute();
+
+  if (empty($query)) {
+    \Drupal::logger('wo_lawn_mowing')->notice('No Task List found for Work Order ID: @id', ['@id' => $workOrderId]);
+    return ['edging_minutes' => 0, 'debris_minutes' => 0, 'trash_minutes' => 0, 'other_minutes' => 0, 'men_on_site' => 0, 'partial_mow' => 0];
+  }
+
+  $id = reset($query);
+  $entity = \Drupal::entityTypeManager()->getStorage('wo_tasks_list')->load($id);
+
+  $task_data = [
+    'edging_minutes' => $entity->get('field_mowing_edging_time')->value ?? 0,
+    'debris_minutes' => $entity->get('field_mowing_debris_time')->value ?? 0,
+    'trash_minutes' => $entity->get('field_mowing_trash_time')->value ?? 0,
+    'other_minutes' => $entity->get('field_mowing_other_time')->value ?? 0,
+    'partial_mow' => $entity->get('field_mowing_partial_mow')->value ?? 0,
+    'men_on_site' => $entity->get('field_mowing_who_on_site')->count() ?? 0,
+  ];
+
+  return $task_data;
+}
+
+/**
+ * Retrieves the per mow rate from the latest Contract associated with the Property referenced in the Work Order.
+ *
+ * @param int $workOrderId
+ *   The ID of the Work Order entity.
+ *
+ * @return float
+ *   The per mow rate, or 0 if not found.
+ */
+function get_mow_rate_for_lawn_mowing($workOrderId) {
+  if (!is_numeric($workOrderId) || $workOrderId < 1) {
+    \Drupal::logger('wo_lawn_mowing')->error('Invalid Work Order ID: @id', ['@id' => $workOrderId]);
+    return 0.0;
+  }
+
+  $workOrder = \Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId);
+  if (!$workOrder || !$workOrder->hasField('field_property')) {
+    \Drupal::logger('wo_lawn_mowing')->error('Work Order not found or missing field_property: @id', ['@id' => $workOrderId]);
+    return 0.0;
+  }
+
+  $propertyId = $workOrder->get('field_property')->target_id;
+  if (!$propertyId) {
+    \Drupal::logger('wo_lawn_mowing')->error('Property ID not found for Work Order: @id', ['@id' => $workOrderId]);
+    return 0.0;
+  }
+
+  $query = \Drupal::entityQuery('contracts')
+    ->accessCheck(FALSE)
+    ->condition('field_property', $propertyId)
+    ->condition('type', 'residential')
+    ->sort('created', 'DESC')
+    ->range(0, 1);
+
+  $contractIds = $query->execute();
+  if (empty($contractIds)) {
+    \Drupal::logger('wo_lawn_mowing')->error('No contracts found for Property ID: @id', ['@id' => $propertyId]);
+    return 0.0;
+  }
+
+  $latestContract = \Drupal::entityTypeManager()->getStorage('contracts')->load(reset($contractIds));
+  if (!$latestContract || !$latestContract->hasField('field_lawn_mowing_and_trimming')) {
+    \Drupal::logger('wo_lawn_mowing')->error('Latest contract missing field_lawn_mowing_and_trimming for Property ID: @id', ['@id' => $propertyId]);
+    return 0.0;
+  }
+
+  $lawnSectionInfo = $latestContract->get('field_lawn_mowing_and_trimming')->entity;
+  if (!$lawnSectionInfo || !$lawnSectionInfo->hasField('field_mow_rate')) {
+    \Drupal::logger('wo_lawn_mowing')->error('Latest contract missing field_mow_rate for Property ID: @id', ['@id' => $propertyId]);
+    return 0.0;
+  }
+
+  $perMowRate = $lawnSectionInfo->get('field_mow_rate')->value;
+  return (float) $perMowRate;
+}
+
+/**
+ * Retrieves the Hours clocked in for lawn_mowing from related wo_time_clock entities.
+ *
+ * @param int $workOrderId
+ *   The Work Order entity ID.
+ *
+ * @return int
+ *   The total hours.
+ */
+function get_hours_for_lawn_mowing($workOrderId) {
+  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+    return 0;
+  }
+
+  $hoursSpent = 0;
+  $woTimeClockEntities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
+    'field_work_order' => $workOrderId,
+  ]);
+
+  foreach ($woTimeClockEntities as $entity) {
+    if ($entity->bundle() === 'entry') {
+      $hours = $entity->get('field_total_time')->value;
+      $hoursSpent += $hours;
+    }
+  }
+
+  return $hoursSpent;
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * This adds a custom submit handler to the wo_tasks_list edit form.
+ */
+function wo_lawn_mowing_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  // Use the actual form ID.
+  if ($form_id === 'wo-tasks-list-lawn-mowing-edit-form') {
+    $form['#submit'][] = 'wo_lawn_mowing_tasks_list_edit_submit';
+  }
+}
+
+/**
+ * Custom submit handler for the wo_tasks_list edit form.
+ *
+ * After the user saves the edit form, redirect them to the related work_order.
+ */
+function wo_lawn_mowing_tasks_list_edit_submit(array &$form, FormStateInterface $form_state) {
+  \Drupal::logger('wo_lawn_mowing')->notice('Custom submit handler triggered.');
+  $entity = $form_state->getFormObject()->getEntity();
+  $work_order_id = $entity->get('field_work_order')->target_id;
+  $form_state->setRedirect('entity.work_order.canonical', ['work_order' => $work_order_id]);
+}

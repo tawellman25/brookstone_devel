@@ -1,0 +1,48 @@
+{#
+/**
+ * @file
+ * Theme implementation for an unformatted Views display for Teammate Handbook Navigation EVA.
+ *
+ * Available variables:
+ * - rows: The View rows.
+ * - view: The View object.
+ * - options: Format options.
+ *
+ * @see template_preprocess_views_view_unformatted()
+ */
+#}
+{% if rows %}
+  {# Collect all entity IDs for the current parent #}
+  {% set entity_ids = [] %}
+  {% for row in rows %}
+    {% set entity_id = row.content['#row']._entity.id.value %}
+    {% set entity_ids = entity_ids|merge([entity_id]) %}
+  {% endfor %}
+
+  {# Render rows with navigation links #}
+  {% for row in rows %}
+    {% set current_id = row.content['#row']._entity.id.value %}
+    {% set current_index = entity_ids|keys|filter(k => entity_ids[k] == current_id)|first|default(-1) %}
+    {% set prev_id = current_index > 0 ? entity_ids[current_index - 1] : null %}
+    {% set next_id = current_index < entity_ids|length - 1 ? entity_ids[current_index + 1] : null %}
+
+    <div class="views-row">
+      {# Render the row content (e.g., Page title) #}
+      {{ row.content }}
+      {# Add Next/Previous links #}
+      <div class="navigation-links">
+        {% if prev_id %}
+          <a href="/page/{{ prev_id }}" class="prev-link">Previous</a>
+        {% endif %}
+        {% if next_id %}
+          <a href="/page/{{ next_id }}" class="next-link">Next</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  {# Display if no rows are found #}
+  <div class="views-empty">
+    No child pages found.
+  </div>
+{% endif %}

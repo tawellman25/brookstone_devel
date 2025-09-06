@@ -1,0 +1,271 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\config_pages\ConfigPagesLoaderInterface;
+use Drupal\eck\EckEntityInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_fertilizing_trees_and_shrubs_entity_presave(EntityInterface $entity) {
+    // Initialize $grand_total at the start.
+    $grand_total = 0;
+    $chemical_subtotal = 0;
+    $spreader_subtotal = 0;
+    $labor_subtotal = 0;
+    $trucks = 0;
+    $totalTrip = 0;
+
+    // Check if it's a Work Order entity of the 'Fertilizing Trees and Shrubs' bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'fertilizing_trees_and_shrubs') {
+
+        // Check if the Work Order is marked as 'Complete'.
+        $statusTermId = $entity->get('field_status')->target_id ?? 0;
+        if ($statusTermId != 1097) {
+            //If the Work Order is not 'Complete', exit the function early to avoid performing further calculations.
+            return;
+        }
+
+        // The Work Order is 'Complete'; you can now proceed with further calculations.
+        // Initialize variables to ensure they're defined before use.
+
+        $config_pages_loader = \Drupal::service('config_pages.loader');
+        $business_settings = $config_pages_loader->load('business_setting');
+        
+        if ($business_settings) {
+            // Fetch the configured minimums and fees.
+            $fertilizerRate = $business_settings->get('field_fertilizer_tree_rate')->value;
+            $minAllottedTime = $business_settings->get('field_fertilizing_tree_min_time')->value; // Assume this is in minutes for the calculation.
+            $spreaderRate = $business_settings->get('field_spreader_charge')->value;
+            $hourlyRate = $business_settings->get('field_spray_crew_labor')->value;
+            
+            // Get values from functions
+            $poundsUsed = get_pounds_used_for_fertilizing_trees_and_shrubs($entity->id());
+            $timeSpent = get_hours_for_fertilizing_trees_and_shrubs($entity->id()); // Total hours of all men that clocked in.
+
+            $trucks = $entity->get('field_trucks')->value;
+
+            // Calculate Labor.
+            $totalTime = $entity->get('field_total_time')->value;
+            
+            // Calculate costs.
+            // Material Costs
+            $fertilizerRate_subtotal = $poundsUsed * $fertilizerRate;
+            $entity->set('field_material_chemical_total', $fertilizerRate_subtotal);
+
+            // Fertilizer Spreader Fee (Using ATV Total Field in Work Order)
+            $hoursPerBlock = 4; // Define this before using it in calculations.
+            $blocksUsed = ceil($timeSpent / $hoursPerBlock);
+            $spreader_subtotal = $blocksUsed * $spreaderRate;
+            $entity->set('field_atv_total', $spreader_subtotal);
+
+            // Assuming $hourlyRate is the charge per hour.
+            if ($totalTime <= $minAllottedTime) {
+                // If the actual time spent is less than the minimum allotted time,
+                // charge based on the minimum allotted time.
+                $labor_subtotal = $hourlyRate * $minAllottedTime;
+            } else {
+                // If the actual time spent is more than the minimum allotted time,
+                // charge based on the actual time spent.
+                $labor_subtotal = $hourlyRate * $totalTime;
+            }
+            $entity->set('field_labor_total', $labor_subtotal);
+
+        }
+
+        // Continue on with Updating the Work Order Entity.
+
+        // Labor from above
+        // Make sure Labor is a positive number and add to grand total.
+        if ($labor_subtotal > 0) {
+            $grand_total += $labor_subtotal;
+        }
+        
+        // Make sure materials is a positive number and add to grand total.
+        if ($fertilizerRate_subtotal > 0) {
+            $grand_total += $fertilizerRate_subtotal;
+        }
+        // Trip Fee Calculated in the wo_sign_off and saved to work_order's field_trip_fee
+        $totalTrip = $entity->get('field_trip_fee')->value;
+
+        // Make sure Trip is a positive number and add to grand total.
+        if ($totalTrip > 0) {
+            $grand_total += $totalTrip;
+        }
+
+        // Make sure Tree Sprayer Rate is a positive number and add to grand total.
+        if ($spreader_subtotal > 0) {
+            $grand_total += $spreader_subtotal;
+        }
+
+        // Office Adjust Total as needed for invoicing
+        $billingAdjustment = $entity->get('field_billing_adjustment')->value;
+        $grand_total += $billingAdjustment;
+
+        // Future calculations can modify $grand_total as needed.
+        // Set 'field_total' with the final $grand_total value.
+        if ($grand_total > 0) {
+            $entity->set('field_wo_total', $grand_total);
+        }
+    }
+}
+
+/**
+ * Implements hook_entity_insert() for work_order entities.
+ */
+function wo_fertilizing_trees_and_shrubs_entity_insert(EntityInterface $entity) {
+    // Check if it's the right entity type and bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'fertilizing_trees_and_shrubs') {
+      // Perform actions specific to when a new work order of the 'fertilizing_trees_and_shrubs' bundle is created.
+      _wo_fertilizing_trees_and_shrubs_handle_work_order($entity, 'insert');
+    }
+  }
+  
+/**
+ * Implements hook_entity_update() for work_order entities.
+ */
+function wo_fertilizing_trees_and_shrubs_entity_update(EntityInterface $entity) {
+    // Check if it's the right entity type and bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'fertilizing_trees_and_shrubs') {
+        // Perform actions specific to when a work order of the 'fertilizing_trees_and_shrubs' bundle is updated.
+        _wo_fertilizing_trees_and_shrubs_handle_work_order($entity, 'update');
+    }
+}
+
+/**
+ * A helper function to process work orders on insert or update.
+ * 
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The entity being inserted or updated.
+ * @param string $operation
+ *   The operation being performed ('insert' or 'update').
+ */
+function _wo_fertilizing_trees_and_shrubs_handle_work_order(EntityInterface $entity, $operation) {
+    // Shared logic to handle both insert and update operations.
+    // You can use the $operation parameter if you need to distinguish between inserts and updates.
+
+    // Check if the Work Order is marked as 'Complete'.
+    $statusTermId = $entity->get('field_status')->target_id ?? 0;
+    
+    if ($statusTermId != 1097) {
+        //If the Work Order is not 'Complete', exit the function early to avoid performing further calculations.
+        return;
+    }        
+    
+    // Get Work Order Complete Info
+    $workOrderId = $entity->id();
+
+    $poundsUsed = 0;
+    $currentSeasonValue = '';
+    $signOffDateFormated = null;
+    $signOffBy = 1;
+    
+    // Load 'wo_complete_info' entities by '$workOrderId'.
+    $woSignOffInfoEntities = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->loadByProperties([
+        'field_work_order' => $workOrderId,
+        'type' => 'fertilizing_crew',
+    ]);
+    $woSignOffInfo = reset($woSignOffInfoEntities);
+
+    if (!empty($woSignOffInfo)) {
+        // Get needed Info for Property Fertilizing Info
+        $woSignOffInfoTimestamp = $woSignOffInfo->get('field_date_completed')->value;
+        $signOffDate = DrupalDateTime::createFromTimestamp($woSignOffInfoTimestamp);
+        $signOffDate->setTimezone(new \DateTimeZone('UTC'));
+        $signOffDateFormated = $signOffDate->format('Y-m-d\TH:i:s');
+        $signOffBy = $woSignOffInfo->get('field_signed_off_by')->target_id;
+        $poundsUsed = get_pounds_used_for_fertilizing_trees_and_shrubs($workOrderId);
+
+    // Get Property ID from Work Order
+    $propertyId = $entity->get('field_property')->target_id ?? null;
+
+    // Load 'property_spraying_info' entities by 'field_property'.
+    $propertySprayingInfo = \Drupal::entityTypeManager()->getStorage('property_fertilizing_info')->loadByProperties([
+        'field_property' => $propertyId,
+        'type' => 'shrub_and_tree_fertilizing',
+    ]);
+    
+        // Set Property Fertilizing Info - Last Applied Information.
+        if (!empty($propertySprayingInfo)) {
+            // Get the first entity (assuming there's only one) from the loaded entities.
+            $sprayingInfoEntity = reset($propertySprayingInfo);
+            
+            if ($sprayingInfoEntity) {
+                $sprayingInfoEntity->set('field_fertilizer_lbs_applied', $poundsUsed);
+                $sprayingInfoEntity->set('field_fertilized_last', $signOffDateFormated);
+                $sprayingInfoEntity->set('field_fertilized_last_by', $signOffBy);
+            }
+            // Save the updated Property Fertilizing Info entity.
+            $sprayingInfoEntity->save();
+        }
+    }
+}
+
+/**
+ * Retrieves the Total pounds used for Fertilizing wo_chemicals_used entities.
+ *
+ * @param int $workOrderId
+ *   The work order entity ID.
+ *
+ * @return int
+ *   The total pounds used of Fertilizers.
+ */
+function get_pounds_used_for_fertilizing_trees_and_shrubs($workOrderId) {
+
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    $poundsUsed = 0;
+
+    // Load wo_chemicals_used entities that reference the given work order.
+    $fertilizerUsedEntities = \Drupal::entityTypeManager()->getStorage('wo_chemicals_used')->loadByProperties([
+        'field_work_order' => $workOrderId,
+        'type' => 'fertilizers_tree_and_shrubs',
+    ]);
+
+    if (!empty($fertilizerUsedEntities)) {
+        foreach ($fertilizerUsedEntities as $entity) {
+            // Sum the pounds used.
+            $pounds = $entity->get('field_fertilizer_lbs_applied')->value; // Adjust 'field_total_gallons_applied' to your actual field name.
+            $poundsUsed += $pounds;
+        }
+    }
+
+    return $poundsUsed;
+}
+
+/**
+ * Retrieves the Hours clocked in for Fertilizing Trees and Shrubs from related wo_time_clock entities.
+ *
+ * @param int $workOrderId
+ *   The work order entity ID.
+ *
+ * @return int
+ *   The total hours for Fertilizing Trees and Shrubs Work Order.
+ */
+function get_hours_for_fertilizing_trees_and_shrubs($workOrderId) {
+
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    $hoursSpent = 0;
+
+    // Load wo_time_clock entities that reference the given work order.
+    $woTimeClockEntities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
+        'field_work_order' => $workOrderId,
+    ]);
+
+    foreach ($woTimeClockEntities as $entity) {
+        // Check if the entity is part of the 'Fertilizing Trees and Shrubs' bundle.
+        if ($entity->bundle() === 'entry') {
+            // Sum the gallons used.
+            $hours = $entity->get('field_total_time')->value; // Adjust 'field_total_time' that is a Number(decimal).
+            $hoursSpent += $hours;
+        }
+    }
+
+    return $hoursSpent;
+}

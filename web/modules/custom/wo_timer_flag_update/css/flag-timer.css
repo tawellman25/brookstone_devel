@@ -1,0 +1,62 @@
+/* Center the flag link within its container */
+.flag-work-order-timer {
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    min-height: 100px; /* Match icon size */
+    min-width: 100px; /* Match icon size */
+  }
+  
+/* Style the flag link */
+a.flag-timer-icon {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none !important; /* Remove underline */
+    border: none !important; /* Ensure no border */
+  }
+  
+/* Icon styles for flagged and unflagged states */
+a.flag.flag-work-order-timer.flag-timer-icon.flag-state-flagged::before,
+a.flag.flag-work-order-timer.flag-timer-icon.flag-state-unflagged::before {
+    display: inline-block;
+    content: url('../images/clock_out_button.svg?v=2.0'); /* Default for flagged */
+    width: 100px !important; /* Match resized SVG */
+    height: 100px !important;
+    max-width: 100px !important; /* Prevent oversized rendering */
+    max-height: 100px !important;
+    vertical-align: middle;
+    object-fit: contain !important; /* Ensure proportional scaling */
+  }
+  
+a.flag.flag-work-order-timer.flag-timer-icon.flag-state-unflagged::before {
+    content: url('../images/clock_in_button.svg?v=2.0'); /* Override for unflagged */
+  }
+  
+/* Handle SVG and image elements directly */
+a.flag.flag-work-order-timer.flag-timer-icon svg,
+a.flag.flag-work-order-timer.flag-timer-icon img {
+    width: 100px !important;
+    height: 100px !important;
+    max-width: 100px !important;
+    max-height: 100px !important;
+  }
+  
+/* Ensure link text is hidden but accessible */
+.flag-work-order-timer .visually-hidden,
+.flag.flag-work-order-timer a .visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    border: 0 !important;
+  }
+  
+/* Override theme styles */
+a.flag.flag-work-order-timer.flag-timer-icon:hover {
+    color: inherit !important; /* Prevent hover color change */
+    border: none !important;
+  }

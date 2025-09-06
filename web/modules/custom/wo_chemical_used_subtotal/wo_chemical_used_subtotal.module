@@ -1,0 +1,227 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\config_pages\ConfigPagesLoaderInterface;
+use Drupal\eck\EckEntityInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_chemical_used_subtotal_entity_presave(EntityInterface $entity) {
+    if ($entity->getEntityTypeId() === 'wo_chemicals_used') {
+      $bundle = $entity->bundle();
+  
+      switch ($bundle) {
+        case 'fertilizers':
+          // Logic for fertilizers
+          if ($entity->hasField('field_chemical') && !$entity->get('field_chemical')->isEmpty()) {
+            $chemical_reference = $entity->get('field_chemical')->entity;
+            $lawnSqFt = 0; // Default square footage
+            $workOrderEntity = $entity->get('field_work_order')->entity;
+
+            // Use the new sq. ft. amount if 'field_did_sq_ft_of_lawn_change' is checked
+            if ($entity->hasField('field_did_sq_ft_of_lawn_change') && 
+                !$entity->get('field_did_sq_ft_of_lawn_change')->isEmpty() && 
+                $entity->get('field_did_sq_ft_of_lawn_change')->value == 1) {
+                if ($entity->hasField('field_new_sq_ft_of_lawn') && 
+                    !$entity->get('field_new_sq_ft_of_lawn')->isEmpty()) {
+                    $lawnSqFt = $entity->get('field_new_sq_ft_of_lawn')->value;
+                }
+                $workOrderEntity->set('field_current_turf_sq_footage', $lawnSqFt);
+            } else {
+                // Retrieve sq. ft. directly from the 'field_work_order'
+                if ($entity->hasField('field_work_order') && 
+                    !$entity->get('field_work_order')->isEmpty()) {
+                    if ($workOrderEntity && 
+                        $workOrderEntity->hasField('field_current_turf_sq_footage') && 
+                        !$workOrderEntity->get('field_current_turf_sq_footage')->isEmpty()) {
+                        $lawnSqFt = $workOrderEntity->get('field_current_turf_sq_footage')->value;
+                    }
+                }            
+            }
+                
+                // Get Fetilizer Cost from Chemical referenced.
+                // Check if the referenced entity has 'field_material_cost'.
+                if ($chemical_reference && $chemical_reference->hasField('field_material_cost')) {
+                    // Check if 'chemical_cost' is manually entered.
+                    $chemical_cost = $entity->get('field_chemical_cost')->value;
+                
+                    if (!isset($chemical_cost)) {
+                        // 'field_chemical_cost' is empty, update it with the referenced entity's cost.
+                        $chemical_cost = $chemical_reference->get('field_material_cost')->value;
+                        $entity->set('field_chemical_cost', $chemical_cost);
+                    }
+                }
+                
+                // Get Fertilizer values entered from wo_chemicals_used entity.
+
+                $fertilizer_applied = $entity->get('field_fertilizer_lbs_applied')->value;
+                if ($lawnSqFt > 0) {
+                    $fertilizer_rate = $fertilizer_applied / ($lawnSqFt/1000);
+                } else {
+                    // Handle the case where lawnSqFt is 0 or not set
+                    // You could set $fertilizer_rate to a default value or log an error
+                    $fertilizer_rate = 0; // Example default value, adjust as needed
+                }
+                $fertilizer_cost = $chemical_cost * $fertilizer_applied;
+                $entity->set('field_fertilizer_cost', $fertilizer_cost);
+                $entity->set('field_rate', $fertilizer_rate);
+        }
+        break;
+        case 'fertilizers_tree_and_shrubs':
+            // Logic for Tree and Shrub Fertilizers
+            if ($entity->hasField('field_chemical') && !$entity->get('field_chemical')->isEmpty()) {
+                $chemical_reference = $entity->get('field_chemical')->entity;
+                              
+                // Get Fetilizer Cost from Chemical referenced.
+                // Check if the referenced entity has 'field_material_cost'.
+                if ($chemical_reference && $chemical_reference->hasField('field_material_cost')) {
+                    // Check if 'chemical_cost' is manually entered.
+                    $chemical_cost = $entity->get('field_chemical_cost')->value;
+                
+                    if (!isset($chemical_cost)) {
+                        // 'field_chemical_cost' is empty, update it with the referenced entity's cost.
+                        $chemical_cost = $chemical_reference->get('field_material_cost')->value;
+                        $entity->set('field_chemical_cost', $chemical_cost);
+                    }
+                }
+                
+                // Get Fertilizer values entered from wo_chemicals_used entity.
+
+                $fertilizer_applied = $entity->get('field_fertilizer_lbs_applied')->value;
+                $fertilizer_cost = $chemical_cost * $fertilizer_applied;
+                $entity->set('field_fertilizer_cost', $fertilizer_cost);
+          }
+        break;  
+        case 'fertilizing_chemicals':
+        case 'weed_spraying':
+            // Check if 'field_chemical' reference field is set.
+            if ($entity->hasField('field_chemical') && !$entity->get('field_chemical')->isEmpty()) {
+                $chemical_reference = $entity->get('field_chemical')->entity;
+                $chemical_subtotal = 0;
+                $spreader_subtotal = 0;
+            
+                // Check if the referenced entity has 'field_material_cost'.
+                if ($chemical_reference && $chemical_reference->hasField('field_material_cost')) {
+                    // Check if 'field_chemical_cost' is manually entered.
+                    $chemical_cost = $entity->get('field_chemical_cost')->value;
+                    $total_added = $entity->get('field_total_added_to_sprayer')->value;
+                    $per_how_many_gallons = $entity->get('field_per_how_many_gallons')->value;
+                    $total_gallons_applied = $entity->get('field_total_gallons_applied')->value;
+                    $chemical_used = ($total_added / $per_how_many_gallons) * $total_gallons_applied;
+                
+                    if (!isset($chemical_cost)) {
+                        // 'field_chemical_cost' is empty, update it with the referenced entity's cost.
+                        $chemical_cost = $chemical_reference->get('field_material_cost')->value;
+                        $entity->set('field_chemical_cost', $chemical_cost);
+                    }
+                    $chemical_subtotal = $chemical_cost * $chemical_used;
+                }
+            
+                // Retrieve the Spreader Rate value if the 'field_spreader_sticker_adjuvalen' indicates Bio 90
+                if ($entity->hasField('field_spreader_sticker_adjuvalen') && !$entity->get('field_spreader_sticker_adjuvalen')->isEmpty()) {
+                    $spreader_sticker_value = $entity->get('field_spreader_sticker_adjuvalen')->value;
+                    
+                    /** @var ConfigPagesLoaderInterface $config_pages_loader */
+                    $config_pages_loader = \Drupal::service('config_pages.loader');
+                    $config_page = $config_pages_loader->load('business_setting');
+
+                    if ($config_page) {
+                        if ($config_page->hasField('field_bio_90_rate_per_gallon')) {
+                            $bio_90_rate = $config_page->get('field_bio_90_rate_per_gallon')->value;
+                        }
+                        if ($config_page->hasField('field_hawkeye_rate_per_gallon')) {
+                            $hawkeye_rate = $config_page->get('field_hawkeye_rate_per_gallon')->value;
+                        }
+                    }
+                
+                    if ($spreader_sticker_value === '1') {
+                        /** @var EckEntityInterface $bio_90_entity */
+                        $bio_90_entity = \Drupal::entityTypeManager()->getStorage('chemical')->load(77398);
+                        if ($bio_90_entity && $bio_90_entity->hasField('field_material_cost')) {
+                            $bio_90_material_cost = $bio_90_entity->get('field_material_cost')->value;
+                    
+                            // Check if the current entity has 'field_spreader_cost'
+                            if ($entity->hasField('field_spreader_cost') && $bio_90_rate) {
+                                // Calculate the spreader cost
+                                $spreader_cost = ($bio_90_rate / 100) * $bio_90_material_cost;
+                                // Set 'field_spreader_cost' on the current entity
+                                $entity->set('field_spreader_cost', $spreader_cost);
+                    
+                                $total_gallons_applied = $entity->get('field_total_gallons_applied')->value;
+                                $spreader_subtotal = $spreader_cost * $total_gallons_applied;
+                            \Drupal::logger('my_module')->notice('Bio 90 Rate: @rate, Material Cost: @cost, Gallons Applied: @gallons', [
+                                '@rate' => $bio_90_rate,
+                                '@cost' => $bio_90_material_cost,
+                                '@gallons' => $total_gallons_applied,
+                                ]);
+                            }
+                        }
+                    } elseif ($spreader_sticker_value === '2') {
+                        /** @var EckEntityInterface $hawkeye_entity */
+                        $hawkeye_entity = \Drupal::entityTypeManager()->getStorage('chemical')->load(77409);
+                        if ($hawkeye_entity && $hawkeye_entity->hasField('field_material_cost')) {
+                            $hawkeye_material_cost = $hawkeye_entity->get('field_material_cost')->value;
+                    
+                            // Check if the current entity has 'field_spreader_cost'
+                            if ($entity->hasField('field_spreader_cost') && $hawkeye_rate) {
+                                // Calculate the spreader cost
+                                $spreader_cost = ($hawkeye_rate / 100) * $hawkeye_material_cost;
+                                // Set 'field_spreader_cost' on the current entity
+                                $entity->set('field_spreader_cost', $spreader_cost);
+                    
+                                $total_gallons_applied = $entity->get('field_total_gallons_applied')->value;
+                                $spreader_subtotal = $spreader_cost * $total_gallons_applied;
+                            }
+                        }
+                    }
+
+                }
+            
+                // Calculate 'field_subtotal' based on 'field_chemical_cost' and 'field_spreader_cost'.
+                $subtotal = $chemical_subtotal + $spreader_subtotal;
+                $entity->set('field_subtotal', $subtotal);
+            }
+        break;
+                
+       default:
+          // Optional: Default logic if the bundle doesn't match any of the above
+              // Check if 'field_chemical' reference field is set.
+              if ($entity->hasField('field_chemical') && !$entity->get('field_chemical')->isEmpty()) {
+                $chemical_reference = $entity->get('field_chemical')->entity;
+        
+                // Check if the referenced entity has 'field_material_cost'.
+                if ($chemical_reference->hasField('field_material_cost')) {
+                // Check if 'field_chemical_cost' is manually entered.
+                $chemical_cost = $entity->get('field_chemical_cost')->value;
+                if (isset($chemical_cost)) {
+
+                    // If 'field_chemical_cost' is manually entered, use it for 'field_subtotal'.
+
+                    $total_added = $entity->get('field_total_added_to_sprayer')->value;
+                    $per_how_many_gallons = $entity->get('field_per_how_many_gallons')->value;
+                    $total_gallons_applied = $entity->get('field_total_gallons_applied')->value;
+                    $chemical_used = ($total_added / $per_how_many_gallons) * $total_gallons_applied;
+                    $subtotal = $chemical_cost * $chemical_used;
+                    $entity->set('field_subtotal', $subtotal);
+                } else {
+                    // 'field_chemical_cost' is empty, update it with the referenced entity's cost.
+                    $chemical_cost = $chemical_reference->get('field_material_cost')->value;
+                    $total_added = $entity->get('field_total_added_to_sprayer')->value;
+                    $per_how_many_gallons = $entity->get('field_per_how_many_gallons')->value;
+                    $total_gallons_applied = $entity->get('field_total_gallons_applied')->value;
+                    $chemical_used = ($total_added / $per_how_many_gallons) * $total_gallons_applied;
+                    
+                    // Enter 'field_chemical_cost' based on the referenced entity's cost.
+                    $entity->set('field_chemical_cost', $chemical_cost);
+        
+                    // Calculate 'field_subtotal' based on 'field_chemical_cost'.
+                    $subtotal = $chemical_cost * $chemical_used;
+                    $entity->set('field_subtotal', $subtotal);
+                }
+                }
+            }
+        break;
+      }
+    }
+  }

@@ -1,0 +1,10 @@
+{% for item in items %}
+  <span {{ attributes.addClass('listing-category').addClass(item.content['#options'].entity.field_listing_category_color.value) }}>
+      {% if item.content['#options'].entity.field_listing_category_icon.value %}
+         <i class="icon {{ item.content['#options'].entity.field_listing_category_icon.value }}"></i>
+      {% endif %}
+      {{ item.content }}
+      <span class="data-icon d-none">{{ item.content['#options'].entity.field_listing_category_icon.value }}</span>
+      <span class="data-category-color d-none">{{ item.content['#options'].entity.field_listing_category_color.value }}</span>
+   </span>
+{% endfor %}

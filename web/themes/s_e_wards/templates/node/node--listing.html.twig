@@ -1,0 +1,337 @@
+{% if sew_theme_setting('map_source') == 'google' or sew_theme_setting('map_source') == '' %}
+  {{ attach_library('s_e_wards/listing_init.gmap') }}
+{% endif %} 
+{{ attach_library('s_e_wards/listing_init') }}
+
+{%
+  set classes = [
+    'node',
+    'node-detail',
+    'node--type-' ~ node.bundle|clean_class,
+    node.isPromoted() ? 'node--promoted',
+    node.isSticky() ? 'node--sticky',
+    not node.isPublished() ? 'node--unpublished',
+    view_mode ? 'node--view-mode-' ~ view_mode|clean_class,
+    'clearfix',
+  ]
+%}
+{% set conBody  %}{{ content.body }}{% endset %}
+{% set conAddress %}{{ node.field_listing_address.value }}{% endset %}
+{% set conVideo %}{{ node.field_listing_video.value }}{% endset %}
+<!-- Start Display article for teaser page -->
+{% if view_mode == 'teaser' %} 
+  
+  <div class="listing-block v2">
+    
+    {% if content.field_listing_image|render %}
+      <div class="listing-image text-center">
+        {{ content.field_listing_image }}
+        <span class="show-in-map"><a href="#" title="{{'Show In Map'|t}}"><i class="la la-map-marker"></i></a></span>
+        <div class="listing-preview">
+          {% if content.field_listing_gallery %}
+            <div class="preview-gallery">{{ content.field_listing_gallery }}</div>
+          {% endif %}  
+          {% if content.field_listing_video|render %}
+            <div class="preview-video">
+              <a class="popup-video" href="{{ conVideo|trim }}"><i class="icon la la-camera"></i>{{ "Video" }}</a>
+            </div>
+          {% endif %}
+        </div>  
+      </div>
+    {% endif %}  
+
+    <div class="listing-content clearfix">  
+      <div class="listing-info">
+        <h3 class="title"><a href="{{ url }}" rel="bookmark">{{ label }}</a></h3>
+        {% if node.field_listing_address.value %}
+          <div class="address"><i class="icon la la-map"></i>{{ conAddress|striptags }}</div>
+        {% endif %}
+        {% if content.field_listing_phone|render %}
+          <div class="phone"><i class="icon la la-phone"></i>{{ node.field_listing_phone.value }}</div>
+        {% endif %}
+      </div>
+      <div class="listing-footer">
+        <div class="left listing-category">{{ content.field_listing_category }}</div>
+        <div class="right listing-location"><i class="icon la la-map-marker"></i>{{ content.field_listing_location }}</div>
+      </div>
+    </div>  
+    <div class="listing-data hidden">
+      <span class="data-lat">{{node.field_listing_map.lat}}</span>
+      <span class="data-lon">{{node.field_listing_map.lon}}</span>
+      <span class="data-html">
+        <span class="sew-map-content-popup">
+          <span class="image">
+            <a href="{{ url }}" rel="bookmark">
+              <img src="{{ node.field_listing_image.entity.uri.value | image_style('small') }}" alt="{{ node.field_listing_image.alt }}"/>
+            </a>
+          </span>
+          <span class="content-inner">
+            <span class="title"><a href="{{ url }}" rel="bookmark">{{ node.title.value }}</a></span>
+            {% if node.field_listing_address.value %}
+              <span class="address"><i class="icon la la-map"></i>{{ conAddress|striptags }}</span>
+            {% endif %}
+            {% if node.field_listing_phone.value %}
+              <span class="phone"><i class="icon la la-phone"></i>{{ node.field_listing_phone.value }}</span>
+            {% endif %}
+          </span>  
+        </span>
+      </span>
+    </div>
+  </div> 
+
+{% elseif view_mode == 'teaser_2' %}
+  <div class="listing-block">
+    <div class="listing-image text-center">
+      {{ content.field_listing_image }}
+      <span class="show-in-map"><a href="#" title="{{'Show In Map'|t}}"><i class="la la-map-marker"></i></a></span>
+      <div class="listing-preview">
+        {% if content.field_listing_gallery %}
+          <div class="preview-gallery">{{ content.field_listing_gallery }}</div>
+        {% endif %}  
+        {% if content.field_listing_video|render %}
+          <div class="preview-video">
+            <a class="popup-video" href="{{ conVideo|trim }}"><i class="icon la la-camera"></i>{{ "Video" }}</a>
+          </div>
+        {% endif %}
+      </div>  
+    </div>
+    <div class="listing-content clearfix">  
+      <div class="listing-info">
+        <h3 class="title"><a href="{{ url }}" rel="bookmark">{{ label }}</a></h3>
+        <div class="body">{{ conBody|striptags }}</div>
+        {% if node.field_listing_address.value %}
+          <div class="address"><i class="icon la la-map"></i>{{ conAddress|striptags }}</div>
+        {% endif %}
+        {% if node.field_listing_phone.value %}
+          <div class="phone"><i class="icon la la-phone"></i>{{ node.field_listing_phone.value }}</div>
+        {% endif %}
+      </div>
+      <div class="listing-footer">
+        <div class="left listing-category">{{ content.field_listing_category }}</div>
+        <div class="right listing-location"><i class="icon la la-map-marker"></i>{{ content.field_listing_location }}</div>
+      </div>
+    </div>  
+    <div class="listing-data hidden">
+      <span class="data-lat">{{node.field_listing_map.lat}}</span>
+      <span class="data-lon">{{node.field_listing_map.lon}}</span>
+      <span class="data-html">
+        <span class="sew-map-content-popup">
+          <span class="image">
+            <a href="{{ url }}" rel="bookmark">
+              <img src="{{ node.field_listing_image.entity.uri.value | image_style('small') }}" alt="{{ node.field_listing_image.alt }}"/>
+            </a>
+          </span>
+          <span class="content-inner">
+            <span class="title"><a href="{{ url }}" rel="bookmark">{{ node.title.value }}</a></span>
+            {% if node.field_listing_address.value %}
+              <span class="address"><i class="icon la la-map"></i>{{ conAddress|striptags }}</span>
+            {% endif %}
+            {% if node.field_listing_phone.value %}
+              <span class="phone"><i class="icon la la-phone"></i>{{ node.field_listing_phone.value }}</span>
+            {% endif %}
+          </span>  
+        </span>
+      </span>
+    </div>
+  </div>
+
+{# Listing Single Page #}
+{% else %}
+
+<article{{ attributes.addClass(classes).addClass('node-listing-single') }}>
+  <div class="listing-top">
+    <div id="listing-home" class="listing-gallery before-help-region">
+      {{ content.field_listing_gallery }}
+    </div>
+    
+    <div class="container listing-top-content">
+      <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+          <div class="listing-categories">{{ content.field_listing_category }}</div>
+          <h1{{ title_attributes.addClass('post-title') }}>{{ label }}</h1>
+          <div class="listing-price"><span class="label">{{'Price'|t}}: </span>{{content.field_listing_price}}</div>
+        </div>
+      </div>    
+    </div> 
+
+    <div class="listing-nav sticky-listing-nav">
+      <div class="listing-nav-inner">
+        <div class="listing-nav-inner-inner">
+          <div class="container">
+            <div class="row">
+              <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                <ul>
+                  <li><a href="#listing-home">{{'Home'|t}}</a></li>
+                  <li><a href="#listing-description">{{'Description'|t}}</a></li>
+                  <li><a href="#listing-features">{{'Listing Features'|t}}</a></li>
+                  <li><a href="#listing-location">{{'Location'|t}}</a></li>
+                  <li><a href="#listing-video">{{'Video'|t}}</a></li>
+                  <li><a href="#listing-comment">{{'Comment'|t}}</a></li>
+                </ul>
+              </div>
+            </div>  
+          </div>
+        </div>  
+      </div>  
+    </div>  
+
+  </div>  
+
+  <div class="container">
+    <div class="row">
+      <div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 col-xs-12">
+        <div class="listing-content-main">
+          
+          {% if content.body|render %}
+            <div class="listing-info-block listing-description" id="listing-description">
+              <div class="title"><i class="la la-file-text"></i>{{ 'Description'|t }}</div>
+              <div class="block-content">
+                {{ content.body }}
+              </div>
+            </div>  
+          {% endif %}  
+
+          {% if content.field_listing_amenities|render %}
+            <div class="listing-info-block listing-amenties" id="listing-features">
+              <div class="title"><i class="la la-list-alt"></i>{{ 'Amenties'|t }}</div>
+              <div class="block-content">
+                {{ content.field_listing_amenities }}
+              </div>  
+            </div> 
+          {% endif %}  
+
+          <div class="listing-info-block listing-location" id="listing-location">
+            <div class="title"><i class="la la-map-marker"></i>{{ 'Location'|t }}</div>
+            <div class="block-content">
+              <div class="listing-location-taxonomy">{{ content.field_listing_location }}</div>
+              <div class="listing-main-map" id="listing-main-map"></div>
+              <div class="listing-items hidden">
+                <div class="listing-block">
+                  <div class="listing-data hidden">
+                    {{ content.field_listing_category }}
+                    <span class="data-lat">{{node.field_listing_map.lat}}</span>
+                    <span class="data-lon">{{node.field_listing_map.lon}}</span>
+                    <span class="data-html">
+                      <span class="sew-map-content-popup">
+                        <span class="image">
+                          <img src="{{ node.field_listing_image.entity.uri.value | image_style('small') }}" />
+                        </span>
+                        <span class="content-inner">
+                          <span class="title"><a href="{{ url }}" rel="bookmark">{{ node.title.value }}</a></span>
+                          {% if node.field_listing_address.value %}
+                            <span class="address"><i class="icon la la-map"></i>{{ conAddress|striptags }}</span>
+                          {% endif %}
+                          {% if node.field_listing_phone.value %}
+                            <span class="phone"><i class="icon la la-phone"></i>{{ node.field_listing_phone.value }}</span>
+                          {% endif %}
+                        </span>  
+                      </span>
+                    </span>
+                  </div>
+                </div>  
+              </div>
+            </div>
+          </div>
+
+          <div class="listing-info-block listing-video" id="listing-video">
+            <div class="title"><i class="la la-video-camera"></i>{{ 'Video'|t }}</div>
+            <div class="block-content">
+              {{ listing_video|raw }}
+            </div>  
+          </div>
+
+          {% if content.comment|render %}
+            <div class="listing-info-block listing-comment" id="listing-comment">
+              <div class="title">{{ 'Comment'|t }}</div>
+              <div class="block-content">
+                <div id="node-single-comment">
+                  {{ content.comment }}
+                </div>
+              </div>
+            </div>
+          {% endif %}  
+
+        </div>  
+      </div>
+      <div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-xs-12">
+        <div class="listing-content-main">
+          <div class="listing-info-block business-info">
+            <div class="title"><i class="la la-map-signs"></i>{{ 'Business Info'|t }}</div>
+            <div class="block-content">
+              <ul class="business-info">
+
+                {% if conAddress %}
+                  <li><span class="address"><i class="icon la la-map"></i>{{ conAddress|striptags }}</span></li>
+                {% endif %}
+
+                {% if content.field_listing_email|render %}
+                  <li><a href="mailto:{{node.field_listing_email.value}}">
+                    <i class="icon la la-envelope"></i>{{ node.field_listing_email.value }}
+                  </a></li>
+                {% endif %}
+
+                {% if content.field_listing_phone|render %}
+                  <li><i class="icon la la-phone"></i>{{ node.field_listing_phone.value }}</li>
+                {% endif %}  
+
+                {% if content.field_listing_website|render %}
+                  <li><span><i class="icon la la-globe"></i>{{ node.field_listing_website.value }}</span></li>
+                {% endif %}  
+
+              </ul>
+
+              <ul class="listing-socials">
+
+                {% if node.field_listing_facebook.value %}
+                  <li><a href="{{ node.field_listing_facebook.value }}"><i class="icon la la-facebook"></i></a></li>
+                {% endif %}
+
+                {% if node.field_listing_google.value %}
+                  <li><a href="{{ node.field_listing_google.value }}"><i class="icon la la-google"></i></a></li>
+                {% endif %}
+
+                {% if node.field_listing_linkedin.value %}
+                  <li><a href="{{ node.field_listing_linkedin.value }}"><i class="icon la la-linkedin"></i></a></li>
+                {% endif %}
+
+                {% if node.field_listing_twitter.value %}
+                  <li><a href="{{ node.field_listing_twitter.value }}"><i class="icon la la-twitter"></i></a></li>
+                {% endif %}
+
+              </ul>
+            </div>  
+          </div>
+
+          {% if content.field_listing_time|render %}
+            <div class="listing-info-block business-hours">
+              <div class="title"><i class="la la-clock-o"></i>{{ 'Business Hours'|t }}</div>
+              <div class="block-content">
+                {{ content.field_listing_time }}
+              </div>
+            </div>
+          {% endif %}
+
+          {% if content.field_listing_tags|render %}
+            <div class="listing-info-block listing-tags">
+              <div class="title"><i class="la la-tags"></i>{{ 'Tags'|t }}</div>
+              <div class="block-content">
+                {{ content.field_listing_tags }}
+              </div>
+            </div>
+          {% endif %}
+
+          {{ listing_sidebar }}
+
+        </div>  
+
+      </div>
+    </div>
+  </div>  
+</article>
+<script>
+  map_init('single');
+</script>
+
+<!-- End Display article for detail page -->
+{% endif %}
+

@@ -1,0 +1,228 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\config_pages\ConfigPagesLoaderInterface;
+use Drupal\eck\EckEntityInterface;
+use Drupal\views\Views;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_fall_cleanup_entity_presave(EntityInterface $entity) {
+    // Initialize $grand_total at the start.
+    $grand_total = 0;
+    $labor_subtotal = 0;
+    $trucks = 0;
+    $totalTrip = 0;
+    $totalDump = 0;
+
+    // Check if it's a Work Order entity of the 'Fall Cleanup' bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'fall_cleanup') {
+
+        // Check if the Work Order is marked as 'Complete'.
+        $statusTermId = $entity->get('field_status')->target_id ?? 0;
+        if ($statusTermId != 1097) {
+            //If the Work Order is not 'Complete', exit the function early to avoid performing further calculations.
+            return;
+        }
+        
+        // The Work Order is 'Complete'; you can now proceed with further calculations.
+        // Initialize variables to ensure they're defined before use.
+
+        $config_pages_loader = \Drupal::service('config_pages.loader');
+        $business_settings = $config_pages_loader->load('business_setting');
+        
+        if ($business_settings) {
+            // Fetch the configured minimums and fees.
+            $minAllottedTime = $business_settings->get('field_hour_billing_increment')->value; // Assume this is in minutes for the calculation.
+            $hourlyRate = $business_settings->get('field_maintenance_crew_labor')->value;
+            $hourlyBillingIncrement = $business_settings->get('field_hour_billing_increment')->value;
+            $hourlyMinimum = $business_settings->get('field_cleanup_labor_minimum')->value;
+
+            $trucks = $entity->get('field_trucks')->value;
+            
+            $totalTime = $entity->get('field_total_time')->value;
+            
+            if ($totalTime > $hourlyMinimum) {
+                // figure the time by increments
+                $totalMinutes = $totalTime * 60;
+                $totalTimeIncrements = ceil($totalMinutes / $hourlyBillingIncrement);
+                $hourlyIncrement = $hourlyBillingIncrement / 60;
+                $hourlyRateIncrement = $hourlyRate * $hourlyIncrement;
+                $labor_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
+    
+            } else {
+                $labor_subtotal = $hourlyRate;
+            }
+            
+            $entity->set('field_labor_total', $labor_subtotal);
+        }
+
+        $workOrderId = $entity->id();
+
+        // NO NEED TO UPDATE PROPERTY INFO FROM SIGN OFF
+
+        // Trip Fee Calculated in the wo_sign_off and saved to work_order's field_trip_fee
+        $totalTrip = $entity->get('field_trip_fee')->value;
+
+        // Trip Fee from above
+        // Make sure Trip Fee is a positive number and add to grand total.
+        if ($totalTrip > 0) {
+            $grand_total += $totalTrip;
+        }
+
+        // Labor from above
+        // Make sure Labor is a positive number and add to grand total.
+        if ($labor_subtotal > 0) {
+            $grand_total += $labor_subtotal;
+        }
+
+        // Dump Fees
+        // Now, add the Materials Dumping Fees from related 'wo_material_dumping' entities.
+        $dumpTotal = get_fall_cleanup_total_dump_fees($entity->id());
+
+        // Make sure Rental is a positive number and add to grand total.
+        if ($dumpTotal > 0) {
+            // Set the rental fee total on the entity regardless of grand total.
+            $entity->set('field_dump_fee_total', $dumpTotal);
+            $grand_total += $dumpTotal;
+        }
+
+        // Rental Fees
+        // Now, add the Equipment Rental Fees from related 'wo_rental_equipment' entities.
+        $rental_fee_total = get_fall_cleanup_total_rental_fees($workOrderId);
+
+        // Make sure Rental is a positive number and add to grand total.
+        if ($rental_fee_total > 0) {
+            // Set the rental fee total on the entity regardless of grand total.
+            $entity->set('field_rental_total', $rental_fee_total);
+            $grand_total += $rental_fee_total;
+        }
+
+        // Office Adjust Total as needed for invoicing
+        $billingAdjustment = $entity->get('field_billing_adjustment')->value;
+        $grand_total += $billingAdjustment;
+        
+        // Future calculations can modify $grand_total as needed.
+        // Set 'field_total' with the final $grand_total value.
+        if ($grand_total > 0) {
+            $entity->set('field_wo_total', $grand_total);
+        }
+    }
+}
+
+/**
+ * Calculates the total Materials for a given Work Order.
+ */
+function get_total_fall_cleanup_material_list_price($workOrderId) {
+    $database = \Drupal::database();
+
+    // Start by selecting from the table that contains subtotal values.
+    $query = $database->select('wo_material_list_item__field_subtotal_w_markup', 'subtotal');
+    
+    // Join to link the subtotal values to their respective material list items.
+    $query->join('wo_material_list_item', 'items', 'subtotal.entity_id = items.id');
+    
+    // Join to link each material list item to its material list via the reference field.
+    // Adjust the join condition based on your actual data model.
+    $query->join('wo_material_list_item__field_list_id', 'list_id', 'items.id = list_id.entity_id');
+    
+    // Then, join to the material list to work order reference table.
+    // This assumes there's a direct relationship table or field connecting material lists to work orders.
+    $query->join('wo_material_list__field_work_order', 'work_order', 'list_id.field_list_id_target_id = work_order.entity_id');
+    
+    // Filter by the work order ID.
+    $query->condition('work_order.field_work_order_target_id', $workOrderId);
+    
+    // Specify the field to sum for the total.
+    $query->addExpression('SUM(subtotal.field_subtotal_w_markup_value)', 'total_subtotal_w_markup');
+    
+    // Execute the query and fetch the result.
+    $result = $query->execute()->fetchField();
+
+    return $result ? $result : 0;
+}
+
+/**
+ * Calculates the total Dump fees for a given Work Order.
+ */
+function get_fall_cleanup_total_dump_fees($workOrderId) {
+    $database = \Drupal::database();
+    
+    // Query the dedicated field storage table for 'field_dump_fee'.
+    $query = $database->select('wo_material_dumping__field_dump_total', 'dump_fees');
+    
+    // Join the entity base table to access the Work Order reference.
+    // This assumes 'field_work_order' is the correct entity reference field name.
+    $query->join('wo_material_dumping__field_work_order', 'work_order', 'dump_fees.entity_id = work_order.entity_id');
+    
+    // Filter by the Work Order ID.
+    $query->condition('work_order.field_work_order_target_id', $workOrderId);
+    
+    // Sum the Dump fee values.
+    $query->addExpression('SUM(dump_fees.field_dump_total_value)', 'total_dump_fee');
+    
+    // Execute the query and fetch the result.
+    $result = $query->execute()->fetchField();
+    
+    return $result ? $result : 0;
+}
+
+/**
+ * Calculates the total Rented Equipment fees for a given Work Order.
+ */
+function get_fall_cleanup_total_rental_fees($workOrderId) {
+    $database = \Drupal::database();
+    
+    // Query the dedicated field storage table for 'field_receipt_total_cost'.
+    $query = $database->select('wo_rental_equipment__field_receipt_total_cost', 'rental_fees');
+    
+    // Join the entity base table to access the Work Order reference.
+    // This assumes 'field_rented_for' is the correct entity reference field name.
+    $query->join('wo_rental_equipment__field_rented_for', 'work_order', 'rental_fees.entity_id = work_order.entity_id');
+    
+    // Filter by the Work Order ID.
+    $query->condition('work_order.field_rented_for_target_id', $workOrderId);
+    
+    // Sum the rental fee values.
+    $query->addExpression('SUM(rental_fees.field_receipt_total_cost_value)', 'total_rental_fee');
+    
+    // Execute the query and fetch the result.
+    $result = $query->execute()->fetchField();
+    
+    return $result ? $result : 0;
+}
+
+/**
+ * Retrieves the Hours clocked in for fall_cleanup from related wo_time_clock entities.
+ *
+ * @param int $workOrderId
+ *   The work order entity ID.
+ *
+ * @return int
+ *   The total hours for fall_cleanup Work Order.
+ */
+function get_hours_for_fall_cleanup($workOrderId) {
+
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+
+    $hoursSpent = 0;
+
+    // Load wo_time_clock entities that reference the given work order.
+    $woTimeClockEntities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
+        'field_work_order' => $workOrderId,
+    ]);
+
+    foreach ($woTimeClockEntities as $entity) {
+        // Check if the entity is part of the 'pre-emergent' bundle.
+        if ($entity->bundle() === 'entry') {
+            // Sum the gallons used.
+            $hours = $entity->get('field_total_time')->value; // Adjust 'field_total_time' that is a Number(decimal).
+            $hoursSpent += $hours;
+        }
+    }
+
+    return $hoursSpent;
+}

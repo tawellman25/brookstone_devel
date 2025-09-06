@@ -1,0 +1,27 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_presave() for equipment_status_update entities.
+ */
+function equipment_status_updates_entity_presave(EntityInterface $entity) {
+    // Check if the entity type is 'equipment_status_update'.
+    if ($entity->getEntityTypeId() === 'equipment_status_update' && $entity->bundle() === 'update') {
+      // Get the value of the 'field_status_of_wo' field from the 'wo_status_update' entity.
+      $equipment_reference = $entity->get('field_status_of')->getValue();
+      // Extract the target ID from the reference field.
+      $equipment_id = !empty($equipment_reference[0]['target_id']) ? $equipment_reference[0]['target_id'] : NULL;
+      // Get the target ID of the taxonomy term.
+      $equipment_update_status_tid = !empty($entity->get('field_status')->target_id) ? $entity->get('field_status')->target_id : NULL;
+  
+      // Load the 'work_order' entity referenced by the 'field_status_of'.
+      $equipment = \Drupal::entityTypeManager()->getStorage('equipment')->load($equipment_id);
+      if ($equipment && $equipment_update_status_tid) {
+        // Update the 'Equipment' entity with the new status.
+        $equipment->set('field_status', $equipment_update_status_tid);
+        // Save the 'work_order' entity.
+        $equipment->save();
+      }
+    }
+  }

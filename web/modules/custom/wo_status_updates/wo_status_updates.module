@@ -1,0 +1,27 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_presave() for wo_status_update entities.
+ */
+function wo_status_updates_entity_presave(EntityInterface $entity) {
+    // Check if the entity type is 'wo_status_update'.
+    if ($entity->getEntityTypeId() === 'wo_status_updates' && $entity->bundle() === 'update') {
+      // Get the value of the 'field_status_of_wo' field from the 'wo_status_update' entity.
+      $work_order_reference = $entity->get('field_status_of_wo')->getValue();
+      // Extract the target ID from the reference field.
+      $work_order_id = !empty($work_order_reference[0]['target_id']) ? $work_order_reference[0]['target_id'] : NULL;
+      // Get the target ID of the taxonomy term.
+      $wo_status_updates_status_tid = !empty($entity->get('field_status')->target_id) ? $entity->get('field_status')->target_id : NULL;
+  
+      // Load the 'work_order' entity referenced by the 'field_status_of_wo'.
+      $work_order = \Drupal::entityTypeManager()->getStorage('work_order')->load($work_order_id);
+      if ($work_order && $wo_status_updates_status_tid) {
+        // Update the 'work_order' entity with the new status.
+        $work_order->set('field_status', $wo_status_updates_status_tid);
+        // Save the 'work_order' entity.
+        $work_order->save();
+      }
+    }
+  }

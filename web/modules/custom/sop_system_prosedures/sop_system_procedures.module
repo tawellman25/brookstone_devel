@@ -1,0 +1,50 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function sop_system_procedures_entity_presave(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'sop' && $entity->bundle() === 'system_procedures') {
+    // Only set SOP Code for new entities.
+    if ($entity->isNew()) {
+      $prefix = 'WEB';
+      $next_number = 1;
+
+      // Query all system_procedures SOPs to find the highest valid SOP-WEB-NNN code.
+      $query = \Drupal::entityQuery('sop')
+        ->condition('type', 'system_procedures')
+        ->condition('field_sop_code', 'SOP-WEB-[0-9][0-9][0-9]', 'REGEXP')
+        ->sort('field_sop_code', 'DESC')
+        ->range(0, 1)
+        ->accessCheck(FALSE);
+      $result = $query->execute();
+
+      if (!empty($result)) {
+        $latest_sop_id = reset($result);
+        $latest_sop = \Drupal::entityTypeManager()->getStorage('sop')->load($latest_sop_id);
+        if ($latest_sop && $latest_sop->bundle() === 'system_procedures') {
+          $latest_code = $latest_sop->get('field_sop_code')->value;
+          if (preg_match('/SOP-WEB-(\d{3})/', $latest_code, $matches)) {
+            $next_number = (int) $matches[1] + 1;
+          }
+        }
+      }
+
+      $sop_code = sprintf('SOP-%s-%03d', $prefix, $next_number);
+
+      // Check for uniqueness.
+      $query = \Drupal::entityQuery('sop')
+        ->condition('type', 'system_procedures')
+        ->condition('field_sop_code', $sop_code)
+        ->accessCheck(FALSE);
+      $result = $query->execute();
+      if (!empty($result)) {
+        throw new \Exception(t('The generated SOP Code %code is already in use.', ['%code' => $sop_code]));
+      }
+
+      $entity->set('field_sop_code', $sop_code);
+    }
+  }
+}

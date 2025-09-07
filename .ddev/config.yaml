@@ -301,3 +301,12 @@ corepack_enable: false
 #   - exec: drush sql:sanitize
 #   - exec: drush updatedb
 #   - exec: drush cache:rebuild
+
+hooks:
+  post-import-db:
+    - exec: "drush pmu -y s3fs || true"
+    - exec: "drush en -y stage_file_proxy"
+    - exec: "drush cset -y stage_file_proxy.settings origin 'https://brookstone-images.s3.us-east-2.amazonaws.com'"
+    - exec: "drush cset -y stage_file_proxy.settings origin_dir 's3fs-public'"
+    - exec: "drush cset -y stage_file_proxy.settings hotlink 1"
+    - exec: "drush cr"

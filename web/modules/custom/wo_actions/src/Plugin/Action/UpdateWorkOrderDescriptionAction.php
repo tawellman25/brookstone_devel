@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "update_work_order_description_action",
  *   label = @Translation("Update Work Order Description"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "work_order"
  * )
  */
 class UpdateWorkOrderDescriptionAction extends ViewsBulkOperationsActionBase {

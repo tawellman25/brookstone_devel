@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "update_work_order_invoiced_action",
  *   label = @Translation("Update Completed WO to Invoiced"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "work_order"
  * )
  */
 class UpdateWorkOrderInvoicedAction extends ViewsBulkOperationsActionBase {

@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_weed_pulling_work_order_action",
  *   label = @Translation("Create Weed Pulling Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreateWeedPullingWorkOrderAction extends ViewsBulkOperationsActionBase {

@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_pre_emergent_work_order_action",
  *   label = @Translation("Create Pre-emergent Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreatePreEmergentWorkOrderAction extends ViewsBulkOperationsActionBase {

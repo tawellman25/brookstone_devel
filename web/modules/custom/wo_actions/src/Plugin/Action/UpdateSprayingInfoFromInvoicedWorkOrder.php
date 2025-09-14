@@ -16,7 +16,8 @@ use Drupal\Core\Messenger\MessengerTrait;
  *   id = "update_spraying_info_from_invoiced_work_order",
  *   label = "Update Property Spraying Info",
  *   type = "work_order",
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "work_order"
  * )
  */
 class UpdateSprayingInfoFromInvoicedWorkOrder extends ViewsBulkOperationsActionBase {

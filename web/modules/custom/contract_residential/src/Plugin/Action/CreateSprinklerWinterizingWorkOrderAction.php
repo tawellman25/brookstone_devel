@@ -13,7 +13,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_sprinkler_winterizing_work_order_action",
  *   label = @Translation("Create Sprinkler Winterizing Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreateSprinklerWinterizingWorkOrderAction extends ViewsBulkOperationsActionBase {

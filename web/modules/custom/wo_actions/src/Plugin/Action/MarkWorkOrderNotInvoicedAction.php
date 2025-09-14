@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "mark_work_order_not_invoiced_action",
  *   label = @Translation("Mark WO NOT Invoiced"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "work_order"
  * )
  */
 class MarkWorkOrderNotInvoicedAction extends ViewsBulkOperationsActionBase {

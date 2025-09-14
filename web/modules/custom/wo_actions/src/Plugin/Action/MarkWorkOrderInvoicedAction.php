@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "mark_work_order_invoiced_action",
  *   label = @Translation("Mark WO Invoiced"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "work_order"
  * )
  */
 class MarkWorkOrderInvoicedAction extends ViewsBulkOperationsActionBase {

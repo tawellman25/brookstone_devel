@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "mark_equipment_active_action",
  *   label = @Translation("Mark Equipment Active"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "equipment"
  * )
  */
 class MarkEquipmentActiveAction extends ViewsBulkOperationsActionBase {

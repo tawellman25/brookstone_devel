@@ -13,7 +13,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_cooley_spruce_gall_work_order_action",
  *   label = @Translation("Create Cooley Spruce Gall Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreateCooleySpruceGallWorkOrderAction extends ViewsBulkOperationsActionBase {

@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "take_off_misc_weed_spray_route_action",
  *   label = @Translation("Take Off Spray Route"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class SprayRouteOffMiscWeedSprayAction extends ViewsBulkOperationsActionBase {

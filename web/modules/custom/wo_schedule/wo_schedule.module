@@ -1,52 +1,45 @@
 <?php
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\eck\EckEntityInterface;
 use Drupal\user\Entity\User;
 use Drupal\Core\Url;
 use Drupal\Core\Datetime\DrupalDateTime;
 
 /**
- * Implements hook_entity_presave() for 'scheduling' entities.
- * Syncs field_date (Smart Date) to field_scheduled_date_and_time (Date Range) as UTC for America/Denver display.
+ * Sync Smart Date -> Date Range as UTC (display America/Denver).
  */
 function wo_schedule_entity_presave(EntityInterface $entity) {
-  if ($entity->getEntityTypeId() === 'scheduling' && $entity->bundle() === 'work_order') {
-    if (!$entity->field_date->isEmpty()) {
-      $smart_date = $entity->field_date->first();
-      $start_value = $smart_date->value; // Unix timestamp in UTC
-      $end_value = $smart_date->end_value ?: $start_value; // Fallback
-      $is_all_day = $smart_date->duration == 0 || $smart_date->duration == 1439;
-
-      // Start date in UTC
-      $start_date = new DrupalDateTime('@' . $start_value, new \DateTimeZone('UTC'));
-
-      if ($is_all_day) {
-        // Convert to MDT, set day boundaries
-        $start_date->setTimezone(new \DateTimeZone('America/Denver'));
-        $start_date->setTime(0, 0, 0); // Midnight MDT
-        $end_date = clone $start_date;
-        $end_date->setTime(23, 59, 59); // End of day MDT
-        // Back to UTC for storage
-        $start_date->setTimezone(new \DateTimeZone('UTC'));
-        $end_date->setTimezone(new \DateTimeZone('UTC'));
-      } else {
-        $end_date = new DrupalDateTime('@' . $end_value, new \DateTimeZone('UTC'));
-      }
-
-      $start_formatted = $start_date->format('Y-m-d\TH:i:s');
-      $end_formatted = $end_date->format('Y-m-d\TH:i:s');
-
-      $entity->field_scheduled_date_and_time->setValue([
-        'value' => $start_formatted,
-        'end_value' => $end_formatted,
-      ]);
-    }
+  if ($entity->getEntityTypeId() !== 'scheduling' || $entity->bundle() !== 'work_order') {
+    return;
   }
+  if ($entity->get('field_date')->isEmpty()) {
+    return;
+  }
+
+  $smart_date = $entity->get('field_date')->first();
+  $start_value = $smart_date->value; // Unix timestamp (UTC).
+  $end_value = $smart_date->end_value ?: $start_value;
+  $is_all_day = ($smart_date->duration == 0 || $smart_date->duration == 1439);
+
+  $start = new DrupalDateTime('@' . $start_value, new \DateTimeZone('UTC'));
+  if ($is_all_day) {
+    $start->setTimezone(new \DateTimeZone('America/Denver'))->setTime(0, 0, 0);
+    $end = (clone $start)->setTime(23, 59, 59);
+    $start->setTimezone(new \DateTimeZone('UTC'));
+    $end->setTimezone(new \DateTimeZone('UTC'));
+  }
+  else {
+    $end = new DrupalDateTime('@' . $end_value, new \DateTimeZone('UTC'));
+  }
+
+  $entity->set('field_scheduled_date_and_time', [
+    'value' => $start->format('Y-m-d\TH:i:s'),
+    'end_value' => $end->format('Y-m-d\TH:i:s'),
+  ]);
 }
 
 /**
- * Implements hook_entity_insert() for 'scheduling' entities.
+ * Insert.
  */
 function wo_schedule_entity_insert(EntityInterface $entity) {
   if ($entity->getEntityTypeId() === 'scheduling' && $entity->bundle() === 'work_order') {
@@ -59,7 +52,7 @@ function wo_schedule_entity_insert(EntityInterface $entity) {
 }
 
 /**
- * Implements hook_entity_update() for 'scheduling' entities.
+ * Update.
  */
 function wo_schedule_entity_update(EntityInterface $entity) {
   if ($entity->getEntityTypeId() === 'scheduling' && $entity->bundle() === 'work_order') {
@@ -72,202 +65,226 @@ function wo_schedule_entity_update(EntityInterface $entity) {
 }
 
 /**
- * Handles the creation of 'wo_status_updates' based on the 'scheduling' entity's state.
+ * Create WO status updates based on Scheduling state.
+ *
+ * RULE YOU ASKED FOR:
+ * - If the scheduling record HAS a date, keep Work Order effectively "Scheduled".
+ *   * On (re)assignment while a date exists: write an update note that says Assigned/Re-assigned,
+ *     but the update uses the SCHEDULED status (1091). Do NOT switch to Assigned.
+ * - Only write "Assigned" status (1090) when there is NO date on this scheduling entity.
  */
 function _wo_schedule_handle_status_update(EntityInterface $entity, $isNew) {
-  $work_order_reference = $entity->get('field_work_order')->getValue();
-  $work_order_id = !empty($work_order_reference[0]['target_id']) ? $work_order_reference[0]['target_id'] : NULL;
-  $assigned_reference = $entity->get('field_assigned_to')->getValue();
-  $assigned_id = !empty($assigned_reference[0]['target_id']) ? $assigned_reference[0]['target_id'] : NULL;
-  $schedulingDate = $entity->get('field_scheduled_date_and_time')->getValue();
-  $notifyAssigned = $entity->get('field_notify_assigned_teammate')->value;
+  $wo_ref = $entity->get('field_work_order')->getValue();
+  $work_order_id = !empty($wo_ref[0]['target_id']) ? $wo_ref[0]['target_id'] : NULL;
 
-  $current_user = \Drupal::currentUser()->id();
+  $ass_ref = $entity->get('field_assigned_to')->getValue();
+  $assigned_id = !empty($ass_ref[0]['target_id']) ? $ass_ref[0]['target_id'] : NULL;
+
+  $date_val = $entity->get('field_scheduled_date_and_time')->getValue();
+  $hasDate = !empty($date_val) && !empty($date_val[0]['value']);
+
+  $uid = \Drupal::currentUser()->id();
   $assignedUserName = $assigned_id ? User::load($assigned_id)->getAccountName() : '';
 
   $work_order = \Drupal::entityTypeManager()->getStorage('work_order')->load($work_order_id);
+  if (!$work_order) {
+    return;
+  }
 
-  if ($work_order) {
-    $currentStatus = $work_order->get('field_status')->target_id;
-    if (!in_array($currentStatus, [1097, 1098])) { // Not cancelled or completed.
-      $statusIdForAssigned = 1090; // 'Assigned' status
-      $statusIdForScheduled = 1091; // 'Scheduled' status
+  // Status vocab IDs.
+  $STATUS_ASSIGNED  = 1090;
+  $STATUS_SCHEDULED = 1091;
+  $STATUS_CANCELLED = 1097;
+  $STATUS_COMPLETED = 1098;
 
-      if (!empty($schedulingDate)) {
-        $formattedStartDate = date('m/d/Y - h:i A', strtotime($schedulingDate[0]['value']));
-        if (!$isNew) {
-          $original = $entity->original;
-          $originalSchedulingDate = isset($original->get('field_scheduled_date_and_time')->value) ? $original->get('field_scheduled_date_and_time')->value : NULL;
-          $isNewDateSet = $entity->get('field_scheduled_date_and_time')->value != $originalSchedulingDate;
+  $currentStatus = (int) $work_order->get('field_status')->target_id;
+  if (in_array($currentStatus, [$STATUS_CANCELLED, $STATUS_COMPLETED], TRUE)) {
+    return;
+  }
 
-          if ($isNewDateSet) {
-            wo_schedule_create_wo_status_update($work_order_id, "Scheduled for {$formattedStartDate}", $current_user, $statusIdForScheduled, 1);
-            $work_order->set('field_scheduled', 1);
-            $work_order->save();
-          }
-        } else if ($isNew) {
-          wo_schedule_create_wo_status_update($work_order_id, "Scheduled for {$formattedStartDate}", $current_user, $statusIdForScheduled, 1);
-          $work_order->set('field_scheduled', 1);
-          $work_order->save();
+  // If this record has a date, ensure a "Scheduled for ..." update and flip the scheduled flag on WO.
+  if ($hasDate) {
+    $formatted = date('m/d/Y - h:i A', strtotime($date_val[0]['value']));
+    if ($isNew) {
+      wo_schedule_create_wo_status_update($work_order_id, "Scheduled for {$formatted}", $uid, $STATUS_SCHEDULED, 1);
+      $work_order->set('field_scheduled', 1)->save();
+    }
+    else {
+      $original = property_exists($entity, 'original') ? $entity->original : NULL;
+      $origDate = $original ? $original->get('field_scheduled_date_and_time')->value : NULL;
+      $changedDate = $entity->get('field_scheduled_date_and_time')->value != $origDate;
+
+      if ($changedDate) {
+        wo_schedule_create_wo_status_update($work_order_id, "Scheduled for {$formatted}", $uid, $STATUS_SCHEDULED, 1);
+        $work_order->set('field_scheduled', 1)->save();
+      }
+    }
+  }
+
+  // ASSIGNMENT NOTES
+  if (!empty($assigned_id)) {
+    if ($hasDate) {
+      // With a DATE present: keep WO effectively Scheduled — use SCHEDULED status for the note.
+      if ($isNew) {
+        wo_schedule_create_wo_status_update($work_order_id, "Assigned to {$assignedUserName} (Scheduled)", $uid, $STATUS_SCHEDULED, 1);
+      }
+      else {
+        $original = property_exists($entity, 'original') ? $entity->original : NULL;
+        $origAssigned = $original ? $original->get('field_assigned_to')->target_id : NULL;
+        if ($assigned_id != $origAssigned) {
+          $name = User::load($assigned_id)->getAccountName();
+          wo_schedule_create_wo_status_update($work_order_id, "Re-assigned to {$name} (Scheduled)", $uid, $STATUS_SCHEDULED, 1);
         }
       }
-
-      if (!empty($assigned_id)) {
-        if ($isNew && empty($schedulingDate)) {
-          wo_schedule_create_wo_status_update($work_order_id, "Assigned to {$assignedUserName}", $current_user, $statusIdForAssigned, 0);
-        } elseif (!$isNew) {
-          $original = $entity->original;
-          $originalAssignedId = isset($original->get('field_assigned_to')->target_id) ? $original->get('field_assigned_to')->target_id : NULL;
-          $isReassigned = $assigned_id != $originalAssignedId;
-
-          if ($isReassigned) {
-            $reassignedUserName = User::load($assigned_id)->getAccountName();
-            wo_schedule_create_wo_status_update($work_order_id, "Re-assigned to {$reassignedUserName}", $current_user, $statusIdForAssigned, 0);
-          }
-        }
-
-        if ($isNew && !empty($schedulingDate)) {
-          $formattedStartDate = date('m/d/Y - h:i A', strtotime($schedulingDate[0]['value']));
-          wo_schedule_create_wo_status_update($work_order_id, "Assigned to {$assignedUserName} Scheduled for {$formattedStartDate}", $current_user, $statusIdForScheduled, 1);
+    }
+    else {
+      // NO DATE: normal Assigned behavior (uses ASSIGNED status).
+      if ($isNew) {
+        wo_schedule_create_wo_status_update($work_order_id, "Assigned to {$assignedUserName}", $uid, $STATUS_ASSIGNED, 0);
+      }
+      else {
+        $original = property_exists($entity, 'original') ? $entity->original : NULL;
+        $origAssigned = $original ? $original->get('field_assigned_to')->target_id : NULL;
+        if ($assigned_id != $origAssigned) {
+          $name = User::load($assigned_id)->getAccountName();
+          wo_schedule_create_wo_status_update($work_order_id, "Re-assigned to {$name}", $uid, $STATUS_ASSIGNED, 0);
         }
       }
     }
   }
+
+  // If both assigned + date on NEW creation, keep single combined Scheduled message as the final entry.
+  if ($isNew && !empty($assigned_id) && $hasDate) {
+    $formatted = date('m/d/Y - h:i A', strtotime($date_val[0]['value']));
+    wo_schedule_create_wo_status_update($work_order_id, "Assigned to {$assignedUserName} Scheduled for {$formatted}", $uid, $STATUS_SCHEDULED, 1);
+  }
+
+  // NOTE: We NEVER set the WO field_status to Assigned here when a date exists.
+  // If any downstream process mirrors WO status from the latest status_update,
+  // the latest update for dated items is always STATUS_SCHEDULED (1091).
 }
 
 /**
- * Helper function to create a 'wo_status_updates' entity.
+ * Create a 'wo_status_updates' entity.
  */
 function wo_schedule_create_wo_status_update($work_order_id, $note, $uid, $statusId, $scheduled) {
-  $wo_status_updates = \Drupal::entityTypeManager()
-      ->getStorage('wo_status_updates')
-      ->create([
-          'type' => 'update',
-          'field_status_of_wo' => $work_order_id,
-          'field_status' => $statusId,
-          'field_status_change_note' => ['value' => $note],
-          'uid' => $uid,
-          'field_scheduled' => $scheduled,
-      ]);
-
-  $wo_status_updates->save();
+  $update = \Drupal::entityTypeManager()
+    ->getStorage('wo_status_updates')
+    ->create([
+      'type' => 'update',
+      'field_status_of_wo' => $work_order_id,
+      'field_status' => $statusId,
+      'field_status_change_note' => ['value' => $note],
+      'uid' => $uid,
+      'field_scheduled' => $scheduled,
+    ]);
+  $update->save();
 }
 
 /**
- * Sends an email notification when a scheduling entity is assigned or reassigned.
+ * Email on assignment/reassignment.
  */
 function _wo_schedule_send_email_on_assignment(EntityInterface $entity) {
   $assigned_id = $entity->get('field_assigned_to')->target_id;
-  $notifyAssigned = $entity->get('field_notify_assigned_teammate')->value;
+  $notify = $entity->get('field_notify_assigned_teammate')->value;
 
-  // Debug: Log entry to function.
   \Drupal::logger('wo_schedule')->notice('Entering _wo_schedule_send_email_on_assignment: Assigned ID: @id, Notify: @notify', [
     '@id' => $assigned_id ?? 'None',
-    '@notify' => $notifyAssigned ? 'Yes' : 'No',
+    '@notify' => $notify ? 'Yes' : 'No',
   ]);
 
-  if ($assigned_id && $notifyAssigned == 1) {
-    $user = User::load($assigned_id);
-    if ($user && $user->getEmail()) {
-      $work_order_id = $entity->get('field_work_order')->target_id;
-      $url = Url::fromRoute('entity.work_order.canonical', ['work_order' => $work_order_id], ['absolute' => TRUE])->toString();
-      $to = $user->getEmail();
-      $userName = $user->getDisplayName();
-      $schedulingDateValue = $entity->get('field_scheduled_date_and_time')->getValue();
-      $formattedDate = 'No date set';
-      $schedulingNote = $entity->get('field_scheduling_note')->isEmpty() ? 'No note provided' : $entity->get('field_scheduling_note')->value;
+  if (!$assigned_id || (int) $notify !== 1) {
+    return;
+  }
 
-      if (!empty($schedulingDateValue) && !empty($schedulingDateValue[0]['value'])) {
-        $schedulingDate = new DrupalDateTime($schedulingDateValue[0]['value'], new \DateTimeZone('America/Denver'));
-        $formattedDate = $schedulingDate->format('m/d/Y h:i A');
-      }
+  $user = User::load($assigned_id);
+  if (!$user || !$user->getEmail()) {
+    return;
+  }
 
-      // Debug: Log email variables.
-      \Drupal::logger('wo_schedule')->notice('Email variables: To: @to, WO ID: @id, Date: @date, URL: @url, Note: @note', [
-        '@to' => $to,
-        '@id' => $work_order_id,
-        '@date' => $formattedDate,
-        '@url' => $url,
-        '@note' => $schedulingNote,
+  $work_order_id = $entity->get('field_work_order')->target_id;
+  $url = Url::fromRoute('entity.work_order.canonical', ['work_order' => $work_order_id], ['absolute' => TRUE])->toString();
+  $to = $user->getEmail();
+  $userName = $user->getDisplayName();
+  $dateVal = $entity->get('field_scheduled_date_and_time')->getValue();
+  $formattedDate = 'No date set';
+  $note = $entity->get('field_scheduling_note')->isEmpty() ? 'No note provided' : $entity->get('field_scheduling_note')->value;
+
+  if (!empty($dateVal) && !empty($dateVal[0]['value'])) {
+    $dt = new DrupalDateTime($dateVal[0]['value'], new \DateTimeZone('America/Denver'));
+    $formattedDate = $dt->format('m/d/Y h:i A');
+  }
+
+  \Drupal::logger('wo_schedule')->notice('Email variables: To: @to, WO ID: @id, Date: @date, URL: @url, Note: @note', [
+    '@to' => $to,
+    '@id' => $work_order_id,
+    '@date' => $formattedDate,
+    '@url' => $url,
+    '@note' => $note,
+  ]);
+
+  try {
+    if (!\Drupal::hasService('email_factory')) {
+      \Drupal::logger('wo_schedule')->error('Email factory service not found. Ensure Symfony Mailer module is enabled.');
+      \Drupal::messenger()->addError(t('Email service unavailable. Please contact the site administrator.'));
+      return;
+    }
+
+    $email = \Drupal::service('email_factory')->newTypedEmail('wo_schedule', 'schedule_notification');
+    $email
+      ->setTo($to)
+      ->setSubject(t('Work Order #@work_order_id Assignment', ['@work_order_id' => $work_order_id]))
+      ->setBody([
+        '#type' => 'processed_text',
+        '#text' => sprintf(
+          '<p>WO#%s has been %s to you and scheduled for %s.</p><p>Scheduling Note: %s</p><p>You can view it <a href="%s">here</a>.</p>',
+          $work_order_id,
+          ($entity->isNew() ? 'assigned' : 're-assigned'),
+          $formattedDate,
+          htmlspecialchars($note, ENT_QUOTES, 'UTF-8'),
+          $url
+        ),
+        '#format' => 'full_html',
       ]);
 
-      try {
-        // Check if the email_factory service exists.
-        if (!\Drupal::hasService('email_factory')) {
-          \Drupal::logger('wo_schedule')->error('Email factory service not found. Ensure Symfony Mailer module is enabled.');
-          \Drupal::messenger()->addError(t('Email service unavailable. Please contact the site administrator.'));
-          return;
-        }
+    \Drupal::logger('wo_schedule')->notice('Email to @email: Subject: @subject, Body: @body', [
+      '@email' => $to,
+      '@subject' => $email->getSubject(),
+      '@body' => $email->getBody()['#text'],
+    ]);
 
-        // Create the email using Symfony Mailer.
-        $email = \Drupal::service('email_factory')->newTypedEmail('wo_schedule', 'schedule_notification');
-        $email
-          ->setTo($to)
-          ->setSubject(t('Work Order #@work_order_id Assignment', ['@work_order_id' => $work_order_id]))
-          ->setBody([
-            '#type' => 'processed_text',
-            '#text' => sprintf(
-              '<p>WO#%s has been %s to you and scheduled for %s.</p><p>Scheduling Note: %s</p><p>You can view it <a href="%s">here</a>.</p>',
-              $work_order_id,
-              ($entity->isNew() ? 'assigned' : 're-assigned'),
-              $formattedDate,
-              htmlspecialchars($schedulingNote, ENT_QUOTES, 'UTF-8'),
-              $url
-            ),
-            '#format' => 'full_html',
-          ]);
-
-        // Debug: Log email details.
-        \Drupal::logger('wo_schedule')->notice('Email to @email: Subject: @subject, Body: @body', [
-          '@email' => $to,
-          '@subject' => $email->getSubject(),
-          '@body' => $email->getBody()['#text'],
-        ]);
-
-        // Send the email.
-        $result = $email->send();
-
-        if ($result) {
-          \Drupal::messenger()->addStatus(t('Email sent successfully to @name.', ['@name' => $userName]));
-        } else {
-          \Drupal::messenger()->addError(t('There was a problem sending the email to @email.', ['@email' => $to]));
-          \Drupal::logger('wo_schedule')->error('Failed to send email to @email', ['@email' => $to]);
-        }
-      } catch (\Exception $e) {
-        \Drupal::logger('wo_schedule')->error('Email sending failed: @message', ['@message' => $e->getMessage()]);
-        \Drupal::messenger()->addError(t('Failed to send email to @email. Please contact the site administrator.', ['@email' => $to]));
-      }
-    }
+    $email->send()
+      ? \Drupal::messenger()->addStatus(t('Email sent successfully to @name.', ['@name' => $userName]))
+      : (\Drupal::messenger()->addError(t('There was a problem sending the email to @email.', ['@email' => $to])) &
+         \Drupal::logger('wo_schedule')->error('Failed to send email to @email', ['@email' => $to]));
+  }
+  catch (\Exception $e) {
+    \Drupal::logger('wo_schedule')->error('Email sending failed: @message', ['@message' => $e->getMessage()]);
+    \Drupal::messenger()->addError(t('Failed to send email to @email. Please contact the site administrator.', ['@email' => $to]));
   }
 }
 
 /**
- * Implements hook_form_alter() to redirect to Work Order after saving a Scheduling entity.
+ * Redirect back to the WO after saving Scheduling.
  */
 function wo_schedule_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
-  // Target the Scheduling entity form for the 'work_order' bundle.
-  $form_ids = ['scheduling_work_order_form', 'scheduling_work_order_edit_form'];
-  if (in_array($form_id, $form_ids)) {
-    // Add a custom submit handler.
-    $form['actions']['submit']['#submit'][] = 'wo_schedule_scheduling_form_submit';
-    // Debug: Log form ID to confirm hook triggers.
-    \Drupal::logger('wo_schedule')->notice('Form alter triggered for form ID: @id', ['@id' => $form_id]);
+  if (!in_array($form_id, ['scheduling_work_order_form', 'scheduling_work_order_edit_form'], TRUE)) {
+    return;
   }
+  $form['actions']['submit']['#submit'][] = 'wo_schedule_scheduling_form_submit';
+  \Drupal::logger('wo_schedule')->notice('Form alter triggered for form ID: @id', ['@id' => $form_id]);
 }
 
-/**
- * Custom submit handler for Scheduling entity form to redirect to Work Order.
- */
 function wo_schedule_scheduling_form_submit($form, \Drupal\Core\Form\FormStateInterface $form_state) {
   $entity = $form_state->getFormObject()->getEntity();
   if ($entity->getEntityTypeId() === 'scheduling' && $entity->bundle() === 'work_order') {
     $work_order_id = $entity->get('field_work_order')->target_id;
     if ($work_order_id) {
-      // Redirect to the Work Order's canonical page.
       $form_state->setRedirect('entity.work_order.canonical', ['work_order' => $work_order_id]);
       \Drupal::logger('wo_schedule')->notice('Redirecting to Work Order: @id', ['@id' => $work_order_id]);
-    } else {
-      \Drupal::logger('wo_schedule')->notice('No redirect: field_work_order is empty for Scheduling entity: @id', ['@id' => $entity->id() ?: 'new']);
+    }
+    else {
+      \Drupal::logger('wo_schedule')->notice('No redirect: field_work_order empty for Scheduling entity: @id', ['@id' => $entity->id() ?: 'new']);
     }
   }
 }

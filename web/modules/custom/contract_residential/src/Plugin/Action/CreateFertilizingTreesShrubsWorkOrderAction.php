@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_fertilizing_trees_and_shrubs_work_order_action",
  *   label = @Translation("Create Fertilizing Trees and Shrubs Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreateFertilizingTreesShrubsWorkOrderAction extends ViewsBulkOperationsActionBase {

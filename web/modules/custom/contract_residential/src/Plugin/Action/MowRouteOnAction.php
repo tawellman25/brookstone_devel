@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "put_on_mow_route_action",
  *   label = @Translation("Put On Mow Route"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class MowRouteOnAction extends ViewsBulkOperationsActionBase {

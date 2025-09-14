@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_deer_prevention_put_up_work_order_action",
  *   label = @Translation("Create PUT UP Deer Prevention Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreateDeerPreventionPutUpWorkOrderAction extends ViewsBulkOperationsActionBase {

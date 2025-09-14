@@ -13,7 +13,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_aerating_work_order_action",
  *   label = @Translation("Create Aerating Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreateAeratingWorkOrderAction extends ViewsBulkOperationsActionBase {

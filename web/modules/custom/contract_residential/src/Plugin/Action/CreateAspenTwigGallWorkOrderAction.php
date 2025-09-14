@@ -13,7 +13,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_aspen_twig_gall_work_order_action",
  *   label = @Translation("Create Aspen Twig Gall Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreateAspenTwigGallWorkOrderAction extends ViewsBulkOperationsActionBase {

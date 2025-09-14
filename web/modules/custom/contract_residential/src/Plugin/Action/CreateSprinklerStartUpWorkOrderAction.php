@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_sprinkler_start_up_work_order_action",
  *   label = @Translation("Create Sprinkler Start Up Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreateSprinklerStartUpWorkOrderAction extends ViewsBulkOperationsActionBase {

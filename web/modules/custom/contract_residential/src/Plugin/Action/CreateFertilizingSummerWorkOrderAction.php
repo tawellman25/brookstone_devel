@@ -13,7 +13,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_fertilizing_summer_work_order_action",
  *   label = @Translation("Create SUMMER Lawn Fertilizing Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreateFertilizingSummerWorkOrderAction extends ViewsBulkOperationsActionBase {

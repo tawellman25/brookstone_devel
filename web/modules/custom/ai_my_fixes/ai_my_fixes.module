@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Put this in a small custom module, e.g. my_ai_fixes/my_ai_fixes.module
+ */
+
+/**
+ * Add missing 'type' to third-party Action plugins so AI can derive.
+ */
+function my_ai_fixes_action_info_alter(array &$actions) {
+  // VBO delete is generic. Give it a concrete type you actually use with Agents.
+  if (isset($actions['views_bulk_operations_delete_entity']) && empty($actions['views_bulk_operations_delete_entity']['type'])) {
+    $actions['views_bulk_operations_delete_entity']['type'] = 'work_order'; // or 'contracts' if that’s what you need
+  }
+
+  // Pathauto update alias is also generic; pin to a concrete entity type.
+  if (isset($actions['pathauto_update_alias']) && empty($actions['pathauto_update_alias']['type'])) {
+    $actions['pathauto_update_alias']['type'] = 'node'; // adjust if you need a different entity type
+  }
+}

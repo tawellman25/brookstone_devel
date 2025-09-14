@@ -14,7 +14,8 @@ use Drupal\Core\Datetime\DrupalDateTime;
  *   id = "create_christmas_work_orders_action",
  *   label = @Translation("Create Christmas Decorations Work Orders"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreateChristmasWorkOrderAction extends ViewsBulkOperationsActionBase {

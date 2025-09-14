@@ -15,7 +15,8 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_pinyon_pine_ips_beetle_summer_work_order_action",
  *   label = @Translation("Create SUMMER Pinyon Pine Ips Beetle Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE
+ *   confirm = TRUE,
+ *   type = "contracts"
  * )
  */
 class CreatePinyonPineIpsBeetleSummerWorkOrderAction extends ViewsBulkOperationsActionBase {

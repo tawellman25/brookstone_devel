@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_dormant_oil_work_order_action",
  *   label = @Translation("Create Dormant Oild Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "contracts"
+ *   confirm = TRUE
  * )
  */
 class CreateDormantOilWorkOrderAction extends ViewsBulkOperationsActionBase {

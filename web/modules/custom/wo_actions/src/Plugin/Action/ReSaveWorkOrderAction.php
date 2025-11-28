@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "re_save_work_order_action",
  *   label = @Translation("Re-save Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "work_order"
+ *   confirm = TRUE
  * )
  */
 class ReSaveWorkOrderAction extends ViewsBulkOperationsActionBase {

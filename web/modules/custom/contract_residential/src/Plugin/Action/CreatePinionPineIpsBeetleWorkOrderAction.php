@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_pinion_pine_ips_beetle_work_order_action",
  *   label = @Translation("Create Pinion Pine Ips Beetled Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "contracts"
+ *   confirm = TRUE
  * )
  */
 class CreatePinionPineIpsBeetleWorkOrderAction extends ViewsBulkOperationsActionBase {

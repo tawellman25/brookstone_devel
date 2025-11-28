@@ -1,0 +1,1134 @@
+uuid: 10a3ece0-0a63-42d6-a389-13a717dad6ca
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.scheduling.work_order
+    - field.storage.profile.field_first_name
+    - field.storage.profile.field_last_name
+    - field.storage.properties.field_nickname
+    - field.storage.scheduling.field_date
+    - field.storage.scheduling.field_scheduled_firm
+    - field.storage.scheduling.field_scheduled_oder
+    - field.storage.scheduling.field_scheduling_note
+    - field.storage.scheduling.field_work_order
+    - field.storage.work_order.field_service
+    - system.menu.admin
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+  module:
+    - eck
+    - fullcalendar
+    - profile
+    - smart_date
+    - user
+id: admin_wo_calendar
+label: 'Admin - WO Calendar'
+module: views
+description: ''
+tag: ''
+base_table: scheduling_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'WO Calendar'
+      fields:
+        field_date:
+          id: field_date
+          table: scheduling__field_date
+          field: field_date
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: smartdate_default
+          settings:
+            timezone_override: ''
+            format: default
+            force_chronological: false
+            add_classes: false
+            time_wrapper: true
+            localize: false
+            parts:
+              start: start
+              end: end
+              duration: '0'
+            duration:
+              separator: ' | '
+              unit: ''
+              decimals: 2
+              suffix: h
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_scheduling_note:
+          id: field_scheduling_note
+          table: scheduling__field_scheduling_note
+          field: field_scheduling_note
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_work_order:
+          id: field_work_order
+          table: scheduling__field_work_order
+          field: field_work_order
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: true
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_first_name:
+          id: field_first_name
+          table: profile__field_first_name
+          field: field_first_name
+          relationship: profile
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 2
+            word_boundary: false
+            ellipsis: false
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: true
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_last_name:
+          id: field_last_name
+          table: profile__field_last_name
+          field: field_last_name
+          relationship: profile
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 1
+            word_boundary: false
+            ellipsis: false
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: true
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_scheduled_oder:
+          id: field_scheduled_oder
+          table: scheduling__field_scheduled_oder
+          field: field_scheduled_oder
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_scheduled_firm:
+          id: field_scheduled_firm
+          table: scheduling__field_scheduled_firm
+          field: field_scheduled_firm
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: boolean
+          settings:
+            format: custom
+            format_custom_false: ''
+            format_custom_true: F
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_service:
+          id: field_service
+          table: work_order__field_service
+          field: field_service
+          relationship: field_work_order
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: false
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_nickname:
+          id: field_nickname
+          table: properties__field_nickname
+          field: field_nickname
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 10
+            word_boundary: false
+            ellipsis: false
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: true
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        view_work_order:
+          id: view_work_order
+          table: work_order
+          field: view_work_order
+          relationship: field_work_order
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          plugin_id: entity_link
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          text: view
+          output_url_as_text: true
+          absolute: false
+        id:
+          id: id
+          table: work_order_field_data
+          field: id
+          relationship: field_work_order
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          entity_field: id
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: true
+            text: '{{ field_nickname }} - {{ field_service }}'
+            make_link: true
+            path: '{{ view_work_order }}'
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: '{{ field_work_order }}'
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: _blank
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        title:
+          id: title
+          table: scheduling_field_data
+          field: title
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: null
+          entity_field: title
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: true
+            text: '{{ field_first_name }}{{ field_last_name }}{{ field_scheduled_oder }}{{ field_scheduled_firm }} - {{ id }}'
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+      pager:
+        type: none
+        options:
+          offset: 0
+          items_per_page: null
+      exposed_form:
+        type: basic
+        options:
+          submit_button: Apply
+          reset_button: false
+          reset_button_label: Reset
+          exposed_sorts_label: 'Sort by'
+          expose_sort_order: true
+          sort_asc_label: Asc
+          sort_desc_label: Desc
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+      cache:
+        type: tag
+        options: {  }
+      empty: {  }
+      sorts: {  }
+      arguments: {  }
+      filters:
+        type:
+          id: type
+          table: scheduling_field_data
+          field: type
+          entity_type: scheduling
+          entity_field: type
+          plugin_id: bundle
+          value:
+            work_order: work_order
+        created:
+          id: created
+          table: scheduling_field_data
+          field: created
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: scheduling
+          entity_field: created
+          plugin_id: date
+          operator: between
+          value:
+            min: '[current-date:custom:Y]-01-01'
+            max: '[current-date:custom:Y]-12-31'
+            value: ''
+            type: date
+          group: 1
+          exposed: false
+          expose:
+            operator_id: ''
+            label: ''
+            description: ''
+            use_operator: false
+            operator: ''
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: ''
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            min_placeholder: ''
+            max_placeholder: ''
+            placeholder: ''
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          use_tokens: 1
+      style:
+        type: fullcalendar
+        options:
+          header: "left:'dayGridMonth,timeGridWeek,timeGridDay', center:'title', right:'today prev,next'"
+          footer: ''
+          titleFormat: ''
+          titleRangeSeparator: \u2013
+          buttonText: "today:'today', month:'month', week:'week', day:'day', list:'list'"
+          buttonIcons: "prev:'left-single-arrow', next:'right-single-arrow', prevYear:'left-double-arrow', nextYear:'right-double-arrow'"
+          month_view: true
+          timegrid_view: true
+          daygrid_view: true
+          list_view: true
+          fields:
+            title: true
+            title_field: title
+            url: true
+            url_field: view_work_order
+            date: true
+            date_field:
+              field_date: field_date
+          event_format:
+            eventColor: '#3788d8'
+            eventDisplay: auto
+            displayEventTime: true
+            nextDayThreshold: '00:00:00'
+          links:
+            navLinks: true
+            navLinkDayClick: ''
+            navLinkWeekClick: ''
+            bundle_type: ''
+            createTarget: ''
+            modalWidth: 600
+            updateConfirm: false
+            showMessages: true
+          colors:
+            color_bundle:
+              work_order: {  }
+            tax_field: ''
+            vocabularies: ''
+            color_taxonomies: {  }
+          month_view_settings:
+            fixedWeekCount: true
+            showNonCurrentDates: '1'
+          timegrid_view_settings:
+            allDaySlot: true
+            allDayContent: all-day
+            slotEventOverlap: true
+            timeGridEventMinHeight: ''
+          list_view_settings:
+            listDayFormat: "weekday:'long'"
+            listDayAltFormat: "month:'long', day:'numeric', year:'numeric'"
+            noEventsMessage: 'No events to display'
+          views_year:
+            listYear_buttonText: "buttonText: 'list'"
+            listYear_titleFormat: "year: 'numeric'"
+          views_month:
+            listMonth_buttonText: "buttonText: 'list'"
+            listMonth_titleFormat: "year: 'numeric', month: 'long'"
+            dayGridMonth_buttonText: "buttonText: 'month'"
+            dayGridMonth_titleFormat: "year: 'numeric', month: 'long'"
+            dayGridMonth_dayHeaderFormat: "weekday:'short'"
+          views_week:
+            listWeek_buttonText: "buttonText: 'list'"
+            listWeek_titleFormat: "year: 'numeric', month: 'short', day: 'numeric'"
+            dayGridWeek_buttonText: "buttonText: 'week'"
+            dayGridWeek_titleFormat: "year: 'numeric', month: 'short', day: 'numeric'"
+            dayGridWeek_dayHeaderFormat: "weekday:'short', month:'numeric', day:'numeric', omitCommas:true"
+            timeGridWeek_buttonText: "buttonText: 'week'"
+            timeGridWeek_titleFormat: "year: 'numeric', month: 'short', day: 'numeric'"
+            timeGridWeek_dayHeaderFormat: "weekday:'short', month:'numeric', day:'numeric', omitCommas:true"
+          views_day:
+            listDay_buttonText: "buttonText: 'list'"
+            listDay_titleFormat: "year: 'numeric', month: 'long', day: 'numeric'"
+            dayGridDay_buttonText: "buttonText: 'day'"
+            dayGridDay_titleFormat: "year: 'numeric', month: 'long', day: 'numeric'"
+            dayGridDay_dayHeaderFormat: "weekday:'long'"
+            timeGridDay_buttonText: "buttonText: 'day'"
+            timeGridDay_titleFormat: "year: 'numeric', month: 'long', day: 'numeric'"
+            timeGridDay_dayHeaderFormat: "weekday:'long'"
+          display:
+            initialView: dayGridMonth
+            firstDay: '0'
+          times:
+            convert_timezones: true
+            weekends: true
+            hiddenDays: ''
+            dayHeaders: '1'
+          axis:
+            slotDuration: ''
+            slotLabelInterval: ''
+            slotLabelFormat: ''
+            slotMinTime: ''
+            slotMaxTime: ''
+            scrollTime: ''
+          nav:
+            initialDate: ''
+            validRange: ''
+          week:
+            weekNumbers: false
+            weekNumberCalculation: local
+            weekText: W
+          now:
+            nowIndicator: false
+            now: false
+          business:
+            businessHours: false
+            businessHours2: ''
+          style:
+            themeSystem: standard
+            height: ''
+            contentHeight: ''
+            aspectRatio: '1.35'
+            handleWindowResize: true
+            windowResizeDelay: '100'
+          google:
+            googleCalendarApiKey: ''
+            googleCalendarId: ''
+      row:
+        type: fields
+      query:
+        type: views_query
+        options:
+          query_comment: ''
+          disable_sql_rewrite: false
+          distinct: false
+          replica: false
+          query_tags: {  }
+      relationships:
+        field_work_order:
+          id: field_work_order
+          table: scheduling__field_work_order
+          field: field_work_order
+          relationship: none
+          group_type: group
+          admin_label: 'Work Order'
+          plugin_id: standard
+          required: false
+        field_property:
+          id: field_property
+          table: work_order__field_property
+          field: field_property
+          relationship: field_work_order
+          group_type: group
+          admin_label: Property
+          plugin_id: standard
+          required: false
+        field_zipcode_reference:
+          id: field_zipcode_reference
+          table: properties__field_zipcode_reference
+          field: field_zipcode_reference
+          relationship: field_property
+          group_type: group
+          admin_label: Zipcode
+          plugin_id: standard
+          required: false
+        field_city:
+          id: field_city
+          table: zipcodes__field_city
+          field: field_city
+          relationship: field_zipcode_reference
+          group_type: group
+          admin_label: City
+          plugin_id: standard
+          required: false
+        field_assigned_to:
+          id: field_assigned_to
+          table: scheduling__field_assigned_to
+          field: field_assigned_to
+          relationship: none
+          group_type: group
+          admin_label: 'Assigned To'
+          plugin_id: standard
+          required: false
+        profile:
+          id: profile
+          table: users_field_data
+          field: profile
+          relationship: field_assigned_to
+          group_type: group
+          admin_label: 'Assigned Profile'
+          entity_type: user
+          plugin_id: standard
+          required: false
+      header: {  }
+      footer: {  }
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - user.roles
+      tags:
+        - 'config:field.storage.profile.field_first_name'
+        - 'config:field.storage.profile.field_last_name'
+        - 'config:field.storage.properties.field_nickname'
+        - 'config:field.storage.scheduling.field_date'
+        - 'config:field.storage.scheduling.field_scheduled_firm'
+        - 'config:field.storage.scheduling.field_scheduled_oder'
+        - 'config:field.storage.scheduling.field_scheduling_note'
+        - 'config:field.storage.scheduling.field_work_order'
+        - 'config:field.storage.work_order.field_service'
+  page_1:
+    id: page_1
+    display_title: Page
+    display_plugin: page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/office/calendar
+      menu:
+        type: normal
+        title: Calendar
+        description: ''
+        weight: -10
+        expanded: false
+        menu_name: admin
+        parent: 'menu_link_content:4b4baafc-6631-4b64-9157-b570acf68c2c'
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - user.roles
+      tags:
+        - 'config:field.storage.profile.field_first_name'
+        - 'config:field.storage.profile.field_last_name'
+        - 'config:field.storage.properties.field_nickname'
+        - 'config:field.storage.scheduling.field_date'
+        - 'config:field.storage.scheduling.field_scheduled_firm'
+        - 'config:field.storage.scheduling.field_scheduled_oder'
+        - 'config:field.storage.scheduling.field_scheduling_note'
+        - 'config:field.storage.scheduling.field_work_order'
+        - 'config:field.storage.work_order.field_service'
+

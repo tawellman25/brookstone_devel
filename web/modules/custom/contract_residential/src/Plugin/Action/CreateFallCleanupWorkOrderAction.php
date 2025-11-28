@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_fall_cleanup_work_order_action",
  *   label = @Translation("Create Fall Cleanup Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "contracts"
+ *   confirm = TRUE
  * )
  */
 class CreateFallCleanupWorkOrderAction extends ViewsBulkOperationsActionBase {

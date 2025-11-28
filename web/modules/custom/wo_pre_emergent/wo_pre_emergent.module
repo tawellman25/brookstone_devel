@@ -1,7 +1,6 @@
 <?php
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\config_pages\ConfigPagesLoaderInterface;
 use Drupal\Core\Datetime\DrupalDateTime;
 
 /**
@@ -13,15 +12,16 @@ function wo_pre_emergent_entity_presave(EntityInterface $entity) {
   }
 
   // Only process if status is Complete (1097).
-  $statusTermId = $entity->get('field_status')->target_id ?? 0;
-  if ($statusTermId != 1097) {
+  $statusTermId = (int) ($entity->get('field_status')->target_id ?? 0);
+  if ($statusTermId !== 1097) {
     return;
   }
 
-  $grand_total = 0;
-  $workOrderId = $entity->id();
+  $grand_total = 0.0;
+  $workOrderId = (int) $entity->id();
 
   // Load business settings.
+  /** @var \Drupal\config_pages\ConfigPagesLoaderInterface $config_pages_loader */
   $config_pages_loader = \Drupal::service('config_pages.loader');
   $business_settings = $config_pages_loader->load('business_setting');
   if (!$business_settings) {
@@ -30,63 +30,52 @@ function wo_pre_emergent_entity_presave(EntityInterface $entity) {
   }
 
   // Fetch configuration values.
-  $preEmergentRate = $business_settings->get('field_pre_emergent_rate')->value ?? 0;
-  $dyeRate = $business_settings->get('field_dye_rate')->value ?? 0;
-  $minAllottedTime = $business_settings->get('field_pre_emergt_min_time')->value ?? 0;
-  $atvRate = $business_settings->get('field_atv_and_sprayer_charge')->value ?? 0;
-  $hourlyRate = $business_settings->get('field_spray_crew_labor')->value ?? 0;
+  $preEmergentRate = (float) ($business_settings->get('field_pre_emergent_rate')->value ?? 0);
+  $dyeRate         = (float) ($business_settings->get('field_dye_rate')->value ?? 0);
+  $minAllottedTime = (float) ($business_settings->get('field_pre_emergt_min_time')->value ?? 0);
+  $atvRate         = (float) ($business_settings->get('field_atv_and_sprayer_charge')->value ?? 0);
+  $hourlyRate      = (float) ($business_settings->get('field_spray_crew_labor')->value ?? 0);
 
   // Get values for calculations.
-  $gallonsUsed = get_largest_gallons_used_for_pre_emergent($workOrderId);
-  $timeSpent = get_hours_for_pre_emergent($workOrderId);
-  $trucks = $entity->get('field_trucks')->value ?? 0;
-  $totalTime = $entity->get('field_total_time')->value ?? 0;
+  $gallonsUsed = (float) get_largest_gallons_used_for_pre_emergent($workOrderId);
+  $timeSpent   = (float) get_hours_for_pre_emergent($workOrderId);
+  $trucks      = (int) ($entity->get('field_trucks')->value ?? 0);
+  $totalTime   = (float) ($entity->get('field_total_time')->value ?? 0);
 
-  // Calculate chemical subtotal.
+  // Chemical subtotal.
   $chemical_subtotal = $gallonsUsed * $preEmergentRate;
   $entity->set('field_material_chemical_total', $chemical_subtotal);
-  if ($chemical_subtotal > 0) {
-    $grand_total += $chemical_subtotal;
-  }
+  $grand_total += max(0, $chemical_subtotal);
 
-  // Calculate dye subtotal.
+  // Dye subtotal.
   $dye_subtotal = $gallonsUsed > 0 ? ceil($gallonsUsed / 100) * $dyeRate : 0;
   $entity->set('field_die_total', $dye_subtotal);
-  if ($dye_subtotal > 0) {
-    $grand_total += $dye_subtotal;
-  }
+  $grand_total += max(0, $dye_subtotal);
 
-  // Calculate ATV subtotal.
+  // ATV subtotal.
   $hoursPerBlock = 4;
-  $blocksUsed = ceil($timeSpent / $hoursPerBlock);
-  $atv_subtotal = $blocksUsed * $atvRate * $trucks;
+  $blocksUsed = (int) ceil($timeSpent / $hoursPerBlock);
+  $atv_subtotal = $blocksUsed * $atvRate * max(0, $trucks);
   $entity->set('field_atv_total', $atv_subtotal);
-  if ($atv_subtotal > 0) {
-    $grand_total += $atv_subtotal;
-  }
+  $grand_total += max(0, $atv_subtotal);
 
-  // Calculate labor subtotal.
-  $labor_subtotal = $totalTime <= $minAllottedTime ? $hourlyRate * $minAllottedTime : $hourlyRate * $totalTime;
+  // Labor subtotal.
+  $billable_time = $totalTime <= $minAllottedTime ? $minAllottedTime : $totalTime;
+  $labor_subtotal = $hourlyRate * $billable_time;
   $entity->set('field_labor_total', $labor_subtotal);
-  if ($labor_subtotal > 0) {
-    $grand_total += $labor_subtotal;
-  }
+  $grand_total += max(0, $labor_subtotal);
 
-  // Add trip fee.
-  $totalTrip = $entity->get('field_trip_fee')->value ?? 0;
-  if ($totalTrip > 0) {
-    $grand_total += $totalTrip;
-  }
+  // Trip fee.
+  $totalTrip = (float) ($entity->get('field_trip_fee')->value ?? 0);
+  $grand_total += max(0, $totalTrip);
 
-  // Add rental fees.
-  $rental_fee_total = get_pre_emergent_total_rental_fees($workOrderId);
+  // Rental fees.
+  $rental_fee_total = (float) get_pre_emergent_total_rental_fees($workOrderId);
   $entity->set('field_rental_total', $rental_fee_total);
-  if ($rental_fee_total > 0) {
-    $grand_total += $rental_fee_total;
-  }
+  $grand_total += max(0, $rental_fee_total);
 
-  // Add billing adjustment.
-  $billingAdjustment = $entity->get('field_billing_adjustment')->value ?? 0;
+  // Billing adjustment.
+  $billingAdjustment = (float) ($entity->get('field_billing_adjustment')->value ?? 0);
   $grand_total += $billingAdjustment;
 
   // Set grand total.
@@ -94,7 +83,7 @@ function wo_pre_emergent_entity_presave(EntityInterface $entity) {
     $entity->set('field_wo_total', $grand_total);
   }
 
-  // Debug logging (remove in production).
+  // Debug logging.
   \Drupal::logger('wo_pre_emergent')->debug('WO #@id: Grand Total=@total, Chemical=@chem, Dye=@dye, ATV=@atv, Labor=@labor, Trip=@trip, Rental=@rental, Adjustment=@adjust', [
     '@id' => $workOrderId,
     '@total' => $grand_total,
@@ -113,7 +102,7 @@ function wo_pre_emergent_entity_presave(EntityInterface $entity) {
  */
 function wo_pre_emergent_entity_insert(EntityInterface $entity) {
   if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'pre_emergent') {
-    _wo_pre_emergent_handle_work_order($entity, 'insert');
+    _wo_pre_emergent_handle_work_order($entity);
   }
 }
 
@@ -122,29 +111,30 @@ function wo_pre_emergent_entity_insert(EntityInterface $entity) {
  */
 function wo_pre_emergent_entity_update(EntityInterface $entity) {
   if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'pre_emergent') {
-    _wo_pre_emergent_handle_work_order($entity, 'update');
+    _wo_pre_emergent_handle_work_order($entity);
   }
 }
 
 /**
- * Helper function to process work orders on insert or update.
+ * Process work orders on insert or update.
  */
-function _wo_pre_emergent_handle_work_order(EntityInterface $entity, $operation) {
-  if ($entity->get('field_status')->target_id != 1097) {
+function _wo_pre_emergent_handle_work_order(EntityInterface $entity) {
+  $status_tid = (int) ($entity->get('field_status')->target_id ?? 0);
+  if ($status_tid !== 1097) {
     return;
   }
 
-  $workOrderId = $entity->id();
-  $propertyId = $entity->get('field_property')->target_id ?? NULL;
-  if (!$propertyId) {
+  $workOrderId = (int) $entity->id();
+  $propertyId = (int) ($entity->get('field_property')->target_id ?? 0);
+  if ($propertyId <= 0) {
     \Drupal::logger('wo_pre_emergent')->warning('Property not set for Work Order #@id', ['@id' => $workOrderId]);
     return;
   }
 
-  $gallonsUsed = get_largest_gallons_used_for_pre_emergent($workOrderId);
+  $gallonsUsed = (float) get_largest_gallons_used_for_pre_emergent($workOrderId);
   $currentSeasonValue = '';
-  $signOffDateFormatted = NULL;
-  $signOffBy = NULL;
+  $signOffDateFormatted = null;
+  $signOffBy = null;
 
   // Load latest wo_complete_info.
   $query = \Drupal::entityQuery('wo_complete_info')
@@ -158,13 +148,13 @@ function _wo_pre_emergent_handle_work_order(EntityInterface $entity, $operation)
   if (!empty($result)) {
     $woSignOffInfo = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load(reset($result));
     if ($woSignOffInfo) {
-      $woSignOffInfoTimestamp = $woSignOffInfo->get('field_date_completed')->value;
-      if ($woSignOffInfoTimestamp) {
-        $signOffDate = DrupalDateTime::createFromTimestamp($woSignOffInfoTimestamp);
+      $timestamp_val = $woSignOffInfo->get('field_date_completed')->value ?? null;
+      if ($timestamp_val !== null && $timestamp_val !== '') {
+        $signOffDate = DrupalDateTime::createFromTimestamp((int) $timestamp_val);
         $signOffDate->setTimezone(new \DateTimeZone('UTC'));
         $signOffDateFormatted = $signOffDate->format('Y-m-d\TH:i:s');
       }
-      $signOffBy = $woSignOffInfo->get('field_signed_off_by')->target_id;
+      $signOffBy = (int) ($woSignOffInfo->get('field_signed_off_by')->target_id ?? 0);
     }
   }
 
@@ -172,15 +162,16 @@ function _wo_pre_emergent_handle_work_order(EntityInterface $entity, $operation)
   if (!$signOffDateFormatted || !$signOffBy) {
     $current_time = new \DateTime('now', new \DateTimeZone('UTC'));
     $signOffDateFormatted = $current_time->format('Y-m-d\TH:i:s');
-    $signOffBy = \Drupal::currentUser()->id();
+    $signOffBy = (int) \Drupal::currentUser()->id();
     \Drupal::logger('wo_pre_emergent')->warning('No wo_complete_info found for WO #@id. Using current date and user.', ['@id' => $workOrderId]);
   }
 
-  // Determine season.
-  $currentSeason = $entity->get('field_pre_emergent_season')->target_id ?? NULL;
-  if ($currentSeason == 1100) {
+  // Determine season (1100 spring, 1102 fall).
+  $currentSeason = (int) ($entity->get('field_pre_emergent_season')->target_id ?? 0);
+  if ($currentSeason === 1100) {
     $currentSeasonValue = 'spring';
-  } elseif ($currentSeason == 1102) {
+  }
+  elseif ($currentSeason === 1102) {
     $currentSeasonValue = 'fall';
   }
 
@@ -189,13 +180,15 @@ function _wo_pre_emergent_handle_work_order(EntityInterface $entity, $operation)
     'field_property' => $propertyId,
     'type' => 'pre_emergent',
   ]);
-  $sprayingInfoEntity = !empty($propertySprayingInfo) ? reset($propertySprayingInfo) : \Drupal::entityTypeManager()->getStorage('property_spraying_info')->create([
-    'type' => 'pre_emergent',
-    'field_property' => $propertyId,
-  ]);
+  $sprayingInfoEntity = !empty($propertySprayingInfo)
+    ? reset($propertySprayingInfo)
+    : \Drupal::entityTypeManager()->getStorage('property_spraying_info')->create([
+        'type' => 'pre_emergent',
+        'field_property' => $propertyId,
+      ]);
 
-  // Update spraying info if valid data exists.
-  if ($sprayingInfoEntity && ($gallonsUsed > 0 || $signOffDateFormatted || $signOffBy)) {
+  // Update spraying info.
+  if ($sprayingInfoEntity) {
     $sprayingInfoEntity->set('field_last_amount_applied', $gallonsUsed);
     $sprayingInfoEntity->set('field_last_season_applied', $currentSeasonValue);
     $sprayingInfoEntity->set('field_last_applied_date', $signOffDateFormatted);
@@ -208,8 +201,9 @@ function _wo_pre_emergent_handle_work_order(EntityInterface $entity, $operation)
     ]);
     $chemicalReferences = [];
     foreach ($chemicalsUsedEntities as $chemicalEntity) {
-      if ($chemicalReference = $chemicalEntity->get('field_chemical')->entity) {
-        $chemicalReferences[] = $chemicalReference;
+      $chemical_target = $chemicalEntity->get('field_chemical')->entity ?? null;
+      if ($chemical_target) {
+        $chemicalReferences[] = $chemical_target;
       }
     }
     $sprayingInfoEntity->set('field_last_chemicals', $chemicalReferences);
@@ -229,37 +223,49 @@ function _wo_pre_emergent_handle_work_order(EntityInterface $entity, $operation)
 
 /**
  * Calculates the total rented equipment fees for a given Work Order.
+ *
+ * @param int $workOrderId
+ * @return float
  */
 function get_pre_emergent_total_rental_fees($workOrderId) {
-  if (!is_numeric($workOrderId) || $workOrderId < 1) {
-    return 0;
+  $workOrderId = (int) $workOrderId;
+  if ($workOrderId < 1) {
+    return 0.0;
   }
 
   $database = \Drupal::database();
-  $query = $database->select('wo_rental_equipment__field_receipt_total_cost', 'rental_fees')
-    ->join('wo_rental_equipment__field_rented_for', 'work_order', 'rental_fees.entity_id = work_order.entity_id')
-    ->condition('work_order.field_rented_for_target_id', $workOrderId)
-    ->addExpression('SUM(rental_fees.field_receipt_total_cost_value)', 'total_rental_fee');
+
+  // Build the query without chaining the return value of addExpression().
+  $query = $database->select('wo_rental_equipment__field_receipt_total_cost', 'r');
+  $query->join('wo_rental_equipment__field_rented_for', 'w', 'r.entity_id = w.entity_id');
+  $query->condition('w.field_rented_for_target_id', $workOrderId);
+  $query->addExpression('SUM(r.field_receipt_total_cost_value)', 'total_rental_fee');
+
   $result = $query->execute()->fetchField();
-  return $result ?: 0;
+
+  return (float) ($result ?: 0.0);
 }
 
 /**
  * Retrieves the largest gallons value used for pre-emergent.
+ *
+ * @param int $workOrderId
+ * @return float
  */
 function get_largest_gallons_used_for_pre_emergent($workOrderId) {
-  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
-    return 0;
+  $workOrderId = (int) $workOrderId;
+  if ($workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+    return 0.0;
   }
 
-  $largestGallonsUsed = 0;
+  $largestGallonsUsed = 0.0;
   $chemicalsUsedEntities = \Drupal::entityTypeManager()->getStorage('wo_chemicals_used')->loadByProperties([
     'field_work_order' => $workOrderId,
     'type' => 'pre_emergent',
   ]);
 
   foreach ($chemicalsUsedEntities as $entity) {
-    $gallons = $entity->get('field_total_gallons_applied')->value ?? 0;
+    $gallons = (float) ($entity->get('field_total_gallons_applied')->value ?? 0);
     if ($gallons > $largestGallonsUsed) {
       $largestGallonsUsed = $gallons;
     }
@@ -270,20 +276,24 @@ function get_largest_gallons_used_for_pre_emergent($workOrderId) {
 
 /**
  * Retrieves the total hours clocked for pre-emergent.
+ *
+ * @param int $workOrderId
+ * @return float
  */
 function get_hours_for_pre_emergent($workOrderId) {
-  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
-    return 0;
+  $workOrderId = (int) $workOrderId;
+  if ($workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+    return 0.0;
   }
 
-  $hoursSpent = 0;
+  $hoursSpent = 0.0;
   $woTimeClockEntities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
     'field_work_order' => $workOrderId,
     'type' => 'entry',
   ]);
 
   foreach ($woTimeClockEntities as $entity) {
-    $hoursSpent += $entity->get('field_total_time')->value ?? 0;
+    $hoursSpent += (float) ($entity->get('field_total_time')->value ?? 0);
   }
 
   return $hoursSpent;
@@ -291,46 +301,54 @@ function get_hours_for_pre_emergent($workOrderId) {
 
 /**
  * Retrieves the number of crew members for a pre-emergent work order.
+ *
+ * @param int $workOrderId
+ * @return int
  */
 function get_men_for_pre_emergent($workOrderId) {
-  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+  $workOrderId = (int) $workOrderId;
+  if ($workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
     return 0;
   }
 
-  $query = \Drupal::entityQuery('wo_complete_info')
+  $result = \Drupal::entityQuery('wo_complete_info')
     ->accessCheck(FALSE)
     ->condition('field_work_order', $workOrderId)
     ->sort('field_date_completed', 'DESC')
-    ->range(0, 1);
-  $result = $query->execute();
+    ->range(0, 1)
+    ->execute();
 
   if (empty($result)) {
     return 0;
   }
 
   $latestEntity = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load(reset($result));
-  return $latestEntity->get('field_those_on_crew')->count() ?? 0;
+  return (int) ($latestEntity->get('field_those_on_crew')->count() ?? 0);
 }
 
 /**
  * Retrieves the number of trucks for a pre-emergent work order.
+ *
+ * @param int $workOrderId
+ * @return int
  */
 function get_trucks_for_pre_emergent($workOrderId) {
-  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+  $workOrderId = (int) $workOrderId;
+  if ($workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
     return 0;
   }
 
-  $query = \Drupal::entityQuery('wo_complete_info')
+  $result = \Drupal::entityQuery('wo_complete_info')
     ->accessCheck(FALSE)
     ->condition('field_work_order', $workOrderId)
     ->sort('field_date_completed', 'DESC')
-    ->range(0, 1);
-  $result = $query->execute();
+    ->range(0, 1)
+    ->execute();
 
   if (empty($result)) {
     return 0;
   }
 
   $latestEntity = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load(reset($result));
-  return $latestEntity->get('field_how_many_trucks_taken')->value ?? 0;
+  return (int) ($latestEntity->get('field_how_many_trucks_taken')->value ?? 0);
 }

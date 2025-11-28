@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "put_on_landscape_weed_spray_route_action",
  *   label = @Translation("Put Landscape Beds On Spray Route"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "contracts"
+ *   confirm = TRUE
  * )
  */
 class SprayRouteOnLandscapeWeedSprayAction extends ViewsBulkOperationsActionBase {

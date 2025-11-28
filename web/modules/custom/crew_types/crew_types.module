@@ -1,0 +1,153 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_insert().
+ *
+ * Adds cross-reference when a crew_types entity is created.
+ */
+function crew_types_entity_insert(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'crew_types') {
+    return;
+  }
+
+  $department_id = NULL;
+  if ($entity->hasField('field_department') && !$entity->get('field_department')->isEmpty()) {
+    $department_id = $entity->get('field_department')->target_id;
+  }
+
+  if (!empty($department_id)) {
+    crew_types_add_to_department($entity->id(), $department_id);
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ *
+ * Keeps department <-> crew_type cross-reference in sync when a crew_type is updated.
+ */
+function crew_types_entity_update(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'crew_types') {
+    return;
+  }
+
+  // Current department on the crew_type.
+  $new_department_id = NULL;
+  if ($entity->hasField('field_department') && !$entity->get('field_department')->isEmpty()) {
+    $new_department_id = $entity->get('field_department')->target_id;
+  }
+
+  // Original department before save.
+  $original_department_id = NULL;
+  if (isset($entity->original)) {
+    if ($entity->original->hasField('field_department') && !$entity->original->get('field_department')->isEmpty()) {
+      $original_department_id = $entity->original->get('field_department')->target_id;
+    }
+  }
+
+  // Add crew_type to new department.
+  if (!empty($new_department_id)) {
+    crew_types_add_to_department($entity->id(), $new_department_id);
+  }
+
+  // Remove from old department if changed.
+  if (!empty($original_department_id) && $original_department_id != $new_department_id) {
+    crew_types_remove_from_department($entity->id(), $original_department_id);
+  }
+}
+
+/**
+ * Implements hook_entity_delete().
+ *
+ * Removes cross-reference when a crew_type is deleted.
+ */
+function crew_types_entity_delete(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'crew_types') {
+    return;
+  }
+
+  if ($entity->hasField('field_department') && !$entity->get('field_department')->isEmpty()) {
+    $department_id = $entity->get('field_department')->target_id;
+    if (!empty($department_id)) {
+      crew_types_remove_from_department($entity->id(), $department_id);
+    }
+  }
+}
+
+/**
+ * Adds crew_type reference to department's field_associated_crews.
+ *
+ * @param int|string $crew_type_id
+ *   The crew_types entity ID.
+ * @param int|string $department_id
+ *   The department entity ID.
+ */
+function crew_types_add_to_department($crew_type_id, $department_id) {
+  // Adjust 'department' here if your ECK Department entity type ID is different.
+  $storage = \Drupal::entityTypeManager()->getStorage('department');
+  $department = $storage->load($department_id);
+  if (!$department) {
+    return;
+  }
+
+  // This is the field on the Department Details bundle that holds the crews.
+  $field_name = 'field_associated_crews';
+  if (!$department->hasField($field_name)) {
+    return;
+  }
+
+  $values = $department->get($field_name)->getValue();
+
+  // Skip if already linked.
+  foreach ($values as $item) {
+    if ((int) $item['target_id'] === (int) $crew_type_id) {
+      return;
+    }
+  }
+
+  $values[] = ['target_id' => $crew_type_id];
+  $department->set($field_name, $values);
+  $department->save();
+}
+
+/**
+ * Removes crew_type reference from department's field_associated_crews.
+ *
+ * @param int|string $crew_type_id
+ *   The crew_types entity ID.
+ * @param int|string $department_id
+ *   The department entity ID.
+ */
+function crew_types_remove_from_department($crew_type_id, $department_id) {
+  // Adjust 'department' here if your ECK Department entity type ID is different.
+  $storage = \Drupal::entityTypeManager()->getStorage('department');
+  $department = $storage->load($department_id);
+  if (!$department) {
+    return;
+  }
+
+  $field_name = 'field_associated_crews';
+  if (!$department->hasField($field_name)) {
+    return;
+  }
+
+  $values = $department->get($field_name)->getValue();
+  $new_values = [];
+  $changed = FALSE;
+
+  foreach ($values as $item) {
+    if ((int) $item['target_id'] !== (int) $crew_type_id) {
+      $new_values[] = $item;
+    }
+    else {
+      $changed = TRUE;
+    }
+  }
+
+  if ($changed) {
+    $department->set($field_name, $new_values);
+    $department->save();
+  }
+}
+

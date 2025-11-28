@@ -30,6 +30,16 @@
   width: 100%;
 }
 
+/* Property Pages */
+.view-property-header h3 {
+  margin-top: -1.75rem !important;
+}
+
+.view-eva.view-properties-current-owner-contact-info h5 {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
 
 /* Property Work Orders View */
 .view-property-work-orders * {
@@ -133,4 +143,160 @@
 
 .view-subordinate-handbook-pages .view-handbook-child-pages ul {
   margin-block-start: 1.0em;
+}
+
+/* Work Order Adjustments */
+
+.wo.winterizing.sprinkler-info .views-field-field-pumps .field {
+  margin-block-end: var(--sp0-25) !important;
+}
+
+.wo.winterizing.sprinkler-info .views-field-edit-property-ss-sources,
+.wo.winterizing.sprinkler-info .views-field-edit-property-sprinkler-info,
+.wo.winterizing.sprinkler-info .views-field-edit-property-sprinkler-pumps {
+  margin-top: 0.5em;
+  text-align: right;
+}
+
+.wo.winterizing.sprinkler-info h3,
+.wo.winterizing.sprinkler-info h4,
+.wo.winterizing.sprinkler-info h5 {
+  margin-top: .5rem !important;
+  margin-bottom: .1rem !important;
+}
+
+.wo.winterizing.sprinkler-info .views-table {
+  margin-block-start: 0em !important;
+  margin-block-end: 0em !important;
+}
+
+/* Property Sprinkler System Adjustments */
+
+
+
+.wo.winterizing.sprinkler-info .views-field-field-pumps .field {
+  margin-block-end: var(--sp0-25) !important;
+}
+
+.water-sources .views-field-edit-property-ss-sources,
+.water-sources .views-field-edit-property-sprinkler-info,
+.water-sources .views-field-edit-property-sprinkler-pumps,
+.ss_controllers .views-field-edit-property-system-controller {
+  margin-top: 0.5em;
+  text-align: right;
+}
+
+.view-property-sprinkler-info-systems h2 {
+  margin-top: -2rem !important;
+  margin-bottom: .1rem !important;
+}
+
+.view-property-ss-zones .views-table {
+  margin-top: -2rem !important;
+}
+
+.water-sources h3,
+.water-sources h4,
+.water-sources h5,
+.ss_controllers h3,
+.ss_controllers h4,
+.ss_controllers h5 {
+  margin-top: .5rem !important;
+  margin-bottom: .1rem !important;
+}
+
+.water-sources .views-table {
+  margin-block-start: 0em !important;
+  margin-block-end: 0em !important;
+}
+
+.ss_controllers .controller-description {
+  margin-left: 2rem !important;
+}
+
+
+/* Desktop: place each EVA view (each button) in one row */
+.add-source-button-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+/* Each EVA view container acts as a flex item */
+.ss-water-source-button-wrapper .view {
+  flex: 0 0 auto;
+  width: auto !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Style the actual link button */
+.ss-water-source-button-wrapper .ss-water-source-buttons a.button {
+  display: inline-flex !important;
+  width: auto !important;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+
+/* Prevent contextual gear from affecting layout */
+.ss-water-source-button-wrapper .ss-water-source-buttons .contextual {
+  position: absolute;
+}
+
+/* Stack vertically on small screens */
+@media (max-width: 700px) {
+  .ss-water-source-button-wrapper {
+    flex-direction: column;
+  }
+  .ss-water-source-button-wrapper .ss-water-source-buttons a.button {
+    width: 100% !important;
+  }
+}
+
+/* Sprinkler system Related View Adjustments */
+
+.ss-winterizing-total .view-content {
+  display: inline !important;
+}
+
+/* Fall clean-up Related View Adjustments */
+
+.last-year-count,
+.last-year-count .view-content,
+.last-year-count .views-row,
+.last-year-count .views-field,
+.last-year-count .field-content,
+.last-year-count div {
+  display: inline !important;
+  margin: 0;
+  padding: 0;
+}
+
+body { outline: 5px solid lime !important; }
+
+.view-id-teammate_wos_fall_cleanup_counts.view-display-id-block_5 * {
+  outline: 1px solid red;
+}
+
+/* Work Order Counts - Block */
+
+.wo-counts-block h3 {
+  margin-block: 0;
+}
+
+.wo-counts-block h3 {
+  margin-block-start: 0;
+}
+
+.wo-counts-block table {
+  padding-block: 0;
+}
+
+.wo-counts-block .views-table {
+  margin-block-start: -20px;
+}
+
+.wo-counts-block :is(.forum table, .text-content table, .views-table, .draggable-table) td {
+  padding-block: 2px;
 }

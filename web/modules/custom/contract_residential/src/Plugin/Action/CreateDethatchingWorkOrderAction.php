@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_dethatching_work_order_action",
  *   label = @Translation("Create Dethatching Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "contracts"
+ *   confirm = TRUE
  * )
  */
 class CreateDethatchingWorkOrderAction extends ViewsBulkOperationsActionBase {

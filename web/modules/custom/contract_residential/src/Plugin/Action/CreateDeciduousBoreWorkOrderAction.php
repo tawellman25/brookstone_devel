@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_deciduous_bore_work_order_action",
  *   label = @Translation("Create Deciduous Bored Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "contracts"
+ *   confirm = TRUE
  * )
  */
 class CreateDeciduousBoreWorkOrderAction extends ViewsBulkOperationsActionBase {

@@ -16,8 +16,7 @@ use Drupal\Core\Messenger\MessengerTrait;
  *   id = "update_spraying_info_from_invoiced_work_order",
  *   label = "Update Property Spraying Info",
  *   type = "work_order",
- *   confirm = TRUE,
- *   type = "work_order"
+ *   confirm = TRUE
  * )
  */
 class UpdateSprayingInfoFromInvoicedWorkOrder extends ViewsBulkOperationsActionBase {
@@ -128,7 +127,7 @@ class UpdateSprayingInfoFromInvoicedWorkOrder extends ViewsBulkOperationsActionB
   /**
    * {@inheritdoc}
    */
-  public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
+  public function submitConfigurationForm(array &$form, FormStateInterface $form_state): void {
     // Handle configuration form submission if needed.
   }
 }

@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_fertilizing_early_spring_work_order_action",
  *   label = @Translation("Create EARLY SPRING Lawn Fertilizing Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "contracts"
+ *   confirm = TRUE
  * )
  */
 class CreateFertilizingEarlySpringWorkOrderAction extends ViewsBulkOperationsActionBase {

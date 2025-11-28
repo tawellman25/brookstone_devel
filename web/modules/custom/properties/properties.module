@@ -1,10 +1,80 @@
 <?php
 
+declare(strict_types=1);
+
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * Implements hook_ENTITY_TYPE_presave() for the 'property' entity type.
+ * Implements hook_ENTITY_TYPE_presave() for the 'properties' entity type.
+ * Reserved for future logic. Currently unused.
  */
-function properties_presave(Drupal\Core\Entity\EntityInterface $entity) {
+function properties_properties_presave(EntityInterface $entity): void {
+  // Add presave logic here when needed.
+}
 
+/**
+ * Implements hook_entity_insert().
+ * Ensure a sprinkler info record exists when a Properties entity is created.
+ */
+function properties_entity_insert(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() === 'properties') {
+    _properties_ensure_property_sprinkler_info($entity);
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ * Ensure a sprinkler info record exists when a Properties entity is updated.
+ */
+function properties_entity_update(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() === 'properties') {
+    _properties_ensure_property_sprinkler_info($entity);
+  }
+}
+
+/**
+ * Ensure a property_sprinkler_info entity exists for the given Properties entity.
+ *
+ * Entity type: property_sprinkler_info
+ * Bundle: general_information
+ * Reference field: field_property (references properties)
+ */
+function _properties_ensure_property_sprinkler_info(EntityInterface $property): void {
+  $property_id = $property->id();
+  if (!$property_id) {
+    return;
+  }
+
+  $storage = \Drupal::entityTypeManager()->getStorage('property_sprinkler_info');
+
+  // Check whether a related sprinkler info entity already exists.
+  $ids = $storage->getQuery()
+    ->condition('field_property', $property_id)
+    ->range(0, 1)
+    ->accessCheck(FALSE)
+    ->execute();
+
+  // If one exists, do nothing.
+  if (!empty($ids)) {
+    return;
+  }
+
+  // Create new sprinkler info entity.
+  $entity = $storage->create([
+    'type' => 'general_information',
+    'field_property' => [
+      'target_id' => $property_id,
+    ],
+  ]);
+
+  $entity->save();
+
+  // Logging is optional, but useful.
+  \Drupal::logger('properties')->notice(
+    'Created property_sprinkler_info @sid for property @pid.',
+    [
+      '@sid' => $entity->id(),
+      '@pid' => $property_id,
+    ]
+  );
 }

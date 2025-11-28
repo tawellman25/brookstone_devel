@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_trunk_bore_work_order_action",
  *   label = @Translation("Create Trunk Bored Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "contracts"
+ *   confirm = TRUE
  * )
  */
 class CreateTrunkBoreWorkOrderAction extends ViewsBulkOperationsActionBase {

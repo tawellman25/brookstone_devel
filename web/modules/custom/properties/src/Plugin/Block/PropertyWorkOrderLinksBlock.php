@@ -1,13 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\properties\Plugin\Block;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Block\BlockBase;
+use Drupal\Core\Link;
+use Drupal\Core\Path\CurrentPathStack;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
+use Drupal\path_alias\AliasManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\path_alias\AliasManager;
 
 /**
  * Provides a block with dynamic links to create work orders.
@@ -18,138 +24,135 @@ use Drupal\path_alias\AliasManager;
  *   category = @Translation("Custom")
  * )
  */
-class PropertyWorkOrderLinksBlock extends BlockBase implements ContainerFactoryPluginInterface {
+final class PropertyWorkOrderLinksBlock extends BlockBase implements ContainerFactoryPluginInterface {
 
-  /**
-   * The current route match.
-   *
-   * @var \Drupal\Core\Routing\RouteMatchInterface
-   */
-  protected $routeMatch;
+  protected RouteMatchInterface $routeMatch;
+  protected AliasManagerInterface $aliasManager;
+  protected CurrentPathStack $currentPath;
 
-  /**
-   * The alias manager.
-   *
-   * @var \Drupal\Core\Path\AliasManagerInterface
-   */
-  protected $aliasManager;
-
-  /**
-   * Constructs a new PropertyWorkOrderLinksBlock instance.
-   *
-   * @param array $configuration
-   *   A configuration array containing information about the plugin instance.
-   * @param string $plugin_id
-   *   The plugin_id for the plugin instance.
-   * @param mixed $plugin_definition
-   *   The plugin implementation definition.
-   * @param \Drupal\Core\Routing\RouteMatchInterface $route_match
-   *   The current route match.
-   * @param \Drupal\Core\Path\AliasManagerInterface $alias_manager
-   *   The path alias manager.
-   */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, RouteMatchInterface $route_match, AliasManager $alias_manager) {
+  public function __construct(
+    array $configuration,
+    $plugin_id,
+    $plugin_definition,
+    RouteMatchInterface $route_match,
+    AliasManagerInterface $alias_manager,
+    CurrentPathStack $current_path
+  ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->routeMatch = $route_match;
     $this->aliasManager = $alias_manager;
+    $this->currentPath = $current_path;
   }
 
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static(
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): self {
+    return new self(
       $configuration,
       $plugin_id,
       $plugin_definition,
       $container->get('current_route_match'),
-      $container->get('path_alias.manager')
+      $container->get('path_alias.manager'),
+      $container->get('path.current')
     );
   }
 
   /**
-   * {@inheritdoc}
+   * Only allow the block on /properties/{id} and subpaths.
    */
-  public function build() {
-    $property_id = $this->getPropertyIdFromCurrentPage();
+  protected function blockAccess(AccountInterface $account): AccessResult {
+    $system_path = $this->aliasManager->getPathByAlias($this->currentPath->getPath());
+    $allowed = (bool) preg_match('#^/properties/\d+(?:/.*)?$#', $system_path);
+    return AccessResult::allowedIf($allowed)
+      ->addCacheContexts(['route', 'url.path']);
+  }
+
+  public function build(): array {
+    $property_id = $this->getPropertyIdFromRoute();
+    if (!$property_id) {
+      return [
+        '#markup' => '',
+        '#cache' => [
+          'contexts' => ['route', 'url.path'],
+          'max-age' => 0,
+        ],
+      ];
+    }
 
     $work_order_types = [
-        'aerating' => 'Aerating',
-        'aspen_twig_gall' => 'Aspen Twig Gall',
-        'christmas_decorations' => 'Christmas Decorations',
-        'cooley_spruce_gall' => 'Cooley Spruce Gall',
-        'deciduous_bore' => 'Deciduous Bore',
-        'deer_prevention' => 'Deer Prevention',
-        'dethatching' => 'Dethatching',
-        'dormant_oil' => 'Dormant Oil',
-        'estimate' => 'Estimate',
-        'fall_cleanup' => 'Fall Cleanup',
-        'fertilizing' => 'Fertilizing',
-        'fertilizing_trees_and_shrubs' => 'Fertilizing Trees and Shrubs',
-        'in_house_tasks' => 'In House Tasks',
-        'landscaping' => 'Landscaping',
-        'lawn_mowing' => 'Lawn Mowing',
-        'misc_services' => 'Misc Services',
-        'pinion_pine_ips_beetle' => 'Pinion Pine Ips Beetle',
-        'pre_emergent' => 'Pre-emergent',
-        'snow_removal' => 'Snow Removal',
-        'special_mowing' => 'Special Mowing',
-        'spring_cleanup' => 'Spring Cleanup',
-        'sprinkler_check_up' => 'Sprinkler Check-Up',
-        'sprinkler_design' => 'Sprinkler Design',
-        'sprinkler_installation' => 'Sprinkler Installation',
-        'sprinkler_repair' => 'Sprinkler Repair',
-        'sprinkler_start_up' => 'Sprinkler Start-Up',
-        'sprinkler_winterizing' => 'Sprinkler Winterizing',
-        'summer_pruning' => 'Summer Pruning',
-        'trunk_bore' => 'Trunk Bore',
-        'weed_pulling' => 'Weed Pulling',
-        // Add more work order types as needed
+      'aerating' => 'Aerating',
+      'aspen_twig_gall' => 'Aspen Twig Gall',
+      'christmas_decorations' => 'Christmas Decorations',
+      'cooley_spruce_gall' => 'Cooley Spruce Gall',
+      'deciduous_bore' => 'Deciduous Bore',
+      'deer_prevention' => 'Deer Prevention',
+      'dethatching' => 'Dethatching',
+      'dormant_oil' => 'Dormant Oil',
+      'estimate' => 'Estimate',
+      'fall_cleanup' => 'Fall Cleanup',
+      'fertilizing' => 'Fertilizing',
+      'fertilizing_trees_and_shrubs' => 'Fertilizing Trees and Shrubs',
+      'grub_prevention' => 'Grub Prevention',
+      'in_house_tasks' => 'In House Tasks',
+      'landscaping' => 'Landscaping',
+      'lawn_mowing' => 'Lawn Mowing',
+      'misc_services' => 'Misc Services',
+      'pinion_pine_ips_beetle' => 'Pinion Pine Ips Beetle',
+      'pre_emergent' => 'Pre-emergent',
+      'snow_removal' => 'Snow Removal',
+      'special_mowing' => 'Special Mowing',
+      'spring_cleanup' => 'Spring Cleanup',
+      'sprinkler_check_up' => 'Sprinkler Check-Up',
+      'sprinkler_design' => 'Sprinkler Design',
+      'sprinkler_installation' => 'Sprinkler Installation',
+      'sprinkler_repair' => 'Sprinkler Repair',
+      'sprinkler_start_up' => 'Sprinkler Start-Up',
+      'sprinkler_winterizing' => 'Sprinkler Winterizing',
+      'summer_pruning' => 'Summer Pruning',
+      'trunk_bore' => 'Trunk Bore',
+      'weed_pulling' => 'Weed Pulling',
     ];
 
     $links = [];
     foreach ($work_order_types as $type_key => $type_label) {
-        $url = Url::fromUri("internal:/admin/content/work_order/add/{$type_key}", [
-            'query' => [
-                "edit[field_property][widget][0][target_id]" => $property_id
-            ]
-        ]);
-    
-        $links[] = [
-            '#type' => 'link',
-            '#title' => $type_label,
-            '#url' => $url,
-            '#attributes' => ['target' => '_blank'] // Opens in a new tab
-        ];
+      $url = Url::fromUri("internal:/admin/content/work_order/add/{$type_key}", [
+        'query' => [
+          'edit[field_property][widget][0][target_id]' => $property_id,
+        ],
+      ]);
+      $links[] = Link::fromTextAndUrl($type_label, $url)->toRenderable() + [
+        '#attributes' => ['target' => '_blank'],
+      ];
     }
 
     return [
-        '#theme' => 'item_list',
-        '#items' => $links,
+      '#theme' => 'item_list',
+      '#items' => $links,
+      '#cache' => [
+        'contexts' => ['route', 'url.path'],
+        'max-age' => 0,
+      ],
     ];
   }
 
   /**
-   * Extract the property ID from the current page's URL.
+   * Extract the property ID from the current route or URL.
    */
-  private function getPropertyIdFromCurrentPage() {
-    $property_id = $this->routeMatch->getParameter('property_id');
-    if (!$property_id) {
-      // Try to resolve an alias if the property_id isn't directly available
-      $current_path = \Drupal::service('path.current')->getPath();
-      $path = $this->aliasManager->getPathByAlias($current_path);
-      if (preg_match('/\/properties\/(\d+)/', $path, $matches)) {
-        $property_id = $matches[1];
-      }
+  private function getPropertyIdFromRoute(): ?string {
+    $param = $this->routeMatch->getParameter('properties')
+      ?? $this->routeMatch->getParameter('property')
+      ?? $this->routeMatch->getParameter('property_id');
+
+    if ($param && is_object($param) && method_exists($param, 'id')) {
+      return (string) $param->id();
     }
-    return $property_id;
+    if (is_scalar($param) && (string) $param !== '') {
+      return (string) $param;
+    }
+
+    $system_path = $this->aliasManager->getPathByAlias($this->currentPath->getPath());
+    if (preg_match('#^/properties/(\d+)(?:/.*)?$#', $system_path, $m)) {
+      return $m[1];
+    }
+    return NULL;
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function getCacheContexts() {
-    return array_merge(parent::getCacheContexts(), ['url.path']);
-  }
 }

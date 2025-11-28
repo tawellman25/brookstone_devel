@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_fertilizing_spring_work_order_action",
  *   label = @Translation("Create SRING Lawn Fertilizing Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "contracts"
+ *   confirm = TRUE
  * )
  */
 class CreateFertilizingSpringWorkOrderAction extends ViewsBulkOperationsActionBase {

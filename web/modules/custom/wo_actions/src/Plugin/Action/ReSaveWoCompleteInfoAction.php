@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "re_save_wo_complete_info_action",
  *   label = @Translation("Re-save Work Order Complete Info"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "work_order"
+ *   confirm = TRUE
  * )
  */
 class ReSaveWoCompleteInfoAction extends ViewsBulkOperationsActionBase {

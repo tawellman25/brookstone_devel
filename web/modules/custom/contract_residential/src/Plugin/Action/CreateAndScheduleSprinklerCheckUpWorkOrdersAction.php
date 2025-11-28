@@ -17,8 +17,7 @@ use Drupal\Core\Datetime\DrupalDateTime;
  *   id = "create_and_schedule_sprinkler_check_up_work_orders_action",
  *   label = @Translation("Create and Schedule Sprinkler Check-up Work Orders (May-Sep)"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "contracts"
+ *   confirm = TRUE
  * )
  */
 class CreateAndScheduleSprinklerCheckUpWorkOrdersAction extends ViewsBulkOperationsActionBase {

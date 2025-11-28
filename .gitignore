@@ -1,27 +1,93 @@
-# Drupal core and vendor
-/vendor/
-/web/core/
-/web/libraries/
-/web/modules/contrib/
-/web/profiles/contrib/
-/web/themes/contrib/
+# This file contains default .gitignore rules. To use it, copy it to .gitignore,
+# and it will cause files like your settings.php and user-uploaded files to be
+# excluded from Git version control. This is a common strategy to avoid
+# accidentally including private information in public repositories and patch
+# files.
+#
+# Because .gitignore can be specific to your site, this file has a different
+# name; updating Drupal core will not override your custom .gitignore file.
 
-# Files and private stuff
-/web/sites/default/files/
-/web/sites/default/settings.php
-/web/sites/default/settings.local.php
-/private/
+# Ignore core when managing all of a project's dependencies with Composer
+# including Drupal core.
+web/core
 
-# DDEV generated files
-/.ddev/.downloads/
-/.ddev/.importdb/
-/.ddev/.webimageBuild/
-/.ddev/docker-compose.*.yaml
+# Added by Todd from this webpage: https://www.hashbangcode.com/article/drupal-9-deleting-and-ignoring-drupal-composer-directories-git
 
-# Composer lock (optional: keep if you want to pin exact versions)
-composer.lock
+web/modules/contrib
+web/themes/contrib
+web/profiles/contrib
+web/libraries
+web/.csslintrc
+web/.editorconfig
+web/.eslintignore
+web/.eslintrc.json
+web/.gitattributes
+web/.ht.router.php
+web/INSTALL.txt
+web/README.txt
+web/autoload.php
+web/example.gitignore
+web/index.php
+web/robots.txt
+web/update.php
+web/web.config
+web/README.md
+/.editorconfig
+/.gitattributes
 
-# IDE/editor/node
-/.idea/
-/.vscode/
-/node_modules/
+# Ignore dependencies that are managed with Composer.
+# Generally you should only ignore the root vendor directory. It's important
+# that core/assets/vendor and any other vendor directories within contrib or
+# custom module, theme, etc., are not ignored unless you purposely do so.
+vendor/
+
+# Ignore configuration files that may contain sensitive information.
+web/sites/*/settings*.php
+web/*/services*.yml
+
+# Ignore paths that contain user-generated content.
+web/sites/*/files
+web/sites/*/private
+
+# Ignore multi-site test environment.
+web/sites/simpletest
+
+# If you prefer to store your .gitignore file in the sites/ folder, comment
+# or delete the previous settings and uncomment the following ones, instead.
+
+# Ignore configuration files that may contain sensitive information.
+# */settings*.php
+
+# Ignore paths that contain user-generated content.
+# */files
+# */private
+
+# Ignore multi-site test environment.
+# simpletest
+
+# Ignore database backup files
+*.sql.gz
+
+# Local backups / temp
+backup_*.sql
+db-backup-*.sql
+config-backup/
+config/temp/
+
+# AWS installers / local tools
+awscliv2.zip
+
+# Local AWS SDK copies (we deploy via composer)
+aws/
+aws_sdk/
+aws-sdk-php/
+
+# DDEV db exports
+.ddev/*.sql
+
+# S3 local files dir
+web/s3fs-public/
+
+# Misc local-only files
+web/phpinfo.php
+web/s3_uri_verification.txt

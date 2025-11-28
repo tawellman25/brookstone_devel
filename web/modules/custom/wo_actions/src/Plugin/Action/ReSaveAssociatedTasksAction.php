@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "re_save_associated_tasks_action",
  *   label = @Translation("Re-save Tasks Lists"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "work_order"
+ *   confirm = TRUE
  * )
  */
 class ReSaveAssociatedTasksAction extends ViewsBulkOperationsActionBase {

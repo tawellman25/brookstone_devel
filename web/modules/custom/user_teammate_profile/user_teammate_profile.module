@@ -1,0 +1,91 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_insert().
+ */
+function user_teammate_profile_entity_insert(EntityInterface $entity): void {
+  user_teammate_profile_sync($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function user_teammate_profile_entity_update(EntityInterface $entity): void {
+  user_teammate_profile_sync($entity);
+}
+
+/**
+ * Ensures each referenced contact on the teammate profile points back to the owner.
+ *
+ * Assumptions:
+ * - ECK entity type: 'contacts' with bundle 'emergency_contacts'
+ * - Contact back-ref field: 'field_teammate' (entity reference to user)
+ * - Profile entity type: 'profile' with bundle 'teammate_profile'
+ * - Profile -> contacts field: 'field_emergency_contacts' (entity ref to contacts)
+ */
+function user_teammate_profile_sync(EntityInterface $entity): void {
+  // Case 1: Profile saved directly.
+  if ($entity->getEntityTypeId() === 'profile' && $entity->bundle() === 'teammate_profile') {
+    user_teammate_profile_sync_from_profile($entity);
+    return;
+  }
+
+  // Case 2: User saved - load that user's teammate_profile and sync.
+  if ($entity->getEntityTypeId() === 'user') {
+    /** @var \Drupal\user\UserInterface $user */
+    $user = $entity;
+    $storage = \Drupal::entityTypeManager()->getStorage('profile');
+    // Profile module API: loadByUser($account, $type) returns ProfileInterface|null.
+    if (method_exists($storage, 'loadByUser')) {
+      $profile = $storage->loadByUser($user, 'teammate_profile');
+      if ($profile) {
+        user_teammate_profile_sync_from_profile($profile);
+      }
+    }
+  }
+}
+
+/**
+ * Sync helper using a teammate_profile entity as source.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $profile
+ *   The teammate_profile entity.
+ */
+function user_teammate_profile_sync_from_profile(EntityInterface $profile): void {
+  if ($profile->getEntityTypeId() !== 'profile' || $profile->bundle() !== 'teammate_profile') {
+    return;
+  }
+  if (!$profile->hasField('field_emergency_contacts') || $profile->get('field_emergency_contacts')->isEmpty()) {
+    return;
+  }
+
+  // Get owning user ID from profile.
+  $owner_id = 0;
+  if (method_exists($profile, 'getOwnerId')) {
+    $owner_id = (int) $profile->getOwnerId();
+  }
+  if ($owner_id <= 0) {
+    return;
+  }
+
+  /** @var \Drupal\Core\Entity\EntityInterface[] $contacts */
+  $contacts = $profile->get('field_emergency_contacts')->referencedEntities();
+  foreach ($contacts as $contact) {
+    if ($contact->getEntityTypeId() !== 'contacts') {
+      continue;
+    }
+    if ($contact->bundle() !== 'emergency_contacts') {
+      continue;
+    }
+    if (!$contact->hasField('field_teammate')) {
+      continue;
+    }
+    $current = (int) ($contact->get('field_teammate')->target_id ?? 0);
+    if ($current !== $owner_id) {
+      $contact->set('field_teammate', $owner_id);
+      $contact->save();
+    }
+  }
+}

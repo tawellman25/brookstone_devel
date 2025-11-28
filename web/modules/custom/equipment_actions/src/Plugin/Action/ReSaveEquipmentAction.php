@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "re_save_equipment_action",
  *   label = @Translation("Re-save Equipment"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "equipment"
+ *   confirm = TRUE
  * )
  */
 class ReSaveEquipmentAction extends ViewsBulkOperationsActionBase {

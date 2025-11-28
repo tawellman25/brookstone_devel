@@ -15,8 +15,7 @@ use Drupal\Core\Entity\EntityInterface;
  *   id = "create_spring_cleanup_work_order_action",
  *   label = @Translation("Create Spring Cleanup Work Order"),
  *   category = @Translation("Custom"),
- *   confirm = TRUE,
- *   type = "contracts"
+ *   confirm = TRUE
  * )
  */
 class CreateSpringCleanupWorkOrderAction extends ViewsBulkOperationsActionBase {

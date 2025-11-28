@@ -15,8 +15,7 @@ use Drupal\Core\Ajax\OpenModalDialogCommand;
  *   id = "clone_material_items_action",
  *   label = @Translation("Clone Material Items"),
  *   confirm = TRUE,
- *   category = @Translation("Custom"),
- *   type = "work_order_materials"
+ *   category = @Translation("Custom")
  * )
  */
 class CloneMaterialItems extends ViewsBulkOperationsActionBase {

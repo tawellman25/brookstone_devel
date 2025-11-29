@@ -1,0 +1,133 @@
+uuid: e2834d88-49bb-4878-83bb-678f9b41ccfd
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contracts.snow_removal
+    - field.field.contracts.snow_removal.field_client_entered_date
+    - field.field.contracts.snow_removal.field_client_signature
+    - field.field.contracts.snow_removal.field_contract_submitted
+    - field.field.contracts.snow_removal.field_contract_year
+    - field.field.contracts.snow_removal.field_per_push_rate
+    - field.field.contracts.snow_removal.field_property
+    - field.field.contracts.snow_removal.field_shoveling_labor_included
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_administation:
+      children:
+        - created
+        - uid
+        - field_contract_submitted
+        - field_client_entered_date
+        - field_client_signature
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+id: contracts.snow_removal.default
+targetEntityType: contracts
+bundle: snow_removal
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 5
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_client_entered_date:
+    type: datetime_timestamp
+    weight: 8
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_client_signature:
+    type: string_textfield
+    weight: 9
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract_submitted:
+    type: boolean_checkbox
+    weight: 7
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_contract_year:
+    type: number
+    weight: 1
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_per_push_rate:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_shoveling_labor_included:
+    type: boolean_checkbox
+    weight: 4
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 6
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

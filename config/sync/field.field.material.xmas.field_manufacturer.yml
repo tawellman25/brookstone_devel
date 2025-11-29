@@ -1,0 +1,35 @@
+uuid: 648f4cef-93e3-4978-9f8d-44d762f775a6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.manufacturer.manufacturer
+    - eck.eck_type.material.xmas
+    - field.storage.material.field_manufacturer
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.xmas.field_manufacturer
+field_name: field_manufacturer
+entity_type: material
+bundle: xmas
+label: Manufacturer
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:manufacturer'
+  handler_settings:
+    target_bundles:
+      manufacturer: manufacturer
+    sort:
+      field: field_name
+      direction: ASC
+    auto_create: true
+    auto_create_bundle: ''
+field_type: entity_reference

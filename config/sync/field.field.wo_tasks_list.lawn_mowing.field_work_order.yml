@@ -1,0 +1,29 @@
+uuid: 898e158b-56ce-4894-997b-402ced0322ea
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.lawn_mowing
+    - eck.eck_type.work_order.lawn_mowing
+    - field.storage.wo_tasks_list.field_work_order
+id: wo_tasks_list.lawn_mowing.field_work_order
+field_name: field_work_order
+entity_type: wo_tasks_list
+bundle: lawn_mowing
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      lawn_mowing: lawn_mowing
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

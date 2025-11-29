@@ -1,0 +1,28 @@
+uuid: 791db2c0-fb9d-45f4-bf30-6c38fb855f5f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.positions.role
+    - field.storage.positions.field_reporting_structure
+id: positions.role.field_reporting_structure
+field_name: field_reporting_structure
+entity_type: positions
+bundle: role
+label: 'Reporting Structure'
+description: 'Select the user this position reports to (e.g., Partner, Operations Manager, Crew Lead).'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:positions'
+  handler_settings:
+    target_bundles:
+      role: role
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

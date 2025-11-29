@@ -1,0 +1,163 @@
+uuid: 8ee717f4-02f1-44c3-8f01-4b25e422818c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_chemicals_used.fertilizing_chemicals
+    - field.field.wo_chemicals_used.fertilizing_chemicals.field_chemical
+    - field.field.wo_chemicals_used.fertilizing_chemicals.field_chemical_amount_type
+    - field.field.wo_chemicals_used.fertilizing_chemicals.field_chemical_cost
+    - field.field.wo_chemicals_used.fertilizing_chemicals.field_per_how_many_gallons
+    - field.field.wo_chemicals_used.fertilizing_chemicals.field_spreader_cost
+    - field.field.wo_chemicals_used.fertilizing_chemicals.field_spreader_sticker_adjuvalen
+    - field.field.wo_chemicals_used.fertilizing_chemicals.field_subtotal
+    - field.field.wo_chemicals_used.fertilizing_chemicals.field_total_added_to_sprayer
+    - field.field.wo_chemicals_used.fertilizing_chemicals.field_total_gallons_applied
+    - field.field.wo_chemicals_used.fertilizing_chemicals.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_chemical_cost
+        - field_spreader_cost
+        - field_subtotal
+        - field_work_order
+        - created
+        - uid
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_formula:
+      children:
+        - field_total_added_to_sprayer
+        - field_chemical_amount_type
+        - field_per_how_many_gallons
+      label: Formula
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+id: wo_chemicals_used.fertilizing_chemicals.default
+targetEntityType: wo_chemicals_used
+bundle: fertilizing_chemicals
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 14
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_chemical:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_chemical_amount_type:
+    type: options_buttons
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_chemical_cost:
+    type: number
+    weight: 10
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_per_how_many_gallons:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_spreader_cost:
+    type: number
+    weight: 11
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_spreader_sticker_adjuvalen:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_subtotal:
+    type: number
+    weight: 12
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_total_added_to_sprayer:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_total_gallons_applied:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 13
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 16
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 15
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

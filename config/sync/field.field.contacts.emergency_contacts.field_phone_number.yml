@@ -1,0 +1,29 @@
+uuid: 00c9b8da-cdd2-47fb-83ef-253252987089
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.emergency_contacts
+    - eck.eck_type.phone_number.contacts
+    - field.storage.contacts.field_phone_number
+id: contacts.emergency_contacts.field_phone_number
+field_name: field_phone_number
+entity_type: contacts
+bundle: emergency_contacts
+label: 'Phone Numbers'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:phone_number'
+  handler_settings:
+    target_bundles:
+      contacts: contacts
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: true
+    auto_create_bundle: profile_phone_numbers
+field_type: entity_reference

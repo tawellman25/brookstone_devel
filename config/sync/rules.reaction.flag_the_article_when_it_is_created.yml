@@ -1,0 +1,62 @@
+uuid: 357915ba-23d5-4eb1-ba57-f076326b8747
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: 1nJ3p5OgY9z2dj6CPvsUEZSCh1FriDbNdqhlJgm4hz4
+id: flag_the_article_when_it_is_created
+label: 'Flag the article when it is created'
+events:
+  -
+    event_name: 'rules_entity_insert:node--article'
+description: ''
+tags: {  }
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: ef35ba77-a9c3-4e4a-abc5-eb4ef89c232c
+  weight: 0
+  conditions:
+    id: rules_and
+    uuid: 82c897a0-2d47-4dbb-8a5e-b9df4d8bdd9e
+    weight: 0
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 92269107-8a28-4f9c-972e-72b3674d3ddc
+    weight: 0
+    actions:
+      -
+        id: rules_action
+        uuid: 13937935-3257-4bfa-a53d-1194470d2e4b
+        weight: 0
+        context_values:
+          flag_id: best_article
+          entity_type: node
+          entity_id: '{{node.nid}}'
+          uid: '1'
+        context_mapping: {  }
+        context_processors:
+          flag_id:
+            rules_tokens: {  }
+          entity_type:
+            rules_tokens: {  }
+          entity_id:
+            rules_tokens: {  }
+          uid:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_flag_flagging_create
+      -
+        id: rules_action
+        uuid: f0dab0d2-508b-446f-bdf5-bd74c494538b
+        weight: 0
+        context_values:
+          immediate: ''
+        context_mapping:
+          entity: flagging_created
+        context_processors:
+          immediate:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_entity_save

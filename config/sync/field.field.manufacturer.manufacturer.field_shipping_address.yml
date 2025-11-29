@@ -1,0 +1,56 @@
+uuid: b22de9cf-eb0b-45ee-8757-aa7e40ca417e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.manufacturer.manufacturer
+    - field.storage.manufacturer.field_shipping_address
+  module:
+    - address
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: manufacturer.manufacturer.field_shipping_address
+field_name: field_shipping_address
+entity_type: manufacturer
+bundle: manufacturer
+label: 'Shipping Address'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    langcode: null
+    country_code: US
+    administrative_area: ''
+    locality: ''
+    dependent_locality: null
+    postal_code: ''
+    sorting_code: null
+    address_line1: ''
+    address_line2: ''
+    organization: ''
+    given_name: ''
+    additional_name: null
+    family_name: ''
+default_value_callback: ''
+settings:
+  available_countries:
+    CA: CA
+    IL: IL
+    MX: MX
+    US: US
+  langcode_override: ''
+  field_overrides:
+    givenName:
+      override: hidden
+    additionalName:
+      override: hidden
+    familyName:
+      override: hidden
+    organization:
+      override: hidden
+  fields: {  }
+field_type: address

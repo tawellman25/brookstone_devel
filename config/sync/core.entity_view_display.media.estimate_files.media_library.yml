@@ -1,0 +1,34 @@
+uuid: bacdda17-a710-43ea-ae28-c31b235693b1
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.media.media_library
+    - field.field.media.estimate_files.field_estimate
+    - field.field.media.estimate_files.field_media_file
+    - image.style.medium
+    - media.type.estimate_files
+  module:
+    - image
+id: media.estimate_files.media_library
+targetEntityType: media
+bundle: estimate_files
+mode: media_library
+content:
+  thumbnail:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: medium
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  created: true
+  field_estimate: true
+  field_media_file: true
+  name: true
+  uid: true

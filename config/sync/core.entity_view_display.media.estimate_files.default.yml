@@ -1,0 +1,36 @@
+uuid: c21c9bef-7e11-4852-a6cf-3a792b048afd
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.media.estimate_files.field_estimate
+    - field.field.media.estimate_files.field_media_file
+    - media.type.estimate_files
+  module:
+    - file
+id: media.estimate_files.default
+targetEntityType: media
+bundle: estimate_files
+mode: default
+content:
+  field_estimate:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_media_file:
+    type: file_default
+    label: visually_hidden
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  created: true
+  name: true
+  thumbnail: true
+  uid: true

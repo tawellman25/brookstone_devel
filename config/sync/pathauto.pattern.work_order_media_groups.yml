@@ -1,0 +1,23 @@
+uuid: e85af9bd-e1be-47cf-8557-1630210ae44c
+langcode: en
+status: true
+dependencies:
+  module:
+    - media
+id: work_order_media_groups
+label: 'WO Media Groups'
+type: 'canonical_entities:media'
+pattern: '[media:field_work_order:entity:url:path]/[media:name]'
+selection_criteria:
+  7abd82a6-6132-4152-adc7-5f9a9e96f3d4:
+    id: 'entity_bundle:media'
+    negate: false
+    uuid: 7abd82a6-6132-4152-adc7-5f9a9e96f3d4
+    context_mapping:
+      media: media
+    bundles:
+      wo_files: wo_files
+      wo_images: wo_images
+selection_logic: and
+weight: 33
+relationships: {  }

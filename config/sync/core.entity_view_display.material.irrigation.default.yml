@@ -1,0 +1,246 @@
+uuid: 9b1b2c60-8827-43c9-b2e2-848e3bbbee8c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.irrigation
+    - field.field.material.irrigation.field_banner_images
+    - field.field.material.irrigation.field_carton_quantity
+    - field.field.material.irrigation.field_cost_integer
+    - field.field.material.irrigation.field_description
+    - field.field.material.irrigation.field_discontinued
+    - field.field.material.irrigation.field_documentation
+    - field.field.material.irrigation.field_front_promoted
+    - field.field.material.irrigation.field_installed_price
+    - field.field.material.irrigation.field_instructional_video
+    - field.field.material.irrigation.field_main_image
+    - field.field.material.irrigation.field_manufacturer
+    - field.field.material.irrigation.field_manufacturer_item_number
+    - field.field.material.irrigation.field_manufacturer_website_item
+    - field.field.material.irrigation.field_material_tags
+    - field.field.material.irrigation.field_name
+    - field.field.material.irrigation.field_price_updated
+    - field.field.material.irrigation.field_retail_price_disclaimer
+    - field.field.material.irrigation.field_safety_data_sheet
+    - field.field.material.irrigation.field_size
+    - field.field.material.irrigation.field_slideshow_image
+    - field.field.material.irrigation.field_subheader_text
+    - field.field.material.irrigation.field_supplier_item_number
+    - field.field.material.irrigation.field_supplier_website_item_link
+    - field.field.material.irrigation.field_suppliers
+    - field.field.material.irrigation.field_supporting_images
+    - field.field.material.irrigation.field_unit_of_measure
+    - image.style.max_1300x1300
+  module:
+    - field_group
+    - file
+    - image
+    - link
+    - options
+    - text
+third_party_settings:
+  field_group:
+    group_manufacturer_information:
+      children:
+        - field_manufacturer
+        - field_manufacturer_item_number
+        - field_manufacturer_website_item
+      label: 'Manufacturer Information'
+      parent_name: ''
+      region: content
+      weight: 12
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_suppliers:
+      children:
+        - field_suppliers
+        - field_supplier_item_number
+        - field_supplier_website_item_link
+      label: Suppliers
+      parent_name: ''
+      region: content
+      weight: 11
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+id: material.irrigation.default
+targetEntityType: material
+bundle: irrigation
+mode: default
+content:
+  field_carton_quantity:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_cost_integer:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_documentation:
+    type: file_default
+    label: above
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_installed_price:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_instructional_video:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_main_image:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: max_1300x1300
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_manufacturer:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_manufacturer_item_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_manufacturer_website_item:
+    type: link
+    label: hidden
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_price_updated:
+    type: boolean
+    label: inline
+    settings:
+      format: yes-no
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_safety_data_sheet:
+    type: file_default
+    label: above
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_size:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_supplier_item_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 23
+    region: content
+  field_supplier_website_item_link:
+    type: link
+    label: hidden
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 24
+    region: content
+  field_suppliers:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 22
+    region: content
+  field_unit_of_measure:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_banner_images: true
+  field_discontinued: true
+  field_front_promoted: true
+  field_material_tags: true
+  field_name: true
+  field_retail_price_disclaimer: true
+  field_slideshow_image: true
+  field_subheader_text: true
+  field_supporting_images: true
+  title: true
+  uid: true

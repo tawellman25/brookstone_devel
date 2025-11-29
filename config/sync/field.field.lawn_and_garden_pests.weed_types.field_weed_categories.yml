@@ -1,0 +1,29 @@
+uuid: bef5c0f4-aea5-4f2b-af8e-e53edc113569
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.lawn_and_garden_pests.weed_types
+    - field.storage.lawn_and_garden_pests.field_weed_categories
+    - taxonomy.vocabulary.weed_categories
+id: lawn_and_garden_pests.weed_types.field_weed_categories
+field_name: field_weed_categories
+entity_type: lawn_and_garden_pests
+bundle: weed_types
+label: 'Weed Categories'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      weed_categories: weed_categories
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,513 @@
+uuid: 53521ab9-8dc9-4f77-8738-662d0c63d602
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.properties.property
+    - field.field.properties.property.field_aerial_view
+    - field.field.properties.property.field_app_note
+    - field.field.properties.property.field_call_ahead
+    - field.field.properties.property.field_client_app
+    - field.field.properties.property.field_cod_customer
+    - field.field.properties.property.field_county_account_number
+    - field.field.properties.property.field_front_view
+    - field.field.properties.property.field_full_address
+    - field.field.properties.property.field_gate_code
+    - field.field.properties.property.field_geofield
+    - field.field.properties.property.field_import_id
+    - field.field.properties.property.field_latest_contract
+    - field.field.properties.property.field_maps
+    - field.field.properties.property.field_must_use_client_app
+    - field.field.properties.property.field_nickname
+    - field.field.properties.property.field_no_services
+    - field.field.properties.property.field_parcel_number
+    - field.field.properties.property.field_property_description
+    - field.field.properties.property.field_street_address
+    - field.field.properties.property.field_why_cod_for_this_property
+    - field.field.properties.property.field_why_no_services
+    - field.field.properties.property.field_work_order_note
+    - field.field.properties.property.field_zipcode_reference
+  module:
+    - field_group
+    - text
+third_party_settings:
+  field_group:
+    group_office_admin:
+      children:
+        - uid
+        - created
+        - field_full_address
+        - field_geofield
+        - field_latest_contract
+        - field_parcel_number
+      label: 'Office Administation'
+      parent_name: ''
+      region: hidden
+      weight: 26
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: false
+        open: false
+    group_client_app:
+      children:
+        - field_must_use_client_app
+        - field_client_app
+        - field_app_note
+      label: 'Client App'
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_landscape_details:
+      children:
+        - property_landscape_details_entity_view_1
+      label: 'Landscape Details'
+      parent_name: ''
+      region: content
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_spraying_info:
+      children:
+        - group_pre_emergent
+        - group_weed_spraying
+        - group_tree_spaying
+        - group_grub_prevention
+      label: 'Spraying Info'
+      parent_name: ''
+      region: content
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_pre_emergent:
+      children:
+        - property_spray_info_entity_view_1
+        - property_pre_emergent_photos_entity_view_1
+      label: Pre-emergent
+      parent_name: group_spraying_info
+      region: content
+      weight: 20
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_tree_spaying:
+      children:
+        - property_spray_info_entity_view_2
+        - property_spray_info_entity_view_3
+        - property_spray_info_entity_view_4
+        - property_spray_info_entity_view_5
+        - property_spray_info_entity_view_6
+        - property_spray_info_entity_view_7
+      label: 'Tree Spaying'
+      parent_name: group_spraying_info
+      region: content
+      weight: 22
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_weed_spraying:
+      children:
+        - property_spray_info_entity_view_8
+      label: 'Weed Spraying'
+      parent_name: group_spraying_info
+      region: content
+      weight: 21
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_grub_prevention:
+      children:
+        - property_spray_info_entity_view_9
+      label: 'Grub Prevention'
+      parent_name: group_spraying_info
+      region: content
+      weight: 24
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_mowing_info:
+      children:
+        - property_lawn_maintenance_info_entity_view_1
+      label: 'Mowing Info'
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_snow_removal:
+      children:
+        - property_snow_removal_entity_view_1
+      label: 'Snow Removal'
+      parent_name: ''
+      region: content
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_sprinkler_info:
+      children:
+        - property_general_sprinkler_info_entity_view_1
+      label: 'Sprinkler Information'
+      parent_name: ''
+      region: content
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_alerts:
+      children:
+        - field_cod_customer
+        - field_why_cod_for_this_property
+        - field_no_services
+        - field_why_no_services
+        - field_call_ahead
+        - field_work_order_note
+      label: Alerts
+      parent_name: ''
+      region: content
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Call ahead and COD Customer alerts will show up here.'
+    group_notes_about_property:
+      children:
+        - field_gate_code
+        - property_instructions_entity_view_1
+      label: Instructions
+      parent_name: ''
+      region: content
+      weight: 3
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+    group_fertilizing_information:
+      children:
+        - property_fetilizer_information_entity_view_1
+        - property_fetilizer_information_entity_view_2
+      label: 'Fertilizing Information'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_christmas_decorations:
+      children:
+        - property_christmas_photos_entity_view_1
+      label: 'Christmas Decorations'
+      parent_name: ''
+      region: content
+      weight: 14
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_weed_pulling:
+      children:
+        - property_weed_pulling_details_entity_view_1
+      label: 'Weed Pulling'
+      parent_name: ''
+      region: content
+      weight: 12
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+id: properties.property.default
+targetEntityType: properties
+bundle: property
+mode: default
+content:
+  field_app_note:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_call_ahead:
+    type: boolean
+    label: hidden
+    settings:
+      format: custom
+      format_custom_false: ''
+      format_custom_true: 'Call Ahead'
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_client_app:
+    type: entity_reference_entity_view
+    label: hidden
+    settings:
+      view_mode: default
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_cod_customer:
+    type: boolean
+    label: hidden
+    settings:
+      format: custom
+      format_custom_false: ''
+      format_custom_true: 'COD Customer'
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_gate_code:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_must_use_client_app:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_no_services:
+    type: boolean
+    label: hidden
+    settings:
+      format: custom
+      format_custom_false: ''
+      format_custom_true: 'NO SERVICES'
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_property_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_why_cod_for_this_property:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_why_no_services:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_work_order_note:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  properties_current_owner_contact_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  property_christmas_photos_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 26
+    region: content
+  property_fetilizer_information_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  property_fetilizer_information_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  property_general_sprinkler_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  property_instructions_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  property_landscape_details_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  property_lawn_maintenance_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  property_pre_emergent_photos_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  property_snow_removal_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  property_spray_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  property_spray_info_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  property_spray_info_entity_view_3:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  property_spray_info_entity_view_4:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  property_spray_info_entity_view_5:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  property_spray_info_entity_view_6:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  property_spray_info_entity_view_7:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  property_spray_info_entity_view_8:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 22
+    region: content
+  property_spray_info_entity_view_9:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  property_weed_pulling_details_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_aerial_view: true
+  field_county_account_number: true
+  field_front_view: true
+  field_full_address: true
+  field_geofield: true
+  field_import_id: true
+  field_latest_contract: true
+  field_maps: true
+  field_nickname: true
+  field_parcel_number: true
+  field_street_address: true
+  field_zipcode_reference: true
+  title: true
+  uid: true

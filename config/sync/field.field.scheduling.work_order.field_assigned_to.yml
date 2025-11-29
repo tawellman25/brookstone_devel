@@ -1,0 +1,25 @@
+uuid: 7260b5a4-0f8c-41ff-8843-8a5749fdefd5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.scheduling.work_order
+    - field.storage.scheduling.field_assigned_to
+id: scheduling.work_order.field_assigned_to
+field_name: field_assigned_to
+entity_type: scheduling
+bundle: work_order
+label: 'Assigned To'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

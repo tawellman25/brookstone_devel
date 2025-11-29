@@ -1,0 +1,33 @@
+uuid: 55d6c8ea-0595-4b31-8e28-2a96de795033
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.weed_spraying
+    - field.storage.wo_spraying_conditions.field_wind_direction
+    - taxonomy.vocabulary.wind_direction
+  content:
+    - 'taxonomy_term:wind_direction:21a94b6d-f825-42ab-89c3-f1f82dae80e7'
+id: wo_spraying_conditions.weed_spraying.field_wind_direction
+field_name: field_wind_direction
+entity_type: wo_spraying_conditions
+bundle: weed_spraying
+label: 'Wind Direction'
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: 21a94b6d-f825-42ab-89c3-f1f82dae80e7
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      wind_direction: wind_direction
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

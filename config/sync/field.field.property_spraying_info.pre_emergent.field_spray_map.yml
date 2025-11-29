@@ -1,0 +1,57 @@
+uuid: 7826004e-dbfd-45d2-af8e-778a58e7d0f5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_spraying_info.pre_emergent
+    - field.storage.property_spraying_info.field_spray_map
+  module:
+    - filefield_paths
+    - image
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[property_spraying_info:field_property:entity:url:path]/spray_info/pre-emergent'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[property_spraying_info:field_property:entity:title]_pre_emergent_spray_map.[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: true
+        transliterate: false
+    redirect: false
+    retroactive_update: true
+    active_updating: false
+id: property_spraying_info.pre_emergent.field_spray_map
+field_name: field_spray_map
+entity_type: property_spraying_info
+bundle: pre_emergent
+label: 'Pre-emergent Spray Map'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'png gif jpg jpeg'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: true
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

@@ -1,0 +1,37 @@
+uuid: aa207760-ff2e-4b91-9740-efee268003f4
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.media.media_library
+    - field.field.media.estimate_files.field_estimate
+    - field.field.media.estimate_files.field_media_file
+    - media.type.estimate_files
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: media.estimate_files.media_library
+targetEntityType: media
+bundle: estimate_files
+mode: media_library
+content:
+  name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_estimate: true
+  field_media_file: true
+  path: true
+  status: true
+  uid: true

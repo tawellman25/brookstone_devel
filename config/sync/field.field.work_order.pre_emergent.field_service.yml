@@ -1,0 +1,33 @@
+uuid: 0e4cadaf-b52f-4965-ba7c-38420a95d1e6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.pre_emergent
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:5d7091c7-71aa-42cd-8b8e-76a347ba2bc6'
+id: work_order.pre_emergent.field_service
+field_name: field_service
+entity_type: work_order
+bundle: pre_emergent
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 5d7091c7-71aa-42cd-8b8e-76a347ba2bc6
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

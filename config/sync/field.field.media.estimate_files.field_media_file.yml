@@ -1,0 +1,46 @@
+uuid: 40d3f327-0b97-456e-a829-417c421fcb8c
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.media.field_media_file
+    - media.type.estimate_files
+  module:
+    - file
+    - filefield_paths
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[media:field_estimate:entity:url:path]/files'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[file:ffp-name-only-original].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: true
+id: media.estimate_files.field_media_file
+field_name: field_media_file
+entity_type: media
+bundle: estimate_files
+label: File
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'txt pdf doc docx xml xmls cdr xls xlsx skp cmx'
+  max_filesize: ''
+  description_field: true
+field_type: file

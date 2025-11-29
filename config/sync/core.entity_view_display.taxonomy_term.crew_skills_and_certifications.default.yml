@@ -1,0 +1,48 @@
+uuid: 6b8d35aa-c7eb-4987-8595-0948848ad9aa
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.crew_skills_and_certifications.field_renewal
+    - field.field.taxonomy_term.crew_skills_and_certifications.field_training_manual
+    - field.field.taxonomy_term.crew_skills_and_certifications.field_type
+    - taxonomy.vocabulary.crew_skills_and_certifications
+  module:
+    - options
+    - text
+id: taxonomy_term.crew_skills_and_certifications.default
+targetEntityType: taxonomy_term
+bundle: crew_skills_and_certifications
+mode: default
+content:
+  description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_renewal:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_training_manual:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_type:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden: {  }

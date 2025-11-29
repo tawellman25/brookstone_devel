@@ -1,0 +1,71 @@
+uuid: 0e0a4464-1f9f-45be-9fff-549319ac3d92
+langcode: en
+status: true
+dependencies:
+  config:
+    - comment.type.comment_forum
+    - field.field.comment.comment_forum.comment_body
+  module:
+    - field_layout
+    - layout_builder
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  layout_builder:
+    enabled: true
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          4bc7526d-0961-45ea-923d-e80a6f62989d:
+            uuid: 4bc7526d-0961-45ea-923d-e80a6f62989d
+            region: content
+            configuration:
+              id: 'field_block:comment:comment_forum:comment_body'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: text_default
+                label: hidden
+                settings: {  }
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          20f79a4e-a2f3-41b1-b7de-9120595dce52:
+            uuid: 20f79a4e-a2f3-41b1-b7de-9120595dce52
+            region: content
+            configuration:
+              id: 'extra_field_block:comment:comment_forum:links'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+            weight: 1
+            additional: {  }
+        third_party_settings: {  }
+_core:
+  default_config_hash: 98hKfGA9ltg8i60bx7UcDkHOC63bvORAL-wMguWZvg8
+id: comment.comment_forum.default
+targetEntityType: comment
+bundle: comment_forum
+mode: default
+content:
+  comment_body:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  links:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 100
+    region: content
+hidden: {  }

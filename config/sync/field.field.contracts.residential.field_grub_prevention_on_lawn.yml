@@ -1,0 +1,29 @@
+uuid: 48707516-ecd4-4dd1-896c-3154f19f38da
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.grub_prevention_on_lawn
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_grub_prevention_on_lawn
+id: contracts.residential.field_grub_prevention_on_lawn
+field_name: field_grub_prevention_on_lawn
+entity_type: contracts
+bundle: residential
+label: 'Grub Prevention on Lawn'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      grub_prevention_on_lawn: grub_prevention_on_lawn
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

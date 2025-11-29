@@ -1,0 +1,29 @@
+uuid: d9388c7b-31fa-4655-b1ea-90bbdfa04da6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.manual.chapter
+    - eck.eck_type.manual.title_page
+    - field.storage.manual.field_parent_manual
+id: manual.chapter.field_parent_manual
+field_name: field_parent_manual
+entity_type: manual
+bundle: chapter
+label: 'Parent Manual'
+description: 'Select the manual this chapter belongs to (e.g., “Website Training Manual for Landscape Crews”). This links the chapter to its parent manual for organization and display.'
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:manual'
+  handler_settings:
+    target_bundles:
+      title_page: title_page
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

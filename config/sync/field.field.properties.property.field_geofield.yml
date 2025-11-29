@@ -1,0 +1,38 @@
+uuid: 56a762bd-522d-46e9-b3c9-1ec9f25d518e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.properties.property
+    - field.storage.properties.field_geofield
+  module:
+    - geocoder_field
+    - geofield
+third_party_settings:
+  geocoder_field:
+    method: geocode
+    weight: 0
+    field: field_full_address
+    skip_not_empty_value: false
+    disabled: false
+    hidden: false
+    providers:
+      - googlemaps
+    dumper: wkt
+    delta_handling: default
+    failure:
+      handling: preserve
+      status_message: true
+      log: true
+id: properties.property.field_geofield
+field_name: field_geofield
+entity_type: properties
+bundle: property
+label: Geofield
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: geofield

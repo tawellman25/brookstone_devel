@@ -1,0 +1,33 @@
+uuid: 591640f2-6652-4c9e-897a-15d0cd07d809
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.aspen_twig_gall
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:45afa451-b2c3-45a3-883a-71b8c1ec2367'
+id: work_order.aspen_twig_gall.field_service
+field_name: field_service
+entity_type: work_order
+bundle: aspen_twig_gall
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 45afa451-b2c3-45a3-883a-71b8c1ec2367
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

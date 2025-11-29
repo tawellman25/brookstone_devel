@@ -1,0 +1,33 @@
+uuid: 891ac70b-39e2-4eaa-a5d8-1057737491e7
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.trunk_bore
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:eb5bdd96-c1d8-4f98-9de9-00e505897ccd'
+id: work_order.trunk_bore.field_service
+field_name: field_service
+entity_type: work_order
+bundle: trunk_bore
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: eb5bdd96-c1d8-4f98-9de9-00e505897ccd
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

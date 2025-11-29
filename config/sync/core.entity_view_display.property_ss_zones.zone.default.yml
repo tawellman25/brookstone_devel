@@ -1,0 +1,162 @@
+uuid: 0a41714f-61a5-40aa-8c6a-5aef237e33d8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_ss_zones.zone
+    - field.field.property_ss_zones.zone.field_clock_number
+    - field.field.property_ss_zones.zone.field_clock_zone_number
+    - field.field.property_ss_zones.zone.field_lateral_lines
+    - field.field.property_ss_zones.zone.field_manual_automatic
+    - field.field.property_ss_zones.zone.field_property
+    - field.field.property_ss_zones.zone.field_property_ss_system
+    - field.field.property_ss_zones.zone.field_ss_valve_box_location
+    - field.field.property_ss_zones.zone.field_ss_valve_type
+    - field.field.property_ss_zones.zone.field_ss_zone_location
+    - field.field.property_ss_zones.zone.field_ss_zone_photos
+    - field.field.property_ss_zones.zone.field_ss_zone_sprinkler_types
+    - field.field.property_ss_zones.zone.field_ss_zone_swing_pipe
+    - field.field.property_ss_zones.zone.field_ss_zone_type
+    - field.field.property_ss_zones.zone.field_ss_zone_valve_box
+    - field.field.property_ss_zones.zone.field_valve_box_gps_coordinates
+    - field.field.property_ss_zones.zone.field_zone_name
+  module:
+    - geofield
+    - image
+    - options
+id: property_ss_zones.zone.default
+targetEntityType: property_ss_zones
+bundle: zone
+mode: default
+content:
+  field_clock_number:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_clock_zone_number:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_lateral_lines:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_manual_automatic:
+    type: boolean
+    label: hidden
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_ss_valve_box_location:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_ss_valve_type:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_ss_zone_location:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_ss_zone_photos:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  field_ss_zone_sprinkler_types:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_ss_zone_swing_pipe:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_ss_zone_type:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_ss_zone_valve_box:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_valve_box_gps_coordinates:
+    type: geofield_latlon
+    label: inline
+    settings:
+      output_format: wkt
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_zone_name:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  field_property: true
+  field_property_ss_system: true

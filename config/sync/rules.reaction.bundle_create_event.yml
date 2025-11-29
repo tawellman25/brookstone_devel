@@ -1,0 +1,46 @@
+uuid: e9e1119e-1746-440a-9605-16f9b8f53c08
+langcode: en
+status: false
+dependencies:
+  enforced:
+    module:
+      - tr_rulez
+_core:
+  default_config_hash: RJvE3M4ooPqImVi1h4BABCgkjsInYYyNzdVCf64tink
+id: bundle_create_event
+label: 'Test bundle create event'
+events:
+  -
+    event_name: tr_rulez.entity_bundle_create
+description: 'See https://www.drupal.org/project/tr_rulez/issues/3100511'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 529f8990-bea5-4ef6-be73-cf458e8f1326
+  conditions:
+    id: rules_and
+    uuid: 265282ad-1f1f-4dfb-bb07-59e2bc9bac44
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 957392a1-1f0b-49f3-835b-38e7ad2beebc
+    actions:
+      -
+        id: rules_action
+        uuid: 4997d755-9f6d-4b23-add3-09175312e7f7
+        context_values:
+          message: 'Bundle {{ bundle_name }} created for entity type {{ entity_type }}'
+          type: warning
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message

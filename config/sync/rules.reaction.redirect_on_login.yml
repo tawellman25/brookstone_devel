@@ -1,0 +1,39 @@
+uuid: 4dfe1520-1294-4fcb-a2ee-13a29470a887
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: oMQcf2GKvzfYv4X3nRZJlsQJJFGP8cEan0Tf3YqNvbI
+id: redirect_on_login
+label: 'Redirect users on Login'
+events:
+  -
+    event_name: rules_user_login
+description: 'Issue #2858817-8: Redirect users to /special-page on login.'
+tags:
+  - login
+  - redirect
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 7268882c-3847-460d-af3f-6c78f80fbcc1
+  conditions:
+    id: rules_and
+    uuid: a8c1bb95-b783-4238-a7e1-9b4b9fb96ca4
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: d17285ef-4de4-498a-8b78-654cf79566ee
+    actions:
+      -
+        id: rules_action
+        uuid: a529b090-e6f3-4421-aede-75489267d888
+        context_values:
+          url: /special-page
+        context_mapping: {  }
+        context_processors:
+          url:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_page_redirect

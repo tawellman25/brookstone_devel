@@ -1,0 +1,33 @@
+uuid: 314f63b9-e724-4cd9-be73-7e6065e5c129
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contracts.commercial
+    - eck.eck_type.contracts.residential
+    - eck.eck_type.contracts.snow_removal
+    - eck.eck_type.work_order.special_mowing
+    - field.storage.work_order.field_contract
+id: work_order.special_mowing.field_contract
+field_name: field_contract
+entity_type: work_order
+bundle: special_mowing
+label: Contract
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contracts'
+  handler_settings:
+    target_bundles:
+      commercial: commercial
+      residential: residential
+      snow_removal: snow_removal
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: commercial
+field_type: entity_reference

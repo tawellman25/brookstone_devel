@@ -1,0 +1,84 @@
+uuid: a11e2078-15e6-4e43-a8b5-6b0d0bbe14d2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.manual.page
+    - field.field.manual.page.field_cover_image
+    - field.field.manual.page.field_description
+    - field.field.manual.page.field_parent_chapter
+    - image.style.max_1300x1300
+  module:
+    - colorbox
+    - text
+    - user
+id: manual.page.default
+targetEntityType: manual
+bundle: page
+mode: default
+content:
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_cover_image:
+    type: colorbox
+    label: hidden
+    settings:
+      colorbox_image_style: ''
+      colorbox_gallery: post
+      colorbox_gallery_custom: ''
+      colorbox_caption: auto
+      colorbox_caption_custom: ''
+      colorbox_node_style: ''
+      colorbox_node_style_first: max_1300x1300
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_parent_chapter:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true

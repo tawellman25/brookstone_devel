@@ -1,0 +1,42 @@
+uuid: 820cf282-bd97-4ff9-8ba9-af973f2612de
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.snow_removal
+    - field.storage.work_order.field_supervisor
+  content:
+    - 'user:user:efcbce4f-892d-4d20-88bc-a02c38d5a80e'
+id: work_order.snow_removal.field_supervisor
+field_name: field_supervisor
+entity_type: work_order
+bundle: snow_removal
+label: Supervisor
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: efcbce4f-892d-4d20-88bc-a02c38d5a80e
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        supervisor: supervisor
+        site_admin: '0'
+        administration: '0'
+        administrator: '0'
+        teammates: '0'
+        client: '0'
+        user: '0'
+        supplier: '0'
+    include_anonymous: true
+field_type: entity_reference

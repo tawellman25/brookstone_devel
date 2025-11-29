@@ -1,0 +1,33 @@
+uuid: a4b694db-cdee-41b0-9edd-7e1e1acd8e88
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.deer_prevention
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:42fc7685-038b-4f10-a0d9-4338caaf3e99'
+id: work_order.deer_prevention.field_service
+field_name: field_service
+entity_type: work_order
+bundle: deer_prevention
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 42fc7685-038b-4f10-a0d9-4338caaf3e99
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

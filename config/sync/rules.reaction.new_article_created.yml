@@ -1,0 +1,57 @@
+uuid: 39c2a91d-641f-426f-9f9f-80f395a1fdda
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: pWgwH9MjrZhgDWqsZxOugiQAsk14yyZb7bKwcwJ38ys
+id: new_article_created
+label: 'New article created'
+events:
+  -
+    event_name: 'rules_entity_insert:node'
+description: "Issue #2852342-16: Shows a system message when a new node of type 'article' is created."
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: f8e466d6-51d6-41ea-93f1-34436470f3c3
+  conditions:
+    id: rules_and
+    uuid: 7776a869-e0c6-4499-b09e-da727722213e
+    conditions:
+      -
+        id: rules_condition
+        uuid: 6bf893f5-7bcf-420c-9a62-7e1cb9a884f6
+        context_values:
+          types:
+            - article
+        context_mapping:
+          node: node
+        context_processors:
+          types:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        condition_id: rules_node_is_of_type
+        negate: false
+  actions:
+    id: rules_action_set
+    uuid: f0bcccfd-685f-4a74-a4fd-0d36b540037a
+    actions:
+      -
+        id: rules_action
+        uuid: ec599dbc-cb40-448b-b37b-129d956c2eb7
+        context_values:
+          message: '<b>New article created:</b> {{ node.title }}'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message

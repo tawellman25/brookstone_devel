@@ -1,0 +1,22 @@
+uuid: ffe1cb5c-56d2-4586-9ec0-9939f209b657
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: estimate_path
+label: 'Estimate Path'
+type: 'canonical_entities:estimate'
+pattern: '[estimate:field_property:entity:url:path][estimate:field_name]/estimates/[estimate:field_estimate_type:entity:name]/[estimate:title]'
+selection_criteria:
+  dc8327f2-4311-41d7-bbd9-31991b4fd1bb:
+    id: 'entity_bundle:estimate'
+    negate: false
+    uuid: dc8327f2-4311-41d7-bbd9-31991b4fd1bb
+    context_mapping:
+      estimate: estimate
+    bundles:
+      landscaping: landscaping
+selection_logic: and
+weight: -7
+relationships: {  }

@@ -1,0 +1,29 @@
+uuid: 4a1ca86e-674c-4fca-98a7-316771171a8f
+langcode: en
+status: true
+dependencies:
+  module:
+    - ctools_block
+  theme:
+    - brookstone_olivero
+id: brookstone_olivero_customerprofileprofiles
+theme: brookstone_olivero
+region: content
+weight: -19
+provider: null
+plugin: 'entity_field:user:customer_profile_profiles'
+settings:
+  id: 'entity_field:user:customer_profile_profiles'
+  label: 'Customer Profile profiles'
+  label_display: visible
+  provider: ctools_block
+  context_mapping:
+    entity: '@user.current_user_context:current_user'
+  formatter:
+    type: entity_reference_label
+    weight: 0
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+visibility: {  }

@@ -1,0 +1,29 @@
+uuid: baa60b2e-7bde-4cdf-bf6a-c29d23ac600b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_chemicals_used.pinion_pine_ips_beetle
+    - eck.eck_type.work_order.pinion_pine_ips_beetle
+    - field.storage.wo_chemicals_used.field_work_order
+id: wo_chemicals_used.pinion_pine_ips_beetle.field_work_order
+field_name: field_work_order
+entity_type: wo_chemicals_used
+bundle: pinion_pine_ips_beetle
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      pinion_pine_ips_beetle: pinion_pine_ips_beetle
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: fertilizing
+field_type: entity_reference

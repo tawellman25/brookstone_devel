@@ -1,0 +1,273 @@
+uuid: ef7c8d6b-c8ad-48d0-becd-a9d7bd76b195
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.misc_services
+    - field.field.work_order.misc_services.field_billing_adjustment
+    - field.field.work_order.misc_services.field_billing_notes
+    - field.field.work_order.misc_services.field_client_app_wo_number
+    - field.field.work_order.misc_services.field_contract
+    - field.field.work_order.misc_services.field_dump_fee_total
+    - field.field.work_order.misc_services.field_estimated_price
+    - field.field.work_order.misc_services.field_invoiced
+    - field.field.work_order.misc_services.field_labor_total
+    - field.field.work_order.misc_services.field_material_chemical_total
+    - field.field.work_order.misc_services.field_printed
+    - field.field.work_order.misc_services.field_property
+    - field.field.work_order.misc_services.field_rental_total
+    - field.field.work_order.misc_services.field_scheduled
+    - field.field.work_order.misc_services.field_service
+    - field.field.work_order.misc_services.field_status
+    - field.field.work_order.misc_services.field_supervisor
+    - field.field.work_order.misc_services.field_total_time
+    - field.field.work_order.misc_services.field_trip_fee
+    - field.field.work_order.misc_services.field_wo_total
+    - field.field.work_order.misc_services.field_work_order_id
+    - field.field.work_order.misc_services.field_work_order_notes
+    - field.field.work_order.misc_services.field_work_todo_description
+  module:
+    - field_group
+    - text
+third_party_settings:
+  field_group:
+    group_hours:
+      children:
+        - wo_time_clock_entries_total_entity_view_1
+        - wo_hours_grouping_entity_view_1
+      label: Hours
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_materials:
+      children:
+        - wo_material_list_grouping_entity_view_1
+      label: Materials
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_photos:
+      children:
+        - wo_media_photos_entity_view_1
+      label: Photos
+      parent_name: ''
+      region: content
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_schedule:
+      children:
+        - wo_scheduled_teammate_view_entity_view_1
+      label: Schedule
+      parent_name: ''
+      region: content
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_files:
+      children: {  }
+      label: Files
+      parent_name: ''
+      region: hidden
+      weight: 12
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_rental_equipment:
+      children:
+        - wo_rented_equipment_entity_view_1
+      label: 'Rental Equipment'
+      parent_name: ''
+      region: content
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_office_admin:
+      children:
+        - title
+        - uid
+        - created
+        - field_billing_adjustment
+        - field_billing_notes
+        - field_contract
+        - field_dump_fee_total
+        - field_estimated_price
+        - field_labor_total
+        - field_material_chemical_total
+        - field_property
+        - field_rental_total
+        - field_scheduled
+        - field_service
+        - field_status
+        - field_supervisor
+        - field_total_time
+        - field_trip_fee
+        - field_wo_total
+        - wo_current_property_owner_entity_view_1
+      label: 'Office Administation'
+      parent_name: ''
+      region: hidden
+      weight: 18
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: false
+        open: false
+    group_notes:
+      children:
+        - wo_notes_entity_view_1
+      label: Notes
+      parent_name: ''
+      region: content
+      weight: 2
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: false
+        open: false
+id: work_order.misc_services.default
+targetEntityType: work_order
+bundle: misc_services
+mode: default
+content:
+  field_client_app_wo_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_work_todo_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  flag_work_order_timer:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  wo_hours_grouping_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  wo_material_list_grouping_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  wo_media_photos_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 16
+    region: content
+  wo_notes_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  wo_rented_equipment_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  wo_scheduled_teammate_view_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  wo_sign_off_entity_view_8:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  wo_time_clock_buttons_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  wo_time_clock_buttons_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  wo_time_clock_entries_total_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 14
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_billing_adjustment: true
+  field_billing_notes: true
+  field_contract: true
+  field_dump_fee_total: true
+  field_estimated_price: true
+  field_invoiced: true
+  field_labor_total: true
+  field_material_chemical_total: true
+  field_printed: true
+  field_property: true
+  field_rental_total: true
+  field_scheduled: true
+  field_service: true
+  field_status: true
+  field_supervisor: true
+  field_total_time: true
+  field_trip_fee: true
+  field_wo_total: true
+  field_work_order_id: true
+  field_work_order_notes: true
+  title: true
+  uid: true
+  wo_current_property_owner_entity_view_1: true

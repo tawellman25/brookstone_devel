@@ -1,0 +1,164 @@
+uuid: 79d9ae80-0950-4e56-9bab-40a9e8dcb9fc
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.wo_material_list_item.teammate_entry
+    - eck.eck_type.wo_material_list_item.items
+    - field.field.wo_material_list_item.items.field_alternate_name_description
+    - field.field.wo_material_list_item.items.field_list_id
+    - field.field.wo_material_list_item.items.field_material_cost
+    - field.field.wo_material_list_item.items.field_material_type
+    - field.field.wo_material_list_item.items.field_parts_used
+    - field.field.wo_material_list_item.items.field_purchased_supplier
+    - field.field.wo_material_list_item.items.field_quantity
+    - field.field.wo_material_list_item.items.field_reciept_pic
+    - field.field.wo_material_list_item.items.field_subtotal
+    - field.field.wo_material_list_item.items.field_subtotal_w_markup
+    - field.field.wo_material_list_item.items.field_supplier
+    - image.style.thumbnail
+  module:
+    - conditional_fields
+    - field_layout
+    - image
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: wo_material_list_item.items.teammate_entry
+targetEntityType: wo_material_list_item
+bundle: items
+mode: teammate_entry
+content:
+  field_alternate_name_description:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        c0250d93-033e-4b33-9609-7d6cb08f19e6:
+          entity_type: wo_material_list_item
+          bundle: items
+          dependee: field_material_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                value: purchased
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_list_id:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_material_cost:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_material_type:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_parts_used:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 0
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        d62c1877-9cf8-4fb4-8dbf-264ee213bfc1:
+          entity_type: wo_material_list_item
+          bundle: items
+          dependee: field_material_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                value: stocked_item
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_purchased_supplier:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_quantity:
+    type: number
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_reciept_pic:
+    type: image_image
+    weight: 6
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings:
+      conditional_fields:
+        41b15c22-0dd2-48d8-8b61-6ee02667688e:
+          entity_type: wo_material_list_item
+          bundle: items
+          dependee: field_material_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                value: purchased
+            effect: show
+            effect_options: {  }
+            selector: ''
+hidden:
+  created: true
+  field_subtotal: true
+  field_subtotal_w_markup: true
+  field_supplier: true
+  path: true
+  uid: true

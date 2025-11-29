@@ -1,0 +1,65 @@
+uuid: b03f48df-d7e0-4f17-adf2-284b4d3be2d8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.time_clock_entry.entry
+    - field.field.time_clock_entry.entry.field_clocking_in_out
+    - field.field.time_clock_entry.entry.field_clocking_in_out_date
+    - field.field.time_clock_entry.entry.field_tasks
+    - field.field.time_clock_entry.entry.field_team_member
+  module:
+    - datetime
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: time_clock_entry.entry.default
+targetEntityType: time_clock_entry
+bundle: entry
+mode: default
+content:
+  field_clocking_in_out:
+    type: options_buttons
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_clocking_in_out_date:
+    type: datetime_default
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_tasks:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_team_member:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  uid: true

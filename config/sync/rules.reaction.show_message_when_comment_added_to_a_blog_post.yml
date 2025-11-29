@@ -1,0 +1,62 @@
+uuid: c76e369e-6a2e-4dbd-ac2f-c0e0a79e525f
+langcode: en
+status: false
+dependencies:
+  enforced:
+    module:
+      - comment
+_core:
+  default_config_hash: fAbrH_i5o9lj6roRDjYtVZMiLaV662kHxFfrFzTmeUM
+id: show_message_when_comment_added_to_a_blog_post
+label: 'Show a system message when a comment is added to a blog post'
+events:
+  -
+    event_name: 'rules_entity_insert:comment'
+description: 'Issue #2991249-2: Show a system message when a comment is added to content of type blog_post.'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 8d7a1078-0a0c-4538-b9c9-9a08463c0999
+  conditions:
+    id: rules_and
+    uuid: fccbc29f-2e42-43a5-819a-58c0c09de0aa
+    conditions:
+      -
+        id: rules_condition
+        uuid: aa140003-f73c-4af9-b45e-199c69587ba5
+        context_values:
+          operator: contains
+          match: blog_post
+        context_mapping:
+          text: comment.entity_id.entity.type.target_id
+        context_processors:
+          operator:
+            rules_tokens: {  }
+          match:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        condition_id: rules_text_comparison
+        negate: false
+  actions:
+    id: rules_action_set
+    uuid: 91331307-e962-4d4b-97d1-fc6ed30b5e03
+    actions:
+      -
+        id: rules_action
+        uuid: 39e37aa9-531f-4c46-9820-69755de577b4
+        context_values:
+          message: 'Comment added to a {{ comment.entity_id.entity.type }} type with title {{comment.entity_id.entity.title.value }}'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message

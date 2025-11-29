@@ -1,0 +1,25 @@
+uuid: 4c1ab04d-1be3-4f23-9ffa-5c4b05afb458
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.estimate
+    - field.storage.work_order.field_estimates_for_services
+id: work_order.estimate.field_estimates_for_services
+field_name: field_estimates_for_services
+entity_type: work_order
+bundle: estimate
+label: 'Create Estimate for'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

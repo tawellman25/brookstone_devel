@@ -1,0 +1,119 @@
+uuid: a9251818-6c7f-489d-92eb-0553f28f23c9
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.wo_material_list_item.teammate_individual_view
+    - eck.eck_type.wo_material_list_item.items
+    - field.field.wo_material_list_item.items.field_alternate_name_description
+    - field.field.wo_material_list_item.items.field_list_id
+    - field.field.wo_material_list_item.items.field_material_cost
+    - field.field.wo_material_list_item.items.field_material_type
+    - field.field.wo_material_list_item.items.field_parts_used
+    - field.field.wo_material_list_item.items.field_purchased_supplier
+    - field.field.wo_material_list_item.items.field_quantity
+    - field.field.wo_material_list_item.items.field_reciept_pic
+    - field.field.wo_material_list_item.items.field_subtotal
+    - field.field.wo_material_list_item.items.field_subtotal_w_markup
+    - field.field.wo_material_list_item.items.field_supplier
+  module:
+    - field_group
+    - layout_builder
+    - options
+third_party_settings:
+  field_group:
+    group_office_admin:
+      children:
+        - uid
+        - created
+        - field_list_id
+      label: 'Office Administation'
+      parent_name: ''
+      region: hidden
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: wo_material_list_item.items.teammate_individual_view
+targetEntityType: wo_material_list_item
+bundle: items
+mode: teammate_individual_view
+content:
+  field_alternate_name_description:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_material_cost:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_material_type:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_parts_used:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_quantity:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_subtotal_w_markup:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_supplier:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_list_id: true
+  field_purchased_supplier: true
+  field_reciept_pic: true
+  field_subtotal: true
+  uid: true

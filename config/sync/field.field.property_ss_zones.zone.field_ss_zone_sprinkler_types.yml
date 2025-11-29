@@ -1,0 +1,29 @@
+uuid: cbdf7651-738e-49c0-b5b2-3ae8266a9690
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_ss_zones.zone
+    - eck.eck_type.sprinkler_types.types
+    - field.storage.property_ss_zones.field_ss_zone_sprinkler_types
+id: property_ss_zones.zone.field_ss_zone_sprinkler_types
+field_name: field_ss_zone_sprinkler_types
+entity_type: property_ss_zones
+bundle: zone
+label: 'Sprinkler Types'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sprinkler_types'
+  handler_settings:
+    target_bundles:
+      types: types
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

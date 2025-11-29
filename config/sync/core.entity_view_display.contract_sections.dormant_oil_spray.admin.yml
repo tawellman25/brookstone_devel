@@ -1,0 +1,193 @@
+uuid: 19bdd6d2-d8fc-4996-8215-eaebf0a4c88d
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.contract_sections.admin
+    - eck.eck_type.contract_sections.dormant_oil_spray
+    - field.field.contract_sections.dormant_oil_spray.field_chemicals_used
+    - field.field.contract_sections.dormant_oil_spray.field_client_notes
+    - field.field.contract_sections.dormant_oil_spray.field_contract
+    - field.field.contract_sections.dormant_oil_spray.field_do_you_want
+    - field.field.contract_sections.dormant_oil_spray.field_estimate
+    - field.field.contract_sections.dormant_oil_spray.field_gallons_used
+    - field.field.contract_sections.dormant_oil_spray.field_last_year
+    - field.field.contract_sections.dormant_oil_spray.field_work_order
+    - views.view.contract_sections_admin_view
+  module:
+    - field_group
+    - layout_builder
+    - layout_discovery
+    - options
+    - user
+    - views
+third_party_settings:
+  field_group:
+    group_office_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_chemicals_used
+        - field_gallons_used
+        - created
+        - uid
+        - field_contract
+      label: 'Office Administation'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          cadec1ea-7b85-4eb2-a245-3f8b7d8e1219:
+            uuid: cadec1ea-7b85-4eb2-a245-3f8b7d8e1219
+            region: content
+            configuration:
+              id: 'views_block:contract_sections_admin_view-block_3'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 0
+            additional: {  }
+          fbb3d0ab-2a79-4870-a6dd-1c572d213cc5:
+            uuid: fbb3d0ab-2a79-4870-a6dd-1c572d213cc5
+            region: content
+            configuration:
+              id: 'field_block:contract_sections:dormant_oil_spray:changed'
+              label: Changed
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: timestamp
+                label: inline
+                settings:
+                  date_format: short
+                  custom_date_format: ''
+                  timezone: ''
+                  tooltip:
+                    date_format: short
+                    custom_date_format: ''
+                  time_diff:
+                    enabled: false
+                    future_format: '@interval hence'
+                    past_format: '@interval ago'
+                    granularity: 2
+                    refresh: 60
+                    description: ''
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+        third_party_settings: {  }
+id: contract_sections.dormant_oil_spray.admin
+targetEntityType: contract_sections
+bundle: dormant_oil_spray
+mode: admin
+content:
+  created:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_chemicals_used:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_client_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_contract:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_do_you_want:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_estimate:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_gallons_used:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_last_year:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  uid:
+    type: author
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+hidden:
+  changed: true
+  field_work_order: true

@@ -1,0 +1,35 @@
+uuid: 127a1920-b71b-4252-9507-ea3a12020f71
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.city.city
+    - eck.eck_type.county.county
+    - field.storage.city.field_county
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: city.city.field_county
+field_name: field_county
+entity_type: city
+bundle: city
+label: County
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:county'
+  handler_settings:
+    target_bundles:
+      county: county
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

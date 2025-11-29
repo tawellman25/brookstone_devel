@@ -1,0 +1,158 @@
+uuid: 64237434-b0da-48f0-9bb2-69dff410f5b1
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.contract_sections.client
+    - eck.eck_type.contract_sections.summer_hedge_shrub_pruning
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_client_notes
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_contract
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_do_you_want
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_estimate
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_last_year
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_man_hours
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_specific_plants
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_work_order
+  module:
+    - field_group
+    - layout_builder
+    - options
+    - user
+third_party_settings:
+  field_group:
+    group_office_administation:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_man_hours
+        - created
+        - uid
+        - changed
+        - field_contract
+      label: 'Office Administation'
+      parent_name: ''
+      region: content
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: contract_sections.summer_hedge_shrub_pruning.client
+targetEntityType: contract_sections
+bundle: summer_hedge_shrub_pruning
+mode: client
+content:
+  changed:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  created:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_client_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_contract:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_do_you_want:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_estimate:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_last_year:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_man_hours:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_specific_plants:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  uid:
+    type: author
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+hidden:
+  field_work_order: true

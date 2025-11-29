@@ -1,0 +1,354 @@
+uuid: e9925211-73c9-4007-b7f5-59763cd9417c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.special_mowing
+    - field.field.wo_tasks_list.special_mowing.field_additional_work_describe
+    - field.field.wo_tasks_list.special_mowing.field_additional_work_requested
+    - field.field.wo_tasks_list.special_mowing.field_mowing_assigned_to
+    - field.field.wo_tasks_list.special_mowing.field_mowing_cleaned_debri
+    - field.field.wo_tasks_list.special_mowing.field_mowing_debris_men
+    - field.field.wo_tasks_list.special_mowing.field_mowing_debris_minutes
+    - field.field.wo_tasks_list.special_mowing.field_mowing_debris_time
+    - field.field.wo_tasks_list.special_mowing.field_mowing_edged
+    - field.field.wo_tasks_list.special_mowing.field_mowing_edging_men
+    - field.field.wo_tasks_list.special_mowing.field_mowing_edging_minutes
+    - field.field.wo_tasks_list.special_mowing.field_mowing_edging_time
+    - field.field.wo_tasks_list.special_mowing.field_mowing_mowed
+    - field.field.wo_tasks_list.special_mowing.field_mowing_other_men
+    - field.field.wo_tasks_list.special_mowing.field_mowing_other_minutes
+    - field.field.wo_tasks_list.special_mowing.field_mowing_other_tasks
+    - field.field.wo_tasks_list.special_mowing.field_mowing_other_time
+    - field.field.wo_tasks_list.special_mowing.field_mowing_partial_describe
+    - field.field.wo_tasks_list.special_mowing.field_mowing_partial_mow
+    - field.field.wo_tasks_list.special_mowing.field_mowing_picked_up_trash
+    - field.field.wo_tasks_list.special_mowing.field_mowing_tasks_completed
+    - field.field.wo_tasks_list.special_mowing.field_mowing_time_spent_cleaning
+    - field.field.wo_tasks_list.special_mowing.field_mowing_time_spent_edging
+    - field.field.wo_tasks_list.special_mowing.field_mowing_time_spent_trash
+    - field.field.wo_tasks_list.special_mowing.field_mowing_trash_men
+    - field.field.wo_tasks_list.special_mowing.field_mowing_trash_minutes
+    - field.field.wo_tasks_list.special_mowing.field_mowing_trash_time
+    - field.field.wo_tasks_list.special_mowing.field_mowing_trimmed
+    - field.field.wo_tasks_list.special_mowing.field_mowing_who_on_site
+    - field.field.wo_tasks_list.special_mowing.field_mowing_why_not
+    - field.field.wo_tasks_list.special_mowing.field_mowing_why_not_describe
+    - field.field.wo_tasks_list.special_mowing.field_notes_to_office
+    - field.field.wo_tasks_list.special_mowing.field_work_order
+  module:
+    - options
+    - user
+id: wo_tasks_list.special_mowing.default
+targetEntityType: wo_tasks_list
+bundle: special_mowing
+mode: default
+content:
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_additional_work_describe:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 19
+    region: content
+  field_additional_work_requested:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 18
+    region: content
+  field_mowing_assigned_to:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_mowing_cleaned_debri:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_mowing_debris_men:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  field_mowing_debris_minutes:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 16
+    region: content
+  field_mowing_debris_time:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 17
+    region: content
+  field_mowing_edged:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_mowing_edging_men:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  field_mowing_edging_minutes:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 16
+    region: content
+  field_mowing_edging_time:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 17
+    region: content
+  field_mowing_mowed:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_mowing_other_men:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 19
+    region: content
+  field_mowing_other_minutes:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 20
+    region: content
+  field_mowing_other_tasks:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 16
+    region: content
+  field_mowing_other_time:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 21
+    region: content
+  field_mowing_partial_describe:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_mowing_partial_mow:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_mowing_picked_up_trash:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  field_mowing_tasks_completed:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 17
+    region: content
+  field_mowing_time_spent_cleaning:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_mowing_time_spent_edging:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_mowing_time_spent_trash:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  field_mowing_trash_men:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 16
+    region: content
+  field_mowing_trash_minutes:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 17
+    region: content
+  field_mowing_trash_time:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 18
+    region: content
+  field_mowing_trimmed:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_mowing_who_on_site:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_mowing_why_not:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_mowing_why_not_describe:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_notes_to_office:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 22
+    region: content
+  field_work_order:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 20
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true

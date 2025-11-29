@@ -1,0 +1,67 @@
+uuid: aa86d208-23d3-448a-bcf8-a367601dd670
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_fertilizing_info.shrub_and_tree_fertilizing
+    - field.field.property_fertilizing_info.shrub_and_tree_fertilizing.field_fertilized_last
+    - field.field.property_fertilizing_info.shrub_and_tree_fertilizing.field_fertilized_last_by
+    - field.field.property_fertilizing_info.shrub_and_tree_fertilizing.field_fertilizer_lbs_applied
+    - field.field.property_fertilizing_info.shrub_and_tree_fertilizing.field_property
+    - field.field.property_fertilizing_info.shrub_and_tree_fertilizing.field_shrub_tree_fert_contracted
+  module:
+    - datetime
+id: property_fertilizing_info.shrub_and_tree_fertilizing.default
+targetEntityType: property_fertilizing_info
+bundle: shrub_and_tree_fertilizing
+mode: default
+content:
+  field_fertilized_last:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: short
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_fertilized_last_by:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_fertilizer_lbs_applied:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_shrub_tree_fert_contracted:
+    type: boolean
+    label: inline
+    settings:
+      format: unicode-yes-no
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  field_property: true

@@ -1,0 +1,37 @@
+uuid: e0290c9b-2d60-4a20-ae26-2f78e657b517
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.attachements
+    - eck.eck_type.equipment.heavy_equipment
+    - eck.eck_type.equipment.power_tools
+    - eck.eck_type.equipment.small_engine
+    - eck.eck_type.equipment.sprayers
+    - eck.eck_type.wo_rental_equipment.equipment_rental
+    - field.storage.wo_rental_equipment.field_equipment_used
+id: wo_rental_equipment.equipment_rental.field_equipment_used
+field_name: field_equipment_used
+entity_type: wo_rental_equipment
+bundle: equipment_rental
+label: 'Equipment Used'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:equipment'
+  handler_settings:
+    target_bundles:
+      attachements: attachements
+      heavy_equipment: heavy_equipment
+      power_tools: power_tools
+      small_engine: small_engine
+      sprayers: sprayers
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: small_engine
+field_type: entity_reference

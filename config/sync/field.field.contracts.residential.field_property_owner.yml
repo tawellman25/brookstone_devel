@@ -1,0 +1,38 @@
+uuid: cf399f25-1934-460a-a364-f67f2f4cf85a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_property_owner
+id: contracts.residential.field_property_owner
+field_name: field_property_owner
+entity_type: contracts
+bundle: residential
+label: 'Property Owner'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        client: client
+        administrator: '0'
+        site_admin: '0'
+        administration: '0'
+        supervisor: '0'
+        teammates: '0'
+        user: '0'
+        supplier: '0'
+    include_anonymous: true
+field_type: entity_reference

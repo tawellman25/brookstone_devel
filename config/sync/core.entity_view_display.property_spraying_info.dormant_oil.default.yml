@@ -1,0 +1,91 @@
+uuid: 5eaefe0e-0456-4adc-b91d-14402731e76a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_spraying_info.dormant_oil
+    - field.field.property_spraying_info.dormant_oil.field_dormant_oil_contracted
+    - field.field.property_spraying_info.dormant_oil.field_last_amount_applied
+    - field.field.property_spraying_info.dormant_oil.field_last_applied_by
+    - field.field.property_spraying_info.dormant_oil.field_last_applied_date
+    - field.field.property_spraying_info.dormant_oil.field_property
+    - field.field.property_spraying_info.dormant_oil.field_spray_map
+    - field.field.property_spraying_info.dormant_oil.field_spray_notes
+  module:
+    - datetime
+    - image
+id: property_spraying_info.dormant_oil.default
+targetEntityType: property_spraying_info
+bundle: dormant_oil
+mode: default
+content:
+  field_dormant_oil_contracted:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_last_amount_applied:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_last_applied_by:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_last_applied_date:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_spray_map:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_spray_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_property: true
+  uid: true

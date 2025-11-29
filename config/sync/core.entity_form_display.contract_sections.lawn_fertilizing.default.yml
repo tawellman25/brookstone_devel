@@ -1,0 +1,183 @@
+uuid: 158f2fb2-3a56-4c2f-8858-94e9fcaaf6ca
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.lawn_fertilizing
+    - field.field.contract_sections.lawn_fertilizing.field_2nd_work_order
+    - field.field.contract_sections.lawn_fertilizing.field_3rd_work_order
+    - field.field.contract_sections.lawn_fertilizing.field_4th_work_order
+    - field.field.contract_sections.lawn_fertilizing.field_chemicals_used
+    - field.field.contract_sections.lawn_fertilizing.field_client_notes
+    - field.field.contract_sections.lawn_fertilizing.field_contract
+    - field.field.contract_sections.lawn_fertilizing.field_do_you_want
+    - field.field.contract_sections.lawn_fertilizing.field_estimate
+    - field.field.contract_sections.lawn_fertilizing.field_fertilizer_app_season
+    - field.field.contract_sections.lawn_fertilizing.field_last_year
+    - field.field.contract_sections.lawn_fertilizing.field_pounds_used
+    - field.field.contract_sections.lawn_fertilizing.field_work_order
+  module:
+    - conditional_fields
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_chemicals_used
+        - field_pounds_used
+        - field_contract
+        - field_4th_work_order
+        - field_work_order
+        - field_2nd_work_order
+        - field_3rd_work_order
+      label: Admin
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+id: contract_sections.lawn_fertilizing.default
+targetEntityType: contract_sections
+bundle: lawn_fertilizing
+mode: default
+content:
+  field_2nd_work_order:
+    type: entity_reference_autocomplete
+    weight: 12
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_3rd_work_order:
+    type: entity_reference_autocomplete
+    weight: 13
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_4th_work_order:
+    type: entity_reference_autocomplete
+    weight: 10
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_chemicals_used:
+    type: options_buttons
+    weight: 7
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_client_notes:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract:
+    type: entity_reference_autocomplete
+    weight: 9
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_do_you_want:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_estimate:
+    type: string_textfield
+    weight: 6
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_fertilizer_app_season:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings:
+      conditional_fields:
+        4314b568-9365-4501-a423-258ed8bfb100:
+          entity_type: contract_sections
+          bundle: lawn_fertilizing
+          dependee: field_do_you_want
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                value: '2'
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_last_year:
+    type: boolean_checkbox
+    weight: 5
+    region: content
+    settings:
+      display_label: false
+    third_party_settings: {  }
+  field_pounds_used:
+    type: number
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 11
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  uid: true

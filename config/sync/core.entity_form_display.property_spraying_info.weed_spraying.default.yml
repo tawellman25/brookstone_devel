@@ -1,0 +1,235 @@
+uuid: b0a96cd7-4027-4c42-8d0a-c389fc6ec795
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_spraying_info.weed_spraying
+    - field.field.property_spraying_info.weed_spraying.field_beds_spraying_frequency
+    - field.field.property_spraying_info.weed_spraying.field_last_amount_applied
+    - field.field.property_spraying_info.weed_spraying.field_last_applied_by
+    - field.field.property_spraying_info.weed_spraying.field_last_applied_date
+    - field.field.property_spraying_info.weed_spraying.field_misc_spraying_frequency
+    - field.field.property_spraying_info.weed_spraying.field_property
+    - field.field.property_spraying_info.weed_spraying.field_route_order
+    - field.field.property_spraying_info.weed_spraying.field_spray_map
+    - field.field.property_spraying_info.weed_spraying.field_spray_notes
+    - field.field.property_spraying_info.weed_spraying.field_spray_route
+    - field.field.property_spraying_info.weed_spraying.field_weed_beds_contracted
+    - field.field.property_spraying_info.weed_spraying.field_weed_misc_contracted
+    - image.style.thumbnail
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_property
+        - created
+        - uid
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_last_applied_info:
+      children:
+        - field_last_applied_by
+        - field_last_applied_date
+        - field_last_amount_applied
+      label: 'Last Applied Info'
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+        required_fields: true
+    group_spray_route_info:
+      children:
+        - field_spray_route
+        - field_route_order
+        - field_weed_beds_contracted
+        - field_beds_spraying_frequency
+        - field_weed_misc_contracted
+        - field_misc_spraying_frequency
+      label: 'Spray Route Info'
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+        required_fields: true
+    group_property_spray_notes:
+      children:
+        - field_spray_notes
+      label: 'Property Spray Notes'
+      region: content
+      parent_name: ''
+      weight: 1
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+        required_fields: true
+        element: div
+        show_label: false
+        label_element: h3
+        label_element_classes: ''
+        attributes: ''
+        effect: none
+        speed: fast
+id: property_spraying_info.weed_spraying.default
+targetEntityType: property_spraying_info
+bundle: weed_spraying
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 28
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_beds_spraying_frequency:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_amount_applied:
+    type: number
+    weight: 23
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_applied_by:
+    type: entity_reference_autocomplete
+    weight: 21
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_applied_date:
+    type: datetime_default
+    weight: 22
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_misc_spraying_frequency:
+    type: entity_reference_autocomplete
+    weight: 6
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 27
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_route_order:
+    type: number
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_spray_map:
+    type: image_image
+    weight: 0
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_spray_notes:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_spray_route:
+    type: boolean_checkbox
+    weight: 1
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_weed_beds_contracted:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_weed_misc_contracted:
+    type: boolean_checkbox
+    weight: 5
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 29
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

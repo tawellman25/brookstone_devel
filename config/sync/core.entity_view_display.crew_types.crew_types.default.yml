@@ -1,0 +1,130 @@
+uuid: df492ed7-8ce3-43e5-9695-ae33c5e392de
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.crew_types.crew_types
+    - field.field.crew_types.crew_types.field_crew_description
+    - field.field.crew_types.crew_types.field_crew_leader
+    - field.field.crew_types.crew_types.field_crew_size_maximum
+    - field.field.crew_types.crew_types.field_crew_size_minimum
+    - field.field.crew_types.crew_types.field_cross_crew_compatibility
+    - field.field.crew_types.crew_types.field_department
+    - field.field.crew_types.crew_types.field_primary_responsibilities
+    - field.field.crew_types.crew_types.field_required_equipment
+    - field.field.crew_types.crew_types.field_required_equipment_types
+    - field.field.crew_types.crew_types.field_seasonal_availability
+    - field.field.crew_types.crew_types.field_skills_certifications
+  module:
+    - field_layout
+    - layout_builder
+    - options
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: crew_types.crew_types.default
+targetEntityType: crew_types
+bundle: crew_types
+mode: default
+content:
+  field_crew_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_crew_leader:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_crew_size_maximum:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_crew_size_minimum:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_cross_crew_compatibility:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_department:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_primary_responsibilities:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_required_equipment:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_required_equipment_types:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_seasonal_availability:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_skills_certifications:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  teammate_crews_members_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+hidden:
+  title: true

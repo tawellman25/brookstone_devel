@@ -1,0 +1,107 @@
+uuid: 8154f840-50b1-4cfe-a1ae-2b3c8e4e7b07
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.contract_sections.admin
+    - eck.eck_type.contract_sections.lawn_mowing_and_trimming
+    - field.field.contract_sections.lawn_mowing_and_trimming.field_client_notes
+    - field.field.contract_sections.lawn_mowing_and_trimming.field_contract
+    - field.field.contract_sections.lawn_mowing_and_trimming.field_do_you_want
+    - field.field.contract_sections.lawn_mowing_and_trimming.field_estimate
+    - field.field.contract_sections.lawn_mowing_and_trimming.field_last_year
+    - field.field.contract_sections.lawn_mowing_and_trimming.field_mow_rate
+    - field.field.contract_sections.lawn_mowing_and_trimming.field_mowing_frequency
+    - field.field.contract_sections.lawn_mowing_and_trimming.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_contract
+        - field_mow_rate
+      label: Admin
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details_sidebar
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+        weight: 0
+id: contract_sections.lawn_mowing_and_trimming.admin
+targetEntityType: contract_sections
+bundle: lawn_mowing_and_trimming
+mode: admin
+content:
+  field_client_notes:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_do_you_want:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_estimate:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_year:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: false
+    third_party_settings: {  }
+  field_mow_rate:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_mowing_frequency:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_work_order: true
+  path: true
+  uid: true

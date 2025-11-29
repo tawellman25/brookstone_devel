@@ -1,0 +1,29 @@
+uuid: d3100f30-c604-49e2-afbb-de748de5a36b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.crew_types.crew_types
+    - eck.eck_type.manual.chapter
+    - field.storage.manual.field_associated_crew
+id: manual.chapter.field_associated_crew
+field_name: field_associated_crew
+entity_type: manual
+bundle: chapter
+label: 'Associated Crew(s)'
+description: "Select one or more crews this manual applies to (e.g., “Landscape Crew,” “Lawn Maintenance Crew”). Leave blank if the manual applies to all crews.\r\nPurpose: Links the manual to multiple crews, accommodating cases like a website training manual relevant to several or all crews.\r\n\r\n"
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:crew_types'
+  handler_settings:
+    target_bundles:
+      crew_types: crew_types
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

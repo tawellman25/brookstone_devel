@@ -1,0 +1,33 @@
+uuid: ac847664-ce73-441f-acdf-d6fba302b8a6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.pre_emergent
+    - field.storage.wo_spraying_conditions.field_wind_speed
+    - taxonomy.vocabulary.spraying_wind_speed
+  content:
+    - 'taxonomy_term:spraying_wind_speed:c31f705c-e2ea-4d17-99fd-3ac489ea6279'
+id: wo_spraying_conditions.pre_emergent.field_wind_speed
+field_name: field_wind_speed
+entity_type: wo_spraying_conditions
+bundle: pre_emergent
+label: 'Wind Speed'
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: c31f705c-e2ea-4d17-99fd-3ac489ea6279
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      spraying_wind_speed: spraying_wind_speed
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

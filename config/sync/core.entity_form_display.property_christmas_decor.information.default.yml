@@ -1,0 +1,90 @@
+uuid: 82150275-f088-4c05-add9-a92068ca9aa9
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_christmas_decor.information
+    - field.field.property_christmas_decor.information.field_christmas_decor_contracted
+    - field.field.property_christmas_decor.information.field_christmas_decor_light_type
+    - field.field.property_christmas_decor.information.field_christmas_decor_lightcolor
+    - field.field.property_christmas_decor.information.field_christmas_decor_photos
+    - field.field.property_christmas_decor.information.field_christmas_light_diagram
+    - field.field.property_christmas_decor.information.field_property
+    - field.field.property_christmas_decor.information.field_xmas_installation_photos
+    - image.style.thumbnail
+  module:
+    - field_layout
+    - image
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: property_christmas_decor.information.default
+targetEntityType: property_christmas_decor
+bundle: information
+mode: default
+content:
+  field_christmas_decor_contracted:
+    type: boolean_checkbox
+    weight: 2
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_christmas_decor_light_type:
+    type: options_buttons
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_christmas_decor_lightcolor:
+    type: options_buttons
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_christmas_decor_photos:
+    type: image_image
+    weight: 6
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_christmas_light_diagram:
+    type: image_image
+    weight: 9
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_xmas_installation_photos:
+    type: image_image
+    weight: 5
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

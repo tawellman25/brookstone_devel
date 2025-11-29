@@ -1,0 +1,267 @@
+uuid: 60ac7cd6-05ea-4787-b26c-e9c7528c05ae
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.in_house_tasks
+    - field.field.work_order.in_house_tasks.field_billing_adjustment
+    - field.field.work_order.in_house_tasks.field_billing_notes
+    - field.field.work_order.in_house_tasks.field_dump_fee_total
+    - field.field.work_order.in_house_tasks.field_invoiced
+    - field.field.work_order.in_house_tasks.field_labor_total
+    - field.field.work_order.in_house_tasks.field_material_chemical_total
+    - field.field.work_order.in_house_tasks.field_printed
+    - field.field.work_order.in_house_tasks.field_property
+    - field.field.work_order.in_house_tasks.field_rental_total
+    - field.field.work_order.in_house_tasks.field_scheduled
+    - field.field.work_order.in_house_tasks.field_service
+    - field.field.work_order.in_house_tasks.field_status
+    - field.field.work_order.in_house_tasks.field_supervisor
+    - field.field.work_order.in_house_tasks.field_total_time
+    - field.field.work_order.in_house_tasks.field_trip_fee
+    - field.field.work_order.in_house_tasks.field_wo_total
+    - field.field.work_order.in_house_tasks.field_work_order_id
+    - field.field.work_order.in_house_tasks.field_work_order_notes
+    - field.field.work_order.in_house_tasks.field_work_todo_description
+  module:
+    - allowed_formats
+    - comment
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_administation:
+      children:
+        - field_work_order_notes
+        - flag
+        - field_status
+        - field_scheduled
+        - field_total_time
+        - field_labor_total
+        - field_trip_fee
+        - field_material_chemical_total
+        - field_dump_fee_total
+        - field_billing_adjustment
+        - field_wo_total
+        - field_billing_notes
+        - field_invoiced
+        - field_rental_total
+        - group_system_info
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_system_info:
+      children:
+        - created
+        - uid
+        - field_printed
+        - field_work_order_id
+        - field_service
+        - path
+      label: 'System Info'
+      region: content
+      parent_name: group_office_administation
+      weight: 16
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: work_order.in_house_tasks.default
+targetEntityType: work_order
+bundle: in_house_tasks
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_billing_adjustment:
+    type: number
+    weight: 11
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_billing_notes:
+    type: string_textfield
+    weight: 13
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_dump_fee_total:
+    type: number
+    weight: 10
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_invoiced:
+    type: boolean_checkbox
+    weight: 14
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_labor_total:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_material_chemical_total:
+    type: number
+    weight: 9
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_printed:
+    type: boolean_checkbox
+    weight: 6
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_rental_total:
+    type: number
+    weight: 15
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_scheduled:
+    type: boolean_checkbox
+    weight: 5
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_service:
+    type: entity_reference_autocomplete
+    weight: 8
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_status:
+    type: options_select
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_supervisor:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_total_time:
+    type: number
+    weight: 6
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_trip_fee:
+    type: number
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_wo_total:
+    type: number
+    weight: 12
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order_id:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order_notes:
+    type: comment_default
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_work_todo_description:
+    type: text_textarea
+    weight: 1
+    region: content
+    settings:
+      rows: 5
+      placeholder: 'Enter the description of Work To Be Done here'
+    third_party_settings:
+      allowed_formats:
+        hide_help: '1'
+        hide_guidelines: '0'
+  flag:
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 9
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

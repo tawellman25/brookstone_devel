@@ -1,0 +1,97 @@
+uuid: b6d60e04-9f3a-4328-ae03-f02bff1b9115
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_christmas_decor.information
+    - field.field.property_christmas_decor.information.field_christmas_decor_contracted
+    - field.field.property_christmas_decor.information.field_christmas_decor_light_type
+    - field.field.property_christmas_decor.information.field_christmas_decor_lightcolor
+    - field.field.property_christmas_decor.information.field_christmas_decor_photos
+    - field.field.property_christmas_decor.information.field_christmas_light_diagram
+    - field.field.property_christmas_decor.information.field_property
+    - field.field.property_christmas_decor.information.field_xmas_installation_photos
+  module:
+    - image
+id: property_christmas_decor.information.default
+targetEntityType: property_christmas_decor
+bundle: information
+mode: default
+content:
+  field_christmas_decor_contracted:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: -4
+    region: content
+  field_christmas_decor_light_type:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_christmas_decor_lightcolor:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_christmas_decor_photos:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: -1
+    region: content
+  field_christmas_light_diagram:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_property:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: -2
+    region: content
+  field_xmas_installation_photos:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: -3
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+hidden:
+  changed: true

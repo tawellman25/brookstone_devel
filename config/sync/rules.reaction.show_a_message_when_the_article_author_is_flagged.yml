@@ -1,0 +1,63 @@
+uuid: 414c856e-3c67-4412-a515-184db4c21aa7
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: OS2FDNA4iE5tkNiTvFSSgWKyNrg_Fxl-GH4psrA-vXU
+id: show_a_message_when_the_article_author_is_flagged
+label: 'Show a message when the article author is flagged'
+events:
+  -
+    event_name: 'rules_entity_view:node--article'
+description: ''
+tags: {  }
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: ccdb6f32-ef49-424d-8277-971275c653dc
+  weight: 0
+  conditions:
+    id: rules_and
+    uuid: 2e441ef6-b277-4369-91db-930c9d3ba3bf
+    weight: 0
+    conditions:
+      -
+        id: rules_condition
+        uuid: beb6e24c-85a6-4153-adc9-08a426200fcd
+        weight: 0
+        condition_id: rules_entity_is_flagged
+        negate: false
+        context_values:
+          flag: favorite_users
+          uid: '1'
+        context_mapping:
+          entity: node.uid.entity
+        context_processors:
+          flag:
+            rules_tokens: {  }
+          uid:
+            rules_tokens: {  }
+        provides_mapping: {  }
+  actions:
+    id: rules_action_set
+    uuid: 08e1042a-d7c2-4bd6-9b2f-39c6d313401c
+    weight: 0
+    actions:
+      -
+        id: rules_action
+        uuid: 23d3ad0f-328a-4fc4-8859-aa0f1fe484a0
+        weight: 0
+        action_id: rules_system_message
+        context_values:
+          message: 'The article author is flagged.'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }

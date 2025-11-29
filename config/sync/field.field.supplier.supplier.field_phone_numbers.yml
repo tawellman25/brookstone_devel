@@ -1,0 +1,29 @@
+uuid: 0eb20258-49c2-4030-ad85-550f3d94819d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.phone_number.suppliers
+    - eck.eck_type.supplier.supplier
+    - field.storage.supplier.field_phone_numbers
+id: supplier.supplier.field_phone_numbers
+field_name: field_phone_numbers
+entity_type: supplier
+bundle: supplier
+label: 'Phone Numbers'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:phone_number'
+  handler_settings:
+    target_bundles:
+      suppliers: suppliers
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

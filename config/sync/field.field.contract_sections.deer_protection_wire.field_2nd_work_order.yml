@@ -1,0 +1,29 @@
+uuid: 225acaf5-bc9e-4bc6-931c-0d698f831678
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.deer_protection_wire
+    - eck.eck_type.work_order.deer_prevention
+    - field.storage.contract_sections.field_2nd_work_order
+id: contract_sections.deer_protection_wire.field_2nd_work_order
+field_name: field_2nd_work_order
+entity_type: contract_sections
+bundle: deer_protection_wire
+label: 'Take Down Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      deer_prevention: deer_prevention
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

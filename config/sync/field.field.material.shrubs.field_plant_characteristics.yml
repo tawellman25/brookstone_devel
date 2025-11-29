@@ -1,0 +1,29 @@
+uuid: 135315a3-567f-4c09-88ec-73c57d09ddca
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.shrubs
+    - field.storage.material.field_plant_characteristics
+    - taxonomy.vocabulary.plant_characteristics
+id: material.shrubs.field_plant_characteristics
+field_name: field_plant_characteristics
+entity_type: material
+bundle: shrubs
+label: 'Plant Characteristics'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      plant_characteristics: plant_characteristics
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

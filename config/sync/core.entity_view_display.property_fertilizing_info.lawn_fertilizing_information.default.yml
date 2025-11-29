@@ -1,0 +1,248 @@
+uuid: 462a19bd-0369-4afa-86fe-ef8931232677
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_fertilizing_info.lawn_fertilizing_information
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_fertilized_last
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_fertilized_last_by
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_fertilizer_lbs_applied
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_fertilizer_notes
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_fertilizer_route_order
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_lawn_fertilizer_contracted
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_property
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_turf_pre_emergent_property
+  module:
+    - datetime
+    - layout_builder
+    - layout_discovery
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Main Content'
+          context_mapping: {  }
+          column_widths: 50-50
+        components:
+          eea4709a-233d-40bf-bb35-d42d7bc4cbbb:
+            uuid: eea4709a-233d-40bf-bb35-d42d7bc4cbbb
+            region: first
+            configuration:
+              id: 'field_block:property_fertilizing_info:lawn_fertilizing_information:field_lawn_fertilizer_contracted'
+              label: 'Lawn Fertilizer Contracted'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: boolean
+                label: hidden
+                settings:
+                  format: custom
+                  format_custom_false: 'NOT Contracted'
+                  format_custom_true: '<h3>Contracted</h3>'
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          0ccda608-5117-4533-871d-30db304f83de:
+            uuid: 0ccda608-5117-4533-871d-30db304f83de
+            region: second
+            configuration:
+              id: 'field_block:property_fertilizing_info:lawn_fertilizing_information:field_fertilized_last'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: datetime_default
+                label: inline
+                settings:
+                  timezone_override: ''
+                  format_type: short
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          9f8d751e-279e-4dd9-a3e1-38e7a5df3be5:
+            uuid: 9f8d751e-279e-4dd9-a3e1-38e7a5df3be5
+            region: second
+            configuration:
+              id: 'field_block:property_fertilizing_info:lawn_fertilizing_information:field_fertilized_last_by'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          4dd2c9f9-4ab0-48a7-9e61-f9c945649e82:
+            uuid: 4dd2c9f9-4ab0-48a7-9e61-f9c945649e82
+            region: second
+            configuration:
+              id: 'field_block:property_fertilizing_info:lawn_fertilizing_information:field_fertilizer_lbs_applied'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_decimal
+                label: inline
+                settings:
+                  thousand_separator: ''
+                  decimal_separator: .
+                  scale: 2
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          344b2441-58e9-4133-9bc6-1bbbbc93a839:
+            uuid: 344b2441-58e9-4133-9bc6-1bbbbc93a839
+            region: first
+            configuration:
+              id: 'field_block:property_fertilizing_info:lawn_fertilizing_information:field_fertilizer_route_order'
+              label: 'Route Order'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: number_integer
+                label: inline
+                settings:
+                  thousand_separator: ''
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          55a61c4c-8b48-4232-bf5f-077a50975f9b:
+            uuid: 55a61c4c-8b48-4232-bf5f-077a50975f9b
+            region: first
+            configuration:
+              id: 'field_block:property_fertilizing_info:lawn_fertilizing_information:field_turf_pre_emergent_property'
+              label: 'Turf Pre-emergent Property'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: boolean
+                label: hidden
+                settings:
+                  format: custom
+                  format_custom_false: ''
+                  format_custom_true: '<b>Turf Pre-emergent Property</b>'
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          31eb7a6d-7b93-43dd-b92b-5242627c9dee:
+            uuid: 31eb7a6d-7b93-43dd-b92b-5242627c9dee
+            region: content
+            configuration:
+              id: 'field_block:property_fertilizing_info:lawn_fertilizing_information:field_fertilizer_notes'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: above
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+        third_party_settings: {  }
+id: property_fertilizing_info.lawn_fertilizing_information.default
+targetEntityType: property_fertilizing_info
+bundle: lawn_fertilizing_information
+mode: default
+content:
+  field_fertilized_last:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: short
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_fertilized_last_by:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_fertilizer_lbs_applied:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_fertilizer_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_fertilizer_route_order:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_lawn_fertilizer_contracted:
+    type: boolean
+    label: inline
+    settings:
+      format: unicode-yes-no
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_turf_pre_emergent_property:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  field_property: true

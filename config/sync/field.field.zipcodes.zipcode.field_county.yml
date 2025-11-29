@@ -1,0 +1,35 @@
+uuid: f9d35e5b-b8a7-43f2-a793-610eb6050824
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.county.county
+    - eck.eck_type.zipcodes.zipcode
+    - field.storage.zipcodes.field_county
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: zipcodes.zipcode.field_county
+field_name: field_county
+entity_type: zipcodes
+bundle: zipcode
+label: County
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:county'
+  handler_settings:
+    target_bundles:
+      county: county
+    sort:
+      field: field_county_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

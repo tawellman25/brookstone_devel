@@ -1,0 +1,29 @@
+uuid: f11220c6-2874-4f68-9810-3cacb515c739
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.christmas_decorations
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_christmas_decorations
+id: contracts.residential.field_christmas_decorations
+field_name: field_christmas_decorations
+entity_type: contracts
+bundle: residential
+label: 'Christmas Decorations'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      christmas_decorations: christmas_decorations
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

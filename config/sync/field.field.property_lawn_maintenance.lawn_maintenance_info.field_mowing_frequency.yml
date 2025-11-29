@@ -1,0 +1,29 @@
+uuid: 6c737024-03f5-4492-8e30-9b4179fc5d9d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_lawn_maintenance.lawn_maintenance_info
+    - field.storage.property_lawn_maintenance.field_mowing_frequency
+    - taxonomy.vocabulary.mowing_frequency
+id: property_lawn_maintenance.lawn_maintenance_info.field_mowing_frequency
+field_name: field_mowing_frequency
+entity_type: property_lawn_maintenance
+bundle: lawn_maintenance_info
+label: 'How often'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      mowing_frequency: mowing_frequency
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,57 @@
+uuid: 76e1368b-9058-441b-b5de-9b30d0e4137d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_christmas_decor.information
+    - field.storage.property_christmas_decor.field_xmas_installation_photos
+  module:
+    - filefield_paths
+    - image
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[property_christmas_decor:field_property:entity:url]/christmas_decorations/installation_photos'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: 'christmas_decoration_installation_[file:fid].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: property_christmas_decor.information.field_xmas_installation_photos
+field_name: field_xmas_installation_photos
+entity_type: property_christmas_decor
+bundle: information
+label: 'Installation Photos'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'png gif jpg jpeg'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: true
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

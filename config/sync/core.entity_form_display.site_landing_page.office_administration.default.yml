@@ -1,0 +1,80 @@
+uuid: ae4d2984-1afe-4e13-a55b-0238420efeea
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.site_landing_page.office_administration
+    - field.field.site_landing_page.office_administration.field_description
+    - field.field.site_landing_page.office_administration.field_menu
+  module:
+    - field_layout
+    - layout_builder
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_twocol_section
+    settings:
+      label: ''
+      column_widths: 75-25
+id: site_landing_page.office_administration.default
+targetEntityType: site_landing_page
+bundle: office_administration
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 4
+    region: second
+    settings: {  }
+    third_party_settings: {  }
+  field_description:
+    type: text_textarea
+    weight: 1
+    region: first
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_menu:
+    type: entity_reference_autocomplete
+    weight: 6
+    region: second
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 2
+    region: second
+    settings: {  }
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    weight: 5
+    region: second
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: first
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: second
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

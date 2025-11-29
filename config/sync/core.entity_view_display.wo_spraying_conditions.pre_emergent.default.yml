@@ -1,0 +1,241 @@
+uuid: a295c8c3-5055-4452-95d3-2c8696515473
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.pre_emergent
+    - field.field.wo_spraying_conditions.pre_emergent.field_carrier
+    - field.field.wo_spraying_conditions.pre_emergent.field_how_applied
+    - field.field.wo_spraying_conditions.pre_emergent.field_method_of_application
+    - field.field.wo_spraying_conditions.pre_emergent.field_soil_moisture
+    - field.field.wo_spraying_conditions.pre_emergent.field_sprayed_areas
+    - field.field.wo_spraying_conditions.pre_emergent.field_temperature
+    - field.field.wo_spraying_conditions.pre_emergent.field_wind_direction
+    - field.field.wo_spraying_conditions.pre_emergent.field_wind_speed
+    - field.field.wo_spraying_conditions.pre_emergent.field_work_order
+  module:
+    - layout_builder
+    - layout_discovery
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Spraying Conditions'
+          context_mapping: {  }
+          column_widths: 50-50
+        components:
+          6446a111-80a9-4ce8-a736-d839542bb949:
+            uuid: 6446a111-80a9-4ce8-a736-d839542bb949
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:pre_emergent:field_how_applied'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          dafed52b-7327-4eed-a685-3339323c731b:
+            uuid: dafed52b-7327-4eed-a685-3339323c731b
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:pre_emergent:field_sprayed_areas'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          85e13b79-dfbf-4d32-bfb5-8745b745714d:
+            uuid: 85e13b79-dfbf-4d32-bfb5-8745b745714d
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:pre_emergent:field_method_of_application'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          f8b0f965-10ad-43f6-bb02-ddf3bb8cc603:
+            uuid: f8b0f965-10ad-43f6-bb02-ddf3bb8cc603
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:pre_emergent:field_carrier'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          e7599c9e-b30e-408d-8184-f8206e067198:
+            uuid: e7599c9e-b30e-408d-8184-f8206e067198
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:pre_emergent:field_temperature'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_integer
+                label: inline
+                settings:
+                  thousand_separator: ''
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          995c5161-c835-4039-95ca-910e55e1db02:
+            uuid: 995c5161-c835-4039-95ca-910e55e1db02
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:pre_emergent:field_wind_direction'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          0dae466b-4517-4d33-a96c-a016bfe267e6:
+            uuid: 0dae466b-4517-4d33-a96c-a016bfe267e6
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:pre_emergent:field_soil_moisture'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 5
+            additional: {  }
+          a6211eb3-7cdc-484b-85a8-541868452fbe:
+            uuid: a6211eb3-7cdc-484b-85a8-541868452fbe
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:pre_emergent:field_wind_speed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components: {  }
+        third_party_settings: {  }
+id: wo_spraying_conditions.pre_emergent.default
+targetEntityType: wo_spraying_conditions
+bundle: pre_emergent
+mode: default
+content:
+  field_carrier:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_how_applied:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_method_of_application:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_soil_moisture:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_sprayed_areas:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_temperature:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_wind_direction:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_wind_speed:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+hidden:
+  created: true
+  field_work_order: true
+  title: true
+  uid: true

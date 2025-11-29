@@ -1,0 +1,29 @@
+uuid: b72598f7-ffda-4658-936c-483e1899f4aa
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.insecticide
+    - eck.eck_type.contract_sections.grub_prevention_on_lawn
+    - field.storage.contract_sections.field_chemicals_used
+id: contract_sections.grub_prevention_on_lawn.field_chemicals_used
+field_name: field_chemicals_used
+entity_type: contract_sections
+bundle: grub_prevention_on_lawn
+label: 'Chemicals Used'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:chemical'
+  handler_settings:
+    target_bundles:
+      insecticide: insecticide
+    sort:
+      field: field_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

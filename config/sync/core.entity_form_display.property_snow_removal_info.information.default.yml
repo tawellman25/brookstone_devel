@@ -1,0 +1,220 @@
+uuid: 2f83bb35-f0b4-4965-be91-872c98fe5984
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_snow_removal_info.information
+    - field.field.property_snow_removal_info.information.field_app
+    - field.field.property_snow_removal_info.information.field_plow_route
+    - field.field.property_snow_removal_info.information.field_property
+    - field.field.property_snow_removal_info.information.field_snow_last_mag_amount
+    - field.field.property_snow_removal_info.information.field_snow_removal_assigned_to
+    - field.field.property_snow_removal_info.information.field_snow_removal_complete_by
+    - field.field.property_snow_removal_info.information.field_snow_removal_contracted
+    - field.field.property_snow_removal_info.information.field_snow_removal_icy_condition
+    - field.field.property_snow_removal_info.information.field_snow_removal_instructions
+    - field.field.property_snow_removal_info.information.field_snow_removal_last_plow_by
+    - field.field.property_snow_removal_info.information.field_snow_removal_last_plowed
+    - field.field.property_snow_removal_info.information.field_snow_removal_last_salt_amt
+    - field.field.property_snow_removal_info.information.field_snow_removal_map
+    - field.field.property_snow_removal_info.information.field_snow_removal_max_salt
+    - field.field.property_snow_removal_info.information.field_snow_removal_minimum
+    - field.field.property_snow_removal_info.information.field_snow_removal_priority
+    - field.field.property_snow_removal_info.information.field_snow_removal_salt
+    - field.field.property_snow_removal_info.information.field_snow_removal_sidewalks
+    - image.style.thumbnail
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_administation:
+      children:
+        - field_snow_removal_last_plowed
+        - field_snow_removal_last_plow_by
+        - field_snow_removal_last_salt_amt
+        - field_snow_last_mag_amount
+        - field_property
+        - field_snow_removal_assigned_to
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+id: property_snow_removal_info.information.default
+targetEntityType: property_snow_removal_info
+bundle: information
+mode: default
+content:
+  field_app:
+    type: entity_reference_autocomplete
+    weight: 10
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_plow_route:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 20
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_snow_last_mag_amount:
+    type: number
+    weight: 19
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_snow_removal_assigned_to:
+    type: entity_reference_autocomplete
+    weight: 21
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_snow_removal_complete_by:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_snow_removal_contracted:
+    type: boolean_checkbox
+    weight: 1
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_snow_removal_icy_condition:
+    type: options_select
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_snow_removal_instructions:
+    type: string_textfield
+    weight: 12
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_snow_removal_last_plow_by:
+    type: entity_reference_autocomplete
+    weight: 17
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_snow_removal_last_plowed:
+    type: datetime_default
+    weight: 16
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_snow_removal_last_salt_amt:
+    type: number
+    weight: 18
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_snow_removal_map:
+    type: image_image
+    weight: 11
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_snow_removal_max_salt:
+    type: options_select
+    weight: 9
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_snow_removal_minimum:
+    type: options_select
+    weight: 5
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_snow_removal_priority:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_snow_removal_salt:
+    type: boolean_checkbox
+    weight: 8
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_snow_removal_sidewalks:
+    type: boolean_checkbox
+    weight: 7
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 22
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

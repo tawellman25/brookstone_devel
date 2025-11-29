@@ -1,0 +1,25 @@
+uuid: 2ca32e1e-70db-4d8a-8cec-ad4990831468
+langcode: en
+status: true
+dependencies:
+  module:
+    - user
+id: teammate_yard_cleanup_landing_page
+label: 'Teammate -Yard Cleanup Landing Page'
+description: 'This is the landing page for the Teammates Yard Cleanup Information and Views.'
+use_admin_theme: false
+path: /teammates/work-orders/yard-cleanups
+access_logic: and
+access_conditions:
+  -
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      administrator: administrator
+      site_admin: site_admin
+      administration: administration
+      supervisor: supervisor
+      teammates: teammates
+parameters: {  }

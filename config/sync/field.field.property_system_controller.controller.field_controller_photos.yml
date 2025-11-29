@@ -1,0 +1,57 @@
+uuid: c21e69ca-6aea-434b-8640-f66e8ad3eb96
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_system_controller.controller
+    - field.storage.property_system_controller.field_controller_photos
+  module:
+    - filefield_paths
+    - image
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[property_system_controller:url:path]/photos'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[property_system_controller:field_controller_type]_controller.[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: property_system_controller.controller.field_controller_photos
+field_name: field_controller_photos
+entity_type: property_system_controller
+bundle: controller
+label: 'Controller Photos'
+description: "<p>It is preferred that we get 4 different pictures of each Controller.</p>\r\n<ol>\r\n  <li>Stepped back from the controller showing where it is located</li>\r\n  <li>With the door open showing the Controller's Face Plate</li>\r\n  <li>With the face plate open or wire cover off to show the wiring</li>\r\n  <li>Of the Zone list contained within the Controller.</li>\r\n</ol>"
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'png gif jpg jpeg webp'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: true
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

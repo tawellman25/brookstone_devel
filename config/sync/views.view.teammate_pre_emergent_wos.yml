@@ -1,0 +1,2276 @@
+uuid: 551823e5-7a8c-497b-8272-a2a5ebb1e310
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.pre_emergent
+    - field.storage.properties.field_geofield
+    - field.storage.properties.field_nickname
+    - field.storage.work_order.field_pre_emergent_season
+    - field.storage.work_order.field_property
+    - field.storage.work_order.field_scheduled
+    - field.storage.work_order.field_status
+    - field.storage.work_order.field_work_todo_description
+    - system.menu.teammate-navigation
+    - taxonomy.vocabulary.season
+    - taxonomy.vocabulary.wo_status
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+    - user.role.teammates
+    - views.view.teammate_wos_pre_emergent_counts
+  content:
+    - 'taxonomy_term:season:8060b72f-e4f3-4523-92ee-c04ab5f00e6c'
+    - 'taxonomy_term:season:f072f108-bcf4-48c7-ae85-9f635bc1f000'
+    - 'taxonomy_term:wo_status:0df9434f-6b05-4106-a0e0-2f370c20a085'
+    - 'taxonomy_term:wo_status:96cdf11b-3d95-4ec2-bdf1-4960324c24aa'
+    - 'taxonomy_term:wo_status:9ba6a2eb-5756-4278-9c1d-e3c6f54601e1'
+    - 'taxonomy_term:wo_status:d158832c-a5d9-47ad-9f83-ad81115a1153'
+    - 'taxonomy_term:wo_status:d81080d0-3128-47e3-a1ef-f7179bfd8df2'
+    - 'taxonomy_term:wo_status:da37d8f5-cebe-4317-b252-807d1c2e7814'
+    - 'taxonomy_term:wo_status:df9c2737-dc5a-40c9-bfb2-e30696addb6d'
+    - 'taxonomy_term:wo_status:e30129a7-9963-43d6-9026-078272fa387c'
+    - 'taxonomy_term:wo_status:e3f6cee6-869b-4029-ab9e-869ba3fa9a69'
+  module:
+    - better_exposed_filters
+    - eck
+    - geofield
+    - geofield_map
+    - smart_date
+    - taxonomy
+    - text
+    - user
+    - views_field_view
+id: teammate_pre_emergent_wos
+label: 'Teammate - Pre-emergent WOs'
+module: views
+description: ''
+tag: ''
+base_table: work_order_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'Pre-emergent WOs'
+      fields:
+        counter:
+          id: counter
+          table: views
+          field: counter
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: counter
+          label: '#'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          counter_start: 1
+        view_work_order:
+          id: view_work_order
+          table: work_order
+          field: view_work_order
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          plugin_id: entity_link
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          text: view
+          output_url_as_text: true
+          absolute: false
+        title:
+          id: title
+          table: work_order_field_data
+          field: title
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: null
+          entity_field: title
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_nickname:
+          id: field_nickname
+          table: properties__field_nickname
+          field: field_nickname
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        view:
+          id: view
+          table: views
+          field: view
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: view
+          label: View
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          view: teammate_wo_pre_emergent_past_info
+          display: default
+          arguments: '{{ raw_fields.id }}'
+        field_property:
+          id: field_property
+          table: work_order__field_property
+          field: field_property
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Property
+          exclude: false
+          alter:
+            alter_text: true
+            text: "<b>{{ field_nickname }}</b></br>\r\n{{ title }}</br>\r\n{{ field_property }}</br>\r\n{{ view }}"
+            make_link: true
+            path: '{{ view_work_order }}'
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: false
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_work_todo_description:
+          id: field_work_todo_description
+          table: work_order__field_work_todo_description
+          field: field_work_todo_description
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Description
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: text_default
+          settings: {  }
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_pre_emergent_season:
+          id: field_pre_emergent_season
+          table: work_order__field_pre_emergent_season
+          field: field_pre_emergent_season
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: true
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_pre_emergent_season_1:
+          id: field_pre_emergent_season_1
+          table: work_order__field_pre_emergent_season
+          field: field_pre_emergent_season
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Season
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: false
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_scheduled:
+          id: field_scheduled
+          table: work_order__field_scheduled
+          field: field_scheduled
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: boolean
+          settings:
+            format: default
+            format_custom_false: ''
+            format_custom_true: ''
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_status:
+          id: field_status
+          table: work_order__field_status
+          field: field_status
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Status
+          exclude: false
+          alter:
+            alter_text: true
+            text: "{{ field_status }}</br>\r\n{{ field_scheduled }}"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: true
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        id:
+          id: id
+          table: properties_field_data
+          field: id
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          entity_type: properties
+          entity_field: id
+          plugin_id: field
+          label: ID
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+      pager:
+        type: none
+        options:
+          offset: 0
+      exposed_form:
+        type: bef
+        options:
+          submit_button: Apply
+          reset_button: false
+          reset_button_label: Reset
+          exposed_sorts_label: 'Sort by'
+          expose_sort_order: true
+          sort_asc_label: Asc
+          sort_desc_label: Desc
+          text_input_required: 'Select any filter and click on Apply to see results'
+          text_input_required_format: basic_html
+          bef:
+            general:
+              autosubmit: false
+              autosubmit_exclude_textfield: false
+              autosubmit_textfield_delay: 500
+              autosubmit_hide: false
+              input_required: false
+              allow_secondary: false
+              secondary_label: 'Advanced options'
+              secondary_open: false
+              reset_button_always_show: false
+            filter:
+              field_pre_emergent_season_target_id:
+                plugin_id: bef
+                advanced:
+                  sort_options: false
+                  rewrite:
+                    filter_rewrite_values: ''
+                    filter_rewrite_values_key: false
+                  collapsible: false
+                  collapsible_disable_automatic_open: false
+                  is_secondary: false
+                select_all_none: false
+                select_all_none_nested: false
+                display_inline: false
+              field_street_address_value:
+                plugin_id: default
+                advanced:
+                  placeholder_text: ''
+                  collapsible: false
+                  collapsible_disable_automatic_open: false
+                  is_secondary: false
+              field_city_name_value:
+                plugin_id: default
+                advanced:
+                  placeholder_text: ''
+                  collapsible: false
+                  collapsible_disable_automatic_open: false
+                  is_secondary: false
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+            teammates: teammates
+      cache:
+        type: tag
+        options: {  }
+      empty: {  }
+      sorts:
+        field_nickname_value:
+          id: field_nickname_value
+          table: properties__field_nickname
+          field: field_nickname_value
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: standard
+          order: ASC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
+      arguments: {  }
+      filters:
+        type:
+          id: type
+          table: work_order_field_data
+          field: type
+          entity_type: work_order
+          entity_field: type
+          plugin_id: bundle
+          value:
+            pre_emergent: pre_emergent
+          group: 1
+        created:
+          id: created
+          table: work_order_field_data
+          field: created
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          entity_field: created
+          plugin_id: date
+          operator: between
+          value:
+            min: '[current-date:custom:Y]-01-01'
+            max: '[current-date:custom:Y]-12-31'
+            value: ''
+            type: date
+          group: 1
+          exposed: false
+          expose:
+            operator_id: created_op
+            label: 'Authored on'
+            description: null
+            use_operator: false
+            operator: created_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: created
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            min_placeholder: null
+            max_placeholder: null
+            placeholder: null
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          use_tokens: 1
+        field_status_target_id:
+          id: field_status_target_id
+          table: work_order__field_status
+          field: field_status_target_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: taxonomy_index_tid
+          operator: or
+          value:
+            1089: 1089
+            1099: 1099
+            1091: 1091
+            1090: 1090
+            1093: 1093
+            1094: 1094
+            1092: 1092
+            1096: 1096
+            1095: 1095
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_status_target_id_op
+            label: Status
+            description: ''
+            use_operator: false
+            operator: field_status_target_id_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_status_target_id
+            required: false
+            remember: false
+            multiple: true
+            remember_roles:
+              administrator: administrator
+              site_admin: site_admin
+              administration: administration
+              supervisor: supervisor
+              teammates: teammates
+              anonymous: '0'
+              authenticated: '0'
+              client: '0'
+              user: '0'
+              supplier: '0'
+            reduce: false
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          reduce_duplicates: false
+          vid: wo_status
+          type: select
+          hierarchy: false
+          limit: true
+          error_message: true
+        field_pre_emergent_season_target_id:
+          id: field_pre_emergent_season_target_id
+          table: work_order__field_pre_emergent_season
+          field: field_pre_emergent_season_target_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: taxonomy_index_tid
+          operator: or
+          value:
+            1100: 1100
+            1102: 1102
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_pre_emergent_season_target_id_op
+            label: Season
+            description: ''
+            use_operator: false
+            operator: field_pre_emergent_season_target_id_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_pre_emergent_season_target_id
+            required: true
+            remember: true
+            multiple: false
+            remember_roles:
+              administrator: administrator
+              site_admin: site_admin
+              administration: administration
+              supervisor: supervisor
+              teammates: teammates
+              anonymous: '0'
+              authenticated: '0'
+              site_assistant: '0'
+              client: '0'
+              user: '0'
+            reduce: true
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          reduce_duplicates: false
+          vid: season
+          type: select
+          hierarchy: false
+          limit: true
+          error_message: true
+        id:
+          id: id
+          table: work_order_field_data
+          field: id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          entity_field: id
+          plugin_id: numeric
+          operator: '='
+          value:
+            min: ''
+            max: ''
+            value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: id_op
+            label: 'Work Order #'
+            description: ''
+            use_operator: false
+            operator: id_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: id
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+              supplier: '0'
+            min_placeholder: ''
+            max_placeholder: ''
+            placeholder: ''
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          use_tokens: 0
+        field_nickname_value:
+          id: field_nickname_value
+          table: properties__field_nickname
+          field: field_nickname_value
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_nickname_value_op
+            label: Property
+            description: ''
+            use_operator: false
+            operator: field_nickname_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_nickname_value
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+              supplier: '0'
+            placeholder: ''
+            autocomplete_filter: 0
+            autocomplete_min_chars: '0'
+            autocomplete_items: '10'
+            autocomplete_field: field_nickname
+            autocomplete_raw_suggestion: 1
+            autocomplete_raw_dropdown: 1
+            autocomplete_dependent: 0
+            autocomplete_contextual: 0
+            autocomplete_autosubmit: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+        field_street_address_value:
+          id: field_street_address_value
+          table: properties__field_street_address
+          field: field_street_address_value
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_street_address_value_op
+            label: 'Street Address'
+            description: ''
+            use_operator: false
+            operator: field_street_address_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_street_address_value
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+              supplier: '0'
+            placeholder: ''
+            autocomplete_filter: 0
+            autocomplete_min_chars: '0'
+            autocomplete_items: '10'
+            autocomplete_field: ''
+            autocomplete_raw_suggestion: 1
+            autocomplete_raw_dropdown: 1
+            autocomplete_dependent: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+        field_city_name_value:
+          id: field_city_name_value
+          table: city__field_city_name
+          field: field_city_name_value
+          relationship: field_city
+          group_type: group
+          admin_label: ''
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_city_name_value_op
+            label: City
+            description: ''
+            use_operator: false
+            operator: field_city_name_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_city_name_value
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+              supplier: '0'
+            placeholder: ''
+            autocomplete_filter: 0
+            autocomplete_min_chars: '0'
+            autocomplete_items: '10'
+            autocomplete_field: ''
+            autocomplete_raw_suggestion: 1
+            autocomplete_raw_dropdown: 1
+            autocomplete_dependent: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+      filter_groups:
+        operator: AND
+        groups:
+          1: AND
+      style:
+        type: table
+      row:
+        type: fields
+      query:
+        type: views_query
+        options:
+          query_comment: ''
+          disable_sql_rewrite: false
+          distinct: true
+          replica: false
+          query_tags: {  }
+      relationships:
+        field_property:
+          id: field_property
+          table: work_order__field_property
+          field: field_property
+          relationship: none
+          group_type: group
+          admin_label: Properties
+          plugin_id: standard
+          required: false
+        field_zipcode_reference:
+          id: field_zipcode_reference
+          table: properties__field_zipcode_reference
+          field: field_zipcode_reference
+          relationship: field_property
+          group_type: group
+          admin_label: Zipcodes
+          plugin_id: standard
+          required: false
+        field_city:
+          id: field_city
+          table: zipcodes__field_city
+          field: field_city
+          relationship: field_zipcode_reference
+          group_type: group
+          admin_label: City
+          plugin_id: standard
+          required: false
+      header:
+        view:
+          id: view
+          table: views
+          field: view
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: view
+          empty: false
+          view_to_insert: 'teammate_wos_pre_emergent_counts:block_2'
+          inherit_arguments: false
+      footer: {  }
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - user.roles
+      tags:
+        - 'config:field.storage.properties.field_nickname'
+        - 'config:field.storage.work_order.field_pre_emergent_season'
+        - 'config:field.storage.work_order.field_property'
+        - 'config:field.storage.work_order.field_scheduled'
+        - 'config:field.storage.work_order.field_status'
+        - 'config:field.storage.work_order.field_work_todo_description'
+  attachment_1:
+    id: attachment_1
+    display_title: Attachment
+    display_plugin: attachment
+    position: 2
+    display_options:
+      enabled: true
+      fields:
+        counter:
+          id: counter
+          table: views
+          field: counter
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: counter
+          label: '#'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          counter_start: 1
+        view_work_order:
+          id: view_work_order
+          table: work_order
+          field: view_work_order
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          plugin_id: entity_link
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          text: view
+          output_url_as_text: true
+          absolute: false
+        title:
+          id: title
+          table: work_order_field_data
+          field: title
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: null
+          entity_field: title
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: true
+            text: '{{ title }}'
+            make_link: true
+            path: '{{ view_work_order }}'
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: _blank
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_nickname:
+          id: field_nickname
+          table: properties__field_nickname
+          field: field_nickname
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_pre_emergent_season:
+          id: field_pre_emergent_season
+          table: work_order__field_pre_emergent_season
+          field: field_pre_emergent_season
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Pre-emergent Season'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: true
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_scheduled:
+          id: field_scheduled
+          table: work_order__field_scheduled
+          field: field_scheduled
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: boolean
+          settings:
+            format: default
+            format_custom_false: ''
+            format_custom_true: ''
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_status:
+          id: field_status
+          table: work_order__field_status
+          field: field_status
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Status
+          exclude: false
+          alter:
+            alter_text: true
+            text: "{{ field_status }}</br>\r\n{{ field_scheduled }}"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: true
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_property:
+          id: field_property
+          table: work_order__field_property
+          field: field_property
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Property
+          exclude: false
+          alter:
+            alter_text: true
+            text: "<b>{{ field_nickname }}</b></br>\r\n{{ field_property }}</br>\r\n{{ field_last_amount_applied }}</br>\r\n</br>\r\n{{ title }}"
+            make_link: false
+            path: '{{ view_work_order }}'
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: false
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_geofield:
+          id: field_geofield
+          table: properties__field_geofield
+          field: field_geofield
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Geofield
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: geofield_default
+          settings:
+            output_format: wkt
+            output_escape: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+      pager:
+        type: none
+        options:
+          offset: 0
+      style:
+        type: geofield_google_map
+        options:
+          data_source:
+            field_geofield: field_geofield
+          entity_source: __base_table
+          entity_source_submit: 'Update Entity Source'
+          map_dimensions:
+            width: 100%
+            height: 450px
+          map_empty:
+            empty_behaviour: '0'
+          map_center:
+            center_force: '1'
+            lat: '38.792570265115685'
+            lon: ' -107.98715502258634'
+            geocode: 'Find my location'
+          map_zoom_and_pan:
+            zoom:
+              initial: '10'
+              force: 0
+              min: '1'
+              max: '22'
+              finer: '0'
+            gestureHandling: auto
+            scrollwheel: '1'
+            draggable: '1'
+            map_reset: 0
+            map_reset_position: TOP_RIGHT
+          map_controls:
+            disable_default_ui: 0
+            zoom_control: 0
+            map_type_id: roadmap
+            map_type_control: 0
+            map_type_control_options_type_ids:
+              roadmap: roadmap
+              satellite: satellite
+              hybrid: hybrid
+              terrain: terrain
+            scale_control: 0
+            street_view_control: 0
+            fullscreen_control: 1
+          map_marker_and_infowindow:
+            icon_image_path: ''
+            infowindow_field: field_property
+            multivalue_split: 0
+            view_mode: full
+            tooltip_field: field_nickname
+            theming:
+              plugin_id: geofieldmap_entity_type_url
+              geofieldmap_entity_type_url:
+                id: geofieldmap_entity_type_url
+                values:
+                  aerating:
+                    weight: '0'
+                    label_alias: ''
+                    icon_file: none
+                    label: Aerating
+                    legend_exclude: 0
+                  aspen_twig_gall:
+                    weight: '1'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Aspen Twig Gall'
+                    legend_exclude: 0
+                  christmas_decorations:
+                    weight: '2'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Christmas Decorations'
+                    legend_exclude: 0
+                  cooley_spruce_gall:
+                    weight: '3'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Cooley Spruce Gall'
+                    legend_exclude: 0
+                  deciduous_bore:
+                    weight: '4'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Deciduous Bore'
+                    legend_exclude: 0
+                  deer_prevention:
+                    weight: '5'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Deer Prevention'
+                    legend_exclude: 0
+                  dethatching:
+                    weight: '6'
+                    label_alias: ''
+                    icon_file: none
+                    label: Dethatching
+                    legend_exclude: 0
+                  dormant_oil:
+                    weight: '7'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Dormant Oil'
+                    legend_exclude: 0
+                  estimate:
+                    weight: '8'
+                    label_alias: ''
+                    icon_file: none
+                    label: Estimate
+                    legend_exclude: 0
+                  fall_cleanup:
+                    weight: '9'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Fall Cleanup'
+                    legend_exclude: 0
+                  fertilizing:
+                    weight: '10'
+                    label_alias: ''
+                    icon_file: none
+                    label: Fertilizing
+                    legend_exclude: 0
+                  fertilizing_trees_and_shrubs:
+                    weight: '11'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Fertilizing Trees and Shrubs'
+                    legend_exclude: 0
+                  grub_prevention:
+                    weight: '12'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Grub Prevention'
+                    legend_exclude: 0
+                  in_house_tasks:
+                    weight: '13'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'In House Tasks'
+                    legend_exclude: 0
+                  landscaping:
+                    weight: '14'
+                    label_alias: ''
+                    icon_file: none
+                    label: Landscaping
+                    legend_exclude: 0
+                  lawn_mowing:
+                    weight: '15'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Lawn Mowing'
+                    legend_exclude: 0
+                  misc_services:
+                    weight: '16'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Misc Services'
+                    legend_exclude: 0
+                  pinion_pine_ips_beetle:
+                    weight: '17'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Pinion Pine Ips Beetle'
+                    legend_exclude: 0
+                  pre_emergent:
+                    weight: '18'
+                    label_alias: ''
+                    icon_file: none
+                    label: Pre-emergent
+                    legend_exclude: 0
+                  snow_removal:
+                    weight: '19'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Snow Removal'
+                    legend_exclude: 0
+                  special_mowing:
+                    weight: '20'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Special Mowing'
+                    legend_exclude: 0
+                  spring_cleanup:
+                    weight: '21'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Spring Cleanup'
+                    legend_exclude: 0
+                  sprinkler_check_up:
+                    weight: '22'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Sprinkler Check-Up'
+                    legend_exclude: 0
+                  sprinkler_design:
+                    weight: '23'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Sprinkler Design'
+                    legend_exclude: 0
+                  sprinkler_installation:
+                    weight: '24'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Sprinkler Installation'
+                    legend_exclude: 0
+                  sprinkler_repair:
+                    weight: '25'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Sprinkler Repair'
+                    legend_exclude: 0
+                  sprinkler_start_up:
+                    weight: '26'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Sprinkler Start-Up'
+                    legend_exclude: 0
+                  sprinkler_winterizing:
+                    weight: '27'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Sprinkler Winterizing'
+                    legend_exclude: 0
+                  summer_pruning:
+                    weight: '28'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Summer Pruning'
+                    legend_exclude: 0
+                  trunk_bore:
+                    weight: '29'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Trunk Bore'
+                    legend_exclude: 0
+                  weed_pulling:
+                    weight: '30'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Weed Pulling'
+                    legend_exclude: 0
+                  weed_spraying:
+                    weight: '31'
+                    label_alias: ''
+                    icon_file: none
+                    label: 'Weed Spraying'
+                    legend_exclude: 0
+                description: |-
+                  This Geofield Map Themer allows the Image Selection of
+                   * different Marker Icons based on Entity Types/Bundles.
+              plugins_descriptions:
+                table: ''
+          weight: ''
+          map_additional_options: ''
+          map_additional_libraries:
+            places: 0
+            drawing: 0
+            geometry: 0
+            visualization: 0
+          map_geometries_options: '{"strokeColor":"black","strokeOpacity":"0.8","strokeWeight":2,"fillColor":"blue","fillOpacity":"0.1","clickable":false}'
+          map_oms:
+            map_oms_control: 1
+            map_oms_options: '{"markersWontMove":"true","markersWontHide":"true","basicFormatEvents":"true","nearbyDistance":3}'
+          custom_style_map:
+            custom_style_control: 0
+            custom_style_name: ''
+            custom_style_options: ''
+            custom_style_default: 0
+          map_markercluster:
+            markercluster_control: 0
+            markercluster_additional_options: '{"maxZoom":12,"gridSize":50}'
+          map_geocoder:
+            control: 0
+            settings:
+              position: TOP_LEFT
+              input_size: '25'
+              providers:
+                googlemaps:
+                  weight: '0'
+                  checked: 0
+              min_terms: '4'
+              delay: '800'
+              zoom: '16'
+              infowindow: 0
+              options: ''
+          map_lazy_load:
+            lazy_load: 0
+      row:
+        type: fields
+        options: {  }
+      defaults:
+        style: false
+        row: false
+        fields: false
+        header: false
+      header: {  }
+      display_extenders: {  }
+      displays:
+        page_1: page_1
+      inherit_arguments: false
+      inherit_exposed_filters: true
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - user.roles
+      tags:
+        - 'config:field.storage.properties.field_geofield'
+        - 'config:field.storage.properties.field_nickname'
+        - 'config:field.storage.work_order.field_pre_emergent_season'
+        - 'config:field.storage.work_order.field_property'
+        - 'config:field.storage.work_order.field_scheduled'
+        - 'config:field.storage.work_order.field_status'
+  page_1:
+    id: page_1
+    display_title: Page
+    display_plugin: page
+    position: 1
+    display_options:
+      defaults:
+        header: false
+      header:
+        view:
+          id: view
+          table: views
+          field: view
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: view
+          empty: false
+          view_to_insert: 'teammate_wos_pre_emergent_counts:block_3'
+          inherit_arguments: false
+        view_1:
+          id: view_1
+          table: views
+          field: view
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: view
+          empty: false
+          view_to_insert: 'teammate_wos_pre_emergent_counts:block_4'
+          inherit_arguments: false
+      exposed_block: false
+      display_extenders: {  }
+      path: teammates/work-orders/spraying/pre-emergent
+      menu:
+        type: normal
+        title: Pre-emergent
+        description: ''
+        weight: -42
+        expanded: false
+        menu_name: teammate-navigation
+        parent: 'menu_link_content:850d1b02-803c-4229-8058-57f9a7d15bbd'
+        context: '0'
+      use_admin_theme: true
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - user.roles
+      tags:
+        - 'config:field.storage.properties.field_nickname'
+        - 'config:field.storage.work_order.field_pre_emergent_season'
+        - 'config:field.storage.work_order.field_property'
+        - 'config:field.storage.work_order.field_scheduled'
+        - 'config:field.storage.work_order.field_status'
+        - 'config:field.storage.work_order.field_work_todo_description'

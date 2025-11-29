@@ -1,0 +1,32 @@
+uuid: 0bd9b2de-8466-4924-91d6-d1243dd1a49b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.herbicide
+    - field.storage.chemical.field_product_label_file
+  module:
+    - epp
+    - file
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: chemical.herbicide.field_product_label_file
+field_name: field_product_label_file
+entity_type: chemical
+bundle: herbicide
+label: 'Product Label File'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: chemical/herbicide/labels/files
+  file_extensions: 'txt pdf'
+  max_filesize: ''
+  description_field: false
+field_type: file

@@ -1,0 +1,29 @@
+uuid: e9e1e4bf-5bec-4d61-a8a0-7ec301435b83
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.crew_types.crew_types
+    - eck.eck_type.department.details
+    - field.storage.department.field_associated_crews
+id: department.details.field_associated_crews
+field_name: field_associated_crews
+entity_type: department
+bundle: details
+label: 'Associated Crews'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:crew_types'
+  handler_settings:
+    target_bundles:
+      crew_types: crew_types
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

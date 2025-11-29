@@ -1,0 +1,30 @@
+uuid: f5867035-6a11-4d92-a162-965eea63bcc0
+langcode: en
+status: true
+dependencies:
+  module:
+    - ctools_block
+  theme:
+    - brookstone_admin
+id: brookstone_admin_comments_2
+theme: brookstone_admin
+region: sidebar_first
+weight: -14
+provider: null
+plugin: 'entity_field:node:comment_forum'
+settings:
+  id: 'entity_field:node:comment_forum'
+  label: Comments
+  label_display: visible
+  provider: ctools_block
+  context_mapping:
+    entity: '@node.node_route_context:node'
+  formatter:
+    type: comment_default
+    weight: 0
+    label: above
+    settings:
+      view_mode: default
+      pager_id: 0
+    third_party_settings: {  }
+visibility: {  }

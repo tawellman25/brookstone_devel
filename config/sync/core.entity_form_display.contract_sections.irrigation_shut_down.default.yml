@@ -1,0 +1,100 @@
+uuid: 7d7531d9-0844-4a55-aa34-82018d6c6df6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_shut_down
+    - field.field.contract_sections.irrigation_shut_down.field_client_notes
+    - field.field.contract_sections.irrigation_shut_down.field_contract
+    - field.field.contract_sections.irrigation_shut_down.field_do_you_want
+    - field.field.contract_sections.irrigation_shut_down.field_estimate
+    - field.field.contract_sections.irrigation_shut_down.field_last_year
+    - field.field.contract_sections.irrigation_shut_down.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_contract
+        - field_work_order
+      label: Admin
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: details_sidebar
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+        weight: 0
+id: contract_sections.irrigation_shut_down.default
+targetEntityType: contract_sections
+bundle: irrigation_shut_down
+mode: default
+content:
+  field_client_notes:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_do_you_want:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_estimate:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_year:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: false
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 6
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  uid: true

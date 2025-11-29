@@ -1,0 +1,404 @@
+uuid: 765c241a-1538-4ad6-bdcc-1842f09edd1c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.decorative_rock
+    - field.field.material.decorative_rock.feeds_item
+    - field.field.material.decorative_rock.field_banner_images
+    - field.field.material.decorative_rock.field_cost_integer
+    - field.field.material.decorative_rock.field_description
+    - field.field.material.decorative_rock.field_discontinued
+    - field.field.material.decorative_rock.field_est_wt_per_yard
+    - field.field.material.decorative_rock.field_front_promoted
+    - field.field.material.decorative_rock.field_last_restocked_date
+    - field.field.material.decorative_rock.field_lead_time
+    - field.field.material.decorative_rock.field_main_image
+    - field.field.material.decorative_rock.field_material_tags
+    - field.field.material.decorative_rock.field_name
+    - field.field.material.decorative_rock.field_price
+    - field.field.material.decorative_rock.field_price_updated
+    - field.field.material.decorative_rock.field_quantity_in_stock
+    - field.field.material.decorative_rock.field_rock_type
+    - field.field.material.decorative_rock.field_slideshow_image
+    - field.field.material.decorative_rock.field_supplier
+    - field.field.material.decorative_rock.field_supplier_item_number
+    - field.field.material.decorative_rock.field_supplier_website_item_link
+    - field.field.material.decorative_rock.field_suppliers
+    - field.field.material.decorative_rock.field_unit_of_measure
+    - field.field.material.decorative_rock.field_yard_per_ton
+    - image.style.max_650x650
+  module:
+    - colorbox
+    - layout_builder
+    - layout_discovery
+    - link
+    - options
+    - text
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: Header
+          context_mapping: {  }
+          column_widths: 67-33
+        components:
+          cad3c3dc-6a55-4818-a7f8-f22d44f22249:
+            uuid: cad3c3dc-6a55-4818-a7f8-f22d44f22249
+            region: first
+            configuration:
+              id: 'field_block:material:decorative_rock:field_main_image'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: colorbox
+                label: hidden
+                settings:
+                  colorbox_image_style: ''
+                  colorbox_gallery: post
+                  colorbox_gallery_custom: ''
+                  colorbox_caption: auto
+                  colorbox_caption_custom: ''
+                  colorbox_node_style: max_650x650
+                  colorbox_node_style_first: ''
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          a0bffce8-a419-46fa-bbbe-2d79f85b8f8a:
+            uuid: a0bffce8-a419-46fa-bbbe-2d79f85b8f8a
+            region: second
+            configuration:
+              id: 'field_block:material:decorative_rock:field_rock_type'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          d32897ab-cf92-4b4b-ad55-43ddec7b9597:
+            uuid: d32897ab-cf92-4b4b-ad55-43ddec7b9597
+            region: second
+            configuration:
+              id: 'field_block:material:decorative_rock:field_unit_of_measure'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          ffbe917f-9788-4ca6-8656-7a16f87d01a8:
+            uuid: ffbe917f-9788-4ca6-8656-7a16f87d01a8
+            region: second
+            configuration:
+              id: 'field_block:material:decorative_rock:field_est_wt_per_yard'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_integer
+                label: inline
+                settings:
+                  thousand_separator: ''
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          0cae87c7-a79e-4eca-a6f9-c28ba3d0abd9:
+            uuid: 0cae87c7-a79e-4eca-a6f9-c28ba3d0abd9
+            region: second
+            configuration:
+              id: 'field_block:material:decorative_rock:field_yard_per_ton'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_decimal
+                label: inline
+                settings:
+                  thousand_separator: ''
+                  decimal_separator: .
+                  scale: 2
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 5
+            additional: {  }
+          e5909ecb-1159-454c-b88a-6ee990b11151:
+            uuid: e5909ecb-1159-454c-b88a-6ee990b11151
+            region: content
+            configuration:
+              id: 'field_block:material:decorative_rock:field_suppliers'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          f0135f98-a1d8-490f-b088-337ca7098590:
+            uuid: f0135f98-a1d8-490f-b088-337ca7098590
+            region: content
+            configuration:
+              id: 'field_block:material:decorative_rock:field_description'
+              label: Description
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: text_default
+                label: hidden
+                settings: {  }
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          e15573e4-4b7d-4f73-8c49-b896ce7e3e25:
+            uuid: e15573e4-4b7d-4f73-8c49-b896ce7e3e25
+            region: content
+            configuration:
+              id: 'field_block:material:decorative_rock:field_supplier'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 10
+            additional: {  }
+          562e3066-085e-4ae8-a34f-3a567b83428e:
+            uuid: 562e3066-085e-4ae8-a34f-3a567b83428e
+            region: content
+            configuration:
+              id: 'field_block:material:decorative_rock:field_supplier_website_item_link'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: link
+                label: inline
+                settings:
+                  trim_length: 80
+                  url_only: false
+                  url_plain: false
+                  rel: ''
+                  target: ''
+                third_party_settings: {  }
+            weight: 11
+            additional: {  }
+          26c4920d-84f8-4514-b383-b2ba0d1b5203:
+            uuid: 26c4920d-84f8-4514-b383-b2ba0d1b5203
+            region: content
+            configuration:
+              id: 'field_block:material:decorative_rock:field_material_tags'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 12
+            additional: {  }
+          5d349bea-a02f-4f9b-87f3-5a8f13b7954f:
+            uuid: 5d349bea-a02f-4f9b-87f3-5a8f13b7954f
+            region: content
+            configuration:
+              id: 'field_block:material:decorative_rock:field_cost_integer'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_decimal
+                label: inline
+                settings:
+                  thousand_separator: ''
+                  decimal_separator: .
+                  scale: 2
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 7
+            additional: {  }
+          25886bb8-c2ea-479d-a3fa-8b4e64dda770:
+            uuid: 25886bb8-c2ea-479d-a3fa-8b4e64dda770
+            region: content
+            configuration:
+              id: 'field_block:material:decorative_rock:field_price'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_decimal
+                label: inline
+                settings:
+                  thousand_separator: ''
+                  decimal_separator: .
+                  scale: 2
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 6
+            additional: {  }
+        third_party_settings: {  }
+id: material.decorative_rock.default
+targetEntityType: material
+bundle: decorative_rock
+mode: default
+content:
+  field_cost_integer:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_est_wt_per_yard:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_main_image:
+    type: colorbox
+    label: hidden
+    settings:
+      colorbox_image_style: ''
+      colorbox_gallery: post
+      colorbox_gallery_custom: ''
+      colorbox_caption: auto
+      colorbox_caption_custom: ''
+      colorbox_node_style: max_650x650
+      colorbox_node_style_first: ''
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_material_tags:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_price:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_rock_type:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_supplier:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_supplier_website_item_link:
+    type: link
+    label: inline
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_suppliers:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 27
+    region: content
+  field_unit_of_measure:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_yard_per_ton:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+hidden:
+  changed: true
+  created: true
+  feeds_item: true
+  field_banner_images: true
+  field_discontinued: true
+  field_front_promoted: true
+  field_last_restocked_date: true
+  field_lead_time: true
+  field_name: true
+  field_price_updated: true
+  field_quantity_in_stock: true
+  field_slideshow_image: true
+  field_supplier_item_number: true
+  title: true
+  uid: true

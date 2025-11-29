@@ -1,0 +1,29 @@
+uuid: 2275d0b9-fba0-4387-8dff-54a0f6c76e06
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.supplier.supplier
+    - eck.eck_type.wo_material_list_item.items
+    - field.storage.wo_material_list_item.field_purchased_supplier
+id: wo_material_list_item.items.field_purchased_supplier
+field_name: field_purchased_supplier
+entity_type: wo_material_list_item
+bundle: items
+label: 'Purchased Supplier'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:supplier'
+  handler_settings:
+    target_bundles:
+      supplier: supplier
+    sort:
+      field: field_supplier_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: 4f57731b-3b4f-4b50-95dd-1d51e109081d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_info.general_information
+    - field.storage.property_sprinkler_info.field_field_ss_check_how_often
+    - taxonomy.vocabulary.irrigation_check_up_frequency
+id: property_sprinkler_info.general_information.field_field_ss_check_how_often
+field_name: field_field_ss_check_how_often
+entity_type: property_sprinkler_info
+bundle: general_information
+label: 'How Often'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      irrigation_check_up_frequency: irrigation_check_up_frequency
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,24 @@
+uuid: 97da8a01-be8f-40ec-9228-663a8a7eb429
+langcode: en
+status: true
+dependencies:
+  module:
+    - user
+id: office_administation
+label: 'Office Administation'
+description: 'This is a landing page for all the Office Administration links and info.'
+use_admin_theme: true
+path: /admin/office
+access_logic: and
+access_conditions:
+  -
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      site_admin: site_admin
+      administration: administration
+      administrator: administrator
+      supervisor: supervisor
+parameters: {  }

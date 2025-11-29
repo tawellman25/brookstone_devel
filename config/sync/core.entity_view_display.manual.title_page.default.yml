@@ -1,0 +1,81 @@
+uuid: 2664f95b-a56d-4692-8f32-25f5cee908a6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.manual.title_page
+    - field.field.manual.title_page.field_associated_crew
+    - field.field.manual.title_page.field_cover_image
+    - field.field.manual.title_page.field_description
+    - field.field.manual.title_page.field_publication_date
+    - field.field.manual.title_page.field_subtitle
+    - field.field.manual.title_page.field_version
+    - image.style.max_1300x1300
+  module:
+    - colorbox
+    - datetime
+    - text
+id: manual.title_page.default
+targetEntityType: manual
+bundle: title_page
+mode: default
+content:
+  field_associated_crew:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_cover_image:
+    type: colorbox
+    label: hidden
+    settings:
+      colorbox_image_style: ''
+      colorbox_gallery: post
+      colorbox_gallery_custom: ''
+      colorbox_caption: auto
+      colorbox_caption_custom: ''
+      colorbox_node_style: ''
+      colorbox_node_style_first: max_1300x1300
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_publication_date:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_subtitle:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_version:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  changed: true
+  created: true
+  title: true
+  uid: true

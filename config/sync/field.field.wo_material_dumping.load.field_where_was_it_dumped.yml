@@ -1,0 +1,33 @@
+uuid: d5141a55-2563-41b2-b33e-f5ffb47d7ca3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_material_dumping.load
+    - field.storage.wo_material_dumping.field_where_was_it_dumped
+    - taxonomy.vocabulary.dump_location
+  content:
+    - 'taxonomy_term:dump_location:31f8f812-0a42-4737-b985-3516e5e7bc02'
+id: wo_material_dumping.load.field_where_was_it_dumped
+field_name: field_where_was_it_dumped
+entity_type: wo_material_dumping
+bundle: load
+label: 'Where was it dumped?'
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: 31f8f812-0a42-4737-b985-3516e5e7bc02
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      dump_location: dump_location
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

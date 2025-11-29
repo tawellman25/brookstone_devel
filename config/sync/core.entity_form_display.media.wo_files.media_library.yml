@@ -1,0 +1,37 @@
+uuid: b5787364-3cd6-482b-a1f3-49c18588f85f
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.media.media_library
+    - field.field.media.wo_files.field_media_file
+    - field.field.media.wo_files.field_work_order
+    - media.type.wo_files
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: media.wo_files.media_library
+targetEntityType: media
+bundle: wo_files
+mode: media_library
+content:
+  name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_media_file: true
+  field_work_order: true
+  path: true
+  status: true
+  uid: true

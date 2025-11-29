@@ -1,0 +1,67 @@
+uuid: caa9294c-bfd9-4356-a0cf-a2d95da855c8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_time_clock.entry
+    - field.field.wo_time_clock.entry.field_end_time
+    - field.field.wo_time_clock.entry.field_notes
+    - field.field.wo_time_clock.entry.field_start_time
+    - field.field.wo_time_clock.entry.field_teammate
+    - field.field.wo_time_clock.entry.field_total_time
+    - field.field.wo_time_clock.entry.field_work_order
+  module:
+    - datetime
+    - wo_total_time
+id: wo_time_clock.entry.default
+targetEntityType: wo_time_clock
+bundle: entry
+mode: default
+content:
+  field_end_time:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: America/Denver
+      format_type: medium
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_start_time:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: America/Denver
+      format_type: medium
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_teammate:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_total_time:
+    type: wo_total_time_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_work_order: true
+  title: true
+  uid: true

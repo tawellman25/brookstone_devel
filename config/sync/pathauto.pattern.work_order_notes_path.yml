@@ -1,0 +1,22 @@
+uuid: 1c56a402-4d49-470d-9e42-ba8dee59a876
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: work_order_notes_path
+label: 'Work Order Notes Path'
+type: 'canonical_entities:wo_notes'
+pattern: '[wo_notes:field_work_order:entity:url:path]/[wo_notes:uid:entity:account-name]_note'
+selection_criteria:
+  48936276-2ccf-4ae7-a578-2e69d18473dd:
+    id: 'entity_bundle:wo_notes'
+    negate: false
+    uuid: 48936276-2ccf-4ae7-a578-2e69d18473dd
+    context_mapping:
+      wo_notes: wo_notes
+    bundles:
+      note: note
+selection_logic: and
+weight: 26
+relationships: {  }

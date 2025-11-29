@@ -1,0 +1,33 @@
+uuid: 5a41599a-5ae8-42ab-8fd1-36973985e6dd
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.fertilizing
+    - field.storage.wo_spraying_conditions.field_soil_moisture
+    - taxonomy.vocabulary.spraying_soil_moisture_levels
+  content:
+    - 'taxonomy_term:spraying_soil_moisture_levels:ef85c50e-06a8-4689-b17b-e0f79441c8db'
+id: wo_spraying_conditions.fertilizing.field_soil_moisture
+field_name: field_soil_moisture
+entity_type: wo_spraying_conditions
+bundle: fertilizing
+label: 'Soil Moisture'
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: ef85c50e-06a8-4689-b17b-e0f79441c8db
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      spraying_soil_moisture_levels: spraying_soil_moisture_levels
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

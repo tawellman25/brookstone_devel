@@ -1,0 +1,128 @@
+uuid: 84c177ee-fe7f-4339-9ec9-153b47435e3a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.deer_protection_wire
+    - field.field.contract_sections.deer_protection_wire.field_2nd_work_order
+    - field.field.contract_sections.deer_protection_wire.field_client_notes
+    - field.field.contract_sections.deer_protection_wire.field_contract
+    - field.field.contract_sections.deer_protection_wire.field_deer_protection_actions
+    - field.field.contract_sections.deer_protection_wire.field_do_you_want
+    - field.field.contract_sections.deer_protection_wire.field_estimate
+    - field.field.contract_sections.deer_protection_wire.field_last_year
+    - field.field.contract_sections.deer_protection_wire.field_specific_plants
+    - field.field.contract_sections.deer_protection_wire.field_take_down_estimate
+    - field.field.contract_sections.deer_protection_wire.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_work_order
+        - field_take_down_estimate
+        - field_2nd_work_order
+      label: Admin
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details_sidebar
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+        weight: 0
+id: contract_sections.deer_protection_wire.default
+targetEntityType: contract_sections
+bundle: deer_protection_wire
+mode: default
+content:
+  field_2nd_work_order:
+    type: entity_reference_autocomplete
+    weight: 8
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_client_notes:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_deer_protection_actions:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_do_you_want:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_estimate:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_year:
+    type: boolean_checkbox
+    weight: 4
+    region: content
+    settings:
+      display_label: false
+    third_party_settings: {  }
+  field_specific_plants:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_take_down_estimate:
+    type: string_textfield
+    weight: 7
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 6
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_contract: true
+  path: true
+  uid: true

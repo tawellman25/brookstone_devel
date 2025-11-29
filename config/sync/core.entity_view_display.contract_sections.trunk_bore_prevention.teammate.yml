@@ -1,0 +1,157 @@
+uuid: 0b507ab4-f752-4c99-a715-54a8782a47c9
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.contract_sections.teammate
+    - eck.eck_type.contract_sections.trunk_bore_prevention
+    - field.field.contract_sections.trunk_bore_prevention.field_chemicals_used
+    - field.field.contract_sections.trunk_bore_prevention.field_client_notes
+    - field.field.contract_sections.trunk_bore_prevention.field_contract
+    - field.field.contract_sections.trunk_bore_prevention.field_do_you_want
+    - field.field.contract_sections.trunk_bore_prevention.field_estimate
+    - field.field.contract_sections.trunk_bore_prevention.field_gallons_used
+    - field.field.contract_sections.trunk_bore_prevention.field_last_year
+    - field.field.contract_sections.trunk_bore_prevention.field_work_order
+  module:
+    - field_group
+    - layout_builder
+    - options
+    - user
+third_party_settings:
+  field_group:
+    group_office_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_chemicals_used
+        - field_gallons_used
+        - created
+        - uid
+        - changed
+        - field_contract
+      label: 'Office Administation'
+      parent_name: ''
+      region: content
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: contract_sections.trunk_bore_prevention.teammate
+targetEntityType: contract_sections
+bundle: trunk_bore_prevention
+mode: teammate
+content:
+  changed:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  created:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_chemicals_used:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_client_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_contract:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_do_you_want:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_estimate:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_gallons_used:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_last_year:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  uid:
+    type: author
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+hidden:
+  field_work_order: true

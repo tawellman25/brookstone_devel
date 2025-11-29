@@ -1,0 +1,166 @@
+uuid: 0b8bf1c6-7d97-44ca-b06c-81b14bbacd42
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.grub_prevention
+    - field.field.wo_spraying_conditions.grub_prevention.field_how_applied
+    - field.field.wo_spraying_conditions.grub_prevention.field_soil_moisture
+    - field.field.wo_spraying_conditions.grub_prevention.field_temperature
+    - field.field.wo_spraying_conditions.grub_prevention.field_wind_direction
+    - field.field.wo_spraying_conditions.grub_prevention.field_wind_speed
+    - field.field.wo_spraying_conditions.grub_prevention.field_work_order
+  module:
+    - layout_builder
+    - layout_discovery
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Spraying Conditions'
+          context_mapping: {  }
+          column_widths: 50-50
+        components:
+          b4df5bac-265c-41d4-b8bf-dc3b2bd3239b:
+            uuid: b4df5bac-265c-41d4-b8bf-dc3b2bd3239b
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:grub_prevention:field_how_applied'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          fbdba660-1317-4275-92ce-a6058907ad09:
+            uuid: fbdba660-1317-4275-92ce-a6058907ad09
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:grub_prevention:field_temperature'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_integer
+                label: above
+                settings:
+                  thousand_separator: ''
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          79167a3c-dc74-40c5-b250-0c5ddaa11558:
+            uuid: 79167a3c-dc74-40c5-b250-0c5ddaa11558
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:grub_prevention:field_wind_speed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          65f3090b-244d-4362-8078-06fce51acb5f:
+            uuid: 65f3090b-244d-4362-8078-06fce51acb5f
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:grub_prevention:field_wind_direction'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          4feb6d65-465c-4dfa-b809-3df1cc655d2f:
+            uuid: 4feb6d65-465c-4dfa-b809-3df1cc655d2f
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:grub_prevention:field_soil_moisture'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components: {  }
+        third_party_settings: {  }
+id: wo_spraying_conditions.grub_prevention.default
+targetEntityType: wo_spraying_conditions
+bundle: grub_prevention
+mode: default
+content:
+  field_how_applied:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_soil_moisture:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_temperature:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_wind_direction:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_wind_speed:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+hidden:
+  created: true
+  field_work_order: true
+  title: true
+  uid: true

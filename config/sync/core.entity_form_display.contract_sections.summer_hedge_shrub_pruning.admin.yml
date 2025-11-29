@@ -1,0 +1,109 @@
+uuid: 36eee73e-563f-4df5-95f2-37158c4388ce
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.contract_sections.admin
+    - eck.eck_type.contract_sections.summer_hedge_shrub_pruning
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_client_notes
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_contract
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_do_you_want
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_estimate
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_last_year
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_man_hours
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_specific_plants
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_contract
+        - field_man_hours
+      label: Admin
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details_sidebar
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+        weight: 0
+id: contract_sections.summer_hedge_shrub_pruning.admin
+targetEntityType: contract_sections
+bundle: summer_hedge_shrub_pruning
+mode: admin
+content:
+  field_client_notes:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_do_you_want:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_estimate:
+    type: string_textfield
+    weight: 6
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_year:
+    type: boolean_checkbox
+    weight: 5
+    region: content
+    settings:
+      display_label: false
+    third_party_settings: {  }
+  field_man_hours:
+    type: number
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_specific_plants:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_work_order: true
+  path: true
+  uid: true

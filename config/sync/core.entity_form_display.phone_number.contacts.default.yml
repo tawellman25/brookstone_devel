@@ -1,0 +1,33 @@
+uuid: 4832d858-0183-460a-8020-251135690af5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.phone_number.contacts
+    - field.field.phone_number.contacts.field_phone_number
+  module:
+    - field_layout
+    - layout_discovery
+    - telephone
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: phone_number.contacts.default
+targetEntityType: phone_number
+bundle: contacts
+mode: default
+content:
+  field_phone_number:
+    type: telephone_default
+    weight: 0
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  title: true
+  uid: true

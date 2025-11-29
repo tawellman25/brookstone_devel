@@ -1,0 +1,29 @@
+uuid: 37bd43cd-2ca8-41e0-b8a2-5092ea5c2edd
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_services_performed
+    - taxonomy.vocabulary.season
+    - taxonomy.vocabulary.services
+id: taxonomy_term.season.field_services_performed
+field_name: field_services_performed
+entity_type: taxonomy_term
+bundle: season
+label: 'Services Performed'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

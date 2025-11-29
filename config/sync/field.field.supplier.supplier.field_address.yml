@@ -1,0 +1,29 @@
+uuid: 8ca666db-ebdc-4202-9df1-d732d58fa628
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.address.supplier
+    - eck.eck_type.supplier.supplier
+    - field.storage.supplier.field_address
+id: supplier.supplier.field_address
+field_name: field_address
+entity_type: supplier
+bundle: supplier
+label: Address
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:address'
+  handler_settings:
+    target_bundles:
+      supplier: supplier
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

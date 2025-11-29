@@ -1,0 +1,44 @@
+uuid: 8af88ad1-9df4-4ee4-a41d-1c0402b1769b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.pvc
+    - field.storage.material.field_supplier
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.pvc.field_supplier
+field_name: field_supplier
+entity_type: material
+bundle: pvc
+label: Supplier
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: true
+    filter:
+      type: role
+      role:
+        supplier: supplier
+        site_admin: '0'
+        administration: '0'
+        administrator: '0'
+        supervisor: '0'
+        teammates: '0'
+        client: '0'
+        user: '0'
+    include_anonymous: true
+field_type: entity_reference

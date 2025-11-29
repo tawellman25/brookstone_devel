@@ -1,0 +1,46 @@
+uuid: b9a30ce7-b240-41f7-b961-c56259df7e6a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.media.field_media_video_file_1
+    - media.type.wo_videos
+  module:
+    - file
+    - filefield_paths
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[date:custom:Y]-[date:custom:m]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[file:ffp-name-only-original].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: media.wo_videos.field_media_video_file_1
+field_name: field_media_video_file_1
+entity_type: media
+bundle: wo_videos
+label: 'WO Video file'
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: mp4
+  max_filesize: ''
+  description_field: false
+field_type: file

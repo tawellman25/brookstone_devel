@@ -1,0 +1,29 @@
+uuid: be80e1d0-9025-4512-94ce-cced3c753022
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_chemicals_used.dormant_oil
+    - eck.eck_type.work_order.dormant_oil
+    - field.storage.wo_chemicals_used.field_work_order
+id: wo_chemicals_used.dormant_oil.field_work_order
+field_name: field_work_order
+entity_type: wo_chemicals_used
+bundle: dormant_oil
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      dormant_oil: dormant_oil
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: fertilizing
+field_type: entity_reference

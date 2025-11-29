@@ -1,0 +1,29 @@
+uuid: 30d2717a-3449-49d3-abf2-a0ff421a1063
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.summer_hedge_shrub_pruning
+    - eck.eck_type.work_order.summer_pruning
+    - field.storage.contract_sections.field_work_order
+id: contract_sections.summer_hedge_shrub_pruning.field_work_order
+field_name: field_work_order
+entity_type: contract_sections
+bundle: summer_hedge_shrub_pruning
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      summer_pruning: summer_pruning
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: aerating
+field_type: entity_reference

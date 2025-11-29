@@ -1,0 +1,22 @@
+uuid: d1fa3079-c8f5-44d6-8305-49a1d9027674
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: teammate_emergency_contacts_aliases
+label: 'Teammate - Emergency Contacts Aliases'
+type: 'canonical_entities:contacts'
+pattern: 'teammates/[contacts:field_teammate:entity:display-name]/contacts/[contacts:field_first_name]-[contacts:field_last_name]'
+selection_criteria:
+  163ece4c-d816-4332-8c4a-acb1b727c5fd:
+    id: 'entity_bundle:contacts'
+    negate: false
+    uuid: 163ece4c-d816-4332-8c4a-acb1b727c5fd
+    context_mapping:
+      contacts: contacts
+    bundles:
+      emergency_contacts: emergency_contacts
+selection_logic: and
+weight: -5
+relationships: {  }

@@ -1,0 +1,67 @@
+uuid: 08985229-8017-4696-9197-7600d87d678e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_items.labor
+    - field.field.estimate_items.labor.field_cost_subtotal
+    - field.field.estimate_items.labor.field_labor_type
+    - field.field.estimate_items.labor.field_line_total
+    - field.field.estimate_items.labor.field_quantity
+    - field.field.estimate_items.labor.field_unit_price
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: estimate_items.labor.default
+targetEntityType: estimate_items
+bundle: labor
+mode: default
+content:
+  field_cost_subtotal:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_labor_type:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_line_total:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_quantity:
+    type: number
+    weight: 0
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_unit_price:
+    type: number
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  title: true
+  uid: true

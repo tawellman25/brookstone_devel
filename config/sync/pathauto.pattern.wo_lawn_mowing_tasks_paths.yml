@@ -1,0 +1,22 @@
+uuid: f550affd-e895-4bff-8cf5-1bb992065c43
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: wo_lawn_mowing_tasks_paths
+label: 'WO Lawn Mowing Tasks Paths'
+type: 'canonical_entities:wo_tasks_list'
+pattern: '[wo_tasks_list:field_work_order:entity:url:path]/completed_info'
+selection_criteria:
+  2eda6a08-ac3d-42f1-bc42-e9f7f4c005df:
+    id: 'entity_bundle:wo_tasks_list'
+    negate: false
+    uuid: 2eda6a08-ac3d-42f1-bc42-e9f7f4c005df
+    context_mapping:
+      wo_tasks_list: wo_tasks_list
+    bundles:
+      lawn_mowing: lawn_mowing
+selection_logic: and
+weight: 28
+relationships: {  }

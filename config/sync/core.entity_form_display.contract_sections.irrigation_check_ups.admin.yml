@@ -1,0 +1,98 @@
+uuid: 461d4fa3-0de3-4747-9819-3ea343b20c65
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.contract_sections.admin
+    - eck.eck_type.contract_sections.irrigation_check_ups
+    - field.field.contract_sections.irrigation_check_ups.field_check_up_frequency
+    - field.field.contract_sections.irrigation_check_ups.field_client_notes
+    - field.field.contract_sections.irrigation_check_ups.field_contract
+    - field.field.contract_sections.irrigation_check_ups.field_do_you_want
+    - field.field.contract_sections.irrigation_check_ups.field_estimate
+    - field.field.contract_sections.irrigation_check_ups.field_last_year
+    - field.field.contract_sections.irrigation_check_ups.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_contract
+      label: Admin
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details_sidebar
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+        weight: 0
+id: contract_sections.irrigation_check_ups.admin
+targetEntityType: contract_sections
+bundle: irrigation_check_ups
+mode: admin
+content:
+  field_check_up_frequency:
+    type: options_buttons
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_client_notes:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract:
+    type: entity_reference_autocomplete
+    weight: 6
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_do_you_want:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_estimate:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_year:
+    type: boolean_checkbox
+    weight: 4
+    region: content
+    settings:
+      display_label: false
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_work_order: true
+  path: true
+  uid: true

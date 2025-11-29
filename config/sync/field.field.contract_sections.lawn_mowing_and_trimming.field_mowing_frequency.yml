@@ -1,0 +1,29 @@
+uuid: bbe8d1bd-a15a-4d18-befa-a32c3b1ce9b5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.lawn_mowing_and_trimming
+    - field.storage.contract_sections.field_mowing_frequency
+    - taxonomy.vocabulary.mowing_frequency
+id: contract_sections.lawn_mowing_and_trimming.field_mowing_frequency
+field_name: field_mowing_frequency
+entity_type: contract_sections
+bundle: lawn_mowing_and_trimming
+label: 'Mowing Frequency'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      mowing_frequency: mowing_frequency
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

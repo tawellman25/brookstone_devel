@@ -1,0 +1,29 @@
+uuid: 8374de96-a8d6-4261-a466-f4447e5c67ec
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.ownership_record.record
+    - field.storage.ownership_record.field_property_owner
+id: ownership_record.record.field_property_owner
+field_name: field_property_owner
+entity_type: ownership_record
+bundle: record
+label: 'Property Owner'
+description: 'Enter the name of the User that is the new owner of the Property.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: _none
+    include_anonymous: true
+field_type: entity_reference

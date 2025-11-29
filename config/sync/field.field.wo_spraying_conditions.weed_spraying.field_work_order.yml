@@ -1,0 +1,29 @@
+uuid: ec205a17-e252-4b1d-b7d5-4b0897ac3841
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.weed_spraying
+    - eck.eck_type.work_order.weed_spraying
+    - field.storage.wo_spraying_conditions.field_work_order
+id: wo_spraying_conditions.weed_spraying.field_work_order
+field_name: field_work_order
+entity_type: wo_spraying_conditions
+bundle: weed_spraying
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      weed_spraying: weed_spraying
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: fertilizing
+field_type: entity_reference

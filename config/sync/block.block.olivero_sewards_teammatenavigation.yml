@@ -1,0 +1,37 @@
+uuid: 69079035-b1ba-4995-aaf2-515c250f92d2
+langcode: en
+status: true
+dependencies:
+  config:
+    - system.menu.teammate-navigation
+  module:
+    - system
+    - user
+  theme:
+    - olivero_sewards
+id: olivero_sewards_teammatenavigation
+theme: olivero_sewards
+region: primary_menu
+weight: 0
+provider: null
+plugin: 'system_menu_block:teammate-navigation'
+settings:
+  id: 'system_menu_block:teammate-navigation'
+  label: 'Teammate Navigation'
+  label_display: '0'
+  provider: system
+  level: 1
+  depth: 0
+  expand_all_items: false
+visibility:
+  user_role:
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      administrator: administrator
+      site_admin: site_admin
+      administration: administration
+      supervisor: supervisor
+      teammates: teammates

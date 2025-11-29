@@ -1,0 +1,110 @@
+uuid: fac9dea8-30ae-439a-9e08-940fbc227440
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.manufacturer.manufacturer
+    - field.field.manufacturer.manufacturer.field_banner_image
+    - field.field.manufacturer.manufacturer.field_description
+    - field.field.manufacturer.manufacturer.field_email
+    - field.field.manufacturer.manufacturer.field_fax_line
+    - field.field.manufacturer.manufacturer.field_logo
+    - field.field.manufacturer.manufacturer.field_mailing_address
+    - field.field.manufacturer.manufacturer.field_main_telephone
+    - field.field.manufacturer.manufacturer.field_name
+    - field.field.manufacturer.manufacturer.field_shipping_address
+    - field.field.manufacturer.manufacturer.field_slideshow
+    - field.field.manufacturer.manufacturer.field_toll_free_telephone
+    - field.field.manufacturer.manufacturer.field_type
+    - field.field.manufacturer.manufacturer.field_website
+  module:
+    - image
+    - layout_builder
+    - link
+    - telephone
+    - text
+third_party_settings:
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: manufacturer.manufacturer.default
+targetEntityType: manufacturer
+bundle: manufacturer
+mode: default
+content:
+  field_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_email:
+    type: email_mailto
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_fax_line:
+    type: telephone_link
+    label: inline
+    settings:
+      title: ''
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_logo:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_main_telephone:
+    type: telephone_link
+    label: inline
+    settings:
+      title: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_website:
+    type: link
+    label: inline
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  manufacturer_materials_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_banner_image: true
+  field_mailing_address: true
+  field_name: true
+  field_shipping_address: true
+  field_slideshow: true
+  field_toll_free_telephone: true
+  field_type: true

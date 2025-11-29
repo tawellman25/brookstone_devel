@@ -1,0 +1,35 @@
+uuid: ee942ab7-9c9b-4cc4-b2ff-b96a27729eb7
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.herbicide
+    - field.storage.chemical.field_signal_word
+    - taxonomy.vocabulary.signal_words
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: chemical.herbicide.field_signal_word
+field_name: field_signal_word
+entity_type: chemical
+bundle: herbicide
+label: 'Signal Word'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      signal_words: signal_words
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

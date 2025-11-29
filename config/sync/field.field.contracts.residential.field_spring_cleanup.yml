@@ -1,0 +1,29 @@
+uuid: 3d83b8af-45b7-4240-b26c-8b8bdf15f8be
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.spring_cleanup
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_spring_cleanup
+id: contracts.residential.field_spring_cleanup
+field_name: field_spring_cleanup
+entity_type: contracts
+bundle: residential
+label: 'Spring Cleanup'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      spring_cleanup: spring_cleanup
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

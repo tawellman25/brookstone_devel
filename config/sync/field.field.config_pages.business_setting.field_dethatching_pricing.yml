@@ -1,0 +1,29 @@
+uuid: 1fbc970e-6a13-46ab-b3ff-4d1e31814be6
+langcode: en
+status: true
+dependencies:
+  config:
+    - config_pages.type.business_setting
+    - eck.eck_type.sq_ft_break_points.dethatching
+    - field.storage.config_pages.field_dethatching_pricing
+id: config_pages.business_setting.field_dethatching_pricing
+field_name: field_dethatching_pricing
+entity_type: config_pages
+bundle: business_setting
+label: 'Dethatching Pricing'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sq_ft_break_points'
+  handler_settings:
+    target_bundles:
+      dethatching: dethatching
+    sort:
+      field: field_min_sq_ft
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

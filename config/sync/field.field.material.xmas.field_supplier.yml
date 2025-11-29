@@ -1,0 +1,44 @@
+uuid: 71c7a43a-7b09-4b00-9959-dca1dbbd78e3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.xmas
+    - field.storage.material.field_supplier
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.xmas.field_supplier
+field_name: field_supplier
+entity_type: material
+bundle: xmas
+label: Supplier
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: true
+    filter:
+      type: role
+      role:
+        supplier: supplier
+        site_admin: '0'
+        administration: '0'
+        administrator: '0'
+        supervisor: '0'
+        teammates: '0'
+        client: '0'
+        user: '0'
+    include_anonymous: true
+field_type: entity_reference

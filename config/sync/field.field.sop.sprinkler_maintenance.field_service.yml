@@ -1,0 +1,29 @@
+uuid: 70710a3b-ff1d-43ab-9288-541404f532e6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.sprinkler_maintenance
+    - field.storage.sop.field_service
+  content:
+    - 'taxonomy_term:services:52dce544-75ee-4c4d-acfa-7b3c75f0dd99'
+id: sop.sprinkler_maintenance.field_service
+field_name: field_service
+entity_type: sop
+bundle: sprinkler_maintenance
+label: Service
+description: 'Select the service for Work Order-related SOPs, providing the 3-letter SOP Code (e.g., "LSC" for Landscaping).'
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 52dce544-75ee-4c4d-acfa-7b3c75f0dd99
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

@@ -1,0 +1,22 @@
+uuid: d03e9876-bfe5-4860-acdc-36529e135966
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: contracts_residential_alias
+label: 'Contracts - Residential Alias'
+type: 'canonical_entities:contracts'
+pattern: '[contracts:field_property:entity:url:path]/contracts/[contracts:field_contract_year]'
+selection_criteria:
+  c57fb138-fdd1-4a96-a5a8-669ffa3a6f2f:
+    id: 'entity_bundle:contracts'
+    negate: false
+    uuid: c57fb138-fdd1-4a96-a5a8-669ffa3a6f2f
+    context_mapping:
+      contracts: contracts
+    bundles:
+      residential: residential
+selection_logic: and
+weight: 18
+relationships: {  }

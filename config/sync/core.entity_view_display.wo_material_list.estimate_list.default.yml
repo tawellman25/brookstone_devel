@@ -1,0 +1,67 @@
+uuid: 03fa81dc-b4c8-4090-93e0-4304732e7f88
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_material_list.estimate_list
+    - field.field.wo_material_list.estimate_list.field_estimate
+    - field.field.wo_material_list.estimate_list.field_materials_for
+  module:
+    - user
+id: wo_material_list.estimate_list.default
+targetEntityType: wo_material_list
+bundle: estimate_list
+mode: default
+content:
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_estimate:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_materials_for:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true

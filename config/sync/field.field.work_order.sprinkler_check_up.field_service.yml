@@ -1,0 +1,33 @@
+uuid: 73244a53-2909-4336-b217-4732ad557ea5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.sprinkler_check_up
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:341bf835-2d4e-4eff-9db4-867581663ac3'
+id: work_order.sprinkler_check_up.field_service
+field_name: field_service
+entity_type: work_order
+bundle: sprinkler_check_up
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 341bf835-2d4e-4eff-9db4-867581663ac3
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

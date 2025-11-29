@@ -1,0 +1,45 @@
+uuid: b196aded-662d-46f9-a15f-172fad25868f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.heavy_equipment
+    - eck.eck_type.equipment.power_tools
+    - eck.eck_type.equipment.small_engine
+    - eck.eck_type.equipment.sprayers
+    - eck.eck_type.equipment.trailers
+    - eck.eck_type.equipment.vehicles
+    - eck.eck_type.equipment_check_in_out.check_in
+    - field.storage.equipment_check_in_out.field_equipment_name
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: equipment_check_in_out.check_in.field_equipment_name
+field_name: field_equipment_name
+entity_type: equipment_check_in_out
+bundle: check_in
+label: 'Equipment Name'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:equipment'
+  handler_settings:
+    target_bundles:
+      heavy_equipment: heavy_equipment
+      power_tools: power_tools
+      small_engine: small_engine
+      sprayers: sprayers
+      trailers: trailers
+      vehicles: vehicles
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: heavy_equipment
+field_type: entity_reference

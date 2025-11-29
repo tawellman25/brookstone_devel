@@ -1,0 +1,990 @@
+uuid: a4cd3042-4ccc-4b9f-922e-b002b75e36cf
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.wo_complete_info.field_date_completed
+    - field.storage.work_order.field_status
+    - field.storage.work_order.field_work_todo_description
+    - taxonomy.vocabulary.services
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+    - user.role.teammates
+  content:
+    - 'taxonomy_term:services:00a9ca79-dbe6-40ce-a516-093d91a3e2e2'
+    - 'taxonomy_term:services:029565ca-be31-461e-9b87-eb0c21288096'
+    - 'taxonomy_term:services:0b600a78-ab90-4576-984b-991beb2d80ce'
+    - 'taxonomy_term:services:0b8daf76-bc2f-41f4-bc85-db3c0c717bdc'
+    - 'taxonomy_term:services:1d26deb5-0a4e-4578-9136-f7591dfa2361'
+    - 'taxonomy_term:services:1e3cc9ea-cd97-4256-af07-9d1c58942efa'
+    - 'taxonomy_term:services:23f2e2a8-a706-4a01-b792-b7b5302b3158'
+    - 'taxonomy_term:services:2cc11214-0479-4eac-94eb-6594b6152000'
+    - 'taxonomy_term:services:2da12026-fd42-47b5-b832-63afd99d2104'
+    - 'taxonomy_term:services:341bf835-2d4e-4eff-9db4-867581663ac3'
+    - 'taxonomy_term:services:391d1587-1ac4-47e1-904b-b9b1762b3afd'
+    - 'taxonomy_term:services:3a52ca62-48af-4a3c-b487-95acb61a7295'
+    - 'taxonomy_term:services:3bd84c6f-55fb-40b9-988e-275a74d6da48'
+    - 'taxonomy_term:services:42fc7685-038b-4f10-a0d9-4338caaf3e99'
+    - 'taxonomy_term:services:45afa451-b2c3-45a3-883a-71b8c1ec2367'
+    - 'taxonomy_term:services:4a3d6b8e-134a-4fcb-a523-0e4858497cb3'
+    - 'taxonomy_term:services:4d31dcff-b6b7-4e77-b082-71d7ffbec452'
+    - 'taxonomy_term:services:509e128a-f38d-4435-8a4e-0f09a827c7cf'
+    - 'taxonomy_term:services:52dce544-75ee-4c4d-acfa-7b3c75f0dd99'
+    - 'taxonomy_term:services:52e2a3da-464e-481f-babc-ff74f049fa7c'
+    - 'taxonomy_term:services:537ea84d-df7d-48b6-be9e-d22a7d410ab1'
+    - 'taxonomy_term:services:596f315b-82a6-4bd3-8d00-e11ed65dc179'
+    - 'taxonomy_term:services:5d7091c7-71aa-42cd-8b8e-76a347ba2bc6'
+    - 'taxonomy_term:services:6380d073-1079-4904-b167-d097c8a6b67d'
+    - 'taxonomy_term:services:64e81787-5e48-4a54-a6aa-8cf711e589de'
+    - 'taxonomy_term:services:68f5473e-2a88-4615-9e5d-8c03840571fd'
+    - 'taxonomy_term:services:69d68eb3-c5a3-45d4-9bf8-ecaa4af92023'
+    - 'taxonomy_term:services:6de9369f-2af8-4378-ab21-05cc3eaadd75'
+    - 'taxonomy_term:services:7faed644-9aa8-4159-9511-d315398d90a4'
+    - 'taxonomy_term:services:8629ae3f-4377-44a1-b86e-861d9542f8f7'
+    - 'taxonomy_term:services:9403695e-4641-4cf5-860d-903e6f06bf0f'
+    - 'taxonomy_term:services:a80b3ffa-845b-46e5-bcb5-fb82f37f25d3'
+    - 'taxonomy_term:services:b3e375c3-2bda-46ec-9499-f81ed6079220'
+    - 'taxonomy_term:services:b744cc46-115a-44c0-bf41-edb5d59ab7d1'
+    - 'taxonomy_term:services:b91405cb-7c9e-4229-9dae-91078c95e32a'
+    - 'taxonomy_term:services:b967de5b-726e-4a9f-b13e-c691568f28d1'
+    - 'taxonomy_term:services:bcf9b80b-650e-4d45-befc-233877cbde18'
+    - 'taxonomy_term:services:bfc7aef4-9e34-445f-aa36-ae399da38289'
+    - 'taxonomy_term:services:c0c419f5-a7bc-4e90-9ce0-eab108878b04'
+    - 'taxonomy_term:services:c27184a8-f6c4-42e8-b988-ed812420f30f'
+    - 'taxonomy_term:services:c85ce0d2-54fd-4166-99f4-4b373f29c494'
+    - 'taxonomy_term:services:d0765ca9-6e10-4f01-9ea8-1c5a4e668042'
+    - 'taxonomy_term:services:e93f49df-f19b-4db3-a307-31c4cb4365b5'
+    - 'taxonomy_term:services:eb5bdd96-c1d8-4f98-9de9-00e505897ccd'
+    - 'taxonomy_term:services:feab54f6-733a-43b8-a5a0-61279eb242a5'
+  module:
+    - eck
+    - smart_date
+    - taxonomy
+    - text
+    - user
+    - views_bootstrap
+    - views_url_path_arguments
+id: property_work_orders
+label: 'Property - Work Orders'
+module: views
+description: ''
+tag: ''
+base_table: work_order_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'Work Orders'
+      fields:
+        view_work_order:
+          id: view_work_order
+          table: work_order
+          field: view_work_order
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          plugin_id: entity_link
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          text: view
+          output_url_as_text: true
+          absolute: false
+        uid:
+          id: uid
+          table: work_order_field_data
+          field: uid
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          entity_field: uid
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: true
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        created:
+          id: created
+          table: work_order_field_data
+          field: created
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          entity_field: created
+          plugin_id: field
+          label: 'Entered on'
+          exclude: false
+          alter:
+            alter_text: true
+            text: "{{ created }}</br>\r\nby:  {{ uid }}"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: timestamp
+          settings:
+            date_format: short
+            custom_date_format: ''
+            timezone: ''
+            tooltip:
+              date_format: long
+              custom_date_format: ''
+            time_diff:
+              enabled: false
+              future_format: '@interval hence'
+              past_format: '@interval ago'
+              granularity: 2
+              refresh: 60
+              description: ''
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_work_todo_description:
+          id: field_work_todo_description
+          table: work_order__field_work_todo_description
+          field: field_work_todo_description
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: true
+            text: '</br><sub>{{ field_work_todo_description }}</sub>'
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 75
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: true
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: text_default
+          settings: {  }
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        title:
+          id: title
+          table: work_order_field_data
+          field: title
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: null
+          entity_field: title
+          plugin_id: field
+          label: Title
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: true
+            path: '{{ view_work_order }}'
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: work-order-title
+            prefix: ''
+            suffix: ''
+            target: _blank
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        nothing:
+          id: nothing
+          table: views
+          field: nothing
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: custom
+          label: 'Custom text'
+          exclude: false
+          alter:
+            alter_text: true
+            text: '{{ title }}{{ field_work_todo_description }}'
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: false
+        field_date_completed:
+          id: field_date_completed
+          table: wo_complete_info__field_date_completed
+          field: field_date_completed
+          relationship: reverse__wo_complete_info__field_work_order
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: true
+            text: "<sub><i>Completed:</i></br>\r\n{{ field_date_completed }}</sub>"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: timestamp
+          settings:
+            date_format: date_only
+            custom_date_format: ''
+            timezone: ''
+            tooltip:
+              date_format: long
+              custom_date_format: ''
+            time_diff:
+              enabled: false
+              future_format: '@interval hence'
+              past_format: '@interval ago'
+              granularity: 2
+              refresh: 60
+              description: ''
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_status:
+          id: field_status
+          table: work_order__field_status
+          field: field_status
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Status
+          exclude: false
+          alter:
+            alter_text: true
+            text: "<b>{{ field_status }}</b></br>\r\n{{ field_date_completed }}"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: false
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+      pager:
+        type: full
+        options:
+          offset: 0
+          pagination_heading_level: h4
+          items_per_page: 50
+          total_pages: null
+          id: 0
+          tags:
+            next: ››
+            previous: ‹‹
+            first: '« First'
+            last: 'Last »'
+          expose:
+            items_per_page: false
+            items_per_page_label: 'Items per page'
+            items_per_page_options: '5, 10, 25, 50'
+            items_per_page_options_all: false
+            items_per_page_options_all_label: '- All -'
+            offset: false
+            offset_label: Offset
+          quantity: 9
+      exposed_form:
+        type: basic
+        options:
+          submit_button: Apply
+          reset_button: false
+          reset_button_label: Reset
+          exposed_sorts_label: 'Sort by'
+          expose_sort_order: true
+          sort_asc_label: Asc
+          sort_desc_label: Desc
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+            teammates: teammates
+      cache:
+        type: tag
+        options: {  }
+      empty: {  }
+      sorts:
+        created:
+          id: created
+          table: work_order_field_data
+          field: created
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          entity_field: created
+          plugin_id: date
+          order: DESC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
+          granularity: second
+      arguments:
+        field_property_target_id:
+          id: field_property_target_id
+          table: work_order__field_property
+          field: field_property_target_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: entity_target_id
+          default_action: default
+          exception:
+            value: all
+            title_enable: false
+            title: All
+          title_enable: false
+          title: ''
+          default_argument_type: views_url_path
+          default_argument_options:
+            segments: ''
+            provide_static_segments: false
+          summary_options:
+            base_path: ''
+            count: true
+            override: false
+            items_per_page: 25
+          summary:
+            sort_order: asc
+            number_of_records: 0
+            format: default_summary
+          specify_validation: false
+          validate:
+            type: none
+            fail: 'not found'
+          validate_options: {  }
+          break_phrase: false
+          not: false
+          target_entity_type_id: properties
+      filters:
+        field_service_target_id:
+          id: field_service_target_id
+          table: work_order__field_service
+          field: field_service_target_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: taxonomy_index_tid
+          operator: or
+          value:
+            377: 377
+            395: 395
+            367: 367
+            417: 417
+            379: 379
+            410: 410
+            414: 414
+            415: 415
+            416: 416
+            399: 399
+            402: 402
+            408: 408
+            407: 407
+            401: 401
+            406: 406
+            400: 400
+            405: 405
+            411: 411
+            412: 412
+            413: 413
+            389: 389
+            409: 409
+            404: 404
+            390: 390
+            364: 364
+            380: 380
+            394: 394
+            381: 381
+            386: 386
+            370: 370
+            374: 374
+            384: 384
+            383: 383
+            385: 385
+            378: 378
+            382: 382
+            387: 387
+            393: 393
+            371: 371
+            368: 368
+            375: 375
+            369: 369
+            396: 396
+            373: 373
+            391: 391
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_service_target_id_op
+            label: Service
+            description: ''
+            use_operator: false
+            operator: field_service_target_id_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_service_target_id
+            required: false
+            remember: false
+            multiple: true
+            remember_roles:
+              administrator: administrator
+              site_admin: site_admin
+              administration: administration
+              supervisor: supervisor
+              teammates: teammates
+              anonymous: '0'
+              authenticated: '0'
+              client: '0'
+              user: '0'
+            reduce: true
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          reduce_duplicates: false
+          vid: services
+          type: select
+          hierarchy: true
+          limit: true
+          error_message: true
+        created:
+          id: created
+          table: work_order_field_data
+          field: created
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          entity_field: created
+          plugin_id: date
+          operator: between
+          value:
+            min: '[current-date:custom:Y]-01-01'
+            max: '[current-date:custom:Y]-12-31'
+            value: ''
+            type: date
+          group: 1
+          exposed: true
+          expose:
+            operator_id: created_op
+            label: Created
+            description: ''
+            use_operator: false
+            operator: created_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: created
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              site_assistant: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+            min_placeholder: '[current-date:custom:Y]-01-01'
+            max_placeholder: '[current-date:custom:Y]-12-31'
+            placeholder: ''
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          use_tokens: 1
+      style:
+        type: views_bootstrap_table
+        options:
+          grouping: {  }
+          row_class: ''
+          default_row_class: true
+          override: 1
+          sticky: 0
+          caption: ''
+          summary: ''
+          description: ''
+          columns:
+            view_work_order: view_work_order
+            uid: uid
+            created: created
+            field_work_todo_description: field_work_todo_description
+            title: title
+            nothing: nothing
+            field_status: field_status
+          info:
+            view_work_order:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            uid:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            created:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            field_work_todo_description:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            title:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            nothing:
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+            field_status:
+              sortable: 0
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: 0
+              responsive: ''
+          default: '-1'
+          empty_table: 0
+          responsive: 0
+          bootstrap_styles:
+            striped: 0
+            bordered: 0
+            hover: 0
+            condensed: 0
+      row:
+        type: fields
+      query:
+        type: views_query
+        options:
+          query_comment: ''
+          disable_sql_rewrite: false
+          distinct: false
+          replica: false
+          query_tags: {  }
+      relationships:
+        reverse__wo_complete_info__field_work_order:
+          id: reverse__wo_complete_info__field_work_order
+          table: work_order_field_data
+          field: reverse__wo_complete_info__field_work_order
+          relationship: none
+          group_type: group
+          admin_label: Complete
+          entity_type: work_order
+          plugin_id: entity_reverse
+          required: false
+      css_class: view-property-work-orders
+      header: {  }
+      footer: {  }
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.wo_complete_info.field_date_completed'
+        - 'config:field.storage.work_order.field_status'
+        - 'config:field.storage.work_order.field_work_todo_description'
+  page_1:
+    id: page_1
+    display_title: Page
+    display_plugin: page
+    position: 1
+    display_options:
+      exposed_block: false
+      display_extenders: {  }
+      path: properties/%properties/work-orders
+      menu:
+        type: tab
+        title: 'Work Orders'
+        description: ''
+        weight: 3
+        expanded: false
+        menu_name: main
+        parent: ''
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.wo_complete_info.field_date_completed'
+        - 'config:field.storage.work_order.field_status'
+        - 'config:field.storage.work_order.field_work_todo_description'

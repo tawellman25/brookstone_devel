@@ -1,0 +1,46 @@
+uuid: 373233e6-a37b-4c6a-aa20-b72766201e09
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.media.media_library
+    - field.field.media.estimate_design.field_estimate
+    - field.field.media.estimate_design.field_media_image_1
+    - image.style.thumbnail
+    - media.type.estimate_design
+  module:
+    - field_layout
+    - image
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: media.estimate_design.media_library
+targetEntityType: media
+bundle: estimate_design
+mode: media_library
+content:
+  field_media_image_1:
+    type: image_image
+    weight: 5
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_estimate: true
+  path: true
+  status: true
+  uid: true

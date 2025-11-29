@@ -1,0 +1,29 @@
+uuid: ed1806c6-aa80-4068-b70c-dfd148024b42
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.trunk_bore_prevention
+    - eck.eck_type.work_order.trunk_bore
+    - field.storage.contract_sections.field_work_order
+id: contract_sections.trunk_bore_prevention.field_work_order
+field_name: field_work_order
+entity_type: contract_sections
+bundle: trunk_bore_prevention
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      trunk_bore: trunk_bore
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: aerating
+field_type: entity_reference

@@ -1,0 +1,59 @@
+uuid: 245a32a9-bdc6-45c4-aa26-c6e382b3ea77
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_material_list.material_list
+    - eck.eck_type.work_order.aerating
+    - eck.eck_type.work_order.christmas_decorations
+    - eck.eck_type.work_order.deer_prevention
+    - eck.eck_type.work_order.estimate
+    - eck.eck_type.work_order.fall_cleanup
+    - eck.eck_type.work_order.in_house_tasks
+    - eck.eck_type.work_order.landscaping
+    - eck.eck_type.work_order.misc_services
+    - eck.eck_type.work_order.spring_cleanup
+    - eck.eck_type.work_order.sprinkler_check_up
+    - eck.eck_type.work_order.sprinkler_design
+    - eck.eck_type.work_order.sprinkler_installation
+    - eck.eck_type.work_order.sprinkler_repair
+    - eck.eck_type.work_order.sprinkler_start_up
+    - eck.eck_type.work_order.sprinkler_winterizing
+    - eck.eck_type.work_order.summer_pruning
+    - field.storage.wo_material_list.field_work_order
+id: wo_material_list.material_list.field_work_order
+field_name: field_work_order
+entity_type: wo_material_list
+bundle: material_list
+label: 'Work Order'
+description: 'Enter the Work Order Number that this list pertains to.'
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      aerating: aerating
+      christmas_decorations: christmas_decorations
+      deer_prevention: deer_prevention
+      estimate: estimate
+      fall_cleanup: fall_cleanup
+      in_house_tasks: in_house_tasks
+      landscaping: landscaping
+      misc_services: misc_services
+      spring_cleanup: spring_cleanup
+      sprinkler_check_up: sprinkler_check_up
+      sprinkler_design: sprinkler_design
+      sprinkler_installation: sprinkler_installation
+      sprinkler_repair: sprinkler_repair
+      sprinkler_start_up: sprinkler_start_up
+      sprinkler_winterizing: sprinkler_winterizing
+      summer_pruning: summer_pruning
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: christmas_decorations
+field_type: entity_reference

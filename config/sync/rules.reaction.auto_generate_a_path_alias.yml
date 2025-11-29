@@ -1,0 +1,46 @@
+uuid: 4f46a5ab-261e-41b0-bc9c-3cc6267ebcd1
+langcode: en
+status: false
+dependencies:
+  enforced:
+    module:
+      - path_alias
+      - tr_rulez
+_core:
+  default_config_hash: mZpkih1e-pUFr_6vF-Mmmc3-RxsT9R1KIGCi_yN0i4I
+id: auto_generate_a_path_alias
+label: 'Auto-generate a path alias for new content'
+events:
+  -
+    event_name: 'rules_entity_insert:node'
+description: 'Generates a path alias that looks like this: /&lt;content_type&gt;/&lt;title_in_lowercase_snake_case&gt;. This example is documented at https://www.drupal.org/docs/contributed-modules/rules-essentials/examples/generate-path-aliases-automatically'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: f5e6b7be-113d-4b43-a97a-83adfd870e66
+  weight: 0
+  conditions:
+    id: rules_and
+    uuid: a7f15210-89c8-4a26-b6ab-0a685e06cc74
+    weight: 0
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 7de5d7b6-bca2-49f6-a25f-5690321c4700
+    weight: 0
+    actions:
+      -
+        id: rules_action
+        uuid: 61ac9f4d-9301-41ff-a8a6-b7474f5444b9
+        weight: 0
+        context_values:
+          alias: "/{{ node.type.target_id }}/{{ node.title.value | lower | replace(' ', '_') }}"
+        context_mapping:
+          entity: node
+        context_processors:
+          alias:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: 'rules_entity_path_alias_create:entity:node'

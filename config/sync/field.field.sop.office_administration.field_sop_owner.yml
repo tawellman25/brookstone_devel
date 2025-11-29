@@ -1,0 +1,31 @@
+uuid: b0b6d0e4-1fc0-49d8-972c-e1ec6d8cf01b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.office_administration
+    - field.storage.sop.field_sop_owner
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: '[current-user:display-name]'
+    on_update: 0
+id: sop.office_administration.field_sop_owner
+field_name: field_sop_owner
+entity_type: sop
+bundle: office_administration
+label: 'Responsible Teammate'
+description: '[current-user:teammate_profile:field_first_name], this is the teammate responsible for maintaining this SOP.'
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

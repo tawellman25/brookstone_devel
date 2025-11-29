@@ -1,0 +1,29 @@
+uuid: 18f8df9f-fa60-4cef-b61f-e80aff9833a5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.city.city
+    - field.storage.taxonomy_term.field_city
+    - taxonomy.vocabulary.snow_plow_routes
+id: taxonomy_term.snow_plow_routes.field_city
+field_name: field_city
+entity_type: taxonomy_term
+bundle: snow_plow_routes
+label: City
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:city'
+  handler_settings:
+    target_bundles:
+      city: city
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

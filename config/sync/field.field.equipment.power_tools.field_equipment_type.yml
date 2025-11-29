@@ -1,0 +1,29 @@
+uuid: 71c4e018-4910-425f-a015-fe01882e994e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.power_tools
+    - field.storage.equipment.field_equipment_type
+    - taxonomy.vocabulary.equipment_types
+id: equipment.power_tools.field_equipment_type
+field_name: field_equipment_type
+entity_type: equipment
+bundle: power_tools
+label: 'Equipment Type'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      equipment_types: equipment_types
+    sort:
+      field: name
+      direction: asc
+    auto_create: true
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: 8c4cafda-0e53-4477-8449-f5b0427a19e9
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.address.contact_address
+    - eck.eck_type.contacts.contact
+    - field.storage.contacts.field_address
+id: contacts.contact.field_address
+field_name: field_address
+entity_type: contacts
+bundle: contact
+label: Address
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:address'
+  handler_settings:
+    target_bundles:
+      contact_address: contact_address
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: contact_address
+field_type: entity_reference

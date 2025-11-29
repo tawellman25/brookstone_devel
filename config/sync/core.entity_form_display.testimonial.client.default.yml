@@ -1,0 +1,103 @@
+uuid: baa424c7-d77c-459c-9b65-068429e6e82d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.testimonial.client
+    - field.field.testimonial.client.field_customer
+    - field.field.testimonial.client.field_testimonial_by
+    - field.field.testimonial.client.field_testimonial_image
+    - field.field.testimonial.client.field_testimony
+    - field.field.testimonial.client.field_testimony_service
+    - image.style.thumbnail
+  module:
+    - field_layout
+    - image
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: testimonial.client.default
+targetEntityType: testimonial
+bundle: client
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_customer:
+    type: entity_reference_autocomplete
+    weight: 104
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_testimonial_by:
+    type: string_textfield
+    weight: 105
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_testimonial_image:
+    type: image_image
+    weight: 102
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_testimony:
+    type: text_textarea
+    weight: 103
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_testimony_service:
+    type: entity_reference_autocomplete
+    weight: 101
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    weight: 100
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: -5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

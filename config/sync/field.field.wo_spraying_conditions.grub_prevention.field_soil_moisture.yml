@@ -1,0 +1,29 @@
+uuid: e6cd50b4-d6cb-454b-b304-59affa91a00a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.grub_prevention
+    - field.storage.wo_spraying_conditions.field_soil_moisture
+    - taxonomy.vocabulary.spraying_soil_moisture_levels
+id: wo_spraying_conditions.grub_prevention.field_soil_moisture
+field_name: field_soil_moisture
+entity_type: wo_spraying_conditions
+bundle: grub_prevention
+label: 'Soil Moisture'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      spraying_soil_moisture_levels: spraying_soil_moisture_levels
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

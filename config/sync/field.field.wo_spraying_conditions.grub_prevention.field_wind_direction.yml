@@ -1,0 +1,29 @@
+uuid: 80741ed0-d507-4d15-9d93-c2698eea0181
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.grub_prevention
+    - field.storage.wo_spraying_conditions.field_wind_direction
+    - taxonomy.vocabulary.wind_direction
+id: wo_spraying_conditions.grub_prevention.field_wind_direction
+field_name: field_wind_direction
+entity_type: wo_spraying_conditions
+bundle: grub_prevention
+label: 'Wind Direction'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      wind_direction: wind_direction
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

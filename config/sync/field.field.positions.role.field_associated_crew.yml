@@ -1,0 +1,29 @@
+uuid: 526cda08-e791-4a38-bac7-045edf6520cb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.crew_types.crew_types
+    - eck.eck_type.positions.role
+    - field.storage.positions.field_associated_crew
+id: positions.role.field_associated_crew
+field_name: field_associated_crew
+entity_type: positions
+bundle: role
+label: 'Associated Crew'
+description: 'Select the primary crew this position is tied to (e.g., Clean-up Crew). Leave blank for non-crew roles.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:crew_types'
+  handler_settings:
+    target_bundles:
+      crew_types: crew_types
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,67 @@
+uuid: 812da0c3-d116-48c9-8b5e-5968f3fe153b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_zone_watering_time.watering_time
+    - field.field.property_zone_watering_time.watering_time.field_ss_zone_clock_program
+    - field.field.property_zone_watering_time.watering_time.field_ss_zone_referenced
+    - field.field.property_zone_watering_time.watering_time.field_ss_zone_run_time
+    - field.field.property_zone_watering_time.watering_time.field_ss_zone_timechange_reason
+  module:
+    - options
+    - user
+id: property_zone_watering_time.watering_time.default
+targetEntityType: property_zone_watering_time
+bundle: watering_time
+mode: default
+content:
+  field_ss_zone_clock_program:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_ss_zone_referenced:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_ss_zone_run_time:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_ss_zone_timechange_reason:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true

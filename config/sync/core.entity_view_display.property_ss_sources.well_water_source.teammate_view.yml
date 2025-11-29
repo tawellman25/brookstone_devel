@@ -1,0 +1,98 @@
+uuid: 2e890767-c8f5-442c-a2d9-bd6baf3e63db
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.property_ss_sources.teammate_view
+    - eck.eck_type.property_ss_sources.well_water_source
+    - field.field.property_ss_sources.well_water_source.field_property_ss_system
+    - field.field.property_ss_sources.well_water_source.field_shut_off_location_descript
+    - field.field.property_ss_sources.well_water_source.field_source_size
+    - field.field.property_ss_sources.well_water_source.field_ss_key_needed
+    - field.field.property_ss_sources.well_water_source.field_ss_shut_off_location
+    - field.field.property_ss_sources.well_water_source.field_ss_shut_off_location_pic
+    - field.field.property_ss_sources.well_water_source.field_ss_shut_off_notes
+    - field.field.property_ss_sources.well_water_source.field_ss_source_name
+    - field.field.property_ss_sources.well_water_source.field_ss_source_valve
+  module:
+    - image
+    - options
+id: property_ss_sources.well_water_source.teammate_view
+targetEntityType: property_ss_sources
+bundle: well_water_source
+mode: teammate_view
+content:
+  field_shut_off_location_descript:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_source_size:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_ss_key_needed:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: -4
+    region: content
+  field_ss_shut_off_location:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: -2
+    region: content
+  field_ss_shut_off_location_pic:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: -1
+    region: content
+  field_ss_shut_off_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_ss_source_name:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_ss_source_valve:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: -3
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+hidden:
+  changed: true
+  field_property_ss_system: true

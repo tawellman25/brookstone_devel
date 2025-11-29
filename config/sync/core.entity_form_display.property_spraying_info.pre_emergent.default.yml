@@ -1,0 +1,178 @@
+uuid: c12778c3-860d-45c4-b164-b005db4775df
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_spraying_info.pre_emergent
+    - field.field.property_spraying_info.pre_emergent.field_last_amount_applied
+    - field.field.property_spraying_info.pre_emergent.field_last_applied_by
+    - field.field.property_spraying_info.pre_emergent.field_last_applied_date
+    - field.field.property_spraying_info.pre_emergent.field_last_chemicals
+    - field.field.property_spraying_info.pre_emergent.field_last_season_applied
+    - field.field.property_spraying_info.pre_emergent.field_pre_emergent_contracted
+    - field.field.property_spraying_info.pre_emergent.field_property
+    - field.field.property_spraying_info.pre_emergent.field_spray_map
+    - field.field.property_spraying_info.pre_emergent.field_spray_map_file
+    - field.field.property_spraying_info.pre_emergent.field_spray_notes
+    - image.style.thumbnail
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - file
+    - image
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_pre_emergent_contracted
+        - uid
+        - created
+        - field_property
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_last_applied_info:
+      children:
+        - field_last_season_applied
+        - field_last_chemicals
+        - field_last_amount_applied
+        - field_last_applied_date
+        - field_last_applied_by
+      label: 'Last Applied Info (updated automatically)'
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+id: property_spraying_info.pre_emergent.default
+targetEntityType: property_spraying_info
+bundle: pre_emergent
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 9
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_last_amount_applied:
+    type: number
+    weight: 9
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_applied_by:
+    type: entity_reference_autocomplete
+    weight: 11
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_applied_date:
+    type: datetime_default
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_last_chemicals:
+    type: entity_reference_autocomplete
+    weight: 8
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_season_applied:
+    type: options_select
+    weight: 7
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_pre_emergent_contracted:
+    type: boolean_checkbox
+    weight: 7
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 10
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_spray_map:
+    type: image_image
+    weight: 0
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_spray_map_file:
+    type: file_generic
+    weight: 1
+    region: content
+    settings:
+      progress_indicator: throbber
+    third_party_settings: {  }
+  field_spray_notes:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 11
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 8
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

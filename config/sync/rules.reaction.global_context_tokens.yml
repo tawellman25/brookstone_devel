@@ -1,0 +1,165 @@
+uuid: c94ad197-88ec-48a2-b75c-a159e6af9859
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: 7grsg46GHe99w9_urndm0n-mJeG4fqkxe7FvvNJ-_zU
+id: global_context_tokens
+label: 'Global context tokens'
+events:
+  -
+    event_name: 'rules_entity_insert:node'
+description: 'Demonstrates the use of the global context tokens defined by Rules. (These values are prefixed by "@rules"). To use, simply create a new piece of content.'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: bd7d5dd9-4441-4c48-8dc9-10881e04b76c
+  conditions:
+    id: rules_and
+    uuid: 1c8dc562-7247-4d8b-98d7-b511d53a32bd
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 1a2392c5-f2c4-4b0e-a90c-b06d33c45d0e
+    actions:
+      -
+        id: rules_action
+        uuid: 89e10a50-1c10-4316-a0c3-8b6983f6def7
+        context_values:
+          message: 'Global site token: @rules.site_context:site.name = {{ @rules.site_context:site.name }}'
+          type: status
+          repeat: true
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: 3f776802-601a-4a7c-9021-c55d6d1d35ea
+        context_values:
+          message: 'Global site token: @rules.site_context:site.slogan = {{ @rules.site_context:site.slogan}}'
+          type: status
+          repeat: true
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: f5ef06c8-60e9-4235-b14e-2ccbabc16697
+        context_values:
+          message: 'Global site token: @rules.site_context:site.url = {{ @rules.site_context:site.url }}'
+          type: status
+          repeat: true
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: b63ec9c0-edf8-438e-bdf7-72e81129d746
+        context_values:
+          message: 'Global site token: @rules.site_context:site.login-url = {{ @rules.site_context:site.login-url }}'
+          type: status
+          repeat: true
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: a6425192-c1c5-4494-9e4a-c84a52887805
+        context_values:
+          message: 'Global site token: @rules.site_context:site.mail = {{ @rules.site_context:site.mail }}'
+          type: status
+          repeat: true
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: 6da6c701-4d26-4ed2-ab20-72efc75906d5
+        weight: 0
+        context_values:
+          message: 'Global current date token: @rules.current_date_context = {{ @rules.current_date_context:current_date | format_date("long") }}'
+          type: status
+          repeat: true
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: a92be641-b165-4eab-a2a7-22ada80c5c85
+        weight: 0
+        context_values:
+          message: 'Global current path token: @rules.current_path_context:current_path.path = {{ @rules.current_path_context:current_path.path }}'
+          type: status
+          repeat: true
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: 5f679a46-a953-43c7-bfe5-e74edd56e6d3
+        weight: 0
+        context_values:
+          message: 'Global current URL token: @rules.current_path_context:current_path.url = {{ @rules.current_path_context:current_path.url }}'
+          type: status
+          repeat: true
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message

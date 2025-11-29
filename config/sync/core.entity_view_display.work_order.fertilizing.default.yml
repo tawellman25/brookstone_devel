@@ -1,0 +1,346 @@
+uuid: be62af78-dd42-4471-9c5d-19dc4a430b94
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.fertilizing
+    - field.field.work_order.fertilizing.field_areas_to_be_fertilized
+    - field.field.work_order.fertilizing.field_atv_total
+    - field.field.work_order.fertilizing.field_billing_adjustment
+    - field.field.work_order.fertilizing.field_billing_notes
+    - field.field.work_order.fertilizing.field_client_app_wo_number
+    - field.field.work_order.fertilizing.field_contract
+    - field.field.work_order.fertilizing.field_current_turf_sq_footage
+    - field.field.work_order.fertilizing.field_die_total
+    - field.field.work_order.fertilizing.field_estimated_price
+    - field.field.work_order.fertilizing.field_fertilizer_total
+    - field.field.work_order.fertilizing.field_fertilizing_season
+    - field.field.work_order.fertilizing.field_invoiced
+    - field.field.work_order.fertilizing.field_labor_total
+    - field.field.work_order.fertilizing.field_material_chemical_total
+    - field.field.work_order.fertilizing.field_printed
+    - field.field.work_order.fertilizing.field_property
+    - field.field.work_order.fertilizing.field_rental_total
+    - field.field.work_order.fertilizing.field_scheduled
+    - field.field.work_order.fertilizing.field_service
+    - field.field.work_order.fertilizing.field_spot_spray_beds
+    - field.field.work_order.fertilizing.field_spot_spray_lawn
+    - field.field.work_order.fertilizing.field_status
+    - field.field.work_order.fertilizing.field_supervisor
+    - field.field.work_order.fertilizing.field_task_rate
+    - field.field.work_order.fertilizing.field_total_pounds
+    - field.field.work_order.fertilizing.field_total_time
+    - field.field.work_order.fertilizing.field_trip_fee
+    - field.field.work_order.fertilizing.field_trucks
+    - field.field.work_order.fertilizing.field_wo_total
+    - field.field.work_order.fertilizing.field_work_order_id
+    - field.field.work_order.fertilizing.field_work_order_notes
+    - field.field.work_order.fertilizing.field_work_todo_description
+  module:
+    - field_group
+    - options
+    - text
+third_party_settings:
+  field_group:
+    group_hours:
+      children:
+        - wo_time_clock_entries_total_entity_view_1
+        - wo_hours_grouping_entity_view_1
+      label: Hours
+      parent_name: ''
+      region: content
+      weight: 16
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_photos:
+      children:
+        - wo_media_photos_entity_view_1
+      label: Photos
+      parent_name: ''
+      region: content
+      weight: 17
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_schedule:
+      children:
+        - wo_scheduled_teammate_view_entity_view_1
+      label: Schedule
+      parent_name: ''
+      region: content
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_chemicals_used:
+      children:
+        - wo_chemicals_used_entity_view_3
+      label: 'Chemicals Used'
+      parent_name: ''
+      region: content
+      weight: 15
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+    group_spraying_condition:
+      children:
+        - wo_spraying_conditions_entity_view_2
+      label: 'Spraying Condition'
+      parent_name: ''
+      region: content
+      weight: 14
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+    group_fertilizing:
+      children:
+        - wo_chemicals_used_entity_view_2
+      label: Fertilizing
+      parent_name: ''
+      region: content
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+    group_office_admin:
+      children:
+        - uid
+        - created
+        - changed
+        - field_atv_total
+        - field_billing_adjustment
+        - field_billing_notes
+        - field_contract
+        - field_estimated_price
+        - field_fertilizer_total
+        - field_invoiced
+        - field_labor_total
+        - field_material_chemical_total
+        - field_printed
+        - field_property
+        - field_scheduled
+        - field_service
+        - field_status
+        - field_supervisor
+        - field_task_rate
+        - field_total_pounds
+        - field_total_time
+        - field_trip_fee
+        - field_wo_total
+        - wo_current_property_owner_entity_view_1
+      label: 'Office Administation'
+      parent_name: ''
+      region: hidden
+      weight: 25
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_notes:
+      children:
+        - wo_notes_entity_view_1
+      label: Notes
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+id: work_order.fertilizing.default
+targetEntityType: work_order
+bundle: fertilizing
+mode: default
+content:
+  field_areas_to_be_fertilized:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_client_app_wo_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_current_turf_sq_footage:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_fertilizing_season:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_spot_spray_beds:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_spot_spray_lawn:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_work_todo_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  flag_work_order_timer:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  wo_chemicals_used_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  wo_chemicals_used_entity_view_3:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  wo_hours_grouping_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 21
+    region: content
+  wo_lawn_fertilizing_contract_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  wo_media_photos_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 19
+    region: content
+  wo_notes_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  wo_scheduled_teammate_view_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  wo_sign_off_entity_view_6:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 18
+    region: content
+  wo_spraying_conditions_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  wo_time_clock_buttons_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  wo_time_clock_buttons_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  wo_time_clock_entries_total_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 20
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_atv_total: true
+  field_billing_adjustment: true
+  field_billing_notes: true
+  field_contract: true
+  field_die_total: true
+  field_estimated_price: true
+  field_fertilizer_total: true
+  field_invoiced: true
+  field_labor_total: true
+  field_material_chemical_total: true
+  field_printed: true
+  field_property: true
+  field_rental_total: true
+  field_scheduled: true
+  field_service: true
+  field_status: true
+  field_supervisor: true
+  field_task_rate: true
+  field_total_pounds: true
+  field_total_time: true
+  field_trip_fee: true
+  field_trucks: true
+  field_wo_total: true
+  field_work_order_id: true
+  field_work_order_notes: true
+  title: true
+  uid: true
+  wo_current_property_owner_entity_view_1: true
+  wo_material_list_grouping_entity_view_1: true
+  wo_media_files_entity_view_1: true

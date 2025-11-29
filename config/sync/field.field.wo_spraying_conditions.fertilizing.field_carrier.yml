@@ -1,0 +1,33 @@
+uuid: fcea20a0-2ab1-440d-a294-405825a36854
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.fertilizing
+    - field.storage.wo_spraying_conditions.field_carrier
+    - taxonomy.vocabulary.carrier
+  content:
+    - 'taxonomy_term:carrier:e52f9d82-e356-4fea-94a1-b6cdae476606'
+id: wo_spraying_conditions.fertilizing.field_carrier
+field_name: field_carrier
+entity_type: wo_spraying_conditions
+bundle: fertilizing
+label: Carrier
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: e52f9d82-e356-4fea-94a1-b6cdae476606
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      carrier: carrier
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

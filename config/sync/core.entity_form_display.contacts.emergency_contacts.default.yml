@@ -1,0 +1,116 @@
+uuid: 8c15bed2-5f04-46c2-9e96-d87bf4431cb0
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.emergency_contacts
+    - field.field.contacts.emergency_contacts.field_address
+    - field.field.contacts.emergency_contacts.field_first_name
+    - field.field.contacts.emergency_contacts.field_last_name
+    - field.field.contacts.emergency_contacts.field_note
+    - field.field.contacts.emergency_contacts.field_phone_number
+    - field.field.contacts.emergency_contacts.field_primary
+    - field.field.contacts.emergency_contacts.field_relationship
+    - field.field.contacts.emergency_contacts.field_teammate
+  module:
+    - field_layout
+    - inline_entity_form
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: contacts.emergency_contacts.default
+targetEntityType: contacts
+bundle: emergency_contacts
+mode: default
+content:
+  field_address:
+    type: inline_entity_form_complex
+    weight: 5
+    region: content
+    settings:
+      form_mode: default
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      allow_new: true
+      allow_existing: false
+      match_operator: CONTAINS
+      allow_duplicate: false
+      collapsible: true
+      collapsed: true
+      revision: false
+      removed_reference: optional
+    third_party_settings: {  }
+  field_first_name:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_name:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_note:
+    type: string_textarea
+    weight: 6
+    region: content
+    settings:
+      rows: 2
+      placeholder: 'Note about contacting this person in an Emergency'
+    third_party_settings: {  }
+  field_phone_number:
+    type: inline_entity_form_complex
+    weight: 4
+    region: content
+    settings:
+      form_mode: default
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      allow_new: true
+      allow_existing: false
+      match_operator: CONTAINS
+      allow_duplicate: false
+      collapsible: true
+      collapsed: true
+      revision: false
+      removed_reference: optional
+    third_party_settings: {  }
+  field_primary:
+    type: boolean_checkbox
+    weight: 0
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_relationship:
+    type: options_select
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_teammate:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  title: true
+  uid: true

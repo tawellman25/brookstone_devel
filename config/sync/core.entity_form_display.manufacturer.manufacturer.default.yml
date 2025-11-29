@@ -1,0 +1,165 @@
+uuid: 23c3ac54-1d38-4b8b-b87a-5bfd360139de
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.manufacturer.manufacturer
+    - field.field.manufacturer.manufacturer.field_banner_image
+    - field.field.manufacturer.manufacturer.field_description
+    - field.field.manufacturer.manufacturer.field_email
+    - field.field.manufacturer.manufacturer.field_fax_line
+    - field.field.manufacturer.manufacturer.field_logo
+    - field.field.manufacturer.manufacturer.field_mailing_address
+    - field.field.manufacturer.manufacturer.field_main_telephone
+    - field.field.manufacturer.manufacturer.field_name
+    - field.field.manufacturer.manufacturer.field_shipping_address
+    - field.field.manufacturer.manufacturer.field_slideshow
+    - field.field.manufacturer.manufacturer.field_toll_free_telephone
+    - field.field.manufacturer.manufacturer.field_type
+    - field.field.manufacturer.manufacturer.field_website
+    - image.style.thumbnail
+  module:
+    - address
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - link
+    - telephone
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_phone_number_group:
+      children:
+        - field_toll_free_telephone
+        - field_main_telephone
+        - field_fax_line
+      label: 'Phone Numbers'
+      region: content
+      parent_name: ''
+      weight: 7
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+id: manufacturer.manufacturer.default
+targetEntityType: manufacturer
+bundle: manufacturer
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_banner_image:
+    type: image_image
+    weight: 10
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_description:
+    type: text_textarea
+    weight: 4
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_email:
+    type: email_default
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+      size: 60
+    third_party_settings: {  }
+  field_fax_line:
+    type: telephone_default
+    weight: 13
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_logo:
+    type: image_image
+    weight: 3
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_mailing_address:
+    type: address_default
+    weight: 5
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_main_telephone:
+    type: telephone_default
+    weight: 12
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_name:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_shipping_address:
+    type: address_default
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_slideshow:
+    type: boolean_checkbox
+    weight: 11
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_toll_free_telephone:
+    type: telephone_default
+    weight: 10
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_type:
+    type: options_select
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_website:
+    type: link_default
+    weight: 9
+    region: content
+    settings:
+      placeholder_url: ''
+      placeholder_title: ''
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

@@ -1,0 +1,42 @@
+uuid: 54af1587-527a-40c6-9cab-9d48a5f7ddb4
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.media.wo_videos.field_media_video_file_1
+    - field.field.media.wo_videos.field_work_order
+    - media.type.wo_videos
+  module:
+    - file
+id: media.wo_videos.default
+targetEntityType: media
+bundle: wo_videos
+mode: default
+content:
+  field_media_video_file_1:
+    type: file_video
+    label: visually_hidden
+    settings:
+      controls: true
+      autoplay: false
+      loop: false
+      multiple_file_display_type: tags
+      muted: false
+      width: 640
+      height: 480
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_work_order:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  created: true
+  name: true
+  thumbnail: true
+  uid: true

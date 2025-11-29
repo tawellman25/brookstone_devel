@@ -1,0 +1,29 @@
+uuid: 6a663059-f648-41b1-a56e-04868f932e2c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_chemicals_used.aspen_twig_gall
+    - field.storage.wo_chemicals_used.field_chemical
+  content:
+    - 'chemical:insecticide:4dd33e45-f1bc-482c-802e-42b2a0ec3479'
+id: wo_chemicals_used.aspen_twig_gall.field_chemical
+field_name: field_chemical
+entity_type: wo_chemicals_used
+bundle: aspen_twig_gall
+label: Chemical
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: 4dd33e45-f1bc-482c-802e-42b2a0ec3479
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: chemicals_by_service
+      display_name: entity_reference_4
+      arguments: {  }
+field_type: entity_reference

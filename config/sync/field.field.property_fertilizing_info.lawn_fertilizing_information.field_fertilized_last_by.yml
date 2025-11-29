@@ -1,0 +1,38 @@
+uuid: b8c0b711-e7c9-4ff2-b878-5995aee9ad1d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_fertilizing_info.lawn_fertilizing_information
+    - field.storage.property_fertilizing_info.field_fertilized_last_by
+id: property_fertilizing_info.lawn_fertilizing_information.field_fertilized_last_by
+field_name: field_fertilized_last_by
+entity_type: property_fertilizing_info
+bundle: lawn_fertilizing_information
+label: 'Last Fertilized By'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        teammates: teammates
+        site_admin: '0'
+        administration: '0'
+        administrator: '0'
+        supervisor: '0'
+        client: '0'
+        user: '0'
+        supplier: '0'
+    include_anonymous: true
+field_type: entity_reference

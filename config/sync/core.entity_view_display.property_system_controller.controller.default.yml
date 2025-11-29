@@ -1,0 +1,87 @@
+uuid: 5ddd3fcc-7ce5-4259-bf9f-cf40ca70e46d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_system_controller.controller
+    - field.field.property_system_controller.controller.field_controller
+    - field.field.property_system_controller.controller.field_controller_description
+    - field.field.property_system_controller.controller.field_controller_location
+    - field.field.property_system_controller.controller.field_controller_number
+    - field.field.property_system_controller.controller.field_controller_photos
+    - field.field.property_system_controller.controller.field_controller_type
+    - field.field.property_system_controller.controller.field_property_ss_system
+    - field.field.property_system_controller.controller.field_stocked_controller
+  module:
+    - image
+    - options
+id: property_system_controller.controller.default
+targetEntityType: property_system_controller
+bundle: controller
+mode: default
+content:
+  field_controller:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_controller_description:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_controller_location:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_controller_number:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_controller_photos:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_controller_type:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_stocked_controller:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  changed: true
+  field_property_ss_system: true
+  title: true

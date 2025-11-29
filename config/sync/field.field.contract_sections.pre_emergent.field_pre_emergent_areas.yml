@@ -1,0 +1,29 @@
+uuid: 561d308a-e727-414a-8877-b98c65912c36
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.pre_emergent
+    - field.storage.contract_sections.field_pre_emergent_areas
+    - taxonomy.vocabulary.spraying_locations
+id: contract_sections.pre_emergent.field_pre_emergent_areas
+field_name: field_pre_emergent_areas
+entity_type: contract_sections
+bundle: pre_emergent
+label: 'What areas would you like it applied?'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      spraying_locations: spraying_locations
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

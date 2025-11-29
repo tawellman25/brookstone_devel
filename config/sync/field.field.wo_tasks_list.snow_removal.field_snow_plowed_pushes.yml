@@ -1,0 +1,29 @@
+uuid: 91e53598-407c-409a-bef0-92bdc23c05c7
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.snow_removal
+    - field.storage.wo_tasks_list.field_snow_plowed_pushes
+    - taxonomy.vocabulary.snow_plows
+id: wo_tasks_list.snow_removal.field_snow_plowed_pushes
+field_name: field_snow_plowed_pushes
+entity_type: wo_tasks_list
+bundle: snow_removal
+label: 'How many times(pushes)'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      snow_plows: snow_plows
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

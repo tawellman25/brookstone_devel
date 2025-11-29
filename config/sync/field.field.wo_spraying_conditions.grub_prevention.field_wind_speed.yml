@@ -1,0 +1,29 @@
+uuid: aca982ea-ad28-44b5-8133-9395b0a16632
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.grub_prevention
+    - field.storage.wo_spraying_conditions.field_wind_speed
+    - taxonomy.vocabulary.spraying_wind_speed
+id: wo_spraying_conditions.grub_prevention.field_wind_speed
+field_name: field_wind_speed
+entity_type: wo_spraying_conditions
+bundle: grub_prevention
+label: 'Wind Speed'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      spraying_wind_speed: spraying_wind_speed
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

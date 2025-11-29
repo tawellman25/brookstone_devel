@@ -1,0 +1,31 @@
+uuid: 01577053-29fb-4fd8-beb6-e8068ad5322a
+langcode: en
+status: true
+dependencies:
+  module:
+    - block_visibility_groups
+    - search
+    - system
+  theme:
+    - brookstone_admin
+id: brookstone_admin_searchform
+theme: brookstone_admin
+region: help
+weight: -4
+provider: null
+plugin: search_form_block
+settings:
+  id: search_form_block
+  label: 'Search Help'
+  label_display: visible
+  provider: search
+  page_id: help_search
+visibility:
+  condition_group:
+    id: condition_group
+    negate: false
+    block_visibility_group: ''
+  request_path:
+    id: request_path
+    negate: false
+    pages: /admin/help

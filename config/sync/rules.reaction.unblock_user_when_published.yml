@@ -1,0 +1,64 @@
+uuid: 28c78556-4c7b-4ae4-ba3e-3db0fa591d6a
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: 0CmMZYvuWiXadiaByNPsUjHE-Jm835cDz5fZBvwfORo
+id: unblock_user_when_published
+label: 'Unblock user when published'
+events:
+  -
+    event_name: 'rules_entity_update:node'
+description: 'Issue #2978800-7: Unblock user when node authored by that user is published.'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 4abf0113-4cc2-4926-8986-8b89e7009019
+  conditions:
+    id: rules_and
+    uuid: 2a40cd4c-b2c1-4fc6-b973-f9a31696448b
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 54493b70-fcd3-424e-add1-5e785060ead6
+    actions:
+      -
+        id: rules_action
+        uuid: 490a23e0-96eb-4f97-bc1e-531493a0ed7e
+        context_values:
+          type: 'entity:user'
+        context_mapping:
+          value: node_unchanged.uid.entity
+        context_processors:
+          type:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_variable_add
+      -
+        id: rules_action
+        uuid: 6173344c-ea15-4af4-9797-23e2938cda47
+        context_values:
+          message: 'user {{ variable_added.name.value }} is now unblocked'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: 95aab0f4-295d-4e2a-96a0-65593d97f753
+        context_values: {  }
+        context_mapping:
+          user: variable_added
+        context_processors: {  }
+        provides_mapping: {  }
+        action_id: rules_user_unblock

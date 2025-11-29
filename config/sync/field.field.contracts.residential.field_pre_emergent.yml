@@ -1,0 +1,29 @@
+uuid: 327f5f74-db04-44b9-bfbd-7d22e6f45967
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.pre_emergent
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_pre_emergent
+id: contracts.residential.field_pre_emergent
+field_name: field_pre_emergent
+entity_type: contracts
+bundle: residential
+label: Pre-emergent
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      pre_emergent: pre_emergent
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

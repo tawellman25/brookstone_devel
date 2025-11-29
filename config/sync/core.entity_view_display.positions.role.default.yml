@@ -1,0 +1,88 @@
+uuid: a6c1957c-34d6-4935-91fe-b048e83750b4
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.positions.role
+    - field.field.positions.role.field_associated_crew
+    - field.field.positions.role.field_flsa_status
+    - field.field.positions.role.field_job_summary
+    - field.field.positions.role.field_key_responsibilities
+    - field.field.positions.role.field_physical_requirements
+    - field.field.positions.role.field_qualifications
+    - field.field.positions.role.field_reporting_structure
+    - field.field.positions.role.field_skills_certifications
+    - field.field.positions.role.field_work_environment
+  module:
+    - text
+id: positions.role.default
+targetEntityType: positions
+bundle: role
+mode: default
+content:
+  field_associated_crew:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_job_summary:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_key_responsibilities:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_physical_requirements:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_qualifications:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_reporting_structure:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_skills_certifications:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_work_environment:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_flsa_status: true
+  title: true
+  uid: true

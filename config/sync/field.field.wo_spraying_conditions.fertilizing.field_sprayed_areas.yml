@@ -1,0 +1,33 @@
+uuid: 31eceabe-e372-4f5c-b5ef-200cb75df0e1
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.fertilizing
+    - field.storage.wo_spraying_conditions.field_sprayed_areas
+    - taxonomy.vocabulary.spraying_locations
+  content:
+    - 'taxonomy_term:spraying_locations:b6ad1339-5188-4168-b58c-99faa8c1f83b'
+id: wo_spraying_conditions.fertilizing.field_sprayed_areas
+field_name: field_sprayed_areas
+entity_type: wo_spraying_conditions
+bundle: fertilizing
+label: 'Sprayed Areas'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: b6ad1339-5188-4168-b58c-99faa8c1f83b
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      spraying_locations: spraying_locations
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

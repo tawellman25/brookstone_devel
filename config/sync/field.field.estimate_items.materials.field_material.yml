@@ -1,0 +1,61 @@
+uuid: a93b7d91-f75d-4687-9aaa-f224507ac2bb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_items.materials
+    - eck.eck_type.material.brass
+    - eck.eck_type.material.copper
+    - eck.eck_type.material.decorative_rock
+    - eck.eck_type.material.electric
+    - eck.eck_type.material.galv
+    - eck.eck_type.material.irrigation
+    - eck.eck_type.material.landscape
+    - eck.eck_type.material.misc
+    - eck.eck_type.material.pavers
+    - eck.eck_type.material.plants
+    - eck.eck_type.material.poly
+    - eck.eck_type.material.pumps
+    - eck.eck_type.material.pvc
+    - eck.eck_type.material.shrubs
+    - eck.eck_type.material.sod
+    - eck.eck_type.material.trees
+    - eck.eck_type.material.xmas
+    - field.storage.estimate_items.field_material
+id: estimate_items.materials.field_material
+field_name: field_material
+entity_type: estimate_items
+bundle: materials
+label: Material
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:material'
+  handler_settings:
+    target_bundles:
+      pavers: pavers
+      brass: brass
+      xmas: xmas
+      copper: copper
+      electric: electric
+      galv: galv
+      irrigation: irrigation
+      landscape: landscape
+      misc: misc
+      pvc: pvc
+      plants: plants
+      poly: poly
+      pumps: pumps
+      decorative_rock: decorative_rock
+      shrubs: shrubs
+      sod: sod
+      trees: trees
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: pavers
+field_type: entity_reference

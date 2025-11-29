@@ -1,0 +1,29 @@
+uuid: 6d9ae345-345f-4f92-8aa2-f05f76e935f2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.electric
+    - eck.eck_type.supplier.supplier
+    - field.storage.material.field_suppliers
+id: material.electric.field_suppliers
+field_name: field_suppliers
+entity_type: material
+bundle: electric
+label: Supplier
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:supplier'
+  handler_settings:
+    target_bundles:
+      supplier: supplier
+    sort:
+      field: field_supplier_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

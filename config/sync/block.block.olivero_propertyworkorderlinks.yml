@@ -1,0 +1,27 @@
+uuid: 50aec8bf-ba6b-4e4f-a4cd-00932763af35
+langcode: en
+status: true
+dependencies:
+  config:
+    - block_visibility_groups.block_visibility_group.teammate_properties
+  module:
+    - block_visibility_groups
+    - properties
+  theme:
+    - olivero
+id: olivero_propertyworkorderlinks
+theme: olivero
+region: sidebar
+weight: -16
+provider: null
+plugin: property_work_order_links
+settings:
+  id: property_work_order_links
+  label: 'Create Work Orders for this Property'
+  label_display: visible
+  provider: properties
+visibility:
+  condition_group:
+    id: condition_group
+    negate: false
+    block_visibility_group: teammate_properties

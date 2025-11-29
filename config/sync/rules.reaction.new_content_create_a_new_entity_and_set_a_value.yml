@@ -1,0 +1,80 @@
+uuid: 5bcd4cc3-4d34-4bfe-b0f8-cc757109a7cb
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: H15sg638ScCS_ae9XvwIRd2HFVrzYmUl1MmCefGoIAo
+id: new_content_create_a_new_entity_and_set_a_value
+label: 'Create a new entity and set the body value after new content'
+events:
+  -
+    event_name: 'rules_entity_insert:node'
+description: 'Issue #2830722-4: Create a new entity and set a field value on that entity.'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: adcead4b-cbb6-4973-a093-0fc1ccaef76b
+  conditions:
+    id: rules_and
+    uuid: 9237862a-8820-4954-8b56-09cce250bc24
+    conditions:
+      -
+        id: rules_condition
+        uuid: 8b283097-21ee-4bf7-bbaa-30bdf1a42702
+        context_values:
+          type: node
+          bundle: termin
+        context_mapping:
+          entity: node
+        context_processors:
+          type:
+            rules_tokens: {  }
+          bundle:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        condition_id: rules_entity_is_of_bundle
+        negate: false
+  actions:
+    id: rules_action_set
+    uuid: caf1a253-49a9-4c05-997b-e539e0e093c8
+    actions:
+      -
+        id: rules_action
+        uuid: 537491c1-bc74-451e-9bfe-4a7f39690181
+        context_values:
+          type: article
+          title: 'New article created by a Rule'
+        context_mapping: {  }
+        context_processors:
+          type:
+            rules_tokens: {  }
+          title:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: 'rules_entity_create:node'
+      -
+        id: rules_action
+        uuid: 4b3d99c1-3a7b-43c3-bddf-bffcd320a613
+        context_values:
+          immediate: '1'
+        context_mapping:
+          entity: node_created
+        context_processors:
+          immediate:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_entity_save
+      -
+        id: rules_action
+        uuid: e44c5119-c109-44e5-b22c-f0262280d124
+        context_values:
+          value: '{{ node.field_pressebegleittext.value }}'
+        context_mapping:
+          data: node_created.body
+        context_processors:
+          value:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_data_set

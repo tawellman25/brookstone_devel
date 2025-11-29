@@ -1,0 +1,25 @@
+uuid: b0f803ea-46a3-4b5f-9175-afa03b3455e6
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.profile.field_assigned_crew
+    - profile.type.teammate_profile
+id: profile.teammate_profile.field_assigned_crew
+field_name: field_assigned_crew
+entity_type: profile
+bundle: teammate_profile
+label: 'Assigned Crew'
+description: 'Add the crews this Teammate is on.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: crew_types
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

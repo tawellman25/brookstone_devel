@@ -1,0 +1,146 @@
+uuid: 567f2672-e778-4728-84f6-5286df94f61f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_lawn_maintenance.lawn_maintenance_info
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_aerating_lawns_contracted
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_dethatching_contracted
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_assigned_to
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_contracted
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_dumping_location
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_frequency
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_instructions
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_last_mowed
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_last_mowed_by
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_priority
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_weekday
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_property
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_property
+        - field_mowing_contracted
+        - field_aerating_lawns_contracted
+        - field_dethatching_contracted
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: property_lawn_maintenance.lawn_maintenance_info.default
+targetEntityType: property_lawn_maintenance
+bundle: lawn_maintenance_info
+mode: default
+content:
+  field_aerating_lawns_contracted:
+    type: boolean_checkbox
+    weight: 10
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_dethatching_contracted:
+    type: boolean_checkbox
+    weight: 11
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_mowing_assigned_to:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_mowing_contracted:
+    type: boolean_checkbox
+    weight: 9
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_mowing_dumping_location:
+    type: string_textfield
+    weight: 6
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_mowing_frequency:
+    type: options_buttons
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_mowing_instructions:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_mowing_last_mowed:
+    type: datetime_default
+    weight: 7
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_mowing_last_mowed_by:
+    type: options_select
+    weight: 8
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_mowing_priority:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_mowing_weekday:
+    type: options_select
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 8
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  title: true

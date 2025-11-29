@@ -1,0 +1,139 @@
+uuid: 4aa83be0-a71e-43e0-9fce-a3392f4c4980
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.dethatching_of_lawn_areas
+    - field.field.contract_sections.dethatching_of_lawn_areas.field_client_notes
+    - field.field.contract_sections.dethatching_of_lawn_areas.field_contract
+    - field.field.contract_sections.dethatching_of_lawn_areas.field_do_you_want
+    - field.field.contract_sections.dethatching_of_lawn_areas.field_estimate
+    - field.field.contract_sections.dethatching_of_lawn_areas.field_last_year
+    - field.field.contract_sections.dethatching_of_lawn_areas.field_work_order
+  module:
+    - field_group
+    - options
+    - user
+third_party_settings:
+  field_group:
+    group_office_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - created
+        - uid
+        - changed
+        - field_contract
+        - field_work_order
+      label: 'Office Administation'
+      parent_name: ''
+      region: content
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+id: contract_sections.dethatching_of_lawn_areas.default
+targetEntityType: contract_sections
+bundle: dethatching_of_lawn_areas
+mode: default
+content:
+  changed:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  created:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_client_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_contract:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_do_you_want:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_estimate:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_last_year:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_work_order:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  uid:
+    type: author
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+hidden: {  }

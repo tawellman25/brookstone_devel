@@ -1,0 +1,31 @@
+uuid: 9eccba46-ece2-4c52-8e1c-b868c11340b4
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.sprinkler_maintenance
+    - eck.eck_type.sop.system_procedures
+    - field.storage.media.field_sop
+    - media.type.sop_images
+id: media.sop_images.field_sop
+field_name: field_sop
+entity_type: media
+bundle: sop_images
+label: SOP
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sop'
+  handler_settings:
+    target_bundles:
+      sprinkler_maintenance: sprinkler_maintenance
+      system_procedures: system_procedures
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: sprinkler_maintenance
+field_type: entity_reference

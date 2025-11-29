@@ -1,0 +1,33 @@
+uuid: 2184c2a0-ae7f-446e-b08c-30cab8f51161
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.sprinkler_start_up
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:23f2e2a8-a706-4a01-b792-b7b5302b3158'
+id: work_order.sprinkler_start_up.field_service
+field_name: field_service
+entity_type: work_order
+bundle: sprinkler_start_up
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 23f2e2a8-a706-4a01-b792-b7b5302b3158
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

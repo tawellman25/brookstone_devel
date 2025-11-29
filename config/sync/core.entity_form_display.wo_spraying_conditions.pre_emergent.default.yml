@@ -1,0 +1,132 @@
+uuid: c9e60e32-e074-4c13-9148-447f2c8925df
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.pre_emergent
+    - field.field.wo_spraying_conditions.pre_emergent.field_carrier
+    - field.field.wo_spraying_conditions.pre_emergent.field_how_applied
+    - field.field.wo_spraying_conditions.pre_emergent.field_method_of_application
+    - field.field.wo_spraying_conditions.pre_emergent.field_soil_moisture
+    - field.field.wo_spraying_conditions.pre_emergent.field_sprayed_areas
+    - field.field.wo_spraying_conditions.pre_emergent.field_temperature
+    - field.field.wo_spraying_conditions.pre_emergent.field_wind_direction
+    - field.field.wo_spraying_conditions.pre_emergent.field_wind_speed
+    - field.field.wo_spraying_conditions.pre_emergent.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_work_order
+        - created
+        - uid
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: wo_spraying_conditions.pre_emergent.default
+targetEntityType: wo_spraying_conditions
+bundle: pre_emergent
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_carrier:
+    type: options_buttons
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_how_applied:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_method_of_application:
+    type: options_buttons
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_soil_moisture:
+    type: options_buttons
+    weight: 7
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_sprayed_areas:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_temperature:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_wind_direction:
+    type: options_buttons
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_wind_speed:
+    type: options_buttons
+    weight: 5
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 11
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 14
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 13
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

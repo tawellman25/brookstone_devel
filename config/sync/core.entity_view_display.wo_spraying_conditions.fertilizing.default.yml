@@ -1,0 +1,355 @@
+uuid: 00a152da-da26-4290-953f-d80d83b7cad0
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.fertilizing
+    - field.field.wo_spraying_conditions.fertilizing.field_carrier
+    - field.field.wo_spraying_conditions.fertilizing.field_how_applied
+    - field.field.wo_spraying_conditions.fertilizing.field_method_of_application
+    - field.field.wo_spraying_conditions.fertilizing.field_other_weed_types
+    - field.field.wo_spraying_conditions.fertilizing.field_soil_moisture
+    - field.field.wo_spraying_conditions.fertilizing.field_sprayed_areas
+    - field.field.wo_spraying_conditions.fertilizing.field_stage_of_weed_growth
+    - field.field.wo_spraying_conditions.fertilizing.field_temperature
+    - field.field.wo_spraying_conditions.fertilizing.field_weed_types
+    - field.field.wo_spraying_conditions.fertilizing.field_wind_direction
+    - field.field.wo_spraying_conditions.fertilizing.field_wind_speed
+    - field.field.wo_spraying_conditions.fertilizing.field_work_order
+  module:
+    - layout_builder
+    - layout_discovery
+    - user
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Spraying Conditions Layout'
+          context_mapping: {  }
+          column_widths: 50-50
+        components:
+          f2f5ca6e-3788-4e98-8d42-770eadecc1b3:
+            uuid: f2f5ca6e-3788-4e98-8d42-770eadecc1b3
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:fertilizing:field_how_applied'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          f26e00dc-7a24-4b5f-b916-605e3054366c:
+            uuid: f26e00dc-7a24-4b5f-b916-605e3054366c
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:fertilizing:field_sprayed_areas'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          c2ad3ede-e80c-43cb-a51a-a54d5445b120:
+            uuid: c2ad3ede-e80c-43cb-a51a-a54d5445b120
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:fertilizing:field_method_of_application'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          7b301ab8-d4b1-4de4-ab43-b241d45bed6b:
+            uuid: 7b301ab8-d4b1-4de4-ab43-b241d45bed6b
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:fertilizing:field_carrier'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          b9e413d6-3b46-43af-a5bd-23a2fdab589b:
+            uuid: b9e413d6-3b46-43af-a5bd-23a2fdab589b
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:fertilizing:field_temperature'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_integer
+                label: above
+                settings:
+                  thousand_separator: ''
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          b2022cfb-2a70-44d7-a1a2-d446fecb5d81:
+            uuid: b2022cfb-2a70-44d7-a1a2-d446fecb5d81
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:fertilizing:field_wind_speed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          3fadfd62-3995-4c99-8940-fa2db9e8691b:
+            uuid: 3fadfd62-3995-4c99-8940-fa2db9e8691b
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:fertilizing:field_wind_direction'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          99ae6365-463b-4c99-8f37-c335b654e1d5:
+            uuid: 99ae6365-463b-4c99-8f37-c335b654e1d5
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:fertilizing:field_soil_moisture'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 5
+            additional: {  }
+          35796c97-1a91-4672-914a-27c49834adc5:
+            uuid: 35796c97-1a91-4672-914a-27c49834adc5
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:fertilizing:field_stage_of_weed_growth'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          a47007a5-bd99-410c-a4ff-7fc1d0fc0409:
+            uuid: a47007a5-bd99-410c-a4ff-7fc1d0fc0409
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:fertilizing:field_weed_types'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          e2863038-15e9-43c1-8472-54e0db33e633:
+            uuid: e2863038-15e9-43c1-8472-54e0db33e633
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:fertilizing:field_other_weed_types'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: above
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components: {  }
+        third_party_settings: {  }
+id: wo_spraying_conditions.fertilizing.default
+targetEntityType: wo_spraying_conditions
+bundle: fertilizing
+mode: default
+content:
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_carrier:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_how_applied:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_method_of_application:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_other_weed_types:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_soil_moisture:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_sprayed_areas:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_stage_of_weed_growth:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_temperature:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_weed_types:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_wind_direction:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_wind_speed:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_work_order:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden: {  }

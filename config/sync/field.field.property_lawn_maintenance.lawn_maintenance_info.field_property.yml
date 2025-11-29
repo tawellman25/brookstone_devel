@@ -1,0 +1,29 @@
+uuid: d78ffde6-2820-4a80-9522-55dd60e4aa09
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.properties.property
+    - eck.eck_type.property_lawn_maintenance.lawn_maintenance_info
+    - field.storage.property_lawn_maintenance.field_property
+id: property_lawn_maintenance.lawn_maintenance_info.field_property
+field_name: field_property
+entity_type: property_lawn_maintenance
+bundle: lawn_maintenance_info
+label: Property
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:properties'
+  handler_settings:
+    target_bundles:
+      property: property
+    sort:
+      field: field_nickname
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

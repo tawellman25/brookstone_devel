@@ -1,0 +1,25 @@
+uuid: e4ce0f6f-f3ba-44e1-9e3f-2a0bc63786ec
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.special_mowing
+    - field.storage.wo_tasks_list.field_mowing_who_on_site
+id: wo_tasks_list.special_mowing.field_mowing_who_on_site
+field_name: field_mowing_who_on_site
+entity_type: wo_tasks_list
+bundle: special_mowing
+label: 'Who on site with this truck'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: mow_crew_select_list
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

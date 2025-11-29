@@ -1,0 +1,33 @@
+uuid: d1a72bb0-b51b-4a92-abfe-cf8d634466a4
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.snow_plows
+    - field.storage.equipment.field_equipment_type
+    - taxonomy.vocabulary.equipment_types
+  content:
+    - 'taxonomy_term:equipment_types:4e4079b7-6286-4bf1-ba5c-e10de981fc1f'
+id: equipment.snow_plows.field_equipment_type
+field_name: field_equipment_type
+entity_type: equipment
+bundle: snow_plows
+label: 'Equipment Category'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 4e4079b7-6286-4bf1-ba5c-e10de981fc1f
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      equipment_types: equipment_types
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

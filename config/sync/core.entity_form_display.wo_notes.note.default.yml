@@ -1,0 +1,50 @@
+uuid: 41b42ee4-b1e5-4036-8627-8483ced4d1ca
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_notes.note
+    - field.field.wo_notes.note.field_note_text
+    - field.field.wo_notes.note.field_work_order
+  module:
+    - field_layout
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: wo_notes.note.default
+targetEntityType: wo_notes
+bundle: note
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_note_text:
+    type: text_textarea
+    weight: 0
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  path: true
+  title: true
+  uid: true

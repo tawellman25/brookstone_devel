@@ -1,0 +1,37 @@
+uuid: 7590a644-75e1-46a4-9771-1b12092b8884
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_design.design
+    - eck.eck_type.work_order.landscaping
+    - eck.eck_type.work_order.sprinkler_check_up
+    - eck.eck_type.work_order.sprinkler_design
+    - eck.eck_type.work_order.sprinkler_installation
+    - eck.eck_type.work_order.sprinkler_repair
+    - field.storage.property_sprinkler_design.field_work_order
+id: property_sprinkler_design.design.field_work_order
+field_name: field_work_order
+entity_type: property_sprinkler_design
+bundle: design
+label: 'Attached Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+      sprinkler_check_up: sprinkler_check_up
+      sprinkler_design: sprinkler_design
+      sprinkler_installation: sprinkler_installation
+      sprinkler_repair: sprinkler_repair
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: sprinkler_design
+field_type: entity_reference

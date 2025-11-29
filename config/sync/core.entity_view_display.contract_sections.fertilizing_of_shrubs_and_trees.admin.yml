@@ -1,0 +1,214 @@
+uuid: 56d82ff3-209d-4808-bdc4-a6c6e3980693
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.contract_sections.admin
+    - eck.eck_type.contract_sections.fertilizing_of_shrubs_and_trees
+    - field.field.contract_sections.fertilizing_of_shrubs_and_trees.field_chemicals_used
+    - field.field.contract_sections.fertilizing_of_shrubs_and_trees.field_client_notes
+    - field.field.contract_sections.fertilizing_of_shrubs_and_trees.field_contract
+    - field.field.contract_sections.fertilizing_of_shrubs_and_trees.field_do_you_want
+    - field.field.contract_sections.fertilizing_of_shrubs_and_trees.field_estimate
+    - field.field.contract_sections.fertilizing_of_shrubs_and_trees.field_last_year
+    - field.field.contract_sections.fertilizing_of_shrubs_and_trees.field_pounds_used
+    - field.field.contract_sections.fertilizing_of_shrubs_and_trees.field_work_order
+    - views.view.contract_sections_admin_view
+  module:
+    - field_group
+    - layout_builder
+    - layout_discovery
+    - options
+    - user
+    - views
+third_party_settings:
+  field_group:
+    group_office_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_chemicals_used
+        - field_pounds_used
+        - created
+        - uid
+        - changed
+        - field_contract
+      label: 'Office Administation'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          5349d555-f8b3-43f7-8b78-986f30c20cae:
+            uuid: 5349d555-f8b3-43f7-8b78-986f30c20cae
+            region: content
+            configuration:
+              id: 'field_block:contract_sections:fertilizing_of_shrubs_and_trees:changed'
+              label: Changed
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: timestamp
+                label: inline
+                settings:
+                  date_format: short
+                  custom_date_format: ''
+                  timezone: ''
+                  tooltip:
+                    date_format: long
+                    custom_date_format: ''
+                  time_diff:
+                    enabled: false
+                    future_format: '@interval hence'
+                    past_format: '@interval ago'
+                    granularity: 2
+                    refresh: 60
+                    description: ''
+                third_party_settings: {  }
+            weight: 9
+            additional: {  }
+          dd445c7b-051c-4cb4-bcb0-13c283cf9525:
+            uuid: dd445c7b-051c-4cb4-bcb0-13c283cf9525
+            region: content
+            configuration:
+              id: 'views_block:contract_sections_admin_view-block_4'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 8
+            additional: {  }
+        third_party_settings: {  }
+id: contract_sections.fertilizing_of_shrubs_and_trees.admin
+targetEntityType: contract_sections
+bundle: fertilizing_of_shrubs_and_trees
+mode: admin
+content:
+  changed:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  created:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_chemicals_used:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_client_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_contract:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_do_you_want:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_estimate:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_last_year:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_pounds_used:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  uid:
+    type: author
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+hidden:
+  field_work_order: true

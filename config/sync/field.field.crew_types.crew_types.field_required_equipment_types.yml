@@ -1,0 +1,29 @@
+uuid: 69187da0-b2d9-4e99-a986-d5473ee4acff
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.crew_types.crew_types
+    - field.storage.crew_types.field_required_equipment_types
+    - taxonomy.vocabulary.equipment_types
+id: crew_types.crew_types.field_required_equipment_types
+field_name: field_required_equipment_types
+entity_type: crew_types
+bundle: crew_types
+label: 'Required Equipment Types'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      equipment_types: equipment_types
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

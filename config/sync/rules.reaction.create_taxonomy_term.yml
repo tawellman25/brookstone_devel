@@ -1,0 +1,69 @@
+uuid: ae8963a5-6726-41d2-83c7-e1d588736240
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: tT3xbs7ldWsUy5oThik5bCVKcKo6MByVi0IXaOw7xbU
+id: create_taxonomy_term
+label: 'Create a Taxonomy Term'
+events:
+  -
+    event_name: 'rules_entity_insert:node'
+description: 'Issue #2900020-6: When a new node is created, add a new taxonomy term in the tags vocabulary using the node title as the term name.'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: fb31400a-0f9b-443f-b2aa-4d0380b29fbe
+  conditions:
+    id: rules_and
+    uuid: ad01eaed-d9c0-4316-b75b-199d38a93531
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 604f36fb-ac14-4261-ac45-9e35830adeb6
+    actions:
+      -
+        id: rules_action
+        uuid: cab094dc-d0fe-4b33-8e9f-7d2d3de50893
+        context_values:
+          vid: tags
+          name: '{{ node.title.value }}'
+        context_mapping: {  }
+        context_processors:
+          vid:
+            rules_tokens: {  }
+          name:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: 'rules_entity_create:taxonomy_term'
+      -
+        id: rules_action
+        uuid: 059415ab-273c-4a72-93a4-96581a8cbbaf
+        context_values:
+          immediate: '1'
+        context_mapping:
+          entity: taxonomy_term_created
+        context_processors:
+          immediate:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_entity_save
+      -
+        id: rules_action
+        uuid: 960c4bd7-1aba-4e8c-8263-51ccfd09c096
+        context_values:
+          message: 'Created a taxonomy term {{node.title.value}} in the tags vocabulary'
+          type: warning
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message

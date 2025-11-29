@@ -1,0 +1,57 @@
+uuid: 0d9e5299-2a93-49cc-bc70-d42f34ddea1c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_spraying_info.aspen_twig_gall
+    - field.storage.property_spraying_info.field_spray_map
+  module:
+    - filefield_paths
+    - image
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[property_spraying_info:field_property:entity:url]/maps'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[property_spraying_info:field_property:entity:title]_aspen_twig_spray_map.[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: property_spraying_info.aspen_twig_gall.field_spray_map
+field_name: field_spray_map
+entity_type: property_spraying_info
+bundle: aspen_twig_gall
+label: 'Aspen Twig Gall Spray Map'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'png gif jpg jpeg'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: true
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

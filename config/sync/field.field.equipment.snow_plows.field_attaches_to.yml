@@ -1,0 +1,31 @@
+uuid: 81434bdd-9726-446f-9ce5-efd3d5f8e44b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.heavy_equipment
+    - eck.eck_type.equipment.snow_plows
+    - eck.eck_type.equipment.vehicles
+    - field.storage.equipment.field_attaches_to
+id: equipment.snow_plows.field_attaches_to
+field_name: field_attaches_to
+entity_type: equipment
+bundle: snow_plows
+label: 'Attaches to'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:equipment'
+  handler_settings:
+    target_bundles:
+      heavy_equipment: heavy_equipment
+      vehicles: vehicles
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: heavy_equipment
+field_type: entity_reference

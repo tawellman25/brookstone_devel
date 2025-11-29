@@ -1,0 +1,39 @@
+uuid: fd8070cf-6e57-4755-98c2-63893266faa0
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_complete_info.irrigation_crew
+    - eck.eck_type.work_order.sprinkler_check_up
+    - eck.eck_type.work_order.sprinkler_design
+    - eck.eck_type.work_order.sprinkler_installation
+    - eck.eck_type.work_order.sprinkler_repair
+    - eck.eck_type.work_order.sprinkler_start_up
+    - eck.eck_type.work_order.sprinkler_winterizing
+    - field.storage.wo_complete_info.field_work_order
+id: wo_complete_info.irrigation_crew.field_work_order
+field_name: field_work_order
+entity_type: wo_complete_info
+bundle: irrigation_crew
+label: 'Work Order'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      sprinkler_check_up: sprinkler_check_up
+      sprinkler_design: sprinkler_design
+      sprinkler_installation: sprinkler_installation
+      sprinkler_repair: sprinkler_repair
+      sprinkler_start_up: sprinkler_start_up
+      sprinkler_winterizing: sprinkler_winterizing
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: sprinkler_start_up
+field_type: entity_reference

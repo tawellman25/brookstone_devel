@@ -1,0 +1,42 @@
+uuid: 868ea8f1-0f4b-40f6-ae9c-fb286bb02ca1
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.weed_spraying
+    - field.storage.work_order.field_supervisor
+  content:
+    - 'user:user:04140ad1-bc72-49a6-b12f-19e53aaf21b1'
+id: work_order.weed_spraying.field_supervisor
+field_name: field_supervisor
+entity_type: work_order
+bundle: weed_spraying
+label: Supervisor
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 04140ad1-bc72-49a6-b12f-19e53aaf21b1
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        supervisor: supervisor
+        administrator: '0'
+        site_admin: '0'
+        administration: '0'
+        teammates: '0'
+        client: '0'
+        user: '0'
+        supplier: '0'
+    include_anonymous: true
+field_type: entity_reference

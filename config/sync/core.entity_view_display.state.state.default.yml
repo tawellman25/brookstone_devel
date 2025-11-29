@@ -1,0 +1,122 @@
+uuid: e68c3290-d965-498d-88d8-7a03b1481c14
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.state.state
+    - field.field.state.state.field_abbreviation
+    - field.field.state.state.field_banner_image
+    - field.field.state.state.field_state_description
+    - field.field.state.state.field_state_name
+    - field.field.state.state.field_type
+    - views.view.state_counties
+  module:
+    - layout_builder
+    - layout_discovery
+    - options
+    - text
+    - views
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Main content'
+          context_mapping: {  }
+          column_widths: 75-25
+        components:
+          6c6bf661-7228-48c5-9c62-88402b770258:
+            uuid: 6c6bf661-7228-48c5-9c62-88402b770258
+            region: first
+            configuration:
+              id: 'field_block:state:state:field_state_description'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: text_default
+                label: hidden
+                settings: {  }
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          b26d316d-9359-4e5c-bc00-18fdfc673c95:
+            uuid: b26d316d-9359-4e5c-bc00-18fdfc673c95
+            region: second
+            configuration:
+              id: 'field_block:state:state:field_type'
+              label: Type
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          a3c385d1-5274-419e-bf34-f1515dc36e5a:
+            uuid: a3c385d1-5274-419e-bf34-f1515dc36e5a
+            region: second
+            configuration:
+              id: 'views_block:state_counties-block_1'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 1
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components: {  }
+        third_party_settings: {  }
+id: state.state.default
+targetEntityType: state
+bundle: state
+mode: default
+content:
+  field_state_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_state_name:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_type:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  field_abbreviation: true
+  field_banner_image: true

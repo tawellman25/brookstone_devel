@@ -1,0 +1,46 @@
+uuid: 05b9d765-e3ce-4bcd-8ef0-138c5ba75b29
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.pumps
+    - field.storage.material.field_safety_data_sheet
+  module:
+    - file
+    - filefield_paths
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: material/brass/safety_data_sheets
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[file:ffp-name-only-original].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: material.pumps.field_safety_data_sheet
+field_name: field_safety_data_sheet
+entity_type: material
+bundle: pumps
+label: 'Material Safety Data Sheet (MSDS)'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: material/brass/safety_data_sheets
+  file_extensions: 'txt pdf doc'
+  max_filesize: ''
+  description_field: false
+field_type: file

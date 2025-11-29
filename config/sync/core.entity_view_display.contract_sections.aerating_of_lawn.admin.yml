@@ -1,0 +1,200 @@
+uuid: e27f2352-04cf-4abb-a71a-727da434296d
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.contract_sections.admin
+    - eck.eck_type.contract_sections.aerating_of_lawn
+    - field.field.contract_sections.aerating_of_lawn.field_aerating_season
+    - field.field.contract_sections.aerating_of_lawn.field_client_notes
+    - field.field.contract_sections.aerating_of_lawn.field_contract
+    - field.field.contract_sections.aerating_of_lawn.field_do_you_want
+    - field.field.contract_sections.aerating_of_lawn.field_estimate
+    - field.field.contract_sections.aerating_of_lawn.field_last_year
+    - field.field.contract_sections.aerating_of_lawn.field_work_order
+    - views.view.contract_sections_admin_view
+  module:
+    - field_group
+    - layout_builder
+    - layout_discovery
+    - options
+    - user
+    - views
+third_party_settings:
+  field_group:
+    group_office_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - created
+        - uid
+        - changed
+        - field_contract
+      label: 'Office Administation'
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: false
+        open: false
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          82d50556-5915-4e6c-b2ad-9bbd4817f248:
+            uuid: 82d50556-5915-4e6c-b2ad-9bbd4817f248
+            region: content
+            configuration:
+              id: 'field_block:contract_sections:aerating_of_lawn:changed'
+              label: Changed
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: timestamp
+                label: inline
+                settings:
+                  date_format: short
+                  custom_date_format: ''
+                  timezone: ''
+                  tooltip:
+                    date_format: long
+                    custom_date_format: ''
+                  time_diff:
+                    enabled: false
+                    future_format: '@interval hence'
+                    past_format: '@interval ago'
+                    granularity: 2
+                    refresh: 60
+                    description: ''
+                third_party_settings: {  }
+            weight: 7
+            additional: {  }
+          e1de2229-5882-45d5-a008-7d3a3200d242:
+            uuid: e1de2229-5882-45d5-a008-7d3a3200d242
+            region: content
+            configuration:
+              id: 'views_block:contract_sections_admin_view-block_14'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 6
+            additional: {  }
+        third_party_settings: {  }
+id: contract_sections.aerating_of_lawn.admin
+targetEntityType: contract_sections
+bundle: aerating_of_lawn
+mode: admin
+content:
+  changed:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  created:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_aerating_season:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_client_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_contract:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_do_you_want:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_estimate:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_last_year:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  uid:
+    type: author
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+hidden:
+  field_work_order: true

@@ -1,0 +1,29 @@
+uuid: d6707d62-a035-4816-97e2-b4aed2163b0a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.lawn_and_garden_pests.weed_types
+    - eck.eck_type.wo_spraying_conditions.fertilizing
+    - field.storage.wo_spraying_conditions.field_weed_types
+id: wo_spraying_conditions.fertilizing.field_weed_types
+field_name: field_weed_types
+entity_type: wo_spraying_conditions
+bundle: fertilizing
+label: 'Weed Types'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:lawn_and_garden_pests'
+  handler_settings:
+    target_bundles:
+      weed_types: weed_types
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

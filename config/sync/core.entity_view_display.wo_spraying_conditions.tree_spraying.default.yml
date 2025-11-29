@@ -1,0 +1,218 @@
+uuid: a86591ff-44ab-4ca7-81f0-f865f1cf6dc3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.tree_spraying
+    - field.field.wo_spraying_conditions.tree_spraying.field_carrier
+    - field.field.wo_spraying_conditions.tree_spraying.field_how_applied
+    - field.field.wo_spraying_conditions.tree_spraying.field_how_many_trees
+    - field.field.wo_spraying_conditions.tree_spraying.field_method_of_application
+    - field.field.wo_spraying_conditions.tree_spraying.field_temperature
+    - field.field.wo_spraying_conditions.tree_spraying.field_wind_direction
+    - field.field.wo_spraying_conditions.tree_spraying.field_wind_speed
+    - field.field.wo_spraying_conditions.tree_spraying.field_work_order
+  module:
+    - layout_builder
+    - layout_discovery
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Spraying Conditions'
+          context_mapping: {  }
+          column_widths: 50-50
+        components:
+          ec96f38c-17dd-46d1-b5d8-c8eb56f557a2:
+            uuid: ec96f38c-17dd-46d1-b5d8-c8eb56f557a2
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:tree_spraying:field_how_applied'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          bf2b89d1-98f5-4956-9550-2dae06b3ec50:
+            uuid: bf2b89d1-98f5-4956-9550-2dae06b3ec50
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:tree_spraying:field_method_of_application'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          8d808f5a-8fe3-4e1c-b226-6eb43531b381:
+            uuid: 8d808f5a-8fe3-4e1c-b226-6eb43531b381
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:tree_spraying:field_carrier'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          bc9752fa-3aeb-43f0-ac7e-ede1c99ef0da:
+            uuid: bc9752fa-3aeb-43f0-ac7e-ede1c99ef0da
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:tree_spraying:field_temperature'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_integer
+                label: above
+                settings:
+                  thousand_separator: ''
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          b152c8ff-486a-4703-818c-2fa4c854c315:
+            uuid: b152c8ff-486a-4703-818c-2fa4c854c315
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:tree_spraying:field_wind_direction'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          33e7f1bb-7de5-4a21-9871-527992a4e4de:
+            uuid: 33e7f1bb-7de5-4a21-9871-527992a4e4de
+            region: second
+            configuration:
+              id: 'field_block:wo_spraying_conditions:tree_spraying:field_wind_speed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          d7c811c5-6413-44ed-88b8-4f1bfeda9956:
+            uuid: d7c811c5-6413-44ed-88b8-4f1bfeda9956
+            region: first
+            configuration:
+              id: 'field_block:wo_spraying_conditions:tree_spraying:field_how_many_trees'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_integer
+                label: above
+                settings:
+                  thousand_separator: ''
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components: {  }
+        third_party_settings: {  }
+id: wo_spraying_conditions.tree_spraying.default
+targetEntityType: wo_spraying_conditions
+bundle: tree_spraying
+mode: default
+content:
+  field_carrier:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_how_applied:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_how_many_trees:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 6
+    region: first
+  field_method_of_application:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_temperature:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_wind_direction:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_wind_speed:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+hidden:
+  created: true
+  field_work_order: true
+  title: true
+  uid: true

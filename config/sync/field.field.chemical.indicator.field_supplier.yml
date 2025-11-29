@@ -1,0 +1,29 @@
+uuid: 6aa99f6e-1c84-4207-9928-b1f00823a446
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.indicator
+    - eck.eck_type.supplier.supplier
+    - field.storage.chemical.field_supplier
+id: chemical.indicator.field_supplier
+field_name: field_supplier
+entity_type: chemical
+bundle: indicator
+label: Supplier
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:supplier'
+  handler_settings:
+    target_bundles:
+      supplier: supplier
+    sort:
+      field: field_supplier_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

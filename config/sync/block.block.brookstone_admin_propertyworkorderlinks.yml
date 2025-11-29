@@ -1,0 +1,27 @@
+uuid: 85aeb649-d7a9-4f5c-b48c-efd752750e1e
+langcode: en
+status: true
+dependencies:
+  config:
+    - block_visibility_groups.block_visibility_group.teammate_properties
+  module:
+    - block_visibility_groups
+    - properties
+  theme:
+    - brookstone_admin
+id: brookstone_admin_propertyworkorderlinks
+theme: brookstone_admin
+region: sidebar_first
+weight: -16
+provider: null
+plugin: property_work_order_links
+settings:
+  id: property_work_order_links
+  label: 'Create Work Orders for this Property'
+  label_display: visible
+  provider: properties
+visibility:
+  condition_group:
+    id: condition_group
+    negate: false
+    block_visibility_group: teammate_properties

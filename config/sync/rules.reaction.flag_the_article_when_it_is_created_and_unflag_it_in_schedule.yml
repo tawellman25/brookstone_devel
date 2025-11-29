@@ -1,0 +1,75 @@
+uuid: 0bcf7dbc-ae70-4d25-8e48-9523207e655c
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: '-s-9gmiVPqI5tIIASUEnNoE5kzCC5FUs-xhfybIYoEc'
+id: flag_the_article_when_it_is_created_and_unflag_it_in_schedule
+label: 'Flag the article when it is created and unflag it in schedule'
+events:
+  -
+    event_name: 'rules_entity_insert:node--article'
+description: ''
+tags: {  }
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: bece5b46-b6a4-4ad8-8487-fece9a9b0cf5
+  weight: 0
+  conditions:
+    id: rules_and
+    uuid: a0449a9e-3daf-46b8-b0db-d10a961edb51
+    weight: 0
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 74ffbd95-62cd-4093-b3c4-89943157bd26
+    weight: 0
+    actions:
+      -
+        id: rules_action
+        uuid: 62c9126b-1db4-424f-a430-fbb8ffa24ec1
+        weight: 0
+        context_values:
+          flag_id: best_article
+          entity_type: node
+          entity_id: '{{node.nid}}'
+          uid: '1'
+        context_mapping: {  }
+        context_processors:
+          flag_id:
+            rules_tokens: {  }
+          entity_type:
+            rules_tokens: {  }
+          entity_id:
+            rules_tokens: {  }
+          uid:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_flag_flagging_create
+      -
+        id: rules_action
+        uuid: 2fa2a08f-8606-4ba3-b887-6d89299797b2
+        weight: 0
+        context_values:
+          immediate: '1'
+        context_mapping:
+          entity: flagging_created
+        context_processors:
+          immediate:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_entity_save
+      -
+        id: rules_action
+        uuid: 206ad710-70a0-4bc3-bba1-e1b45fab2016
+        weight: 0
+        context_values:
+          period: '120'
+        context_mapping:
+          entity: flagging_created
+        context_processors:
+          period:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_flag_delete_scheduled_entity

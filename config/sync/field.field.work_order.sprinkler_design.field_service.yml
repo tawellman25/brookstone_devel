@@ -1,0 +1,33 @@
+uuid: b0499fb2-3aef-4a98-886c-ffa916ea86fe
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.sprinkler_design
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:52e2a3da-464e-481f-babc-ff74f049fa7c'
+id: work_order.sprinkler_design.field_service
+field_name: field_service
+entity_type: work_order
+bundle: sprinkler_design
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 52e2a3da-464e-481f-babc-ff74f049fa7c
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

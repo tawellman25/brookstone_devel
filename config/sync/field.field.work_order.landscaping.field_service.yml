@@ -1,0 +1,33 @@
+uuid: d7393b2d-3ead-4bbd-b4d0-982524100eba
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.landscaping
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:0b8daf76-bc2f-41f4-bc85-db3c0c717bdc'
+id: work_order.landscaping.field_service
+field_name: field_service
+entity_type: work_order
+bundle: landscaping
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 0b8daf76-bc2f-41f4-bc85-db3c0c717bdc
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

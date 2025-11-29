@@ -1,0 +1,111 @@
+uuid: e6029203-ef23-478f-b7fb-2b556aacd662
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.grub_prevention
+    - field.field.wo_spraying_conditions.grub_prevention.field_how_applied
+    - field.field.wo_spraying_conditions.grub_prevention.field_soil_moisture
+    - field.field.wo_spraying_conditions.grub_prevention.field_temperature
+    - field.field.wo_spraying_conditions.grub_prevention.field_wind_direction
+    - field.field.wo_spraying_conditions.grub_prevention.field_wind_speed
+    - field.field.wo_spraying_conditions.grub_prevention.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_work_order
+        - created
+        - uid
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: wo_spraying_conditions.grub_prevention.default
+targetEntityType: wo_spraying_conditions
+bundle: grub_prevention
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_how_applied:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_soil_moisture:
+    type: options_buttons
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_temperature:
+    type: number
+    weight: 1
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_wind_direction:
+    type: options_buttons
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_wind_speed:
+    type: options_buttons
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 8
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

@@ -1,0 +1,45 @@
+uuid: 26fc9493-ac60-40b9-b0e3-876e15d8e0e9
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_estimate_notes.note
+    - field.field.wo_estimate_notes.note.field_estimate_note
+    - field.field.wo_estimate_notes.note.field_work_order
+  module:
+    - field_layout
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: wo_estimate_notes.note.default
+targetEntityType: wo_estimate_notes
+bundle: note
+mode: default
+content:
+  field_estimate_note:
+    type: text_textarea
+    weight: 1
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  title: true
+  uid: true

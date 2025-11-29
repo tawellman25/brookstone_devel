@@ -1,0 +1,33 @@
+uuid: 092daa2e-5bef-4847-91fb-7227c1cb591f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.snow_plows
+    - field.storage.equipment.field_status
+    - taxonomy.vocabulary.equipment_status
+  content:
+    - 'taxonomy_term:equipment_status:6932dc23-3094-4fc8-b72a-0b7d34bb1a2b'
+id: equipment.snow_plows.field_status
+field_name: field_status
+entity_type: equipment
+bundle: snow_plows
+label: Status
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 6932dc23-3094-4fc8-b72a-0b7d34bb1a2b
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      equipment_status: equipment_status
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

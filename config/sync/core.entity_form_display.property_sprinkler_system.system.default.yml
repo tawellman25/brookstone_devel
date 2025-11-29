@@ -1,0 +1,173 @@
+uuid: 43761496-9856-4960-93e9-8a573026b115
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_system.system
+    - field.field.property_sprinkler_system.system.field_complexity_level
+    - field.field.property_sprinkler_system.system.field_controler
+    - field.field.property_sprinkler_system.system.field_old_system_id
+    - field.field.property_sprinkler_system.system.field_operation
+    - field.field.property_sprinkler_system.system.field_property
+    - field.field.property_sprinkler_system.system.field_property_system_info
+    - field.field.property_sprinkler_system.system.field_ss_zones
+    - field.field.property_sprinkler_system.system.field_system_name
+    - field.field.property_sprinkler_system.system.field_system_type
+    - field.field.property_sprinkler_system.system.field_total_zones
+    - field.field.property_sprinkler_system.system.field_water_sources
+    - field.field.property_sprinkler_system.system.field_zone_map
+    - image.style.thumbnail
+  module:
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_property
+        - field_property_system_info
+        - path
+        - field_old_system_id
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_controllers:
+      children: {  }
+      label: Controller
+      region: content
+      parent_name: ''
+      weight: 8
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        description: 'You can add controllers once this info is saved.'
+        required_fields: true
+    group_water_sources:
+      children: {  }
+      label: 'Water Sources'
+      region: content
+      parent_name: ''
+      weight: 7
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        description: 'You can add Water Sources once this info is saved.'
+        required_fields: true
+id: property_sprinkler_system.system.default
+targetEntityType: property_sprinkler_system
+bundle: system
+mode: default
+content:
+  field_complexity_level:
+    type: options_buttons
+    weight: 5
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_old_system_id:
+    type: number
+    weight: 11
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_operation:
+    type: options_buttons
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 8
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_property_system_info:
+    type: entity_reference_autocomplete
+    weight: 9
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_system_name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_system_type:
+    type: options_buttons
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_total_zones:
+    type: number
+    weight: 1
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_zone_map:
+    type: image_image
+    weight: 3
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  group_controllers:
+    weight: 9
+    region: content
+    settings: {  }
+    third_party_settings:
+      conditional_fields: {  }
+  group_water_sources:
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings:
+      conditional_fields: {  }
+  path:
+    type: path
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  field_controler: true
+  field_ss_zones: true
+  field_water_sources: true
+  title: true

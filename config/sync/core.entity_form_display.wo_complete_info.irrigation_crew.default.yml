@@ -1,0 +1,158 @@
+uuid: 87e19db2-d6fc-4e63-9bc5-5fb774416785
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_complete_info.irrigation_crew
+    - field.field.wo_complete_info.irrigation_crew.field_canceled
+    - field.field.wo_complete_info.irrigation_crew.field_canceled_why
+    - field.field.wo_complete_info.irrigation_crew.field_date_completed
+    - field.field.wo_complete_info.irrigation_crew.field_how_many_trucks_taken
+    - field.field.wo_complete_info.irrigation_crew.field_signed_off_by
+    - field.field.wo_complete_info.irrigation_crew.field_those_on_crew
+    - field.field.wo_complete_info.irrigation_crew.field_work_order
+    - field.field.wo_complete_info.irrigation_crew.field_work_order_completed
+  module:
+    - conditional_fields
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_canceled
+        - field_canceled_why
+        - field_work_order
+        - field_work_order_completed
+        - uid
+        - created
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: wo_complete_info.irrigation_crew.default
+targetEntityType: wo_complete_info
+bundle: irrigation_crew
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_canceled:
+    type: boolean_checkbox
+    weight: 7
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_canceled_why:
+    type: string_textarea
+    weight: 8
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        bd3c54e4-f4c9-4ed7-a84b-2c5d2787835a:
+          entity_type: wo_complete_info
+          bundle: spray_crew
+          dependee: field_canceled
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_date_completed:
+    type: datetime_timestamp
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_how_many_trucks_taken:
+    type: options_select
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_signed_off_by:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_those_on_crew:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 9
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order_completed:
+    type: boolean_checkbox
+    weight: 10
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 13
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 11
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

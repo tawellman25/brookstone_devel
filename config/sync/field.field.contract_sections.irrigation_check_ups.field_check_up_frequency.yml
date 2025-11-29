@@ -1,0 +1,29 @@
+uuid: 888ece4e-1f15-47df-9bc1-746af705a1f5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_check_ups
+    - field.storage.contract_sections.field_check_up_frequency
+    - taxonomy.vocabulary.irrigation_check_up_frequency
+id: contract_sections.irrigation_check_ups.field_check_up_frequency
+field_name: field_check_up_frequency
+entity_type: contract_sections
+bundle: irrigation_check_ups
+label: 'How often would you like to check your system?'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      irrigation_check_up_frequency: irrigation_check_up_frequency
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

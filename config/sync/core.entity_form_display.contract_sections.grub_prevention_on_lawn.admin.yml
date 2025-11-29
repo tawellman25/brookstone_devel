@@ -1,0 +1,108 @@
+uuid: f04b5382-80ca-4c7c-b0dc-952cec56cf8a
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.contract_sections.admin
+    - eck.eck_type.contract_sections.grub_prevention_on_lawn
+    - field.field.contract_sections.grub_prevention_on_lawn.field_chemicals_used
+    - field.field.contract_sections.grub_prevention_on_lawn.field_client_notes
+    - field.field.contract_sections.grub_prevention_on_lawn.field_contract
+    - field.field.contract_sections.grub_prevention_on_lawn.field_do_you_want
+    - field.field.contract_sections.grub_prevention_on_lawn.field_estimate
+    - field.field.contract_sections.grub_prevention_on_lawn.field_last_year
+    - field.field.contract_sections.grub_prevention_on_lawn.field_pounds_used
+    - field.field.contract_sections.grub_prevention_on_lawn.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_chemicals_used
+        - field_pounds_used
+        - field_contract
+      label: Admin
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: details_sidebar
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+        weight: 0
+id: contract_sections.grub_prevention_on_lawn.admin
+targetEntityType: contract_sections
+bundle: grub_prevention_on_lawn
+mode: admin
+content:
+  field_chemicals_used:
+    type: options_select
+    weight: 5
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_client_notes:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_do_you_want:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_estimate:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_year:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: false
+    third_party_settings: {  }
+  field_pounds_used:
+    type: number
+    weight: 6
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_work_order: true
+  path: true
+  uid: true

@@ -1,0 +1,49 @@
+uuid: 27f84087-6bae-45e4-9220-5e67da639425
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.equipment_types.field_banner_images
+    - field.field.taxonomy_term.equipment_types.field_common_name
+    - field.field.taxonomy_term.equipment_types.field_description
+    - field.field.taxonomy_term.equipment_types.field_icon
+    - field.field.taxonomy_term.equipment_types.field_main_image
+    - image.style.medium
+    - taxonomy.vocabulary.equipment_types
+  module:
+    - image
+    - text
+id: taxonomy_term.equipment_types.default
+targetEntityType: taxonomy_term
+bundle: equipment_types
+mode: default
+content:
+  description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_icon:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: medium
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  field_banner_images: true
+  field_common_name: true
+  field_main_image: true

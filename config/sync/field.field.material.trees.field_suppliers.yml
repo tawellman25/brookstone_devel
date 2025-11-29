@@ -1,0 +1,29 @@
+uuid: b13361b1-7a2c-4631-8299-4397dad44271
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.trees
+    - eck.eck_type.supplier.supplier
+    - field.storage.material.field_suppliers
+id: material.trees.field_suppliers
+field_name: field_suppliers
+entity_type: material
+bundle: trees
+label: Supplier
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:supplier'
+  handler_settings:
+    target_bundles:
+      supplier: supplier
+    sort:
+      field: field_supplier_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

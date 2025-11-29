@@ -1,0 +1,33 @@
+uuid: d008b011-ada3-4379-838c-e030f749fb58
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.snow_removal
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:7faed644-9aa8-4159-9511-d315398d90a4'
+id: work_order.snow_removal.field_service
+field_name: field_service
+entity_type: work_order
+bundle: snow_removal
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 7faed644-9aa8-4159-9511-d315398d90a4
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,59 @@
+uuid: 2144a046-4d07-493a-824a-2daad1a7a41b
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: WjGIgIWD4-PK_EEwPA02MVpl68U6g0_NUXNFX2YD8rA
+id: react_on_two_events
+label: 'React on two events'
+events:
+  -
+    event_name: 'rules_entity_insert:node'
+  -
+    event_name: 'rules_entity_update:node'
+description: 'This Rule reacts on two different events and performs the same action for each.'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: b0114bad-7741-4a8f-8211-028f1e50a732
+  conditions:
+    id: rules_and
+    uuid: 1743c0cc-372d-4709-a713-6b4ef56219e5
+    conditions:
+      -
+        id: rules_condition
+        uuid: 6ce26e78-a5a6-4afc-8a8e-477d72cf6a4c
+        context_values:
+          types:
+            - article
+        context_mapping:
+          node: node
+        context_processors:
+          types:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        condition_id: rules_node_is_of_type
+        negate: false
+  actions:
+    id: rules_action_set
+    uuid: 6e947724-c4a5-4827-9e2f-f66d02686808
+    actions:
+      -
+        id: rules_action
+        uuid: 4131ec82-690b-4de1-b8a2-1648b5a7c35b
+        context_values:
+          message: 'New or Updated ARTICLE detected by Rules!'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message

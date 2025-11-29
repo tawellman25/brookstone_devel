@@ -1,0 +1,85 @@
+uuid: 29d68519-17cb-4cd8-bddc-6066350da39a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property.included_address
+    - field.field.property.included_address.field_address
+    - field.field.property.included_address.field_associated_property
+    - field.field.property.included_address.field_unit
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_twocol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_associated_property
+        - created
+        - uid
+      label: 'Office Administation'
+      region: bottom
+      parent_name: ''
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: property.included_address.default
+targetEntityType: property
+bundle: included_address
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 6
+    region: bottom
+    settings: {  }
+    third_party_settings: {  }
+  field_address:
+    type: string_textfield
+    weight: 0
+    region: first
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_associated_property:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: bottom
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_unit:
+    type: string_textfield
+    weight: 1
+    region: second
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: bottom
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

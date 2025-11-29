@@ -1,0 +1,29 @@
+uuid: a28198f4-b73d-4055-96dd-c751c9a5dd95
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.cooley_spruce_gall_treatment
+    - eck.eck_type.work_order.cooley_spruce_gall
+    - field.storage.contract_sections.field_work_order
+id: contract_sections.cooley_spruce_gall_treatment.field_work_order
+field_name: field_work_order
+entity_type: contract_sections
+bundle: cooley_spruce_gall_treatment
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      cooley_spruce_gall: cooley_spruce_gall
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: aerating
+field_type: entity_reference

@@ -1,0 +1,33 @@
+uuid: 024be22f-b2f7-4bb6-9fc4-adb183579cb1
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.tree_spraying
+    - field.storage.wo_spraying_conditions.field_method_of_application
+    - taxonomy.vocabulary.emergence_types
+  content:
+    - 'taxonomy_term:emergence_types:65d8b586-49cc-4bd9-a4cf-c1e8c4810a63'
+id: wo_spraying_conditions.tree_spraying.field_method_of_application
+field_name: field_method_of_application
+entity_type: wo_spraying_conditions
+bundle: tree_spraying
+label: 'Method of Application'
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: 65d8b586-49cc-4bd9-a4cf-c1e8c4810a63
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      emergence_types: emergence_types
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

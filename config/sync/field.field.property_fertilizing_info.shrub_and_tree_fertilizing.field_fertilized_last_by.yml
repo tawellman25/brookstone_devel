@@ -1,0 +1,38 @@
+uuid: 83ed2df5-dea4-40f9-b3ad-569932caf90b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_fertilizing_info.shrub_and_tree_fertilizing
+    - field.storage.property_fertilizing_info.field_fertilized_last_by
+id: property_fertilizing_info.shrub_and_tree_fertilizing.field_fertilized_last_by
+field_name: field_fertilized_last_by
+entity_type: property_fertilizing_info
+bundle: shrub_and_tree_fertilizing
+label: 'Last Fertilized By'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        teammates: teammates
+        site_admin: '0'
+        administration: '0'
+        administrator: '0'
+        supervisor: '0'
+        client: '0'
+        user: '0'
+        supplier: '0'
+    include_anonymous: true
+field_type: entity_reference

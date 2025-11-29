@@ -1,0 +1,241 @@
+uuid: 0fcf802e-98be-462c-a861-5452990055d4
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.base_field_override.material.decorative_rock.uid
+    - eck.eck_type.material.decorative_rock
+    - field.field.material.decorative_rock.field_cost_integer
+    - field.field.material.decorative_rock.field_description
+    - field.field.material.decorative_rock.field_est_wt_per_yard
+    - field.field.material.decorative_rock.field_lead_time
+    - field.field.material.decorative_rock.field_name
+    - field.field.material.decorative_rock.field_price
+    - field.field.material.decorative_rock.field_price_updated
+    - field.field.material.decorative_rock.field_rock_type
+    - field.field.material.decorative_rock.field_supplier
+    - field.field.material.decorative_rock.field_yard_per_ton
+  module:
+    - eck
+    - feeds_log
+    - feeds_tamper
+third_party_settings:
+  feeds_log:
+    status: true
+    operations:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+      cleaned: cleaned
+    items:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+    source: true
+  feeds_tamper:
+    tampers: {  }
+label: 'Decorative Rock Entities'
+id: decorative_rock_entities
+description: 'This is a feed that pulls in the Decorative Rock worksheet entries.'
+help: ''
+import_period: 3600
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:material'
+processor_configuration:
+  values:
+    type: decorative_rock
+  langcode: en
+  insert_new: 1
+  update_existing: 0
+  update_non_existent: _keep
+  skip_hash_check: false
+  skip_validation: false
+  skip_validation_types: {  }
+  authorize: true
+  revision: false
+  expire: -1
+  owner_feed_author: false
+  owner_id: 1
+custom_sources:
+  name:
+    value: name
+    label: name
+    machine_name: name
+    type: csv
+  type:
+    value: type
+    label: type
+    machine_name: type
+    type: csv
+  supplier_id:
+    value: supplier_id
+    label: supplier_id
+    machine_name: supplier_id
+    type: csv
+  description:
+    value: description
+    label: description
+    machine_name: description
+    type: csv
+  '':
+    value: ''
+    label: ''
+    machine_name: ''
+    type: blank
+  wt_per_ton:
+    value: wt_per_ton
+    label: wt_per_ton
+    machine_name: wt_per_ton
+    type: csv
+  yard_per_ton:
+    value: yard_per_ton
+    label: yard_per_ton
+    machine_name: yard_per_ton
+    type: csv
+  cost:
+    value: cost
+    label: cost
+    machine_name: cost
+    type: csv
+  '149_5':
+    value: '149.5'
+    label: '149.5'
+    machine_name: '149_5'
+    type: csv
+  1:
+    value: '1'
+    label: '1'
+    machine_name: '1'
+    type: blank
+  'yes':
+    value: 'Yes'
+    label: 'Yes'
+    machine_name: 'yes'
+    type: blank
+  2:
+    value: '2'
+    label: '2'
+    machine_name: '2'
+    type: blank
+  01_01_2025_05_00_00pm:
+    value: '01/01/2025 05:00:00PM'
+    label: '01/01/2025 05:00:00PM'
+    machine_name: 01_01_2025_05_00_00pm
+    type: blank
+  '2025_01_01':
+    value: '2025-01-01'
+    label: '2025-01-01'
+    machine_name: '2025_01_01'
+    type: blank
+  price:
+    value: price
+    label: price
+    machine_name: price
+    type: blank
+  type_id:
+    value: type_id
+    label: type_id
+    machine_name: type_id
+    type: blank
+  1735750800:
+    value: '1735750800'
+    label: '1735750800'
+    machine_name: '1735750800'
+    type: blank
+mappings:
+  -
+    target: field_name
+    map:
+      value: name
+    settings:
+      language: null
+    unique:
+      value: 1
+  -
+    target: field_rock_type
+    map:
+      target_id: type_id
+    settings:
+      language: ''
+      reference_by: tid
+      autocreate: 0
+      autocreate_bundle: rock_types
+  -
+    target: field_supplier
+    map:
+      target_id: supplier_id
+    settings:
+      language: ''
+      reference_by: uid
+      autocreate: 0
+      autocreate_bundle: false
+  -
+    target: field_description
+    map:
+      value: description
+      summary: ''
+    settings:
+      language: ''
+      format: full_html
+  -
+    target: field_est_wt_per_yard
+    map:
+      value: wt_per_ton
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_yard_per_ton
+    map:
+      value: yard_per_ton
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_cost_integer
+    map:
+      value: cost
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_price
+    map:
+      value: price
+    settings:
+      language: ''
+    unique: {  }
+  -
+    target: uid
+    map:
+      target_id: '1'
+    settings:
+      language: ''
+      reference_by: uid
+      autocreate: 0
+      autocreate_bundle: false
+  -
+    target: field_price_updated
+    map:
+      value: 'yes'
+    settings:
+      language: ''
+  -
+    target: field_lead_time
+    map:
+      value: '2'
+    settings:
+      language: null
+    unique: {  }

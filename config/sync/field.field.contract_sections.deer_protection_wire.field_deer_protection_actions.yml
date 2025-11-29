@@ -1,0 +1,29 @@
+uuid: 62bb9e0e-2267-492b-a4cf-c9db7f2fa5c6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.deer_protection_wire
+    - field.storage.contract_sections.field_deer_protection_actions
+    - taxonomy.vocabulary.deer_protection
+id: contract_sections.deer_protection_wire.field_deer_protection_actions
+field_name: field_deer_protection_actions
+entity_type: contract_sections
+bundle: deer_protection_wire
+label: 'Which actions? '
+description: 'You can pick either or both.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      deer_protection: deer_protection
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

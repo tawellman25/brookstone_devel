@@ -1,0 +1,25 @@
+uuid: c497edd5-c408-45ab-b519-47bedad91663
+langcode: en
+status: true
+dependencies:
+  module:
+    - user
+id: teammate_fertilizing_landing_page
+label: 'Teammate Fertilizing Landing Page'
+description: 'This is the landing page for Teammate Fertilizing Reports'
+use_admin_theme: false
+path: /teammates/work-orders/fertilizing
+access_logic: and
+access_conditions:
+  -
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      administrator: administrator
+      site_admin: site_admin
+      administration: administration
+      supervisor: supervisor
+      teammates: teammates
+parameters: {  }

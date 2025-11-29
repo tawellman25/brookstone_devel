@@ -1,0 +1,35 @@
+uuid: 3c73c502-b1b4-4663-9591-fea5973759ad
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.fungicide
+    - eck.eck_type.manufacturer.manufacturer
+    - field.storage.chemical.field_manufacturer
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: chemical.fungicide.field_manufacturer
+field_name: field_manufacturer
+entity_type: chemical
+bundle: fungicide
+label: Manufacturer
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:manufacturer'
+  handler_settings:
+    target_bundles:
+      manufacturer: manufacturer
+    sort:
+      field: field_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

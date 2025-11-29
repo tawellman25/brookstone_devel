@@ -1,0 +1,39 @@
+uuid: cd1702a0-8a74-4a63-aee4-7d7fea711904
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: 2ab-JI4_bItqdcvdF1yG2lSf5Kt_wwrSuH7RGyAnlh0
+id: set_a_role_for_new_users
+label: 'Set a role for new users'
+events:
+  -
+    event_name: 'rules_entity_insert:user'
+description: "Issue #3059008-4: Assign the 'granted_by_rules' role to new users."
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 36de9619-1401-4b21-a651-d3927c5b8dac
+  conditions:
+    id: rules_and
+    uuid: 416e90b0-d24c-4f37-8272-de0ecee5c375
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 2933681a-a079-496d-bc79-f27ff53144eb
+    actions:
+      -
+        id: rules_action
+        uuid: 38e8a3bb-0470-427f-80e1-53f6a703e8bf
+        context_values:
+          roles:
+            - granted_by_rules
+        context_mapping:
+          user: user
+        context_processors:
+          roles:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_user_role_add

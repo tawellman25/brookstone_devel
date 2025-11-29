@@ -1,0 +1,55 @@
+uuid: 6a56402b-b7f5-40aa-93ca-7f8d98a8dfcd
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.sprayers
+    - field.field.equipment.sprayers.field_pictures
+    - image.style.thumbnail
+  module:
+    - field_layout
+    - image
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: equipment.sprayers.default
+targetEntityType: equipment
+bundle: sprayers
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_pictures:
+    type: image_image
+    weight: 11
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: -5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

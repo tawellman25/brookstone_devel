@@ -1,0 +1,137 @@
+uuid: 5eda6c96-c16e-4822-9b41-db583da4e077
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.city.city
+    - field.field.city.city.field_banner_image
+    - field.field.city.city.field_city_description
+    - field.field.city.city.field_city_name
+    - field.field.city.city.field_county
+    - field.field.city.city.field_state
+    - field.field.city.city.field_type
+    - views.view.city_zipcodes
+  module:
+    - layout_builder
+    - layout_discovery
+    - text
+    - views
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Main Content'
+          context_mapping: {  }
+          column_widths: 75-25
+        components:
+          3538fd1f-7aa0-46e1-ad1b-6d4f775e6f4d:
+            uuid: 3538fd1f-7aa0-46e1-ad1b-6d4f775e6f4d
+            region: first
+            configuration:
+              id: 'field_block:city:city:field_city_description'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: text_default
+                label: hidden
+                settings: {  }
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          b0d041d2-571d-43fa-8717-72d30e7be9b1:
+            uuid: b0d041d2-571d-43fa-8717-72d30e7be9b1
+            region: second
+            configuration:
+              id: 'views_block:city_zipcodes-block_1'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 8
+            additional: {  }
+          e04d9cba-ac5c-4c31-a6d7-b861a53c1155:
+            uuid: e04d9cba-ac5c-4c31-a6d7-b861a53c1155
+            region: second
+            configuration:
+              id: 'field_block:city:city:field_state'
+              label: State
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: entity_reference_label
+                label: hidden
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 6
+            additional: {  }
+          458794f4-45b6-434c-b4b9-3be82dd0f9c6:
+            uuid: 458794f4-45b6-434c-b4b9-3be82dd0f9c6
+            region: second
+            configuration:
+              id: 'field_block:city:city:field_county'
+              label: County
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: entity_reference_label
+                label: hidden
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 7
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components: {  }
+        third_party_settings: {  }
+id: city.city.default
+targetEntityType: city
+bundle: city
+mode: default
+content:
+  field_city_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_county:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_state:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  field_banner_image: true
+  field_city_name: true
+  field_type: true
+  title: true

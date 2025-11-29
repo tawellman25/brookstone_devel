@@ -1,0 +1,27 @@
+uuid: fdaccb64-381d-4db3-baf8-981eef13eec2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.weed_pulling
+    - field.storage.work_order.field_work_todo_description
+    - filter.format.full_html
+  module:
+    - text
+id: work_order.weed_pulling.field_work_todo_description
+field_name: field_work_todo_description
+entity_type: work_order
+bundle: weed_pulling
+label: 'Work To Be Done'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: '<p>[current-date:html_year] - Pull Weeds in shrubs and beds as needed.</p>'
+    format: full_html
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

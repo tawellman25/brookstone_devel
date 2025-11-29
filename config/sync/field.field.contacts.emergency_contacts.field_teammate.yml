@@ -1,0 +1,38 @@
+uuid: 043033aa-94e4-4252-a3ec-afd76cb978f5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.emergency_contacts
+    - field.storage.contacts.field_teammate
+id: contacts.emergency_contacts.field_teammate
+field_name: field_teammate
+entity_type: contacts
+bundle: emergency_contacts
+label: Teammate
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        teammates: teammates
+        administrator: '0'
+        site_admin: '0'
+        site_assistant: '0'
+        administration: '0'
+        supervisor: '0'
+        client: '0'
+        user: '0'
+    include_anonymous: false
+field_type: entity_reference

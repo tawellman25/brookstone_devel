@@ -1,0 +1,25 @@
+uuid: 890a31b3-b4e3-459a-88f7-48274cf0d617
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.landscaping
+    - field.storage.sop.field_sop_owner
+id: sop.landscaping.field_sop_owner
+field_name: field_sop_owner
+entity_type: sop
+bundle: landscaping
+label: 'Responsible Teammate'
+description: '[current-user:teammate_profile:field_first_name], this is the teammate responsible for maintaining this SOP.'
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

@@ -1,0 +1,22 @@
+uuid: 51dada23-918e-4a45-b7bf-b74c45365514
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: wo_snow_removal_tasks_paths
+label: 'WO Snow Removal Tasks Paths'
+type: 'canonical_entities:wo_tasks_list'
+pattern: '[wo_tasks_list:field_work_order:entity:url:path]/tasks'
+selection_criteria:
+  95fade7a-9bc7-4631-ba6d-09b2f71b3b76:
+    id: 'entity_bundle:wo_tasks_list'
+    negate: false
+    uuid: 95fade7a-9bc7-4631-ba6d-09b2f71b3b76
+    context_mapping:
+      wo_tasks_list: wo_tasks_list
+    bundles:
+      snow_removal: snow_removal
+selection_logic: and
+weight: 30
+relationships: {  }

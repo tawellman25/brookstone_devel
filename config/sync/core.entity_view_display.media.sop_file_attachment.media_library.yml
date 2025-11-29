@@ -1,0 +1,34 @@
+uuid: 854da63c-cb33-4ce2-aa57-a66891303db9
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.media.media_library
+    - field.field.media.sop_file_attachment.field_media_file_1
+    - field.field.media.sop_file_attachment.field_sop
+    - image.style.medium
+    - media.type.sop_file_attachment
+  module:
+    - image
+id: media.sop_file_attachment.media_library
+targetEntityType: media
+bundle: sop_file_attachment
+mode: media_library
+content:
+  thumbnail:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: medium
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  created: true
+  field_media_file_1: true
+  field_sop: true
+  name: true
+  uid: true

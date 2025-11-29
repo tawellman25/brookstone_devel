@@ -1,0 +1,44 @@
+uuid: 5fe50aac-cf9f-4b39-bc09-fa8306650632
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.employment.notes
+    - field.storage.employment.field_employee
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: employment.notes.field_employee
+field_name: field_employee
+entity_type: employment
+bundle: notes
+label: Employee
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        teammates: teammates
+        site_admin: '0'
+        administration: '0'
+        administrator: '0'
+        supervisor: '0'
+        client: '0'
+        user: '0'
+        supplier: '0'
+    include_anonymous: false
+field_type: entity_reference

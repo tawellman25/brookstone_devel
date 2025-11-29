@@ -1,0 +1,529 @@
+uuid: 440ab8a5-21d0-40a2-9f2f-951cb526f5f4
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.contract_sections.admin
+    - core.entity_form_mode.contracts.admin
+    - eck.eck_type.contracts.residential
+    - field.field.contracts.residential.field_aerating_of_lawn
+    - field.field.contracts.residential.field_aspen_twig_gall_control
+    - field.field.contracts.residential.field_christmas_decorations
+    - field.field.contracts.residential.field_client_entered_date
+    - field.field.contracts.residential.field_client_signature
+    - field.field.contracts.residential.field_contract_status
+    - field.field.contracts.residential.field_contract_submitted
+    - field.field.contracts.residential.field_contract_year
+    - field.field.contracts.residential.field_cooley_spruce_gall_treatme
+    - field.field.contracts.residential.field_deciduous_bore_treatment
+    - field.field.contracts.residential.field_deer_protection_wire_for_t
+    - field.field.contracts.residential.field_dethatching_of_lawn_areas
+    - field.field.contracts.residential.field_dormant_oil_spray
+    - field.field.contracts.residential.field_fall_cleanup
+    - field.field.contracts.residential.field_fertilizing_trees_shrubs
+    - field.field.contracts.residential.field_grub_prevention_on_lawn
+    - field.field.contracts.residential.field_ip_address_of_submitter
+    - field.field.contracts.residential.field_ips_beetle_on_pinion_pine
+    - field.field.contracts.residential.field_irrigation_check_ups
+    - field.field.contracts.residential.field_irrigation_shut_down
+    - field.field.contracts.residential.field_irrigation_start_up
+    - field.field.contracts.residential.field_lawn_fertilizing_broadleaf
+    - field.field.contracts.residential.field_lawn_mowing_and_trimming
+    - field.field.contracts.residential.field_misc_services
+    - field.field.contracts.residential.field_old_contract_id
+    - field.field.contracts.residential.field_old_nid
+    - field.field.contracts.residential.field_paper_contract_pdf
+    - field.field.contracts.residential.field_pre_emergent
+    - field.field.contracts.residential.field_property
+    - field.field.contracts.residential.field_property_owner
+    - field.field.contracts.residential.field_spring_cleanup
+    - field.field.contracts.residential.field_summer_hedge_shrub_pruning
+    - field.field.contracts.residential.field_trunk_bore_prevention
+    - field.field.contracts.residential.field_weed_spraying_of_landscape
+    - field.field.contracts.residential.field_weed_spraying_of_misc_area
+    - field.field.contracts.residential.field_weeds_in_shrubs_removal
+  module:
+    - field_group
+    - field_layout
+    - file
+    - inline_entity_form
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_customer_entered_info:
+      children:
+        - field_client_signature
+        - field_client_entered_date
+        - field_contract_submitted
+        - field_ip_address_of_submitter
+      label: 'Customer Entered Info'
+      region: content
+      parent_name: ''
+      weight: 28
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_office_administation:
+      children:
+        - field_contract_status
+        - created
+        - uid
+        - field_old_contract_id
+        - field_old_nid
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 29
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_misc_services:
+      children:
+        - field_misc_services
+        - field_weeds_in_shrubs_removal
+      label: 'Misc Services'
+      region: content
+      parent_name: ''
+      weight: 27
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: contracts.residential.admin
+targetEntityType: contracts
+bundle: residential
+mode: admin
+content:
+  created:
+    type: datetime_timestamp
+    weight: 28
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_aerating_of_lawn:
+    type: inline_entity_form_simple
+    weight: 16
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_aspen_twig_gall_control:
+    type: inline_entity_form_simple
+    weight: 5
+    region: content
+    settings:
+      form_mode: client
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: false
+      revision: false
+    third_party_settings: {  }
+  field_christmas_decorations:
+    type: inline_entity_form_simple
+    weight: 26
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_client_entered_date:
+    type: datetime_timestamp
+    weight: 26
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_client_signature:
+    type: string_textfield
+    weight: 25
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract_status:
+    type: options_buttons
+    weight: 27
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_contract_submitted:
+    type: boolean_checkbox
+    weight: 28
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_contract_year:
+    type: number
+    weight: 0
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_cooley_spruce_gall_treatme:
+    type: inline_entity_form_simple
+    weight: 11
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_deciduous_bore_treatment:
+    type: inline_entity_form_simple
+    weight: 10
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_deer_protection_wire_for_t:
+    type: inline_entity_form_simple
+    weight: 25
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_dethatching_of_lawn_areas:
+    type: inline_entity_form_simple
+    weight: 17
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_dormant_oil_spray:
+    type: inline_entity_form_simple
+    weight: 7
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_fall_cleanup:
+    type: inline_entity_form_simple
+    weight: 21
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_fertilizing_trees_shrubs:
+    type: inline_entity_form_simple
+    weight: 4
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_grub_prevention_on_lawn:
+    type: inline_entity_form_simple
+    weight: 18
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_ip_address_of_submitter:
+    type: string_textfield
+    weight: 29
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_ips_beetle_on_pinion_pine:
+    type: inline_entity_form_simple
+    weight: 8
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_irrigation_check_ups:
+    type: inline_entity_form_simple
+    weight: 23
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_irrigation_shut_down:
+    type: inline_entity_form_simple
+    weight: 24
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_irrigation_start_up:
+    type: inline_entity_form_simple
+    weight: 22
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_lawn_fertilizing_broadleaf:
+    type: inline_entity_form_simple
+    weight: 12
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_lawn_mowing_and_trimming:
+    type: inline_entity_form_simple
+    weight: 15
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_misc_services:
+    type: string_textfield
+    weight: 26
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_old_contract_id:
+    type: number
+    weight: 30
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_old_nid:
+    type: number
+    weight: 31
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_paper_contract_pdf:
+    type: file_generic
+    weight: 1
+    region: content
+    settings:
+      progress_indicator: throbber
+    third_party_settings: {  }
+  field_pre_emergent:
+    type: inline_entity_form_simple
+    weight: 6
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_property_owner:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_spring_cleanup:
+    type: inline_entity_form_simple
+    weight: 19
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_summer_hedge_shrub_pruning:
+    type: inline_entity_form_simple
+    weight: 20
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_trunk_bore_prevention:
+    type: inline_entity_form_simple
+    weight: 9
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_weed_spraying_of_landscape:
+    type: inline_entity_form_simple
+    weight: 13
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_weed_spraying_of_misc_area:
+    type: inline_entity_form_simple
+    weight: 14
+    region: content
+    settings:
+      form_mode: admin
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      collapsible: true
+      collapsed: true
+      revision: false
+    third_party_settings: {  }
+  field_weeds_in_shrubs_removal:
+    type: options_select
+    weight: 27
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 29
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  path: true
+  title: true

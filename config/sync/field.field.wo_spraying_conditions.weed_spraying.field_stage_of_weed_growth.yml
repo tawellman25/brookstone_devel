@@ -1,0 +1,29 @@
+uuid: 47bb1d4c-8db4-41f5-aec1-936cc7e6cb89
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.weed_spraying
+    - field.storage.wo_spraying_conditions.field_stage_of_weed_growth
+    - taxonomy.vocabulary.spraying_stages_of_weed_growth
+id: wo_spraying_conditions.weed_spraying.field_stage_of_weed_growth
+field_name: field_stage_of_weed_growth
+entity_type: wo_spraying_conditions
+bundle: weed_spraying
+label: 'Stage of Weed Growth'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      spraying_stages_of_weed_growth: spraying_stages_of_weed_growth
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: fbb2c95c-59bd-4dd5-8ca2-32622c571218
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.herbicide
+    - eck.eck_type.supplier.supplier
+    - field.storage.chemical.field_supplier
+id: chemical.herbicide.field_supplier
+field_name: field_supplier
+entity_type: chemical
+bundle: herbicide
+label: Supplier
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:supplier'
+  handler_settings:
+    target_bundles:
+      supplier: supplier
+    sort:
+      field: field_supplier_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

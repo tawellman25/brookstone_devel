@@ -1,0 +1,207 @@
+uuid: 0de88522-2c82-4a7c-9c24-9258ce84a92f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_ss_sources.domestic_source
+    - field.field.property_ss_sources.domestic_source.field_property_ss_system
+    - field.field.property_ss_sources.domestic_source.field_shut_off_location_descript
+    - field.field.property_ss_sources.domestic_source.field_source_size
+    - field.field.property_ss_sources.domestic_source.field_ss_backflow
+    - field.field.property_ss_sources.domestic_source.field_ss_backflow_location
+    - field.field.property_ss_sources.domestic_source.field_ss_backflow_photos
+    - field.field.property_ss_sources.domestic_source.field_ss_key_needed
+    - field.field.property_ss_sources.domestic_source.field_ss_shut_off_location
+    - field.field.property_ss_sources.domestic_source.field_ss_shut_off_location_pic
+    - field.field.property_ss_sources.domestic_source.field_ss_shut_off_notes
+    - field.field.property_ss_sources.domestic_source.field_ss_source_name
+    - field.field.property_ss_sources.domestic_source.field_ss_source_valve
+    - image.style.thumbnail
+  module:
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_shut_off_information:
+      children:
+        - field_ss_shut_off_location
+        - field_shut_off_location_descript
+        - field_source_size
+        - field_ss_source_valve
+        - field_ss_key_needed
+        - field_ss_shut_off_notes
+        - field_ss_shut_off_location_pic
+      label: 'Shut Off Information'
+      region: content
+      parent_name: group_water_source_info
+      weight: 3
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+    group_backflow_prevention:
+      children:
+        - field_ss_backflow
+        - field_ss_backflow_location
+        - field_ss_backflow_photos
+      label: 'Backflow Prevention'
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+    group_office_admin:
+      children:
+        - field_property_ss_system
+        - path
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_water_source_info:
+      children:
+        - group_shut_off_information
+      label: 'Water Source Info'
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+        required_fields: true
+id: property_ss_sources.domestic_source.default
+targetEntityType: property_ss_sources
+bundle: domestic_source
+mode: default
+content:
+  field_property_ss_system:
+    type: entity_reference_autocomplete
+    weight: 31
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_shut_off_location_descript:
+    type: string_textfield
+    weight: 8
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_source_size:
+    type: options_select
+    weight: 9
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_ss_backflow:
+    type: options_select
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_ss_backflow_location:
+    type: string_textfield
+    weight: 7
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_ss_backflow_photos:
+    type: image_image
+    weight: 8
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_ss_key_needed:
+    type: options_select
+    weight: 11
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_ss_shut_off_location:
+    type: options_select
+    weight: 7
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_ss_shut_off_location_pic:
+    type: image_image
+    weight: 13
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_ss_shut_off_notes:
+    type: string_textfield
+    weight: 12
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_ss_source_name:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_ss_source_valve:
+    type: options_select
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 32
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

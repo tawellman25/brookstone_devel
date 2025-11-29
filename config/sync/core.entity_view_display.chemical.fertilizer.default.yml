@@ -1,0 +1,304 @@
+uuid: 11aa664e-6442-4e2f-b534-8254211db7e5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.fertilizer
+    - field.field.chemical.fertilizer.field_applications
+    - field.field.chemical.fertilizer.field_banner_image
+    - field.field.chemical.fertilizer.field_description
+    - field.field.chemical.fertilizer.field_epa_number
+    - field.field.chemical.fertilizer.field_fertilizer_rate
+    - field.field.chemical.fertilizer.field_iron_fe
+    - field.field.chemical.fertilizer.field_label_pic
+    - field.field.chemical.fertilizer.field_logo
+    - field.field.chemical.fertilizer.field_manufacturer
+    - field.field.chemical.fertilizer.field_material_cost
+    - field.field.chemical.fertilizer.field_material_form
+    - field.field.chemical.fertilizer.field_msds_sheet_update_link
+    - field.field.chemical.fertilizer.field_name
+    - field.field.chemical.fertilizer.field_nitrogen
+    - field.field.chemical.fertilizer.field_organic
+    - field.field.chemical.fertilizer.field_phosphate_p_
+    - field.field.chemical.fertilizer.field_potassium_k_
+    - field.field.chemical.fertilizer.field_product_label_file
+    - field.field.chemical.fertilizer.field_safety_data_sheet
+    - field.field.chemical.fertilizer.field_signal_word
+    - field.field.chemical.fertilizer.field_sulfur
+    - field.field.chemical.fertilizer.field_supplier
+    - field.field.chemical.fertilizer.field_unit_of_measure_fertilizer
+    - image.style.max_1300x1300
+    - image.style.max_325x325
+  module:
+    - colorbox
+    - field_group
+    - file
+    - image
+    - link
+    - options
+    - text
+third_party_settings:
+  field_group:
+    group_fertilizer_composition:
+      children:
+        - field_nitrogen
+        - field_phosphate_p_
+        - field_potassium_k_
+        - field_sulfur
+        - field_iron_fe
+        - field_organic
+        - field_unit_of_measure_fertilizer
+        - field_material_form
+      label: 'Fertilizer Composition'
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+    group_safety_info:
+      children:
+        - field_epa_number
+        - field_msds_sheet_update_link
+        - field_product_label_file
+        - field_safety_data_sheet
+      label: 'Safety Info'
+      parent_name: ''
+      region: content
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+id: chemical.fertilizer.default
+targetEntityType: chemical
+bundle: fertilizer
+mode: default
+content:
+  field_applications:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_banner_image:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_epa_number:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_fertilizer_rate:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_iron_fe:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_label_pic:
+    type: colorbox
+    label: hidden
+    settings:
+      colorbox_image_style: max_2600x2600
+      colorbox_gallery: post
+      colorbox_gallery_custom: ''
+      colorbox_caption: auto
+      colorbox_caption_custom: ''
+      colorbox_node_style: max_1300x1300
+      colorbox_node_style_first: max_1300x1300
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_logo:
+    type: colorbox
+    label: hidden
+    settings:
+      colorbox_image_style: max_1300x1300
+      colorbox_gallery: post
+      colorbox_gallery_custom: ''
+      colorbox_caption: auto
+      colorbox_caption_custom: ''
+      colorbox_node_style: max_325x325
+      colorbox_node_style_first: max_325x325
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_manufacturer:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_material_cost:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_material_form:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_msds_sheet_update_link:
+    type: link
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_name:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_nitrogen:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_organic:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_phosphate_p_:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_potassium_k_:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_product_label_file:
+    type: file_default
+    label: above
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_safety_data_sheet:
+    type: file_default
+    label: above
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_signal_word:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_sulfur:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_supplier:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_unit_of_measure_fertilizer:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+hidden:
+  changed: true
+  created: true
+  title: true

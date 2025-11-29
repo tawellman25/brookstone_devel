@@ -1,0 +1,214 @@
+uuid: 45b129e5-6df4-4ee3-b42a-7fd4b247a439
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.office_administration
+    - field.field.sop.office_administration.field_name
+    - field.field.sop.office_administration.field_parent_sop
+    - field.field.sop.office_administration.field_sop__kpis
+    - field.field.sop.office_administration.field_sop_code
+    - field.field.sop.office_administration.field_sop_last_reviewed
+    - field.field.sop.office_administration.field_sop_owner
+    - field.field.sop.office_administration.field_sop_purpose
+    - field.field.sop.office_administration.field_sop_responsibilities
+    - field.field.sop.office_administration.field_sop_scope
+    - field.field.sop.office_administration.field_sop_status
+    - field.field.sop.office_administration.field_sop_steps
+    - field.field.sop.office_administration.field_sop_tools_and_resources
+    - field.field.sop.office_administration.field_sop_version
+  module:
+    - datetime
+    - field_group
+    - options
+    - text
+    - user
+third_party_settings:
+  field_group:
+    group_attachments:
+      children:
+        - sop_file_attachments_entity_view_1
+      label: Attachments
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+    group_creation_details:
+      children:
+        - field_teammate_manual_pages
+        - field_sop_owner
+        - field_sop_status
+        - field_sop_version
+        - field_sop_last_reviewed
+        - uid
+        - created
+        - changed
+      label: 'Creation Details'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+id: sop.office_administration.default
+targetEntityType: sop
+bundle: office_administration
+mode: default
+content:
+  changed:
+    type: timestamp
+    label: above
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_parent_sop:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 19
+    region: content
+  field_sop__kpis:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_sop_code:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_sop_last_reviewed:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_sop_owner:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_sop_purpose:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_sop_responsibilities:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_sop_scope:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_sop_status:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_sop_steps:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_sop_tools_and_resources:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_sop_version:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  sop_file_attachments_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+hidden:
+  field_name: true
+  title: true

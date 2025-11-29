@@ -1,0 +1,299 @@
+uuid: 47942e75-4963-497e-83ec-d3242d25a7b5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.snow_removal
+    - field.field.wo_tasks_list.snow_removal.field_completed
+    - field.field.wo_tasks_list.snow_removal.field_driveways_plowed
+    - field.field.wo_tasks_list.snow_removal.field_pounds_of_salt
+    - field.field.wo_tasks_list.snow_removal.field_snow_applied_salt
+    - field.field.wo_tasks_list.snow_removal.field_snow_level
+    - field.field.wo_tasks_list.snow_removal.field_snow_mag_chloride
+    - field.field.wo_tasks_list.snow_removal.field_snow_mag_gallons
+    - field.field.wo_tasks_list.snow_removal.field_snow_other
+    - field.field.wo_tasks_list.snow_removal.field_snow_other_descriptions
+    - field.field.wo_tasks_list.snow_removal.field_snow_plow_photos
+    - field.field.wo_tasks_list.snow_removal.field_snow_plowed
+    - field.field.wo_tasks_list.snow_removal.field_snow_plowed_pushes
+    - field.field.wo_tasks_list.snow_removal.field_snow_shoveled
+    - field.field.wo_tasks_list.snow_removal.field_time_shoveling
+    - field.field.wo_tasks_list.snow_removal.field_work_order
+    - image.style.thumbnail
+  module:
+    - conditional_fields
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_work_order
+        - field_completed
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: wo_tasks_list.snow_removal.default
+targetEntityType: wo_tasks_list
+bundle: snow_removal
+mode: default
+content:
+  field_completed:
+    type: boolean_checkbox
+    weight: 1
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_driveways_plowed:
+    type: options_buttons
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings:
+      conditional_fields:
+        4c8034d1-5d7f-49b0-83cb-a9e9a8656fac:
+          entity_type: wo_tasks_list
+          bundle: snow_removal
+          dependee: field_snow_plowed
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_pounds_of_salt:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        682fe863-4591-4b25-b435-ad892b0207f8:
+          entity_type: wo_tasks_list
+          bundle: snow_removal
+          dependee: field_snow_applied_salt
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_snow_applied_salt:
+    type: boolean_checkbox
+    weight: 6
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_snow_level:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_snow_mag_chloride:
+    type: boolean_checkbox
+    weight: 8
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_snow_mag_gallons:
+    type: number
+    weight: 9
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        8d651a1f-725a-42d3-8986-6877efcc9aff:
+          entity_type: wo_tasks_list
+          bundle: snow_removal
+          dependee: field_snow_mag_chloride
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_snow_other:
+    type: boolean_checkbox
+    weight: 10
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_snow_other_descriptions:
+    type: string_textfield
+    weight: 11
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        b0eee806-6c1f-4b7b-bd41-659591b73f30:
+          entity_type: wo_tasks_list
+          bundle: snow_removal
+          dependee: field_snow_other
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_snow_plow_photos:
+    type: image_image
+    weight: 12
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_snow_plowed:
+    type: boolean_checkbox
+    weight: 1
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_snow_plowed_pushes:
+    type: options_buttons
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings:
+      conditional_fields:
+        0e0acecb-822e-46e9-814c-bcc2a8095372:
+          entity_type: wo_tasks_list
+          bundle: snow_removal
+          dependee: field_snow_plowed
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_snow_shoveled:
+    type: boolean_checkbox
+    weight: 4
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_time_shoveling:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        2c728154-7226-4fc6-a155-c89fbd7e4df1:
+          entity_type: wo_tasks_list
+          bundle: snow_removal
+          dependee: field_snow_shoveled
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  title: true
+  uid: true

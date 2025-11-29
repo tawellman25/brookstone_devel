@@ -1,0 +1,57 @@
+uuid: 6c277452-545e-4b19-b970-1c4f789e94e0
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.decorative_rock
+    - field.storage.material.field_main_image
+  module:
+    - filefield_paths
+    - image
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: material/decorative_rock/main_images
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[material:title]_decorative_rock.[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: material.decorative_rock.field_main_image
+field_name: field_main_image
+entity_type: material
+bundle: decorative_rock
+label: 'Main Image'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: material/brass/main_images
+  file_extensions: 'png gif jpg jpeg'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: false
+  title_field: true
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

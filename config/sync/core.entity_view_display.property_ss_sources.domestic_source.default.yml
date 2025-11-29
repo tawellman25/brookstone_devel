@@ -1,0 +1,138 @@
+uuid: 4e64069a-9692-4293-817b-d3ee8eb41c93
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_ss_sources.domestic_source
+    - field.field.property_ss_sources.domestic_source.field_property_ss_system
+    - field.field.property_ss_sources.domestic_source.field_shut_off_location_descript
+    - field.field.property_ss_sources.domestic_source.field_source_size
+    - field.field.property_ss_sources.domestic_source.field_ss_backflow
+    - field.field.property_ss_sources.domestic_source.field_ss_backflow_location
+    - field.field.property_ss_sources.domestic_source.field_ss_backflow_photos
+    - field.field.property_ss_sources.domestic_source.field_ss_key_needed
+    - field.field.property_ss_sources.domestic_source.field_ss_shut_off_location
+    - field.field.property_ss_sources.domestic_source.field_ss_shut_off_location_pic
+    - field.field.property_ss_sources.domestic_source.field_ss_shut_off_notes
+    - field.field.property_ss_sources.domestic_source.field_ss_source_name
+    - field.field.property_ss_sources.domestic_source.field_ss_source_valve
+  module:
+    - field_group
+    - image
+    - options
+third_party_settings:
+  field_group:
+    group_backflow_info:
+      children:
+        - field_ss_backflow
+        - field_ss_backflow_location
+        - field_ss_backflow_photos
+      label: 'Backflow Info'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+id: property_ss_sources.domestic_source.default
+targetEntityType: property_ss_sources
+bundle: domestic_source
+mode: default
+content:
+  field_property_ss_system:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_shut_off_location_descript:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_source_size:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_ss_backflow:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_ss_backflow_location:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_ss_backflow_photos:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_ss_key_needed:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_ss_shut_off_location:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_ss_shut_off_location_pic:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_ss_shut_off_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_ss_source_valve:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  changed: true
+  field_ss_source_name: true
+  title: true

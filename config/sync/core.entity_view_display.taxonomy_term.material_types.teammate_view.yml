@@ -1,0 +1,33 @@
+uuid: 6dbe423c-09f6-43a9-bcf6-f2dbdc4b6a66
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.taxonomy_term.teammate_view
+    - field.field.taxonomy_term.material_types.field_public_description
+    - field.field.taxonomy_term.material_types.field_teammate_description
+    - field.field.taxonomy_term.material_types.field_wording_document
+    - taxonomy.vocabulary.material_types
+  module:
+    - layout_builder
+    - text
+third_party_settings:
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: taxonomy_term.material_types.teammate_view
+targetEntityType: taxonomy_term
+bundle: material_types
+mode: teammate_view
+content:
+  field_teammate_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  description: true
+  field_public_description: true
+  field_wording_document: true

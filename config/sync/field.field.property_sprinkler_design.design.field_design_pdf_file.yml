@@ -1,0 +1,46 @@
+uuid: 1a6e93e0-0ed2-441a-a6ba-0fb5ce453fe3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_design.design
+    - field.storage.property_sprinkler_design.field_design_pdf_file
+  module:
+    - file
+    - filefield_paths
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[property_sprinkler_design:field_property:entity:url:path]/sprinkler-information/design'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[property_sprinkler_design:field_property:entity:field_street_address]_design.[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: property_sprinkler_design.design.field_design_pdf_file
+field_name: field_design_pdf_file
+entity_type: property_sprinkler_design
+bundle: design
+label: 'Design PDF File'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: pdf
+  max_filesize: ''
+  description_field: false
+field_type: file

@@ -1,0 +1,57 @@
+uuid: 388f6f7e-a8f3-4aef-abe2-012b0c55b302
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_snow_removal_info.information
+    - field.storage.property_snow_removal_info.field_snow_removal_map
+  module:
+    - filefield_paths
+    - image
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[property_snow_removal_info:field_property:entity:url]/maps'
+      options:
+        slashes: false
+        pathauto: true
+        transliterate: false
+    file_name:
+      value: '[property_snow_removal_info:field_property:entity:title]_plow_map.[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: true
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: property_snow_removal_info.information.field_snow_removal_map
+field_name: field_snow_removal_map
+entity_type: property_snow_removal_info
+bundle: information
+label: 'Plow Map'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'png gif jpg jpeg'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: true
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

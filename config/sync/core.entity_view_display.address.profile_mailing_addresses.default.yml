@@ -1,0 +1,92 @@
+uuid: d4a9692f-2901-4eea-b453-332b248faedb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.address.profile_mailing_addresses
+    - field.field.address.profile_mailing_addresses.field_additional_address
+    - field.field.address.profile_mailing_addresses.field_address
+    - field.field.address.profile_mailing_addresses.field_address_notes
+    - field.field.address.profile_mailing_addresses.field_address_to
+    - field.field.address.profile_mailing_addresses.field_address_to_additional
+    - field.field.address.profile_mailing_addresses.field_city
+    - field.field.address.profile_mailing_addresses.field_old
+    - field.field.address.profile_mailing_addresses.field_primary_address
+    - field.field.address.profile_mailing_addresses.field_profile
+    - field.field.address.profile_mailing_addresses.field_state
+    - field.field.address.profile_mailing_addresses.field_user
+    - field.field.address.profile_mailing_addresses.field_zipcode
+id: address.profile_mailing_addresses.default
+targetEntityType: address
+bundle: profile_mailing_addresses
+mode: default
+content:
+  changed:
+    type: timestamp_ago
+    label: above
+    settings:
+      future_format: '@interval hence'
+      past_format: '@interval ago'
+      granularity: 2
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_address_notes:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_address_to:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_address_to_additional:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_primary_address:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_user:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  title:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  created: true
+  field_additional_address: true
+  field_address: true
+  field_city: true
+  field_old: true
+  field_profile: true
+  field_state: true
+  field_zipcode: true
+  uid: true

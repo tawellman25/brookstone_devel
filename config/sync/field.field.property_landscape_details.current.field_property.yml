@@ -1,0 +1,35 @@
+uuid: 2eb5c304-60cd-4a8d-90cb-42fa2a3b8164
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.properties.property
+    - eck.eck_type.property_landscape_details.current
+    - field.storage.property_landscape_details.field_property
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: property_landscape_details.current.field_property
+field_name: field_property
+entity_type: property_landscape_details
+bundle: current
+label: Property
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:properties'
+  handler_settings:
+    target_bundles:
+      property: property
+    sort:
+      field: field_nickname
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

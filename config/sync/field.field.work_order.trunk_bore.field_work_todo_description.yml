@@ -1,0 +1,27 @@
+uuid: f0cded91-4317-455e-bcb8-f0b4be1a8580
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.trunk_bore
+    - field.storage.work_order.field_work_todo_description
+    - filter.format.full_html
+  module:
+    - text
+id: work_order.trunk_bore.field_work_todo_description
+field_name: field_work_todo_description
+entity_type: work_order
+bundle: trunk_bore
+label: 'Work To Be Done'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: '<p>[current-date:html_year] - Spray for Trunk Bore on specified trees</p>'
+    format: full_html
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

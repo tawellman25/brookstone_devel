@@ -1,0 +1,38 @@
+uuid: 2c377a60-562c-4a90-a848-fa640d1a12d8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.decorative_rock
+    - field.storage.material.field_supplier
+id: material.decorative_rock.field_supplier
+field_name: field_supplier
+entity_type: material
+bundle: decorative_rock
+label: Supplier
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: true
+    filter:
+      type: role
+      role:
+        supplier: supplier
+        administrator: '0'
+        site_admin: '0'
+        administration: '0'
+        supervisor: '0'
+        teammates: '0'
+        client: '0'
+        user: '0'
+    include_anonymous: false
+field_type: entity_reference

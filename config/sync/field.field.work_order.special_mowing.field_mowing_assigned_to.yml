@@ -1,0 +1,25 @@
+uuid: bf668226-c56e-4d47-a4cb-31049a2d30d3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.special_mowing
+    - field.storage.work_order.field_mowing_assigned_to
+id: work_order.special_mowing.field_mowing_assigned_to
+field_name: field_mowing_assigned_to
+entity_type: work_order
+bundle: special_mowing
+label: 'Mowing Assigned To'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: mow_crew_select_list
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

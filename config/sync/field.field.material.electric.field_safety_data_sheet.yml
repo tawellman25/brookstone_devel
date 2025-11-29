@@ -1,0 +1,32 @@
+uuid: 6f3ee025-201a-4f73-93b1-064ac873eb41
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.electric
+    - field.storage.material.field_safety_data_sheet
+  module:
+    - epp
+    - file
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.electric.field_safety_data_sheet
+field_name: field_safety_data_sheet
+entity_type: material
+bundle: electric
+label: 'Material Safety Data Sheet (MSDS)'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: material/electric/safety_data_sheets
+  file_extensions: 'txt pdf doc'
+  max_filesize: ''
+  description_field: false
+field_type: file

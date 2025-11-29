@@ -1,0 +1,33 @@
+uuid: bd581441-38e4-4b40-8c51-6aa9c36befcb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.pinion_pine_ips_beetle
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:b91405cb-7c9e-4229-9dae-91078c95e32a'
+id: work_order.pinion_pine_ips_beetle.field_service
+field_name: field_service
+entity_type: work_order
+bundle: pinion_pine_ips_beetle
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: b91405cb-7c9e-4229-9dae-91078c95e32a
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

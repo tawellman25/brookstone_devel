@@ -1,0 +1,32 @@
+uuid: 8499d4b1-593a-44ad-b31b-20e26003d088
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.poly
+    - field.storage.material.field_safety_data_sheet
+  module:
+    - epp
+    - file
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.poly.field_safety_data_sheet
+field_name: field_safety_data_sheet
+entity_type: material
+bundle: poly
+label: 'Material Safety Data Sheet (MSDS)'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: material/poly/safety_data_sheets
+  file_extensions: 'txt pdf doc'
+  max_filesize: ''
+  description_field: false
+field_type: file

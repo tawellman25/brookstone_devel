@@ -1,0 +1,38 @@
+uuid: 33a9466b-266a-47fe-aba6-4e656522a9de
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.media.media_library
+    - field.field.media.wo_images.field_media_image_1
+    - field.field.media.wo_images.field_photos_of
+    - field.field.media.wo_images.field_stage
+    - field.field.media.wo_images.field_work_order
+    - image.style.medium
+    - media.type.wo_images
+  module:
+    - image
+id: media.wo_images.media_library
+targetEntityType: media
+bundle: wo_images
+mode: media_library
+content:
+  thumbnail:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: medium
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  created: true
+  field_media_image_1: true
+  field_photos_of: true
+  field_stage: true
+  field_work_order: true
+  name: true
+  uid: true

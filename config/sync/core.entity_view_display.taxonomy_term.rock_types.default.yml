@@ -1,0 +1,46 @@
+uuid: e79acbe9-6e54-4270-a1f6-52e79563efe4
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.rock_types.field_main_image
+    - field.field.taxonomy_term.rock_types.field_teammate_description
+    - image.style.max_650x650
+    - taxonomy.vocabulary.rock_types
+  module:
+    - colorbox
+    - text
+id: taxonomy_term.rock_types.default
+targetEntityType: taxonomy_term
+bundle: rock_types
+mode: default
+content:
+  description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_main_image:
+    type: colorbox
+    label: hidden
+    settings:
+      colorbox_image_style: ''
+      colorbox_gallery: post
+      colorbox_gallery_custom: ''
+      colorbox_caption: auto
+      colorbox_caption_custom: ''
+      colorbox_node_style: max_650x650
+      colorbox_node_style_first: ''
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_teammate_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden: {  }

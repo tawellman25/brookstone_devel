@@ -1,0 +1,339 @@
+uuid: 99a67c67-3131-4874-8369-f2ee8b79961c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.pre_emergent
+    - field.field.work_order.pre_emergent.field_atv_total
+    - field.field.work_order.pre_emergent.field_billing_adjustment
+    - field.field.work_order.pre_emergent.field_billing_notes
+    - field.field.work_order.pre_emergent.field_client_app_wo_number
+    - field.field.work_order.pre_emergent.field_contract
+    - field.field.work_order.pre_emergent.field_current_turf_sq_footage
+    - field.field.work_order.pre_emergent.field_die_total
+    - field.field.work_order.pre_emergent.field_estimated_price
+    - field.field.work_order.pre_emergent.field_invoiced
+    - field.field.work_order.pre_emergent.field_labor_total
+    - field.field.work_order.pre_emergent.field_material_chemical_total
+    - field.field.work_order.pre_emergent.field_pre_emergent_season
+    - field.field.work_order.pre_emergent.field_printed
+    - field.field.work_order.pre_emergent.field_property
+    - field.field.work_order.pre_emergent.field_rental_total
+    - field.field.work_order.pre_emergent.field_scheduled
+    - field.field.work_order.pre_emergent.field_service
+    - field.field.work_order.pre_emergent.field_status
+    - field.field.work_order.pre_emergent.field_supervisor
+    - field.field.work_order.pre_emergent.field_total_time
+    - field.field.work_order.pre_emergent.field_trip_fee
+    - field.field.work_order.pre_emergent.field_trucks
+    - field.field.work_order.pre_emergent.field_wo_total
+    - field.field.work_order.pre_emergent.field_work_order_id
+    - field.field.work_order.pre_emergent.field_work_order_notes
+    - field.field.work_order.pre_emergent.field_work_todo_description
+  module:
+    - field_group
+    - text
+third_party_settings:
+  field_group:
+    group_spraying_condition:
+      children:
+        - wo_spraying_conditions_entity_view_1
+      label: 'Spraying Condition'
+      parent_name: ''
+      region: content
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        open: true
+        description: ''
+    group_office_admin:
+      children:
+        - uid
+        - created
+        - changed
+        - field_atv_total
+        - field_billing_adjustment
+        - field_billing_notes
+        - field_contract
+        - field_current_turf_sq_footage
+        - field_die_total
+        - field_estimated_price
+        - field_labor_total
+        - field_material_chemical_total
+        - field_property
+        - field_rental_total
+        - field_scheduled
+        - field_service
+        - field_status
+        - field_supervisor
+        - field_total_time
+        - field_trip_fee
+        - field_trucks
+        - field_wo_total
+        - field_work_order_id
+        - wo_current_property_owner_entity_view_1
+      label: 'Office Administation'
+      parent_name: ''
+      region: hidden
+      weight: 21
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_schedule:
+      children:
+        - wo_scheduled_teammate_view_entity_view_1
+      label: Schedule
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+        required_fields: false
+    group_photos:
+      children:
+        - wo_media_photos_entity_view_1
+      label: Photos
+      parent_name: ''
+      region: content
+      weight: 14
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+    group_files:
+      children: {  }
+      label: Files
+      parent_name: ''
+      region: hidden
+      weight: 20
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: false
+        open: false
+    group_hours:
+      children:
+        - wo_time_clock_entries_total_entity_view_1
+        - wo_hours_grouping_entity_view_1
+      label: Hours
+      parent_name: ''
+      region: content
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_chemicals_used:
+      children:
+        - wo_chemicals_used_entity_view_1
+      label: 'Chemicals Used'
+      parent_name: ''
+      region: content
+      weight: 12
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        open: true
+        description: ''
+    group_notes:
+      children:
+        - wo_notes_entity_view_1
+      label: Notes
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_property_pre_emergent_info:
+      children:
+        - wo_property_pre_emergent_info_entity_view_1
+        - wo_property_pre_emergent_photos_entity_view_1
+      label: 'Property Pre-Emergent Info'
+      parent_name: ''
+      region: content
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+    group_contract_details:
+      children:
+        - wo_pre_emergent_contract_info_entity_view_1
+      label: 'Contract Details'
+      parent_name: ''
+      region: content
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+id: work_order.pre_emergent.default
+targetEntityType: work_order
+bundle: pre_emergent
+mode: default
+content:
+  field_client_app_wo_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_pre_emergent_season:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_work_todo_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  flag_work_order_timer:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  wo_chemicals_used_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  wo_hours_grouping_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 18
+    region: content
+  wo_media_photos_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  wo_notes_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  wo_pre_emergent_contract_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  wo_property_pre_emergent_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  wo_property_pre_emergent_photos_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  wo_scheduled_teammate_view_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  wo_sign_off_entity_view_4:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  wo_spraying_conditions_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 17
+    region: content
+  wo_time_clock_buttons_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  wo_time_clock_buttons_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  wo_time_clock_entries_total_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 17
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_atv_total: true
+  field_billing_adjustment: true
+  field_billing_notes: true
+  field_contract: true
+  field_current_turf_sq_footage: true
+  field_die_total: true
+  field_estimated_price: true
+  field_invoiced: true
+  field_labor_total: true
+  field_material_chemical_total: true
+  field_printed: true
+  field_property: true
+  field_rental_total: true
+  field_scheduled: true
+  field_service: true
+  field_status: true
+  field_supervisor: true
+  field_total_time: true
+  field_trip_fee: true
+  field_trucks: true
+  field_wo_total: true
+  field_work_order_id: true
+  field_work_order_notes: true
+  title: true
+  uid: true
+  wo_current_property_owner_entity_view_1: true
+  wo_material_list_grouping_entity_view_1: true
+  wo_media_files_entity_view_1: true

@@ -1,0 +1,33 @@
+uuid: 2bd66735-d296-4eb3-9e7e-822211e249c5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.heavy_equipment
+    - eck.eck_type.equipment.trailers
+    - eck.eck_type.equipment.vehicles
+    - field.storage.taxonomy_term.field_assigned_equipment
+    - taxonomy.vocabulary.snow_plow_routes
+id: taxonomy_term.snow_plow_routes.field_assigned_equipment
+field_name: field_assigned_equipment
+entity_type: taxonomy_term
+bundle: snow_plow_routes
+label: 'Assigned Equipment'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:equipment'
+  handler_settings:
+    target_bundles:
+      heavy_equipment: heavy_equipment
+      trailers: trailers
+      vehicles: vehicles
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: heavy_equipment
+field_type: entity_reference

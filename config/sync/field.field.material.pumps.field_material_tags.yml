@@ -1,0 +1,29 @@
+uuid: b5eadb3b-91be-4be9-a4c5-5ee47b20b6a0
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.pumps
+    - field.storage.material.field_material_tags
+    - taxonomy.vocabulary.material_tags
+id: material.pumps.field_material_tags
+field_name: field_material_tags
+entity_type: material
+bundle: pumps
+label: 'Material Tags'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      material_tags: material_tags
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

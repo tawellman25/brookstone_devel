@@ -1,0 +1,22 @@
+uuid: 1bd09458-6d36-4740-8f82-d6899deb029e
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: time_clock_entries
+label: 'Time Clock Entries'
+type: 'canonical_entities:time_clock_entry'
+pattern: '[time_clock_entry:field_team_member:entity:url:path]/time-card/[time_clock_entry:title]'
+selection_criteria:
+  b497ddeb-b831-47b4-a749-1fe15537ae44:
+    id: 'entity_bundle:time_clock_entry'
+    negate: false
+    uuid: b497ddeb-b831-47b4-a749-1fe15537ae44
+    context_mapping:
+      time_clock_entry: time_clock_entry
+    bundles:
+      entry: entry
+selection_logic: and
+weight: 22
+relationships: {  }

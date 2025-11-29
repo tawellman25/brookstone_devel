@@ -1,0 +1,38 @@
+uuid: 70d6b452-5275-4000-a7ec-8fd4c5ed5f65
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_landscape_details.current
+    - field.storage.property_landscape_details.field_last_pulled_by
+id: property_landscape_details.current.field_last_pulled_by
+field_name: field_last_pulled_by
+entity_type: property_landscape_details
+bundle: current
+label: 'Last Pulled By'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        teammates: teammates
+        administrator: '0'
+        site_admin: '0'
+        administration: '0'
+        supervisor: '0'
+        client: '0'
+        user: '0'
+        supplier: '0'
+    include_anonymous: true
+field_type: entity_reference

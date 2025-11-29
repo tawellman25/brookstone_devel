@@ -1,0 +1,29 @@
+uuid: 410a0519-3f7a-46c7-a983-1d788a92ca87
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.contact
+    - eck.eck_type.supplier.supplier
+    - field.storage.supplier.field_contacts
+id: supplier.supplier.field_contacts
+field_name: field_contacts
+entity_type: supplier
+bundle: supplier
+label: Contacts
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contacts'
+  handler_settings:
+    target_bundles:
+      contact: contact
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

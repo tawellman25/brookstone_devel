@@ -1,0 +1,27 @@
+uuid: 7b72d501-e673-4bd7-ade3-efaf6b30932c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.sprinkler_start_up
+    - field.storage.work_order.field_work_todo_description
+    - filter.format.full_html
+  module:
+    - text
+id: work_order.sprinkler_start_up.field_work_todo_description
+field_name: field_work_todo_description
+entity_type: work_order
+bundle: sprinkler_start_up
+label: 'Start up Description'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: '<p>[current-date:html_year] - Sprinkler System Startup as needed.</p>'
+    format: full_html
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

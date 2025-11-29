@@ -1,0 +1,30 @@
+uuid: 1fea4a59-068c-4e88-9008-4214202ace5b
+langcode: en
+status: true
+dependencies:
+  module:
+    - ctools_block
+  theme:
+    - olivero_sewards
+id: olivero_sewards_comments
+theme: olivero_sewards
+region: content_below
+weight: -10
+provider: null
+plugin: 'entity_field:node:comment'
+settings:
+  id: 'entity_field:node:comment'
+  label: Comments
+  label_display: visible
+  provider: ctools_block
+  context_mapping:
+    entity: '@node.node_route_context:node'
+  formatter:
+    type: comment_default
+    weight: 0
+    label: above
+    settings:
+      view_mode: default
+      pager_id: 0
+    third_party_settings: {  }
+visibility: {  }

@@ -1,0 +1,29 @@
+uuid: 8f449f32-1bb4-46c4-b8ef-6514edbacc1a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.contact
+    - eck.eck_type.phone_number.profile_phone_numbers
+    - field.storage.contacts.field_phone_number
+id: contacts.contact.field_phone_number
+field_name: field_phone_number
+entity_type: contacts
+bundle: contact
+label: 'Phone Numbers'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:phone_number'
+  handler_settings:
+    target_bundles:
+      profile_phone_numbers: profile_phone_numbers
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

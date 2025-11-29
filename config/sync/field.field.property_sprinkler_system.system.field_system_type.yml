@@ -1,0 +1,29 @@
+uuid: 8c430cc0-5c74-49dc-a200-9dda2c03bd85
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_system.system
+    - eck.eck_type.sprinkler_system_types.types
+    - field.storage.property_sprinkler_system.field_system_type
+id: property_sprinkler_system.system.field_system_type
+field_name: field_system_type
+entity_type: property_sprinkler_system
+bundle: system
+label: 'System Type'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sprinkler_system_types'
+  handler_settings:
+    target_bundles:
+      types: types
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

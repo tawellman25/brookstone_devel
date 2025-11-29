@@ -1,0 +1,25 @@
+uuid: dde95c94-1505-4c56-8cfa-c7062a1c184c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_lawn_maintenance.lawn_maintenance_info
+    - field.storage.property_lawn_maintenance.field_mowing_last_mowed_by
+id: property_lawn_maintenance.lawn_maintenance_info.field_mowing_last_mowed_by
+field_name: field_mowing_last_mowed_by
+entity_type: property_lawn_maintenance
+bundle: lawn_maintenance_info
+label: 'Last Mowed by'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: mow_crew_select_list
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

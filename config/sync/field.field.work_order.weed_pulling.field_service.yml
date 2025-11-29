@@ -1,0 +1,33 @@
+uuid: 07b7fad9-8f34-41f7-a193-d9a8a579d7f3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.weed_pulling
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:a80b3ffa-845b-46e5-bcb5-fb82f37f25d3'
+id: work_order.weed_pulling.field_service
+field_name: field_service
+entity_type: work_order
+bundle: weed_pulling
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: a80b3ffa-845b-46e5-bcb5-fb82f37f25d3
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

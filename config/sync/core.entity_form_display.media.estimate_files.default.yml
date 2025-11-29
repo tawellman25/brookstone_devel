@@ -1,0 +1,93 @@
+uuid: 2968238b-52e2-49eb-ac8f-e6b253487f7b
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.media.estimate_files.field_estimate
+    - field.field.media.estimate_files.field_media_file
+    - media.type.estimate_files
+  module:
+    - field_group
+    - field_layout
+    - file
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_estimate
+        - created
+        - uid
+        - path
+        - status
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 1
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+id: media.estimate_files.default
+targetEntityType: media
+bundle: estimate_files
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 102
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 101
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_media_file:
+    type: file_generic
+    weight: 0
+    region: content
+    settings:
+      progress_indicator: throbber
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 104
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    weight: 105
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 103
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  name: true

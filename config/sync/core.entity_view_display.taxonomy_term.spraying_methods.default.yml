@@ -1,0 +1,38 @@
+uuid: 2d827632-9dd3-4c14-929f-f78becc8827e
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.spraying_methods.field_applicable_services
+    - field.field.taxonomy_term.spraying_methods.field_teammate_description
+    - taxonomy.vocabulary.spraying_methods
+  module:
+    - text
+id: taxonomy_term.spraying_methods.default
+targetEntityType: taxonomy_term
+bundle: spraying_methods
+mode: default
+content:
+  description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_applicable_services:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_teammate_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden: {  }

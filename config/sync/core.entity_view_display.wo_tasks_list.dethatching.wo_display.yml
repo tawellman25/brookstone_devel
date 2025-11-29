@@ -1,0 +1,51 @@
+uuid: c146e537-9b16-4f19-b1cb-6b45bd66343b
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.wo_tasks_list.wo_display
+    - eck.eck_type.wo_tasks_list.dethatching
+    - field.field.wo_tasks_list.dethatching.field_dethatching_equipment_used
+    - field.field.wo_tasks_list.dethatching.field_sprinkler_heads_marked
+    - field.field.wo_tasks_list.dethatching.field_sprinkler_heads_we_marked
+    - field.field.wo_tasks_list.dethatching.field_work_order
+  module:
+    - layout_builder
+    - options
+third_party_settings:
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: wo_tasks_list.dethatching.wo_display
+targetEntityType: wo_tasks_list
+bundle: dethatching
+mode: wo_display
+content:
+  field_dethatching_equipment_used:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_sprinkler_heads_marked:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_sprinkler_heads_we_marked:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_work_order: true
+  title: true
+  uid: true

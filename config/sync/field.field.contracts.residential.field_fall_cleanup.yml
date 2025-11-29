@@ -1,0 +1,29 @@
+uuid: 328eb3d2-cad2-4f9a-a857-a5e72d76fed7
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.fall_cleanup
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_fall_cleanup
+id: contracts.residential.field_fall_cleanup
+field_name: field_fall_cleanup
+entity_type: contracts
+bundle: residential
+label: 'Fall Cleanup'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      fall_cleanup: fall_cleanup
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

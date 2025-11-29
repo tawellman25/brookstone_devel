@@ -1,0 +1,29 @@
+uuid: 588ab7cb-716e-4d92-b417-cc9d8fc97f2a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.pumps
+    - eck.eck_type.supplier.supplier
+    - field.storage.material.field_suppliers
+id: material.pumps.field_suppliers
+field_name: field_suppliers
+entity_type: material
+bundle: pumps
+label: Supplier
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:supplier'
+  handler_settings:
+    target_bundles:
+      supplier: supplier
+    sort:
+      field: field_supplier_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

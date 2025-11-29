@@ -1,0 +1,29 @@
+uuid: 9c0a80e7-6bf4-47d6-ac3b-bc5d0fb90cd8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_christmas_decor.information
+    - field.storage.property_christmas_decor.field_christmas_decor_lightcolor
+    - taxonomy.vocabulary.christmas_light_colors
+id: property_christmas_decor.information.field_christmas_decor_lightcolor
+field_name: field_christmas_decor_lightcolor
+entity_type: property_christmas_decor
+bundle: information
+label: 'Christmas Light Colors'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      christmas_light_colors: christmas_light_colors
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

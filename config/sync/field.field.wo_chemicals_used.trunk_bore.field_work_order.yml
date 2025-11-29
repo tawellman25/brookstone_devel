@@ -1,0 +1,29 @@
+uuid: d72695ce-3da7-4ec7-bb22-defec3a1d3ca
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_chemicals_used.trunk_bore
+    - eck.eck_type.work_order.trunk_bore
+    - field.storage.wo_chemicals_used.field_work_order
+id: wo_chemicals_used.trunk_bore.field_work_order
+field_name: field_work_order
+entity_type: wo_chemicals_used
+bundle: trunk_bore
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      trunk_bore: trunk_bore
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: fertilizing
+field_type: entity_reference

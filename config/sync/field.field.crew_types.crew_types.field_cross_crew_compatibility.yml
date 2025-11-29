@@ -1,0 +1,28 @@
+uuid: ae0f2d9c-194b-46e2-b4a3-861a8ffb2820
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.crew_types.crew_types
+    - field.storage.crew_types.field_cross_crew_compatibility
+id: crew_types.crew_types.field_cross_crew_compatibility
+field_name: field_cross_crew_compatibility
+entity_type: crew_types
+bundle: crew_types
+label: 'Cross-Crew Compatibility'
+description: 'Select other crews this crew’s members can assist (e.g., Fertilizing Crew can support Clean-up). Leave blank if not applicable.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:crew_types'
+  handler_settings:
+    target_bundles:
+      crew_types: crew_types
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

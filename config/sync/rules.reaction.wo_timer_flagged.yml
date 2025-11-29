@@ -1,0 +1,124 @@
+uuid: 699f2e14-828f-4005-a3a8-d320569f0a9f
+langcode: en
+status: false
+dependencies: {  }
+id: wo_timer_flagged
+label: 'WO Timer Flagged'
+events:
+  -
+    event_name: 'rules_flag_entity_flagged:work_order'
+description: ''
+tags: {  }
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 4155f6f5-04a7-43f6-99e3-a227d00ee8ec
+  weight: 0
+  conditions:
+    id: rules_and
+    uuid: f7ba1e37-a7ca-48b2-8b7c-51632cdbeba2
+    weight: 0
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 88accdb2-312d-4a09-95fe-8eb1331f5318
+    weight: 0
+    actions:
+      -
+        id: rules_action
+        uuid: 5705a619-4687-4d65-ad4a-78f961d5c116
+        weight: -50
+        action_id: 'rules_entity_create:wo_time_clock'
+        context_values:
+          type: entry
+          title: ''
+        context_mapping: {  }
+        context_processors:
+          type:
+            rules_tokens: {  }
+          title:
+            rules_tokens: {  }
+        provides_mapping: {  }
+      -
+        id: rules_action
+        uuid: fd5e974b-a1d4-4813-af06-accf7205650e
+        weight: -49
+        action_id: rules_data_set
+        context_values: {  }
+        context_mapping:
+          data: wo_time_clock_created.field_work_order
+          value: work_order
+        context_processors: {  }
+        provides_mapping: {  }
+      -
+        id: rules_action
+        uuid: deb34636-204e-47af-a56e-9c28d14c8af9
+        weight: -48
+        action_id: rules_data_set
+        context_values:
+          value: 'Start time entered through system.'
+        context_mapping:
+          data: wo_time_clock_created.field_notes
+        context_processors:
+          value:
+            rules_tokens: {  }
+        provides_mapping: {  }
+      -
+        id: rules_action
+        uuid: d108ca86-233c-47fa-b3b1-fe8ef6ce796e
+        weight: -47
+        action_id: rules_data_set
+        context_values: {  }
+        context_mapping:
+          data: wo_time_clock_created.field_start_time
+          value: '@rules.current_date_context:current_date'
+        context_processors: {  }
+        provides_mapping: {  }
+      -
+        id: rules_action
+        uuid: 2836175b-ca22-40a4-97b1-9181236319ba
+        weight: -46
+        action_id: rules_entity_fetch_by_id
+        context_values:
+          type: flagging
+        context_mapping:
+          entity_id: flagging.id.value
+        context_processors:
+          type:
+            rules_tokens: {  }
+        provides_mapping:
+          entity_fetched: flag_fetched
+      -
+        id: rules_action
+        uuid: b0d20434-86d2-4ab9-b19f-e26677a79c2a
+        weight: -45
+        action_id: rules_system_message
+        context_values:
+          message: 'Date Entered in new WO Timer by {{@user.current_user_context:current_user}}'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+      -
+        id: rules_action
+        uuid: c0674199-ae46-4e14-9f43-b9040ba75eae
+        weight: 0
+        action_id: rules_system_message
+        context_values:
+          type: status
+          repeat: false
+        context_mapping:
+          message: flag_fetched.uid.entity.name.value
+        context_processors:
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }

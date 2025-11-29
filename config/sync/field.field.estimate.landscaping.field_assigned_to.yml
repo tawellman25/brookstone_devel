@@ -1,0 +1,29 @@
+uuid: e9445205-bb5d-47c8-bbb1-9a4e61e9cf24
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - field.storage.estimate.field_assigned_to
+  content:
+    - 'user:user:d6e0b472-06b0-4757-a4c3-a6eb280501df'
+id: estimate.landscaping.field_assigned_to
+field_name: field_assigned_to
+entity_type: estimate
+bundle: landscaping
+label: 'Assigned To'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: d6e0b472-06b0-4757-a4c3-a6eb280501df
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

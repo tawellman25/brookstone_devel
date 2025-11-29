@@ -1,0 +1,35 @@
+uuid: 48ae77b7-fb62-4c8c-9ecb-8d84aaa9d87d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.fungicide
+    - field.storage.chemical.field_signal_word
+    - taxonomy.vocabulary.signal_words
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: chemical.fungicide.field_signal_word
+field_name: field_signal_word
+entity_type: chemical
+bundle: fungicide
+label: 'Signal Word'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      signal_words: signal_words
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: 1f62673f-b4ff-4449-bd6a-ec77557b0df4
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contracts.residential
+    - eck.eck_type.properties.property
+    - field.storage.contracts.field_property
+id: contracts.residential.field_property
+field_name: field_property
+entity_type: contracts
+bundle: residential
+label: Property
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:properties'
+  handler_settings:
+    target_bundles:
+      property: property
+    sort:
+      field: field_nickname
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

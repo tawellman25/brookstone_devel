@@ -1,0 +1,571 @@
+uuid: 1693e533-2a79-45b8-ac68-382a7a6262f6
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.wo_tasks_list.wo_display
+    - eck.eck_type.wo_tasks_list.lawn_mowing
+    - field.field.wo_tasks_list.lawn_mowing.field_additional_work_describe
+    - field.field.wo_tasks_list.lawn_mowing.field_additional_work_requested
+    - field.field.wo_tasks_list.lawn_mowing.field_completed
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_assigned_to
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_cleaned_debri
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_day_of_week
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_debris_men
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_debris_minutes
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_debris_time
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_edged
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_edging_men
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_edging_minutes
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_edging_time
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_mowed
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_other_men
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_other_minutes
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_other_tasks
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_other_time
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_partial_describe
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_partial_mow
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_picked_up_trash
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_tasks_completed
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_time_spent_cleaning
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_time_spent_edging
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_time_spent_trash
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_trash_men
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_trash_minutes
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_trash_time
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_trimmed
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_who_on_site
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_why_not
+    - field.field.wo_tasks_list.lawn_mowing.field_mowing_why_not_describe
+    - field.field.wo_tasks_list.lawn_mowing.field_notes_to_office
+    - field.field.wo_tasks_list.lawn_mowing.field_work_order
+  module:
+    - layout_builder
+    - layout_discovery
+    - options
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Main Task List Content'
+          context_mapping: {  }
+          column_widths: 50-50
+        components:
+          78105bf7-93d3-43d7-ad8c-8d749631d9d3:
+            uuid: 78105bf7-93d3-43d7-ad8c-8d749631d9d3
+            region: first
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_mowed'
+              label: Mowed
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          3da0d508-7690-4215-a571-7dfc8fd8869d:
+            uuid: 3da0d508-7690-4215-a571-7dfc8fd8869d
+            region: first
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_why_not'
+              label: 'Why not mowed?'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: list_default
+                label: hidden
+                settings: {  }
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          f6f29238-d3b4-491c-ac39-2e281dcb37e2:
+            uuid: f6f29238-d3b4-491c-ac39-2e281dcb37e2
+            region: first
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_why_not_describe'
+              label: 'Please Describe'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: basic_string
+                label: above
+                settings: {  }
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          81304738-d775-4a01-938a-8b51cdd4cb29:
+            uuid: 81304738-d775-4a01-938a-8b51cdd4cb29
+            region: first
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_partial_describe'
+              label: 'Partial Please Describe'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: basic_string
+                label: hidden
+                settings: {  }
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          8ec8ab77-05a2-4204-9efa-f83a22f1004c:
+            uuid: 8ec8ab77-05a2-4204-9efa-f83a22f1004c
+            region: first
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_partial_mow'
+              label: 'Partial Mow'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          f38947d5-0e0f-4715-8f67-5e0fbef4eadf:
+            uuid: f38947d5-0e0f-4715-8f67-5e0fbef4eadf
+            region: first
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_who_on_site'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 6
+            additional: {  }
+          eeb14b3b-f244-4678-96f0-b432520f62ec:
+            uuid: eeb14b3b-f244-4678-96f0-b432520f62ec
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_edged'
+              label: Edged
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          c9598846-c0ca-49b6-9857-c7a3cbc4f58e:
+            uuid: c9598846-c0ca-49b6-9857-c7a3cbc4f58e
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_time_spent_edging'
+              label: 'Enter Time Spent Edging'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: string
+                label: hidden
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          9b246e8b-fe3f-4271-8789-a58b44b69665:
+            uuid: 9b246e8b-fe3f-4271-8789-a58b44b69665
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_cleaned_debri'
+              label: 'Cleaned Up Leaves and Debris'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          e00bd224-44bd-4a7d-8914-6f1434315be1:
+            uuid: e00bd224-44bd-4a7d-8914-6f1434315be1
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_time_spent_cleaning'
+              label: 'Enter Time Spent Cleaning Up Debris'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: string
+                label: hidden
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 5
+            additional: {  }
+          45d037bc-48ff-4ecd-b00d-75e4c68dc399:
+            uuid: 45d037bc-48ff-4ecd-b00d-75e4c68dc399
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_picked_up_trash'
+              label: 'Picked Up Trash'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 6
+            additional: {  }
+          7abb9d11-5486-47b0-9b4f-ccd826752a8c:
+            uuid: 7abb9d11-5486-47b0-9b4f-ccd826752a8c
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_time_spent_trash'
+              label: 'Enter Time Spent Picking Up Trash'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: string
+                label: hidden
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 7
+            additional: {  }
+          791e6ae7-f69f-4657-a95a-5cddd8e3f0b9:
+            uuid: 791e6ae7-f69f-4657-a95a-5cddd8e3f0b9
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_trimmed'
+              label: Trimmed
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          d7c7084c-b62b-4f42-b232-ef4406703de0:
+            uuid: d7c7084c-b62b-4f42-b232-ef4406703de0
+            region: content
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_other_tasks'
+              label: 'Completed Other Tasks'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: yes-no
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 13
+            additional: {  }
+          a0916426-f5d6-49fc-9290-1b792a01de75:
+            uuid: a0916426-f5d6-49fc-9290-1b792a01de75
+            region: content
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_mowing_tasks_completed'
+              label: 'Enter Tasks & Time Completed'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: string
+                label: hidden
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 14
+            additional: {  }
+          39e3604d-a1ea-422d-9620-8a2de093b523:
+            uuid: 39e3604d-a1ea-422d-9620-8a2de093b523
+            region: content
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_additional_work_requested'
+              label: 'Additional Work Requested by Owner'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: yes-no
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 15
+            additional: {  }
+          73d14655-4c18-44a7-b403-110e55fc5860:
+            uuid: 73d14655-4c18-44a7-b403-110e55fc5860
+            region: content
+            configuration:
+              id: 'field_block:wo_tasks_list:lawn_mowing:field_additional_work_describe'
+              label: 'Please Describe'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: basic_string
+                label: hidden
+                settings: {  }
+                third_party_settings: {  }
+            weight: 16
+            additional: {  }
+        third_party_settings: {  }
+id: wo_tasks_list.lawn_mowing.wo_display
+targetEntityType: wo_tasks_list
+bundle: lawn_mowing
+mode: wo_display
+content:
+  field_additional_work_describe:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 16
+    region: content
+  field_additional_work_requested:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  field_mowing_cleaned_debri:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_mowing_edged:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_mowing_mowed:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_mowing_other_tasks:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_mowing_partial_describe:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_mowing_partial_mow:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_mowing_picked_up_trash:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_mowing_tasks_completed:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  field_mowing_time_spent_cleaning:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_mowing_time_spent_edging:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_mowing_time_spent_trash:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_mowing_trimmed:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_mowing_who_on_site:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_mowing_why_not:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_mowing_why_not_describe:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_completed: true
+  field_mowing_assigned_to: true
+  field_mowing_day_of_week: true
+  field_mowing_debris_men: true
+  field_mowing_debris_minutes: true
+  field_mowing_debris_time: true
+  field_mowing_edging_men: true
+  field_mowing_edging_minutes: true
+  field_mowing_edging_time: true
+  field_mowing_other_men: true
+  field_mowing_other_minutes: true
+  field_mowing_other_time: true
+  field_mowing_trash_men: true
+  field_mowing_trash_minutes: true
+  field_mowing_trash_time: true
+  field_notes_to_office: true
+  field_work_order: true
+  title: true
+  uid: true

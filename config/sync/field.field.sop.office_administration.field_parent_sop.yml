@@ -1,0 +1,28 @@
+uuid: 12acdd3e-ff91-4e43-b265-887477de6a35
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.office_administration
+    - field.storage.sop.field_parent_sop
+id: sop.office_administration.field_parent_sop
+field_name: field_parent_sop
+entity_type: sop
+bundle: office_administration
+label: 'Parent SOP'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sop'
+  handler_settings:
+    target_bundles:
+      office_administration: office_administration
+    sort:
+      field: field_sop_code
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: office_administration
+field_type: entity_reference

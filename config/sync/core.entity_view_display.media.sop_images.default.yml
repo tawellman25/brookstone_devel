@@ -1,0 +1,40 @@
+uuid: 7768eb7a-7ac4-40cc-b42d-284c4d84d5cb
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.media.sop_images.field_media_image_2
+    - field.field.media.sop_images.field_sop
+    - image.style.large
+    - media.type.sop_images
+  module:
+    - image
+id: media.sop_images.default
+targetEntityType: media
+bundle: sop_images
+mode: default
+content:
+  field_media_image_2:
+    type: image
+    label: visually_hidden
+    settings:
+      image_link: ''
+      image_style: large
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_sop:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  created: true
+  name: true
+  thumbnail: true
+  uid: true

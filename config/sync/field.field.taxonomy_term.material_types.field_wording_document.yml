@@ -1,0 +1,46 @@
+uuid: bb99cdf0-2c95-493a-885a-1b1b0ca02aec
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_wording_document
+    - taxonomy.vocabulary.material_types
+  module:
+    - file
+    - filefield_paths
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[term:url:path]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[file:ffp-name-only-original].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: true
+    retroactive_update: true
+    active_updating: true
+id: taxonomy_term.material_types.field_wording_document
+field_name: field_wording_document
+entity_type: taxonomy_term
+bundle: material_types
+label: 'Wording Document'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'txt csv pdf doc docx cdr xml ppt pptx xlsx xls odt rtf'
+  max_filesize: ''
+  description_field: true
+field_type: file

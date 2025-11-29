@@ -1,0 +1,32 @@
+uuid: e7d25b45-53ee-4038-9b4b-97a0063dd66e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.pavers
+    - field.storage.material.field_safety_data_sheet
+  module:
+    - epp
+    - file
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.pavers.field_safety_data_sheet
+field_name: field_safety_data_sheet
+entity_type: material
+bundle: pavers
+label: 'Material Safety Data Sheet (MSDS)'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: material/pavers/safety_data_sheets
+  file_extensions: 'txt pdf doc'
+  max_filesize: ''
+  description_field: false
+field_type: file

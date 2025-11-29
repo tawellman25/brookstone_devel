@@ -1,0 +1,29 @@
+uuid: 77731a2d-7e5d-4975-a8af-c7ca3165b2e0
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.crew_types.crew_types
+    - eck.eck_type.department.details
+    - field.storage.crew_types.field_department
+id: crew_types.crew_types.field_department
+field_name: field_department
+entity_type: crew_types
+bundle: crew_types
+label: Department
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:department'
+  handler_settings:
+    target_bundles:
+      details: details
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

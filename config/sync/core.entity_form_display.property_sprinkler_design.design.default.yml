@@ -1,0 +1,74 @@
+uuid: bba1efad-ff81-4097-8469-c338dc75a139
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_design.design
+    - field.field.property_sprinkler_design.design.field_corel_draw_file
+    - field.field.property_sprinkler_design.design.field_design_pdf_file
+    - field.field.property_sprinkler_design.design.field_property
+    - field.field.property_sprinkler_design.design.field_sprinkler_design
+    - field.field.property_sprinkler_design.design.field_work_order
+    - image.style.thumbnail
+  module:
+    - field_layout
+    - file
+    - image
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: property_sprinkler_design.design.default
+targetEntityType: property_sprinkler_design
+bundle: design
+mode: default
+content:
+  field_corel_draw_file:
+    type: file_generic
+    weight: 3
+    region: content
+    settings:
+      progress_indicator: throbber
+    third_party_settings: {  }
+  field_design_pdf_file:
+    type: file_generic
+    weight: 4
+    region: content
+    settings:
+      progress_indicator: throbber
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_sprinkler_design:
+    type: image_image
+    weight: 2
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  title: true
+  uid: true

@@ -1,0 +1,29 @@
+uuid: 1d71da68-aab4-4ff2-97ec-0b3768f4f595
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_ss_zones.zone
+    - eck.eck_type.property_zone_watering_time.watering_time
+    - field.storage.property_zone_watering_time.field_ss_zone_referenced
+id: property_zone_watering_time.watering_time.field_ss_zone_referenced
+field_name: field_ss_zone_referenced
+entity_type: property_zone_watering_time
+bundle: watering_time
+label: Zone
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:property_ss_zones'
+  handler_settings:
+    target_bundles:
+      zone: zone
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

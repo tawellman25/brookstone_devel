@@ -1,0 +1,29 @@
+uuid: 440e9fc3-0d33-4618-9b99-6accac9feeb2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.vehicles
+    - field.storage.equipment.field_status
+    - taxonomy.vocabulary.equipment_status
+id: equipment.vehicles.field_status
+field_name: field_status
+entity_type: equipment
+bundle: vehicles
+label: Status
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      equipment_status: equipment_status
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

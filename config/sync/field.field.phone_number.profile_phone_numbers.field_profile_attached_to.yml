@@ -1,0 +1,31 @@
+uuid: 59087626-4964-4f05-b2a2-467bfa220322
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.phone_number.profile_phone_numbers
+    - field.storage.phone_number.field_profile_attached_to
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: '[current-page:query:target_id]'
+    on_update: 0
+id: phone_number.profile_phone_numbers.field_profile_attached_to
+field_name: field_profile_attached_to
+entity_type: phone_number
+bundle: profile_phone_numbers
+label: 'Old User Reference'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: customer_profile_reference_view
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

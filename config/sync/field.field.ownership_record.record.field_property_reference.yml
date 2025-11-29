@@ -1,0 +1,29 @@
+uuid: 275074ac-b921-4b7c-afe5-98b67dd5244c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.ownership_record.record
+    - eck.eck_type.properties.property
+    - field.storage.ownership_record.field_property_reference
+id: ownership_record.record.field_property_reference
+field_name: field_property_reference
+entity_type: ownership_record
+bundle: record
+label: 'Property Reference'
+description: 'Enter the Property Address that you want to change ownership of.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:properties'
+  handler_settings:
+    target_bundles:
+      property: property
+    sort:
+      field: field_street_address
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

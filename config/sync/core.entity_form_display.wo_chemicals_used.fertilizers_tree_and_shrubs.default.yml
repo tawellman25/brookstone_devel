@@ -1,0 +1,232 @@
+uuid: c8ff60d3-c045-49f8-a215-7310a2c41c29
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_chemicals_used.fertilizers_tree_and_shrubs
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_applied_to
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_applied_to_garden
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_applied_to_shrubs
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_applied_to_trees
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_chemical
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_chemical_cost
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_fertilizer_cost
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_fertilizer_lbs_applied
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_number_of_shrubs
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_number_of_trees
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_sq_ft_of_garden_beds
+    - field.field.wo_chemicals_used.fertilizers_tree_and_shrubs.field_work_order
+  module:
+    - conditional_fields
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_chemical_cost
+        - field_fertilizer_cost
+        - created
+        - uid
+        - field_work_order
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_applied_to_what:
+      children:
+        - field_applied_to_trees
+        - field_number_of_trees
+        - field_applied_to_shrubs
+        - field_number_of_shrubs
+        - field_applied_to_garden
+        - field_sq_ft_of_garden_beds
+      label: 'Applied to what'
+      region: content
+      parent_name: ''
+      weight: 0
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+id: wo_chemicals_used.fertilizers_tree_and_shrubs.default
+targetEntityType: wo_chemicals_used
+bundle: fertilizers_tree_and_shrubs
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 9
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_applied_to_garden:
+    type: boolean_checkbox
+    weight: 5
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_applied_to_shrubs:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_applied_to_trees:
+    type: boolean_checkbox
+    weight: 1
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_chemical:
+    type: options_buttons
+    weight: 8
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_chemical_cost:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_fertilizer_cost:
+    type: number
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_fertilizer_lbs_applied:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_number_of_shrubs:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        3edcc460-f941-4c3f-afc3-b0d7900b1f7a:
+          entity_type: wo_chemicals_used
+          bundle: fertilizers_tree_and_shrubs
+          dependee: field_applied_to_shrubs
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: 1
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_number_of_trees:
+    type: number
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        ca5d29fd-43a9-43a3-8420-22d6ab8a9c24:
+          entity_type: wo_chemicals_used
+          bundle: fertilizers_tree_and_shrubs
+          dependee: field_applied_to_trees
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: 1
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_sq_ft_of_garden_beds:
+    type: number
+    weight: 6
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        9063bd51-1d55-40c4-89f5-f53990f33504:
+          entity_type: wo_chemicals_used
+          bundle: fertilizers_tree_and_shrubs
+          dependee: field_applied_to_garden
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: 1
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 11
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 10
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  field_applied_to: true
+  title: true

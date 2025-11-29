@@ -1,0 +1,46 @@
+uuid: faa170d6-5b84-4ea1-a037-483e3a6ecc88
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.media.media_library
+    - field.field.media.sop_images.field_media_image_2
+    - field.field.media.sop_images.field_sop
+    - image.style.thumbnail
+    - media.type.sop_images
+  module:
+    - field_layout
+    - image
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: media.sop_images.media_library
+targetEntityType: media
+bundle: sop_images
+mode: media_library
+content:
+  field_media_image_2:
+    type: image_image
+    weight: 5
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_sop: true
+  path: true
+  status: true
+  uid: true

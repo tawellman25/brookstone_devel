@@ -1,0 +1,33 @@
+uuid: 1c79b86d-59d9-4d02-90f0-9cea5da45e09
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_system.system
+    - eck.eck_type.property_ss_sources.dirty_water_source
+    - eck.eck_type.property_ss_sources.domestic_source
+    - eck.eck_type.property_ss_sources.well_water_source
+    - field.storage.property_sprinkler_system.field_water_sources
+id: property_sprinkler_system.system.field_water_sources
+field_name: field_water_sources
+entity_type: property_sprinkler_system
+bundle: system
+label: 'Water Source'
+description: "<p>\r\n    Some systems have more than one source of water for them. &nbsp;You can add each of them here.&nbsp;\r\n</p>\r\n<ol>\r\n    <li>\r\n        Select if it is Domestic Water (City Water) or Dirty Water (Ditch or Well Water).\r\n    </li>\r\n    <li>\r\n        Click Add Water Source button.\r\n    </li>\r\n</ol>\r\n<p>\r\n    A New screen will pop up and you can enter the info for that water source there.\r\n</p>"
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:property_ss_sources'
+  handler_settings:
+    target_bundles:
+      dirty_water_source: dirty_water_source
+      domestic_source: domestic_source
+      well_water_source: well_water_source
+    sort:
+      field: field_ss_source_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: dirty_water_source
+field_type: entity_reference

@@ -1,0 +1,19 @@
+uuid: 859248ee-f50b-4e3c-a23a-f77338b3e684
+langcode: en
+status: true
+dependencies:
+  module:
+    - user
+id: teammate_profile
+label: 'Teammate - Profile'
+logic: and
+conditions:
+  825f1681-9d58-4290-9a3f-a224fd8e063f:
+    id: user_role
+    negate: false
+    uuid: 825f1681-9d58-4290-9a3f-a224fd8e063f
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      teammates: teammates
+allow_other_conditions: false

@@ -1,0 +1,24 @@
+uuid: b8bcc5af-26cc-4f1c-a3b1-80e2e8ad05df
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: wo_completion_info_paths
+label: 'WO Completion Info Paths'
+type: 'canonical_entities:wo_complete_info'
+pattern: '[wo_complete_info:field_work_order:entity:url:path]/complete'
+selection_criteria:
+  bcbeabf1-9f9e-4076-8f1a-6f48b0313c87:
+    id: 'entity_bundle:wo_complete_info'
+    negate: false
+    uuid: bcbeabf1-9f9e-4076-8f1a-6f48b0313c87
+    context_mapping:
+      wo_complete_info: wo_complete_info
+    bundles:
+      complete: complete
+      lawn_mowing: lawn_mowing
+      snow_removal: snow_removal
+selection_logic: and
+weight: 27
+relationships: {  }

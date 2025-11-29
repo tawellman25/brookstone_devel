@@ -1,0 +1,57 @@
+uuid: f25eee5c-de7f-4a4e-a12e-80debc0bd398
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sprinkler_types.types
+    - field.storage.sprinkler_types.field_main_image
+  module:
+    - filefield_paths
+    - image
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: 'services/[sprinkler_types:url:path]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[sprinkler_types:title].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: true
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: sprinkler_types.types.field_main_image
+field_name: field_main_image
+entity_type: sprinkler_types
+bundle: types
+label: 'Main Image'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'png gif jpg jpeg'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: true
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

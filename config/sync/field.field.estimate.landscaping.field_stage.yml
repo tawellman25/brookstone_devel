@@ -1,0 +1,33 @@
+uuid: 107c47f6-4035-4571-9b7d-e22d7e29c298
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - field.storage.estimate.field_stage
+    - taxonomy.vocabulary.estimate_stage
+  content:
+    - 'taxonomy_term:estimate_stage:863a00e0-b80a-4712-a4d3-b175f7bea5fd'
+id: estimate.landscaping.field_stage
+field_name: field_stage
+entity_type: estimate
+bundle: landscaping
+label: Stage
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 863a00e0-b80a-4712-a4d3-b175f7bea5fd
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      estimate_stage: estimate_stage
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

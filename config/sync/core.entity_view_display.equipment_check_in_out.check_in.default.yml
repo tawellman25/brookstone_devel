@@ -1,0 +1,83 @@
+uuid: fecc6186-cd48-4883-a8fc-947aef4d6de2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_check_in_out.check_in
+    - field.field.equipment_check_in_out.check_in.field_checking_equipment
+    - field.field.equipment_check_in_out.check_in.field_equipment_condition
+    - field.field.equipment_check_in_out.check_in.field_equipment_name
+    - field.field.equipment_check_in_out.check_in.field_note
+  module:
+    - options
+    - user
+id: equipment_check_in_out.check_in.default
+targetEntityType: equipment_check_in_out
+bundle: check_in
+mode: default
+content:
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: ''
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_checking_equipment:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_equipment_condition:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_equipment_name:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_note:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true

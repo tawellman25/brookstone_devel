@@ -1,0 +1,29 @@
+uuid: 4149a727-4db1-4aeb-87c6-cca5fcf93a4f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contracts.snow_removal
+    - eck.eck_type.properties.property
+    - field.storage.contracts.field_property
+id: contracts.snow_removal.field_property
+field_name: field_property
+entity_type: contracts
+bundle: snow_removal
+label: Property
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:properties'
+  handler_settings:
+    target_bundles:
+      property: property
+    sort:
+      field: field_nickname
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

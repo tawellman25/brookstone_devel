@@ -1,0 +1,29 @@
+uuid: 592cd3d2-bfc5-4538-96fd-d1045b1c90ee
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.deer_prevention
+    - field.storage.work_order.field_deer_prevent_application
+    - taxonomy.vocabulary.deer_protection
+id: work_order.deer_prevention.field_deer_prevent_application
+field_name: field_deer_prevent_application
+entity_type: work_order
+bundle: deer_prevention
+label: Season
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      deer_protection: deer_protection
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

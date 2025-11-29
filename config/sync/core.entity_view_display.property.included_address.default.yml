@@ -1,0 +1,36 @@
+uuid: e333dc88-9b40-463a-9dbc-44ca854def8b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property.included_address
+    - field.field.property.included_address.field_address
+    - field.field.property.included_address.field_associated_property
+    - field.field.property.included_address.field_unit
+id: property.included_address.default
+targetEntityType: property
+bundle: included_address
+mode: default
+content:
+  field_address:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_unit:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_associated_property: true
+  title: true
+  uid: true

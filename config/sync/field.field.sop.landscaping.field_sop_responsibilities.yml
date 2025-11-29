@@ -1,0 +1,27 @@
+uuid: 94a8a8f5-83eb-4a43-8f78-73fd1576d970
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.landscaping
+    - field.storage.sop.field_sop_responsibilities
+    - filter.format.full_html
+  module:
+    - text
+id: sop.landscaping.field_sop_responsibilities
+field_name: field_sop_responsibilities
+entity_type: sop
+bundle: landscaping
+label: Responsibilities
+description: 'Outlines roles and duties for executing the SOP (e.g., "Office Manager: Performs data entry", "Office Assistant: Enters client information").'
+required: false
+translatable: false
+default_value:
+  -
+    value: '<ul dir="ltr"><li><p dir="ltr"><strong>Office Personnel</strong>: Initiates client contact, gathers initial requirements, and hands over to the appropriate Crew Supervisor.</p></li><li><p dir="ltr"><strong>Crew Supervisor</strong>: Manages the onboarding process, coordinates with internal teams, and serves as the primary point of contact for the client.</p></li><li><p dir="ltr"><strong>Teammembers: ...</strong></p></li></ul>'
+    format: full_html
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

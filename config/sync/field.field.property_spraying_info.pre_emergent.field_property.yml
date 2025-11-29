@@ -1,0 +1,29 @@
+uuid: affbe234-65f8-45cf-8e9a-7158aff3018f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.properties.property
+    - eck.eck_type.property_spraying_info.pre_emergent
+    - field.storage.property_spraying_info.field_property
+id: property_spraying_info.pre_emergent.field_property
+field_name: field_property
+entity_type: property_spraying_info
+bundle: pre_emergent
+label: Property
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:properties'
+  handler_settings:
+    target_bundles:
+      property: property
+    sort:
+      field: field_nickname
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

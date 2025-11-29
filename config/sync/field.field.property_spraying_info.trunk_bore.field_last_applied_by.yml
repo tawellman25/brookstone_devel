@@ -1,0 +1,38 @@
+uuid: d2960dc6-ccdd-4f40-b060-7a891670e3c6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_spraying_info.trunk_bore
+    - field.storage.property_spraying_info.field_last_applied_by
+id: property_spraying_info.trunk_bore.field_last_applied_by
+field_name: field_last_applied_by
+entity_type: property_spraying_info
+bundle: trunk_bore
+label: 'Last Applied By'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        teammates: teammates
+        site_admin: '0'
+        administration: '0'
+        administrator: '0'
+        supervisor: '0'
+        client: '0'
+        user: '0'
+        supplier: '0'
+    include_anonymous: true
+field_type: entity_reference

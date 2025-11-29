@@ -1,0 +1,27 @@
+uuid: bfadeff8-a470-4c08-b62d-acce2f01d153
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.christmas_decorations
+    - field.storage.work_order.field_work_todo_description
+    - filter.format.full_html
+  module:
+    - text
+id: work_order.christmas_decorations.field_work_todo_description
+field_name: field_work_todo_description
+entity_type: work_order
+bundle: christmas_decorations
+label: 'Work To Be Done'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: '<p>[current-date:html_year] - Hang Christmas Lights and Decorations as described</p>'
+    format: full_html
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

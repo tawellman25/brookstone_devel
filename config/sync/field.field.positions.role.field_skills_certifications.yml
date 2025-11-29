@@ -1,0 +1,29 @@
+uuid: 76b2a554-e973-439a-9ea5-eac59e5719ee
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.positions.role
+    - field.storage.positions.field_skills_certifications
+    - taxonomy.vocabulary.crew_skills_and_certifications
+id: positions.role.field_skills_certifications
+field_name: field_skills_certifications
+entity_type: positions
+bundle: role
+label: 'Required Skills/Certifications'
+description: 'Select required skills or certifications from the Crew Skills and Certifications vocabulary (e.g., Pesticide Applicator License).'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      crew_skills_and_certifications: crew_skills_and_certifications
+    sort:
+      field: name
+      direction: asc
+    auto_create: true
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: a68f08b9-5876-4b75-9873-b6282256184d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.properties.property
+    - eck.eck_type.property.included_address
+    - field.storage.property.field_associated_property
+id: property.included_address.field_associated_property
+field_name: field_associated_property
+entity_type: property
+bundle: included_address
+label: 'Associated Property'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:properties'
+  handler_settings:
+    target_bundles:
+      property: property
+    sort:
+      field: field_nickname
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

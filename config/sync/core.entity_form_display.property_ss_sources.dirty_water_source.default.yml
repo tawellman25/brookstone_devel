@@ -1,0 +1,142 @@
+uuid: 0fef3c04-55fb-41f1-8833-7f24b04855f5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_ss_sources.dirty_water_source
+    - field.field.property_ss_sources.dirty_water_source.field_dirty_water_source_type
+    - field.field.property_ss_sources.dirty_water_source.field_location
+    - field.field.property_ss_sources.dirty_water_source.field_property_ss_system
+    - field.field.property_ss_sources.dirty_water_source.field_pumps
+    - field.field.property_ss_sources.dirty_water_source.field_ss_key_needed
+    - field.field.property_ss_sources.dirty_water_source.field_ss_shut_off_location_pic
+    - field.field.property_ss_sources.dirty_water_source.field_ss_shut_off_notes
+    - field.field.property_ss_sources.dirty_water_source.field_ss_source_name
+    - field.field.property_ss_sources.dirty_water_source.field_water_shut_off
+    - image.style.thumbnail
+  module:
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_property_ss_system
+        - path
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_water_source_info:
+      children:
+        - field_dirty_water_source_type
+        - field_water_shut_off
+        - field_location
+        - field_ss_key_needed
+        - field_ss_shut_off_notes
+        - field_ss_shut_off_location_pic
+      label: 'Water Source Info'
+      region: content
+      parent_name: ''
+      weight: 1
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+id: property_ss_sources.dirty_water_source.default
+targetEntityType: property_ss_sources
+bundle: dirty_water_source
+mode: default
+content:
+  field_dirty_water_source_type:
+    type: options_select
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_location:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_property_ss_system:
+    type: entity_reference_autocomplete
+    weight: 31
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_ss_key_needed:
+    type: options_select
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_ss_shut_off_location_pic:
+    type: image_image
+    weight: 8
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_ss_shut_off_notes:
+    type: string_textfield
+    weight: 7
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_ss_source_name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_water_shut_off:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 32
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  field_pumps: true
+  title: true

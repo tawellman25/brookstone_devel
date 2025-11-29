@@ -1,0 +1,29 @@
+uuid: 7474afd5-a263-4711-8b5b-bd2f8a4419cd
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.ips_beetle_on_pinion_pine
+    - eck.eck_type.work_order.pinion_pine_ips_beetle
+    - field.storage.contract_sections.field_work_order
+id: contract_sections.ips_beetle_on_pinion_pine.field_work_order
+field_name: field_work_order
+entity_type: contract_sections
+bundle: ips_beetle_on_pinion_pine
+label: 'Spring Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      pinion_pine_ips_beetle: pinion_pine_ips_beetle
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: aerating
+field_type: entity_reference

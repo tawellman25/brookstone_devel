@@ -1,0 +1,33 @@
+uuid: 1b0da856-1de7-40d0-a1e3-8b95b6cb8dd1
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.dethatching
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:00a9ca79-dbe6-40ce-a516-093d91a3e2e2'
+id: work_order.dethatching.field_service
+field_name: field_service
+entity_type: work_order
+bundle: dethatching
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 00a9ca79-dbe6-40ce-a516-093d91a3e2e2
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

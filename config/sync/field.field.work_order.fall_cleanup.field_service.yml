@@ -1,0 +1,33 @@
+uuid: 35a97d20-f99d-4d98-ad3c-e3a52930ef17
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.fall_cleanup
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:e93f49df-f19b-4db3-a307-31c4cb4365b5'
+id: work_order.fall_cleanup.field_service
+field_name: field_service
+entity_type: work_order
+bundle: fall_cleanup
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: e93f49df-f19b-4db3-a307-31c4cb4365b5
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

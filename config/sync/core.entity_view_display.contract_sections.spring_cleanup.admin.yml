@@ -1,0 +1,225 @@
+uuid: 83925f2b-d922-49b7-ad5d-bbd78cf047b9
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.contract_sections.admin
+    - eck.eck_type.contract_sections.spring_cleanup
+    - field.field.contract_sections.spring_cleanup.field_client_notes
+    - field.field.contract_sections.spring_cleanup.field_contract
+    - field.field.contract_sections.spring_cleanup.field_do_you_want
+    - field.field.contract_sections.spring_cleanup.field_estimate
+    - field.field.contract_sections.spring_cleanup.field_last_year
+    - field.field.contract_sections.spring_cleanup.field_man_hours
+    - field.field.contract_sections.spring_cleanup.field_set_your_budget
+    - field.field.contract_sections.spring_cleanup.field_specific_plants
+    - field.field.contract_sections.spring_cleanup.field_work_order
+    - views.view.contract_sections_admin_view
+  module:
+    - field_group
+    - layout_builder
+    - layout_discovery
+    - options
+    - user
+    - views
+third_party_settings:
+  field_group:
+    group_office_admin:
+      children:
+        - field_last_year
+        - field_man_hours
+        - field_estimate
+        - created
+        - uid
+        - changed
+        - field_contract
+      label: 'Office Administation'
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          efa33047-8a31-492d-b005-37f227cd7109:
+            uuid: efa33047-8a31-492d-b005-37f227cd7109
+            region: content
+            configuration:
+              id: 'field_block:contract_sections:spring_cleanup:changed'
+              label: Changed
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: timestamp
+                label: inline
+                settings:
+                  date_format: short
+                  custom_date_format: ''
+                  timezone: ''
+                  tooltip:
+                    date_format: long
+                    custom_date_format: ''
+                  time_diff:
+                    enabled: false
+                    future_format: '@interval hence'
+                    past_format: '@interval ago'
+                    granularity: 2
+                    refresh: 60
+                    description: ''
+                third_party_settings: {  }
+            weight: 10
+            additional: {  }
+          583ee853-5d3e-466a-b222-5c30499b2b36:
+            uuid: 583ee853-5d3e-466a-b222-5c30499b2b36
+            region: content
+            configuration:
+              id: 'views_block:contract_sections_admin_view-block_16'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 9
+            additional: {  }
+        third_party_settings: {  }
+id: contract_sections.spring_cleanup.admin
+targetEntityType: contract_sections
+bundle: spring_cleanup
+mode: admin
+content:
+  changed:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  created:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_client_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_contract:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_do_you_want:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_estimate:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_last_year:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_man_hours:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_set_your_budget:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_specific_plants:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  uid:
+    type: author
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+hidden:
+  field_work_order: true

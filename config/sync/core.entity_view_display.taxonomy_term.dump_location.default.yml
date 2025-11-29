@@ -1,0 +1,90 @@
+uuid: 47258aec-b92b-4c91-964b-c00307eae597
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.dump_location.field_address
+    - field.field.taxonomy_term.dump_location.field_gate_code
+    - field.field.taxonomy_term.dump_location.field_list_order
+    - field.field.taxonomy_term.dump_location.field_location
+    - field.field.taxonomy_term.dump_location.field_phone_number
+    - field.field.taxonomy_term.dump_location.field_teammate_description
+    - field.field.taxonomy_term.dump_location.field_website
+    - taxonomy.vocabulary.dump_location
+  module:
+    - address
+    - geofield
+    - link
+    - text
+id: taxonomy_term.dump_location.default
+targetEntityType: taxonomy_term
+bundle: dump_location
+mode: default
+content:
+  description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_address:
+    type: address_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_gate_code:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_list_order:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_location:
+    type: geofield_default
+    label: above
+    settings:
+      output_format: wkt
+      output_escape: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_phone_number:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_teammate_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_website:
+    type: link
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 8
+    region: content
+hidden: {  }

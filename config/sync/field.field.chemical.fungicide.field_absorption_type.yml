@@ -1,0 +1,35 @@
+uuid: 07af3f05-33c8-4896-9f35-d630a3071cf4
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.fungicide
+    - eck.eck_type.classification.absorption
+    - field.storage.chemical.field_absorption_type
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: chemical.fungicide.field_absorption_type
+field_name: field_absorption_type
+entity_type: chemical
+bundle: fungicide
+label: 'Absorption Type'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:classification'
+  handler_settings:
+    target_bundles:
+      absorption: absorption
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,33 @@
+uuid: 83784f70-c5f1-45fe-95ab-8b82653dd222
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.special_mowing
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:bcf9b80b-650e-4d45-befc-233877cbde18'
+id: work_order.special_mowing.field_service
+field_name: field_service
+entity_type: work_order
+bundle: special_mowing
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: bcf9b80b-650e-4d45-befc-233877cbde18
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

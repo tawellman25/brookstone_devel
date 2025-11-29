@@ -1,0 +1,43 @@
+uuid: 9f9d4b06-5ff0-4e38-b03e-c8ddad2c5c6c
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: GPN-ULGUNhEJsB5r_kxhtToVwYqJeZBFzUams9ofbkI
+id: example_rule
+label: 'Example Rule'
+events:
+  -
+    event_name: kernel.request
+description: 'Example Rule that shows a system message on every page to let users know that the rules_examples module is installed and working. '
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 4ba7e722-408f-43c7-996b-4c5a86e7f11c
+  conditions:
+    id: rules_and
+    uuid: ed2331ee-9e53-458c-8718-c73c87c7ef0e
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 6d521dad-44f0-4964-9a9b-9dbe870a4fa2
+    actions:
+      -
+        id: rules_action
+        uuid: effbdc66-7d89-423e-af2f-eb4edaeb9a37
+        action_id: rules_system_message
+        context_values:
+          message: 'Rules Examples module is installed and the <a href="/admin/config/workflow/rules">Example Rule</a> is running.'
+          type: warning
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }

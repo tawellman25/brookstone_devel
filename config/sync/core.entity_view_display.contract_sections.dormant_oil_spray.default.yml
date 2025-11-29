@@ -1,0 +1,141 @@
+uuid: 2c98f11a-d259-4743-a22c-db99b4ae7443
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.dormant_oil_spray
+    - field.field.contract_sections.dormant_oil_spray.field_chemicals_used
+    - field.field.contract_sections.dormant_oil_spray.field_client_notes
+    - field.field.contract_sections.dormant_oil_spray.field_contract
+    - field.field.contract_sections.dormant_oil_spray.field_do_you_want
+    - field.field.contract_sections.dormant_oil_spray.field_estimate
+    - field.field.contract_sections.dormant_oil_spray.field_gallons_used
+    - field.field.contract_sections.dormant_oil_spray.field_last_year
+    - field.field.contract_sections.dormant_oil_spray.field_work_order
+  module:
+    - field_group
+    - options
+    - user
+third_party_settings:
+  field_group:
+    group_office_admin:
+      children:
+        - field_last_year
+        - field_estimate
+        - field_chemicals_used
+        - field_gallons_used
+        - created
+        - uid
+        - field_contract
+        - field_work_order
+      label: 'Office Administation'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+id: contract_sections.dormant_oil_spray.default
+targetEntityType: contract_sections
+bundle: dormant_oil_spray
+mode: default
+content:
+  created:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_chemicals_used:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_client_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_contract:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_do_you_want:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_estimate:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_gallons_used:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_last_year:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_work_order:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  uid:
+    type: author
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+hidden:
+  changed: true

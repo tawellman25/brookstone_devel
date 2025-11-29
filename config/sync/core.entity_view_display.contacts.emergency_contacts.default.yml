@@ -1,0 +1,88 @@
+uuid: ba50cd88-5180-4cc5-9dd2-9254179411fd
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.emergency_contacts
+    - field.field.contacts.emergency_contacts.field_address
+    - field.field.contacts.emergency_contacts.field_first_name
+    - field.field.contacts.emergency_contacts.field_last_name
+    - field.field.contacts.emergency_contacts.field_note
+    - field.field.contacts.emergency_contacts.field_phone_number
+    - field.field.contacts.emergency_contacts.field_primary
+    - field.field.contacts.emergency_contacts.field_relationship
+    - field.field.contacts.emergency_contacts.field_teammate
+  module:
+    - layout_builder
+    - options
+third_party_settings:
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: contacts.emergency_contacts.default
+targetEntityType: contacts
+bundle: emergency_contacts
+mode: default
+content:
+  field_address:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_note:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_phone_number:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_primary:
+    type: boolean
+    label: hidden
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_relationship:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: first
+  field_teammate:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_first_name: true
+  field_last_name: true
+  uid: true

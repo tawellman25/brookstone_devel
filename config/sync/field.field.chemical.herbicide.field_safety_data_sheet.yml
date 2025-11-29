@@ -1,0 +1,32 @@
+uuid: c4055c30-5117-4f86-8851-b028c387de65
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.herbicide
+    - field.storage.chemical.field_safety_data_sheet
+  module:
+    - epp
+    - file
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: chemical.herbicide.field_safety_data_sheet
+field_name: field_safety_data_sheet
+entity_type: chemical
+bundle: herbicide
+label: 'Material Safety Data Sheet (MSDS)'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: chemical/herbicide/safety_data_sheets
+  file_extensions: 'txt pdf'
+  max_filesize: ''
+  description_field: false
+field_type: file

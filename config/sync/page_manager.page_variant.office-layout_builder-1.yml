@@ -1,0 +1,56 @@
+uuid: 85c80ed0-7d4e-4ead-8d07-74367bcd73eb
+langcode: en
+status: true
+dependencies:
+  config:
+    - block_content.type.basic
+    - page_manager.page.office
+  module:
+    - layout_builder
+    - layout_discovery
+    - user
+id: office-layout_builder-1
+label: 'Office Administation'
+weight: -10
+variant: layout_builder
+variant_settings:
+  id: layout_builder
+  label: null
+  weight: 0
+  uuid: e20abe08-a9b4-4bd0-a5aa-6e04f6aa495f
+  sections:
+    -
+      layout_id: layout_onecol
+      layout_settings:
+        label: 'Top Section'
+        context_mapping: {  }
+      components:
+        1ffbe077-5ff8-4484-982a-b30c1bfd9847:
+          uuid: 1ffbe077-5ff8-4484-982a-b30c1bfd9847
+          region: content
+          configuration:
+            id: 'inline_block:basic'
+            label: 'Page Description'
+            label_display: '0'
+            provider: layout_builder
+            view_mode: full
+            context_mapping: {  }
+            block_id: null
+            block_revision_id: 18
+            block_serialized: null
+          weight: 0
+          additional: {  }
+      third_party_settings: {  }
+page: office
+selection_criteria:
+  -
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      administrator: administrator
+      site_admin: site_admin
+      administration: administration
+selection_logic: and
+static_context: {  }

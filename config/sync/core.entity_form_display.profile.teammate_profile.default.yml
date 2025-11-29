@@ -1,0 +1,189 @@
+uuid: f45fcd93-3547-46d0-9b97-f85523c8f72c
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.profile.teammate_profile.field_address
+    - field.field.profile.teammate_profile.field_assigned_crew
+    - field.field.profile.teammate_profile.field_birthday
+    - field.field.profile.teammate_profile.field_cell_number
+    - field.field.profile.teammate_profile.field_emergency_contacts
+    - field.field.profile.teammate_profile.field_first_name
+    - field.field.profile.teammate_profile.field_hat_preference
+    - field.field.profile.teammate_profile.field_job_title
+    - field.field.profile.teammate_profile.field_last_name
+    - field.field.profile.teammate_profile.field_list_position
+    - field.field.profile.teammate_profile.field_middle_name
+    - field.field.profile.teammate_profile.field_public_viewable
+    - field.field.profile.teammate_profile.field_shirt_size
+    - field.field.profile.teammate_profile.field_spouse_name
+    - field.field.profile.teammate_profile.field_teammate_bio
+    - profile.type.teammate_profile
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - inline_entity_form
+    - layout_discovery
+    - telephone
+    - text
+    - weight
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_administation:
+      children:
+        - field_assigned_crew
+        - field_list_position
+        - field_teammate_bio
+        - field_public_viewable
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: profile.teammate_profile.default
+targetEntityType: profile
+bundle: teammate_profile
+mode: default
+content:
+  field_address:
+    type: inline_entity_form_complex
+    weight: 5
+    region: content
+    settings:
+      form_mode: default
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      allow_new: true
+      allow_existing: false
+      match_operator: CONTAINS
+      allow_duplicate: false
+      collapsible: false
+      collapsed: false
+      revision: false
+      removed_reference: optional
+    third_party_settings: {  }
+  field_assigned_crew:
+    type: options_buttons
+    weight: 31
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_birthday:
+    type: datetime_default
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_cell_number:
+    type: telephone_default
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_emergency_contacts:
+    type: inline_entity_form_complex
+    weight: 10
+    region: content
+    settings:
+      form_mode: default
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      allow_new: true
+      allow_existing: false
+      match_operator: CONTAINS
+      allow_duplicate: false
+      collapsible: false
+      collapsed: false
+      revision: false
+      removed_reference: optional
+    third_party_settings: {  }
+  field_first_name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_hat_preference:
+    type: options_select
+    weight: 8
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_job_title:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_name:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_list_position:
+    type: weight_selector
+    weight: 32
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_middle_name:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_public_viewable:
+    type: boolean_checkbox
+    weight: 34
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_shirt_size:
+    type: options_select
+    weight: 9
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_spouse_name:
+    type: string_textfield
+    weight: 7
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_teammate_bio:
+    type: text_textarea
+    weight: 33
+    region: content
+    settings:
+      rows: 10
+      placeholder: 'Please enter a Public Viewable bio description of this teammate'
+    third_party_settings: {  }
+hidden:
+  is_default: true

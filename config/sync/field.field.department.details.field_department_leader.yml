@@ -1,0 +1,29 @@
+uuid: b3b6cb51-2e51-4603-a48e-e3680b66cb14
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.department.details
+    - eck.eck_type.positions.role
+    - field.storage.department.field_department_leader
+id: department.details.field_department_leader
+field_name: field_department_leader
+entity_type: department
+bundle: details
+label: 'Department Leader'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:positions'
+  handler_settings:
+    target_bundles:
+      role: role
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

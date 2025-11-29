@@ -1,0 +1,38 @@
+uuid: c68a81cd-b831-4fd8-903a-0444a4b4390a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.spraying_locations.field_applicable_services
+    - field.field.taxonomy_term.spraying_locations.field_teammate_description
+    - taxonomy.vocabulary.spraying_locations
+  module:
+    - text
+id: taxonomy_term.spraying_locations.default
+targetEntityType: taxonomy_term
+bundle: spraying_locations
+mode: default
+content:
+  description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_applicable_services:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_teammate_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden: {  }

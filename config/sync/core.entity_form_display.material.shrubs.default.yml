@@ -1,0 +1,400 @@
+uuid: d59ddb73-b911-45e1-9105-2d3fa397404a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.shrubs
+    - field.field.material.shrubs.field_banner_images
+    - field.field.material.shrubs.field_bloom_time
+    - field.field.material.shrubs.field_care_instructions
+    - field.field.material.shrubs.field_cost_integer
+    - field.field.material.shrubs.field_cultivar
+    - field.field.material.shrubs.field_description
+    - field.field.material.shrubs.field_fall_color
+    - field.field.material.shrubs.field_flower_color
+    - field.field.material.shrubs.field_front_promoted
+    - field.field.material.shrubs.field_height
+    - field.field.material.shrubs.field_last_restocked_date
+    - field.field.material.shrubs.field_lead_time
+    - field.field.material.shrubs.field_main_image
+    - field.field.material.shrubs.field_material_tags
+    - field.field.material.shrubs.field_plant_characteristics
+    - field.field.material.shrubs.field_plant_color
+    - field.field.material.shrubs.field_plant_family
+    - field.field.material.shrubs.field_plant_genus
+    - field.field.material.shrubs.field_plant_species
+    - field.field.material.shrubs.field_price
+    - field.field.material.shrubs.field_price_updated
+    - field.field.material.shrubs.field_quantity_in_stock
+    - field.field.material.shrubs.field_supplier_item_number
+    - field.field.material.shrubs.field_supplier_website_item_link
+    - field.field.material.shrubs.field_suppliers
+    - field.field.material.shrubs.field_water_use
+    - field.field.material.shrubs.field_width
+    - image.style.thumbnail
+  module:
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - link
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_shrub_name:
+      children:
+        - title
+        - field_plant_genus
+        - field_plant_species
+        - field_cultivar
+        - field_plant_family
+      label: 'Shrub Name'
+      region: content
+      parent_name: ''
+      weight: 0
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+    group_office_admin:
+      children:
+        - field_material_tags
+        - uid
+        - created
+        - field_front_promoted
+        - path
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_supporting_images:
+      children:
+        - field_main_image
+        - field_banner_images
+      label: 'Supporting Images'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+    group_characteristics:
+      children:
+        - field_plant_characteristics
+        - field_plant_color
+        - field_flower_color
+        - field_bloom_time
+        - field_fall_color
+        - field_height
+        - field_width
+        - field_water_use
+      label: Characteristics
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+    group_inventory_management:
+      children:
+        - field_price_updated
+        - field_cost_integer
+        - field_price
+        - field_suppliers
+        - field_supplier_item_number
+        - field_supplier_website_item_link
+        - field_quantity_in_stock
+        - field_last_restocked_date
+        - field_lead_time
+      label: 'Inventory Management'
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+id: material.shrubs.default
+targetEntityType: material
+bundle: shrubs
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 8
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_banner_images:
+    type: image_image
+    weight: 10
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_bloom_time:
+    type: entity_reference_autocomplete
+    weight: 11
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_care_instructions:
+    type: text_textarea
+    weight: 2
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_cost_integer:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_cultivar:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_description:
+    type: text_textarea_with_summary
+    weight: 1
+    region: content
+    settings:
+      rows: 9
+      summary_rows: 3
+      placeholder: ''
+      show_summary: false
+    third_party_settings: {  }
+  field_fall_color:
+    type: string_textfield
+    weight: 13
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_flower_color:
+    type: string_textfield
+    weight: 10
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_front_promoted:
+    type: boolean_checkbox
+    weight: 9
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_height:
+    type: string_textfield
+    weight: 14
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_restocked_date:
+    type: datetime_timestamp
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_lead_time:
+    type: number
+    weight: 13
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_main_image:
+    type: image_image
+    weight: 9
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_material_tags:
+    type: entity_reference_autocomplete
+    weight: 6
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_plant_characteristics:
+    type: options_buttons
+    weight: 8
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_plant_color:
+    type: string_textfield
+    weight: 9
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_plant_family:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_plant_genus:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_plant_species:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_price:
+    type: number
+    weight: 6
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_price_updated:
+    type: boolean_checkbox
+    weight: 4
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_quantity_in_stock:
+    type: number
+    weight: 11
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_supplier_item_number:
+    type: string_textfield
+    weight: 9
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_supplier_website_item_link:
+    type: link_default
+    weight: 10
+    region: content
+    settings:
+      placeholder_url: ''
+      placeholder_title: ''
+    third_party_settings: {  }
+  field_suppliers:
+    type: entity_reference_autocomplete
+    weight: 8
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_water_use:
+    type: options_select
+    weight: 16
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_width:
+    type: string_textfield
+    weight: 15
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

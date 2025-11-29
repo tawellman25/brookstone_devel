@@ -1,0 +1,44 @@
+uuid: e946776f-eaeb-4c04-a07b-45e6697dfe94
+langcode: en
+status: true
+dependencies:
+  config:
+    - comment.type.work_order_notes
+    - field.field.comment.work_order_notes.comment_body
+  module:
+    - field_layout
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: comment.work_order_notes.default
+targetEntityType: comment
+bundle: work_order_notes
+mode: default
+content:
+  comment_body:
+    type: text_textarea
+    weight: 2
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  comment_notify_settings:
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  subject:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  author: true

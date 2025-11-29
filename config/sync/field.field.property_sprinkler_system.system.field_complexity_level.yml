@@ -1,0 +1,33 @@
+uuid: 84e70058-9395-4095-8b48-e49dc782c5c8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_system.system
+    - field.storage.property_sprinkler_system.field_complexity_level
+    - taxonomy.vocabulary.system_complexity
+  content:
+    - 'taxonomy_term:system_complexity:73f4b42c-5d5b-479d-b36e-88b0d31c273d'
+id: property_sprinkler_system.system.field_complexity_level
+field_name: field_complexity_level
+entity_type: property_sprinkler_system
+bundle: system
+label: 'Complexity Level'
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: 73f4b42c-5d5b-479d-b36e-88b0d31c273d
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      system_complexity: system_complexity
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

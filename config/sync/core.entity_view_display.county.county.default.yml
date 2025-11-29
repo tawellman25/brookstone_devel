@@ -1,0 +1,234 @@
+uuid: 95df7a99-ad15-4f21-b237-7c826ae67164
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.county.county
+    - field.field.county.county.field_banner_image
+    - field.field.county.county.field_county_description
+    - field.field.county.county.field_county_name
+    - field.field.county.county.field_county_records_search
+    - field.field.county.county.field_gis_map_url
+    - field.field.county.county.field_state
+    - views.view.county_cities
+  module:
+    - image
+    - layout_builder
+    - layout_discovery
+    - link
+    - text
+    - views
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: 'Top Banner'
+          context_mapping: {  }
+        components:
+          30e04d1c-6b86-46b1-bff6-f9aad86fdd1c:
+            uuid: 30e04d1c-6b86-46b1-bff6-f9aad86fdd1c
+            region: content
+            configuration:
+              id: 'field_block:county:county:field_banner_image'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: image
+                label: above
+                settings:
+                  image_link: ''
+                  image_style: ''
+                  image_loading:
+                    attribute: lazy
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Main Content'
+          context_mapping: {  }
+          column_widths: 75-25
+        components:
+          4a9bf504-8d9e-48fc-bffc-d28e31903555:
+            uuid: 4a9bf504-8d9e-48fc-bffc-d28e31903555
+            region: second
+            configuration:
+              id: 'field_block:county:county:field_state'
+              label: State
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: entity_reference_label
+                label: hidden
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          daa9ba45-a887-4497-9417-c2539cc28aa5:
+            uuid: daa9ba45-a887-4497-9417-c2539cc28aa5
+            region: first
+            configuration:
+              id: 'field_block:county:county:field_county_description'
+              label: 'County Description'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: text_default
+                label: hidden
+                settings: {  }
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          be2e7452-0512-4cb9-b782-1af52bcc2f49:
+            uuid: be2e7452-0512-4cb9-b782-1af52bcc2f49
+            region: second
+            configuration:
+              id: 'views_block:county_cities-block_1'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 6
+            additional: {  }
+          a659268f-d18c-49d7-a9a6-4fd63f101a94:
+            uuid: a659268f-d18c-49d7-a9a6-4fd63f101a94
+            region: second
+            configuration:
+              id: 'field_block:county:county:field_gis_map_url'
+              label: 'GIS Map URL'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: link
+                label: hidden
+                settings:
+                  trim_length: 80
+                  url_only: false
+                  url_plain: false
+                  rel: '0'
+                  target: '0'
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          96854be6-77e5-4b7c-8509-f66572642873:
+            uuid: 96854be6-77e5-4b7c-8509-f66572642873
+            region: second
+            configuration:
+              id: 'field_block:county:county:field_county_records_search'
+              label: 'County Records Search'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: link
+                label: hidden
+                settings:
+                  trim_length: 80
+                  url_only: false
+                  url_plain: false
+                  rel: '0'
+                  target: '0'
+                third_party_settings: {  }
+            weight: 5
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components: {  }
+        third_party_settings: {  }
+id: county.county.default
+targetEntityType: county
+bundle: county
+mode: default
+content:
+  field_banner_image:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: -4
+    region: content
+  field_county_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: -2
+    region: content
+  field_county_name:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -1
+    region: content
+  field_county_records_search:
+    type: link
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_gis_map_url:
+    type: link
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_state:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: -3
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+hidden: {  }

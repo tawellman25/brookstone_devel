@@ -1,0 +1,54 @@
+uuid: 0dc6f562-334b-4cc2-8a2a-8d7207e39508
+langcode: en
+status: false
+dependencies:
+  enforced:
+    module:
+      - tr_rulez
+_core:
+  default_config_hash: IYshljOUKff4Pw6AEpWrYpdsHFwHP36MWbxrF07veIs
+id: redirect_to_home
+label: 'Redirect to home on Login'
+events:
+  -
+    event_name: rules_user_login
+description: 'Issue #2975452-6: Redirect all users to "/" on login, except for when a one-time login password is used.'
+tags:
+  - login
+  - redirect
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 7263942c-3847-460d-af3f-6c78f80fbcc1
+  conditions:
+    id: rules_and
+    uuid: a8c1bb95-b783-4238-a7e1-9b4b9fb96ca4
+    conditions:
+      -
+        id: rules_condition
+        uuid: f35e2d95-850d-455d-99e2-629e37b17cb7
+        context_values:
+          text: reset
+        context_mapping: {  }
+        context_processors:
+          text:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        condition_id: rules_path_contains_text
+        negate: true
+  actions:
+    id: rules_action_set
+    uuid: d17285ef-4de4-498a-8b78-654cf79566ee
+    actions:
+      -
+        id: rules_action
+        uuid: a529b090-e6f3-4421-aede-75489267d888
+        context_values:
+          url: /
+        context_mapping: {  }
+        context_processors:
+          url:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_page_redirect

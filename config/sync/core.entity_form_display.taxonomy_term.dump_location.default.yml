@@ -1,0 +1,132 @@
+uuid: 15ac767b-a0e1-41db-82bc-ccf203a3f6f8
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.dump_location.field_address
+    - field.field.taxonomy_term.dump_location.field_gate_code
+    - field.field.taxonomy_term.dump_location.field_list_order
+    - field.field.taxonomy_term.dump_location.field_location
+    - field.field.taxonomy_term.dump_location.field_phone_number
+    - field.field.taxonomy_term.dump_location.field_teammate_description
+    - field.field.taxonomy_term.dump_location.field_website
+    - taxonomy.vocabulary.dump_location
+  module:
+    - address
+    - field_group
+    - field_layout
+    - geofield
+    - layout_discovery
+    - link
+    - path
+    - telephone
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_list_order
+        - path
+        - status
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: taxonomy_term.dump_location.default
+targetEntityType: taxonomy_term
+bundle: dump_location
+mode: default
+content:
+  description:
+    type: text_textarea
+    weight: 1
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_address:
+    type: address_default
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_gate_code:
+    type: string_textfield
+    weight: 6
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_list_order:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_location:
+    type: geofield_latlon
+    weight: 3
+    region: content
+    settings:
+      html5_geolocation: false
+    third_party_settings: {  }
+  field_phone_number:
+    type: telephone_default
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_teammate_description:
+    type: text_textarea
+    weight: 2
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_website:
+    type: link_default
+    weight: 7
+    region: content
+    settings:
+      placeholder_url: ''
+      placeholder_title: ''
+    third_party_settings: {  }
+  name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 5
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    weight: 6
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+hidden: {  }

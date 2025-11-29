@@ -1,0 +1,38 @@
+uuid: 56f80b87-8ea8-4ff6-bfd4-2731f2d28a9b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.testimonial.client
+    - field.storage.testimonial.field_customer
+id: testimonial.client.field_customer
+field_name: field_customer
+entity_type: testimonial
+bundle: client
+label: Customer
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        client: client
+        site_admin: '0'
+        administration: '0'
+        administrator: '0'
+        supervisor: '0'
+        teammates: '0'
+        user: '0'
+        supplier: '0'
+    include_anonymous: true
+field_type: entity_reference

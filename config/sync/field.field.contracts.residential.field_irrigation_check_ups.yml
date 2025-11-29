@@ -1,0 +1,29 @@
+uuid: 0c33f7c4-da82-40d4-b5c4-a661b3d13ccc
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_check_ups
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_irrigation_check_ups
+id: contracts.residential.field_irrigation_check_ups
+field_name: field_irrigation_check_ups
+entity_type: contracts
+bundle: residential
+label: 'Irrigation Check Ups'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      irrigation_check_ups: irrigation_check_ups
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

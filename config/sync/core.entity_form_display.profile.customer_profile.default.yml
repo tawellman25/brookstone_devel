@@ -1,0 +1,595 @@
+uuid: faca7726-75cb-4dcb-a5a9-eb86c25d7324
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.profile.customer_profile.field_anniversary
+    - field.field.profile.customer_profile.field_attention
+    - field.field.profile.customer_profile.field_birthday
+    - field.field.profile.customer_profile.field_client_type
+    - field.field.profile.customer_profile.field_company_name
+    - field.field.profile.customer_profile.field_contact_email
+    - field.field.profile.customer_profile.field_first_name
+    - field.field.profile.customer_profile.field_last_name
+    - field.field.profile.customer_profile.field_main_fax_number
+    - field.field.profile.customer_profile.field_main_phone_number
+    - field.field.profile.customer_profile.field_middle_name
+    - field.field.profile.customer_profile.field_personal_name_title
+    - field.field.profile.customer_profile.field_primary_contact
+    - field.field.profile.customer_profile.field_primary_contact_phone
+    - field.field.profile.customer_profile.field_secondary_contact
+    - field.field.profile.customer_profile.field_secondary_contact_phone
+    - field.field.profile.customer_profile.field_spouse_birthday
+    - field.field.profile.customer_profile.field_spouse_name
+    - field.field.profile.customer_profile.field_website
+    - profile.type.customer_profile
+  module:
+    - conditional_fields
+    - datetime
+    - field_group
+    - field_layout
+    - layout_discovery
+    - link
+    - telephone
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_contacts:
+      children:
+        - field_primary_contact
+        - field_primary_contact_phone
+        - field_secondary_contact
+        - field_secondary_contact_phone
+      label: Contacts
+      region: content
+      parent_name: ''
+      weight: 15
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'These are the people we contact for this organization.'
+        required_fields: true
+id: profile.customer_profile.default
+targetEntityType: profile
+bundle: customer_profile
+mode: default
+content:
+  field_anniversary:
+    type: datetime_default
+    weight: 14
+    region: content
+    settings: {  }
+    third_party_settings:
+      conditional_fields:
+        08e3f6d8-7064-4de5-a1e9-79c7cbc5f632:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_attention:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        2a6dccac-c2ad-44ff-bd63-d924e5fa1e5a:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_birthday:
+    type: datetime_default
+    weight: 11
+    region: content
+    settings: {  }
+    third_party_settings:
+      conditional_fields:
+        924a886a-5160-4565-acd5-e17bcb5a08ee:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_client_type:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_company_name:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        afedc586-ba00-4a3c-95b5-ae5bf495b998:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_contact_email:
+    type: email_default
+    weight: 6
+    region: content
+    settings:
+      placeholder: ''
+      size: 60
+    third_party_settings:
+      conditional_fields:
+        16a858f5-cc99-4dbe-8230-f7985fb6427e:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_first_name:
+    type: string_textfield
+    weight: 8
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        0957ed06-5a84-42fe-becd-45b22c7cdd55:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_last_name:
+    type: string_textfield
+    weight: 10
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        9a6bd9ca-5619-429b-9508-b001eed784e8:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_main_fax_number:
+    type: telephone_default
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        a2226eea-89a0-4a10-9d87-cf8df614ac32:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_main_phone_number:
+    type: telephone_default
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        4da5ef4e-536b-4450-8b00-447fda131f05:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_middle_name:
+    type: string_textfield
+    weight: 9
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        e48b35b6-9468-4ae7-b71a-de3b7699d68b:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_personal_name_title:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        7363c7c1-d321-4173-a6c3-93bfde6b02b1:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_primary_contact:
+    type: string_textfield
+    weight: 28
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        c7a9a934-6fb3-4333-8d98-0399766c8a9e:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_primary_contact_phone:
+    type: telephone_default
+    weight: 29
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        369488dc-4c63-4dc3-8707-7bbdc1785020:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_secondary_contact:
+    type: string_textfield
+    weight: 30
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        672ddf0c-b5b2-4ce0-bb29-336869807f9e:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_secondary_contact_phone:
+    type: telephone_default
+    weight: 31
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        1dc73d63-48e3-44b3-88d7-dec514b15657:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_spouse_birthday:
+    type: datetime_default
+    weight: 13
+    region: content
+    settings: {  }
+    third_party_settings:
+      conditional_fields:
+        8f707c38-d7d7-48dc-8777-6ac184075a1e:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_spouse_name:
+    type: string_textfield
+    weight: 12
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        5799b28c-12aa-4421-a9b5-c07ed7a6aa5b:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_website:
+    type: link_default
+    weight: 7
+    region: content
+    settings:
+      placeholder_url: ''
+      placeholder_title: ''
+    third_party_settings:
+      conditional_fields:
+        efed447b-c7f9-4dbb-a8bf-4013ae568e25:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  group_contacts:
+    weight: 26
+    region: content
+    settings: {  }
+    third_party_settings:
+      conditional_fields:
+        590e5366-ae18-483d-b49d-d67f9bf1ff02:
+          entity_type: profile
+          bundle: customer_profile
+          dependee: field_client_type
+          settings:
+            state: '!visible'
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                target_id: '1'
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+            inheritance:
+              propagate: '0'
+              apply_to_parent: '0'
+              recurse: '0'
+hidden:
+  is_default: true

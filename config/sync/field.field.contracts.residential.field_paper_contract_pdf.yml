@@ -1,0 +1,46 @@
+uuid: 9b7d981a-3615-4ef4-b481-853bf22e56fb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_paper_contract_pdf
+  module:
+    - file
+    - filefield_paths
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[contracts:url:path]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[contracts:title].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: contracts.residential.field_paper_contract_pdf
+field_name: field_paper_contract_pdf
+entity_type: contracts
+bundle: residential
+label: 'Paper Contract PDF'
+description: 'Please scan paper Contract as a PDF and upload it here.  This will allow supervisors and teammates to check the contract without having to contact the office.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: pdf
+  max_filesize: ''
+  description_field: false
+field_type: file

@@ -1,0 +1,29 @@
+uuid: 5ff8f4c3-365c-497e-b651-1dbfd4dc5e72
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_start_up
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_irrigation_start_up
+id: contracts.residential.field_irrigation_start_up
+field_name: field_irrigation_start_up
+entity_type: contracts
+bundle: residential
+label: 'Irrigation Start Up'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      irrigation_start_up: irrigation_start_up
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

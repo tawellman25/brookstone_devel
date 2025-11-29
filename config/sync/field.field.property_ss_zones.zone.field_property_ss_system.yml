@@ -1,0 +1,29 @@
+uuid: 74b452bf-c6f3-407f-8046-3f8363fa4773
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_system.system
+    - eck.eck_type.property_ss_zones.zone
+    - field.storage.property_ss_zones.field_property_ss_system
+id: property_ss_zones.zone.field_property_ss_system
+field_name: field_property_ss_system
+entity_type: property_ss_zones
+bundle: zone
+label: 'Property SS System'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:property_sprinkler_system'
+  handler_settings:
+    target_bundles:
+      system: system
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

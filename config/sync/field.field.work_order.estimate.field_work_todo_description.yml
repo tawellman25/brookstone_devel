@@ -1,0 +1,29 @@
+uuid: 65f8a1d5-acf9-42d5-990e-2ecc1fdf956a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.estimate
+    - field.storage.work_order.field_work_todo_description
+    - filter.format.full_html
+  module:
+    - epp
+    - text
+third_party_settings:
+  epp:
+    value: "<b>[current-date:html_year]</b> - Create Estimate for:\_"
+    on_update: 0
+id: work_order.estimate.field_work_todo_description
+field_name: field_work_todo_description
+entity_type: work_order
+bundle: estimate
+label: 'Work To Be Done'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

@@ -1,0 +1,102 @@
+uuid: 672aa64b-386e-489e-b168-dc0f54300870
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.node.teaser
+    - field.field.node.forum.body
+    - field.field.node.forum.comment_forum
+    - field.field.node.forum.taxonomy_forums
+    - node.type.forum
+  module:
+    - field_layout
+    - layout_builder
+    - layout_discovery
+    - text
+    - user
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  layout_builder:
+    enabled: true
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          54f57bd5-a357-4456-bc0f-372adbed5e32:
+            uuid: 54f57bd5-a357-4456-bc0f-372adbed5e32
+            region: content
+            configuration:
+              id: 'field_block:node:forum:taxonomy_forums'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          05547f74-fa35-4df6-a40f-9f0a3e33f109:
+            uuid: 05547f74-fa35-4df6-a40f-9f0a3e33f109
+            region: content
+            configuration:
+              id: 'field_block:node:forum:body'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: text_summary_or_trimmed
+                label: hidden
+                settings:
+                  trim_length: 600
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          cce4fe66-e560-4378-89ba-67d0034a7b7a:
+            uuid: cce4fe66-e560-4378-89ba-67d0034a7b7a
+            region: content
+            configuration:
+              id: 'extra_field_block:node:forum:links'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+            weight: 2
+            additional: {  }
+        third_party_settings: {  }
+_core:
+  default_config_hash: MlT-p1QL2wigjhOAXEPyl3kjZ3FgIULo_rGoV_RiCMQ
+id: node.forum.teaser
+targetEntityType: node
+bundle: forum
+mode: teaser
+content:
+  body:
+    type: text_summary_or_trimmed
+    label: hidden
+    settings:
+      trim_length: 600
+    third_party_settings: {  }
+    weight: 100
+    region: content
+  links:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 101
+    region: content
+  taxonomy_forums:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+hidden:
+  comment_forum: true

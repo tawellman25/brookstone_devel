@@ -1,0 +1,87 @@
+uuid: fbd7e32c-5fc5-4bc2-8f38-7f26f7c63f4b
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.client_app.wo_task_list
+    - eck.eck_type.client_app.app
+    - field.field.client_app.app.field_apple_app_store_link
+    - field.field.client_app.app.field_directions
+    - field.field.client_app.app.field_google_app_store_link
+    - field.field.client_app.app.field_login_name
+    - field.field.client_app.app.field_logo
+    - field.field.client_app.app.field_our_id_pin
+    - field.field.client_app.app.field_password
+    - field.field.client_app.app.field_website
+  module:
+    - field_group
+    - image
+    - layout_builder
+third_party_settings:
+  field_group:
+    group_login_information:
+      children:
+        - field_login_name
+        - field_our_id_pin
+        - field_password
+      label: 'Login Information'
+      parent_name: ''
+      region: hidden
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+    group_links:
+      children:
+        - field_apple_app_store_link
+        - field_google_app_store_link
+        - field_website
+      label: Links
+      parent_name: ''
+      region: hidden
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: client_app.app.wo_task_list
+targetEntityType: client_app
+bundle: app
+mode: wo_task_list
+content:
+  field_logo:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_apple_app_store_link: true
+  field_directions: true
+  field_google_app_store_link: true
+  field_login_name: true
+  field_our_id_pin: true
+  field_password: true
+  field_website: true
+  title: true
+  uid: true

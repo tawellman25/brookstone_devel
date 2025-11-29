@@ -1,0 +1,25 @@
+uuid: 844e24d2-e9ec-4379-8a3f-2ec13480e025
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.special_mowing
+    - field.storage.wo_tasks_list.field_mowing_assigned_to
+id: wo_tasks_list.special_mowing.field_mowing_assigned_to
+field_name: field_mowing_assigned_to
+entity_type: wo_tasks_list
+bundle: special_mowing
+label: 'Mowing Assigned To'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: mow_crew_select_list
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

@@ -1,0 +1,33 @@
+uuid: cf013e59-8926-4307-84aa-d3052eb268b5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.fertilizing_trees_and_shrubs
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:bfc7aef4-9e34-445f-aa36-ae399da38289'
+id: work_order.fertilizing_trees_and_shrubs.field_service
+field_name: field_service
+entity_type: work_order
+bundle: fertilizing_trees_and_shrubs
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: bfc7aef4-9e34-445f-aa36-ae399da38289
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

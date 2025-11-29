@@ -1,0 +1,35 @@
+uuid: 170b54b1-f9f8-47dc-93ef-9efe2e76237b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.city.city
+    - eck.eck_type.state.state
+    - field.storage.city.field_state
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: city.city.field_state
+field_name: field_state
+entity_type: city
+bundle: city
+label: State
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:state'
+  handler_settings:
+    target_bundles:
+      state: state
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: 5167edeb-d98c-46f6-9751-1da51aa617a5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_start_up
+    - eck.eck_type.work_order.sprinkler_start_up
+    - field.storage.contract_sections.field_work_order
+id: contract_sections.irrigation_start_up.field_work_order
+field_name: field_work_order
+entity_type: contract_sections
+bundle: irrigation_start_up
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      sprinkler_start_up: sprinkler_start_up
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: aerating
+field_type: entity_reference

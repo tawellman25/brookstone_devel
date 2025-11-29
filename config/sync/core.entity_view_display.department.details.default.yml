@@ -1,0 +1,68 @@
+uuid: 32ee5e17-a9c0-4886-b01e-90cc26008caa
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.department.details
+    - field.field.department.details.field_associated_crews
+    - field.field.department.details.field_compliance_requirements
+    - field.field.department.details.field_department_leader
+    - field.field.department.details.field_department_name
+    - field.field.department.details.field_department_summary
+    - field.field.department.details.field_key_functions
+    - field.field.department.details.field_reporting_structure
+  module:
+    - text
+id: department.details.default
+targetEntityType: department
+bundle: details
+mode: default
+content:
+  field_associated_crews:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_compliance_requirements:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_department_leader:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_department_summary:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_key_functions:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_reporting_structure:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+hidden:
+  field_department_name: true
+  title: true

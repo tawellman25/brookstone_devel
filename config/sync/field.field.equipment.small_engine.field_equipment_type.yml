@@ -1,0 +1,35 @@
+uuid: 89ebab03-1d8e-476b-93c6-76c7476f2689
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.small_engine
+    - field.storage.equipment.field_equipment_type
+    - taxonomy.vocabulary.equipment_types
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: equipment.small_engine.field_equipment_type
+field_name: field_equipment_type
+entity_type: equipment
+bundle: small_engine
+label: 'Equipment Type'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      equipment_types: equipment_types
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

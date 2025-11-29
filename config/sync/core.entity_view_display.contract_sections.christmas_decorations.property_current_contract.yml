@@ -1,0 +1,106 @@
+uuid: f103850d-5d2e-4ef3-b0c6-1c615a74b686
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.contract_sections.property_current_contract
+    - eck.eck_type.contract_sections.christmas_decorations
+    - field.field.contract_sections.christmas_decorations.field_2nd_work_order
+    - field.field.contract_sections.christmas_decorations.field_client_notes
+    - field.field.contract_sections.christmas_decorations.field_contract
+    - field.field.contract_sections.christmas_decorations.field_do_you_want
+    - field.field.contract_sections.christmas_decorations.field_estimate
+    - field.field.contract_sections.christmas_decorations.field_last_year
+    - field.field.contract_sections.christmas_decorations.field_man_hours
+    - field.field.contract_sections.christmas_decorations.field_set_your_budget
+    - field.field.contract_sections.christmas_decorations.field_take_down_estimate
+    - field.field.contract_sections.christmas_decorations.field_work_order
+  module:
+    - options
+    - user
+id: contract_sections.christmas_decorations.property_current_contract
+targetEntityType: contract_sections
+bundle: christmas_decorations
+mode: property_current_contract
+content:
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_client_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_contract:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_do_you_want:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_estimate:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_last_year:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_work_order:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  field_2nd_work_order: true
+  field_man_hours: true
+  field_set_your_budget: true
+  field_take_down_estimate: true

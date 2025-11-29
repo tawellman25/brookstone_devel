@@ -1,0 +1,98 @@
+uuid: f890295b-a15d-4492-8d8b-630f0bc7593f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_lawn_maintenance.lawn_maintenance_info
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_aerating_lawns_contracted
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_dethatching_contracted
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_assigned_to
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_contracted
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_dumping_location
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_frequency
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_instructions
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_last_mowed
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_last_mowed_by
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_priority
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_mowing_weekday
+    - field.field.property_lawn_maintenance.lawn_maintenance_info.field_property
+  module:
+    - datetime
+    - options
+id: property_lawn_maintenance.lawn_maintenance_info.default
+targetEntityType: property_lawn_maintenance
+bundle: lawn_maintenance_info
+mode: default
+content:
+  field_mowing_assigned_to:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_mowing_dumping_location:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_mowing_frequency:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_mowing_instructions:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_mowing_last_mowed:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_mowing_last_mowed_by:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_mowing_priority:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_mowing_weekday:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  changed: true
+  field_aerating_lawns_contracted: true
+  field_dethatching_contracted: true
+  field_mowing_contracted: true
+  field_property: true
+  title: true

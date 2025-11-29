@@ -1,0 +1,54 @@
+uuid: 887ea532-9b2f-4912-8297-d2c51fc54fe2
+langcode: en
+status: true
+dependencies:
+  config:
+    - block_content.type.basic
+    - page_manager.page.office
+  module:
+    - layout_builder
+    - layout_discovery
+    - user
+id: office-layout_builder-2
+label: Supervisor
+weight: 0
+variant: layout_builder
+variant_settings:
+  id: layout_builder
+  label: null
+  weight: 0
+  uuid: 168a28ca-0333-4bb7-b558-225073ef55ff
+  sections:
+    -
+      layout_id: layout_onecol
+      layout_settings:
+        label: Header
+        context_mapping: {  }
+      components:
+        070dac30-3968-4f2c-aa54-fad5c4c8aaf3:
+          uuid: 070dac30-3968-4f2c-aa54-fad5c4c8aaf3
+          region: content
+          configuration:
+            id: 'inline_block:basic'
+            label: 'Supervisor Office Header'
+            label_display: '0'
+            provider: layout_builder
+            view_mode: full
+            context_mapping: {  }
+            block_id: 132
+            block_revision_id: 132
+            block_serialized: null
+          weight: 0
+          additional: {  }
+      third_party_settings: {  }
+page: office
+selection_criteria:
+  -
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      supervisor: supervisor
+selection_logic: and
+static_context: {  }

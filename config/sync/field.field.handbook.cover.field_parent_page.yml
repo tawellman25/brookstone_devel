@@ -1,0 +1,30 @@
+uuid: 93bf03d8-6c68-4878-984b-8b4de29f9567
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.handbook.cover
+    - eck.eck_type.handbook.page
+    - field.storage.handbook.field_parent_page
+id: handbook.cover.field_parent_page
+field_name: field_parent_page
+entity_type: handbook
+bundle: cover
+label: 'Parent Page'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:handbook'
+  handler_settings:
+    target_bundles:
+      cover: cover
+      page: page
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: cover
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: ecf73f07-3cd4-4473-b522-7be2a2cbf357
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_system.system
+    - eck.eck_type.property_ss_sources.well_water_source
+    - field.storage.property_ss_sources.field_property_ss_system
+id: property_ss_sources.well_water_source.field_property_ss_system
+field_name: field_property_ss_system
+entity_type: property_ss_sources
+bundle: well_water_source
+label: 'Property SS System'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:property_sprinkler_system'
+  handler_settings:
+    target_bundles:
+      system: system
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

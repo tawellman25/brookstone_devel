@@ -1,0 +1,25 @@
+uuid: cc211a87-f4ae-4e42-925f-8cb0f708778b
+langcode: en
+status: true
+dependencies:
+  module:
+    - user
+id: teammate_spraying_landing_page
+label: 'Teammate Spraying Landing page'
+description: 'This is the page that the Teammates will land on when going Spraying Work Orders.'
+use_admin_theme: false
+path: /teammates/work-orders/spraying
+access_logic: and
+access_conditions:
+  -
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      administrator: administrator
+      site_admin: site_admin
+      administration: administration
+      supervisor: supervisor
+      teammates: teammates
+parameters: {  }

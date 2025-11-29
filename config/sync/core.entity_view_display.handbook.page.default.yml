@@ -1,0 +1,57 @@
+uuid: 2fdc15c2-585e-4143-97fb-1127a9a0ba37
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.handbook.page
+    - field.field.handbook.page.field_body
+    - field.field.handbook.page.field_image
+    - field.field.handbook.page.field_intro
+    - field.field.handbook.page.field_parent_page
+    - field.field.handbook.page.field_weight
+    - responsive_image.styles.narrow
+  module:
+    - responsive_image
+    - text
+id: handbook.page.default
+targetEntityType: handbook
+bundle: page
+mode: default
+content:
+  field_body:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_image:
+    type: responsive_image
+    label: hidden
+    settings:
+      responsive_image_style: narrow
+      image_link: content
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_intro:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  subordinate_handbook_pages_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_parent_page: true
+  field_weight: true
+  title: true
+  uid: true

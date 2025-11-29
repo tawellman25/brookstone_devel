@@ -1,0 +1,38 @@
+uuid: bc68a0ce-127e-4e3b-b39f-0d8bba7c81b7
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.pumps
+    - field.storage.material.field_supplier
+id: material.pumps.field_supplier
+field_name: field_supplier
+entity_type: material
+bundle: pumps
+label: Supplier
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: true
+    filter:
+      type: role
+      role:
+        supplier: supplier
+        site_admin: '0'
+        administration: '0'
+        administrator: '0'
+        supervisor: '0'
+        teammates: '0'
+        client: '0'
+        user: '0'
+    include_anonymous: false
+field_type: entity_reference

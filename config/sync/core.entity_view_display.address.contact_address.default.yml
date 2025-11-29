@@ -1,0 +1,44 @@
+uuid: 8b50eb0c-5814-40f2-a6ea-5c5531d73bd6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.address.contact_address
+    - field.field.address.contact_address.field_additional_address
+    - field.field.address.contact_address.field_address
+    - field.field.address.contact_address.field_city
+    - field.field.address.contact_address.field_primary_address
+    - field.field.address.contact_address.field_state
+    - field.field.address.contact_address.field_zipcode
+id: address.contact_address.default
+targetEntityType: address
+bundle: contact_address
+mode: default
+content:
+  field_primary_address:
+    type: boolean
+    label: hidden
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_additional_address: true
+  field_address: true
+  field_city: true
+  field_state: true
+  field_zipcode: true
+  uid: true

@@ -1,0 +1,116 @@
+uuid: f9ace2d1-11a3-4551-8dc2-0bb415324236
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_complete_info.snow_removal
+    - field.field.wo_complete_info.snow_removal.field_date_completed
+    - field.field.wo_complete_info.snow_removal.field_how_many_trucks_taken
+    - field.field.wo_complete_info.snow_removal.field_signed_off_by
+    - field.field.wo_complete_info.snow_removal.field_those_on_crew
+    - field.field.wo_complete_info.snow_removal.field_work_order
+    - field.field.wo_complete_info.snow_removal.field_work_order_completed
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_date_completed
+        - field_work_order_completed
+        - created
+        - uid
+        - field_work_order
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: wo_complete_info.snow_removal.default
+targetEntityType: wo_complete_info
+bundle: snow_removal
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_date_completed:
+    type: datetime_timestamp
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_how_many_trucks_taken:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_signed_off_by:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_those_on_crew:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order_completed:
+    type: boolean_checkbox
+    weight: 1
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

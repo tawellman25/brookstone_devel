@@ -1,0 +1,33 @@
+uuid: c35857b3-bfe7-4cbc-a807-f5f7f90428cf
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_items.labor
+    - field.storage.estimate_items.field_labor_type
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:0b8daf76-bc2f-41f4-bc85-db3c0c717bdc'
+id: estimate_items.labor.field_labor_type
+field_name: field_labor_type
+entity_type: estimate_items
+bundle: labor
+label: 'Labor Type'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 0b8daf76-bc2f-41f4-bc85-db3c0c717bdc
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

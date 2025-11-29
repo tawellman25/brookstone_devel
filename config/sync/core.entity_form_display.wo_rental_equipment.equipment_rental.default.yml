@@ -1,0 +1,253 @@
+uuid: c3be23a0-8a23-417a-9d1c-4cb8aa96a21e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_rental_equipment.equipment_rental
+    - field.field.wo_rental_equipment.equipment_rental.field_equipment_rented
+    - field.field.wo_rental_equipment.equipment_rental.field_equipment_used
+    - field.field.wo_rental_equipment.equipment_rental.field_hourly_rate
+    - field.field.wo_rental_equipment.equipment_rental.field_hours
+    - field.field.wo_rental_equipment.equipment_rental.field_receipt_total_cost
+    - field.field.wo_rental_equipment.equipment_rental.field_rental_equipment_name
+    - field.field.wo_rental_equipment.equipment_rental.field_rental_returned
+    - field.field.wo_rental_equipment.equipment_rental.field_rented_for
+    - field.field.wo_rental_equipment.equipment_rental.field_rented_from
+  module:
+    - conditional_fields
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_rented_for
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+id: wo_rental_equipment.equipment_rental.default
+targetEntityType: wo_rental_equipment
+bundle: equipment_rental
+mode: default
+content:
+  field_equipment_rented:
+    type: boolean_checkbox
+    weight: 0
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_equipment_used:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        8817692f-ee2c-4e92-bbe4-773fccb2f71c:
+          entity_type: wo_rental_equipment
+          bundle: equipment_rental
+          dependee: field_equipment_rented
+          settings:
+            state: visible
+            reset: false
+            condition: '!checked'
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_hourly_rate:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        2b4ce5cb-a878-45cb-8cde-b01ec95353a9:
+          entity_type: wo_rental_equipment
+          bundle: equipment_rental
+          dependee: field_equipment_rented
+          settings:
+            state: visible
+            reset: false
+            condition: '!checked'
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_hours:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_receipt_total_cost:
+    type: number
+    weight: 6
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        0cc0b6d7-0002-4679-a437-e3206c953946:
+          entity_type: wo_rental_equipment
+          bundle: equipment_rental
+          dependee: field_equipment_rented
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_rental_equipment_name:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        509d9285-bbec-40e8-9375-ab6c0b95d520:
+          entity_type: wo_rental_equipment
+          bundle: equipment_rental
+          dependee: field_equipment_rented
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_rental_returned:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: true
+    third_party_settings:
+      conditional_fields:
+        e2e1f9e2-df11-4fd8-8f2a-3202c3d89d71:
+          entity_type: wo_rental_equipment
+          bundle: equipment_rental
+          dependee: field_equipment_rented
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_rented_for:
+    type: entity_reference_autocomplete
+    weight: 8
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_rented_from:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        4900b68c-4cb6-47de-a40d-e2c57d5a4723:
+          entity_type: wo_rental_equipment
+          bundle: equipment_rental
+          dependee: field_equipment_rented
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+hidden:
+  created: true
+  path: true
+  title: true
+  uid: true

@@ -1,0 +1,37 @@
+uuid: 99366552-ba95-412c-b450-8fce824ce08a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_complete_info.clean_up_crew
+    - eck.eck_type.work_order.aerating
+    - eck.eck_type.work_order.dethatching
+    - eck.eck_type.work_order.fall_cleanup
+    - eck.eck_type.work_order.spring_cleanup
+    - eck.eck_type.work_order.summer_pruning
+    - field.storage.wo_complete_info.field_work_order
+id: wo_complete_info.clean_up_crew.field_work_order
+field_name: field_work_order
+entity_type: wo_complete_info
+bundle: clean_up_crew
+label: 'Work Order'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      aerating: aerating
+      dethatching: dethatching
+      fall_cleanup: fall_cleanup
+      spring_cleanup: spring_cleanup
+      summer_pruning: summer_pruning
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: spring_cleanup
+field_type: entity_reference

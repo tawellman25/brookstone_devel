@@ -1,0 +1,211 @@
+uuid: 4f652bec-ed5d-4cd5-a533-819d8af19a32
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - field.field.estimate.landscaping.field_address
+    - field.field.estimate.landscaping.field_assigned_to
+    - field.field.estimate.landscaping.field_client_requested
+    - field.field.estimate.landscaping.field_email
+    - field.field.estimate.landscaping.field_estimate_total
+    - field.field.estimate.landscaping.field_estimate_type
+    - field.field.estimate.landscaping.field_line_items
+    - field.field.estimate.landscaping.field_name
+    - field.field.estimate.landscaping.field_new_client
+    - field.field.estimate.landscaping.field_phone
+    - field.field.estimate.landscaping.field_property
+    - field.field.estimate.landscaping.field_stage
+    - field.field.estimate.landscaping.field_work_order
+    - field.field.estimate.landscaping.field_zipcode
+  module:
+    - editablefields
+    - field_group
+    - text
+third_party_settings:
+  field_group:
+    group_client_information:
+      children:
+        - estimate_new_client_info_entity_view_1
+        - estimate_current_client_info_entity_view_1
+      label: 'Client Information'
+      parent_name: ''
+      region: content
+      weight: 1
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_notes:
+      children:
+        - estimate_notes_entity_view_1
+        - group_photos
+        - group_files
+      label: Notes
+      parent_name: ''
+      region: content
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+    group_photos:
+      children:
+        - estimate_media_photos_entity_view_1
+      label: Photos
+      parent_name: group_notes
+      region: content
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_files:
+      children:
+        - estimate_files_entity_view_1
+      label: Files
+      parent_name: group_notes
+      region: content
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_client_requested:
+      children:
+        - field_client_requested
+      label: 'Client Requested'
+      parent_name: ''
+      region: content
+      weight: 2
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_items:
+      children:
+        - field_line_items
+      label: Items
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+id: estimate.landscaping.default
+targetEntityType: estimate
+bundle: landscaping
+mode: default
+content:
+  estimate_current_client_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  estimate_designs_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  estimate_files_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  estimate_media_photos_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  estimate_new_client_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  estimate_notes_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_client_requested:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_estimate_total:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_line_items:
+    type: editablefields_formatter
+    label: hidden
+    settings:
+      form_mode: default
+      behaviour: inline
+      bypass_access: 0
+      fallback_access: 0
+      display_mode_access: default
+      fallback_edit: 0
+      display_mode_edit: work_order
+      fields_ajax_trigger: ''
+      fields_ajax_trigger_event: change
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_stage:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_address: true
+  field_assigned_to: true
+  field_email: true
+  field_estimate_type: true
+  field_name: true
+  field_new_client: true
+  field_phone: true
+  field_property: true
+  field_work_order: true
+  field_zipcode: true
+  title: true
+  uid: true

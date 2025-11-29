@@ -1,0 +1,32 @@
+uuid: a2d4086e-d66f-430d-9d7e-155dac134e97
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.irrigation
+    - field.storage.material.field_safety_data_sheet
+  module:
+    - epp
+    - file
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.irrigation.field_safety_data_sheet
+field_name: field_safety_data_sheet
+entity_type: material
+bundle: irrigation
+label: 'Material Safety Data Sheet (MSDS)'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: material/irrigation/safety_data_sheets
+  file_extensions: 'txt pdf doc'
+  max_filesize: ''
+  description_field: false
+field_type: file

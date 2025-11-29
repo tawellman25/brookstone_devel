@@ -1,0 +1,45 @@
+uuid: 2d29360a-e6f6-49dc-93b6-b09a5268609d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.aerating
+    - field.field.wo_tasks_list.aerating.field_aerating_equipment_used
+    - field.field.wo_tasks_list.aerating.field_sprinkler_heads_marked
+    - field.field.wo_tasks_list.aerating.field_sprinkler_heads_we_marked
+    - field.field.wo_tasks_list.aerating.field_work_order
+  module:
+    - options
+id: wo_tasks_list.aerating.default
+targetEntityType: wo_tasks_list
+bundle: aerating
+mode: default
+content:
+  field_aerating_equipment_used:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_sprinkler_heads_marked:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_sprinkler_heads_we_marked:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_work_order: true
+  title: true
+  uid: true

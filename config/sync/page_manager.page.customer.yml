@@ -1,0 +1,25 @@
+uuid: fd36182a-5d71-4fa1-8ab4-eb2066e519f4
+langcode: en
+status: true
+dependencies:
+  module:
+    - user
+id: customer
+label: 'Clients Administration'
+description: 'This the new landing page for all the Customer related management tasks.'
+use_admin_theme: true
+path: /admin/client
+access_logic: and
+access_conditions:
+  -
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      administrator: administrator
+      site_admin: site_admin
+      administration: administration
+      supervisor: supervisor
+      teammates: teammates
+parameters: {  }

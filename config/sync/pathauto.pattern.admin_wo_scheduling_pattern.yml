@@ -1,0 +1,22 @@
+uuid: 48c34adb-cb50-470f-bc7d-0f3c60730d59
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: admin_wo_scheduling_pattern
+label: 'WO Scheduling pattern'
+type: 'canonical_entities:scheduling'
+pattern: '[scheduling:field_work_order:entity:url:path]/schedule'
+selection_criteria:
+  f4d07c81-1d80-4cc0-8659-9ba8e211d708:
+    id: 'entity_bundle:scheduling'
+    negate: false
+    uuid: f4d07c81-1d80-4cc0-8659-9ba8e211d708
+    context_mapping:
+      scheduling: scheduling
+    bundles:
+      work_order: work_order
+selection_logic: and
+weight: 29
+relationships: {  }

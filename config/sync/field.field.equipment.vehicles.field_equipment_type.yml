@@ -1,0 +1,35 @@
+uuid: bbc4f428-f1fb-401d-b9ac-9e8b1f239277
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.vehicles
+    - field.storage.equipment.field_equipment_type
+    - taxonomy.vocabulary.equipment_types
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: equipment.vehicles.field_equipment_type
+field_name: field_equipment_type
+entity_type: equipment
+bundle: vehicles
+label: 'Equipment Type'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      equipment_types: equipment_types
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

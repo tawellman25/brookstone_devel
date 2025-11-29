@@ -1,0 +1,88 @@
+uuid: 8c6ff48f-1ea5-40b2-892e-0c2140f732f5
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.services.field_banner_image
+    - field.field.taxonomy_term.services.field_description
+    - field.field.taxonomy_term.services.field_estimate_types
+    - field.field.taxonomy_term.services.field_home_page
+    - field.field.taxonomy_term.services.field_home_page_slide
+    - field.field.taxonomy_term.services.field_iconic_image
+    - field.field.taxonomy_term.services.field_list_order
+    - field.field.taxonomy_term.services.field_other_names
+    - field.field.taxonomy_term.services.field_parent_service
+    - field.field.taxonomy_term.services.field_service_bundle
+    - field.field.taxonomy_term.services.field_service_name
+    - field.field.taxonomy_term.services.field_sop_code
+    - field.field.taxonomy_term.services.field_subtitle
+    - field.field.taxonomy_term.services.field_work_order_service
+    - taxonomy.vocabulary.services
+  module:
+    - image
+    - text
+id: taxonomy_term.services.default
+targetEntityType: taxonomy_term
+bundle: services
+mode: default
+content:
+  field_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_estimate_types:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_iconic_image:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_service_bundle:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_sop_code:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_subtitle:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  description: true
+  field_banner_image: true
+  field_home_page: true
+  field_home_page_slide: true
+  field_list_order: true
+  field_other_names: true
+  field_parent_service: true
+  field_service_name: true
+  field_work_order_service: true

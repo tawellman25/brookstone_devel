@@ -1,0 +1,251 @@
+uuid: 5ba37ca2-9a41-4bfb-90df-8595a0484c28
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_info.general_information
+    - field.field.property_sprinkler_info.general_information.field_field_ss_check_how_often
+    - field.field.property_sprinkler_info.general_information.field_last_checked_by
+    - field.field.property_sprinkler_info.general_information.field_last_system_check
+    - field.field.property_sprinkler_info.general_information.field_property
+    - field.field.property_sprinkler_info.general_information.field_ss_check_contract
+    - field.field.property_sprinkler_info.general_information.field_ss_check_instructions
+    - field.field.property_sprinkler_info.general_information.field_ss_shut_down_contract
+    - field.field.property_sprinkler_info.general_information.field_ss_start_up_contracted
+    - field.field.property_sprinkler_info.general_information.field_ss_start_up_notes
+    - field.field.property_sprinkler_info.general_information.field_ss_winterizing_notes
+    - field.field.property_sprinkler_info.general_information.field_systems
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - inline_entity_form
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_check_ups:
+      children:
+        - field_ss_check_contract
+        - field_field_ss_check_how_often
+        - field_last_system_check
+        - field_last_checked_by
+      label: 'Check Ups'
+      region: content
+      parent_name: group_contract_info
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+    group_winterizing:
+      children:
+        - field_ss_shut_down_contract
+        - field_ss_winterizing_notes
+      label: Winterizing
+      region: content
+      parent_name: group_contract_info
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+    group_start_up:
+      children:
+        - field_ss_start_up_contracted
+        - field_ss_start_up_notes
+      label: 'Start Up'
+      region: content
+      parent_name: group_contract_info
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+    group_office_admin:
+      children:
+        - field_property
+        - path
+        - title
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_sprinkler_systems_on_prope:
+      children:
+        - field_systems
+      label: 'Sprinkler Systems on Property'
+      region: content
+      parent_name: ''
+      weight: 0
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Every Property can have more than one sprinkler system on it.  You can add <b>multiple systems</b> to this property here.'
+        required_fields: true
+    group_contract_info:
+      children:
+        - field_ss_check_instructions
+        - group_check_ups
+        - group_start_up
+        - group_winterizing
+      label: 'Maintenance Info'
+      region: content
+      parent_name: ''
+      weight: 1
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Enter all the info needed for maintaining the system(s) on this Property here.'
+        required_fields: true
+id: property_sprinkler_info.general_information.default
+targetEntityType: property_sprinkler_info
+bundle: general_information
+mode: default
+content:
+  field_field_ss_check_how_often:
+    type: options_buttons
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_last_checked_by:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_system_check:
+    type: datetime_default
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 31
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_ss_check_contract:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_ss_check_instructions:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 30
+      placeholder: 'Enter anything special about this system here.'
+    third_party_settings: {  }
+  field_ss_shut_down_contract:
+    type: boolean_checkbox
+    weight: 6
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_ss_start_up_contracted:
+    type: boolean_checkbox
+    weight: 5
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_ss_start_up_notes:
+    type: string_textfield
+    weight: 6
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_ss_winterizing_notes:
+    type: string_textfield
+    weight: 7
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_systems:
+    type: inline_entity_form_complex
+    weight: 4
+    region: content
+    settings:
+      form_mode: default
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      allow_new: true
+      allow_existing: false
+      match_operator: CONTAINS
+      allow_duplicate: false
+      collapsible: false
+      collapsed: false
+      revision: false
+      removed_reference: optional
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 32
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 33
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

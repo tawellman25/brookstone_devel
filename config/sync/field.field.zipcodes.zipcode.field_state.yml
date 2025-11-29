@@ -1,0 +1,35 @@
+uuid: 9a7773ed-a0af-4bd4-8188-261d6c1b2a3c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.state.state
+    - eck.eck_type.zipcodes.zipcode
+    - field.storage.zipcodes.field_state
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: zipcodes.zipcode.field_state
+field_name: field_state
+entity_type: zipcodes
+bundle: zipcode
+label: State
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:state'
+  handler_settings:
+    target_bundles:
+      state: state
+    sort:
+      field: field_state_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

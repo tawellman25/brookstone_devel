@@ -1,0 +1,345 @@
+uuid: bb0e5d02-7f91-4f6b-b1fc-a43f8ad26710
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.sprinkler_installation
+    - field.field.work_order.sprinkler_installation.field_billing_adjustment
+    - field.field.work_order.sprinkler_installation.field_billing_notes
+    - field.field.work_order.sprinkler_installation.field_client_app_wo_number
+    - field.field.work_order.sprinkler_installation.field_contract
+    - field.field.work_order.sprinkler_installation.field_design_plan_images
+    - field.field.work_order.sprinkler_installation.field_dump_fee_total
+    - field.field.work_order.sprinkler_installation.field_estimated_price
+    - field.field.work_order.sprinkler_installation.field_invoiced
+    - field.field.work_order.sprinkler_installation.field_labor_total
+    - field.field.work_order.sprinkler_installation.field_material_chemical_total
+    - field.field.work_order.sprinkler_installation.field_printed
+    - field.field.work_order.sprinkler_installation.field_property
+    - field.field.work_order.sprinkler_installation.field_rental_total
+    - field.field.work_order.sprinkler_installation.field_scheduled
+    - field.field.work_order.sprinkler_installation.field_service
+    - field.field.work_order.sprinkler_installation.field_status
+    - field.field.work_order.sprinkler_installation.field_supervisor
+    - field.field.work_order.sprinkler_installation.field_total_time
+    - field.field.work_order.sprinkler_installation.field_trip_fee
+    - field.field.work_order.sprinkler_installation.field_wo_total
+    - field.field.work_order.sprinkler_installation.field_work_order_id
+    - field.field.work_order.sprinkler_installation.field_work_order_notes
+    - field.field.work_order.sprinkler_installation.field_work_todo_description
+    - image.style.thumbnail
+  module:
+    - allowed_formats
+    - comment
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_status
+        - group_billing
+        - group_system_info
+        - field_work_order_notes
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_system_info:
+      children:
+        - title
+        - uid
+        - created
+        - flag
+        - field_contract
+        - field_service
+        - field_scheduled
+        - field_printed
+        - path
+        - field_work_order_id
+      label: 'System Info'
+      region: content
+      parent_name: group_office_admin
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_billing:
+      children:
+        - field_estimated_price
+        - field_total_time
+        - group_subtotals
+        - field_billing_adjustment
+        - field_wo_total
+        - field_invoiced
+        - field_billing_notes
+      label: Billing
+      region: content
+      parent_name: group_office_admin
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_subtotals:
+      children:
+        - field_labor_total
+        - field_material_chemical_total
+        - field_rental_total
+        - field_dump_fee_total
+        - field_trip_fee
+      label: Subtotals
+      region: content
+      parent_name: group_billing
+      weight: 6
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+id: work_order.sprinkler_installation.default
+targetEntityType: work_order
+bundle: sprinkler_installation
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_billing_adjustment:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_billing_notes:
+    type: string_textfield
+    weight: 10
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_client_app_wo_number:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_design_plan_images:
+    type: image_image
+    weight: 3
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_dump_fee_total:
+    type: number
+    weight: 23
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimated_price:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_invoiced:
+    type: boolean_checkbox
+    weight: 9
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_labor_total:
+    type: number
+    weight: 20
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_material_chemical_total:
+    type: number
+    weight: 21
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_printed:
+    type: boolean_checkbox
+    weight: 8
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_rental_total:
+    type: number
+    weight: 22
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_scheduled:
+    type: boolean_checkbox
+    weight: 7
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_service:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_status:
+    type: options_select
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_supervisor:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_total_time:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_trip_fee:
+    type: number
+    weight: 24
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_wo_total:
+    type: number
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order_id:
+    type: number
+    weight: 10
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order_notes:
+    type: comment_default
+    weight: 9
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_work_todo_description:
+    type: text_textarea
+    weight: 4
+    region: content
+    settings:
+      rows: 5
+      placeholder: 'Enter the description of Work To Be Done here'
+    third_party_settings:
+      allowed_formats:
+        hide_help: '1'
+        hide_guidelines: '0'
+  flag:
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 9
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

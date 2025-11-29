@@ -1,0 +1,29 @@
+uuid: da338291-17cb-4efe-9942-e5ef12c599bb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - eck.eck_type.zipcodes.zipcode
+    - field.storage.estimate.field_zipcode
+id: estimate.landscaping.field_zipcode
+field_name: field_zipcode
+entity_type: estimate
+bundle: landscaping
+label: Zipcode
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:zipcodes'
+  handler_settings:
+    target_bundles:
+      zipcode: zipcode
+    sort:
+      field: field_zipcode
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

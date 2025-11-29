@@ -1,0 +1,29 @@
+uuid: 06b384c3-9db9-4e80-a2ee-74d6a48b674a
+langcode: en
+status: true
+dependencies:
+  config:
+    - config_pages.type.business_setting
+    - eck.eck_type.sq_ft_break_points.aeration
+    - field.storage.config_pages.field_aeration_pricing
+id: config_pages.business_setting.field_aeration_pricing
+field_name: field_aeration_pricing
+entity_type: config_pages
+bundle: business_setting
+label: 'Aeration Pricing'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sq_ft_break_points'
+  handler_settings:
+    target_bundles:
+      aeration: aeration
+    sort:
+      field: field_max_sq_ft
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

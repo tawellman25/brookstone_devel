@@ -1,0 +1,61 @@
+uuid: 86260c48-0a95-46ce-83fb-c4b2cc1e9ced
+langcode: en
+status: true
+dependencies:
+  config:
+    - block_content.type.basic
+    - page_manager.page.office
+  module:
+    - layout_builder
+    - layout_discovery
+    - rules
+    - user
+id: office-layout_builder-0
+label: 'Teammate Own Office View'
+weight: -9
+variant: layout_builder
+variant_settings:
+  id: layout_builder
+  label: null
+  weight: 0
+  uuid: ae034f30-017b-4d95-b50d-a134ada32e4d
+  sections:
+    -
+      layout_id: layout_onecol
+      layout_settings:
+        label: 'Top Section'
+        context_mapping: {  }
+      components:
+        23752c24-718e-43c5-97a5-fa9ad3048225:
+          uuid: 23752c24-718e-43c5-97a5-fa9ad3048225
+          region: content
+          configuration:
+            id: 'inline_block:basic'
+            label: 'Page Description'
+            label_display: '0'
+            provider: layout_builder
+            view_mode: full
+            context_mapping: {  }
+            block_id: 17
+            block_revision_id: 17
+            block_serialized: null
+          weight: 0
+          additional: {  }
+      third_party_settings: {  }
+page: office
+selection_criteria:
+  -
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      teammates: teammates
+  -
+    id: rules_data_comparison
+    negate: false
+    context_mapping:
+      data: '@user.current_user_context:current_user'
+      value: current_user
+selection_logic: and
+static_context: {  }

@@ -1,0 +1,46 @@
+uuid: ad3b8424-43b0-4a28-8d35-5a353fba6e74
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: H-CiXoPnUp2TFXlrrdPaAoPwHUXpasNEi6K7sXR4ZoU
+id: show_a_message_when_the_article_is_flagged
+label: 'Show a message when the article is flagged'
+events:
+  -
+    event_name: 'rules_flag_entity_flagged:node--article'
+description: ''
+tags: {  }
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 27cff2bd-2f65-40bf-b4ce-2c7597a9a073
+  weight: 0
+  conditions:
+    id: rules_and
+    uuid: 25ed0879-0fbe-466f-a76d-1d788c611bad
+    weight: 0
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 33bdf962-3d77-4f65-b28c-48c5735a3f6a
+    weight: 0
+    actions:
+      -
+        id: rules_action
+        uuid: ce787a3b-866b-403d-9221-e7f0820b5a72
+        weight: 0
+        context_values:
+          message: '{{node.title}} was flagged.'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message

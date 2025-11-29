@@ -1,0 +1,372 @@
+uuid: 324f3cb6-01f0-497f-8fc9-db5209b02379
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.base_field_override.property_sprinkler_pumps.pump.title
+    - eck.eck_type.property_sprinkler_pumps.pump
+    - field.field.property_sprinkler_pumps.pump.field_property_ss_source
+    - field.field.property_sprinkler_pumps.pump.field_pump_configuration_photos
+    - field.field.property_sprinkler_pumps.pump.field_pump_discharge_size
+    - field.field.property_sprinkler_pumps.pump.field_pump_in_house_item
+    - field.field.property_sprinkler_pumps.pump.field_pump_location
+    - field.field.property_sprinkler_pumps.pump.field_pump_manufactured
+    - field.field.property_sprinkler_pumps.pump.field_pump_model_number
+    - field.field.property_sprinkler_pumps.pump.field_pump_phase
+    - field.field.property_sprinkler_pumps.pump.field_pump_serial_number
+    - field.field.property_sprinkler_pumps.pump.field_pump_serial_number_pic
+    - field.field.property_sprinkler_pumps.pump.field_pump_size
+    - field.field.property_sprinkler_pumps.pump.field_pump_suction_size
+    - field.field.property_sprinkler_pumps.pump.field_pump_volts
+    - image.style.max_325x325
+  module:
+    - image
+    - layout_builder
+    - layout_discovery
+    - options
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          9f7802e1-e5ec-481a-b8a1-94bd1e8d4fdf:
+            uuid: 9f7802e1-e5ec-481a-b8a1-94bd1e8d4fdf
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:title'
+              label: Name
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: string
+                label: hidden
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          4a0479c5-1147-4b7e-80b9-3a830422be0c:
+            uuid: 4a0479c5-1147-4b7e-80b9-3a830422be0c
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_manufactured'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          3eae32cc-ed4f-4d9d-a89d-3caf3ea2f325:
+            uuid: 3eae32cc-ed4f-4d9d-a89d-3caf3ea2f325
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_size'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          ae98728d-0f29-46dd-97bc-c8c7a97b6a33:
+            uuid: ae98728d-0f29-46dd-97bc-c8c7a97b6a33
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_model_number'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: inline
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          f2117b83-0997-4fa9-92b1-10bf629448cf:
+            uuid: f2117b83-0997-4fa9-92b1-10bf629448cf
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_location'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: inline
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 5
+            additional: {  }
+          e475a834-1410-4e72-a252-f17520100197:
+            uuid: e475a834-1410-4e72-a252-f17520100197
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_serial_number'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: inline
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 6
+            additional: {  }
+          1c707f91-81d7-4c59-af66-6522b2d64da2:
+            uuid: 1c707f91-81d7-4c59-af66-6522b2d64da2
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_serial_number_pic'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: image
+                label: hidden
+                settings:
+                  image_link: file
+                  image_style: max_325x325
+                  image_loading:
+                    attribute: lazy
+                third_party_settings: {  }
+            weight: 7
+            additional: {  }
+          fbdaca19-31d5-45d9-bed7-ac70ad0cd249:
+            uuid: fbdaca19-31d5-45d9-bed7-ac70ad0cd249
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_phase'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 8
+            additional: {  }
+          871fba1d-9a28-4ec5-a000-a6825924a565:
+            uuid: 871fba1d-9a28-4ec5-a000-a6825924a565
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_volts'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 9
+            additional: {  }
+          6f5ead98-2b5e-456a-a555-221883c3f557:
+            uuid: 6f5ead98-2b5e-456a-a555-221883c3f557
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_suction_size'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 10
+            additional: {  }
+          16e832f9-26ff-46eb-8763-233487a61a2d:
+            uuid: 16e832f9-26ff-46eb-8763-233487a61a2d
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_discharge_size'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 11
+            additional: {  }
+          1739e630-006f-4833-b7c9-b74dd1a3c137:
+            uuid: 1739e630-006f-4833-b7c9-b74dd1a3c137
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_configuration_photos'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: image
+                label: above
+                settings:
+                  image_link: file
+                  image_style: medium
+                  image_loading:
+                    attribute: lazy
+                third_party_settings: {  }
+            weight: 12
+            additional: {  }
+          802d7306-d790-4565-9978-d7aa560d7076:
+            uuid: 802d7306-d790-4565-9978-d7aa560d7076
+            region: content
+            configuration:
+              id: 'field_block:property_sprinkler_pumps:pump:field_pump_in_house_item'
+              label: 'In House Item'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+        third_party_settings: {  }
+id: property_sprinkler_pumps.pump.default
+targetEntityType: property_sprinkler_pumps
+bundle: pump
+mode: default
+content:
+  field_property_ss_source:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_pump_configuration_photos:
+    type: image
+    label: above
+    settings:
+      image_link: file
+      image_style: medium
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_pump_discharge_size:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_pump_in_house_item:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_pump_location:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_pump_manufactured:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_pump_model_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_pump_phase:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_pump_serial_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_pump_serial_number_pic:
+    type: image
+    label: hidden
+    settings:
+      image_link: file
+      image_style: max_325x325
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_pump_size:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_pump_suction_size:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_pump_volts:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true

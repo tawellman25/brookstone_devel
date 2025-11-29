@@ -1,0 +1,22 @@
+uuid: 564464f5-b9cb-40c7-8db3-695b4657f29c
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: sprinkler_zone
+label: 'Sprinkler Zone'
+type: 'canonical_entities:property_ss_zones'
+pattern: '[property_ss_zones:field_property_ss_system:entity:url:path]/zone-[property_ss_zones:field_clock_zone_number]'
+selection_criteria:
+  417a9b24-9db2-4b8c-be60-73f6aea7ecf6:
+    id: 'entity_bundle:property_ss_zones'
+    negate: false
+    uuid: 417a9b24-9db2-4b8c-be60-73f6aea7ecf6
+    context_mapping:
+      property_ss_zones: property_ss_zones
+    bundles:
+      zone: zone
+selection_logic: and
+weight: 17
+relationships: {  }

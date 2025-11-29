@@ -1,0 +1,107 @@
+uuid: 2b2d5f21-b903-4c6d-a068-b176caae4272
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.user.user.field_ok_to_email
+    - field.field.user.user.user_picture
+    - image.style.thumbnail
+  module:
+    - field_group
+    - field_layout
+    - image
+    - layout_builder
+    - user
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  layout_builder:
+    enabled: false
+    allow_custom: false
+  field_group:
+    group_employment_notes:
+      children:
+        - group_filter
+        - teammate_employment_notes_entity_view_1
+      label: 'Employment Notes'
+      parent_name: ''
+      region: content
+      weight: 20
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_filter:
+      children:
+        - teammate_employment_notes_entity_view_1_form
+      label: Filter
+      parent_name: group_employment_notes
+      region: content
+      weight: 20
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+_core:
+  default_config_hash: mZLyuWM9CQx2ZJVqFGSbzgFnHzudVbHBYmdU256A5Wk
+id: user.user.default
+targetEntityType: user
+bundle: user
+mode: default
+content:
+  customer_profile_profiles:
+    type: entity_reference_entity_view
+    label: hidden
+    settings:
+      view_mode: default
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  teammate_employment_notes_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 22
+    region: content
+  teammate_employment_notes_entity_view_1_form:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 21
+    region: content
+  teammate_profile_profiles:
+    type: entity_reference_entity_view
+    label: hidden
+    settings:
+      view_mode: teammate_internal
+      link: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  user_picture:
+    type: image
+    label: hidden
+    settings:
+      image_link: content
+      image_style: thumbnail
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  field_ok_to_email: true
+  flag_following: true
+  member_for: true
+  supplier_profile_profiles: true

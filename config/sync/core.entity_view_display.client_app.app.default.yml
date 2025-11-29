@@ -1,0 +1,171 @@
+uuid: 52f850da-277a-4b72-a0cc-3efb73cafd7a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.client_app.app
+    - field.field.client_app.app.field_apple_app_store_link
+    - field.field.client_app.app.field_directions
+    - field.field.client_app.app.field_google_app_store_link
+    - field.field.client_app.app.field_login_name
+    - field.field.client_app.app.field_logo
+    - field.field.client_app.app.field_our_id_pin
+    - field.field.client_app.app.field_password
+    - field.field.client_app.app.field_website
+    - image.style.max_325x325
+  module:
+    - field_group
+    - image
+    - link
+    - text
+third_party_settings:
+  field_group:
+    group_login_information:
+      children:
+        - field_login_name
+        - field_our_id_pin
+        - field_password
+      label: 'Login Information'
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+    group_links:
+      children:
+        - field_website
+        - field_google_app_store_link
+        - field_apple_app_store_link
+      label: Links
+      parent_name: ''
+      region: content
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+id: client_app.app.default
+targetEntityType: client_app
+bundle: app
+mode: default
+content:
+  changed:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: short
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: ''
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+        description: ''
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_apple_app_store_link:
+    type: link
+    label: hidden
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: '0'
+      target: _blank
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_directions:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_google_app_store_link:
+    type: link
+    label: hidden
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: '0'
+      target: _blank
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_login_name:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_logo:
+    type: image
+    label: hidden
+    settings:
+      image_link: content
+      image_style: max_325x325
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_our_id_pin:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_password:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_website:
+    type: link
+    label: hidden
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  created: true
+  uid: true

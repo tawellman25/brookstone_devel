@@ -1,0 +1,29 @@
+uuid: 3ba16303-d48c-4819-9ff0-c5483f02d62a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.deciduous_bore_treatment
+    - eck.eck_type.contracts.residential
+    - field.storage.contract_sections.field_contract
+id: contract_sections.deciduous_bore_treatment.field_contract
+field_name: field_contract
+entity_type: contract_sections
+bundle: deciduous_bore_treatment
+label: Contract
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contracts'
+  handler_settings:
+    target_bundles:
+      residential: residential
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

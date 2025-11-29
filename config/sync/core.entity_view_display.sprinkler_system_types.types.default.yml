@@ -1,0 +1,41 @@
+uuid: 548a89df-970d-4f57-87ad-56b7f7d2466d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sprinkler_system_types.types
+    - field.field.sprinkler_system_types.types.field_crew_description
+    - field.field.sprinkler_system_types.types.field_public_description
+    - field.field.sprinkler_system_types.types.field_ss_type_name
+  module:
+    - text
+id: sprinkler_system_types.types.default
+targetEntityType: sprinkler_system_types
+bundle: types
+mode: default
+content:
+  field_crew_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_public_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  field_ss_type_name: true

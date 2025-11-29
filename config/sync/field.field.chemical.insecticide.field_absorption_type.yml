@@ -1,0 +1,35 @@
+uuid: ac38a2e4-a01c-422c-b326-1baed0b5c23b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.insecticide
+    - eck.eck_type.classification.absorption
+    - field.storage.chemical.field_absorption_type
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: chemical.insecticide.field_absorption_type
+field_name: field_absorption_type
+entity_type: chemical
+bundle: insecticide
+label: 'Absorption Type'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:classification'
+  handler_settings:
+    target_bundles:
+      absorption: absorption
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

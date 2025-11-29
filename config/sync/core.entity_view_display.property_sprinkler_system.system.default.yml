@@ -1,0 +1,218 @@
+uuid: a30979a2-11f1-4838-a874-b799afad68cf
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_system.system
+    - field.field.property_sprinkler_system.system.field_complexity_level
+    - field.field.property_sprinkler_system.system.field_controler
+    - field.field.property_sprinkler_system.system.field_old_system_id
+    - field.field.property_sprinkler_system.system.field_operation
+    - field.field.property_sprinkler_system.system.field_property
+    - field.field.property_sprinkler_system.system.field_property_system_info
+    - field.field.property_sprinkler_system.system.field_ss_zones
+    - field.field.property_sprinkler_system.system.field_system_name
+    - field.field.property_sprinkler_system.system.field_system_type
+    - field.field.property_sprinkler_system.system.field_total_zones
+    - field.field.property_sprinkler_system.system.field_water_sources
+    - field.field.property_sprinkler_system.system.field_zone_map
+    - image.style.max_1300x1300
+    - image.style.max_650x650
+  module:
+    - colorbox
+    - field_group
+third_party_settings:
+  field_group:
+    group_office_administation:
+      children: {  }
+      label: 'Office Administation'
+      parent_name: ''
+      region: hidden
+      weight: 16
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+        required_fields: false
+        open: false
+    group_water_sources:
+      children:
+        - sprinkler_system_water_sources_entity_view_2
+        - sprinkler_system_water_sources_entity_view_1
+        - sprinkler_system_water_sources_entity_view_3
+        - group_add_more_sources
+      label: 'Water Sources'
+      parent_name: ''
+      region: content
+      weight: 1
+      format_type: fieldset
+      format_settings:
+        classes: water-sources
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_controller:
+      children:
+        - property_ss_controllers_entity_view_1
+        - field_controler
+      label: Controller(s)
+      parent_name: ''
+      region: content
+      weight: 2
+      format_type: fieldset
+      format_settings:
+        classes: ss_controllers
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        description: ''
+    group_zones:
+      children:
+        - field_zone_map
+        - field_total_zones
+        - property_ss_zones_entity_view_1
+      label: Zones
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        description: ''
+    group_add_more_sources:
+      children:
+        - group_add_buttons_wrapper
+      label: 'Add Sources'
+      parent_name: group_water_sources
+      region: content
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ss-water-source-button-wrapper
+        show_empty_fields: false
+        id: add-sources
+        label_as_html: false
+        open: false
+        description: ''
+    group_add_buttons_wrapper:
+      children:
+        - sprinkler_system_water_source_buttons_entity_view_1
+        - sprinkler_system_water_source_buttons_entity_view_2
+        - sprinkler_system_water_source_buttons_entity_view_3
+      label: 'Add Buttons Wrapper'
+      parent_name: group_add_more_sources
+      region: content
+      weight: 20
+      format_type: html_element
+      format_settings:
+        classes: add-source-button-wrapper
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        element: div
+        show_label: false
+        label_element: h3
+        label_element_classes: ''
+        attributes: ''
+        effect: none
+        speed: fast
+id: property_sprinkler_system.system.default
+targetEntityType: property_sprinkler_system
+bundle: system
+mode: default
+content:
+  field_controler:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_total_zones:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_zone_map:
+    type: colorbox
+    label: above
+    settings:
+      colorbox_image_style: max_1300x1300
+      colorbox_gallery: post
+      colorbox_gallery_custom: ''
+      colorbox_caption: alt
+      colorbox_caption_custom: ''
+      colorbox_node_style: max_650x650
+      colorbox_node_style_first: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  property_ss_controllers_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  property_ss_zones_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  sprinkler_system_info_table_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  sprinkler_system_water_source_buttons_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 21
+    region: content
+  sprinkler_system_water_source_buttons_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 22
+    region: content
+  sprinkler_system_water_source_buttons_entity_view_3:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 23
+    region: content
+  sprinkler_system_water_sources_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  sprinkler_system_water_sources_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  sprinkler_system_water_sources_entity_view_3:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+hidden:
+  changed: true
+  field_complexity_level: true
+  field_old_system_id: true
+  field_operation: true
+  field_property: true
+  field_property_system_info: true
+  field_ss_zones: true
+  field_system_name: true
+  field_system_type: true
+  field_water_sources: true
+  title: true

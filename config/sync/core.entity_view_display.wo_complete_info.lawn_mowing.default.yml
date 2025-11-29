@@ -1,0 +1,68 @@
+uuid: 2d6329ea-3889-4563-b3e5-491502e51bb2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_complete_info.lawn_mowing
+    - field.field.wo_complete_info.lawn_mowing.field_canceled
+    - field.field.wo_complete_info.lawn_mowing.field_canceled_why
+    - field.field.wo_complete_info.lawn_mowing.field_date_completed
+    - field.field.wo_complete_info.lawn_mowing.field_signed_off_by
+    - field.field.wo_complete_info.lawn_mowing.field_work_order
+    - field.field.wo_complete_info.lawn_mowing.field_work_order_completed
+id: wo_complete_info.lawn_mowing.default
+targetEntityType: wo_complete_info
+bundle: lawn_mowing
+mode: default
+content:
+  field_canceled:
+    type: boolean
+    label: hidden
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_canceled_why:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_date_completed:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_signed_off_by:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_work_order: true
+  field_work_order_completed: true
+  title: true
+  uid: true

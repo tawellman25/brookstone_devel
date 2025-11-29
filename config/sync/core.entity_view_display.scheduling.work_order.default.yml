@@ -1,0 +1,126 @@
+uuid: d3c7294b-f4c7-475b-9c22-ab3ba694c496
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.scheduling.work_order
+    - field.field.scheduling.work_order.field_assigned_to
+    - field.field.scheduling.work_order.field_date
+    - field.field.scheduling.work_order.field_notify_assigned_teammate
+    - field.field.scheduling.work_order.field_rrule
+    - field.field.scheduling.work_order.field_scheduled
+    - field.field.scheduling.work_order.field_scheduled_date_and_time
+    - field.field.scheduling.work_order.field_scheduled_firm
+    - field.field.scheduling.work_order.field_scheduled_oder
+    - field.field.scheduling.work_order.field_scheduling_note
+    - field.field.scheduling.work_order.field_work_order
+  module:
+    - smart_date
+id: scheduling.work_order.default
+targetEntityType: scheduling
+bundle: work_order
+mode: default
+content:
+  field_assigned_to:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_date:
+    type: smartdate_default
+    label: hidden
+    settings:
+      timezone_override: ''
+      format_type: medium
+      format: default
+      force_chronological: false
+      add_classes: false
+      time_wrapper: true
+      localize: false
+      parts:
+        - start
+        - end
+      duration:
+        separator: ' | '
+        unit: ''
+        decimals: 2
+        suffix: h
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_notify_assigned_teammate:
+    type: boolean
+    label: hidden
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_rrule:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_scheduled_firm:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_scheduled_oder:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_scheduling_note:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_work_order:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  uid:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_scheduled: true
+  field_scheduled_date_and_time: true

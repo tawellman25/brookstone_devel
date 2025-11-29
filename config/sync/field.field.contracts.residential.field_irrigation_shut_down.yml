@@ -1,0 +1,29 @@
+uuid: 95ffb71e-5545-4bf2-a838-91f3a1279546
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_shut_down
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_irrigation_shut_down
+id: contracts.residential.field_irrigation_shut_down
+field_name: field_irrigation_shut_down
+entity_type: contracts
+bundle: residential
+label: 'Irrigation Shut Down'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      irrigation_shut_down: irrigation_shut_down
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

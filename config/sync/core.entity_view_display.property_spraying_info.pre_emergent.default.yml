@@ -1,0 +1,342 @@
+uuid: 6da322db-06f6-4e41-91a9-372a7947ff73
+langcode: en
+status: true
+dependencies:
+  config:
+    - block_content.type.basic
+    - eck.eck_type.property_spraying_info.pre_emergent
+    - field.field.property_spraying_info.pre_emergent.field_last_amount_applied
+    - field.field.property_spraying_info.pre_emergent.field_last_applied_by
+    - field.field.property_spraying_info.pre_emergent.field_last_applied_date
+    - field.field.property_spraying_info.pre_emergent.field_last_chemicals
+    - field.field.property_spraying_info.pre_emergent.field_last_season_applied
+    - field.field.property_spraying_info.pre_emergent.field_pre_emergent_contracted
+    - field.field.property_spraying_info.pre_emergent.field_property
+    - field.field.property_spraying_info.pre_emergent.field_spray_map
+    - field.field.property_spraying_info.pre_emergent.field_spray_map_file
+    - field.field.property_spraying_info.pre_emergent.field_spray_notes
+  module:
+    - datetime
+    - field_group
+    - file
+    - image
+    - layout_builder
+    - layout_discovery
+    - options
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Main Content'
+          context_mapping: {  }
+          column_widths: 50-50
+        components:
+          9baec981-e827-435d-91cf-3d7017d012e5:
+            uuid: 9baec981-e827-435d-91cf-3d7017d012e5
+            region: first
+            configuration:
+              id: 'field_block:property_spraying_info:pre_emergent:field_spray_notes'
+              label: 'Pre-emergent Spray Notes'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: string
+                label: above
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          304b140d-1941-4a57-ae89-0d75502fe03c:
+            uuid: 304b140d-1941-4a57-ae89-0d75502fe03c
+            region: first
+            configuration:
+              id: 'field_block:property_spraying_info:pre_emergent:field_spray_map'
+              label: 'Pre-emergent Spray Map'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: colorbox
+                label: above
+                settings:
+                  colorbox_image_style: ''
+                  colorbox_gallery: post
+                  colorbox_gallery_custom: ''
+                  colorbox_caption: auto
+                  colorbox_caption_custom: ''
+                  colorbox_node_style: max_325x325
+                  colorbox_node_style_first: ''
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          8d03b5dd-83a7-4d2d-9c7c-a7d641fa218f:
+            uuid: 8d03b5dd-83a7-4d2d-9c7c-a7d641fa218f
+            region: second
+            configuration:
+              id: 'field_block:property_spraying_info:pre_emergent:field_last_applied_by'
+              label: 'Last Applied By'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          e11bcf7c-af1c-4779-b1d9-192ed4dea503:
+            uuid: e11bcf7c-af1c-4779-b1d9-192ed4dea503
+            region: second
+            configuration:
+              id: 'field_block:property_spraying_info:pre_emergent:field_last_season_applied'
+              label: 'Last Season Applied'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          cf6f5505-f56d-4e9c-9932-ee3dced3c36a:
+            uuid: cf6f5505-f56d-4e9c-9932-ee3dced3c36a
+            region: second
+            configuration:
+              id: 'field_block:property_spraying_info:pre_emergent:field_last_applied_date'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: datetime_default
+                label: above
+                settings:
+                  timezone_override: ''
+                  format_type: medium
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          df469fcc-b7f3-4027-b3ce-383463babf6c:
+            uuid: df469fcc-b7f3-4027-b3ce-383463babf6c
+            region: second
+            configuration:
+              id: 'field_block:property_spraying_info:pre_emergent:field_last_amount_applied'
+              label: Amount
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: number_decimal
+                label: inline
+                settings:
+                  thousand_separator: ''
+                  decimal_separator: .
+                  scale: 2
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 5
+            additional: {  }
+          e685597c-b71b-494b-95cd-5ba8a5904f82:
+            uuid: e685597c-b71b-494b-95cd-5ba8a5904f82
+            region: second
+            configuration:
+              id: 'field_block:property_spraying_info:pre_emergent:field_pre_emergent_contracted'
+              label: 'Pre-emergent Contracted'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: unicode-yes-no
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          ee93c115-f0bf-46a3-adad-2b0131b168ce:
+            uuid: ee93c115-f0bf-46a3-adad-2b0131b168ce
+            region: first
+            configuration:
+              id: 'field_block:property_spraying_info:pre_emergent:field_spray_map_file'
+              label: 'Corel File'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: file_default
+                label: inline
+                settings:
+                  use_description_as_link_text: true
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          a19159d2-8d91-4bea-a748-0c0a8d4d43bd:
+            uuid: a19159d2-8d91-4bea-a748-0c0a8d4d43bd
+            region: second
+            configuration:
+              id: 'field_block:property_spraying_info:pre_emergent:field_last_chemicals'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 6
+            additional: {  }
+          4a7f6a5b-36c8-4ec3-bcfd-4ef86e029b9e:
+            uuid: 4a7f6a5b-36c8-4ec3-bcfd-4ef86e029b9e
+            region: second
+            configuration:
+              id: 'inline_block:basic'
+              label: 'Last Applied Heading'
+              label_display: '0'
+              provider: layout_builder
+              view_mode: full
+              context_mapping: {  }
+              block_id: 19
+              block_revision_id: 19
+              block_serialized: null
+            weight: 1
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components: {  }
+        third_party_settings: {  }
+  field_group:
+    group_last_applied_info:
+      children: {  }
+      label: 'Last Applied Info'
+      parent_name: ''
+      region: hidden
+      weight: 20
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+id: property_spraying_info.pre_emergent.default
+targetEntityType: property_spraying_info
+bundle: pre_emergent
+mode: default
+content:
+  field_last_amount_applied:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_last_applied_by:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_last_applied_date:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_last_chemicals:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: first
+  field_last_season_applied:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_pre_emergent_contracted:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_spray_map:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_spray_map_file:
+    type: file_default
+    label: above
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 7
+    region: first
+  field_spray_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_property: true
+  title: true
+  uid: true

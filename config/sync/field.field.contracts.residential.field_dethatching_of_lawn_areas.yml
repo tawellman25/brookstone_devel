@@ -1,0 +1,29 @@
+uuid: db6e9757-6d7e-4624-b409-22442fc3e34c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.dethatching_of_lawn_areas
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_dethatching_of_lawn_areas
+id: contracts.residential.field_dethatching_of_lawn_areas
+field_name: field_dethatching_of_lawn_areas
+entity_type: contracts
+bundle: residential
+label: 'Dethatching of Lawn Areas'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      dethatching_of_lawn_areas: dethatching_of_lawn_areas
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

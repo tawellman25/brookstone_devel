@@ -1,0 +1,33 @@
+uuid: 09e4f8c3-2b70-4f2d-96e8-f2ae9f1cc48a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - eck.eck_type.estimate_items.equipment
+    - eck.eck_type.estimate_items.labor
+    - eck.eck_type.estimate_items.materials
+    - field.storage.estimate.field_line_items
+id: estimate.landscaping.field_line_items
+field_name: field_line_items
+entity_type: estimate
+bundle: landscaping
+label: 'Line Items'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate_items'
+  handler_settings:
+    target_bundles:
+      equipment: equipment
+      labor: labor
+      materials: materials
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: true
+    auto_create_bundle: equipment
+field_type: entity_reference

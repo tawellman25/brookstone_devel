@@ -1,0 +1,29 @@
+uuid: e437166b-055a-42dc-b757-f30d1c6f0538
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_spraying_info.weed_spraying
+    - field.storage.property_spraying_info.field_beds_spraying_frequency
+    - taxonomy.vocabulary.spraying_frequency
+id: property_spraying_info.weed_spraying.field_beds_spraying_frequency
+field_name: field_beds_spraying_frequency
+entity_type: property_spraying_info
+bundle: weed_spraying
+label: 'Bed Frequency'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      spraying_frequency: spraying_frequency
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

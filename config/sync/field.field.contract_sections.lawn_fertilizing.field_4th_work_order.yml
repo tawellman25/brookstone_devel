@@ -1,0 +1,29 @@
+uuid: b8814c80-3f51-472a-a10a-11c774d03a67
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.lawn_fertilizing
+    - eck.eck_type.work_order.fertilizing
+    - field.storage.contract_sections.field_4th_work_order
+id: contract_sections.lawn_fertilizing.field_4th_work_order
+field_name: field_4th_work_order
+entity_type: contract_sections
+bundle: lawn_fertilizing
+label: 'Early Spring Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      fertilizing: fertilizing
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

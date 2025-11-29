@@ -1,0 +1,29 @@
+uuid: 68d993ee-af90-4ff3-a169-cdd75cf11164
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.snow_removal
+    - field.storage.wo_tasks_list.field_snow_level
+    - taxonomy.vocabulary.snow_levels
+id: wo_tasks_list.snow_removal.field_snow_level
+field_name: field_snow_level
+entity_type: wo_tasks_list
+bundle: snow_removal
+label: 'Snow Level'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      snow_levels: snow_levels
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

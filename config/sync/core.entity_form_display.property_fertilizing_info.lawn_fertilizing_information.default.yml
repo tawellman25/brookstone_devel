@@ -1,0 +1,118 @@
+uuid: f6a10b82-3230-4f06-995f-7c7e686b1f8e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_fertilizing_info.lawn_fertilizing_information
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_fertilized_last
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_fertilized_last_by
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_fertilizer_lbs_applied
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_fertilizer_notes
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_fertilizer_route_order
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_lawn_fertilizer_contracted
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_property
+    - field.field.property_fertilizing_info.lawn_fertilizing_information.field_turf_pre_emergent_property
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_lawn_fertilizer_contracted
+        - field_property
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: property_fertilizing_info.lawn_fertilizing_information.default
+targetEntityType: property_fertilizing_info
+bundle: lawn_fertilizing_information
+mode: default
+content:
+  field_fertilized_last:
+    type: datetime_default
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_fertilized_last_by:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_fertilizer_lbs_applied:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_fertilizer_notes:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_fertilizer_route_order:
+    type: number
+    weight: 0
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_lawn_fertilizer_contracted:
+    type: boolean_checkbox
+    weight: 6
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_turf_pre_emergent_property:
+    type: boolean_checkbox
+    weight: 1
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 8
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  title: true

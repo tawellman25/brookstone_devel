@@ -1,0 +1,85 @@
+uuid: 37576609-d642-4a05-bcdd-cf4850851aea
+langcode: en
+status: true
+dependencies:
+  config:
+    - block_content.type.basic
+    - page_manager.page.customer
+    - views.view.clients
+  module:
+    - layout_builder
+    - layout_discovery
+    - views
+id: customer-layout_builder-0
+label: 'Office Admin'
+weight: 0
+variant: layout_builder
+variant_settings:
+  id: layout_builder
+  label: null
+  weight: 0
+  uuid: 207b6f6a-761c-4b51-a55d-ea77be4a41d2
+  sections:
+    -
+      layout_id: layout_onecol
+      layout_settings:
+        label: 'Latest Clients'
+        context_mapping: {  }
+      components:
+        89a5ff23-57c2-4dc6-aea7-892094447a87:
+          uuid: 89a5ff23-57c2-4dc6-aea7-892094447a87
+          region: content
+          configuration:
+            id: 'inline_block:basic'
+            label: 'Latest Client Info'
+            label_display: visible
+            provider: layout_builder
+            view_mode: full
+            context_mapping: {  }
+            block_id: 129
+            block_revision_id: 129
+            block_serialized: null
+          weight: 0
+          additional: {  }
+        4c265e9b-bc68-460e-93fe-8de4bb43475c:
+          uuid: 4c265e9b-bc68-460e-93fe-8de4bb43475c
+          region: content
+          configuration:
+            id: 'views_block:clients-block_1'
+            label: ''
+            label_display: '0'
+            provider: views
+            context_mapping: {  }
+            views_label: ''
+            items_per_page: none
+            exposed: {  }
+          weight: 1
+          additional: {  }
+      third_party_settings: {  }
+    -
+      layout_id: layout_twocol_section
+      layout_settings:
+        label: ''
+        context_mapping: {  }
+        column_widths: 50-50
+      components:
+        4ff87821-43a2-4c54-b53e-23e0ae9823cc:
+          uuid: 4ff87821-43a2-4c54-b53e-23e0ae9823cc
+          region: first
+          configuration:
+            id: 'inline_block:basic'
+            label: Future
+            label_display: visible
+            provider: layout_builder
+            view_mode: full
+            context_mapping: {  }
+            block_id: 130
+            block_revision_id: 130
+            block_serialized: null
+          weight: 0
+          additional: {  }
+      third_party_settings: {  }
+page: customer
+selection_criteria: {  }
+selection_logic: and
+static_context: {  }

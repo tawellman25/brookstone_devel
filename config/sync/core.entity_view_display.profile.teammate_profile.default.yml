@@ -1,0 +1,301 @@
+uuid: 2f6f1ba3-ae97-4ab3-81e3-e780ad1ef54e
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.profile.teammate_profile.field_address
+    - field.field.profile.teammate_profile.field_assigned_crew
+    - field.field.profile.teammate_profile.field_birthday
+    - field.field.profile.teammate_profile.field_cell_number
+    - field.field.profile.teammate_profile.field_emergency_contacts
+    - field.field.profile.teammate_profile.field_first_name
+    - field.field.profile.teammate_profile.field_hat_preference
+    - field.field.profile.teammate_profile.field_job_title
+    - field.field.profile.teammate_profile.field_last_name
+    - field.field.profile.teammate_profile.field_list_position
+    - field.field.profile.teammate_profile.field_middle_name
+    - field.field.profile.teammate_profile.field_public_viewable
+    - field.field.profile.teammate_profile.field_shirt_size
+    - field.field.profile.teammate_profile.field_spouse_name
+    - field.field.profile.teammate_profile.field_teammate_bio
+    - profile.type.teammate_profile
+  module:
+    - datetime
+    - field_layout
+    - layout_builder
+    - layout_discovery
+    - options
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  layout_builder:
+    enabled: true
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          bd400d6a-e89c-469c-9853-c25b8082d2d6:
+            uuid: bd400d6a-e89c-469c-9853-c25b8082d2d6
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_job_title'
+              label: 'Job Title'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: string
+                label: inline
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          c60ca621-737f-41e3-b7ee-10f7bcf3e626:
+            uuid: c60ca621-737f-41e3-b7ee-10f7bcf3e626
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_cell_number'
+              label: 'Cell Number'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: telephone_link
+                label: inline
+                settings:
+                  title: ''
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          1211dcb1-07f9-449a-ba95-1a7aaee9c79f:
+            uuid: 1211dcb1-07f9-449a-ba95-1a7aaee9c79f
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_teammate_bio'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: text_default
+                label: above
+                settings: {  }
+                third_party_settings: {  }
+            weight: 6
+            additional: {  }
+          114d6499-fc12-4b7b-b414-f15efc4ef270:
+            uuid: 114d6499-fc12-4b7b-b414-f15efc4ef270
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_spouse_name'
+              label: 'Spouse Name'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: string
+                label: inline
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 5
+            additional: {  }
+          ba690357-3520-4e86-8dc1-ecdf5f0f95e9:
+            uuid: ba690357-3520-4e86-8dc1-ecdf5f0f95e9
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_shirt_size'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: list_default
+                label: above
+                settings: {  }
+                third_party_settings: {  }
+            weight: 9
+            additional: {  }
+          8a679a44-b424-457a-be90-5ff0e4fbffb3:
+            uuid: 8a679a44-b424-457a-be90-5ff0e4fbffb3
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_hat_preference'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: list_default
+                label: above
+                settings: {  }
+                third_party_settings: {  }
+            weight: 10
+            additional: {  }
+          22ae34c2-80ce-4f9d-b6e6-55aeb3440b05:
+            uuid: 22ae34c2-80ce-4f9d-b6e6-55aeb3440b05
+            region: content
+            configuration:
+              id: 'extra_field_block:profile:teammate_profile:emergency_contact_full_name_block_entity_view_1'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+            weight: 13
+            additional: {  }
+          b899d18f-e19e-49a4-9f0d-d275b52ac852:
+            uuid: b899d18f-e19e-49a4-9f0d-d275b52ac852
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_address'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 14
+            additional: {  }
+        third_party_settings: {  }
+id: profile.teammate_profile.default
+targetEntityType: profile
+bundle: teammate_profile
+mode: default
+content:
+  emergency_contact_full_name_block_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_address:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  field_assigned_crew:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_birthday:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_cell_number:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_emergency_contacts:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_first_name:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_hat_preference:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_job_title:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_last_name:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_list_position:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_middle_name:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_public_viewable:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_shirt_size:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_spouse_name:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_teammate_bio:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+hidden: {  }

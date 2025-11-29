@@ -1,0 +1,25 @@
+uuid: 494a1200-6044-47f1-b101-1109f2181f5f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.system_procedures
+    - field.storage.sop.field_service
+id: sop.system_procedures.field_service
+field_name: field_service
+entity_type: sop
+bundle: system_procedures
+label: Service
+description: 'Select the service for Work Order-related SOPs, providing the 3-letter SOP Code (e.g., "LSC" for Landscaping).'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

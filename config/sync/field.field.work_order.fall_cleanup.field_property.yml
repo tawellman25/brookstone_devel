@@ -1,0 +1,29 @@
+uuid: 53f5835a-06e5-4c62-b674-60a4c1af2126
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.properties.property
+    - eck.eck_type.work_order.fall_cleanup
+    - field.storage.work_order.field_property
+id: work_order.fall_cleanup.field_property
+field_name: field_property
+entity_type: work_order
+bundle: fall_cleanup
+label: Property
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:properties'
+  handler_settings:
+    target_bundles:
+      property: property
+    sort:
+      field: field_nickname
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,131 @@
+uuid: 01f0068b-9126-4ddf-aea4-e3074a4bc7b3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_spraying_info.ips_beetle
+    - field.field.property_spraying_info.ips_beetle.field_ips_beetle_contracted
+    - field.field.property_spraying_info.ips_beetle.field_last_amount_applied
+    - field.field.property_spraying_info.ips_beetle.field_last_applied_by
+    - field.field.property_spraying_info.ips_beetle.field_last_applied_date
+    - field.field.property_spraying_info.ips_beetle.field_property
+    - field.field.property_spraying_info.ips_beetle.field_spray_map
+    - field.field.property_spraying_info.ips_beetle.field_spray_notes
+    - image.style.thumbnail
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_property
+        - field_ips_beetle_contracted
+        - created
+        - uid
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: property_spraying_info.ips_beetle.default
+targetEntityType: property_spraying_info
+bundle: ips_beetle
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_ips_beetle_contracted:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_last_amount_applied:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_applied_by:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_applied_date:
+    type: datetime_default
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_spray_map:
+    type: image_image
+    weight: 7
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_spray_notes:
+    type: string_textfield
+    weight: 6
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

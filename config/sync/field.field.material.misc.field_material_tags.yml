@@ -1,0 +1,35 @@
+uuid: 1ae95002-e368-4b36-8e48-c3add525c63c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.misc
+    - field.storage.material.field_material_tags
+    - taxonomy.vocabulary.material_tags
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.misc.field_material_tags
+field_name: field_material_tags
+entity_type: material
+bundle: misc
+label: 'Material Tags'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      material_tags: material_tags
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

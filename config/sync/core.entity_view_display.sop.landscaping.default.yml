@@ -1,0 +1,186 @@
+uuid: 2f09143e-9411-41b5-8356-ae9a42d260c8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.landscaping
+    - field.field.sop.landscaping.field_materials_involved
+    - field.field.sop.landscaping.field_name
+    - field.field.sop.landscaping.field_parent_sop
+    - field.field.sop.landscaping.field_service
+    - field.field.sop.landscaping.field_sop__kpis
+    - field.field.sop.landscaping.field_sop_code
+    - field.field.sop.landscaping.field_sop_last_reviewed
+    - field.field.sop.landscaping.field_sop_owner
+    - field.field.sop.landscaping.field_sop_purpose
+    - field.field.sop.landscaping.field_sop_responsibilities
+    - field.field.sop.landscaping.field_sop_scope
+    - field.field.sop.landscaping.field_sop_status
+    - field.field.sop.landscaping.field_sop_steps
+    - field.field.sop.landscaping.field_sop_tools_and_resources
+    - field.field.sop.landscaping.field_sop_version
+  module:
+    - datetime
+    - options
+    - text
+    - user
+id: sop.landscaping.default
+targetEntityType: sop
+bundle: landscaping
+mode: default
+content:
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_materials_involved:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_name:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 21
+    region: content
+  field_parent_sop:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 19
+    region: content
+  field_service:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 20
+    region: content
+  field_sop__kpis:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_sop_code:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_sop_last_reviewed:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_sop_owner:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_sop_purpose:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_sop_responsibilities:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_sop_scope:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_sop_status:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_sop_steps:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_sop_tools_and_resources:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_sop_version:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  sop_file_attachments_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true

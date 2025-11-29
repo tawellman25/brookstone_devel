@@ -1,0 +1,58 @@
+uuid: 36ab5e64-e9dc-4b3b-93c2-1b97ce83c158
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sprinkler_system_types.types
+    - field.field.sprinkler_system_types.types.field_crew_description
+    - field.field.sprinkler_system_types.types.field_public_description
+    - field.field.sprinkler_system_types.types.field_ss_type_name
+  module:
+    - field_layout
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: sprinkler_system_types.types.default
+targetEntityType: sprinkler_system_types
+bundle: types
+mode: default
+content:
+  field_crew_description:
+    type: text_textarea
+    weight: 3
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_public_description:
+    type: text_textarea_with_summary
+    weight: 2
+    region: content
+    settings:
+      rows: 9
+      summary_rows: 3
+      placeholder: ''
+      show_summary: false
+    third_party_settings: {  }
+  field_ss_type_name:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

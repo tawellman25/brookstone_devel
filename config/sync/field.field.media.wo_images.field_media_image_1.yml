@@ -1,0 +1,57 @@
+uuid: b7a74595-e9d1-4375-be80-4da3d135910c
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.media.field_media_image_1
+    - media.type.wo_images
+  module:
+    - filefield_paths
+    - image
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[media:field_work_order:entity:url:path]/photos/[media:field_photos_of]'
+      options:
+        slashes: false
+        pathauto: true
+        transliterate: false
+    file_name:
+      value: '[media:field_work_order:entity:field_property:entity:field_street_address]-[media:field_photos_of]-[media:field_media_image:alt].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: true
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: true
+id: media.wo_images.field_media_image_1
+field_name: field_media_image_1
+entity_type: media
+bundle: wo_images
+label: Photo
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'png gif jpg jpeg webp'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: false
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

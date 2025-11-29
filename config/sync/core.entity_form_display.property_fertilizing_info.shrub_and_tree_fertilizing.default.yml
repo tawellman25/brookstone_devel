@@ -1,0 +1,99 @@
+uuid: 10011d7a-34f8-4b27-b082-638f3828534c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_fertilizing_info.shrub_and_tree_fertilizing
+    - field.field.property_fertilizing_info.shrub_and_tree_fertilizing.field_fertilized_last
+    - field.field.property_fertilizing_info.shrub_and_tree_fertilizing.field_fertilized_last_by
+    - field.field.property_fertilizing_info.shrub_and_tree_fertilizing.field_fertilizer_lbs_applied
+    - field.field.property_fertilizing_info.shrub_and_tree_fertilizing.field_property
+    - field.field.property_fertilizing_info.shrub_and_tree_fertilizing.field_shrub_tree_fert_contracted
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - path
+        - field_property
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: property_fertilizing_info.shrub_and_tree_fertilizing.default
+targetEntityType: property_fertilizing_info
+bundle: shrub_and_tree_fertilizing
+mode: default
+content:
+  field_fertilized_last:
+    type: datetime_default
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_fertilized_last_by:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_fertilizer_lbs_applied:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 31
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_shrub_tree_fert_contracted:
+    type: boolean_checkbox
+    weight: 1
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

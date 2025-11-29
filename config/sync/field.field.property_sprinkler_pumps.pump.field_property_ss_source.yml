@@ -1,0 +1,31 @@
+uuid: f7480afb-b3a4-4b9c-80a1-c9450f32cf0e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_pumps.pump
+    - eck.eck_type.property_ss_sources.dirty_water_source
+    - eck.eck_type.property_ss_sources.domestic_source
+    - field.storage.property_sprinkler_pumps.field_property_ss_source
+id: property_sprinkler_pumps.pump.field_property_ss_source
+field_name: field_property_ss_source
+entity_type: property_sprinkler_pumps
+bundle: pump
+label: 'Property SS Source'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:property_ss_sources'
+  handler_settings:
+    target_bundles:
+      dirty_water_source: dirty_water_source
+      domestic_source: domestic_source
+    sort:
+      field: field_property_ss_system
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: dirty_water_source
+field_type: entity_reference

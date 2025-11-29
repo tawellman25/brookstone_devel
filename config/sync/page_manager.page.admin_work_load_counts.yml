@@ -1,0 +1,24 @@
+uuid: 141618a6-d120-4717-af07-39f2aafece3d
+langcode: en
+status: true
+dependencies:
+  module:
+    - user
+id: admin_work_load_counts
+label: 'Work Load'
+description: 'This is an Admin page that supplies the counts of Contracts and Work Orders across all the services.'
+use_admin_theme: true
+path: /admin/office/work-load
+access_logic: and
+access_conditions:
+  -
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      administrator: administrator
+      site_admin: site_admin
+      administration: administration
+      supervisor: supervisor
+parameters: {  }

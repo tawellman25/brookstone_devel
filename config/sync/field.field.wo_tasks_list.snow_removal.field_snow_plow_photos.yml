@@ -1,0 +1,57 @@
+uuid: 3b3b858f-fa9c-4f03-8691-f9d0358c5eb5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.snow_removal
+    - field.storage.wo_tasks_list.field_snow_plow_photos
+  module:
+    - filefield_paths
+    - image
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[wo_tasks_list:field_work_order:entity:url:path]/snow_plowing'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[wo_tasks_list:field_work_order:entity:field_property:entity:field_street_address]-snow-plowing-[wo_tasks_list:created:date:html_date].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: wo_tasks_list.snow_removal.field_snow_plow_photos
+field_name: field_snow_plow_photos
+entity_type: wo_tasks_list
+bundle: snow_removal
+label: 'Snow Plow Photos'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'png gif jpg jpeg webp'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: false
+  alt_field_required: false
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

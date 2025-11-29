@@ -1,0 +1,57 @@
+uuid: afe9d3c1-2b3d-4051-bd59-ab99a430186f
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.forums.forum_container
+    - taxonomy.vocabulary.forums
+  module:
+    - field_layout
+    - layout_builder
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  layout_builder:
+    enabled: true
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          552bff5a-12f8-475a-805b-0dccb0e0b3a1:
+            uuid: 552bff5a-12f8-475a-805b-0dccb0e0b3a1
+            region: content
+            configuration:
+              id: 'field_block:taxonomy_term:forums:description'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: text_default
+                label: above
+                settings: {  }
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+        third_party_settings: {  }
+_core:
+  default_config_hash: stc3UW9mGWKOU4zTosSDXyRkid8AYh_ME73FJeY4QNE
+id: taxonomy_term.forums.default
+targetEntityType: taxonomy_term
+bundle: forums
+mode: default
+content:
+  description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  forum_container: true

@@ -1,0 +1,29 @@
+uuid: d1643a79-a116-46de-ac26-251553b97b3a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_christmas_decor.information
+    - field.storage.property_christmas_decor.field_christmas_decor_light_type
+    - taxonomy.vocabulary.christmas_light_types
+id: property_christmas_decor.information.field_christmas_decor_light_type
+field_name: field_christmas_decor_light_type
+entity_type: property_christmas_decor
+bundle: information
+label: 'Christmas Light Types'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      christmas_light_types: christmas_light_types
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

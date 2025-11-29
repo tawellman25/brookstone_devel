@@ -1,0 +1,29 @@
+uuid: 8dd6e39f-4953-4cbd-8e3b-bc15a54dc808
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.weed_spraying_landscape_beds
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_weed_spraying_of_landscape
+id: contracts.residential.field_weed_spraying_of_landscape
+field_name: field_weed_spraying_of_landscape
+entity_type: contracts
+bundle: residential
+label: 'Weed Spraying of Landscape Bed Areas'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      weed_spraying_landscape_beds: weed_spraying_landscape_beds
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

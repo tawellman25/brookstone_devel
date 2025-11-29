@@ -1,0 +1,99 @@
+uuid: 3ad8ad7d-0415-4df8-9991-9af61f0a8a79
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_design.design
+    - field.field.property_sprinkler_design.design.field_corel_draw_file
+    - field.field.property_sprinkler_design.design.field_design_pdf_file
+    - field.field.property_sprinkler_design.design.field_property
+    - field.field.property_sprinkler_design.design.field_sprinkler_design
+    - field.field.property_sprinkler_design.design.field_work_order
+  module:
+    - file
+    - image
+    - user
+id: property_sprinkler_design.design.default
+targetEntityType: property_sprinkler_design
+bundle: design
+mode: default
+content:
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_corel_draw_file:
+    type: file_default
+    label: above
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_design_pdf_file:
+    type: file_default
+    label: above
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_property:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_sprinkler_design:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_work_order:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true

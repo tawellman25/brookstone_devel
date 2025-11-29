@@ -1,0 +1,21 @@
+uuid: 7d3b35a0-0668-40d4-adbd-abc2f4dec907
+langcode: en
+status: true
+dependencies:
+  module:
+    - user
+id: office
+label: Office
+description: "This is the page that contains the Teammate's Office's.  These are customized views depending on the position each teammate has with the company. "
+use_admin_theme: false
+path: /teammates
+access_logic: and
+access_conditions:
+  -
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      authenticated: authenticated
+parameters: {  }

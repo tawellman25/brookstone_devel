@@ -1,0 +1,27 @@
+uuid: 58d1c8a5-3dee-402c-8806-6c44b17aca76
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.deciduous_bore
+    - field.storage.work_order.field_work_todo_description
+    - filter.format.full_html
+  module:
+    - text
+id: work_order.deciduous_bore.field_work_todo_description
+field_name: field_work_todo_description
+entity_type: work_order
+bundle: deciduous_bore
+label: 'Work To Be Done'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: '<p><a href="javascript:void(0);" title="Insert this token into your form">[current-date:html_year]</a> - Apply Deciduous Bore treatment to trees as needed.<br>&nbsp;</p>'
+    format: full_html
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

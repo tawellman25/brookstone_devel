@@ -1,0 +1,46 @@
+uuid: c61442bc-abfe-46ea-b578-992a5920ff5d
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_iconic_image
+    - taxonomy.vocabulary.services
+  module:
+    - epp
+    - image
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: taxonomy_term.services.field_iconic_image
+field_name: field_iconic_image
+entity_type: taxonomy_term
+bundle: services
+label: 'Iconic Image'
+description: 'This is the image(picture) that will show up in any of the lists that this Service is in.  Most of them are the sub-services lists at the bottom of each Parent Service.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: services/iconic_images
+  file_extensions: 'png gif jpg jpeg'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: false
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+    caption: ''
+  caption_field: 1
+  caption_field_required: 0
+field_type: image

@@ -1,0 +1,1505 @@
+uuid: e7d42874-f621-48c8-8831-a9d15fda8d0b
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.contracts.field_contract_status
+    - field.storage.contracts.field_contract_year
+    - field.storage.contracts.field_old_contract_id
+    - field.storage.contracts.field_old_nid
+    - field.storage.contracts.field_property
+    - field.storage.contracts.field_property_owner
+    - field.storage.properties.field_nickname
+    - system.menu.admin
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+  module:
+    - csv_serialization
+    - eck
+    - profile
+    - rest
+    - serialization
+    - user
+    - views_data_export
+id: contracts_administration
+label: Contracts
+module: views
+description: ''
+tag: ''
+base_table: contracts_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: Contracts
+      fields:
+        counter:
+          id: counter
+          table: views
+          field: counter
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: counter
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          counter_start: 1
+        id:
+          id: id
+          table: contracts_field_data
+          field: id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: contracts
+          entity_field: id
+          plugin_id: field
+          label: 'Contract #'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_old_contract_id:
+          id: field_old_contract_id
+          table: contracts__field_old_contract_id
+          field: field_old_contract_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Old Contract ID'
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_old_nid:
+          id: field_old_nid
+          table: contracts__field_old_nid
+          field: field_old_nid
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Old NID'
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_contract_year:
+          id: field_contract_year
+          table: contracts__field_contract_year
+          field: field_contract_year
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Year
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        view_contracts:
+          id: view_contracts
+          table: contracts
+          field: view_contracts
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: contracts
+          plugin_id: entity_link
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          text: view
+          output_url_as_text: true
+          absolute: false
+        title:
+          id: title
+          table: contracts_field_data
+          field: title
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: null
+          entity_field: title
+          plugin_id: field
+          label: Contract
+          exclude: false
+          alter:
+            alter_text: true
+            text: '<b>{{ field_contract_year }} - Contract #{{ id }}</b>'
+            make_link: true
+            path: '{{ view_contracts }}'
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: _blank
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_property:
+          id: field_property
+          table: contracts__field_property
+          field: field_property
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Property
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: true
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_nickname:
+          id: field_nickname
+          table: properties__field_nickname
+          field: field_nickname
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Property
+          exclude: false
+          alter:
+            alter_text: true
+            text: "{{ field_nickname }}</br>\r\n{{ field_property }}"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_property_owner:
+          id: field_property_owner
+          table: contracts__field_property_owner
+          field: field_property_owner
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Property Owner'
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: true
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        name:
+          id: name
+          table: users_field_data
+          field: name
+          relationship: field_property_owner
+          group_type: group
+          admin_label: ''
+          entity_type: user
+          entity_field: name
+          plugin_id: field
+          label: 'Current Owner'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: user_name
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_contract_status:
+          id: field_contract_status
+          table: contracts__field_contract_status
+          field: field_contract_status
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Contract Status'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: true
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        edit_contracts:
+          id: edit_contracts
+          table: contracts
+          field: edit_contracts
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: contracts
+          plugin_id: entity_link_edit
+          label: Edit
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: button
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          text: Edit
+          output_url_as_text: false
+          absolute: false
+      pager:
+        type: full
+        options:
+          offset: 0
+          pagination_heading_level: h4
+          items_per_page: 250
+          total_pages: null
+          id: 0
+          tags:
+            next: ››
+            previous: ‹‹
+            first: '« First'
+            last: 'Last »'
+          expose:
+            items_per_page: false
+            items_per_page_label: 'Items per page'
+            items_per_page_options: '5, 10, 25, 50'
+            items_per_page_options_all: false
+            items_per_page_options_all_label: '- All -'
+            offset: false
+            offset_label: Offset
+          quantity: 9
+      exposed_form:
+        type: basic
+        options:
+          submit_button: Apply
+          reset_button: false
+          reset_button_label: Reset
+          exposed_sorts_label: 'Sort by'
+          expose_sort_order: true
+          sort_asc_label: Asc
+          sort_desc_label: Desc
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+      cache:
+        type: tag
+        options: {  }
+      empty: {  }
+      sorts:
+        field_contract_year_value:
+          id: field_contract_year_value
+          table: contracts__field_contract_year
+          field: field_contract_year_value
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: standard
+          order: DESC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
+        id:
+          id: id
+          table: contracts_field_data
+          field: id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: contracts
+          entity_field: id
+          plugin_id: standard
+          order: ASC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
+      arguments: {  }
+      filters:
+        field_contract_year_value:
+          id: field_contract_year_value
+          table: contracts__field_contract_year
+          field: field_contract_year_value
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: numeric
+          operator: '='
+          value:
+            min: ''
+            max: ''
+            value: '2025'
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_contract_year_value_op
+            label: Year
+            description: ''
+            use_operator: false
+            operator: field_contract_year_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_contract_year_value
+            required: false
+            remember: true
+            multiple: false
+            remember_roles:
+              administrator: administrator
+              site_admin: site_admin
+              administration: administration
+              supervisor: supervisor
+              teammates: teammates
+              anonymous: '0'
+              authenticated: '0'
+              client: '0'
+              user: '0'
+              supplier: '0'
+            min_placeholder: ''
+            max_placeholder: ''
+            placeholder: ''
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          use_tokens: 0
+        field_nickname_value:
+          id: field_nickname_value
+          table: properties__field_nickname
+          field: field_nickname_value
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_nickname_value_op
+            label: 'Property: Nickname'
+            description: ''
+            use_operator: false
+            operator: field_nickname_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_nickname_value
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+              supplier: '0'
+            placeholder: ''
+            autocomplete_filter: 0
+            autocomplete_min_chars: '0'
+            autocomplete_items: '10'
+            autocomplete_field: field_nickname
+            autocomplete_raw_suggestion: 1
+            autocomplete_raw_dropdown: 1
+            autocomplete_dependent: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+        field_street_address_value:
+          id: field_street_address_value
+          table: properties__field_street_address
+          field: field_street_address_value
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_street_address_value_op
+            label: 'Street Address'
+            description: ''
+            use_operator: false
+            operator: field_street_address_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_street_address_value
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+              supplier: '0'
+            placeholder: ''
+            autocomplete_filter: 0
+            autocomplete_min_chars: '0'
+            autocomplete_items: '10'
+            autocomplete_field: ''
+            autocomplete_raw_suggestion: 1
+            autocomplete_raw_dropdown: 1
+            autocomplete_dependent: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+        field_city_name_value:
+          id: field_city_name_value
+          table: city__field_city_name
+          field: field_city_name_value
+          relationship: field_city
+          group_type: group
+          admin_label: ''
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_city_name_value_op
+            label: City
+            description: ''
+            use_operator: false
+            operator: field_city_name_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_city_name_value
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              site_admin: '0'
+              administration: '0'
+              administrator: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+              supplier: '0'
+            placeholder: ''
+            autocomplete_filter: 0
+            autocomplete_min_chars: '0'
+            autocomplete_items: '10'
+            autocomplete_field: ''
+            autocomplete_raw_suggestion: 1
+            autocomplete_raw_dropdown: 1
+            autocomplete_dependent: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+        name:
+          id: name
+          table: users_field_data
+          field: name
+          relationship: field_property_owner
+          group_type: group
+          admin_label: ''
+          entity_type: user
+          entity_field: name
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: name_op
+            label: 'Owner(at time of Contract)'
+            description: ''
+            use_operator: false
+            operator: name_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: name
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+              supplier: '0'
+            placeholder: ''
+            autocomplete_filter: 0
+            autocomplete_min_chars: '0'
+            autocomplete_items: '10'
+            autocomplete_field: name
+            autocomplete_raw_suggestion: 1
+            autocomplete_raw_dropdown: 1
+            autocomplete_dependent: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+      filter_groups:
+        operator: AND
+        groups:
+          1: AND
+      style:
+        type: table
+        options:
+          grouping: {  }
+          row_class: ''
+          default_row_class: true
+          columns:
+            id: id
+            field_old_contract_id: field_old_contract_id
+            field_old_nid: field_old_nid
+            field_contract_year: field_contract_year
+            title: title
+            field_property: field_property
+            field_nickname: field_nickname
+            field_property_owner: field_property_owner
+            name: name
+            field_contract_status: field_contract_status
+            operations: operations
+          default: '-1'
+          info:
+            id:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_old_contract_id:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_old_nid:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_contract_year:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            title:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_property:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_nickname:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_property_owner:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            name:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_contract_status:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            operations:
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          override: true
+          sticky: false
+          summary: ''
+          empty_table: false
+          caption: ''
+          description: ''
+      row:
+        type: fields
+      query:
+        type: views_query
+        options:
+          query_comment: ''
+          disable_sql_rewrite: false
+          distinct: false
+          replica: false
+          query_tags: {  }
+      relationships:
+        field_property:
+          id: field_property
+          table: contracts__field_property
+          field: field_property
+          relationship: none
+          group_type: group
+          admin_label: Properties
+          plugin_id: standard
+          required: false
+        field_zipcode_reference:
+          id: field_zipcode_reference
+          table: properties__field_zipcode_reference
+          field: field_zipcode_reference
+          relationship: field_property
+          group_type: group
+          admin_label: 'field_zipcode_reference: Zipcodes'
+          plugin_id: standard
+          required: false
+        field_city:
+          id: field_city
+          table: zipcodes__field_city
+          field: field_city
+          relationship: field_zipcode_reference
+          group_type: group
+          admin_label: 'field_city: City'
+          plugin_id: standard
+          required: false
+        field_property_owner:
+          id: field_property_owner
+          table: contracts__field_property_owner
+          field: field_property_owner
+          relationship: none
+          group_type: group
+          admin_label: Owner
+          plugin_id: standard
+          required: false
+        profile:
+          id: profile
+          table: users_field_data
+          field: profile
+          relationship: field_property_owner
+          group_type: group
+          admin_label: Profile
+          entity_type: user
+          plugin_id: standard
+          required: false
+      header:
+        area_1:
+          id: area_1
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: false
+          content:
+            value: '<a href="/admin/office/contracts/aerating" class="admin-item__link">Aerating Contracts</a>'
+            format: full_html
+          tokenize: false
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: false
+          content:
+            value: '<a class="button--primary button js-form-submit form-submit" href="/admin/content/contracts/add/residential?destination=/admin/office/contracts">Add New Contract</a>'
+            format: full_html
+          tokenize: false
+      footer: {  }
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.contracts.field_contract_status'
+        - 'config:field.storage.contracts.field_contract_year'
+        - 'config:field.storage.contracts.field_old_contract_id'
+        - 'config:field.storage.contracts.field_old_nid'
+        - 'config:field.storage.contracts.field_property'
+        - 'config:field.storage.contracts.field_property_owner'
+        - 'config:field.storage.properties.field_nickname'
+  data_export_1:
+    id: data_export_1
+    display_title: 'Data export'
+    display_plugin: data_export
+    position: 2
+    display_options:
+      style:
+        type: data_export
+        options:
+          formats:
+            csv: csv
+          csv_settings:
+            delimiter: ','
+            enclosure: '"'
+            escape_char: \
+            strip_tags: true
+            trim: true
+            encoding: utf8
+            utf8_bom: '0'
+            use_serializer_encode_only: false
+      display_extenders: {  }
+      path: admin/office/contracts/csv
+      auth: {  }
+      displays:
+        page_1: page_1
+        default: '0'
+      filename: contract-list.csv
+      automatic_download: true
+      store_in_public_file_directory: null
+      custom_redirect_path: false
+      redirect_to_display: page_1
+      include_query_params: false
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - request_format
+        - url
+        - user.roles
+      tags:
+        - 'config:field.storage.contracts.field_contract_status'
+        - 'config:field.storage.contracts.field_contract_year'
+        - 'config:field.storage.contracts.field_old_contract_id'
+        - 'config:field.storage.contracts.field_old_nid'
+        - 'config:field.storage.contracts.field_property'
+        - 'config:field.storage.contracts.field_property_owner'
+        - 'config:field.storage.properties.field_nickname'
+  page_1:
+    id: page_1
+    display_title: Page
+    display_plugin: page
+    position: 1
+    display_options:
+      defaults:
+        header: false
+      header:
+        area_1:
+          id: area_1
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: 'Report Listing'
+          plugin_id: text
+          empty: false
+          content:
+            value: "<dl class=\"admin-list\">\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/aerating\" class=\"admin-item__link\">Aerating of Lawn</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Aerating of Lawn section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/aspen\" class=\"admin-item__link\">Aspen Twig Gall Control</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Aspen Twig Gall Control section of the contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/christmas_decorations\" class=\"admin-item__link\">Christmas Decorations</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Christmas Decorations section of the contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/cooley\" class=\"admin-item__link\">Cooley Spruce Gall Treatment</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Cooley Spruce Gall Treatment section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/deciduous_bore\" class=\"admin-item__link\">Deciduous Bore Treatment</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Deciduous Bore Treatment section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/deer_protection\" class=\"admin-item__link\">Deer Protection Wire</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Deer Protection Wire for Trees and Shrubs section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/dethatching\" class=\"admin-item__link\">Dethatching of Lawn Areas</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Dethatching of Lawn Areas section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/dormant_oil\" class=\"admin-item__link\">Dormant Oil Spray</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Dormant Oil Spray section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/fall_cleanup\" class=\"admin-item__link\">Fall Cleanup</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Fall Cleanup section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/fertilize_tree_and_shrub\" class=\"admin-item__link\">Fertilizing of shrubs and trees</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Fertilizing of Shrubs and Trees section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/grub_prevention\" class=\"admin-item__link\">Grub Prevention on Lawn</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Grub Prevention on Lawn section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/ips_beetle\" class=\"admin-item__link\">Ips beetle on Pinion Pine</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Ips beetle on Pinion Pine section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/irrigation_check\" class=\"admin-item__link\">Irrigation Check Ups</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Irrigation Check Ups section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/irrigation_shut_down\" class=\"admin-item__link\">Irrigation Shut Down</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Irrigation Shut Down section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/irrigation_start_up\" class=\"admin-item__link\">Irrigation Start Up</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Irrigation Start Up section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/lawn_fertilizing\" class=\"admin-item__link\">Lawn Fertilizing &amp; Broadleaf Control</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Lawn Fertilizing &amp; Broadleaf Control section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/mowing\" class=\"admin-item__link\">Lawn Mowing and Trimming</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Lawn Mowing and Trimming section of the Residential Contracts.\r\n</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/pre_emergent\" class=\"admin-item__link\">Pre-emergent</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Pre-emergent section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/spring_cleanup\" class=\"admin-item__link\">Spring Cleanup</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Spring Cleanup section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/summer_pruning\" class=\"admin-item__link\">Summer Hedge &amp; Shrub Pruning</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Summer Hedge &amp; Shrub Pruning section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/trunk_bore\" class=\"admin-item__link\">Trunk Bore Prevention</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Trunk Bore Prevention section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/weed_pulling\" class=\"admin-item__link\">Weed Pulling</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Weed Pulling Option of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/weed_spraying_beds\" class=\"admin-item__link\">Weed spraying of landscape bed areas</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Weed Spraying of Landscape Beds section of the Residential Contracts.</dd>\r\n              </div>\r\n          <div class=\"admin-item\">\r\n        <dt class=\"admin-item__title\"><a href=\"/admin/office/contracts/misc_weed_spraying\" class=\"admin-item__link\">Weed Spraying of Misc Areas</a></dt>\r\n                  <dd class=\"admin-item__description\">This is the report for the Weed Spraying of Misc Areas section of the Residential Contracts.</dd>\r\n              </div>\r\n      </dl>\r\n</br>"
+            format: full_html
+          tokenize: false
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: false
+          content:
+            value: '<a class="button--primary button js-form-submit form-submit" href="/admin/content/contracts/add/residential?destination=/admin/office/contracts">Add New Contract</a>'
+            format: full_html
+          tokenize: false
+      display_extenders: {  }
+      path: admin/office/contracts
+      menu:
+        type: normal
+        title: Contracts
+        description: ''
+        weight: -3
+        expanded: false
+        menu_name: admin
+        parent: 'menu_link_content:4b4baafc-6631-4b64-9157-b570acf68c2c'
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.contracts.field_contract_status'
+        - 'config:field.storage.contracts.field_contract_year'
+        - 'config:field.storage.contracts.field_old_contract_id'
+        - 'config:field.storage.contracts.field_old_nid'
+        - 'config:field.storage.contracts.field_property'
+        - 'config:field.storage.contracts.field_property_owner'
+        - 'config:field.storage.properties.field_nickname'

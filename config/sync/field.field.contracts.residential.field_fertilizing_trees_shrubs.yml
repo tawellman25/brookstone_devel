@@ -1,0 +1,29 @@
+uuid: c550767d-6941-4e61-933d-67c9c27260da
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.fertilizing_of_shrubs_and_trees
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_fertilizing_trees_shrubs
+id: contracts.residential.field_fertilizing_trees_shrubs
+field_name: field_fertilizing_trees_shrubs
+entity_type: contracts
+bundle: residential
+label: 'Fertilizing Trees and Shrubs'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      fertilizing_of_shrubs_and_trees: fertilizing_of_shrubs_and_trees
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

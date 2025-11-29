@@ -1,0 +1,88 @@
+uuid: 7df84c7a-fcf3-4271-b48c-1d77f1759863
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_ss_sources.dirty_water_source
+    - field.field.property_ss_sources.dirty_water_source.field_dirty_water_source_type
+    - field.field.property_ss_sources.dirty_water_source.field_location
+    - field.field.property_ss_sources.dirty_water_source.field_property_ss_system
+    - field.field.property_ss_sources.dirty_water_source.field_pumps
+    - field.field.property_ss_sources.dirty_water_source.field_ss_key_needed
+    - field.field.property_ss_sources.dirty_water_source.field_ss_shut_off_location_pic
+    - field.field.property_ss_sources.dirty_water_source.field_ss_shut_off_notes
+    - field.field.property_ss_sources.dirty_water_source.field_ss_source_name
+    - field.field.property_ss_sources.dirty_water_source.field_water_shut_off
+  module:
+    - colorbox
+    - options
+id: property_ss_sources.dirty_water_source.default
+targetEntityType: property_ss_sources
+bundle: dirty_water_source
+mode: default
+content:
+  field_dirty_water_source_type:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_location:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_property_ss_system:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_ss_key_needed:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_ss_shut_off_location_pic:
+    type: colorbox
+    label: above
+    settings:
+      colorbox_image_style: ''
+      colorbox_gallery: post
+      colorbox_gallery_custom: ''
+      colorbox_caption: auto
+      colorbox_caption_custom: ''
+      colorbox_node_style: ''
+      colorbox_node_style_first: ''
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_ss_shut_off_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_water_shut_off:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  changed: true
+  field_pumps: true
+  field_ss_source_name: true
+  title: true

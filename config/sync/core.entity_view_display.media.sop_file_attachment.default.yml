@@ -1,0 +1,36 @@
+uuid: 31fa4861-bc58-44f3-a391-f96e63c275f4
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.media.sop_file_attachment.field_media_file_1
+    - field.field.media.sop_file_attachment.field_sop
+    - media.type.sop_file_attachment
+  module:
+    - file
+id: media.sop_file_attachment.default
+targetEntityType: media
+bundle: sop_file_attachment
+mode: default
+content:
+  field_media_file_1:
+    type: file_default
+    label: visually_hidden
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_sop:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  created: true
+  name: true
+  thumbnail: true
+  uid: true

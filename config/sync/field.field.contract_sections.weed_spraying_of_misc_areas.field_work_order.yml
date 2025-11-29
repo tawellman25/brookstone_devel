@@ -1,0 +1,29 @@
+uuid: 1f742118-96a0-4c95-a629-dca4ed5935ff
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.weed_spraying_of_misc_areas
+    - eck.eck_type.work_order.weed_spraying
+    - field.storage.contract_sections.field_work_order
+id: contract_sections.weed_spraying_of_misc_areas.field_work_order
+field_name: field_work_order
+entity_type: contract_sections
+bundle: weed_spraying_of_misc_areas
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      weed_spraying: weed_spraying
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: aerating
+field_type: entity_reference

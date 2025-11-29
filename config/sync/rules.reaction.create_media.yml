@@ -1,0 +1,91 @@
+uuid: 2dcf397c-8a0c-4f05-80de-a59731c2bdc4
+langcode: en
+status: false
+dependencies:
+  enforced:
+    module:
+      - media
+_core:
+  default_config_hash: qpM0qiGEGe-ATuWNRNY8MqEAZWZEKM-IKdu8w5ugDKQ
+id: create_media
+label: 'Create media'
+events:
+  -
+    event_name: 'rules_entity_update:taxonomy_term'
+description: 'Issue https://www.drupal.org/project/rules/issues/2975862'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 51a56755-aa75-4b5a-970d-00757f8ff83c
+  conditions:
+    id: rules_and
+    uuid: f21b1d4e-6978-4340-b86b-7d6fd63bcdb1
+    conditions:
+      -
+        id: rules_condition
+        uuid: d6a274c1-2718-4d15-ac50-6114a5922bf2
+        context_values:
+          type: taxonomy_term
+          bundle: food_groups
+        context_mapping:
+          entity: taxonomy_term
+        context_processors:
+          type:
+            rules_tokens: {  }
+          bundle:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        condition_id: rules_entity_is_of_bundle
+        negate: false
+  actions:
+    id: rules_action_set
+    uuid: c7efdeb4-53e8-4a0d-9697-594ec01cb2ec
+    actions:
+      -
+        id: rules_action
+        uuid: 06e47383-e75c-4161-93a2-30d0712af258
+        context_values:
+          bundle: image
+          name: taxonomy_term.field_image.alt
+        context_mapping: {  }
+        context_processors:
+          bundle:
+            rules_tokens: {  }
+          name:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: 'rules_entity_create:media'
+      -
+        id: rules_action
+        uuid: 4226f3d4-79fb-470c-b0fc-8e9f4281bf77
+        context_values:
+          type: file
+        context_mapping:
+          entity_id: taxonomy_term.field_image.target_id
+        context_processors:
+          type:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_entity_fetch_by_id
+      -
+        id: rules_action
+        uuid: 40bd26d1-a09d-4921-8ae1-e890442ed8e7
+        context_values: {  }
+        context_mapping:
+          data: media_created.field_media_image
+          value: entity_fetched
+        context_processors: {  }
+        provides_mapping: {  }
+        action_id: rules_data_set
+      -
+        id: rules_action
+        uuid: 986f519b-ea78-408a-8e3b-c50e60c8b559
+        context_values: {  }
+        context_mapping:
+          data: media_created.field_media_image.alt
+          value: taxonomy_term.field_image.alt
+        context_processors: {  }
+        provides_mapping: {  }
+        action_id: rules_data_set

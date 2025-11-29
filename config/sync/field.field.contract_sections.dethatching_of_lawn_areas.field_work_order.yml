@@ -1,0 +1,29 @@
+uuid: 50e3f856-caad-41c4-807d-273cf567e809
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.dethatching_of_lawn_areas
+    - eck.eck_type.work_order.dethatching
+    - field.storage.contract_sections.field_work_order
+id: contract_sections.dethatching_of_lawn_areas.field_work_order
+field_name: field_work_order
+entity_type: contract_sections
+bundle: dethatching_of_lawn_areas
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      dethatching: dethatching
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: aerating
+field_type: entity_reference

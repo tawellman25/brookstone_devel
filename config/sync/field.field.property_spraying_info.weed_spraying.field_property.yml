@@ -1,0 +1,29 @@
+uuid: 842adaeb-708d-4b0a-ac63-04065d35e055
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.properties.property
+    - eck.eck_type.property_spraying_info.weed_spraying
+    - field.storage.property_spraying_info.field_property
+id: property_spraying_info.weed_spraying.field_property
+field_name: field_property
+entity_type: property_spraying_info
+bundle: weed_spraying
+label: Property
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:properties'
+  handler_settings:
+    target_bundles:
+      property: property
+    sort:
+      field: field_nickname
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

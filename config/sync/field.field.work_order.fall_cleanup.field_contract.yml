@@ -1,0 +1,33 @@
+uuid: 662c83a2-af71-4d8d-aea6-d56bc6466ee6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contracts.commercial
+    - eck.eck_type.contracts.residential
+    - eck.eck_type.contracts.snow_removal
+    - eck.eck_type.work_order.fall_cleanup
+    - field.storage.work_order.field_contract
+id: work_order.fall_cleanup.field_contract
+field_name: field_contract
+entity_type: work_order
+bundle: fall_cleanup
+label: Contract
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contracts'
+  handler_settings:
+    target_bundles:
+      commercial: commercial
+      residential: residential
+      snow_removal: snow_removal
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: commercial
+field_type: entity_reference

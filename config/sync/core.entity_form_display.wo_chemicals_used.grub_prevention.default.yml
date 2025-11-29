@@ -1,0 +1,123 @@
+uuid: b76ac1ba-15e4-4fe7-af93-e55d6a6154fa
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_chemicals_used.grub_prevention
+    - field.field.wo_chemicals_used.grub_prevention.field_chemical
+    - field.field.wo_chemicals_used.grub_prevention.field_chemical_amount_type
+    - field.field.wo_chemicals_used.grub_prevention.field_chemical_cost
+    - field.field.wo_chemicals_used.grub_prevention.field_fertilizer_lbs_applied
+    - field.field.wo_chemicals_used.grub_prevention.field_per_how_many_gallons
+    - field.field.wo_chemicals_used.grub_prevention.field_spreader_sticker_adjuvalen
+    - field.field.wo_chemicals_used.grub_prevention.field_subtotal
+    - field.field.wo_chemicals_used.grub_prevention.field_total_added_to_sprayer
+    - field.field.wo_chemicals_used.grub_prevention.field_total_gallons_applied
+    - field.field.wo_chemicals_used.grub_prevention.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_chemical_cost
+        - field_subtotal
+        - field_work_order
+        - created
+        - uid
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: wo_chemicals_used.grub_prevention.default
+targetEntityType: wo_chemicals_used
+bundle: grub_prevention
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 13
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_chemical:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_chemical_amount_type:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_chemical_cost:
+    type: number
+    weight: 10
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_fertilizer_lbs_applied:
+    type: number
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_subtotal:
+    type: number
+    weight: 11
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 12
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 15
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 14
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  field_per_how_many_gallons: true
+  field_spreader_sticker_adjuvalen: true
+  field_total_added_to_sprayer: true
+  field_total_gallons_applied: true
+  title: true

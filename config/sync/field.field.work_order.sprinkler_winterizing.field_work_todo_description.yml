@@ -1,0 +1,27 @@
+uuid: 5a7bb0c7-2934-4091-8f17-3187968f310c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.sprinkler_winterizing
+    - field.storage.work_order.field_work_todo_description
+    - filter.format.full_html
+  module:
+    - text
+id: work_order.sprinkler_winterizing.field_work_todo_description
+field_name: field_work_todo_description
+entity_type: work_order
+bundle: sprinkler_winterizing
+label: 'Winterizing Description'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: '<p>[current-date:html_year] - Sprinkler System Shut Down</p>'
+    format: full_html
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

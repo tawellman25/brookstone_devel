@@ -1,0 +1,29 @@
+uuid: bbb831e0-a02d-4d0d-8f45-0e4ee9c8088e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_chemicals_used.fertilizers_tree_and_shrubs
+    - eck.eck_type.work_order.fertilizing_trees_and_shrubs
+    - field.storage.wo_chemicals_used.field_work_order
+id: wo_chemicals_used.fertilizers_tree_and_shrubs.field_work_order
+field_name: field_work_order
+entity_type: wo_chemicals_used
+bundle: fertilizers_tree_and_shrubs
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      fertilizing_trees_and_shrubs: fertilizing_trees_and_shrubs
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: fertilizing
+field_type: entity_reference

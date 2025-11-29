@@ -1,0 +1,33 @@
+uuid: 3da23a71-f242-4294-85a1-0024ef28db20
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.sprinkler_installation
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:060118e9-33aa-4dff-89e6-6c62dbb2ca15'
+id: work_order.sprinkler_installation.field_service
+field_name: field_service
+entity_type: work_order
+bundle: sprinkler_installation
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 060118e9-33aa-4dff-89e6-6c62dbb2ca15
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

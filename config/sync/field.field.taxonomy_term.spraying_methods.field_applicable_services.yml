@@ -1,0 +1,29 @@
+uuid: 6b9d3f52-0287-4f71-a33f-6a800cd3a727
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_applicable_services
+    - taxonomy.vocabulary.services
+    - taxonomy.vocabulary.spraying_methods
+id: taxonomy_term.spraying_methods.field_applicable_services
+field_name: field_applicable_services
+entity_type: taxonomy_term
+bundle: spraying_methods
+label: 'Applicable Services'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

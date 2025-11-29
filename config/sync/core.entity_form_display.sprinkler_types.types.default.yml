@@ -1,0 +1,60 @@
+uuid: c8456dc3-c847-4e17-a949-3a797cada562
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sprinkler_types.types
+    - field.field.sprinkler_types.types.field_main_image
+    - field.field.sprinkler_types.types.field_public_description
+    - field.field.sprinkler_types.types.field_teammate_description
+    - image.style.thumbnail
+  module:
+    - field_layout
+    - image
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: sprinkler_types.types.default
+targetEntityType: sprinkler_types
+bundle: types
+mode: default
+content:
+  field_main_image:
+    type: image_image
+    weight: 5
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_public_description:
+    type: text_textarea_with_summary
+    weight: 3
+    region: content
+    settings:
+      rows: 9
+      summary_rows: 3
+      placeholder: ''
+      show_summary: false
+    third_party_settings: {  }
+  field_teammate_description:
+    type: text_textarea
+    weight: 4
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: -5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

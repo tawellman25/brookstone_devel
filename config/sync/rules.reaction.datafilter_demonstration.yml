@@ -1,0 +1,111 @@
+uuid: 2e58bbb0-9d22-4fa9-a852-5476ffb4fddf
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: jU0vR-QZlRbeKhiTVq59EHseCkhJePD0E-pTj0ZP9Ug
+id: datafilter_demonstration
+label: 'DataFilter demonstration'
+events:
+  -
+    event_name: 'rules_entity_insert:node'
+description: 'Rule to demonstrate how to use the data filters defined by the Typed Data API module. To trigger this example, create a new node with a title that contains the word "Test" (with a capital T) and has whitespace before and after the title. This rule is documented at https://www.drupal.org/docs/contributed-modules/rules-essentials/examples/datafilter-examples/use-typed-data-api-datafilters-to-process-token-values'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 71eb9496-664c-4a61-9c1c-63be115dab09
+  conditions:
+    id: rules_and
+    uuid: 9bf90a57-f14b-497f-8fa6-0bc66fce7dc6
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 57773f7c-7eb0-4535-a869-672731268038
+    actions:
+      -
+        id: rules_action
+        uuid: ca3f2f88-7a42-42fb-aa59-54213a0533ef
+        context_values:
+          message: "DefaultFilter: Applies a default value if there is no value. Title = {{ node.body.value | default('body is empty'}}"
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: 59dc955b-22c8-45b6-aefc-408d87de3486
+        context_values:
+          message: 'EntityUrlFilter: Turn a URL into an HTML anchor tag. URL = {{ node | entity_url }}'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: 4d9bdd4a-398f-4c4e-b346-86ada9422760
+        context_values:
+          message: "FormatDateFilter: The node was created in the year {{ node.created.value | format_date('custom', 'Y') }}"
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: d81320eb-176a-4969-8e4b-bc67416d3b74
+        context_values:
+          message: 'LowerFilter: Change node title to lowercase. Title = {{ node.title.value }}, Lowercase Title = {{ node.title.value | lower }}'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: 908dafaf-6741-4a1a-e18a-26ebc6e495ba
+        context_values:
+          message: 'StripTagsFilter: Remove HTML tags. Body = "{{ node.body.value }}", Stripped = "{{ node.body.value | striptags }}"'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message

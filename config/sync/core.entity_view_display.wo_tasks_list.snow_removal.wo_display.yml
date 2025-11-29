@@ -1,0 +1,415 @@
+uuid: ce33aec6-2113-4a99-94b4-1115be1ff823
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.wo_tasks_list.wo_display
+    - eck.eck_type.wo_tasks_list.snow_removal
+    - field.field.wo_tasks_list.snow_removal.field_completed
+    - field.field.wo_tasks_list.snow_removal.field_driveways_plowed
+    - field.field.wo_tasks_list.snow_removal.field_pounds_of_salt
+    - field.field.wo_tasks_list.snow_removal.field_snow_applied_salt
+    - field.field.wo_tasks_list.snow_removal.field_snow_level
+    - field.field.wo_tasks_list.snow_removal.field_snow_mag_chloride
+    - field.field.wo_tasks_list.snow_removal.field_snow_mag_gallons
+    - field.field.wo_tasks_list.snow_removal.field_snow_other
+    - field.field.wo_tasks_list.snow_removal.field_snow_other_descriptions
+    - field.field.wo_tasks_list.snow_removal.field_snow_plow_photos
+    - field.field.wo_tasks_list.snow_removal.field_snow_plowed
+    - field.field.wo_tasks_list.snow_removal.field_snow_plowed_pushes
+    - field.field.wo_tasks_list.snow_removal.field_snow_shoveled
+    - field.field.wo_tasks_list.snow_removal.field_time_shoveling
+    - field.field.wo_tasks_list.snow_removal.field_work_order
+  module:
+    - layout_builder
+    - layout_discovery
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Main Tasks Content'
+          context_mapping: {  }
+          column_widths: 50-50
+        components:
+          1ac7b0d6-641e-48fe-ad1c-fb7eb2c96878:
+            uuid: 1ac7b0d6-641e-48fe-ad1c-fb7eb2c96878
+            region: first
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_snow_level'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          a1a2b277-74c4-4090-887b-487f87a6c94f:
+            uuid: a1a2b277-74c4-4090-887b-487f87a6c94f
+            region: first
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_snow_plowed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          82917133-6b9f-4f43-a4da-51a6427f8ddd:
+            uuid: 82917133-6b9f-4f43-a4da-51a6427f8ddd
+            region: first
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_snow_plowed_pushes'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          e114c81c-35be-45f0-a34e-a68c8c18806a:
+            uuid: e114c81c-35be-45f0-a34e-a68c8c18806a
+            region: first
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_driveways_plowed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          29d1f4f3-0c0b-4084-b93e-fd51b4fe3e6b:
+            uuid: 29d1f4f3-0c0b-4084-b93e-fd51b4fe3e6b
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_snow_shoveled'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          507d0847-f128-45d1-a593-cf2c6d1caaf3:
+            uuid: 507d0847-f128-45d1-a593-cf2c6d1caaf3
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_time_shoveling'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_integer
+                label: hidden
+                settings:
+                  thousand_separator: ''
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          9f5584a7-ef4a-4a28-a6bf-219e4d77c9b1:
+            uuid: 9f5584a7-ef4a-4a28-a6bf-219e4d77c9b1
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_snow_applied_salt'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          da14fb60-f6d2-4f86-a5e5-d386fcf7821b:
+            uuid: da14fb60-f6d2-4f86-a5e5-d386fcf7821b
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_pounds_of_salt'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_decimal
+                label: hidden
+                settings:
+                  thousand_separator: ''
+                  decimal_separator: .
+                  scale: 2
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          f53c22a9-cdc3-415f-9f61-51d627a9a9e3:
+            uuid: f53c22a9-cdc3-415f-9f61-51d627a9a9e3
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_snow_mag_chloride'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          059e77d3-3011-4b82-9602-3c34632515ce:
+            uuid: 059e77d3-3011-4b82-9602-3c34632515ce
+            region: second
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_snow_mag_gallons'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_decimal
+                label: hidden
+                settings:
+                  thousand_separator: ''
+                  decimal_separator: .
+                  scale: 2
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 5
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          294f8667-18f4-44c5-ada3-532e88a404dd:
+            uuid: 294f8667-18f4-44c5-ada3-532e88a404dd
+            region: content
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_snow_other'
+              label: Other
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: boolean
+                label: inline
+                settings:
+                  format: yes-no
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 10
+            additional: {  }
+          55811e4d-694e-40d9-82b9-c349c08ae872:
+            uuid: 55811e4d-694e-40d9-82b9-c349c08ae872
+            region: content
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_snow_other_descriptions'
+              label: 'Add Other Tasks Completed'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: '@rules.current_date_context:current_date'
+              formatter:
+                type: string
+                label: hidden
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 11
+            additional: {  }
+          fd1221e2-c1ff-4270-aa6a-3b42cb69746d:
+            uuid: fd1221e2-c1ff-4270-aa6a-3b42cb69746d
+            region: content
+            configuration:
+              id: 'field_block:wo_tasks_list:snow_removal:field_snow_plow_photos'
+              label: 'Snow Plow Photos'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: colorbox
+                label: hidden
+                settings:
+                  colorbox_image_style: ''
+                  colorbox_gallery: post
+                  colorbox_gallery_custom: ''
+                  colorbox_caption: auto
+                  colorbox_caption_custom: ''
+                  colorbox_node_style: medium
+                  colorbox_node_style_first: ''
+                third_party_settings: {  }
+            weight: 12
+            additional: {  }
+        third_party_settings: {  }
+id: wo_tasks_list.snow_removal.wo_display
+targetEntityType: wo_tasks_list
+bundle: snow_removal
+mode: wo_display
+content:
+  field_driveways_plowed:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_pounds_of_salt:
+    type: number_decimal
+    label: hidden
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_snow_applied_salt:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_snow_level:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_snow_mag_chloride:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_snow_mag_gallons:
+    type: number_decimal
+    label: hidden
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_snow_other:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_snow_other_descriptions:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_snow_plowed:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_snow_plowed_pushes:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_snow_shoveled:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_time_shoveling:
+    type: number_integer
+    label: hidden
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  wo_snow_tasks_map_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: first
+hidden:
+  changed: true
+  created: true
+  field_completed: true
+  field_snow_plow_photos: true
+  field_work_order: true
+  title: true
+  uid: true

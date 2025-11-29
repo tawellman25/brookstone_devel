@@ -1,0 +1,107 @@
+uuid: 90bcac3d-57e0-4293-832c-a1bcdb4703e1
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.aerating_of_lawn
+    - field.field.contract_sections.aerating_of_lawn.field_aerating_season
+    - field.field.contract_sections.aerating_of_lawn.field_client_notes
+    - field.field.contract_sections.aerating_of_lawn.field_contract
+    - field.field.contract_sections.aerating_of_lawn.field_do_you_want
+    - field.field.contract_sections.aerating_of_lawn.field_estimate
+    - field.field.contract_sections.aerating_of_lawn.field_last_year
+    - field.field.contract_sections.aerating_of_lawn.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_admin:
+      children:
+        - field_estimate
+        - field_last_year
+        - field_contract
+        - field_work_order
+      label: Admin
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details_sidebar
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+        weight: 0
+id: contract_sections.aerating_of_lawn.default
+targetEntityType: contract_sections
+bundle: aerating_of_lawn
+mode: default
+content:
+  field_aerating_season:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_client_notes:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_do_you_want:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_estimate:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_year:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: false
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  uid: true

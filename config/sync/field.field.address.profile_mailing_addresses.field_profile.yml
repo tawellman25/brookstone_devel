@@ -1,0 +1,31 @@
+uuid: ca161d91-e13f-4896-9002-02634fc16009
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.address.profile_mailing_addresses
+    - field.storage.address.field_profile
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: '[current-page:query:profile]'
+    on_update: 0
+id: address.profile_mailing_addresses.field_profile
+field_name: field_profile
+entity_type: address
+bundle: profile_mailing_addresses
+label: 'Old Profile'
+description: 'We will delete this field once we are sure User ID Reference is working better.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: customer_profile_reference_view
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

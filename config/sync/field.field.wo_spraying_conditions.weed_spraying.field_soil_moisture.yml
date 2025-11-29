@@ -1,0 +1,29 @@
+uuid: a421dee3-425b-48b0-9889-1476a4944635
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.weed_spraying
+    - field.storage.wo_spraying_conditions.field_soil_moisture
+    - taxonomy.vocabulary.spraying_soil_moisture_levels
+id: wo_spraying_conditions.weed_spraying.field_soil_moisture
+field_name: field_soil_moisture
+entity_type: wo_spraying_conditions
+bundle: weed_spraying
+label: 'Soil Moisture'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      spraying_soil_moisture_levels: spraying_soil_moisture_levels
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

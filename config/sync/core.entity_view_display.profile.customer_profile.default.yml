@@ -1,0 +1,196 @@
+uuid: 2ef8afe8-552a-4fda-8a3c-e0f7ea95188d
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.profile.customer_profile.field_anniversary
+    - field.field.profile.customer_profile.field_attention
+    - field.field.profile.customer_profile.field_birthday
+    - field.field.profile.customer_profile.field_client_type
+    - field.field.profile.customer_profile.field_company_name
+    - field.field.profile.customer_profile.field_contact_email
+    - field.field.profile.customer_profile.field_first_name
+    - field.field.profile.customer_profile.field_last_name
+    - field.field.profile.customer_profile.field_main_fax_number
+    - field.field.profile.customer_profile.field_main_phone_number
+    - field.field.profile.customer_profile.field_middle_name
+    - field.field.profile.customer_profile.field_personal_name_title
+    - field.field.profile.customer_profile.field_primary_contact
+    - field.field.profile.customer_profile.field_primary_contact_phone
+    - field.field.profile.customer_profile.field_secondary_contact
+    - field.field.profile.customer_profile.field_secondary_contact_phone
+    - field.field.profile.customer_profile.field_spouse_birthday
+    - field.field.profile.customer_profile.field_spouse_name
+    - field.field.profile.customer_profile.field_website
+    - profile.type.customer_profile
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - layout_builder
+    - link
+    - telephone
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  layout_builder:
+    enabled: false
+    allow_custom: false
+  field_group:
+    group_contact_information:
+      children:
+        - field_primary_contact
+        - field_primary_contact_phone
+        - field_secondary_contact
+        - field_secondary_contact_phone
+      label: 'Contact Information'
+      parent_name: ''
+      region: content
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+id: profile.customer_profile.default
+targetEntityType: profile
+bundle: customer_profile
+mode: default
+content:
+  field_anniversary:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_attention:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_birthday:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_client_type:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_company_name:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_contact_email:
+    type: basic_string
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_main_fax_number:
+    type: telephone_link
+    label: inline
+    settings:
+      title: ''
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_main_phone_number:
+    type: telephone_link
+    label: inline
+    settings:
+      title: ''
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_primary_contact:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_primary_contact_phone:
+    type: telephone_link
+    label: inline
+    settings:
+      title: ''
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_secondary_contact:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_secondary_contact_phone:
+    type: telephone_link
+    label: inline
+    settings:
+      title: ''
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_spouse_birthday:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_spouse_name:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_website:
+    type: link
+    label: inline
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 8
+    region: content
+hidden:
+  field_first_name: true
+  field_last_name: true
+  field_middle_name: true
+  field_personal_name_title: true

@@ -1,0 +1,57 @@
+uuid: 6c099fe3-9f53-4e1e-afdf-8829b2e71b4a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_ss_zones.zone
+    - field.storage.property_ss_zones.field_ss_zone_photos
+  module:
+    - filefield_paths
+    - image
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[property_ss_zones:url:path]/photos'
+      options:
+        slashes: false
+        pathauto: true
+        transliterate: false
+    file_name:
+      value: 'zone_[property_ss_zones:field_clock_zone_number]_photo_[file:fid].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: property_ss_zones.zone.field_ss_zone_photos
+field_name: field_ss_zone_photos
+entity_type: property_ss_zones
+bundle: zone
+label: 'Zone Photos'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'png gif jpg jpeg'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: true
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

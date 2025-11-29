@@ -1,0 +1,254 @@
+uuid: 57fcc8f2-2d47-49ee-ba11-380981af0934
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.deciduous_bore
+    - field.field.work_order.deciduous_bore.field_atv_total
+    - field.field.work_order.deciduous_bore.field_billing_adjustment
+    - field.field.work_order.deciduous_bore.field_billing_notes
+    - field.field.work_order.deciduous_bore.field_client_app_wo_number
+    - field.field.work_order.deciduous_bore.field_contract
+    - field.field.work_order.deciduous_bore.field_estimated_price
+    - field.field.work_order.deciduous_bore.field_how_many_trees
+    - field.field.work_order.deciduous_bore.field_invoiced
+    - field.field.work_order.deciduous_bore.field_labor_total
+    - field.field.work_order.deciduous_bore.field_material_chemical_total
+    - field.field.work_order.deciduous_bore.field_printed
+    - field.field.work_order.deciduous_bore.field_property
+    - field.field.work_order.deciduous_bore.field_scheduled
+    - field.field.work_order.deciduous_bore.field_service
+    - field.field.work_order.deciduous_bore.field_status
+    - field.field.work_order.deciduous_bore.field_supervisor
+    - field.field.work_order.deciduous_bore.field_task_rate
+    - field.field.work_order.deciduous_bore.field_total_time
+    - field.field.work_order.deciduous_bore.field_trip_fee
+    - field.field.work_order.deciduous_bore.field_trucks
+    - field.field.work_order.deciduous_bore.field_wo_total
+    - field.field.work_order.deciduous_bore.field_work_order_id
+    - field.field.work_order.deciduous_bore.field_work_order_notes
+    - field.field.work_order.deciduous_bore.field_work_todo_description
+  module:
+    - field_group
+    - text
+third_party_settings:
+  field_group:
+    group_schedule:
+      children:
+        - wo_scheduled_teammate_view_entity_view_1
+      label: Schedule
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_spraying_condition:
+      children:
+        - wo_spraying_conditions_entity_view_3
+      label: 'Spraying Condition'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_chemicals_used:
+      children:
+        - wo_chemicals_used_entity_view_11
+      label: 'Chemicals Used'
+      parent_name: ''
+      region: content
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_hours:
+      children:
+        - wo_time_clock_entries_total_entity_view_1
+        - wo_hours_grouping_entity_view_1
+      label: Hours
+      parent_name: ''
+      region: content
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_photos:
+      children:
+        - wo_media_photos_entity_view_1
+      label: Photos
+      parent_name: ''
+      region: content
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_notes:
+      children:
+        - wo_notes_entity_view_1
+      label: Notes
+      parent_name: ''
+      region: content
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_system_info:
+      children:
+        - title
+        - uid
+        - created
+        - field_property
+        - field_status
+        - field_supervisor
+      label: 'System Info'
+      parent_name: ''
+      region: hidden
+      weight: 34
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+id: work_order.deciduous_bore.default
+targetEntityType: work_order
+bundle: deciduous_bore
+mode: default
+content:
+  field_client_app_wo_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_work_todo_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  flag_work_order_timer:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  wo_chemicals_used_entity_view_11:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  wo_deciduous_bore_contract_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  wo_hours_grouping_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  wo_media_photos_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  wo_notes_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  wo_scheduled_teammate_view_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  wo_sign_off_entity_view_4:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  wo_spraying_conditions_entity_view_3:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  wo_time_clock_buttons_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  wo_time_clock_buttons_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  wo_time_clock_entries_total_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_atv_total: true
+  field_billing_adjustment: true
+  field_billing_notes: true
+  field_contract: true
+  field_estimated_price: true
+  field_how_many_trees: true
+  field_invoiced: true
+  field_labor_total: true
+  field_material_chemical_total: true
+  field_printed: true
+  field_property: true
+  field_scheduled: true
+  field_service: true
+  field_status: true
+  field_supervisor: true
+  field_task_rate: true
+  field_total_time: true
+  field_trip_fee: true
+  field_trucks: true
+  field_wo_total: true
+  field_work_order_id: true
+  field_work_order_notes: true
+  title: true
+  uid: true
+  wo_current_property_owner_entity_view_1: true

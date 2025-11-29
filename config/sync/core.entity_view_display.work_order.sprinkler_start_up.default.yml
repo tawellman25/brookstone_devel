@@ -1,0 +1,291 @@
+uuid: 64c81e97-84a8-4fd7-a042-3b99cde4b6af
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.sprinkler_start_up
+    - field.field.work_order.sprinkler_start_up.field_billing_adjustment
+    - field.field.work_order.sprinkler_start_up.field_billing_notes
+    - field.field.work_order.sprinkler_start_up.field_client_app_wo_number
+    - field.field.work_order.sprinkler_start_up.field_contract
+    - field.field.work_order.sprinkler_start_up.field_estimated_price
+    - field.field.work_order.sprinkler_start_up.field_invoiced
+    - field.field.work_order.sprinkler_start_up.field_labor_total
+    - field.field.work_order.sprinkler_start_up.field_material_chemical_total
+    - field.field.work_order.sprinkler_start_up.field_printed
+    - field.field.work_order.sprinkler_start_up.field_property
+    - field.field.work_order.sprinkler_start_up.field_rental_total
+    - field.field.work_order.sprinkler_start_up.field_scheduled
+    - field.field.work_order.sprinkler_start_up.field_service
+    - field.field.work_order.sprinkler_start_up.field_status
+    - field.field.work_order.sprinkler_start_up.field_supervisor
+    - field.field.work_order.sprinkler_start_up.field_task_rate
+    - field.field.work_order.sprinkler_start_up.field_total_time
+    - field.field.work_order.sprinkler_start_up.field_trip_fee
+    - field.field.work_order.sprinkler_start_up.field_wo_total
+    - field.field.work_order.sprinkler_start_up.field_work_order_id
+    - field.field.work_order.sprinkler_start_up.field_work_order_notes
+    - field.field.work_order.sprinkler_start_up.field_work_todo_description
+    - field.field.work_order.sprinkler_start_up.field_zone_charge
+    - field.field.work_order.sprinkler_start_up.field_zone_total
+  module:
+    - field_group
+    - text
+third_party_settings:
+  field_group:
+    group_hours:
+      children:
+        - wo_time_clock_entries_total_entity_view_1
+        - wo_hours_grouping_entity_view_1
+      label: Hours
+      parent_name: ''
+      region: content
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+    group_schedule:
+      children:
+        - wo_scheduled_teammate_view_entity_view_1
+      label: Schedule
+      parent_name: ''
+      region: content
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+    group_materials:
+      children:
+        - wo_material_list_grouping_entity_view_1
+      label: Materials
+      parent_name: ''
+      region: content
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_photos:
+      children:
+        - wo_media_photos_entity_view_1
+      label: Photos
+      parent_name: ''
+      region: content
+      weight: 12
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: "These are general photos pertaining to things that happened during the Start-up.  Please don't add photos of the different aspects of the system itself here.  Those photos need to be added directly to the Sprinkler System Info."
+    group_notes:
+      children:
+        - wo_notes_entity_view_1
+      label: Notes
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: false
+        open: false
+    group_office_admin:
+      children:
+        - uid
+        - created
+        - changed
+        - field_billing_adjustment
+        - field_billing_notes
+        - field_contract
+        - field_estimated_price
+        - field_invoiced
+        - field_labor_total
+        - field_material_chemical_total
+        - field_printed
+        - field_property
+        - field_rental_total
+        - field_scheduled
+        - field_service
+        - field_status
+        - field_supervisor
+        - field_task_rate
+        - field_total_time
+        - field_trip_fee
+        - field_work_order_id
+        - field_wo_total
+        - field_zone_charge
+        - wo_current_property_owner_entity_view_1
+      label: 'Office Admin'
+      parent_name: ''
+      region: hidden
+      weight: 16
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: false
+        open: false
+    group_contract_information:
+      children:
+        - wo_sprinkler_start_up_contract_info_entity_view_1
+      label: 'Contract Information'
+      parent_name: ''
+      region: content
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+    group_sprinkler_system:
+      children:
+        - wo_property_sprinkler_start_up_info_entity_view_1
+      label: 'Sprinkler System'
+      parent_name: ''
+      region: content
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+id: work_order.sprinkler_start_up.default
+targetEntityType: work_order
+bundle: sprinkler_start_up
+mode: default
+content:
+  field_client_app_wo_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_work_todo_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_zone_total:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  flag_work_order_timer:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  wo_hours_grouping_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  wo_material_list_grouping_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  wo_media_photos_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  wo_notes_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  wo_property_sprinkler_start_up_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  wo_scheduled_teammate_view_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  wo_sign_off_entity_view_5:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  wo_sprinkler_start_up_contract_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  wo_time_clock_buttons_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  wo_time_clock_buttons_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  wo_time_clock_entries_total_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 13
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_billing_adjustment: true
+  field_billing_notes: true
+  field_contract: true
+  field_estimated_price: true
+  field_invoiced: true
+  field_labor_total: true
+  field_material_chemical_total: true
+  field_printed: true
+  field_property: true
+  field_rental_total: true
+  field_scheduled: true
+  field_service: true
+  field_status: true
+  field_supervisor: true
+  field_task_rate: true
+  field_total_time: true
+  field_trip_fee: true
+  field_wo_total: true
+  field_work_order_id: true
+  field_work_order_notes: true
+  field_zone_charge: true
+  title: true
+  uid: true
+  wo_current_property_owner_entity_view_1: true

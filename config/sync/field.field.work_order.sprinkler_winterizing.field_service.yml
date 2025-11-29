@@ -1,0 +1,33 @@
+uuid: 472a414b-9f28-4b06-b19d-ad32040223b3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.sprinkler_winterizing
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:68f5473e-2a88-4615-9e5d-8c03840571fd'
+id: work_order.sprinkler_winterizing.field_service
+field_name: field_service
+entity_type: work_order
+bundle: sprinkler_winterizing
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 68f5473e-2a88-4615-9e5d-8c03840571fd
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

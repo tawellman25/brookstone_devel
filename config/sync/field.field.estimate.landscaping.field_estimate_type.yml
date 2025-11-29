@@ -1,0 +1,29 @@
+uuid: e829a286-b723-4616-ab92-05afafd03e90
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - field.storage.estimate.field_estimate_type
+  content:
+    - 'taxonomy_term:services:0b8daf76-bc2f-41f4-bc85-db3c0c717bdc'
+id: estimate.landscaping.field_estimate_type
+field_name: field_estimate_type
+entity_type: estimate
+bundle: landscaping
+label: 'Landscape Component'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 0b8daf76-bc2f-41f4-bc85-db3c0c717bdc
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

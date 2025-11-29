@@ -1,0 +1,298 @@
+uuid: d9ca6675-32b6-4188-9707-caba77657dad
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_landscape_details.current
+    - field.field.property_landscape_details.current.field_deer_protection_contracted
+    - field.field.property_landscape_details.current.field_fall_cleanup_contracted
+    - field.field.property_landscape_details.current.field_last_pulled_by
+    - field.field.property_landscape_details.current.field_last_pulled_date
+    - field.field.property_landscape_details.current.field_new_landscaping_contracted
+    - field.field.property_landscape_details.current.field_number_of_shrubs
+    - field.field.property_landscape_details.current.field_number_of_trees
+    - field.field.property_landscape_details.current.field_number_of_trees_aspen
+    - field.field.property_landscape_details.current.field_number_of_trees_bluespruce
+    - field.field.property_landscape_details.current.field_number_of_trees_deciduous
+    - field.field.property_landscape_details.current.field_number_of_trees_frui
+    - field.field.property_landscape_details.current.field_number_of_trees_pinyon
+    - field.field.property_landscape_details.current.field_other_details
+    - field.field.property_landscape_details.current.field_property
+    - field.field.property_landscape_details.current.field_spring_cleanup_contracted
+    - field.field.property_landscape_details.current.field_summer_pruning_contracted
+    - field.field.property_landscape_details.current.field_turf_sq_footage
+    - field.field.property_landscape_details.current.field_weed_pulling_contracted
+  module:
+    - datetime
+    - field_group
+third_party_settings:
+  field_group:
+    group_office_admin:
+      children:
+        - created
+        - uid
+        - field_spring_cleanup_contracted
+        - field_summer_pruning_contracted
+        - field_fall_cleanup_contracted
+        - field_deer_protection_contracted
+        - field_new_landscaping_contracted
+      label: 'Office Administation'
+      parent_name: ''
+      region: content
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_trees:
+      children:
+        - field_number_of_trees_aspen
+        - field_number_of_trees_pinyon
+        - field_number_of_trees_bluespruce
+        - field_number_of_trees_frui
+        - field_number_of_trees_deciduous
+      label: Trees
+      parent_name: ''
+      region: content
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_weed_pulling:
+      children:
+        - field_weed_pulling_contracted
+        - field_last_pulled_date
+        - field_last_pulled_by
+      label: 'Weed Pulling'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+id: property_landscape_details.current.default
+targetEntityType: property_landscape_details
+bundle: current
+mode: default
+content:
+  changed:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: ''
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  created:
+    type: timestamp
+    label: above
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 18
+    region: content
+  field_deer_protection_contracted:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 23
+    region: content
+  field_fall_cleanup_contracted:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 22
+    region: content
+  field_last_pulled_by:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_last_pulled_date:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_new_landscaping_contracted:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 24
+    region: content
+  field_number_of_shrubs:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_number_of_trees:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_number_of_trees_aspen:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_number_of_trees_bluespruce:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_number_of_trees_deciduous:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_number_of_trees_frui:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_number_of_trees_pinyon:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_other_details:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_spring_cleanup_contracted:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 20
+    region: content
+  field_summer_pruning_contracted:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 21
+    region: content
+  field_turf_sq_footage:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_weed_pulling_contracted:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  uid:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 19
+    region: content
+hidden:
+  field_property: true
+  title: true

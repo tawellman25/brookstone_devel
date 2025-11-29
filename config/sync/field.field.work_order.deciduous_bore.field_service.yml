@@ -1,0 +1,33 @@
+uuid: 443dfb93-0a57-455b-a505-eab9eb7ac0d9
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.deciduous_bore
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:b3e375c3-2bda-46ec-9499-f81ed6079220'
+id: work_order.deciduous_bore.field_service
+field_name: field_service
+entity_type: work_order
+bundle: deciduous_bore
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: b3e375c3-2bda-46ec-9499-f81ed6079220
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

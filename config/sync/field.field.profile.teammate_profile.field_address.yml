@@ -1,0 +1,29 @@
+uuid: 671c8e41-cecb-41c7-9d1b-d35332204582
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.address.teammate_address
+    - field.storage.profile.field_address
+    - profile.type.teammate_profile
+id: profile.teammate_profile.field_address
+field_name: field_address
+entity_type: profile
+bundle: teammate_profile
+label: Address
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:address'
+  handler_settings:
+    target_bundles:
+      teammate_address: teammate_address
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: profile_mailing_addresses
+field_type: entity_reference

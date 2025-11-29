@@ -1,0 +1,55 @@
+uuid: 73aed910-efa0-4e86-8486-47bd9a239f82
+langcode: en
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: YnEQ-pleopETwlOv9YQ6Q3zLsE4oyOphLGaeaZNYe1c
+id: delete_the_friendship
+label: 'Delete the friendship'
+events:
+  -
+    event_name: 'rules_flag_entity_unflagged:user--user'
+description: ''
+tags: {  }
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: caf4a1cf-fe21-479b-ac5f-8759786ff101
+  weight: 0
+  conditions:
+    id: rules_and
+    uuid: 0de8c464-8b33-41fe-a06c-c95e47f5c62b
+    weight: 0
+    conditions:
+      -
+        id: rules_condition
+        uuid: 30037776-4eca-48c3-8731-2804aab0ae95
+        weight: 0
+        context_values:
+          operation: '=='
+          value: friend
+        context_mapping:
+          data: flagging.flag_id.target_id
+        context_processors:
+          operation:
+            rules_tokens: {  }
+          value:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        condition_id: rules_data_comparison
+        negate: false
+  actions:
+    id: rules_action_set
+    uuid: 68956b4e-6e46-49f8-9757-efc9905fc801
+    weight: 0
+    actions:
+      -
+        id: rules_action
+        uuid: 93563ad7-b041-4fd7-8c1d-5ca4b6e54696
+        weight: 0
+        context_values: {  }
+        context_mapping:
+          entity: flagging
+        context_processors: {  }
+        provides_mapping: {  }
+        action_id: rules_flag_delete_friend_flagging

@@ -1,0 +1,35 @@
+uuid: 70becdf6-73b8-43dd-9a62-b6900963dc01
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.client_app.app
+    - eck.eck_type.properties.property
+    - field.storage.properties.field_client_app
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: properties.property.field_client_app
+field_name: field_client_app
+entity_type: properties
+bundle: property
+label: 'Client App'
+description: 'Select the App that this Client would like us to use.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:client_app'
+  handler_settings:
+    target_bundles:
+      app: app
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

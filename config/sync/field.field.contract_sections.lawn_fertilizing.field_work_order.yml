@@ -1,0 +1,29 @@
+uuid: 7781ad1e-0b27-4c45-964f-56a324aaf2e3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.lawn_fertilizing
+    - eck.eck_type.work_order.fertilizing
+    - field.storage.contract_sections.field_work_order
+id: contract_sections.lawn_fertilizing.field_work_order
+field_name: field_work_order
+entity_type: contract_sections
+bundle: lawn_fertilizing
+label: 'Spring Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      fertilizing: fertilizing
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: aerating
+field_type: entity_reference

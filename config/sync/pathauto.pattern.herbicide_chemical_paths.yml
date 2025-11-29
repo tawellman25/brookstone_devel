@@ -1,0 +1,22 @@
+uuid: 08a3a325-96fd-42b5-972c-08d643656624
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: herbicide_chemical_paths
+label: 'Herbicide Chemical Paths'
+type: 'canonical_entities:chemical'
+pattern: 'services/landscape-lawn-care/spraying/chemicals/herbicide/[chemical:field_name]'
+selection_criteria:
+  726a4104-3c07-451b-afa2-30b6c57bef0b:
+    id: 'entity_bundle:chemical'
+    negate: false
+    uuid: 726a4104-3c07-451b-afa2-30b6c57bef0b
+    context_mapping:
+      chemical: chemical
+    bundles:
+      herbicide: herbicide
+selection_logic: and
+weight: -30
+relationships: {  }

@@ -1,0 +1,67 @@
+uuid: 2bb48751-2ab1-462e-aa85-b33b3a18c975
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.spraying_methods.field_applicable_services
+    - field.field.taxonomy_term.spraying_methods.field_teammate_description
+    - taxonomy.vocabulary.spraying_methods
+  module:
+    - field_layout
+    - layout_discovery
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: taxonomy_term.spraying_methods.default
+targetEntityType: taxonomy_term
+bundle: spraying_methods
+mode: default
+content:
+  description:
+    type: text_textarea
+    weight: 1
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_applicable_services:
+    type: options_buttons
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_teammate_description:
+    type: text_textarea
+    weight: 2
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    weight: 5
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+hidden: {  }

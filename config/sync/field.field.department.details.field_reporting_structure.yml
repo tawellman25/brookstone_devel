@@ -1,0 +1,29 @@
+uuid: 5655d56d-ba88-42da-80b6-fe91593965b5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.department.details
+    - eck.eck_type.positions.role
+    - field.storage.department.field_reporting_structure
+id: department.details.field_reporting_structure
+field_name: field_reporting_structure
+entity_type: department
+bundle: details
+label: 'Reporting Structure'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:positions'
+  handler_settings:
+    target_bundles:
+      role: role
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

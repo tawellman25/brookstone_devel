@@ -1,0 +1,26 @@
+uuid: 26c1816b-5ab8-4cea-bfee-e953cd5aeed6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_rental_equipment.equipment_rental
+    - field.storage.wo_rental_equipment.field_rented_from
+id: wo_rental_equipment.equipment_rental.field_rented_from
+field_name: field_rented_from
+entity_type: wo_rental_equipment
+bundle: equipment_rental
+label: 'Rented From'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: supplier_references
+      display_name: entity_reference_1
+      arguments:
+        - 'Equipment Rental'
+field_type: entity_reference

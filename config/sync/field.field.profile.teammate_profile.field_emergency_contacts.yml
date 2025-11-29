@@ -1,0 +1,29 @@
+uuid: cb4566d6-b975-4275-adff-6726365aa4d5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.emergency_contacts
+    - field.storage.profile.field_emergency_contacts
+    - profile.type.teammate_profile
+id: profile.teammate_profile.field_emergency_contacts
+field_name: field_emergency_contacts
+entity_type: profile
+bundle: teammate_profile
+label: 'Emergency Contacts'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contacts'
+  handler_settings:
+    target_bundles:
+      emergency_contacts: emergency_contacts
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: true
+    auto_create_bundle: ''
+field_type: entity_reference

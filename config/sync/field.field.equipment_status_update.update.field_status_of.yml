@@ -1,0 +1,39 @@
+uuid: 8cdc1369-fce5-4a84-b48b-4b8f02bf2001
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.heavy_equipment
+    - eck.eck_type.equipment.power_tools
+    - eck.eck_type.equipment.small_engine
+    - eck.eck_type.equipment.sprayers
+    - eck.eck_type.equipment.trailers
+    - eck.eck_type.equipment.vehicles
+    - eck.eck_type.equipment_status_update.update
+    - field.storage.equipment_status_update.field_status_of
+id: equipment_status_update.update.field_status_of
+field_name: field_status_of
+entity_type: equipment_status_update
+bundle: update
+label: 'Status of'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:equipment'
+  handler_settings:
+    target_bundles:
+      heavy_equipment: heavy_equipment
+      power_tools: power_tools
+      small_engine: small_engine
+      sprayers: sprayers
+      trailers: trailers
+      vehicles: vehicles
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: heavy_equipment
+field_type: entity_reference

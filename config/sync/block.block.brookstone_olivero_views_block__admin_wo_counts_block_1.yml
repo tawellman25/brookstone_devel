@@ -1,0 +1,41 @@
+uuid: 917cab17-ca18-465c-98d2-8e764a625369
+langcode: en
+status: true
+dependencies:
+  config:
+    - views.view.admin_wo_counts
+  module:
+    - system
+    - user
+    - views
+  theme:
+    - brookstone_olivero
+id: brookstone_olivero_views_block__admin_wo_counts_block_1
+theme: brookstone_olivero
+region: sidebar
+weight: -15
+provider: null
+plugin: 'views_block:admin_wo_counts-block_1'
+settings:
+  id: 'views_block:admin_wo_counts-block_1'
+  label: ''
+  label_display: visible
+  provider: views
+  views_label: ''
+  items_per_page: none
+  exposed: {  }
+visibility:
+  request_path:
+    id: request_path
+    negate: false
+    pages: "/teammates\r\n/admin/office"
+  user_role:
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      administrator: administrator
+      site_admin: site_admin
+      administration: administration
+      supervisor: supervisor

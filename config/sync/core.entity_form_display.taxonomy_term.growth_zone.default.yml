@@ -1,0 +1,127 @@
+uuid: 2727b909-1f40-4052-939c-be65290d2275
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.growth_zone.field_short_description
+    - field.field.taxonomy_term.growth_zone.field_zone_max_temp
+    - field.field.taxonomy_term.growth_zone.field_zone_min_temp
+    - field.field.taxonomy_term.growth_zone.field_zone_number
+    - field.field.taxonomy_term.growth_zone.field_zone_subzone
+    - taxonomy.vocabulary.growth_zone
+  module:
+    - conditional_fields
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - path
+        - status
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+id: taxonomy_term.growth_zone.default
+targetEntityType: taxonomy_term
+bundle: growth_zone
+mode: default
+content:
+  description:
+    type: text_textarea
+    weight: 5
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_short_description:
+    type: text_textarea
+    weight: 4
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings:
+      conditional_fields:
+        ee2217bf-ed42-47cc-96a8-c70f5336811c:
+          entity_type: taxonomy_term
+          bundle: growth_zone
+          dependee: field_zone_subzone
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                value: a
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_zone_max_temp:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_zone_min_temp:
+    type: number
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_zone_number:
+    type: number
+    weight: 0
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_zone_subzone:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    weight: 31
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+hidden:
+  name: true

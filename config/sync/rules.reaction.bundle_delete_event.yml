@@ -1,0 +1,46 @@
+uuid: 18ae485d-2a37-4388-b253-d081967f465f
+langcode: en
+status: false
+dependencies:
+  enforced:
+    module:
+      - tr_rulez
+_core:
+  default_config_hash: zhtQ8QHprdpcs_23DktG1OLKsZafNvvXlGqYNdGUsO8
+id: bundle_delete_event
+label: 'Test bundle delete event'
+events:
+  -
+    event_name: tr_rulez.entity_bundle_delete
+description: 'See https://www.drupal.org/project/tr_rulez/issues/3100511'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: af595616-d24d-4554-b18a-18bd8ce0979d
+  conditions:
+    id: rules_and
+    uuid: 93de2f23-3702-4ff9-aac3-036d21d68602
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 49b62a43-ebe7-4477-b525-cb9aeae1973a
+    actions:
+      -
+        id: rules_action
+        uuid: 17b3f9ab-9f5f-4082-a4a3-cddccbf7aedf
+        context_values:
+          message: 'Bundle {{ bundle_name }} deleted for entity type {{ entity_type }}'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message

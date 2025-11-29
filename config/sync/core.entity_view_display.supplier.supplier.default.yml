@@ -1,0 +1,95 @@
+uuid: 6cad1010-13db-4d46-86ff-9feb0f1aa890
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.supplier.supplier
+    - field.field.supplier.supplier.field_address
+    - field.field.supplier.supplier.field_contacts
+    - field.field.supplier.supplier.field_logo
+    - field.field.supplier.supplier.field_phone_numbers
+    - field.field.supplier.supplier.field_supplier_name
+    - field.field.supplier.supplier.field_supplier_type
+    - field.field.supplier.supplier.field_website
+    - image.style.max_1300x1300
+  module:
+    - field_group
+    - image
+    - link
+third_party_settings:
+  field_group:
+    group_contacts:
+      children:
+        - field_contacts
+      label: Contacts
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+id: supplier.supplier.default
+targetEntityType: supplier
+bundle: supplier
+mode: default
+content:
+  field_address:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_contacts:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_logo:
+    type: image
+    label: hidden
+    settings:
+      image_link: file
+      image_style: max_1300x1300
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_phone_numbers:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_website:
+    type: link
+    label: inline
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_supplier_name: true
+  field_supplier_type: true
+  title: true
+  uid: true

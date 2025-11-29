@@ -1,0 +1,76 @@
+uuid: ea4b3a4a-e271-4107-b405-d0ec630fdd88
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.address.contact_address
+    - field.field.address.contact_address.field_additional_address
+    - field.field.address.contact_address.field_address
+    - field.field.address.contact_address.field_city
+    - field.field.address.contact_address.field_primary_address
+    - field.field.address.contact_address.field_state
+    - field.field.address.contact_address.field_zipcode
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: address.contact_address.default
+targetEntityType: address
+bundle: contact_address
+mode: default
+content:
+  field_additional_address:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_address:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_city:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_primary_address:
+    type: boolean_checkbox
+    weight: 0
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_state:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_zipcode:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  title: true
+  uid: true

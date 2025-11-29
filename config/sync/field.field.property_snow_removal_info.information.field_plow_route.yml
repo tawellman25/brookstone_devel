@@ -1,0 +1,29 @@
+uuid: 566ea610-54ed-4363-9aa7-d50a0d7c4502
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_snow_removal_info.information
+    - field.storage.property_snow_removal_info.field_plow_route
+    - taxonomy.vocabulary.snow_plow_routes
+id: property_snow_removal_info.information.field_plow_route
+field_name: field_plow_route
+entity_type: property_snow_removal_info
+bundle: information
+label: 'Plow Route'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      snow_plow_routes: snow_plow_routes
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

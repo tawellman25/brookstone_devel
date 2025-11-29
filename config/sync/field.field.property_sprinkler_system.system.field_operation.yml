@@ -1,0 +1,33 @@
+uuid: e1feb30e-d8d0-48a1-b6d1-3d306d0565c5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_system.system
+    - field.storage.property_sprinkler_system.field_operation
+    - taxonomy.vocabulary.system_operation
+  content:
+    - 'taxonomy_term:system_operation:28432d32-16f3-422f-8850-88055e4891fe'
+id: property_sprinkler_system.system.field_operation
+field_name: field_operation
+entity_type: property_sprinkler_system
+bundle: system
+label: Operation
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: 28432d32-16f3-422f-8850-88055e4891fe
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      system_operation: system_operation
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

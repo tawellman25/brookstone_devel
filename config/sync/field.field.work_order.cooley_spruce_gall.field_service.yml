@@ -1,0 +1,33 @@
+uuid: 3cca5bc9-07e6-4c55-99e4-999777faaacb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.cooley_spruce_gall
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:0b600a78-ab90-4576-984b-991beb2d80ce'
+id: work_order.cooley_spruce_gall.field_service
+field_name: field_service
+entity_type: work_order
+bundle: cooley_spruce_gall
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 0b600a78-ab90-4576-984b-991beb2d80ce
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,35 @@
+uuid: 856d7ca3-6fca-4baf-8c77-3ee09ffc0a3b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.manufacturer.manufacturer
+    - eck.eck_type.material.pavers
+    - field.storage.material.field_manufacturer
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.pavers.field_manufacturer
+field_name: field_manufacturer
+entity_type: material
+bundle: pavers
+label: Manufacturer
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:manufacturer'
+  handler_settings:
+    target_bundles:
+      manufacturer: manufacturer
+    sort:
+      field: field_name
+      direction: ASC
+    auto_create: true
+    auto_create_bundle: ''
+field_type: entity_reference

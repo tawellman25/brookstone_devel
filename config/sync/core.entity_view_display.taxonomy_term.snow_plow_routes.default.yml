@@ -1,0 +1,84 @@
+uuid: 10c008f2-f9ff-473e-945a-c1b55ff3d97a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.snow_plow_routes.field_assigned_equipment
+    - field.field.taxonomy_term.snow_plow_routes.field_assigned_teammate
+    - field.field.taxonomy_term.snow_plow_routes.field_city
+    - field.field.taxonomy_term.snow_plow_routes.field_route_name
+    - taxonomy.vocabulary.snow_plow_routes
+  module:
+    - field_group
+    - text
+third_party_settings:
+  field_group:
+    group_properties_on_route:
+      children:
+        - snow_plow_route_properties_entity_view_1
+      label: 'Properties on Route'
+      parent_name: ''
+      region: content
+      weight: 5
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: 'To add properties to this list you must add the "Snow Removal Info" to the property you want on this list.'
+id: taxonomy_term.snow_plow_routes.default
+targetEntityType: taxonomy_term
+bundle: snow_plow_routes
+mode: default
+content:
+  description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_assigned_equipment:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_assigned_teammate:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_city:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_route_name:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  snow_plow_route_properties_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  snow_plow_route_properties_entity_view_1_form:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+hidden: {  }

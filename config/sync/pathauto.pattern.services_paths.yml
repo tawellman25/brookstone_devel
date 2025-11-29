@@ -1,0 +1,22 @@
+uuid: af476897-e7b0-48c6-9ca8-32a19ead3339
+langcode: en
+status: true
+dependencies:
+  module:
+    - taxonomy
+id: services_paths
+label: 'Services Paths'
+type: 'canonical_entities:taxonomy_term'
+pattern: '[term:parent:url:path]/[term:name]'
+selection_criteria:
+  5f38053d-7c80-438c-b19b-e68146491b49:
+    id: 'entity_bundle:taxonomy_term'
+    negate: false
+    uuid: 5f38053d-7c80-438c-b19b-e68146491b49
+    context_mapping:
+      taxonomy_term: taxonomy_term
+    bundles:
+      services: services
+selection_logic: and
+weight: -41
+relationships: {  }

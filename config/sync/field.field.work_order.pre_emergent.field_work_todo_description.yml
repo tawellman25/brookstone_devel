@@ -1,0 +1,27 @@
+uuid: 42b084cc-3599-4b98-af33-cae859212a83
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.pre_emergent
+    - field.storage.work_order.field_work_todo_description
+    - filter.format.full_html
+  module:
+    - text
+id: work_order.pre_emergent.field_work_todo_description
+field_name: field_work_todo_description
+entity_type: work_order
+bundle: pre_emergent
+label: 'Work To Be Done'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: '<p>[current-date:html_year] - Spray Pre-emergent as described</p>'
+    format: full_html
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

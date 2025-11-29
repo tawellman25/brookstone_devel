@@ -1,0 +1,29 @@
+uuid: 6737d277-70d4-4b04-b269-01397b6dbd9f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.crew_types.crew_types
+    - field.storage.crew_types.field_skills_certifications
+    - taxonomy.vocabulary.crew_skills_and_certifications
+id: crew_types.crew_types.field_skills_certifications
+field_name: field_skills_certifications
+entity_type: crew_types
+bundle: crew_types
+label: 'Required Skills/Certifications'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      crew_skills_and_certifications: crew_skills_and_certifications
+    sort:
+      field: name
+      direction: asc
+    auto_create: true
+    auto_create_bundle: ''
+field_type: entity_reference

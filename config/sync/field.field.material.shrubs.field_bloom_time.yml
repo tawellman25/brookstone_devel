@@ -1,0 +1,29 @@
+uuid: 228435bf-f218-4539-ba05-03996b27e27a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.shrubs
+    - field.storage.material.field_bloom_time
+    - taxonomy.vocabulary.bloom_time
+id: material.shrubs.field_bloom_time
+field_name: field_bloom_time
+entity_type: material
+bundle: shrubs
+label: 'Bloom Time'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      bloom_time: bloom_time
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

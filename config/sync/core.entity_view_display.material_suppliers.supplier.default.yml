@@ -1,0 +1,90 @@
+uuid: 85f511ca-e391-4455-bd94-83882360bf06
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material_suppliers.supplier
+    - field.field.material_suppliers.supplier.field_material
+    - field.field.material_suppliers.supplier.field_supplier
+    - field.field.material_suppliers.supplier.field_supplier_item_number
+    - field.field.material_suppliers.supplier.field_supplier_website_item_link
+  module:
+    - link
+    - user
+id: material_suppliers.supplier.default
+targetEntityType: material_suppliers
+bundle: supplier
+mode: default
+content:
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_material:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_supplier:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_supplier_item_number:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_supplier_website_item_link:
+    type: link
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true

@@ -1,0 +1,155 @@
+uuid: ea224c6c-22e6-4105-8388-6878312bcdcc
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.weed_spraying
+    - field.field.wo_spraying_conditions.weed_spraying.field_carrier
+    - field.field.wo_spraying_conditions.weed_spraying.field_how_applied
+    - field.field.wo_spraying_conditions.weed_spraying.field_method_of_application
+    - field.field.wo_spraying_conditions.weed_spraying.field_other_weed_types
+    - field.field.wo_spraying_conditions.weed_spraying.field_soil_moisture
+    - field.field.wo_spraying_conditions.weed_spraying.field_sprayed_areas
+    - field.field.wo_spraying_conditions.weed_spraying.field_stage_of_weed_growth
+    - field.field.wo_spraying_conditions.weed_spraying.field_temperature
+    - field.field.wo_spraying_conditions.weed_spraying.field_weed_types
+    - field.field.wo_spraying_conditions.weed_spraying.field_wind_direction
+    - field.field.wo_spraying_conditions.weed_spraying.field_wind_speed
+    - field.field.wo_spraying_conditions.weed_spraying.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_work_order
+        - created
+        - uid
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 11
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+        open: false
+id: wo_spraying_conditions.weed_spraying.default
+targetEntityType: wo_spraying_conditions
+bundle: weed_spraying
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_carrier:
+    type: options_buttons
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_how_applied:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_method_of_application:
+    type: options_buttons
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_other_weed_types:
+    type: string_textfield
+    weight: 10
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_soil_moisture:
+    type: options_buttons
+    weight: 7
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_sprayed_areas:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_stage_of_weed_growth:
+    type: options_buttons
+    weight: 8
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_temperature:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_weed_types:
+    type: options_buttons
+    weight: 9
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_wind_direction:
+    type: options_buttons
+    weight: 5
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_wind_speed:
+    type: options_buttons
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 14
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 13
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

@@ -1,0 +1,186 @@
+uuid: bb5e69c3-cdee-40b7-b95e-3797597396ca
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_sprinkler_info.general_information
+    - field.field.property_sprinkler_info.general_information.field_field_ss_check_how_often
+    - field.field.property_sprinkler_info.general_information.field_last_checked_by
+    - field.field.property_sprinkler_info.general_information.field_last_system_check
+    - field.field.property_sprinkler_info.general_information.field_property
+    - field.field.property_sprinkler_info.general_information.field_ss_check_contract
+    - field.field.property_sprinkler_info.general_information.field_ss_check_instructions
+    - field.field.property_sprinkler_info.general_information.field_ss_shut_down_contract
+    - field.field.property_sprinkler_info.general_information.field_ss_start_up_contracted
+    - field.field.property_sprinkler_info.general_information.field_ss_start_up_notes
+    - field.field.property_sprinkler_info.general_information.field_ss_winterizing_notes
+    - field.field.property_sprinkler_info.general_information.field_systems
+  module:
+    - datetime
+    - field_group
+    - layout_builder
+third_party_settings:
+  field_group:
+    group_check_ups:
+      children:
+        - field_ss_check_contract
+        - field_field_ss_check_how_often
+        - field_last_system_check
+        - field_last_checked_by
+        - field_ss_check_instructions
+      label: 'Check Ups'
+      parent_name: ''
+      region: content
+      weight: 1
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+    group_systems:
+      children:
+        - property_sprinkler_info_systems_entity_view_1
+      label: Systems
+      parent_name: ''
+      region: content
+      weight: 0
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Some properties have more than one system.  You can add more here.'
+    group_ss_start_ups:
+      children:
+        - field_ss_start_up_contracted
+        - field_ss_start_up_notes
+      label: 'Start Up'
+      parent_name: ''
+      region: content
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+    group_ss_winterizing:
+      children:
+        - field_ss_shut_down_contract
+        - field_ss_winterizing_notes
+      label: Winterizing
+      parent_name: ''
+      region: content
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: property_sprinkler_info.general_information.default
+targetEntityType: property_sprinkler_info
+bundle: general_information
+mode: default
+content:
+  field_field_ss_check_how_often:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_last_checked_by:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  field_last_system_check:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  field_ss_check_contract:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_ss_check_instructions:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 16
+    region: content
+  field_ss_shut_down_contract:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_ss_start_up_contracted:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_ss_start_up_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_ss_winterizing_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  property_sprinkler_info_systems_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+hidden:
+  changed: true
+  field_property: true
+  field_systems: true
+  title: true

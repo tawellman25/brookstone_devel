@@ -1,0 +1,47 @@
+uuid: d4529e70-880c-4af8-9021-362cb47c5d13
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.pre_emergent
+    - eck.eck_type.work_order.aspen_twig_gall
+    - eck.eck_type.work_order.cooley_spruce_gall
+    - eck.eck_type.work_order.deciduous_bore
+    - eck.eck_type.work_order.dormant_oil
+    - eck.eck_type.work_order.fertilizing
+    - eck.eck_type.work_order.fertilizing_trees_and_shrubs
+    - eck.eck_type.work_order.pinion_pine_ips_beetle
+    - eck.eck_type.work_order.pre_emergent
+    - eck.eck_type.work_order.trunk_bore
+    - eck.eck_type.work_order.weed_spraying
+    - field.storage.wo_spraying_conditions.field_work_order
+id: wo_spraying_conditions.pre_emergent.field_work_order
+field_name: field_work_order
+entity_type: wo_spraying_conditions
+bundle: pre_emergent
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      aspen_twig_gall: aspen_twig_gall
+      cooley_spruce_gall: cooley_spruce_gall
+      deciduous_bore: deciduous_bore
+      dormant_oil: dormant_oil
+      fertilizing: fertilizing
+      fertilizing_trees_and_shrubs: fertilizing_trees_and_shrubs
+      pinion_pine_ips_beetle: pinion_pine_ips_beetle
+      pre_emergent: pre_emergent
+      trunk_bore: trunk_bore
+      weed_spraying: weed_spraying
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: aspen_twig_gall
+field_type: entity_reference

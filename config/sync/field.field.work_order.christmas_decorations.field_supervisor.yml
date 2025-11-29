@@ -1,0 +1,42 @@
+uuid: b6a12f64-b7c1-4a61-907d-19f94a28f037
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.christmas_decorations
+    - field.storage.work_order.field_supervisor
+  content:
+    - 'user:user:d6e0b472-06b0-4757-a4c3-a6eb280501df'
+id: work_order.christmas_decorations.field_supervisor
+field_name: field_supervisor
+entity_type: work_order
+bundle: christmas_decorations
+label: Supervisor
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: d6e0b472-06b0-4757-a4c3-a6eb280501df
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        supervisor: supervisor
+        administrator: '0'
+        site_admin: '0'
+        administration: '0'
+        teammates: '0'
+        client: '0'
+        user: '0'
+        supplier: '0'
+    include_anonymous: true
+field_type: entity_reference

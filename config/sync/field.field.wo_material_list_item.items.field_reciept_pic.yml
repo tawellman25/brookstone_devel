@@ -1,0 +1,57 @@
+uuid: 206f5877-907d-425f-bbd9-8d11dece6d0d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_material_list_item.items
+    - field.storage.wo_material_list_item.field_reciept_pic
+  module:
+    - filefield_paths
+    - image
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[wo_material_list_item:url:path]/receipts'
+      options:
+        slashes: false
+        pathauto: true
+        transliterate: false
+    file_name:
+      value: '[wo_material_list_item:field_list_id:entity:field_work_order:entity:title]_[wo_material_list_item:field_list_id:entity:field_materials_for]_receipt.[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: true
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: true
+id: wo_material_list_item.items.field_reciept_pic
+field_name: field_reciept_pic
+entity_type: wo_material_list_item
+bundle: items
+label: 'Receipt Picture'
+description: "Take a pic of the Receipt for this item.  May use one pic for several Items.  If you have already saved the Receipt Picture once, you don't need to do it again."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'png gif jpg jpeg webp'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: false
+  alt_field_required: false
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

@@ -1,0 +1,27 @@
+uuid: 91def823-0079-4cef-8fd8-e2a67fdb5313
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.misc_services
+    - field.storage.work_order.field_work_todo_description
+    - filter.format.full_html
+  module:
+    - text
+id: work_order.misc_services.field_work_todo_description
+field_name: field_work_todo_description
+entity_type: work_order
+bundle: misc_services
+label: 'Work To Be Done'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: '<p>[current-date:html_year] - Misc. Services needing done (Please Describe Here)</p>'
+    format: full_html
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

@@ -1,0 +1,33 @@
+uuid: be3a06c6-65aa-40d6-8cf7-aab2ad1ae284
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.in_house_tasks
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:5e1f552c-1909-40d0-ae24-fcfdb588643c'
+id: work_order.in_house_tasks.field_service
+field_name: field_service
+entity_type: work_order
+bundle: in_house_tasks
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 5e1f552c-1909-40d0-ae24-fcfdb588643c
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

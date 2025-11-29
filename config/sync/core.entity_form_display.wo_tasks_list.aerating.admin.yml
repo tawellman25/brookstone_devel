@@ -1,0 +1,110 @@
+uuid: a0782d88-df8e-4259-8305-b0a74f0c2198
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.wo_tasks_list.admin
+    - eck.eck_type.wo_tasks_list.aerating
+    - field.field.wo_tasks_list.aerating.field_aerating_equipment_used
+    - field.field.wo_tasks_list.aerating.field_sprinkler_heads_marked
+    - field.field.wo_tasks_list.aerating.field_sprinkler_heads_we_marked
+    - field.field.wo_tasks_list.aerating.field_work_order
+  module:
+    - conditional_fields
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_administation:
+      children:
+        - created
+        - uid
+        - field_work_order
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 20
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: wo_tasks_list.aerating.admin
+targetEntityType: wo_tasks_list
+bundle: aerating
+mode: admin
+content:
+  created:
+    type: datetime_timestamp
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_aerating_equipment_used:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_sprinkler_heads_marked:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_sprinkler_heads_we_marked:
+    type: options_buttons
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings:
+      conditional_fields:
+        450bf342-b84e-4d36-ba62-00584c197763:
+          entity_type: wo_tasks_list
+          bundle: aerating
+          dependee: field_sprinkler_heads_marked
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                value: 'no'
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  path: true
+  title: true

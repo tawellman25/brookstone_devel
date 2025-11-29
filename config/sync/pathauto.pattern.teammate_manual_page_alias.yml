@@ -1,0 +1,22 @@
+uuid: a245f491-2854-4763-a1c7-a0ae7aa1245e
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+id: teammate_manual_page_alias
+label: 'Teammate Manual Page Alias'
+type: 'canonical_entities:node'
+pattern: '[node:book:parent:url:path]/[node:title]'
+selection_criteria:
+  37d3adea-4dc4-4be4-8c01-e178190ef681:
+    id: 'entity_bundle:node'
+    negate: false
+    uuid: 37d3adea-4dc4-4be4-8c01-e178190ef681
+    context_mapping:
+      node: node
+    bundles:
+      teammate_manual_page: teammate_manual_page
+selection_logic: and
+weight: -5
+relationships: {  }

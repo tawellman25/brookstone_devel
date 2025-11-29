@@ -1,0 +1,29 @@
+uuid: 6bb8bf22-fca9-40c2-ae24-37deb7c78c0b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.pre_emergent
+    - field.storage.wo_spraying_conditions.field_sprayed_areas
+    - taxonomy.vocabulary.spraying_locations
+id: wo_spraying_conditions.pre_emergent.field_sprayed_areas
+field_name: field_sprayed_areas
+entity_type: wo_spraying_conditions
+bundle: pre_emergent
+label: 'Sprayed Areas'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      spraying_locations: spraying_locations
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

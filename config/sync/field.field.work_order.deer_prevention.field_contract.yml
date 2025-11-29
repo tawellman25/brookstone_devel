@@ -1,0 +1,33 @@
+uuid: 8fb16b12-6b0a-46a4-afb4-9ac3f8c5a9bb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contracts.commercial
+    - eck.eck_type.contracts.residential
+    - eck.eck_type.contracts.snow_removal
+    - eck.eck_type.work_order.deer_prevention
+    - field.storage.work_order.field_contract
+id: work_order.deer_prevention.field_contract
+field_name: field_contract
+entity_type: work_order
+bundle: deer_prevention
+label: Contract
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contracts'
+  handler_settings:
+    target_bundles:
+      commercial: commercial
+      residential: residential
+      snow_removal: snow_removal
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: commercial
+field_type: entity_reference

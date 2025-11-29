@@ -1,0 +1,29 @@
+uuid: 8769a8d5-c2b4-455a-a1f1-647b7792bdfd
+langcode: en
+status: true
+dependencies:
+  module:
+    - ctools_block
+  theme:
+    - olivero_sewards
+id: olivero_sewards_customerprofileprofiles
+theme: olivero_sewards
+region: content
+weight: -9
+provider: null
+plugin: 'entity_field:user:customer_profile_profiles'
+settings:
+  id: 'entity_field:user:customer_profile_profiles'
+  label: 'Customer Profile profiles'
+  label_display: visible
+  provider: ctools_block
+  context_mapping:
+    entity: '@user.current_user_context:current_user'
+  formatter:
+    type: entity_reference_label
+    weight: 0
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+visibility: {  }

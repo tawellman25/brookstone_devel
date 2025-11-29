@@ -1,0 +1,312 @@
+uuid: 0492af1a-4cbf-41e8-a67f-db98ad9b0f3f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.decorative_rock
+    - field.field.material.decorative_rock.feeds_item
+    - field.field.material.decorative_rock.field_banner_images
+    - field.field.material.decorative_rock.field_cost_integer
+    - field.field.material.decorative_rock.field_description
+    - field.field.material.decorative_rock.field_discontinued
+    - field.field.material.decorative_rock.field_est_wt_per_yard
+    - field.field.material.decorative_rock.field_front_promoted
+    - field.field.material.decorative_rock.field_last_restocked_date
+    - field.field.material.decorative_rock.field_lead_time
+    - field.field.material.decorative_rock.field_main_image
+    - field.field.material.decorative_rock.field_material_tags
+    - field.field.material.decorative_rock.field_name
+    - field.field.material.decorative_rock.field_price
+    - field.field.material.decorative_rock.field_price_updated
+    - field.field.material.decorative_rock.field_quantity_in_stock
+    - field.field.material.decorative_rock.field_rock_type
+    - field.field.material.decorative_rock.field_slideshow_image
+    - field.field.material.decorative_rock.field_supplier
+    - field.field.material.decorative_rock.field_supplier_item_number
+    - field.field.material.decorative_rock.field_supplier_website_item_link
+    - field.field.material.decorative_rock.field_suppliers
+    - field.field.material.decorative_rock.field_unit_of_measure
+    - field.field.material.decorative_rock.field_yard_per_ton
+    - image.style.thumbnail
+  module:
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - link
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_front_promoted
+        - created
+        - uid
+        - path
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_inventory_management:
+      children:
+        - field_discontinued
+        - field_unit_of_measure
+        - field_est_wt_per_yard
+        - field_yard_per_ton
+        - field_cost_integer
+        - field_quantity_in_stock
+        - field_price
+        - field_price_updated
+        - field_last_restocked_date
+        - field_lead_time
+        - field_supplier_item_number
+        - field_supplier
+        - field_supplier_website_item_link
+      label: 'Inventory Management'
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+    group_supporting_images:
+      children:
+        - field_banner_images
+        - field_main_image
+        - field_slideshow_image
+      label: 'Supporting Images'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+id: material.decorative_rock.default
+targetEntityType: material
+bundle: decorative_rock
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 13
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_banner_images:
+    type: image_image
+    weight: 12
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_cost_integer:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_description:
+    type: text_textarea_with_summary
+    weight: 2
+    region: content
+    settings:
+      rows: 9
+      summary_rows: 3
+      placeholder: ''
+      show_summary: false
+    third_party_settings: {  }
+  field_discontinued:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_est_wt_per_yard:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_front_promoted:
+    type: boolean_checkbox
+    weight: 12
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_last_restocked_date:
+    type: datetime_timestamp
+    weight: 11
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_lead_time:
+    type: number
+    weight: 12
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_main_image:
+    type: image_image
+    weight: 14
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_material_tags:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_price:
+    type: number
+    weight: 9
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_price_updated:
+    type: boolean_checkbox
+    weight: 10
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_quantity_in_stock:
+    type: number
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_rock_type:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_slideshow_image:
+    type: image_image
+    weight: 15
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_supplier:
+    type: entity_reference_autocomplete
+    weight: 14
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_supplier_item_number:
+    type: string_textfield
+    weight: 13
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_supplier_website_item_link:
+    type: link_default
+    weight: 15
+    region: content
+    settings:
+      placeholder_url: ''
+      placeholder_title: ''
+    third_party_settings: {  }
+  field_suppliers:
+    type: entity_reference_autocomplete
+    weight: 19
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_unit_of_measure:
+    type: options_select
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_yard_per_ton:
+    type: number
+    weight: 6
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 16
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 14
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  feeds_item: true
+  title: true

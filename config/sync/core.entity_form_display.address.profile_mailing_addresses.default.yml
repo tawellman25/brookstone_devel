@@ -1,0 +1,176 @@
+uuid: 1a04c482-f652-4a2d-ab9c-880ef10a4a3d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.address.profile_mailing_addresses
+    - field.field.address.profile_mailing_addresses.field_additional_address
+    - field.field.address.profile_mailing_addresses.field_address
+    - field.field.address.profile_mailing_addresses.field_address_notes
+    - field.field.address.profile_mailing_addresses.field_address_to
+    - field.field.address.profile_mailing_addresses.field_address_to_additional
+    - field.field.address.profile_mailing_addresses.field_city
+    - field.field.address.profile_mailing_addresses.field_old
+    - field.field.address.profile_mailing_addresses.field_primary_address
+    - field.field.address.profile_mailing_addresses.field_profile
+    - field.field.address.profile_mailing_addresses.field_state
+    - field.field.address.profile_mailing_addresses.field_user
+    - field.field.address.profile_mailing_addresses.field_zipcode
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_administration:
+      children:
+        - field_user
+        - field_primary_address
+        - field_old
+        - field_address_notes
+        - uid
+        - created
+        - field_profile
+      label: Administration
+      region: content
+      parent_name: ''
+      weight: 8
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+id: address.profile_mailing_addresses.default
+targetEntityType: address
+bundle: profile_mailing_addresses
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_additional_address:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_address:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_address_notes:
+    type: string_textarea
+    weight: 10
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_address_to:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_address_to_additional:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_city:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_old:
+    type: boolean_checkbox
+    weight: 9
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_primary_address:
+    type: boolean_checkbox
+    weight: 8
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_profile:
+    type: entity_reference_autocomplete
+    weight: 13
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_state:
+    type: string_textfield
+    weight: 6
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_user:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_zipcode:
+    type: string_textfield
+    weight: 7
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 11
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

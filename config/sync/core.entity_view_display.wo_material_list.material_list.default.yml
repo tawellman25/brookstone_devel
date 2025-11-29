@@ -1,0 +1,87 @@
+uuid: f9df04cc-e048-4a2d-9727-fd4f6e137084
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_material_list.material_list
+    - field.field.wo_material_list.material_list.field_materials_for
+    - field.field.wo_material_list.material_list.field_work_order
+  module:
+    - layout_builder
+    - layout_discovery
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          85edef7b-6987-4d4e-aa6e-4b9e009d27a3:
+            uuid: 85edef7b-6987-4d4e-aa6e-4b9e009d27a3
+            region: content
+            configuration:
+              id: 'field_block:wo_material_list:material_list:field_materials_for'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: inline
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          e0fdb27c-a53e-409d-a321-535f64d97d38:
+            uuid: e0fdb27c-a53e-409d-a321-535f64d97d38
+            region: content
+            configuration:
+              id: 'field_block:wo_material_list:material_list:field_work_order'
+              label: 'For Work Order'
+              label_display: visible
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: entity_reference_label
+                label: hidden
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+        third_party_settings: {  }
+id: wo_material_list.material_list.default
+targetEntityType: wo_material_list
+bundle: material_list
+mode: default
+content:
+  field_materials_for:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  material_list_item_list_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  material_list_items_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_material_list_items: true
+  field_work_order: true
+  title: true
+  uid: true

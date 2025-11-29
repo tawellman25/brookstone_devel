@@ -1,0 +1,161 @@
+uuid: 1312ce5c-1ded-462b-ac08-91f92e9a123f
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.profile.teammate_internal
+    - field.field.profile.teammate_profile.field_address
+    - field.field.profile.teammate_profile.field_assigned_crew
+    - field.field.profile.teammate_profile.field_birthday
+    - field.field.profile.teammate_profile.field_cell_number
+    - field.field.profile.teammate_profile.field_emergency_contacts
+    - field.field.profile.teammate_profile.field_first_name
+    - field.field.profile.teammate_profile.field_hat_preference
+    - field.field.profile.teammate_profile.field_job_title
+    - field.field.profile.teammate_profile.field_last_name
+    - field.field.profile.teammate_profile.field_list_position
+    - field.field.profile.teammate_profile.field_middle_name
+    - field.field.profile.teammate_profile.field_public_viewable
+    - field.field.profile.teammate_profile.field_shirt_size
+    - field.field.profile.teammate_profile.field_spouse_name
+    - field.field.profile.teammate_profile.field_teammate_bio
+    - profile.type.teammate_profile
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - layout_builder
+    - options
+    - telephone
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  layout_builder:
+    enabled: false
+    allow_custom: false
+  field_group:
+    group_personal_info:
+      children:
+        - field_birthday
+        - field_spouse_name
+        - field_hat_preference
+        - field_shirt_size
+      label: 'Personal Info'
+      parent_name: ''
+      region: content
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+    group_emergency_contacts:
+      children:
+        - emergency_contact_full_name_block_entity_view_1
+      label: 'Emergency Contacts'
+      parent_name: ''
+      region: content
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+id: profile.teammate_profile.teammate_internal
+targetEntityType: profile
+bundle: teammate_profile
+mode: teammate_internal
+content:
+  emergency_contact_full_name_block_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_address:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_assigned_crew:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_birthday:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: date_only
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_cell_number:
+    type: telephone_link
+    label: inline
+    settings:
+      title: ''
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_hat_preference:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_job_title:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_shirt_size:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_spouse_name:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_teammate_bio:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+hidden:
+  field_emergency_contacts: true
+  field_first_name: true
+  field_last_name: true
+  field_list_position: true
+  field_middle_name: true
+  field_public_viewable: true

@@ -1,0 +1,29 @@
+uuid: db5b4025-7a63-450c-976d-7b297d0546a6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.lawn_mowing_and_trimming
+    - eck.eck_type.contracts.residential
+    - field.storage.contract_sections.field_contract
+id: contract_sections.lawn_mowing_and_trimming.field_contract
+field_name: field_contract
+entity_type: contract_sections
+bundle: lawn_mowing_and_trimming
+label: Contract
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contracts'
+  handler_settings:
+    target_bundles:
+      residential: residential
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,34 @@
+uuid: 0683c45f-22b6-4d89-a83f-e5228698c8d6
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.media.media_library
+    - field.field.media.wo_videos.field_media_video_file_1
+    - field.field.media.wo_videos.field_work_order
+    - image.style.medium
+    - media.type.wo_videos
+  module:
+    - image
+id: media.wo_videos.media_library
+targetEntityType: media
+bundle: wo_videos
+mode: media_library
+content:
+  thumbnail:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: medium
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  created: true
+  field_media_video_file_1: true
+  field_work_order: true
+  name: true
+  uid: true

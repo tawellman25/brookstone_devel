@@ -1,0 +1,39 @@
+uuid: 8ee3e01e-35f8-4095-8ca9-1eade5707c11
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.attachements
+    - eck.eck_type.equipment.heavy_equipment
+    - eck.eck_type.equipment.small_engine
+    - eck.eck_type.equipment.sprayers
+    - eck.eck_type.equipment.trailers
+    - eck.eck_type.equipment.vehicles
+    - eck.eck_type.estimate_items.equipment
+    - field.storage.estimate_items.field_equipment
+id: estimate_items.equipment.field_equipment
+field_name: field_equipment
+entity_type: estimate_items
+bundle: equipment
+label: Equipment
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:equipment'
+  handler_settings:
+    target_bundles:
+      attachements: attachements
+      heavy_equipment: heavy_equipment
+      small_engine: small_engine
+      sprayers: sprayers
+      trailers: trailers
+      vehicles: vehicles
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: attachements
+field_type: entity_reference

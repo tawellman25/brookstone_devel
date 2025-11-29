@@ -1,0 +1,29 @@
+uuid: 51714a3e-0a7e-4408-a6f6-51a3a94fe32f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_chemicals_used.dormant_oil
+    - field.storage.wo_chemicals_used.field_chemical
+  content:
+    - 'chemical:insecticide:fc111414-5b79-4e3c-849c-a2871fda2486'
+id: wo_chemicals_used.dormant_oil.field_chemical
+field_name: field_chemical
+entity_type: wo_chemicals_used
+bundle: dormant_oil
+label: Chemical
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: fc111414-5b79-4e3c-849c-a2871fda2486
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: chemicals_by_service
+      display_name: entity_reference_6
+      arguments: {  }
+field_type: entity_reference

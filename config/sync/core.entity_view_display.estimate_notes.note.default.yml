@@ -1,0 +1,35 @@
+uuid: a299d3f2-ebf8-4133-9f71-590de79b93dd
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_notes.note
+    - field.field.estimate_notes.note.field_estimate
+    - field.field.estimate_notes.note.field_note
+  module:
+    - text
+id: estimate_notes.note.default
+targetEntityType: estimate_notes
+bundle: note
+mode: default
+content:
+  field_estimate:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_note:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  changed: true
+  created: true
+  title: true
+  uid: true

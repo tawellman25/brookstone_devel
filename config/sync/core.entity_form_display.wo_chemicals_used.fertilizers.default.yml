@@ -1,0 +1,124 @@
+uuid: bebf95b7-3247-47e5-9401-a4fa55a95d93
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_chemicals_used.fertilizers
+    - field.field.wo_chemicals_used.fertilizers.field_chemical
+    - field.field.wo_chemicals_used.fertilizers.field_chemical_cost
+    - field.field.wo_chemicals_used.fertilizers.field_did_sq_ft_of_lawn_change
+    - field.field.wo_chemicals_used.fertilizers.field_fertilizer_cost
+    - field.field.wo_chemicals_used.fertilizers.field_fertilizer_lbs_applied
+    - field.field.wo_chemicals_used.fertilizers.field_new_sq_ft_of_lawn
+    - field.field.wo_chemicals_used.fertilizers.field_rate
+    - field.field.wo_chemicals_used.fertilizers.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_work_order
+        - created
+        - uid
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: wo_chemicals_used.fertilizers.default
+targetEntityType: wo_chemicals_used
+bundle: fertilizers
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 23
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_chemical:
+    type: options_select
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_chemical_cost:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_did_sq_ft_of_lawn_change:
+    type: boolean_checkbox
+    weight: 0
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_fertilizer_cost:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_fertilizer_lbs_applied:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_new_sq_ft_of_lawn:
+    type: number
+    weight: 1
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 22
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 25
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 24
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  field_rate: true
+  title: true

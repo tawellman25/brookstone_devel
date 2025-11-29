@@ -1,0 +1,69 @@
+uuid: 3da8a151-8b1b-4e29-a469-4aaa3a50692f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.address.teammate_address
+    - field.field.address.teammate_address.field_address
+    - field.field.address.teammate_address.field_city
+    - field.field.address.teammate_address.field_primary_address
+    - field.field.address.teammate_address.field_state
+    - field.field.address.teammate_address.field_user
+    - field.field.address.teammate_address.field_zipcode
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: address.teammate_address.default
+targetEntityType: address
+bundle: teammate_address
+mode: default
+content:
+  field_address:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_city:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_primary_address:
+    type: boolean_checkbox
+    weight: 0
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_state:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_zipcode:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_user: true
+  title: true
+  uid: true

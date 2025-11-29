@@ -1,0 +1,32 @@
+uuid: 2013d7c9-5f23-4ef8-a251-a71c8b051b0f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.pvc
+    - field.storage.material.field_safety_data_sheet
+  module:
+    - epp
+    - file
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.pvc.field_safety_data_sheet
+field_name: field_safety_data_sheet
+entity_type: material
+bundle: pvc
+label: 'Material Safety Data Sheet (MSDS)'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: material/pvc/safety_data_sheets
+  file_extensions: 'txt pdf doc'
+  max_filesize: ''
+  description_field: false
+field_type: file

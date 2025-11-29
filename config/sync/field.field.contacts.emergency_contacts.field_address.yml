@@ -1,0 +1,29 @@
+uuid: ffbfa787-03f9-478f-8523-3cd5f71aaa6e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.address.contact_address
+    - eck.eck_type.contacts.emergency_contacts
+    - field.storage.contacts.field_address
+id: contacts.emergency_contacts.field_address
+field_name: field_address
+entity_type: contacts
+bundle: emergency_contacts
+label: Address
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:address'
+  handler_settings:
+    target_bundles:
+      contact_address: contact_address
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: true
+    auto_create_bundle: contact_address
+field_type: entity_reference

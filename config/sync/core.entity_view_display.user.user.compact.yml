@@ -1,0 +1,87 @@
+uuid: 21f0004c-c819-473e-8550-0374b0aba4bb
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.user.compact
+    - field.field.user.user.field_ok_to_email
+    - field.field.user.user.user_picture
+    - image.style.thumbnail
+  module:
+    - field_layout
+    - image
+    - layout_builder
+    - layout_discovery
+    - user
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  layout_builder:
+    enabled: true
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          2d290bd7-c765-412a-8cf6-af755387584e:
+            uuid: 2d290bd7-c765-412a-8cf6-af755387584e
+            region: content
+            configuration:
+              id: 'field_block:user:user:user_picture'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: image
+                label: hidden
+                settings:
+                  image_link: content
+                  image_style: thumbnail
+                  image_loading:
+                    attribute: lazy
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          5235d00c-25f0-45bc-9acf-952360974b41:
+            uuid: 5235d00c-25f0-45bc-9acf-952360974b41
+            region: content
+            configuration:
+              id: 'extra_field_block:user:user:flag_following'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+            weight: 1
+            additional: {  }
+        third_party_settings: {  }
+_core:
+  default_config_hash: 00zr_RBdTjPjBGITD3h4c1ESQZimjdVCcHGt1trLqIY
+id: user.user.compact
+targetEntityType: user
+bundle: user
+mode: compact
+content:
+  flag_following:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  user_picture:
+    type: image
+    label: hidden
+    settings:
+      image_link: content
+      image_style: thumbnail
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  customer_profile_profiles: true
+  field_ok_to_email: true
+  member_for: true
+  supplier_profile_profiles: true
+  teammate_profile_profiles: true

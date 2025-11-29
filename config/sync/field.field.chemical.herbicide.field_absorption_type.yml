@@ -1,0 +1,35 @@
+uuid: 13602567-ad1c-45c7-9a0e-a310c19eb137
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.herbicide
+    - eck.eck_type.classification.absorption
+    - field.storage.chemical.field_absorption_type
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: chemical.herbicide.field_absorption_type
+field_name: field_absorption_type
+entity_type: chemical
+bundle: herbicide
+label: 'Absorption Type'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:classification'
+  handler_settings:
+    target_bundles:
+      absorption: absorption
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

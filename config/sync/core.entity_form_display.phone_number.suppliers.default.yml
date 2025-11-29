@@ -1,0 +1,39 @@
+uuid: 8435a2e0-1e44-4688-af47-2733c61392b3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.phone_number.suppliers
+    - field.field.phone_number.suppliers.field_phone_number
+    - field.field.phone_number.suppliers.field_phone_type
+  module:
+    - field_layout
+    - layout_discovery
+    - telephone
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: phone_number.suppliers.default
+targetEntityType: phone_number
+bundle: suppliers
+mode: default
+content:
+  field_phone_number:
+    type: telephone_default
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_phone_type:
+    type: options_select
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  created: true
+  title: true
+  uid: true

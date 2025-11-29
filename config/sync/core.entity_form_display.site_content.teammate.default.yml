@@ -1,0 +1,73 @@
+uuid: f863ce34-ed8e-4a74-b23c-4cdb03bf817a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.site_content.teammate
+    - field.field.site_content.teammate.field_content_text
+    - field.field.site_content.teammate.field_iconic_image
+    - field.field.site_content.teammate.field_name
+    - image.style.thumbnail
+  module:
+    - allowed_formats
+    - field_layout
+    - image
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: site_content.teammate.default
+targetEntityType: site_content
+bundle: teammate
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_content_text:
+    type: text_textarea_with_summary
+    weight: 2
+    region: content
+    settings:
+      rows: 20
+      summary_rows: 3
+      placeholder: 'Enter the text and format it here.'
+      show_summary: false
+    third_party_settings:
+      allowed_formats:
+        hide_help: '1'
+        hide_guidelines: '1'
+  field_iconic_image:
+    type: image_image
+    weight: 1
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

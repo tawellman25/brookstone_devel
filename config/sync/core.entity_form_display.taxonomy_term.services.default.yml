@@ -1,0 +1,219 @@
+uuid: 4ea22777-5ed9-4397-aa89-86eece521289
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.services.field_banner_image
+    - field.field.taxonomy_term.services.field_description
+    - field.field.taxonomy_term.services.field_estimate_types
+    - field.field.taxonomy_term.services.field_home_page
+    - field.field.taxonomy_term.services.field_home_page_slide
+    - field.field.taxonomy_term.services.field_iconic_image
+    - field.field.taxonomy_term.services.field_list_order
+    - field.field.taxonomy_term.services.field_other_names
+    - field.field.taxonomy_term.services.field_parent_service
+    - field.field.taxonomy_term.services.field_service_bundle
+    - field.field.taxonomy_term.services.field_service_name
+    - field.field.taxonomy_term.services.field_sop_code
+    - field.field.taxonomy_term.services.field_subtitle
+    - field.field.taxonomy_term.services.field_work_order_service
+    - image.style.thumbnail
+    - taxonomy.vocabulary.services
+  module:
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_public_view:
+      children:
+        - field_subtitle
+        - field_iconic_image
+        - field_banner_image
+        - description
+        - field_description
+        - field_other_names
+        - group_promoted
+      label: 'Pertaining to Public View'
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: fieldset
+      format_settings:
+        classes: 'group-public-view field-group-fieldset'
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+    group_promoted:
+      children:
+        - field_home_page
+        - field_home_page_slide
+      label: 'Promoted to Home (Front) Page'
+      region: content
+      parent_name: group_public_view
+      weight: 13
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+id: taxonomy_term.services.default
+targetEntityType: taxonomy_term
+bundle: services
+mode: default
+content:
+  description:
+    type: text_textarea
+    weight: 10
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_banner_image:
+    type: image_image
+    weight: 9
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_description:
+    type: text_textarea_with_summary
+    weight: 11
+    region: content
+    settings:
+      rows: 9
+      summary_rows: 3
+      placeholder: ''
+      show_summary: false
+    third_party_settings: {  }
+  field_estimate_types:
+    type: entity_reference_autocomplete
+    weight: 27
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_home_page:
+    type: boolean_checkbox
+    weight: 14
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_home_page_slide:
+    type: image_image
+    weight: 15
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_iconic_image:
+    type: image_image
+    weight: 8
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_list_order:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_other_names:
+    type: string_textfield
+    weight: 12
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_parent_service:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_service_bundle:
+    type: string_textfield
+    weight: 16
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_service_name:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_sop_code:
+    type: string_textfield
+    weight: 26
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_subtitle:
+    type: string_textfield
+    weight: 7
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order_service:
+    type: boolean_checkbox
+    weight: 4
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    weight: 7
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+hidden: {  }

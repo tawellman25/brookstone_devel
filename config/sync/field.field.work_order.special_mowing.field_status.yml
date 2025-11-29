@@ -1,0 +1,33 @@
+uuid: 34bfef94-cc58-46b6-8601-410153918d71
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.special_mowing
+    - field.storage.work_order.field_status
+    - taxonomy.vocabulary.wo_status
+  content:
+    - 'taxonomy_term:wo_status:96cdf11b-3d95-4ec2-bdf1-4960324c24aa'
+id: work_order.special_mowing.field_status
+field_name: field_status
+entity_type: work_order
+bundle: special_mowing
+label: Status
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: 96cdf11b-3d95-4ec2-bdf1-4960324c24aa
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      wo_status: wo_status
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

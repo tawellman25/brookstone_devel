@@ -1,0 +1,292 @@
+uuid: f1180269-81ed-4bcb-bce3-fdd6668f6e7b
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.base_field_override.property_ss_sources.dirty_water_source.changed
+    - core.entity_view_mode.property_ss_sources.teammate_view
+    - eck.eck_type.property_ss_sources.dirty_water_source
+    - field.field.property_ss_sources.dirty_water_source.field_dirty_water_source_type
+    - field.field.property_ss_sources.dirty_water_source.field_location
+    - field.field.property_ss_sources.dirty_water_source.field_property_ss_system
+    - field.field.property_ss_sources.dirty_water_source.field_pumps
+    - field.field.property_ss_sources.dirty_water_source.field_ss_key_needed
+    - field.field.property_ss_sources.dirty_water_source.field_ss_shut_off_location_pic
+    - field.field.property_ss_sources.dirty_water_source.field_ss_shut_off_notes
+    - field.field.property_ss_sources.dirty_water_source.field_ss_source_name
+    - field.field.property_ss_sources.dirty_water_source.field_water_shut_off
+  module:
+    - image
+    - layout_builder
+    - layout_discovery
+    - options
+third_party_settings:
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: ''
+          context_mapping: {  }
+          column_widths: 25-75
+        components:
+          654281b4-23c3-422d-8c12-c930065da552:
+            uuid: 654281b4-23c3-422d-8c12-c930065da552
+            region: first
+            configuration:
+              id: 'field_block:property_ss_sources:dirty_water_source:field_ss_source_name'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: hidden
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          5e0b6a2d-3363-4806-90b1-4d9e013d9d1b:
+            uuid: 5e0b6a2d-3363-4806-90b1-4d9e013d9d1b
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:dirty_water_source:field_location'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: inline
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          d19af2da-dbf3-419e-8830-6fc2ad83f5ae:
+            uuid: d19af2da-dbf3-419e-8830-6fc2ad83f5ae
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:dirty_water_source:field_water_shut_off'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: above
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          0d0430ca-6449-4736-94f6-0fea1851a573:
+            uuid: 0d0430ca-6449-4736-94f6-0fea1851a573
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:dirty_water_source:field_ss_key_needed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          e291fcd1-0885-4c6f-a255-fbcd1769fec1:
+            uuid: e291fcd1-0885-4c6f-a255-fbcd1769fec1
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:dirty_water_source:changed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: timestamp
+                label: inline
+                settings:
+                  date_format: medium
+                  custom_date_format: ''
+                  timezone: ''
+                  tooltip:
+                    date_format: long
+                    custom_date_format: ''
+                  time_diff:
+                    enabled: false
+                    future_format: '@interval hence'
+                    past_format: '@interval ago'
+                    granularity: 2
+                    refresh: 60
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          0f01c33c-08ba-4330-b841-c4c275395991:
+            uuid: 0f01c33c-08ba-4330-b841-c4c275395991
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:dirty_water_source:field_dirty_water_source_type'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          658c5045-aa6b-4b6f-8102-0c7c1e684d50:
+            uuid: 658c5045-aa6b-4b6f-8102-0c7c1e684d50
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:dirty_water_source:field_pumps'
+              label: Pumps
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: entity_reference_entity_view
+                label: hidden
+                settings:
+                  view_mode: default
+                third_party_settings: {  }
+            weight: 5
+            additional: {  }
+          de9fc48b-e39d-40a2-b527-396bbea298fc:
+            uuid: de9fc48b-e39d-40a2-b527-396bbea298fc
+            region: first
+            configuration:
+              id: 'field_block:property_ss_sources:dirty_water_source:field_ss_shut_off_notes'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: above
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+          3995731d-0943-4a06-8535-3346ab661362:
+            uuid: 3995731d-0943-4a06-8535-3346ab661362
+            region: first
+            configuration:
+              id: 'field_block:property_ss_sources:dirty_water_source:field_ss_shut_off_location_pic'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: image
+                label: above
+                settings:
+                  image_link: ''
+                  image_style: ''
+                  image_loading:
+                    attribute: lazy
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components: {  }
+        third_party_settings: {  }
+id: property_ss_sources.dirty_water_source.teammate_view
+targetEntityType: property_ss_sources
+bundle: dirty_water_source
+mode: teammate_view
+content:
+  changed:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_dirty_water_source_type:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_location:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_ss_key_needed:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_ss_shut_off_location_pic:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 8
+    region: first
+  field_ss_shut_off_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: first
+  field_ss_source_name:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_water_shut_off:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  field_property_ss_system: true
+  field_pumps: true

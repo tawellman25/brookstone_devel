@@ -1,0 +1,83 @@
+uuid: bdf7a7f6-cc0a-4503-a3cf-2140d944a122
+langcode: en
+status: false
+dependencies:
+  enforced:
+    module:
+      - comment
+_core:
+  default_config_hash: XuNqPaFfHDyoMPinAAqAPU5fB7v1ubrivpLg9oeMLIM
+id: notify_user_of_deleted_comment
+label: 'Notify user of deleted comment'
+events:
+  -
+    event_name: 'rules_entity_delete:comment'
+description: 'Issue #2897960-2: Send e-mail notification when comment is deleted.'
+tags:
+  - rules_examples
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 41a410f1-c30d-4a88-8a86-e90a367a9768
+  conditions:
+    id: rules_and
+    uuid: e52d2819-5c7d-4838-856e-7dceb3e8945e
+    conditions:
+      -
+        id: rules_condition
+        uuid: 4458fce5-4910-4ea0-bd84-02a448006fd1
+        context_values:
+          field: field_your_email
+        context_mapping:
+          entity: comment
+        context_processors:
+          field:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        condition_id: rules_entity_has_field
+        negate: false
+  actions:
+    id: rules_action_set
+    uuid: a593f0fc-01aa-44d6-a9ba-284ed48a5fd3
+    actions:
+      -
+        id: rules_action
+        uuid: 21092dc8-90e3-4c97-9060-c06eea407115
+        context_values:
+          message: 'Notified comment author at {{comment.field_your_email.value}} that comment on {{comment.entity_id.entity|entity_url}} was deleted.'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message
+      -
+        id: rules_action
+        uuid: a1542ae8-534c-4f0e-ad39-55c8fbe5fd40
+        context_values:
+          to:
+            - '{{comment.field_your_email.value}}'
+          subject: 'Your comment was deleted'
+          message: 'Your comment at {{ comment.entity_id.entity|entity_url }} was deleted.'
+          reply: ''
+          language: ''
+        context_mapping: {  }
+        context_processors:
+          to:
+            rules_tokens: {  }
+          subject:
+            rules_tokens: {  }
+          message:
+            rules_tokens: {  }
+          reply:
+            rules_tokens: {  }
+          language:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_send_email

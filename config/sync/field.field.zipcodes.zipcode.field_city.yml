@@ -1,0 +1,35 @@
+uuid: 8e83dce5-4dbd-47d8-93bb-d50c7e72d8d1
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.city.city
+    - eck.eck_type.zipcodes.zipcode
+    - field.storage.zipcodes.field_city
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: zipcodes.zipcode.field_city
+field_name: field_city
+entity_type: zipcodes
+bundle: zipcode
+label: City
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:city'
+  handler_settings:
+    target_bundles:
+      city: city
+    sort:
+      field: field_city_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

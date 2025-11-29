@@ -1,0 +1,29 @@
+uuid: 9e2c8d37-102c-4394-b3b7-07932d7e6d43
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.testimonial.client
+    - field.storage.testimonial.field_testimony_service
+    - taxonomy.vocabulary.services
+id: testimonial.client.field_testimony_service
+field_name: field_testimony_service
+entity_type: testimonial
+bundle: client
+label: 'Testimony of which Services'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

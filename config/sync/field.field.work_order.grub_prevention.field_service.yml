@@ -1,0 +1,33 @@
+uuid: 927715ce-5cbf-4723-a7bb-0a57f0c6c951
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.grub_prevention
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:6de9369f-2af8-4378-ab21-05cc3eaadd75'
+id: work_order.grub_prevention.field_service
+field_name: field_service
+entity_type: work_order
+bundle: grub_prevention
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 6de9369f-2af8-4378-ab21-05cc3eaadd75
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

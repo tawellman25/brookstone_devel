@@ -1,0 +1,35 @@
+uuid: 471ef116-5431-4bec-9bd0-0dda0c0af9a7
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.lawn_fertilizing
+    - field.storage.contract_sections.field_fertilizer_app_season
+  content:
+    - 'taxonomy_term:season:1f588205-abde-4470-bbbc-2e8e3ef956b4'
+    - 'taxonomy_term:season:8060b72f-e4f3-4523-92ee-c04ab5f00e6c'
+    - 'taxonomy_term:season:f072f108-bcf4-48c7-ae85-9f635bc1f000'
+id: contract_sections.lawn_fertilizing.field_fertilizer_app_season
+field_name: field_fertilizer_app_season
+entity_type: contract_sections
+bundle: lawn_fertilizing
+label: 'Sellect Applications Wanted'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: f072f108-bcf4-48c7-ae85-9f635bc1f000
+  -
+    target_uuid: 8060b72f-e4f3-4523-92ee-c04ab5f00e6c
+  -
+    target_uuid: 1f588205-abde-4470-bbbc-2e8e3ef956b4
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: lawn_fertilizing_season_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

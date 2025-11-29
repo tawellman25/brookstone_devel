@@ -1,0 +1,35 @@
+uuid: ff96a832-d61b-4dc7-ab62-fca96bceb391
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_estimate_notes.note
+    - field.field.wo_estimate_notes.note.field_estimate_note
+    - field.field.wo_estimate_notes.note.field_work_order
+  module:
+    - text
+id: wo_estimate_notes.note.default
+targetEntityType: wo_estimate_notes
+bundle: note
+mode: default
+content:
+  field_estimate_note:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_work_order:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  created: true
+  title: true
+  uid: true

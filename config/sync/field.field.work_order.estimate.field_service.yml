@@ -1,0 +1,33 @@
+uuid: 911c0029-be18-4c3a-a1ff-a67f2d300526
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.estimate
+    - field.storage.work_order.field_service
+    - taxonomy.vocabulary.services
+  content:
+    - 'taxonomy_term:services:feab54f6-733a-43b8-a5a0-61279eb242a5'
+id: work_order.estimate.field_service
+field_name: field_service
+entity_type: work_order
+bundle: estimate
+label: Service
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: feab54f6-733a-43b8-a5a0-61279eb242a5
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      services: services
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

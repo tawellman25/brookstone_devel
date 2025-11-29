@@ -1,0 +1,46 @@
+uuid: 81b96b39-ed22-4b23-a188-ed4d17240605
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: FAuVVmTUg5Hr54x2sDUTDwJGH7-uQZt03WSNc_Xnw2k
+id: show_a_message_when_the_user_is_flagged
+label: 'Show a message when the user is flagged'
+events:
+  -
+    event_name: 'rules_flag_entity_flagged:user--user'
+description: ''
+tags: {  }
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: 8365bd4e-e629-49dd-986b-0810b45aa81b
+  weight: 0
+  conditions:
+    id: rules_and
+    uuid: b64cfff7-d590-4ff9-a56e-2a9b496e0546
+    weight: 0
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: f08d26c8-4742-4628-914b-5230e48c8018
+    weight: 0
+    actions:
+      -
+        id: rules_action
+        uuid: b1e5d5dc-0b57-4d7f-a7fc-c41d6915bbb0
+        weight: 0
+        context_values:
+          message: '{{user.mail}} was flagged.'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message

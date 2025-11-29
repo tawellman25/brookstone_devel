@@ -1,0 +1,59 @@
+uuid: f6280a52-f5b8-4336-b97d-ea66e9b3f858
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.annuals
+    - eck.eck_type.material.brass
+    - eck.eck_type.material.copper
+    - eck.eck_type.material.decorative_rock
+    - eck.eck_type.material.electric
+    - eck.eck_type.material.galv
+    - eck.eck_type.material.irrigation
+    - eck.eck_type.material.landscape
+    - eck.eck_type.material.misc
+    - eck.eck_type.material.plants
+    - eck.eck_type.material.poly
+    - eck.eck_type.material.pumps
+    - eck.eck_type.material.pvc
+    - eck.eck_type.material.shrubs
+    - eck.eck_type.material.sod
+    - eck.eck_type.material.trees
+    - eck.eck_type.sop.landscaping
+    - field.storage.sop.field_materials_involved
+id: sop.landscaping.field_materials_involved
+field_name: field_materials_involved
+entity_type: sop
+bundle: landscaping
+label: 'Materials Involved'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:material'
+  handler_settings:
+    target_bundles:
+      annuals: annuals
+      brass: brass
+      copper: copper
+      electric: electric
+      galv: galv
+      irrigation: irrigation
+      landscape: landscape
+      misc: misc
+      pvc: pvc
+      plants: plants
+      poly: poly
+      pumps: pumps
+      decorative_rock: decorative_rock
+      shrubs: shrubs
+      sod: sod
+      trees: trees
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: galv
+field_type: entity_reference

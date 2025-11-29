@@ -1,0 +1,36 @@
+uuid: 38ae6cd9-7016-48a9-9ce7-3887f7431c69
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.media.media_library
+    - field.field.media.estimate_images.field_estimate
+    - field.field.media.estimate_images.field_media_image_1
+    - field.field.media.estimate_images.field_photos_of
+    - image.style.medium
+    - media.type.estimate_images
+  module:
+    - image
+id: media.estimate_images.media_library
+targetEntityType: media
+bundle: estimate_images
+mode: media_library
+content:
+  thumbnail:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: medium
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  created: true
+  field_estimate: true
+  field_media_image_1: true
+  field_photos_of: true
+  name: true
+  uid: true

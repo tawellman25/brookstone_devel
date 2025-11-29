@@ -1,0 +1,33 @@
+uuid: 2e36357d-07fe-4245-8724-94df2dde2035
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_spraying_conditions.fertilizing
+    - field.storage.wo_spraying_conditions.field_method_of_application
+    - taxonomy.vocabulary.emergence_types
+  content:
+    - 'taxonomy_term:emergence_types:9be94a11-19e0-42b4-9b0b-dc69a5da72ab'
+id: wo_spraying_conditions.fertilizing.field_method_of_application
+field_name: field_method_of_application
+entity_type: wo_spraying_conditions
+bundle: fertilizing
+label: 'Method of Application'
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: 9be94a11-19e0-42b4-9b0b-dc69a5da72ab
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      emergence_types: emergence_types
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

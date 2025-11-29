@@ -1,0 +1,28 @@
+uuid: d801e8ab-34a1-43a7-bcca-8f1e5a01b4d0
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.sprinkler_maintenance
+    - field.storage.sop.field_parent_sop
+id: sop.sprinkler_maintenance.field_parent_sop
+field_name: field_parent_sop
+entity_type: sop
+bundle: sprinkler_maintenance
+label: 'Parent SOP'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sop'
+  handler_settings:
+    target_bundles:
+      sprinkler_maintenance: sprinkler_maintenance
+    sort:
+      field: field_sop_code
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: office_administration
+field_type: entity_reference

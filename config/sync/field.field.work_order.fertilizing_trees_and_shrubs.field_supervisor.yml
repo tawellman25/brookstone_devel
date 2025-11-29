@@ -1,0 +1,42 @@
+uuid: 293c7e0a-b07d-4b0a-9de3-7f30310dbd00
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.fertilizing_trees_and_shrubs
+    - field.storage.work_order.field_supervisor
+  content:
+    - 'user:user:04140ad1-bc72-49a6-b12f-19e53aaf21b1'
+id: work_order.fertilizing_trees_and_shrubs.field_supervisor
+field_name: field_supervisor
+entity_type: work_order
+bundle: fertilizing_trees_and_shrubs
+label: Supervisor
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 04140ad1-bc72-49a6-b12f-19e53aaf21b1
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        supervisor: supervisor
+        site_admin: '0'
+        administration: '0'
+        administrator: '0'
+        teammates: '0'
+        client: '0'
+        user: '0'
+        supplier: '0'
+    include_anonymous: true
+field_type: entity_reference

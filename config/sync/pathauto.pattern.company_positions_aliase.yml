@@ -1,0 +1,22 @@
+uuid: d4c57c2d-207c-4a18-9ac3-f5cf921a1314
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: company_positions_aliase
+label: 'Company Positions Path'
+type: 'canonical_entities:positions'
+pattern: '/teammates/positions/[positions:title]'
+selection_criteria:
+  d833e0d1-55d2-438d-a6f4-a34b9fae311a:
+    id: 'entity_bundle:positions'
+    negate: false
+    uuid: d833e0d1-55d2-438d-a6f4-a34b9fae311a
+    context_mapping:
+      positions: positions
+    bundles:
+      role: role
+selection_logic: and
+weight: -5
+relationships: {  }

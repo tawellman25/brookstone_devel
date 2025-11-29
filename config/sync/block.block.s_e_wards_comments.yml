@@ -1,0 +1,30 @@
+uuid: d3b87dae-8dc7-4225-b470-07ee19f127b8
+langcode: en
+status: true
+dependencies:
+  module:
+    - ctools_block
+  theme:
+    - s_e_wards
+id: s_e_wards_comments
+theme: s_e_wards
+region: content_bottom
+weight: -9
+provider: null
+plugin: 'entity_field:node:comment'
+settings:
+  id: 'entity_field:node:comment'
+  label: Comments
+  label_display: visible
+  provider: ctools_block
+  context_mapping:
+    entity: '@node.node_route_context:node'
+  formatter:
+    type: comment_default
+    weight: 0
+    label: above
+    settings:
+      view_mode: default
+      pager_id: 0
+    third_party_settings: {  }
+visibility: {  }

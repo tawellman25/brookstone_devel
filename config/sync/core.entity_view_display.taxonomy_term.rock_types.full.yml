@@ -1,0 +1,42 @@
+uuid: e0776902-25d0-436f-acd9-9fc935527cdd
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.taxonomy_term.full
+    - field.field.taxonomy_term.rock_types.field_main_image
+    - field.field.taxonomy_term.rock_types.field_teammate_description
+    - taxonomy.vocabulary.rock_types
+  module:
+    - image
+    - layout_builder
+    - text
+third_party_settings:
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: taxonomy_term.rock_types.full
+targetEntityType: taxonomy_term
+bundle: rock_types
+mode: full
+content:
+  description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_main_image:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  field_teammate_description: true

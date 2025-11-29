@@ -1,0 +1,28 @@
+uuid: cf8c09fd-d08b-42d1-8f04-0e30b33857fb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.system_procedures
+    - field.storage.sop.field_parent_sop
+id: sop.system_procedures.field_parent_sop
+field_name: field_parent_sop
+entity_type: sop
+bundle: system_procedures
+label: 'Parent SOP'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sop'
+  handler_settings:
+    target_bundles:
+      system_procedures: system_procedures
+    sort:
+      field: field_sop_code
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: office_administration
+field_type: entity_reference

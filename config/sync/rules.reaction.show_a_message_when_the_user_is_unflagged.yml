@@ -1,0 +1,46 @@
+uuid: 69606515-477b-4236-9ca5-93290f5be616
+langcode: en
+status: false
+dependencies: {  }
+_core:
+  default_config_hash: gCxTe9U8Q_pdw2bQGX66rSSrzR5sNyS8SjL4RVvTwQY
+id: show_a_message_when_the_user_is_unflagged
+label: 'Show a message when the user is unflagged'
+events:
+  -
+    event_name: 'rules_flag_entity_unflagged:user--user'
+description: ''
+tags: {  }
+config_version: '3'
+expression:
+  id: rules_rule
+  uuid: ad55fce1-b766-4f0d-a331-857cc97a59f7
+  weight: 0
+  conditions:
+    id: rules_and
+    uuid: e92fe140-73c1-491a-80a7-ea36c25fab93
+    weight: 0
+    conditions: {  }
+  actions:
+    id: rules_action_set
+    uuid: 572c5342-ef6d-46bd-abfa-39b65a24e6b0
+    weight: 0
+    actions:
+      -
+        id: rules_action
+        uuid: 6a6370ab-866f-49a1-a894-4abbefb51527
+        weight: 0
+        context_values:
+          message: '{{user.mail}} was unflagged.'
+          type: status
+          repeat: false
+        context_mapping: {  }
+        context_processors:
+          message:
+            rules_tokens: {  }
+          type:
+            rules_tokens: {  }
+          repeat:
+            rules_tokens: {  }
+        provides_mapping: {  }
+        action_id: rules_system_message

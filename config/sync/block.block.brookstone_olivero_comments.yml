@@ -1,0 +1,30 @@
+uuid: 1caad7a1-edf4-4118-b709-930b601995cc
+langcode: en
+status: true
+dependencies:
+  module:
+    - ctools_block
+  theme:
+    - brookstone_olivero
+id: brookstone_olivero_comments
+theme: brookstone_olivero
+region: content_below
+weight: -15
+provider: null
+plugin: 'entity_field:node:comment'
+settings:
+  id: 'entity_field:node:comment'
+  label: Comments
+  label_display: visible
+  provider: ctools_block
+  context_mapping:
+    entity: '@node.node_route_context:node'
+  formatter:
+    type: comment_default
+    weight: 0
+    label: above
+    settings:
+      view_mode: default
+      pager_id: 0
+    third_party_settings: {  }
+visibility: {  }

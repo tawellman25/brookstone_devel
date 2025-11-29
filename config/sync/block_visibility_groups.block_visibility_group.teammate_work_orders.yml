@@ -1,0 +1,30 @@
+uuid: bfc722ac-5fff-4408-b196-f165658d1bb4
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+    - user
+id: teammate_work_orders
+label: 'Teammate - Work Orders'
+logic: and
+conditions:
+  0aca41cb-0b5a-404c-a4e3-6b12d5e118c7:
+    id: user_role
+    negate: false
+    uuid: 0aca41cb-0b5a-404c-a4e3-6b12d5e118c7
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      administrator: administrator
+      site_admin: site_admin
+      administration: administration
+      supervisor: supervisor
+      teammates: teammates
+  7b364681-cbf0-4497-92d0-b7250479a60a:
+    id: request_path
+    negate: false
+    uuid: 7b364681-cbf0-4497-92d0-b7250479a60a
+    context_mapping: {  }
+    pages: '/work_order/*'
+allow_other_conditions: false

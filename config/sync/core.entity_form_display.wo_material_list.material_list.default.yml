@@ -1,0 +1,91 @@
+uuid: 13d24b33-cf7c-4cc0-b62d-4d0c93a2c8b2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_material_list.material_list
+    - field.field.wo_material_list.material_list.field_materials_for
+    - field.field.wo_material_list.material_list.field_work_order
+  module:
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_work_order
+        - uid
+        - created
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: wo_material_list.material_list.default
+targetEntityType: wo_material_list
+bundle: material_list
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 24
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_materials_for:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 22
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 25
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 23
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

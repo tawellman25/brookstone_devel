@@ -1,0 +1,61 @@
+uuid: c730585f-a36a-40b8-9930-57fb542b677a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_rental_equipment.equipment_rental
+    - eck.eck_type.work_order.aerating
+    - eck.eck_type.work_order.christmas_decorations
+    - eck.eck_type.work_order.deer_prevention
+    - eck.eck_type.work_order.dethatching
+    - eck.eck_type.work_order.estimate
+    - eck.eck_type.work_order.fall_cleanup
+    - eck.eck_type.work_order.fertilizing
+    - eck.eck_type.work_order.in_house_tasks
+    - eck.eck_type.work_order.landscaping
+    - eck.eck_type.work_order.snow_removal
+    - eck.eck_type.work_order.special_mowing
+    - eck.eck_type.work_order.spring_cleanup
+    - eck.eck_type.work_order.sprinkler_installation
+    - eck.eck_type.work_order.sprinkler_repair
+    - eck.eck_type.work_order.sprinkler_start_up
+    - eck.eck_type.work_order.sprinkler_winterizing
+    - eck.eck_type.work_order.summer_pruning
+    - field.storage.wo_rental_equipment.field_rented_for
+id: wo_rental_equipment.equipment_rental.field_rented_for
+field_name: field_rented_for
+entity_type: wo_rental_equipment
+bundle: equipment_rental
+label: 'Used for'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      aerating: aerating
+      christmas_decorations: christmas_decorations
+      deer_prevention: deer_prevention
+      dethatching: dethatching
+      estimate: estimate
+      fall_cleanup: fall_cleanup
+      fertilizing: fertilizing
+      in_house_tasks: in_house_tasks
+      landscaping: landscaping
+      snow_removal: snow_removal
+      special_mowing: special_mowing
+      spring_cleanup: spring_cleanup
+      sprinkler_installation: sprinkler_installation
+      sprinkler_repair: sprinkler_repair
+      sprinkler_start_up: sprinkler_start_up
+      sprinkler_winterizing: sprinkler_winterizing
+      summer_pruning: summer_pruning
+    sort:
+      field: id
+      direction: DESC
+    auto_create: false
+    auto_create_bundle: aerating
+field_type: entity_reference

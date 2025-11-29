@@ -1,0 +1,46 @@
+uuid: b05a8fb9-5690-43d3-9df2-2679395bc5c8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.pumps
+    - field.storage.material.field_documentation
+  module:
+    - file
+    - filefield_paths
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: material/brass/documentation
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[file:ffp-name-only-original].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: material.pumps.field_documentation
+field_name: field_documentation
+entity_type: material
+bundle: pumps
+label: Documentation
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: material/brass/documentation
+  file_extensions: 'txt pdf doc'
+  max_filesize: ''
+  description_field: false
+field_type: file

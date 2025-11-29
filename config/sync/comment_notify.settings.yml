@@ -1,0 +1,63 @@
+_core:
+  default_config_hash: y7oCzsZ-B0R-nyeSFO1f2h9BEChUQGSZT-3cqXd-sLE
+langcode: en
+bundle_types:
+  - work_order--pre_emergent--field_work_order_notes
+  - work_order--sprinkler_repair--field_work_order_notes
+  - work_order--aerating--field_work_order_notes
+  - work_order--aspen_twig_gall--field_work_order_notes
+  - work_order--cooley_spruce_gall--field_work_order_notes
+  - work_order--dormant_oil--field_work_order_notes
+  - work_order--pinion_pine_ips_beetle--field_work_order_notes
+  - work_order--trunk_bore--field_work_order_notes
+  - work_order--deciduous_bore--field_work_order_notes
+  - work_order--grub_prevention--field_work_order_notes
+  - work_order--weed_spraying--field_work_order_notes
+  - work_order--fertilizing--field_work_order_notes
+  - work_order--fertilizing_trees_and_shrubs--field_work_order_notes
+  - work_order--deer_prevention--field_work_order_notes
+  - work_order--dethatching--field_work_order_notes
+  - work_order--lawn_mowing--field_work_order_notes
+  - work_order--special_mowing--field_work_order_notes
+  - work_order--fall_cleanup--field_work_order_notes
+  - work_order--summer_pruning--field_work_order_notes
+  - work_order--spring_cleanup--field_work_order_notes
+  - work_order--weed_pulling--field_work_order_notes
+  - work_order--landscaping--field_work_order_notes
+  - work_order--sprinkler_check_up--field_work_order_notes
+  - work_order--sprinkler_start_up--field_work_order_notes
+  - work_order--sprinkler_winterizing--field_work_order_notes
+  - work_order--sprinkler_installation--field_work_order_notes
+  - work_order--sprinkler_design--field_work_order_notes
+  - work_order--in_house_tasks--field_work_order_notes
+  - work_order--christmas_decorations--field_work_order_notes
+  - work_order--snow_removal--field_work_order_notes
+  - work_order--misc_services--field_work_order_notes
+  - work_order--estimate--field_work_order_notes
+available_alerts:
+  1: true
+  2: true
+enable_default:
+  watcher: '2'
+  entity_author: true
+mail_templates:
+  watcher:
+    node:
+      subject: '[site:name] :: new comment on [node:title]'
+      body: "Hi [comment-subscribed:author],\r\n\r\n[comment:author] has commented on: \"[node:title]\"\r\n\r\n----\r\n[comment:title]\r\n[comment:body]\r\n----\r\n\r\nYou can view the comment at the following url\r\n[comment:url]\r\n\r\nYou can stop receiving emails when someone replies to this post,\r\nby going to [comment-subscribed:unsubscribe-url]\r\n\r\nYou can set up auto-following feature for all future posts\r\nby creating your own user with a few clicks here [site:login-url]\r\n\r\n-- [site:name] team\r\n[site:url]\r\n"
+    equipment:
+      subject: ''
+      body: ''
+    work_order:
+      subject: '[comment:author:name] Replied to your comment'
+      body: "[comment:body]\r\n\r\nBy [comment:author:display-name]"
+  entity_author:
+    node:
+      subject: '[site:name] :: new comment for your post'
+      body: "Hi [node:author],\r\n\r\nYou have received a comment on: \"[node:title]\"\r\n\r\n----\r\n[comment:title]\r\n[comment:body]\r\n----\r\n\r\nYou can view the comment at the following url\r\n[comment:url]\r\n\r\nYou will receive emails like this for all replies to your posts. You can\r\ndisable this by logging in and changing the settings on your user account at\r\n[node:author:edit-url].\r\n\r\n-- [site:name] team\r\n[site:url]\r\n"
+    equipment:
+      subject: ''
+      body: ''
+    work_order:
+      subject: '[comment:author] created a Note on [comment:entity]'
+      body: "[comment:body]\r\n\r\nBy [comment:author:display-name]\r\nOn:  [current-page:url]"

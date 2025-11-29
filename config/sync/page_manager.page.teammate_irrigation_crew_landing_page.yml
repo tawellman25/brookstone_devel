@@ -1,0 +1,25 @@
+uuid: de1524b9-4f38-4453-92ae-08267eb94095
+langcode: en
+status: true
+dependencies:
+  module:
+    - user
+id: teammate_irrigation_crew_landing_page
+label: 'Teammate Irrigation Crew Landing Page'
+description: ''
+use_admin_theme: false
+path: /teammates/work-orders/sprinkler-systems
+access_logic: and
+access_conditions:
+  -
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      administrator: administrator
+      site_admin: site_admin
+      administration: administration
+      supervisor: supervisor
+      teammates: teammates
+parameters: {  }

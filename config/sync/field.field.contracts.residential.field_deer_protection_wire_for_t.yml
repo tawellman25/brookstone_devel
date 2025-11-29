@@ -1,0 +1,29 @@
+uuid: 8d03eba4-6817-4719-a340-f5417dc05719
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.deer_protection_wire
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_deer_protection_wire_for_t
+id: contracts.residential.field_deer_protection_wire_for_t
+field_name: field_deer_protection_wire_for_t
+entity_type: contracts
+bundle: residential
+label: 'Deer Protection Wire for Trees and Shrubs'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      deer_protection_wire: deer_protection_wire
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

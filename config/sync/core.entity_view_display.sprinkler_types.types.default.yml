@@ -1,0 +1,52 @@
+uuid: 9717a31b-7ab8-4ef3-8314-cbd51511b0fe
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sprinkler_types.types
+    - field.field.sprinkler_types.types.field_main_image
+    - field.field.sprinkler_types.types.field_public_description
+    - field.field.sprinkler_types.types.field_teammate_description
+  module:
+    - image
+    - text
+id: sprinkler_types.types.default
+targetEntityType: sprinkler_types
+bundle: types
+mode: default
+content:
+  field_main_image:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: -2
+    region: content
+  field_public_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: -4
+    region: content
+  field_teammate_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: -3
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+hidden:
+  changed: true

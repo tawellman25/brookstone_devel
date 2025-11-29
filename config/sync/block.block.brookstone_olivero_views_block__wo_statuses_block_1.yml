@@ -1,0 +1,42 @@
+uuid: ff45a76d-1446-49ea-98d3-965d341e573e
+langcode: en
+status: true
+dependencies:
+  config:
+    - views.view.wo_statuses
+  module:
+    - system
+    - user
+    - views
+  theme:
+    - brookstone_olivero
+id: brookstone_olivero_views_block__wo_statuses_block_1
+theme: brookstone_olivero
+region: content
+weight: -21
+provider: null
+plugin: 'views_block:wo_statuses-block_1'
+settings:
+  id: 'views_block:wo_statuses-block_1'
+  label: ''
+  label_display: visible
+  provider: views
+  views_label: ''
+  items_per_page: none
+  exposed: {  }
+visibility:
+  request_path:
+    id: request_path
+    negate: false
+    pages: /teammate/manual/website/work-orders/status
+  user_role:
+    id: user_role
+    negate: false
+    context_mapping:
+      user: '@user.current_user_context:current_user'
+    roles:
+      site_admin: site_admin
+      administration: administration
+      administrator: administrator
+      supervisor: supervisor
+      teammates: teammates

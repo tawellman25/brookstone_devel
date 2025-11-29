@@ -1,0 +1,30 @@
+uuid: ff23404f-7a14-42d8-afaf-c008d2a43da6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.manual.chapter
+    - eck.eck_type.manual.page
+    - field.storage.manual.field_parent_chapter
+id: manual.page.field_parent_chapter
+field_name: field_parent_chapter
+entity_type: manual
+bundle: page
+label: 'Parent Content'
+description: "Select the chapter or parent page this page belongs to (e.g., “Website Navigation for Scheduling” for a chapter or “How to Log In to the Website” for a page). This links the page to its parent in the manual’s structure.\r\n\r\n"
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:manual'
+  handler_settings:
+    target_bundles:
+      chapter: chapter
+      page: page
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: chapter
+field_type: entity_reference

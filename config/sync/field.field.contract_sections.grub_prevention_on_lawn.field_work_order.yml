@@ -1,0 +1,29 @@
+uuid: 2cdadacb-f534-4497-8008-daa2a8ad8d00
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.grub_prevention_on_lawn
+    - eck.eck_type.work_order.grub_prevention
+    - field.storage.contract_sections.field_work_order
+id: contract_sections.grub_prevention_on_lawn.field_work_order
+field_name: field_work_order
+entity_type: contract_sections
+bundle: grub_prevention_on_lawn
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      grub_prevention: grub_prevention
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: aerating
+field_type: entity_reference

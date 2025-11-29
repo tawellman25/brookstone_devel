@@ -1,0 +1,35 @@
+uuid: 8f8b5dd4-38dd-4c6a-bbdc-8d64fd0d3efe
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.county.county
+    - eck.eck_type.state.state
+    - field.storage.county.field_state
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: county.county.field_state
+field_name: field_state
+entity_type: county
+bundle: county
+label: State
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:state'
+  handler_settings:
+    target_bundles:
+      state: state
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

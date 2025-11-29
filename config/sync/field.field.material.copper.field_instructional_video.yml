@@ -1,0 +1,35 @@
+uuid: 8809a131-7906-4ddd-9841-657f1cd4e077
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.copper
+    - field.storage.material.field_instructional_video
+    - media.type.remote_video
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.copper.field_instructional_video
+field_name: field_instructional_video
+entity_type: material
+bundle: copper
+label: 'Instructional Video'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:media'
+  handler_settings:
+    target_bundles:
+      remote_video: remote_video
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,151 @@
+uuid: 345140d2-bf6a-4ce1-b1a2-9970dbd818e2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_material_dumping.load
+    - field.field.wo_material_dumping.load.field_billing_adjustment
+    - field.field.wo_material_dumping.load.field_dump_fee
+    - field.field.wo_material_dumping.load.field_dump_other_location
+    - field.field.wo_material_dumping.load.field_dump_rate
+    - field.field.wo_material_dumping.load.field_dump_total
+    - field.field.wo_material_dumping.load.field_dumping_how_many_full_load
+    - field.field.wo_material_dumping.load.field_load_s_amount
+    - field.field.wo_material_dumping.load.field_reciept_pic
+    - field.field.wo_material_dumping.load.field_where_was_it_dumped
+    - field.field.wo_material_dumping.load.field_work_order
+    - image.style.thumbnail
+  module:
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_work_order
+        - field_dump_rate
+        - field_billing_adjustment
+        - field_dump_total
+        - created
+        - uid
+        - path
+      label: 'Office Administation'
+      region: content
+      parent_name: ''
+      weight: 20
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: wo_material_dumping.load.default
+targetEntityType: wo_material_dumping
+bundle: load
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 11
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_billing_adjustment:
+    type: number
+    weight: 9
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_dump_fee:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_dump_other_location:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_dump_rate:
+    type: number
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_dump_total:
+    type: number
+    weight: 10
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_dumping_how_many_full_load:
+    type: number
+    weight: 1
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_load_s_amount:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_reciept_pic:
+    type: image_image
+    weight: 5
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_where_was_it_dumped:
+    type: options_buttons
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 13
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 12
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

@@ -1,0 +1,364 @@
+uuid: ae5fe40f-ad05-45e9-8999-293b7c2e4235
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.property_ss_sources.teammate_view
+    - eck.eck_type.property_ss_sources.domestic_source
+    - field.field.property_ss_sources.domestic_source.field_property_ss_system
+    - field.field.property_ss_sources.domestic_source.field_shut_off_location_descript
+    - field.field.property_ss_sources.domestic_source.field_source_size
+    - field.field.property_ss_sources.domestic_source.field_ss_backflow
+    - field.field.property_ss_sources.domestic_source.field_ss_backflow_location
+    - field.field.property_ss_sources.domestic_source.field_ss_backflow_photos
+    - field.field.property_ss_sources.domestic_source.field_ss_key_needed
+    - field.field.property_ss_sources.domestic_source.field_ss_shut_off_location
+    - field.field.property_ss_sources.domestic_source.field_ss_shut_off_location_pic
+    - field.field.property_ss_sources.domestic_source.field_ss_shut_off_notes
+    - field.field.property_ss_sources.domestic_source.field_ss_source_name
+    - field.field.property_ss_sources.domestic_source.field_ss_source_valve
+  module:
+    - field_group
+    - image
+    - layout_builder
+    - layout_discovery
+    - options
+third_party_settings:
+  field_group:
+    group_backflow_info:
+      children:
+        - field_ss_backflow
+        - field_ss_backflow_location
+        - field_ss_backflow_photos
+      label: 'Backflow Info'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+    group_backflow:
+      children: {  }
+      label: Backflow
+      parent_name: ''
+      region: hidden
+      weight: 20
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+  layout_builder:
+    enabled: true
+    allow_custom: false
+    sections:
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: ''
+          context_mapping: {  }
+          column_widths: 25-75
+        components:
+          13d81915-2bca-4433-918d-a239ee19bf36:
+            uuid: 13d81915-2bca-4433-918d-a239ee19bf36
+            region: first
+            configuration:
+              id: 'field_block:property_ss_sources:domestic_source:field_ss_source_name'
+              label: 'Source Name'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: string
+                label: hidden
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          afdcb502-e844-43aa-b144-f4a70a7609cd:
+            uuid: afdcb502-e844-43aa-b144-f4a70a7609cd
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:domestic_source:field_source_size'
+              label: 'Source Size'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 0
+            additional: {  }
+          12fe6e75-2b00-4bfd-ac72-74df1781c5bc:
+            uuid: 12fe6e75-2b00-4bfd-ac72-74df1781c5bc
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:domestic_source:field_ss_shut_off_location'
+              label: 'Shut off Location'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 2
+            additional: {  }
+          4c5df0fd-1d6f-4e6b-8176-48c2e236162f:
+            uuid: 4c5df0fd-1d6f-4e6b-8176-48c2e236162f
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:domestic_source:field_ss_key_needed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: list_default
+                label: above
+                settings: {  }
+                third_party_settings: {  }
+            weight: 4
+            additional: {  }
+          ff756845-7299-4e31-8377-1564b653310b:
+            uuid: ff756845-7299-4e31-8377-1564b653310b
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:domestic_source:field_ss_shut_off_location_pic'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: image
+                label: above
+                settings:
+                  image_link: ''
+                  image_style: ''
+                  image_loading:
+                    attribute: lazy
+                third_party_settings: {  }
+            weight: 5
+            additional: {  }
+          8f6a4bbe-3adc-4bf6-a332-8faae806a36e:
+            uuid: 8f6a4bbe-3adc-4bf6-a332-8faae806a36e
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:domestic_source:field_ss_backflow'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 7
+            additional: {  }
+          cd9f956d-1360-4742-b0f0-0f9feba71316:
+            uuid: cd9f956d-1360-4742-b0f0-0f9feba71316
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:domestic_source:field_ss_backflow_location'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: above
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 8
+            additional: {  }
+          173dfe75-97d4-48d5-9ab0-8301b25c9d76:
+            uuid: 173dfe75-97d4-48d5-9ab0-8301b25c9d76
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:domestic_source:field_ss_backflow_photos'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: image
+                label: above
+                settings:
+                  image_link: ''
+                  image_style: ''
+                  image_loading:
+                    attribute: lazy
+                third_party_settings: {  }
+            weight: 9
+            additional: {  }
+          e676a6f8-18d5-4958-a7cd-96c0114132ce:
+            uuid: e676a6f8-18d5-4958-a7cd-96c0114132ce
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:domestic_source:field_ss_source_valve'
+              label: 'Source Valve'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: list_default
+                label: inline
+                settings: {  }
+                third_party_settings: {  }
+            weight: 1
+            additional: {  }
+          74cd6415-43dc-4032-9791-27edc8e3333e:
+            uuid: 74cd6415-43dc-4032-9791-27edc8e3333e
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:domestic_source:field_ss_shut_off_notes'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: above
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 6
+            additional: {  }
+          e93d7390-fa53-4eb3-aa04-2c2883589369:
+            uuid: e93d7390-fa53-4eb3-aa04-2c2883589369
+            region: second
+            configuration:
+              id: 'field_block:property_ss_sources:domestic_source:field_shut_off_location_descript'
+              label: 'Shut off Location Description'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: string
+                label: above
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 3
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components: {  }
+        third_party_settings: {  }
+id: property_ss_sources.domestic_source.teammate_view
+targetEntityType: property_ss_sources
+bundle: domestic_source
+mode: teammate_view
+content:
+  field_source_size:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_ss_backflow:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_ss_backflow_location:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_ss_backflow_photos:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_ss_key_needed:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_ss_shut_off_location:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_ss_shut_off_location_pic:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_ss_shut_off_notes:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_ss_source_name:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_ss_source_valve:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  field_property_ss_system: true
+  field_shut_off_location_descript: true

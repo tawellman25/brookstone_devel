@@ -1,0 +1,29 @@
+uuid: d84d472a-254a-4d09-a568-0116e28c3cb8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.irrigation
+    - eck.eck_type.property_sprinkler_pumps.pump
+    - field.storage.property_sprinkler_pumps.field_pump_in_house_item
+id: property_sprinkler_pumps.pump.field_pump_in_house_item
+field_name: field_pump_in_house_item
+entity_type: property_sprinkler_pumps
+bundle: pump
+label: 'In House Item'
+description: 'Enter the In House Material item to link it to this pump.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:material'
+  handler_settings:
+    target_bundles:
+      irrigation: irrigation
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

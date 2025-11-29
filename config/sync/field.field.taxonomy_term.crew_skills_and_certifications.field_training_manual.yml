@@ -1,0 +1,29 @@
+uuid: 0a0fcac0-5f06-444d-baa2-955990de339f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.manual.title_page
+    - field.storage.taxonomy_term.field_training_manual
+    - taxonomy.vocabulary.crew_skills_and_certifications
+id: taxonomy_term.crew_skills_and_certifications.field_training_manual
+field_name: field_training_manual
+entity_type: taxonomy_term
+bundle: crew_skills_and_certifications
+label: 'Training Manual'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:manual'
+  handler_settings:
+    target_bundles:
+      title_page: title_page
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

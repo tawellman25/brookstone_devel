@@ -1,0 +1,22 @@
+uuid: a4ce7f54-149b-4266-8f8d-9559ec16dcce
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+id: employment_note_aliases
+label: 'Employment Note Aliases'
+type: 'canonical_entities:employment'
+pattern: '[employment:field_employee:entity:url:path]/employment-notes/[employment:created]'
+selection_criteria:
+  22093892-a0f0-4479-a77a-4d0b2de88771:
+    id: 'entity_bundle:employment'
+    negate: false
+    uuid: 22093892-a0f0-4479-a77a-4d0b2de88771
+    context_mapping:
+      employment: employment
+    bundles:
+      notes: notes
+selection_logic: and
+weight: -5
+relationships: {  }

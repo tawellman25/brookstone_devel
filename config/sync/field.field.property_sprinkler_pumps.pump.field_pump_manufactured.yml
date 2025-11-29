@@ -1,0 +1,29 @@
+uuid: fe7a25db-a66e-4e61-aecc-59d1d7f6f4f2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.manufacturer.manufacturer
+    - eck.eck_type.property_sprinkler_pumps.pump
+    - field.storage.property_sprinkler_pumps.field_pump_manufactured
+id: property_sprinkler_pumps.pump.field_pump_manufactured
+field_name: field_pump_manufactured
+entity_type: property_sprinkler_pumps
+bundle: pump
+label: Manufactured
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:manufacturer'
+  handler_settings:
+    target_bundles:
+      manufacturer: manufacturer
+    sort:
+      field: field_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

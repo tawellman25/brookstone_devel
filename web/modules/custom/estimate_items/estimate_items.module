@@ -1,0 +1,152 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Calculate estimate_items bundle totals before save.
+ */
+function estimate_items_entity_presave(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_items') {
+    return;
+  }
+
+  $bundle = $entity->bundle();
+
+  switch ($bundle) {
+    case 'labor':
+      $hours = (float) ($entity->get('field_quantity')->value ?? 0);
+      $rate = (float) ($entity->get('field_unit_price')->value ?? 0);
+      $subtotal = $hours * $rate;
+
+      if ($entity->hasField('field_cost_subtotal')) {
+        $entity->set('field_cost_subtotal', $subtotal);
+      }
+      $entity->set('field_line_total', $subtotal);
+      break;
+
+    case 'materials':
+      $qty = (float) ($entity->get('field_quantity')->value ?? 0);
+      $unit_price = (float) ($entity->get('field_unit_price')->value ?? 0);
+      $subtotal = $qty * $unit_price;
+
+      if ($entity->hasField('field_cost_subtotal')) {
+        $entity->set('field_cost_subtotal', $subtotal);
+      }
+
+      $markup = 0.0;
+      if ($entity->hasField('field_markup') && !$entity->get('field_markup')->isEmpty()) {
+        $markup = (float) $entity->get('field_markup')->value;
+      }
+
+      $line_total = $subtotal * (1 + $markup);
+      $entity->set('field_line_total', $line_total);
+      break;
+
+    case 'equipment':
+      $qty = (float) ($entity->get('field_quantity')->value ?? 0);
+      $unit_price = (float) ($entity->get('field_unit_price')->value ?? 0);
+      $subtotal = $qty * $unit_price;
+
+      if ($entity->hasField('field_cost_subtotal')) {
+        $entity->set('field_cost_subtotal', $subtotal);
+      }
+
+      $markup = 0.0;
+      if ($entity->hasField('field_markup') && !$entity->get('field_markup')->isEmpty()) {
+        $markup = (float) $entity->get('field_markup')->value;
+      }
+
+      $line_total = $subtotal * (1 + $markup);
+      $entity->set('field_line_total', $line_total);
+      break;
+  }
+}
+
+/**
+ * After create → update parent estimate.
+ */
+function estimate_items_entity_insert(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_items') {
+    return;
+  }
+
+  _estimate_items_update_parent_estimate_total($entity);
+}
+
+/**
+ * After update → update parent estimate.
+ */
+function estimate_items_entity_update(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_items') {
+    return;
+  }
+
+  _estimate_items_update_parent_estimate_total($entity);
+}
+
+/**
+ * After delete → update parent estimate.
+ */
+function estimate_items_entity_delete(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_items') {
+    return;
+  }
+
+  _estimate_items_update_parent_estimate_total($entity);
+}
+
+/**
+ * Recalculate and update the Estimate total.
+ */
+function _estimate_items_update_parent_estimate_total(EntityInterface $estimate_item): void {
+  if (
+    !$estimate_item->hasField('field_estimate') ||
+    $estimate_item->get('field_estimate')->isEmpty()
+  ) {
+    return;
+  }
+
+  $estimate_target = $estimate_item->get('field_estimate')->first();
+  if (!$estimate_target || empty($estimate_target->target_id)) {
+    return;
+  }
+
+  $estimate_id = $estimate_target->target_id;
+
+  $entity_type_manager = \Drupal::entityTypeManager();
+
+  $estimate = $entity_type_manager
+    ->getStorage('estimate')
+    ->load($estimate_id);
+
+  if (!$estimate) {
+    return;
+  }
+
+  $items_storage = $entity_type_manager->getStorage('estimate_items');
+
+  $query = $items_storage
+    ->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_estimate', $estimate_id);
+
+  $ids = $query->execute();
+  $total = 0.0;
+
+  if (!empty($ids)) {
+    $items = $items_storage->loadMultiple($ids);
+
+    foreach ($items as $item) {
+      if ($item->hasField('field_line_total') && !$item->get('field_line_total')->isEmpty()) {
+        $total += (float) $item->get('field_line_total')->value;
+      }
+    }
+  }
+
+  if ($estimate->hasField('field_estimate_total')) {
+    $estimate->set('field_estimate_total', $total);
+    $estimate->save();
+  }
+}

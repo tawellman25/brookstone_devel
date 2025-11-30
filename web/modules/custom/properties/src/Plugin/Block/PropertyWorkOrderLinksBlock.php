@@ -86,7 +86,6 @@ final class PropertyWorkOrderLinksBlock extends BlockBase implements ContainerFa
       'deer_prevention' => 'Deer Prevention',
       'dethatching' => 'Dethatching',
       'dormant_oil' => 'Dormant Oil',
-      'estimate' => 'Estimate',
       'fall_cleanup' => 'Fall Cleanup',
       'fertilizing' => 'Fertilizing',
       'fertilizing_trees_and_shrubs' => 'Fertilizing Trees and Shrubs',

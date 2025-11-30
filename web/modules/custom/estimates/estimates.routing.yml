@@ -1,0 +1,11 @@
+estimates.landscaping_estimate_add:
+  path: '/work-order/{work_order}/estimate/landscaping/add'
+  defaults:
+    _controller: '\Drupal\estimates\Controller\LandscapingEstimateController::createFromWorkOrder'
+    _title: 'Add Landscaping Estimate'
+  requirements:
+    _permission: 'create estimate entities'
+  options:
+    parameters:
+      work_order:
+        type: 'entity:work_order'

@@ -1,0 +1,415 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\user\UserInterface;
+
+/**
+ * Constants for status/term IDs.
+ */
+const ESTIMATES_STAGE_ACCEPTED_TID = 1418;      // estimate_stage: Accepted.
+const ESTIMATES_WO_STATUS_ACCEPTED_TID = 1503;  // wo_status: Accepted.
+
+/**
+ * Default bundles for auto-created entities.
+ *
+ * Adjust these to your real bundle machine names.
+ */
+const ESTIMATES_DEFAULT_WORK_ORDER_BUNDLE = 'landscaping';
+const ESTIMATES_DEFAULT_PROPERTY_BUNDLE = 'default'; // TODO: adjust if needed.
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * Handles:
+ * - Summing landscaping estimate line items into field_estimate_total.
+ * - Syncing description between estimate and work order.
+ * - When estimate stage is Accepted:
+ *   - Ensures a Work Order exists (auto-create if needed).
+ *   - Updates Work Order status + estimated price.
+ *   - Creates a WO Status Update log entry.
+ */
+function estimates_entity_presave(EntityInterface $entity): void {
+  // Only act on the estimate ECK type.
+  if ($entity->getEntityTypeId() !== 'estimate') {
+    return;
+  }
+
+  // Only for the Landscaping estimate bundle.
+  if ($entity->bundle() !== 'landscaping') {
+    return;
+  }
+
+  // 1) Sum line items into estimate total.
+  _estimates_sum_line_items($entity);
+
+  // 2) Keep description fields in sync between Estimate and Work Order.
+  _estimates_sync_description($entity);
+
+  // 3) Handle stage transitions (focus on Accepted).
+  _estimates_handle_accepted_estimate($entity);
+}
+
+/**
+ * Sums line-item totals into field_estimate_total.
+ *
+ * Expects:
+ * - Estimate has "field_line_items" (entity reference).
+ * - Each line item has a numeric total field (TODO: adjust "field_total" if different).
+ * - Estimate has numeric "field_estimate_total".
+ */
+function _estimates_sum_line_items(EntityInterface $estimate): void {
+  if (!$estimate->hasField('field_line_items') || !$estimate->hasField('field_estimate_total')) {
+    return;
+  }
+
+  $line_items = $estimate->get('field_line_items')->referencedEntities();
+  if (empty($line_items)) {
+    return;
+  }
+
+  $total = 0.0;
+
+  foreach ($line_items as $item) {
+    // TODO: adjust "field_total" to your real line-item total field.
+    if ($item->hasField('field_total') && !$item->get('field_total')->isEmpty()) {
+      $total += (float) $item->get('field_total')->value;
+    }
+  }
+
+  $estimate->set('field_estimate_total', $total);
+}
+
+/**
+ * Syncs description text between estimate and work order when linked.
+ *
+ * - If estimate has text and WO is empty => copy estimate → WO.
+ * - If WO has text and estimate is empty => copy WO → estimate.
+ *
+ * This lets you use either field as the starting point depending on
+ * workflow (lead-first vs WO-first) and keeps them aligned.
+ */
+function _estimates_sync_description(EntityInterface $estimate): void {
+  if (
+    !$estimate->hasField('field_work_order')
+    || $estimate->get('field_work_order')->isEmpty()
+  ) {
+    // No attached work order → nothing to sync (lead-only mode for now).
+    return;
+  }
+
+  $work_order = $estimate->get('field_work_order')->entity;
+  if (!$work_order instanceof EntityInterface || $work_order->getEntityTypeId() !== 'work_order') {
+    return;
+  }
+
+  $estimate_has = $estimate->hasField('field_client_requested')
+    && !$estimate->get('field_client_requested')->isEmpty();
+
+  $wo_has = $work_order->hasField('field_work_todo_description')
+    && !$work_order->get('field_work_todo_description')->isEmpty();
+
+  // If both have values, leave them alone and let them diverge if needed.
+  if ($estimate_has && $wo_has) {
+    return;
+  }
+
+  // If estimate has text but WO is empty -> push to WO.
+  if ($estimate_has && !$wo_has && $work_order->hasField('field_work_todo_description')) {
+    $work_order->set('field_work_todo_description', $estimate->get('field_client_requested')->value);
+    $work_order->save();
+    return;
+  }
+
+  // If WO has text but estimate is empty -> pull into estimate.
+  if ($wo_has && !$estimate_has && $estimate->hasField('field_client_requested')) {
+    $estimate->set('field_client_requested', $work_order->get('field_work_todo_description')->value);
+  }
+}
+
+/**
+ * When estimate stage is Accepted:
+ * - Ensure Work Order + Property + User exist (auto-create if needed).
+ * - Update Work Order status and estimated price.
+ * - Create a WO Status Update record.
+ */
+function _estimates_handle_accepted_estimate(EntityInterface $estimate): void {
+  // Must have stage field.
+  if (!$estimate->hasField('field_stage') || $estimate->get('field_stage')->isEmpty()) {
+    return;
+  }
+
+  // Must have estimate_stage "Accepted" (TID 1418).
+  $stage_item = $estimate->get('field_stage')->first();
+  if (!$stage_item || (int) $stage_item->target_id !== ESTIMATES_STAGE_ACCEPTED_TID) {
+    return;
+  }
+
+  // Ensure a Work Order exists.
+  $work_order = NULL;
+
+  if ($estimate->hasField('field_work_order') && !$estimate->get('field_work_order')->isEmpty()) {
+    $work_order = $estimate->get('field_work_order')->entity;
+  }
+  else {
+    $work_order = _estimates_create_lead_user_property_and_work_order($estimate);
+
+    if ($work_order instanceof EntityInterface && $estimate->hasField('field_work_order')) {
+      $estimate->set('field_work_order', $work_order->id());
+    }
+
+    // Cross-link property on estimate if we created one.
+    if ($work_order instanceof EntityInterface
+      && $work_order->hasField('field_property')
+      && $estimate->hasField('field_property')
+      && !$work_order->get('field_property')->isEmpty()
+    ) {
+      $estimate->set('field_property', $work_order->get('field_property')->target_id);
+    }
+  }
+
+  if (!$work_order instanceof EntityInterface || $work_order->getEntityTypeId() !== 'work_order') {
+    return;
+  }
+
+  // Set Work Order status to "Accepted" (wo_status TID 1503).
+  if ($work_order->hasField('field_status') && ESTIMATES_WO_STATUS_ACCEPTED_TID) {
+    $work_order->set('field_status', ['target_id' => ESTIMATES_WO_STATUS_ACCEPTED_TID]);
+  }
+
+  // Sync estimate total into Work Order's field_estimated_price.
+  if ($estimate->hasField('field_estimate_total')
+    && !$estimate->get('field_estimate_total')->isEmpty()
+    && $work_order->hasField('field_estimated_price')
+  ) {
+    $estimate_total = (float) $estimate->get('field_estimate_total')->value;
+
+    // field_estimated_price is multi-value; here we just set a single value.
+    $work_order->set('field_estimated_price', [
+      ['value' => $estimate_total],
+    ]);
+  }
+
+  $work_order->save();
+
+  // Create WO Status Update entry.
+  _estimates_create_status_update($work_order, 'Estimate accepted – Work Order status set to Accepted.');
+}
+
+/**
+ * Auto-creates User, Property, and Work Order for "lead-first" estimates.
+ *
+ * Called when an Accepted estimate has no field_work_order value.
+ *
+ * @return \Drupal\Core\Entity\EntityInterface|null
+ *   The created Work Order entity, or NULL on failure.
+ */
+function _estimates_create_lead_user_property_and_work_order(EntityInterface $estimate): ?EntityInterface {
+  $entity_type_manager = \Drupal::entityTypeManager();
+
+  // 1) Find or create User.
+  $account = _estimates_find_or_create_user_from_estimate($estimate);
+
+  // 2) Create Property.
+  $property_storage = $entity_type_manager->getStorage('properties');
+
+  $property = $property_storage->create([
+    'type' => ESTIMATES_DEFAULT_PROPERTY_BUNDLE,
+  ]);
+
+  // Title / name.
+  $label = $estimate->hasField('field_name') && !$estimate->get('field_name')->isEmpty()
+    ? $estimate->get('field_name')->value
+    : 'Property from estimate ' . $estimate->id();
+
+  if ($property->hasField('title')) {
+    $property->set('title', $label);
+  }
+  elseif (method_exists($property, 'setTitle')) {
+    $property->setTitle($label);
+  }
+
+  // Optional mapping if fields exist on properties.
+  if ($estimate->hasField('field_address')
+    && $property->hasField('field_address')
+    && !$estimate->get('field_address')->isEmpty()
+  ) {
+    $property->set('field_address', $estimate->get('field_address')->value);
+  }
+
+  if ($estimate->hasField('field_zipcode')
+    && $property->hasField('field_zipcode')
+    && !$estimate->get('field_zipcode')->isEmpty()
+  ) {
+    $property->set('field_zipcode', $estimate->get('field_zipcode')->target_id);
+  }
+
+  // Link property to user if such a field exists.
+  if ($account instanceof UserInterface && $property->hasField('field_client')) {
+    $property->set('field_client', $account->id());
+  }
+
+  $property->save();
+
+  // 3) Create Work Order (landscaping bundle).
+  $wo_storage = $entity_type_manager->getStorage('work_order');
+
+  $wo_values = [
+    'type' => ESTIMATES_DEFAULT_WORK_ORDER_BUNDLE,
+    'title' => $label,
+  ];
+
+  /** @var \Drupal\Core\Entity\ContentEntityInterface $work_order */
+  $work_order = $wo_storage->create($wo_values);
+
+  // Basic field mappings.
+  if ($work_order->hasField('field_property')) {
+    $work_order->set('field_property', $property->id());
+  }
+
+  if ($account instanceof UserInterface && $work_order->hasField('uid')) {
+    $work_order->set('uid', $account->id());
+  }
+
+  if ($estimate->hasField('field_client_requested')
+    && $work_order->hasField('field_work_todo_description')
+    && !$estimate->get('field_client_requested')->isEmpty()
+  ) {
+    $work_order->set('field_work_todo_description', $estimate->get('field_client_requested')->value);
+  }
+
+  // Initial status = Accepted (since this is triggered on estimate acceptance).
+  if ($work_order->hasField('field_status') && ESTIMATES_WO_STATUS_ACCEPTED_TID) {
+    $work_order->set('field_status', ['target_id' => ESTIMATES_WO_STATUS_ACCEPTED_TID]);
+  }
+
+  // Set estimated price if we already have field_estimate_total.
+  if ($estimate->hasField('field_estimate_total')
+    && !$estimate->get('field_estimate_total')->isEmpty()
+    && $work_order->hasField('field_estimated_price')
+  ) {
+    $estimate_total = (float) $estimate->get('field_estimate_total')->value;
+    $work_order->set('field_estimated_price', [
+      ['value' => $estimate_total],
+    ]);
+  }
+
+  $work_order->save();
+
+  return $work_order;
+}
+
+/**
+ * Find or create a User account based on estimate fields.
+ *
+ * Priority:
+ * - Match by email (field_email → user.mail).
+ * - Optionally match by phone + name if user has a phone field.
+ * - Else create a new account.
+ *
+ * @return \Drupal\user\UserInterface|null
+ *   User account, or NULL on failure.
+ */
+function _estimates_find_or_create_user_from_estimate(EntityInterface $estimate): ?UserInterface {
+  $entity_type_manager = \Drupal::entityTypeManager();
+  $user_storage = $entity_type_manager->getStorage('user');
+
+  $mail = '';
+  if ($estimate->hasField('field_email') && !$estimate->get('field_email')->isEmpty()) {
+    $mail = trim($estimate->get('field_email')->value);
+  }
+
+  $name = '';
+  if ($estimate->hasField('field_name') && !$estimate->get('field_name')->isEmpty()) {
+    $name = trim($estimate->get('field_name')->value);
+  }
+
+  $phone = '';
+  if ($estimate->hasField('field_phone') && !$estimate->get('field_phone')->isEmpty()) {
+    $phone = trim($estimate->get('field_phone')->value);
+  }
+
+  // Try to find existing by email.
+  if ($mail !== '') {
+    $uids = $user_storage->getQuery()
+      ->condition('mail', $mail)
+      ->range(0, 1)
+      ->execute();
+
+    if (!empty($uids)) {
+      $account = $user_storage->load(reset($uids));
+      if ($account instanceof UserInterface) {
+        return $account;
+      }
+    }
+  }
+
+  // Optional: try match by phone + name if user entity has a phone field.
+  // Adjust "field_phone" to your real user phone field if different.
+  if ($phone !== '' && $name !== '') {
+    $query = $user_storage->getQuery()
+      ->condition('name', $name);
+    // Only add phone condition if such a field exists.
+    $user_temp = $user_storage->create([]);
+    if ($user_temp->hasField('field_phone')) {
+      $query->condition('field_phone', $phone);
+    }
+    $uids = $query->range(0, 1)->execute();
+    if (!empty($uids)) {
+      $account = $user_storage->load(reset($uids));
+      if ($account instanceof UserInterface) {
+        return $account;
+      }
+    }
+  }
+
+  // Create new account.
+  $username = $name !== '' ? $name : ('customer_' . time());
+
+  $values = [
+    'name' => $username,
+    'mail' => $mail !== '' ? $mail : ('no-email-' . time() . '@example.com'),
+    'status' => 1,
+  ];
+
+  /** @var \Drupal\user\UserInterface $account */
+  $account = $user_storage->create($values);
+  $account->save();
+
+  return $account;
+}
+
+/**
+ * Create a WO Status Update entry logging a status change.
+ */
+function _estimates_create_status_update(EntityInterface $work_order, string $note = ''): void {
+  $entity_type_manager = \Drupal::entityTypeManager();
+  $storage = $entity_type_manager->getStorage('wo_status_updates');
+
+  /** @var \Drupal\Core\Entity\ContentEntityInterface $status_update */
+  $status_update = $storage->create([
+    'type' => 'update',
+  ]);
+
+  if ($status_update->hasField('field_status') && ESTIMATES_WO_STATUS_ACCEPTED_TID) {
+    $status_update->set('field_status', ['target_id' => ESTIMATES_WO_STATUS_ACCEPTED_TID]);
+  }
+
+  if ($status_update->hasField('field_status_of_wo')) {
+    $status_update->set('field_status_of_wo', $work_order->id());
+  }
+
+  if ($status_update->hasField('field_status_change_note')) {
+    $status_update->set('field_status_change_note', $note !== '' ? $note : 'Work Order status set to Accepted.');
+  }
+
+  $current_user = \Drupal::currentUser();
+  if ($status_update->hasField('uid')) {
+    $status_update->set('uid', $current_user->id());
+  }
+
+  if (method_exists($status_update, 'setTitle')) {
+    $status_update->setTitle('Work Order status set to Accepted');
+  }
+
+  $status_update->save();
+}

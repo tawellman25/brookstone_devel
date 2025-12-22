@@ -1,0 +1,29 @@
+uuid: 4b62ce23-da1d-4c74-807e-02bc695df45a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.department.details
+    - field.storage.taxonomy_term.field_department
+    - taxonomy.vocabulary.services
+id: taxonomy_term.services.field_department
+field_name: field_department
+entity_type: taxonomy_term
+bundle: services
+label: Department
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:department'
+  handler_settings:
+    target_bundles:
+      details: details
+    sort:
+      field: field_department_name
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

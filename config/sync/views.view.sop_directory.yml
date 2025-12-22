@@ -253,7 +253,7 @@ display:
             more_link_text: ''
             more_link_path: ''
             strip_tags: false
-            trim: true
+            trim: false
             preserve_tags: ''
             html: false
           element_type: ''
@@ -281,8 +281,8 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        type:
-          id: type
+        type_1:
+          id: type_1
           table: sop_field_data
           field: type
           relationship: none
@@ -291,7 +291,7 @@ display:
           entity_type: sop
           entity_field: type
           plugin_id: field
-          label: Type
+          label: ''
           exclude: true
           alter:
             alter_text: false
@@ -324,7 +324,71 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_entity_id
+          settings: {  }
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        type:
+          id: type
+          table: sop_field_data
+          field: type
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: sop
+          entity_field: type
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: true
+            text: "<h3>{{ type }} SOPs - </h3><a href=\"/admin/content/sop/add/{{ type_1 }}\"\r\n   target=\"_blank\"\r\n   rel=\"noopener noreferrer\"\r\n   class=\"button button--small\">\r\n  + Add\r\n</a>"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -673,7 +737,7 @@ display:
           exclude: false
           alter:
             alter_text: true
-            text: "<b>Code: </b>{{ field_sop_code }}</br>\r\n<b>Status: </b>{{ field_sop_status }}</br>\r\n<b>Version: </b>{{ field_sop_version }}</br>\r\n<b>Teammate: </b>{{ field_sop_owner }}</br>\r\n<b>Last Reviewed: </b>{{ field_sop_last_reviewed }}"
+            text: "<b>Code: </b>{{ field_sop_code }}</br>\r\n<b>Status: </b>{{ field_sop_status }}</br>\r\n<b>Version: </b>{{ field_sop_version }}</br>\r\n<b>Who's Responsible: </b>{{ field_sop_owner }}</br>\r\n<b>Last Reviewed: </b>{{ field_sop_last_reviewed }}"
             make_link: false
             path: ''
             absolute: false
@@ -710,6 +774,57 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: false
+        operations:
+          id: operations
+          table: sop
+          field: operations
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: sop
+          plugin_id: entity_operations
+          label: Links
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          destination: false
       pager:
         type: mini
         options:
@@ -752,7 +867,35 @@ display:
         type: tag
         options: {  }
       empty: {  }
-      sorts: {  }
+      sorts:
+        type:
+          id: type
+          table: sop_field_data
+          field: type
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: sop
+          entity_field: type
+          plugin_id: standard
+          order: ASC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
+        field_sop_code_value:
+          id: field_sop_code_value
+          table: sop__field_sop_code
+          field: field_sop_code_value
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: standard
+          order: ASC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
       arguments: {  }
       filters: {  }
       style:
@@ -863,7 +1006,20 @@ display:
           replica: false
           query_tags: {  }
       relationships: {  }
-      header: {  }
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: false
+          content:
+            value: "<div class=\"sop-directory-header\">\r\n  <a href=\"/admin/content/sop/add\" class=\"button button--primary\">\r\n    + Add New SOP\r\n  </a>\r\n  <p class=\"sop-directory-help\">\r\n    Create a new Standard Operating Procedure using the approved SOP bundles and <a href=\"/teammates/sop/sop-governance/gov-sop-002\">\r\n    code standards</a>.\r\n  </p>\r\n</div>"
+            format: full_html
+          tokenize: true
       footer: {  }
       display_extenders: {  }
     cache_metadata:

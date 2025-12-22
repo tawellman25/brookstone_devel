@@ -13,6 +13,9 @@ dependencies:
     - field.storage.wo_tasks_list.field_snow_level
     - field.storage.wo_tasks_list.field_snow_mag_chloride
     - field.storage.wo_tasks_list.field_snow_mag_gallons
+    - field.storage.wo_tasks_list.field_snow_other
+    - field.storage.wo_tasks_list.field_snow_other_descriptions
+    - field.storage.wo_tasks_list.field_snow_plow_photos
     - field.storage.wo_tasks_list.field_snow_plowed
     - field.storage.wo_tasks_list.field_snow_plowed_pushes
     - field.storage.wo_tasks_list.field_snow_shoveled
@@ -28,6 +31,7 @@ dependencies:
     - field.storage.work_order.field_total_time
     - field.storage.work_order.field_trip_fee
     - field.storage.work_order.field_wo_total
+    - image.style.thumbnail
     - system.menu.admin
     - taxonomy.vocabulary.wo_status
     - user.role.administration
@@ -36,6 +40,7 @@ dependencies:
   content:
     - 'taxonomy_term:wo_status:05dac4ce-0e53-4842-8340-181422437f48'
   module:
+    - colorbox
     - eck
     - smart_date
     - taxonomy
@@ -666,6 +671,75 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        field_snow_plow_photos:
+          id: field_snow_plow_photos
+          table: wo_tasks_list__field_snow_plow_photos
+          field: field_snow_plow_photos
+          relationship: reverse__wo_tasks_list__field_work_order
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Snow Plow Photos'
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: colorbox
+          settings:
+            colorbox_image_style: ''
+            colorbox_gallery: field_post
+            colorbox_gallery_custom: ''
+            colorbox_caption: auto
+            colorbox_caption_custom: ''
+            colorbox_node_style: thumbnail
+            colorbox_node_style_first: thumbnail
+          group_column: ''
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
         field_status:
           id: field_status
           table: work_order__field_status
@@ -678,7 +752,7 @@ display:
           exclude: false
           alter:
             alter_text: true
-            text: "{{ field_status }}</br>\r\n{{ field_date_completed }}"
+            text: "{{ field_status }}</br>\r\n{{ field_date_completed }}</br>\r\n{{ field_snow_plow_photos }}"
             make_link: false
             path: ''
             absolute: false
@@ -1311,6 +1385,134 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        field_snow_other_descriptions:
+          id: field_snow_other_descriptions
+          table: wo_tasks_list__field_snow_other_descriptions
+          field: field_snow_other_descriptions
+          relationship: reverse__wo_tasks_list__field_work_order
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Other Tasks Notes'
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: ul
+          separator: ', '
+          field_api_classes: false
+        field_snow_other:
+          id: field_snow_other
+          table: wo_tasks_list__field_snow_other
+          field: field_snow_other
+          relationship: reverse__wo_tasks_list__field_work_order
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Other Yes or No'
+          exclude: true
+          alter:
+            alter_text: true
+            text: "<b>Other: </b></br>\r\n{{ field_snow_other_descriptions }}"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: boolean
+          settings:
+            format: custom
+            format_custom_false: ''
+            format_custom_true: 'Other Tasks Completed'
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
         field_material_chemical_total:
           id: field_material_chemical_total
           table: work_order__field_material_chemical_total
@@ -1323,7 +1525,7 @@ display:
           exclude: false
           alter:
             alter_text: true
-            text: "{{ field_snow_applied_salt }} - {{ field_pounds_of_salt }}</br>\r\n{{ field_snow_mag_chloride }} - {{ field_snow_mag_gallons }}</br>\r\n<b>Total: </b>{{ field_material_chemical_total }}"
+            text: "{{ field_snow_applied_salt }} - {{ field_pounds_of_salt }}</br>\r\n{{ field_snow_mag_chloride }} - {{ field_snow_mag_gallons }}</br>\r\n<b>Total: </b>{{ field_material_chemical_total }}</br>\r\n{{ field_snow_other }}"
             make_link: false
             path: ''
             absolute: false
@@ -2354,6 +2556,9 @@ display:
         - 'config:field.storage.wo_tasks_list.field_snow_level'
         - 'config:field.storage.wo_tasks_list.field_snow_mag_chloride'
         - 'config:field.storage.wo_tasks_list.field_snow_mag_gallons'
+        - 'config:field.storage.wo_tasks_list.field_snow_other'
+        - 'config:field.storage.wo_tasks_list.field_snow_other_descriptions'
+        - 'config:field.storage.wo_tasks_list.field_snow_plow_photos'
         - 'config:field.storage.wo_tasks_list.field_snow_plowed'
         - 'config:field.storage.wo_tasks_list.field_snow_plowed_pushes'
         - 'config:field.storage.wo_tasks_list.field_snow_shoveled'
@@ -2403,6 +2608,9 @@ display:
         - 'config:field.storage.wo_tasks_list.field_snow_level'
         - 'config:field.storage.wo_tasks_list.field_snow_mag_chloride'
         - 'config:field.storage.wo_tasks_list.field_snow_mag_gallons'
+        - 'config:field.storage.wo_tasks_list.field_snow_other'
+        - 'config:field.storage.wo_tasks_list.field_snow_other_descriptions'
+        - 'config:field.storage.wo_tasks_list.field_snow_plow_photos'
         - 'config:field.storage.wo_tasks_list.field_snow_plowed'
         - 'config:field.storage.wo_tasks_list.field_snow_plowed_pushes'
         - 'config:field.storage.wo_tasks_list.field_snow_shoveled'

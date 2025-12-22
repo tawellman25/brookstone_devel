@@ -1,0 +1,25 @@
+uuid: 7bb8a0fc-e9dc-416b-bc7e-7eaf8bbf51c7
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.sop_governance
+    - field.storage.sop.field_service
+id: sop.sop_governance.field_service
+field_name: field_service
+entity_type: sop
+bundle: sop_governance
+label: Service
+description: "Use this field only if this SOP governs a specific service or service group.\r\nLeave this field blank for system-wide or company-wide governance SOPs.\r\n\r\nDo not select a service unless the rules in this SOP apply only to that service."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

@@ -1,0 +1,225 @@
+uuid: 9ebdab8f-2584-4919-9039-b95c43d7491f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.sop_governance
+    - field.field.sop.sop_governance.field_name
+    - field.field.sop.sop_governance.field_parent_sop
+    - field.field.sop.sop_governance.field_service
+    - field.field.sop.sop_governance.field_sop__kpis
+    - field.field.sop.sop_governance.field_sop_code
+    - field.field.sop.sop_governance.field_sop_last_reviewed
+    - field.field.sop.sop_governance.field_sop_owner
+    - field.field.sop.sop_governance.field_sop_purpose
+    - field.field.sop.sop_governance.field_sop_responsibilities
+    - field.field.sop.sop_governance.field_sop_scope
+    - field.field.sop.sop_governance.field_sop_steps
+  module:
+    - allowed_formats
+    - datetime
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - group_teammate_manual
+        - group_entered_info
+        - group_url_info
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 8
+      format_type: tabs
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        direction: vertical
+        width_breakpoint: 640
+    group_entered_info:
+      children:
+        - created
+        - uid
+      label: 'Entered Info'
+      region: content
+      parent_name: group_office_admin
+      weight: 12
+      format_type: tab
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        formatter: closed
+        description: ''
+        required_fields: true
+    group_url_info:
+      children:
+        - path
+      label: 'URL Info'
+      region: content
+      parent_name: group_office_admin
+      weight: 13
+      format_type: tab
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        formatter: closed
+        description: ''
+        required_fields: true
+    group_teammate_manual:
+      children:
+        - field_sop_code
+        - field_sop_owner
+        - field_sop_last_reviewed
+        - field_parent_sop
+        - field_service
+      label: 'Teammate Manual'
+      region: content
+      parent_name: group_office_admin
+      weight: 11
+      format_type: tab
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        formatter: closed
+        description: ''
+        required_fields: true
+id: sop.sop_governance.default
+targetEntityType: sop
+bundle: sop_governance
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_name:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_parent_sop:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_service:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_sop__kpis:
+    type: text_textarea
+    weight: 7
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_sop_code:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_sop_last_reviewed:
+    type: datetime_default
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_sop_owner:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_sop_purpose:
+    type: text_textarea
+    weight: 3
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_sop_responsibilities:
+    type: text_textarea
+    weight: 5
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_sop_scope:
+    type: text_textarea
+    weight: 4
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_sop_steps:
+    type: text_textarea
+    weight: 6
+    region: content
+    settings:
+      rows: 15
+      placeholder: "Steps:\r\n\r\n    1. Enter Steps Here"
+    third_party_settings:
+      allowed_formats:
+        hide_help: '1'
+        hide_guidelines: '1'
+  path:
+    type: path
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 11
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

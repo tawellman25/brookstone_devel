@@ -3,9 +3,12 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.storage.taxonomy_term.field_department
     - field.storage.taxonomy_term.field_parent_service
     - field.storage.taxonomy_term.field_service_bundle
+    - field.storage.taxonomy_term.field_service_name
     - field.storage.taxonomy_term.field_sop_code
+    - field.storage.taxonomy_term.field_work_order_service
     - system.menu.admin
     - taxonomy.vocabulary.services
     - user.role.administration
@@ -16,7 +19,6 @@ dependencies:
     - calendar
     - taxonomy
     - user
-    - views_bootstrap
 id: services_administration
 label: 'Services Administration'
 module: views
@@ -110,21 +112,103 @@ display:
           entity_field: name
           plugin_id: term_name
           label: ''
-          exclude: false
+          exclude: true
           alter:
             alter_text: false
+            text: ''
             make_link: false
+            path: ''
             absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
             word_boundary: false
             ellipsis: false
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
             strip_tags: false
             trim: false
+            preserve_tags: ''
             html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+          convert_spaces: false
+        field_service_name:
+          id: field_service_name
+          table: taxonomy_term__field_service_name
+          field: field_service_name
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Service Name (Name)'
+          exclude: false
+          alter:
+            alter_text: true
+            text: '{{ field_service_name }} (<i>{{ name }}</i>)'
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -146,7 +230,6 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-          convert_spaces: false
         field_parent_service:
           id: field_parent_service
           table: taxonomy_term__field_parent_service
@@ -273,6 +356,69 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        field_department:
+          id: field_department
+          table: taxonomy_term__field_department
+          field: field_department
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: true
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
         field_sop_code:
           id: field_sop_code
           table: taxonomy_term__field_sop_code
@@ -326,6 +472,71 @@ display:
           type: string
           settings:
             link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_work_order_service:
+          id: field_work_order_service
+          table: taxonomy_term__field_work_order_service
+          field: field_work_order_service
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: WO
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: boolean
+          settings:
+            format: unicode-yes-no
+            format_custom_false: ''
+            format_custom_true: ''
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -416,15 +627,28 @@ display:
         options: {  }
       empty: {  }
       sorts:
-        weight:
-          id: weight
-          table: taxonomy_term_field_data
-          field: weight
+        field_department_target_id:
+          id: field_department_target_id
+          table: taxonomy_term__field_department
+          field: field_department_target_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: standard
+          order: ASC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
+        parent_target_id:
+          id: parent_target_id
+          table: taxonomy_term__parent
+          field: parent_target_id
           relationship: none
           group_type: group
           admin_label: ''
           entity_type: taxonomy_term
-          entity_field: weight
+          entity_field: parent
           plugin_id: standard
           order: ASC
           expose:
@@ -444,19 +668,23 @@ display:
             label: ''
             field_identifier: ''
           exposed: false
+        weight:
+          id: weight
+          table: taxonomy_term_field_data
+          field: weight
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: taxonomy_term
+          entity_field: weight
+          plugin_id: standard
+          order: ASC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
       arguments: {  }
       filters:
-        status:
-          id: status
-          table: taxonomy_term_field_data
-          field: status
-          entity_type: taxonomy_term
-          entity_field: status
-          plugin_id: boolean
-          value: '1'
-          group: 1
-          expose:
-            operator: ''
         vid:
           id: vid
           table: taxonomy_term_field_data
@@ -524,34 +752,88 @@ display:
             default_group_multiple: {  }
             group_items: {  }
       style:
-        type: views_bootstrap_table
+        type: table
         options:
-          grouping: {  }
+          grouping:
+            -
+              field: field_department
+              rendered: true
+              rendered_strip: false
           row_class: ''
           default_row_class: true
-          override: 1
-          sticky: 0
-          caption: ''
-          summary: ''
-          description: ''
           columns:
+            tid: tid
             name: name
+            field_service_name: field_service_name
+            field_parent_service: field_parent_service
+            field_service_bundle: field_service_bundle
+            field_department: field_department
+            field_sop_code: field_sop_code
+            edit_taxonomy_term: edit_taxonomy_term
+          default: '-1'
           info:
-            name:
-              sortable: 0
+            tid:
+              sortable: false
               default_sort_order: asc
               align: ''
               separator: ''
-              empty_column: 0
+              empty_column: false
               responsive: ''
-          default: name
-          empty_table: 0
-          responsive: 0
-          bootstrap_styles:
-            striped: 0
-            bordered: 0
-            hover: 0
-            condensed: 0
+            name:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_service_name:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_parent_service:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_service_bundle:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_department:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_sop_code:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            edit_taxonomy_term:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          override: true
+          sticky: false
+          summary: ''
+          empty_table: false
+          caption: ''
+          description: ''
       row:
         type: calendar_row
       query:
@@ -574,7 +856,7 @@ display:
           plugin_id: text
           empty: false
           content:
-            value: "Hello [current-user:teammate_profile:field_first_name], this <b>\"Services\"</b> page provides a comprehensive overview of all service offerings provided by our landscaping business. It features a table listing each service, including details like service type, category, and associated procedures, with options to edit or manage them. This page is designed for internal team members to review and update our service catalog, ensuring we deliver high-quality lawn care, landscaping, sprinkler systems, and specialized treatments to our clients. For other operational resources like crews or equipment, visit Company Components, or for a full list of content types, see System Content under the Operations tab.\r\n\r\n"
+            value: "Hello [current-user:teammate_profile:field_first_name], </br>This <b>\"Services\"</b> page provides a comprehensive overview of all service offerings provided by our landscaping business. It features a table listing each service, including details like service type, category, and associated procedures, with options to edit or manage them. This page is designed for internal team members to review and update our service catalog, ensuring we deliver high-quality lawn care, landscaping, sprinkler systems, and specialized treatments to our clients. For other operational resources like crews or equipment, visit Company Components, or for a full list of content types, see System Content under the Operations tab.\r\n\r\n"
             format: full_html
           tokenize: false
       footer: {  }
@@ -587,9 +869,12 @@ display:
         - url
         - user.roles
       tags:
+        - 'config:field.storage.taxonomy_term.field_department'
         - 'config:field.storage.taxonomy_term.field_parent_service'
         - 'config:field.storage.taxonomy_term.field_service_bundle'
+        - 'config:field.storage.taxonomy_term.field_service_name'
         - 'config:field.storage.taxonomy_term.field_sop_code'
+        - 'config:field.storage.taxonomy_term.field_work_order_service'
   page_1:
     id: page_1
     display_title: Page
@@ -615,6 +900,9 @@ display:
         - url
         - user.roles
       tags:
+        - 'config:field.storage.taxonomy_term.field_department'
         - 'config:field.storage.taxonomy_term.field_parent_service'
         - 'config:field.storage.taxonomy_term.field_service_bundle'
+        - 'config:field.storage.taxonomy_term.field_service_name'
         - 'config:field.storage.taxonomy_term.field_sop_code'
+        - 'config:field.storage.taxonomy_term.field_work_order_service'

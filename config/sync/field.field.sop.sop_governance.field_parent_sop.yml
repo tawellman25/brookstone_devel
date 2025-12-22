@@ -1,0 +1,28 @@
+uuid: 5cb2e98c-efb7-4f1f-bdd4-1e95123d576d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.sop_governance
+    - field.storage.sop.field_parent_sop
+id: sop.sop_governance.field_parent_sop
+field_name: field_parent_sop
+entity_type: sop
+bundle: sop_governance
+label: 'Parent SOP'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sop'
+  handler_settings:
+    target_bundles:
+      sop_governance: sop_governance
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: landscaping
+field_type: entity_reference

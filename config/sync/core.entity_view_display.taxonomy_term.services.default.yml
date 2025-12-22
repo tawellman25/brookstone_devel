@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - field.field.taxonomy_term.services.field_banner_image
+    - field.field.taxonomy_term.services.field_department
     - field.field.taxonomy_term.services.field_description
     - field.field.taxonomy_term.services.field_estimate_types
     - field.field.taxonomy_term.services.field_home_page
@@ -26,6 +27,14 @@ targetEntityType: taxonomy_term
 bundle: services
 mode: default
 content:
+  field_department:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
   field_description:
     type: text_default
     label: hidden

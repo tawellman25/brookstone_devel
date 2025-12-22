@@ -21,6 +21,7 @@ dependencies:
     - field.storage.property_snow_removal_info.field_snow_removal_last_plow_by
     - field.storage.property_snow_removal_info.field_snow_removal_last_plowed
     - field.storage.property_snow_removal_info.field_snow_removal_last_salt_amt
+    - field.storage.property_snow_removal_info.field_snow_removal_map
     - field.storage.property_snow_removal_info.field_snow_removal_max_salt
     - field.storage.property_snow_removal_info.field_snow_removal_minimum
     - field.storage.property_snow_removal_info.field_snow_removal_priority
@@ -28,6 +29,7 @@ dependencies:
     - field.storage.property_snow_removal_info.field_snow_removal_sidewalks
     - field.storage.taxonomy_term.field_assigned_equipment
     - field.storage.taxonomy_term.field_assigned_teammate
+    - image.style.medium
     - image.style.thumbnail
     - system.menu.teammate-navigation
     - taxonomy.vocabulary.snow_plow_routes
@@ -37,6 +39,7 @@ dependencies:
     - user.role.supervisor
     - user.role.teammates
   module:
+    - colorbox
     - datetime
     - eck
     - image
@@ -761,6 +764,75 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        field_snow_removal_map:
+          id: field_snow_removal_map
+          table: property_snow_removal_info__field_snow_removal_map
+          field: field_snow_removal_map
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Plow Map'
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: colorbox
+          settings:
+            colorbox_image_style: ''
+            colorbox_gallery: field_post
+            colorbox_gallery_custom: ''
+            colorbox_caption: auto
+            colorbox_caption_custom: ''
+            colorbox_node_style: medium
+            colorbox_node_style_first: medium
+          group_column: ''
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
         field_nickname:
           id: field_nickname
           table: properties__field_nickname
@@ -773,7 +845,7 @@ display:
           exclude: false
           alter:
             alter_text: true
-            text: "<b>#{{ field_snow_removal_priority }}</b></br>\r\n<b>{{ field_nickname }}</b></br>\r\n</br>\r\n{{ field_app }}"
+            text: "<b>#{{ field_snow_removal_priority }}</b></br>\r\n<b>{{ field_nickname }}</b></br>\r\n{{ field_snow_removal_map }}</br>\r\n</br>\r\n{{ field_app }}"
             make_link: false
             path: ''
             absolute: false
@@ -813,7 +885,7 @@ display:
           click_sort_column: value
           type: string
           settings:
-            link_to_entity: false
+            link_to_entity: true
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -2497,6 +2569,7 @@ display:
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_last_plow_by'
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_last_plowed'
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_last_salt_amt'
+        - 'config:field.storage.property_snow_removal_info.field_snow_removal_map'
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_max_salt'
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_minimum'
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_priority'
@@ -2547,6 +2620,7 @@ display:
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_last_plow_by'
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_last_plowed'
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_last_salt_amt'
+        - 'config:field.storage.property_snow_removal_info.field_snow_removal_map'
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_max_salt'
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_minimum'
         - 'config:field.storage.property_snow_removal_info.field_snow_removal_priority'

@@ -124,13 +124,14 @@ third_party_settings:
         - field_labor_cost_decorations
         - field_labor_cost_clean_up_crew
         - field_labor_cost_fertilizing
-        - field_snow_removal_labor
         - field_spray_crew_labor
         - field_labor_cost_spray_crew
         - field_sprinkler_technician_rate
         - field_labor_cost_irrigation_crew
         - field_lighting_crew_labor_rate
         - field_labor_cost_lighting_crew
+        - field_snow_removal_labor
+        - field_labor_cost_snow_removal
       label: 'Labor Rates'
       region: content
       parent_name: ''
@@ -321,7 +322,6 @@ third_party_settings:
         required_fields: true
     group_snow_removal:
       children:
-        - field_labor_cost_snow_removal
         - field_shoveling_minimum
         - field_salt_rate
         - field_salt_pounds_per_bag
@@ -516,6 +516,21 @@ third_party_settings:
       region: content
       parent_name: ''
       weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_snow_removal_labor:
+      children: {  }
+      label: 'Snow Removal'
+      region: hidden
+      parent_name: ''
+      weight: 20
       format_type: details
       format_settings:
         classes: ''
@@ -857,7 +872,7 @@ content:
     third_party_settings: {  }
   field_labor_cost_irrigation_crew:
     type: number
-    weight: 48
+    weight: 47
     region: content
     settings:
       placeholder: ''
@@ -871,7 +886,7 @@ content:
     third_party_settings: {  }
   field_labor_cost_lighting_crew:
     type: number
-    weight: 50
+    weight: 49
     region: content
     settings:
       placeholder: ''
@@ -885,14 +900,14 @@ content:
     third_party_settings: {  }
   field_labor_cost_snow_removal:
     type: number
-    weight: 125
+    weight: 51
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_labor_cost_spray_crew:
     type: number
-    weight: 46
+    weight: 45
     region: content
     settings:
       placeholder: ''
@@ -906,7 +921,7 @@ content:
     third_party_settings: {  }
   field_lighting_crew_labor_rate:
     type: number
-    weight: 49
+    weight: 48
     region: content
     settings:
       placeholder: ''
@@ -1004,14 +1019,14 @@ content:
     third_party_settings: {  }
   field_snow_removal_labor:
     type: number
-    weight: 44
+    weight: 50
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_spray_crew_labor:
     type: number
-    weight: 45
+    weight: 44
     region: content
     settings:
       placeholder: ''
@@ -1053,7 +1068,7 @@ content:
     third_party_settings: {  }
   field_sprinkler_technician_rate:
     type: number
-    weight: 47
+    weight: 46
     region: content
     settings:
       placeholder: ''

@@ -34,12 +34,13 @@ third_party_settings:
   field_group:
     group_office_admin:
       children:
+        - group_teammate_manual
         - group_entered_info
         - group_url_info
       label: 'Office Admin'
       region: content
       parent_name: ''
-      weight: 14
+      weight: 13
       format_type: tabs
       format_settings:
         classes: ''
@@ -50,12 +51,11 @@ third_party_settings:
         width_breakpoint: 640
     group_url_info:
       children:
-        - field_sop_code
         - path
       label: 'URL Info'
       region: content
       parent_name: group_office_admin
-      weight: 22
+      weight: 14
       format_type: tab
       format_settings:
         classes: ''
@@ -73,7 +73,7 @@ third_party_settings:
       label: 'Entered Info'
       region: content
       parent_name: group_office_admin
-      weight: 21
+      weight: 13
       format_type: tab
       format_settings:
         classes: ''
@@ -85,21 +85,26 @@ third_party_settings:
         required_fields: true
     group_teammate_manual:
       children:
+        - field_sop_code
+        - field_sop_status
+        - field_sop_version
+        - field_sop_owner
+        - field_service
         - field_parent_sop
-        - field_teammate_manual_pages
       label: 'Teammate Manual'
       region: content
-      parent_name: ''
-      weight: 13
-      format_type: details
+      parent_name: group_office_admin
+      weight: 12
+      format_type: tab
       format_settings:
         classes: ''
         show_empty_fields: false
         id: ''
         label_as_html: false
-        open: true
+        formatter: closed
         description: ''
         required_fields: true
+        open: true
 id: sop.sprinkler_maintenance.default
 targetEntityType: sop
 bundle: sprinkler_maintenance
@@ -113,7 +118,7 @@ content:
     third_party_settings: {  }
   field_materials_involved:
     type: entity_reference_autocomplete
-    weight: 11
+    weight: 10
     region: content
     settings:
       match_operator: CONTAINS
@@ -123,7 +128,7 @@ content:
     third_party_settings: {  }
   field_name:
     type: string_textfield
-    weight: 1
+    weight: 0
     region: content
     settings:
       size: 60
@@ -131,7 +136,7 @@ content:
     third_party_settings: {  }
   field_parent_sop:
     type: entity_reference_autocomplete
-    weight: 23
+    weight: 12
     region: content
     settings:
       match_operator: CONTAINS
@@ -141,7 +146,7 @@ content:
     third_party_settings: {  }
   field_service:
     type: entity_reference_autocomplete
-    weight: 5
+    weight: 11
     region: content
     settings:
       match_operator: CONTAINS
@@ -151,7 +156,7 @@ content:
     third_party_settings: {  }
   field_sop__kpis:
     type: text_textarea
-    weight: 12
+    weight: 11
     region: content
     settings:
       rows: 5
@@ -159,7 +164,7 @@ content:
     third_party_settings: {  }
   field_sop_code:
     type: string_textfield
-    weight: 2
+    weight: 7
     region: content
     settings:
       size: 60
@@ -173,7 +178,7 @@ content:
     third_party_settings: {  }
   field_sop_owner:
     type: entity_reference_autocomplete
-    weight: 2
+    weight: 10
     region: content
     settings:
       match_operator: CONTAINS
@@ -183,7 +188,7 @@ content:
     third_party_settings: {  }
   field_sop_purpose:
     type: text_textarea
-    weight: 6
+    weight: 5
     region: content
     settings:
       rows: 5
@@ -191,7 +196,7 @@ content:
     third_party_settings: {  }
   field_sop_responsibilities:
     type: text_textarea
-    weight: 8
+    weight: 7
     region: content
     settings:
       rows: 5
@@ -199,7 +204,7 @@ content:
     third_party_settings: {  }
   field_sop_scope:
     type: text_textarea
-    weight: 7
+    weight: 6
     region: content
     settings:
       rows: 5
@@ -207,13 +212,13 @@ content:
     third_party_settings: {  }
   field_sop_status:
     type: options_select
-    weight: 3
+    weight: 8
     region: content
     settings: {  }
     third_party_settings: {  }
   field_sop_steps:
     type: text_textarea
-    weight: 9
+    weight: 8
     region: content
     settings:
       rows: 5
@@ -221,7 +226,7 @@ content:
     third_party_settings: {  }
   field_sop_tools_and_resources:
     type: text_textarea
-    weight: 10
+    weight: 9
     region: content
     settings:
       rows: 5
@@ -229,7 +234,7 @@ content:
     third_party_settings: {  }
   field_sop_version:
     type: string_textfield
-    weight: 4
+    weight: 9
     region: content
     settings:
       size: 60
@@ -241,14 +246,6 @@ content:
     region: content
     settings: {  }
     third_party_settings: {  }
-  title:
-    type: string_textfield
-    weight: 0
-    region: content
-    settings:
-      size: 60
-      placeholder: ''
-    third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
     weight: 13
@@ -259,4 +256,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  title: true

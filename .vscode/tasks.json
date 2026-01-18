@@ -1,0 +1,79 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "DDEV Start",
+      "type": "shell",
+      "command": "ddev start",
+      "problemMatcher": []
+    },
+    {
+      "label": "DDEV Stop",
+      "type": "shell",
+      "command": "ddev stop",
+      "problemMatcher": []
+    },
+    {
+      "label": "SSH into DDEV Web",
+      "type": "shell",
+      "command": "ddev ssh",
+      "problemMatcher": []
+    },
+    {
+      "label": "Clear Drupal Cache",
+      "type": "shell",
+      "command": "ddev drush cr",
+      "problemMatcher": []
+    },
+
+    {
+      "label": "Sync Code FROM Live (no DB)",
+      "type": "shell",
+      "command": "./dev_scripts/brookstone-sync-from-remote.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Sync DB FROM Live",
+      "type": "shell",
+      "command": "./dev_scripts/brookstone-sync-db-from-remote.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Sync Code + DB FROM Live (All)",
+      "type": "shell",
+      "command": "./dev_scripts/brookstone-sync-all.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Deploy TO Live (DANGEROUS)",
+      "type": "shell",
+      "command": "./dev_scripts/brookstone-sync-to-remote-DANGEROUS.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+
+    {
+      "label": "Backup Database",
+      "type": "shell",
+      "command": "ddev drush sql-dump --result-file=../db-backup-$(date +%F_%H-%M-%S).sql",
+      "problemMatcher": []
+    },
+    {
+      "label": "SSH into Live Server",
+      "type": "shell",
+      "command": "ssh sewardsdevel",
+      "problemMatcher": []
+    }
+  ]
+}

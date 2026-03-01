@@ -71,6 +71,8 @@ ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "true" >/dev/null
 remote "cd '${REMOTE_ROOT}' >/dev/null"
 remote "command -v drush >/dev/null"
 [[ "$RUN_COMPOSER" -eq 1 ]] && remote "command -v composer >/dev/null"
+remote "grep -q 'brookstoneadmin_bos_prod' '${REMOTE_ROOT}/web/sites/default/settings.php'" \
+  || die "ABORT: Remote settings.php does not contain expected database name. Refusing to deploy. Fix settings.php before deploying."
 
 if [[ "$DRY_RUN" -eq 0 && "$REQUIRE_CONFIRM" -eq 1 ]]; then
   log "LIVE DEPLOY — type LIVE to continue:"
@@ -125,6 +127,10 @@ RSYNC_FLAGS=(
   --exclude "web/themes/contrib/"
   --exclude "web/profiles/"
   --exclude "web/sites/*/files/"
+  --exclude "web/sites/default/settings.php"
+  --exclude "web/sites/default/settings.local.php"
+  --exclude "web/sites/*/settings.php"
+  --exclude "web/sites/*/settings.local.php"
   --exclude "web/sites/default/settings.ddev.php"
   --exclude "web/sites/default/.gitignore"
   --exclude "web/s3_uri_verification.txt"

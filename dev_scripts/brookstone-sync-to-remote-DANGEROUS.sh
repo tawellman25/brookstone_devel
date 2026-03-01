@@ -13,8 +13,8 @@ export LC_ALL=C
 #   from deletion on LIVE (even with --delete).
 ###############################################################################
 
-REMOTE_HOST="sewardsdevel"
-REMOTE_ROOT="/home/sewardsdevel9/sewards10"
+REMOTE_HOST="brookstone"
+REMOTE_ROOT="/home/brookstoneadmin/brookstone"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

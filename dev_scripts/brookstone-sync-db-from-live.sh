@@ -4,12 +4,12 @@ set -euo pipefail
 # ----------------------------
 # Config
 # ----------------------------
-REMOTE_HOST="sewardsdevel"
-REMOTE_PROJECT_ROOT="/home/sewardsdevel9/sewards10"
+REMOTE_HOST="brookstone"
+REMOTE_PROJECT_ROOT="/home/brookstoneadmin/brookstone"
 REMOTE_WEB_ROOT="${REMOTE_PROJECT_ROOT}/web"
-REMOTE_SITE_PATH="sites/default"                           # change if multisite
+REMOTE_SITE_PATH="sites/default"
 REMOTE_SETTINGS="${REMOTE_WEB_ROOT}/${REMOTE_SITE_PATH}/settings.php"
-REMOTE_TMP_DIR="/home/sewardsdevel9/tmp"                   # 700 ok
+REMOTE_TMP_DIR="/home/brookstoneadmin/tmp"
 
 # Which $databases key to dump: default (live) or seward7 (legacy)
 REMOTE_DB_KEY="${REMOTE_DB_KEY:-default}"
@@ -25,9 +25,19 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # ----------------------------
 # Preflight (local)
 # ----------------------------
-command -v ssh  >/dev/null 2>&1 || { echo "ERROR: ssh not found"; exit 1; }
+command -v ssh   >/dev/null 2>&1 || { echo "ERROR: ssh not found";   exit 1; }
 command -v rsync >/dev/null 2>&1 || { echo "ERROR: rsync not found"; exit 1; }
-command -v ddev >/dev/null 2>&1 || { echo "ERROR: ddev not found"; exit 1; }
+command -v ddev  >/dev/null 2>&1 || { echo "ERROR: ddev not found";  exit 1; }
+
+# ----------------------------
+# Disk space check (require 2GB free)
+# ----------------------------
+echo ">>> Checking local disk space…"
+AVAILABLE=$(df -BG "$PROJECT_ROOT" | awk 'NR==2 {gsub("G","",$4); print $4}')
+if [[ "$AVAILABLE" -lt 2 ]]; then
+  echo "ERROR: Less than 2GB free locally — aborting"
+  exit 1
+fi
 
 # ----------------------------
 # Unique dump filename
@@ -79,16 +89,24 @@ set -euo pipefail
 
 DUMP_BIN="$(command -v mysqldump || command -v mariadb-dump)"
 
-# Pull creds from settings.php safely (define Drupal vars to avoid warnings)
+# Pull creds from settings.php safely (define Drupal vars to avoid bootstrap errors)
 CREDS="$(php <<'PHP'
 <?php
 error_reporting(E_ERROR);
 
-$databases = [];
+// Define constants that settings.php may reference during include
 $app_root = getenv('APP_ROOT');
-$site_path = getenv('SITE_PATH');
+define('DRUPAL_ROOT', $app_root);
+define('APP_ROOT', $app_root);
+
+if (!defined('SETTINGS_FILE')) {
+  define('SETTINGS_FILE', getenv('SETTINGS_FILE'));
+}
+
+$databases  = [];
+$site_path  = getenv('SITE_PATH');
 $settings_file = getenv('SETTINGS_FILE');
-$key = getenv('DB_KEY');
+$key        = getenv('DB_KEY');
 
 include $settings_file;
 
@@ -98,12 +116,12 @@ if (!isset($databases[$key]['default'])) {
 }
 $db = $databases[$key]['default'];
 
-$driver = $db['driver'] ?? 'mysql';
-$name   = $db['database'] ?? '';
-$user   = $db['username'] ?? '';
-$pass   = $db['password'] ?? '';
-$host   = $db['host'] ?? '';
-$port   = $db['port'] ?? '';
+$driver = $db['driver']      ?? 'mysql';
+$name   = $db['database']    ?? '';
+$user   = $db['username']    ?? '';
+$pass   = $db['password']    ?? '';
+$host   = $db['host']        ?? '';
+$port   = $db['port']        ?? '';
 $sock   = $db['unix_socket'] ?? '';
 
 echo $driver, "\t", $name, "\t", $user, "\t", $pass, "\t", $host, "\t", $port, "\t", $sock;
@@ -136,11 +154,11 @@ echo ">>> Copying dump to local…"
 umask 077
 rsync -avz "${REMOTE_HOST}:${REMOTE_DUMP}" "${LOCAL_DUMP}"
 
-echo ">>> Restarting DDEV…"
-cd "$PROJECT_ROOT"
-ddev restart
-
 echo ">>> Importing DB into DDEV…"
+cd "$PROJECT_ROOT"
 ddev import-db --file="$LOCAL_DUMP"
 
-echo ">>> Done."
+echo ">>> Clearing Drupal cache…"
+ddev drush cr
+
+echo ">>> Done. BOS is synced and ready."

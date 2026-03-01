@@ -1,0 +1,27 @@
+uuid: 31c359e8-a1c5-4ff9-9b38-5c7fa2571177
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.spray
+    - field.storage.sop.field_sop_responsibilities
+    - filter.format.full_html
+  module:
+    - text
+id: sop.spray.field_sop_responsibilities
+field_name: field_sop_responsibilities
+entity_type: sop
+bundle: spray
+label: 'Rules & Responsibilities'
+description: "Use this field to define governing rules, ownership, standards, and compliance requirements.\r\n\r\nAll content in this field must follow the guidance defined in the\r\n<a href=\"/teammates/sop/sop-governance/gov-sop-004\" target=\"_blank\" rel=\"noopener noreferrer\">Rules &amp; Responsibilities Authoring Standard</a>.\r\n\r\nDo not include step-by-step instructions here. Procedural actions belong in Steps &amp; Procedures.\r\n"
+required: false
+translatable: false
+default_value:
+  -
+    value: '<ul dir="ltr"><li><p dir="ltr"><strong>Office Personnel</strong>: Initiates client contact, gathers initial requirements, and hands over to the appropriate Crew Supervisor.</p></li><li><p dir="ltr"><strong>Crew Supervisor</strong>: Manages the onboarding process, coordinates with internal teams, and serves as the primary point of contact for the client.</p></li><li><p dir="ltr"><strong>Teammembers: ...</strong></p></li></ul>'
+    format: full_html
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

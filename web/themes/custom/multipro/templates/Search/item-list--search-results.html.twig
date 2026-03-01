@@ -1,0 +1,55 @@
+{% set base_url = url('<front>') %}
+{% if search_banner_image_url %}
+    <section class="page-banner" style="background-image: url('{{search_banner_image_url}}'));">
+{% else %}
+    <section class="page-banner" style="background-image: url({{base_url}}assets/subpage_banner.jpg);">
+{% endif %}
+    <div class="container">
+        <div class="heading">
+            <h1>{{search_banner_title}}</h1>
+            <ol class="breadcrumb">
+                {{ drupal_block('system_breadcrumb_block') }}
+            </ol>
+        </div>
+    </div>
+</section>
+  {# Search form #}
+<section class="search-result dt-section">
+    <div class="container">
+        <div class="search-form">
+            <form action="{{base_url}}search/node" method="get">
+                <input class="form-control" type="search" name="keys" placeholder="Type Something..." aria-label="Search">
+                <div class="overlay">
+                    <button class="btn btn-primary" type="submit">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+                            <path data-name="Path 39775" d="M280.212,198.6,231.22,149.633a84.214,84.214,0,1,0-11.741,11.7L268.43,210.3a8.3,8.3,0,0,0,11.782-11.7ZM233.636,96.535a67.2,67.2,0,1,1-67.2-67.219A67.28,67.28,0,0,1,233.636,96.535Z" transform="translate(-82.631 -12.74)" fill="#131517"/>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+    
+                       
+{# Result Count #}
+<h2>Search Result - "{{ keyword }}"</h2>
+{% if total_items_count != 0 %}
+<p>We found {{ total_items_count }} Search results for you</p>
+{% else %}
+<p>No result found</p>
+{% endif %}
+</div>
+{%- if title is not empty -%}
+{%- endif -%}
+{%- if items -%}
+<div class="search-list">
+    {%- for item in items -%}
+    <div class = "item">
+        {{ item.value }}
+    </div>
+    {%- endfor -%}
+    </div>
+</div>
+{%- else -%}
+{{- empty -}}
+{%- endif -%}
+</div>
+</div>

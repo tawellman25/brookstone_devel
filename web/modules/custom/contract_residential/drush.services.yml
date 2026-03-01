@@ -1,0 +1,12 @@
+services:
+  contract_residential.commands:
+    class: Drupal\contract_residential\Commands\ContractResidentialCommands
+    arguments: ['@entity_type.manager', '@logger.factory']
+    tags:
+      - { name: drush.command }
+
+  contract_residential.checkups_generator_commands:
+    class: Drupal\contract_residential\Commands\ContractResidentialCheckupsGeneratorCommands
+    arguments: ['@queue', '@logger.factory']
+    tags:
+      - { name: drush.command }

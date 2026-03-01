@@ -811,57 +811,6 @@ display:
             default_group_multiple: {  }
             group_items: {  }
           reduce_duplicates: false
-        field_evaluation_value:
-          id: field_evaluation_value
-          table: employment__field_evaluation
-          field: field_evaluation_value
-          relationship: reverse__employment__field_employee
-          group_type: group
-          admin_label: ''
-          plugin_id: list_field
-          operator: or
-          value:
-            1: '1'
-            2: '2'
-          group: 1
-          exposed: true
-          expose:
-            operator_id: field_evaluation_value_op
-            label: Evaluation
-            description: ''
-            use_operator: false
-            operator: field_evaluation_value_op
-            operator_limit_selection: false
-            operator_list: {  }
-            identifier: field_evaluation_value
-            required: false
-            remember: false
-            multiple: false
-            remember_roles:
-              authenticated: authenticated
-              anonymous: '0'
-              administrator: '0'
-              site_admin: '0'
-              site_assistant: '0'
-              administration: '0'
-              supervisor: '0'
-              teammates: '0'
-              client: '0'
-              user: '0'
-            reduce: true
-          is_grouped: false
-          group_info:
-            label: ''
-            description: ''
-            identifier: ''
-            optional: true
-            widget: select
-            multiple: false
-            remember: false
-            default_group: All
-            default_group_multiple: {  }
-            group_items: {  }
-          reduce_duplicates: false
       style:
         type: table
         options:
@@ -1023,6 +972,7 @@ display:
       entity_type: user
       bundles:
         - user
+      eva_hide_empty: true
     cache_metadata:
       max-age: -1
       contexts:

@@ -1,0 +1,29 @@
+uuid: cdaa2979-6821-446b-b055-f8f9ede0d1cc
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.contact
+    - field.storage.profile.field_contacts
+    - profile.type.customer_profile
+id: profile.customer_profile.field_contacts
+field_name: field_contacts
+entity_type: profile
+bundle: customer_profile
+label: 'Additional Contacts'
+description: 'Select an existing contact. If it does not exist, <a href="/admin/content/contacts/add/contact" target="_blank">create a new contact</a> in a new tab, then return and search again by name or email.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contacts'
+  handler_settings:
+    target_bundles:
+      contact: contact
+    sort:
+      field: title
+      direction: ASC
+    auto_create: true
+    auto_create_bundle: ''
+field_type: entity_reference

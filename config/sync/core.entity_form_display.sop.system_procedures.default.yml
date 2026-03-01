@@ -6,6 +6,8 @@ dependencies:
     - eck.eck_type.sop.system_procedures
     - field.field.sop.system_procedures.field_name
     - field.field.sop.system_procedures.field_parent_sop
+    - field.field.sop.system_procedures.field_prerequisites
+    - field.field.sop.system_procedures.field_related_sops
     - field.field.sop.system_procedures.field_service
     - field.field.sop.system_procedures.field_sop__kpis
     - field.field.sop.system_procedures.field_sop_code
@@ -39,7 +41,7 @@ third_party_settings:
       label: 'Office Admin'
       region: content
       parent_name: ''
-      weight: 9
+      weight: 10
       format_type: tabs
       format_settings:
         classes: ''
@@ -55,7 +57,7 @@ third_party_settings:
       label: 'Entered Info'
       region: content
       parent_name: group_office_admin
-      weight: 14
+      weight: 7
       format_type: tab
       format_settings:
         classes: ''
@@ -71,7 +73,7 @@ third_party_settings:
       label: ' URL Info'
       region: content
       parent_name: group_office_admin
-      weight: 15
+      weight: 8
       format_type: tab
       format_settings:
         classes: ''
@@ -83,17 +85,16 @@ third_party_settings:
         required_fields: true
     group_employee_manual:
       children:
-        - field_sop_code
-        - field_sop_owner
-        - field_sop_status
-        - field_sop_last_reviewed
-        - field_sop_version
         - field_parent_sop
+        - field_sop_status
+        - field_sop_version
         - field_service
-      label: 'Teammate Manual'
+        - field_sop_owner
+        - field_sop_last_reviewed
+      label: 'Training Admin'
       region: content
       parent_name: group_office_admin
-      weight: 13
+      weight: 6
       format_type: tab
       format_settings:
         classes: ''
@@ -103,7 +104,6 @@ third_party_settings:
         formatter: closed
         description: ''
         required_fields: true
-        open: false
 id: sop.system_procedures.default
 targetEntityType: sop
 bundle: system_procedures
@@ -117,7 +117,7 @@ content:
     third_party_settings: {  }
   field_name:
     type: string_textfield
-    weight: 0
+    weight: 1
     region: content
     settings:
       size: 60
@@ -133,9 +133,27 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_prerequisites:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_related_sops:
+    type: entity_reference_autocomplete
+    weight: 9
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 20
+      placeholder: ''
+    third_party_settings: {  }
   field_service:
     type: entity_reference_autocomplete
-    weight: 14
+    weight: 16
     region: content
     settings:
       match_operator: CONTAINS
@@ -145,7 +163,7 @@ content:
     third_party_settings: {  }
   field_sop__kpis:
     type: text_textarea
-    weight: 6
+    weight: 8
     region: content
     settings:
       rows: 5
@@ -153,7 +171,7 @@ content:
     third_party_settings: {  }
   field_sop_code:
     type: string_textfield
-    weight: 8
+    weight: 0
     region: content
     settings:
       size: 60
@@ -161,13 +179,13 @@ content:
     third_party_settings: {  }
   field_sop_last_reviewed:
     type: datetime_default
-    weight: 11
+    weight: 18
     region: content
     settings: {  }
     third_party_settings: {  }
   field_sop_owner:
     type: entity_reference_autocomplete
-    weight: 9
+    weight: 17
     region: content
     settings:
       match_operator: CONTAINS
@@ -177,7 +195,7 @@ content:
     third_party_settings: {  }
   field_sop_purpose:
     type: text_textarea
-    weight: 1
+    weight: 2
     region: content
     settings:
       rows: 5
@@ -185,7 +203,7 @@ content:
     third_party_settings: {  }
   field_sop_responsibilities:
     type: text_textarea
-    weight: 3
+    weight: 4
     region: content
     settings:
       rows: 5
@@ -193,7 +211,7 @@ content:
     third_party_settings: {  }
   field_sop_scope:
     type: text_textarea
-    weight: 2
+    weight: 3
     region: content
     settings:
       rows: 5
@@ -201,13 +219,13 @@ content:
     third_party_settings: {  }
   field_sop_status:
     type: options_select
-    weight: 10
+    weight: 14
     region: content
     settings: {  }
     third_party_settings: {  }
   field_sop_steps:
     type: text_textarea
-    weight: 4
+    weight: 6
     region: content
     settings:
       rows: 5
@@ -215,7 +233,7 @@ content:
     third_party_settings: {  }
   field_sop_tools_and_resources:
     type: text_textarea
-    weight: 5
+    weight: 7
     region: content
     settings:
       rows: 5
@@ -223,7 +241,7 @@ content:
     third_party_settings: {  }
   field_sop_version:
     type: string_textfield
-    weight: 12
+    weight: 15
     region: content
     settings:
       size: 60

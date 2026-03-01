@@ -1,0 +1,192 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
+
+/**
+ * Implements hook_entity_validate().
+ *
+ * BOS integrity rules for material_suppliers:supplier:
+ * 1) Uniqueness: one record per (Material, Supplier).
+ * 2) Pack Quantity required when Order Unit != Cost UOM.
+ * 3) Only one Preferred Supplier per Material.
+ */
+function material_supplier_entity_validate(EntityInterface $entity, ConstraintViolationListInterface $violations): void {
+  if ($entity->getEntityTypeId() !== 'material_suppliers') {
+    return;
+  }
+
+  if ($entity->bundle() !== 'supplier') {
+    return;
+  }
+
+  // ---- 1) Uniqueness: (field_material, field_supplier) ----
+  if ($entity->hasField('field_material') && $entity->hasField('field_supplier')) {
+    $material_id = (int) ($entity->get('field_material')->target_id ?? 0);
+    $supplier_id = (int) ($entity->get('field_supplier')->target_id ?? 0);
+
+    if ($material_id > 0 && $supplier_id > 0) {
+      $query = \Drupal::entityTypeManager()
+        ->getStorage('material_suppliers')
+        ->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('type', 'supplier')
+        ->condition('field_material.target_id', $material_id)
+        ->condition('field_supplier.target_id', $supplier_id);
+
+      $current_id = (int) ($entity->id() ?? 0);
+      if ($current_id > 0) {
+        $query->condition('id', $current_id, '<>');
+      }
+
+      $existing_ids = $query->range(0, 1)->execute();
+      if (!empty($existing_ids)) {
+        $violations->add(new ConstraintViolation(
+          'A Material–Supplier link already exists for this Material and Supplier. Edit the existing entry instead of creating a duplicate.',
+          '',
+          [],
+          $entity,
+          'field_supplier',
+          (string) $supplier_id
+        ));
+      }
+    }
+
+    // ---- 3) One Preferred Supplier per Material ----
+    if ($material_id > 0 && $entity->hasField('field_preferred_supplier')) {
+      $preferred = (bool) ($entity->get('field_preferred_supplier')->value ?? FALSE);
+      if ($preferred) {
+        $pref_query = \Drupal::entityTypeManager()
+          ->getStorage('material_suppliers')
+          ->getQuery()
+          ->accessCheck(FALSE)
+          ->condition('type', 'supplier')
+          ->condition('field_material.target_id', $material_id)
+          ->condition('field_preferred_supplier', 1);
+
+        $current_id = (int) ($entity->id() ?? 0);
+        if ($current_id > 0) {
+          $pref_query->condition('id', $current_id, '<>');
+        }
+
+        $pref_ids = $pref_query->range(0, 1)->execute();
+        if (!empty($pref_ids)) {
+          $violations->add(new ConstraintViolation(
+            'Only one Preferred Supplier may be set per Material. Uncheck Preferred on the existing entry before setting this one.',
+            '',
+            [],
+            $entity,
+            'field_preferred_supplier',
+            '1'
+          ));
+        }
+      }
+    }
+  }
+
+  // ---- 2) Pack Quantity required when Order Unit != Cost UOM ----
+  // This is safe even if you haven't created these fields yet.
+  if (
+    $entity->hasField('field_order_uom') &&
+    $entity->hasField('field_cost_uom') &&
+    $entity->hasField('field_pack_quantity')
+  ) {
+    $order_uom = trim((string) ($entity->get('field_order_uom')->value ?? ''));
+    $cost_uom = trim((string) ($entity->get('field_cost_uom')->value ?? ''));
+
+    if ($order_uom !== '' && $cost_uom !== '' && $order_uom !== $cost_uom) {
+      $pack_qty = (int) ($entity->get('field_pack_quantity')->value ?? 0);
+      if ($pack_qty <= 0) {
+        $violations->add(new ConstraintViolation(
+          'Pack Quantity is required when Order Unit differs from Cost Unit of Measure.',
+          '',
+          [],
+          $entity,
+          'field_pack_quantity',
+          (string) $pack_qty
+        ));
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * 5) Normalize Supplier Item Number:
+ * - trim
+ * - collapse whitespace
+ * - strip common pasted prefixes like "Item #", "SKU", "Part #"
+ * Safe and non-destructive; does not change case except for prefix detection.
+ */
+function material_supplier_entity_presave(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'material_suppliers') {
+    return;
+  }
+
+  if ($entity->bundle() !== 'supplier') {
+    return;
+  }
+
+  if (!$entity->hasField('field_supplier_item_number')) {
+    return;
+  }
+
+  $raw = (string) ($entity->get('field_supplier_item_number')->value ?? '');
+  $value = trim($raw);
+
+  if ($value === '') {
+    // Preserve empty cleanly.
+    $entity->set('field_supplier_item_number', NULL);
+    return;
+  }
+
+  // Collapse internal whitespace sequences into a single space.
+  $value = (string) preg_replace('/\s+/u', ' ', $value);
+
+  // Strip common prefixes (case-insensitive), e.g.:
+  // "Item # RBL15F" -> "RBL15F"
+  // "SKU: ABC123"   -> "ABC123"
+  // "Part # 1812-SAM" -> "1812-SAM"
+  $lower = strtolower($value);
+
+  $prefixes = [
+    'item #',
+    'item#',
+    'item no',
+    'item number',
+    'sku',
+    'sku #',
+    'sku#',
+    'part #',
+    'part#',
+    'part no',
+    'part number',
+  ];
+
+  foreach ($prefixes as $prefix) {
+    if (str_starts_with($lower, $prefix)) {
+      // Remove the matched prefix from the original string length.
+      $value = trim(substr($value, strlen($prefix)));
+
+      // Strip common separators that follow the prefix.
+      $value = ltrim($value, " \t\n\r\0\x0B:-#");
+
+      // Final whitespace collapse after stripping.
+      $value = (string) preg_replace('/\s+/u', ' ', $value);
+      break;
+    }
+  }
+
+  if ($value === '') {
+    $entity->set('field_supplier_item_number', NULL);
+    return;
+  }
+
+  if ($value !== $raw) {
+    $entity->set('field_supplier_item_number', $value);
+  }
+}

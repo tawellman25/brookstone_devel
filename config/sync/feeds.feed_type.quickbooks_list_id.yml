@@ -1,0 +1,86 @@
+uuid: 18cab347-77fd-4513-8515-45c404d28ed6
+langcode: en
+status: true
+dependencies:
+  module:
+    - feeds_log
+    - user
+third_party_settings:
+  feeds_log:
+    status: true
+    operations:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+      cleaned: cleaned
+    items:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+    source: true
+label: 'Quickbooks List ID'
+id: quickbooks_list_id
+description: "This feed pulls in the QB's Reference Numbers associated with BOS Clients"
+help: ''
+import_period: -1
+import_period_per_feed: false
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:user'
+processor_configuration:
+  values: {  }
+  langcode: en
+  insert_new: 0
+  update_existing: 2
+  update_non_existent: _keep
+  skip_hash_check: false
+  skip_validation: false
+  skip_validation_types: {  }
+  authorize: false
+  revision: false
+  expire: -1
+  owner_feed_author: false
+  owner_id: 0
+custom_sources:
+  qb_refnum:
+    value: qb_refnum
+    label: qb_refnum
+    machine_name: qb_refnum
+    type: csv
+  uid:
+    value: uid
+    label: uid
+    machine_name: uid
+    type: csv
+  '':
+    value: qb_refnum
+    label: qb_refnum
+    machine_name: ''
+    type: csv
+mappings:
+  -
+    target: uid
+    map:
+      value: uid
+    settings: {  }
+    unique:
+      value: 1
+  -
+    target: customer_profile_profiles
+    map:
+      target_id: qb_refnum
+    settings:
+      reference_by: field_qb_account_number
+      autocreate: 0
+      autocreate_bundle: customer_profile

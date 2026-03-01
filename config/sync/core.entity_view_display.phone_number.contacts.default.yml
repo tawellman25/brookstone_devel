@@ -5,7 +5,9 @@ dependencies:
   config:
     - eck.eck_type.phone_number.contacts
     - field.field.phone_number.contacts.field_phone_number
+    - field.field.phone_number.contacts.field_phone_type
   module:
+    - options
     - telephone
 id: phone_number.contacts.default
 targetEntityType: phone_number
@@ -19,6 +21,13 @@ content:
       title: ''
     third_party_settings: {  }
     weight: 0
+    region: content
+  field_phone_type:
+    type: list_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
     region: content
 hidden:
   changed: true

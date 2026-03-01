@@ -9,6 +9,7 @@ dependencies:
     - field.field.properties.property.field_call_ahead
     - field.field.properties.property.field_client_app
     - field.field.properties.property.field_cod_customer
+    - field.field.properties.property.field_contacts
     - field.field.properties.property.field_county_account_number
     - field.field.properties.property.field_front_view
     - field.field.properties.property.field_full_address
@@ -21,6 +22,7 @@ dependencies:
     - field.field.properties.property.field_nickname
     - field.field.properties.property.field_no_services
     - field.field.properties.property.field_parcel_number
+    - field.field.properties.property.field_primary_contact_ref
     - field.field.properties.property.field_property_description
     - field.field.properties.property.field_street_address
     - field.field.properties.property.field_why_cod_for_this_property
@@ -60,7 +62,7 @@ third_party_settings:
       label: 'Client App'
       parent_name: ''
       region: content
-      weight: 4
+      weight: 5
       format_type: details
       format_settings:
         classes: ''
@@ -75,7 +77,7 @@ third_party_settings:
       label: 'Landscape Details'
       parent_name: ''
       region: content
-      weight: 5
+      weight: 6
       format_type: details
       format_settings:
         classes: ''
@@ -93,7 +95,7 @@ third_party_settings:
       label: 'Spraying Info'
       parent_name: ''
       region: content
-      weight: 9
+      weight: 10
       format_type: details
       format_settings:
         classes: ''
@@ -174,7 +176,7 @@ third_party_settings:
       label: 'Mowing Info'
       parent_name: ''
       region: content
-      weight: 7
+      weight: 8
       format_type: details
       format_settings:
         classes: ''
@@ -189,7 +191,7 @@ third_party_settings:
       label: 'Snow Removal'
       parent_name: ''
       region: content
-      weight: 13
+      weight: 12
       format_type: details
       format_settings:
         classes: ''
@@ -205,7 +207,7 @@ third_party_settings:
       label: 'Sprinkler Information'
       parent_name: ''
       region: content
-      weight: 6
+      weight: 7
       format_type: details
       format_settings:
         classes: ''
@@ -225,7 +227,7 @@ third_party_settings:
       label: Alerts
       parent_name: ''
       region: content
-      weight: 2
+      weight: 3
       format_type: details
       format_settings:
         classes: ''
@@ -241,7 +243,7 @@ third_party_settings:
       label: Instructions
       parent_name: ''
       region: content
-      weight: 3
+      weight: 4
       format_type: fieldset
       format_settings:
         classes: ''
@@ -255,7 +257,7 @@ third_party_settings:
       label: 'Fertilizing Information'
       parent_name: ''
       region: content
-      weight: 8
+      weight: 9
       format_type: details
       format_settings:
         classes: ''
@@ -270,7 +272,7 @@ third_party_settings:
       label: 'Christmas Decorations'
       parent_name: ''
       region: content
-      weight: 14
+      weight: 13
       format_type: details
       format_settings:
         classes: ''
@@ -286,7 +288,7 @@ third_party_settings:
       label: 'Weed Pulling'
       parent_name: ''
       region: content
-      weight: 12
+      weight: 11
       format_type: details
       format_settings:
         classes: ''
@@ -337,6 +339,14 @@ content:
     third_party_settings: {  }
     weight: 2
     region: content
+  field_contacts:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 15
+    region: content
   field_gate_code:
     type: string
     label: inline
@@ -364,6 +374,14 @@ content:
       format_custom_true: 'NO SERVICES'
     third_party_settings: {  }
     weight: 4
+    region: content
+  field_primary_contact_ref:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 14
     region: content
   field_property_description:
     type: text_default
@@ -403,6 +421,11 @@ content:
     settings: {  }
     third_party_settings: {  }
     weight: 26
+    region: content
+  property_contacts_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
     region: content
   property_fetilizer_information_entity_view_1:
     settings: {  }

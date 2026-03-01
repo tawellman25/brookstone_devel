@@ -1,0 +1,46 @@
+services:
+  estimate.item_calculator:
+    class: Drupal\estimate\Service\EstimateItemCalculator
+
+  estimate.request_warning_builder:
+    class: Drupal\estimate\Service\EstimateRequestWarningBuilder
+    arguments: ['@messenger', '@request_stack']
+
+  estimate.request_readiness_validator:
+    class: Drupal\estimate\Service\EstimateRequestReadinessValidator
+    arguments: ['@config.factory']
+
+  # Existing services (keep these registrations if not already present in your module).
+  estimate.total_calculator:
+    class: Drupal\estimate\Service\EstimateTotalCalculator
+    arguments: ['@entity_type.manager']
+
+  estimate.revision_manager:
+    class: Drupal\estimate\Service\EstimateRevisionManager
+    arguments: ['@entity_type.manager', '@config.factory', '@logger.channel.estimate']
+
+  # Constraint validator (keep if already present).
+  estimate.scope_code_unique_validator:
+    class: Drupal\estimate\Plugin\Validation\Constraint\ScopeCodeUniqueConstraintValidator
+    arguments: ['@entity_type.manager']
+    tags:
+      - { name: validator.constraint_validator, alias: ScopeCodeUnique }
+
+  logger.channel.estimate:
+    class: Drupal\Core\Logger\LoggerChannel
+    factory: ['@logger.factory', 'get']
+    arguments: ['estimate']
+
+  estimate.work_order_converter:
+    class: Drupal\estimate\Service\WorkOrderConverter
+    arguments:
+      - '@entity_type.manager'
+      - '@config.factory'
+      - '@logger.channel.estimate'
+
+  estimate.sq_ft_break_point_resolver:
+    class: Drupal\estimate\Service\SqFtBreakPointResolver
+    arguments:
+      - '@config_pages.loader'
+      - '@entity_type.manager'
+      - '@logger.factory'

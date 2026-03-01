@@ -3,7 +3,16 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.user.user.feeds_item
+    - field.field.user.user.field_consent_updated
+    - field.field.user.user.field_credit_hold
+    - field.field.user.user.field_do_not_schedule
     - field.field.user.user.field_ok_to_email
+    - field.field.user.user.field_paperless_delivery
+    - field.field.user.user.field_qb_list_id
+    - field.field.user.user.field_qb_refnum
+    - field.field.user.user.field_service_suspension_reason
+    - field.field.user.user.field_sms_consent
     - field.field.user.user.user_picture
     - image.style.thumbnail
   module:
@@ -28,7 +37,7 @@ third_party_settings:
       label: 'Employment Notes'
       parent_name: ''
       region: content
-      weight: 20
+      weight: 3
       format_type: details
       format_settings:
         classes: ''
@@ -39,12 +48,30 @@ third_party_settings:
         description: ''
         required_fields: false
     group_filter:
-      children:
-        - teammate_employment_notes_entity_view_1_form
+      children: {  }
       label: Filter
       parent_name: group_employment_notes
       region: content
       weight: 20
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_communication_preferences:
+      children:
+        - field_paperless_delivery
+        - field_ok_to_email
+        - field_sms_consent
+        - field_consent_updated
+      label: 'Communication Preferences'
+      parent_name: ''
+      region: content
+      weight: 4
       format_type: details
       format_settings:
         classes: ''
@@ -69,6 +96,55 @@ content:
       link: true
     third_party_settings: {  }
     weight: 1
+    region: content
+  field_consent_updated:
+    type: timestamp
+    label: inline
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_ok_to_email:
+    type: boolean
+    label: inline
+    settings:
+      format: unicode-yes-no
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_paperless_delivery:
+    type: boolean
+    label: inline
+    settings:
+      format: unicode-yes-no
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_sms_consent:
+    type: boolean
+    label: inline
+    settings:
+      format: unicode-yes-no
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 7
     region: content
   teammate_employment_notes_entity_view_1:
     settings: {  }
@@ -101,7 +177,12 @@ content:
     weight: 0
     region: content
 hidden:
-  field_ok_to_email: true
+  feeds_item: true
+  field_credit_hold: true
+  field_do_not_schedule: true
+  field_qb_list_id: true
+  field_qb_refnum: true
+  field_service_suspension_reason: true
   flag_following: true
   member_for: true
   supplier_profile_profiles: true

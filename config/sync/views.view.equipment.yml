@@ -3,8 +3,13 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.storage.equipment.field_equipment_make
+    - field.storage.equipment.field_equipment_type
     - field.storage.equipment.field_license_plate
+    - field.storage.equipment.field_purchase_price
     - field.storage.equipment.field_renewal_month
+    - field.storage.equipment.field_serial_code_number
+    - field.storage.equipment.field_small_engine_type
     - field.storage.equipment.field_status
     - field.storage.equipment.field_vin
     - system.menu.admin
@@ -13,8 +18,6 @@ dependencies:
     - user.role.administrator
     - user.role.site_admin
     - user.role.supervisor
-  content:
-    - 'taxonomy_term:equipment_status:6932dc23-3094-4fc8-b72a-0b7d34bb1a2b'
   module:
     - eck
     - options
@@ -231,18 +234,16 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        title:
-          id: title
-          table: equipment_field_data
-          field: title
+        field_equipment_type:
+          id: field_equipment_type
+          table: equipment__field_equipment_type
+          field: field_equipment_type
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: null
-          entity_field: title
           plugin_id: field
-          label: ''
-          exclude: false
+          label: 'Equipment Type'
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -274,7 +275,70 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: false
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: false
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_small_engine_type:
+          id: field_small_engine_type
+          table: equipment__field_small_engine_type
+          field: field_small_engine_type
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Small Engine Type'
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -283,9 +347,8 @@ display:
           empty_zero: false
           hide_alter_empty: true
           click_sort_column: value
-          type: string
-          settings:
-            link_to_entity: true
+          type: list_default
+          settings: {  }
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -296,16 +359,16 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        field_vin:
-          id: field_vin
-          table: equipment__field_vin
-          field: field_vin
+        field_equipment_make:
+          id: field_equipment_make
+          table: equipment__field_equipment_make
+          field: field_equipment_make
           relationship: none
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: VIN
-          exclude: false
+          label: 'Equipment Make'
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -359,19 +422,147 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        field_license_plate:
-          id: field_license_plate
-          table: equipment__field_license_plate
-          field: field_license_plate
+        title:
+          id: title
+          table: equipment_field_data
+          field: title
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: null
+          entity_field: title
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: true
+            text: "{{ title }}</br>\r\n<dl>\r\n{{ field_equipment_make }} {{ field_small_engine_type }} {{ field_equipment_type }}"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_serial_code_number:
+          id: field_serial_code_number
+          table: equipment__field_serial_code_number
+          field: field_serial_code_number
           relationship: none
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: 'License Plate #'
-          exclude: false
+          label: 'Serial Number'
+          exclude: true
           alter:
             alter_text: false
             text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_vin:
+          id: field_vin
+          table: equipment__field_vin
+          field: field_vin
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: VIN/Serial
+          exclude: false
+          alter:
+            alter_text: true
+            text: '{{ field_serial_code_number }}{{ field_vin }}'
             make_link: false
             path: ''
             absolute: false
@@ -474,6 +665,135 @@ display:
           click_sort_column: value
           type: list_default
           settings: {  }
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_license_plate:
+          id: field_license_plate
+          table: equipment__field_license_plate
+          field: field_license_plate
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'License Plate #'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_purchase_price:
+          id: field_purchase_price
+          table: equipment__field_purchase_price
+          field: field_purchase_price
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Purchase Price'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_decimal
+          settings:
+            thousand_separator: ''
+            decimal_separator: .
+            scale: 2
+            prefix_suffix: true
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -640,8 +960,7 @@ display:
           admin_label: ''
           plugin_id: taxonomy_index_tid
           operator: or
-          value:
-            1301: 1301
+          value: {  }
           group: 1
           exposed: true
           expose:
@@ -663,6 +982,7 @@ display:
               supervisor: supervisor
               anonymous: '0'
               authenticated: '0'
+              site_assistant: '0'
               teammates: '0'
               client: '0'
               user: '0'
@@ -808,8 +1128,13 @@ display:
         - url.query_args
         - user.roles
       tags:
+        - 'config:field.storage.equipment.field_equipment_make'
+        - 'config:field.storage.equipment.field_equipment_type'
         - 'config:field.storage.equipment.field_license_plate'
+        - 'config:field.storage.equipment.field_purchase_price'
         - 'config:field.storage.equipment.field_renewal_month'
+        - 'config:field.storage.equipment.field_serial_code_number'
+        - 'config:field.storage.equipment.field_small_engine_type'
         - 'config:field.storage.equipment.field_status'
         - 'config:field.storage.equipment.field_vin'
   page_1:
@@ -839,7 +1164,12 @@ display:
         - url.query_args
         - user.roles
       tags:
+        - 'config:field.storage.equipment.field_equipment_make'
+        - 'config:field.storage.equipment.field_equipment_type'
         - 'config:field.storage.equipment.field_license_plate'
+        - 'config:field.storage.equipment.field_purchase_price'
         - 'config:field.storage.equipment.field_renewal_month'
+        - 'config:field.storage.equipment.field_serial_code_number'
+        - 'config:field.storage.equipment.field_small_engine_type'
         - 'config:field.storage.equipment.field_status'
         - 'config:field.storage.equipment.field_vin'

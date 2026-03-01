@@ -1,0 +1,22 @@
+{# Language Dropdown #}
+{% if links %}
+    <ul class="lang-dropdown-menu">
+      <li class="lang-dropdown-item">
+        <a href="#" data-bs-toggle="dropdown" title="{{links['activeLink'].text['#title']}}">{{ links['activeLink'].text }}
+          <svg xmlns="http://www.w3.org/2000/svg" width="349.999" height="200" viewBox="0 0 349.999 200">
+					  <path data-name="Path 39783" d="M361.825,390.414a23.7,23.7,0,0,1-16.027-6.837L194.955,233.531a25.682,25.682,0,0,1-6.658-24.065,24.71,24.71,0,0,1,16.756-18.041,23.593,23.593,0,0,1,23.464,5.966L362.583,330.825,496.65,197.392a23.591,23.591,0,0,1,23.463-5.966,24.712,24.712,0,0,1,16.756,18.041,25.688,25.688,0,0,1-6.658,24.065L379.367,383.577a23.643,23.643,0,0,1-17.533,6.837Z" transform="translate(-187.583 -190.433)" fill="#131517"/>
+				  </svg>
+        </a>
+        <ul class="dropdown-menu">
+          {%- for key, item in links -%}
+            {% if key is not same as("activeLink") %}
+            <li>
+              {{ item.link }}
+            </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      </li>
+    </ul>
+{% endif %}
+

@@ -1,0 +1,227 @@
+uuid: 29e7ecfa-6859-4849-b60c-7816476a9917
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.profile.customer_profile.field_client_status
+    - field.field.profile.customer_profile.field_client_type
+    - field.field.profile.customer_profile.field_company_name
+    - field.field.profile.customer_profile.field_first_name
+    - field.field.profile.customer_profile.field_former_last_name
+    - field.field.profile.customer_profile.field_last_name
+    - field.field.profile.customer_profile.field_middle_name
+    - field.field.profile.customer_profile.field_quickbooks_notes
+    - field.field.profile.customer_profile.field_salutation
+    - field.field.profile.customer_profile.field_spouse_last_name
+    - field.field.profile.customer_profile.field_spouse_name
+    - field.field.profile.customer_profile.field_suffix
+    - profile.type.customer_profile
+  module:
+    - feeds_log
+    - profile
+third_party_settings:
+  feeds_log:
+    status: true
+    operations:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+      cleaned: cleaned
+    items:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+    source: true
+label: 'QuickBooks User Profile'
+id: quickbooks_user_profile
+description: 'The Client Info profiles for the new users from quickbooks.'
+help: ''
+import_period: -1
+import_period_per_feed: false
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:profile'
+processor_configuration:
+  values:
+    type: customer_profile
+  insert_new: 1
+  update_existing: 2
+  update_non_existent: _keep
+  skip_hash_check: false
+  skip_validation: false
+  skip_validation_types: {  }
+  authorize: true
+  revision: false
+  expire: -1
+  owner_feed_author: false
+  owner_id: 1
+custom_sources:
+  uid:
+    value: uid
+    label: uid
+    machine_name: uid
+    type: csv
+  field_client_status:
+    value: field_client_status
+    label: field_client_status
+    machine_name: field_client_status
+    type: csv
+  field_salutation:
+    value: field_salutation
+    label: field_salutation
+    machine_name: field_salutation
+    type: csv
+  field_company_name:
+    value: field_company_name
+    label: field_company_name
+    machine_name: field_company_name
+    type: csv
+  field_first_name:
+    value: field_first_name
+    label: field_first_name
+    machine_name: field_first_name
+    type: csv
+  field_middle_name:
+    value: field_middle_name
+    label: field_middle_name
+    machine_name: field_middle_name
+    type: csv
+  field_last_name:
+    value: field_last_name
+    label: field_last_name
+    machine_name: field_last_name
+    type: csv
+  field_suffix:
+    value: field_suffix
+    label: field_suffix
+    machine_name: field_suffix
+    type: csv
+  field_former_last_name:
+    value: field_former_last_name
+    label: field_former_last_name
+    machine_name: field_former_last_name
+    type: csv
+  field_spouse_name:
+    value: field_spouse_name
+    label: field_spouse_name
+    machine_name: field_spouse_name
+    type: csv
+  field_spouse_last_name:
+    value: field_spouse_last_name
+    label: field_spouse_last_name
+    machine_name: field_spouse_last_name
+    type: csv
+  field_quickbooks_notes:
+    value: field_quickbooks_notes
+    label: field_quickbooks_notes
+    machine_name: field_quickbooks_notes
+    type: csv
+  field_client_type:
+    value: field_client_type
+    label: field_client_type
+    machine_name: field_client_type
+    type: csv
+mappings:
+  -
+    target: uid
+    map:
+      target_id: uid
+    settings:
+      reference_by: uid
+      feeds_item: guid
+      autocreate: 0
+      autocreate_bundle: false
+  -
+    target: field_client_status
+    map:
+      value: field_client_status
+    settings:
+      language: null
+  -
+    target: field_salutation
+    map:
+      value: field_salutation
+    settings:
+      language: null
+  -
+    target: field_company_name
+    map:
+      value: field_company_name
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_first_name
+    map:
+      value: field_first_name
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_middle_name
+    map:
+      value: field_middle_name
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_last_name
+    map:
+      value: field_last_name
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_suffix
+    map:
+      value: field_suffix
+    settings:
+      language: null
+  -
+    target: field_former_last_name
+    map:
+      value: field_former_last_name
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_spouse_name
+    map:
+      value: field_spouse_name
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_spouse_last_name
+    map:
+      value: field_spouse_last_name
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_quickbooks_notes
+    map:
+      value: field_quickbooks_notes
+    settings:
+      language: null
+      format: plain_text
+  -
+    target: field_client_type
+    map:
+      target_id: field_client_type
+    settings:
+      language: ''
+      reference_by: id
+      autocreate: 0
+      autocreate_bundle: false

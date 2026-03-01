@@ -6,6 +6,8 @@ dependencies:
     - eck.eck_type.sop.office_administration
     - field.field.sop.office_administration.field_name
     - field.field.sop.office_administration.field_parent_sop
+    - field.field.sop.office_administration.field_prerequisites
+    - field.field.sop.office_administration.field_related_sops
     - field.field.sop.office_administration.field_sop__kpis
     - field.field.sop.office_administration.field_sop_code
     - field.field.sop.office_administration.field_sop_last_reviewed
@@ -115,6 +117,22 @@ content:
       link: true
     third_party_settings: {  }
     weight: 3
+    region: content
+  field_prerequisites:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_related_sops:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 20
     region: content
   field_sop__kpis:
     type: text_default

@@ -1,0 +1,87 @@
+{#
+/**
+ * @file
+ * Theme override to display a single Drupal page while offline.
+ *
+ * All available variables are mirrored in page.html.twig.
+ * Some may be blank but they are provided for consistency.
+ *
+ * @see template_preprocess_maintenance_page()
+ */
+#}
+
+{% set base_url = url('<front>') %}
+{% if "1" in mode_type  %}
+<!--Maintenance Mode -->
+{% if background_image_maintenance_url %}
+    <section class="coming-maintenance bg-image dt-section" style="background-image: url('{{background_image_maintenance_url}}');">
+{% else %}
+    <section class="coming-maintenance bg-image dt-section" style="background-image: url({{base_url}}/sites/default/files/2022-08/maintenance.jpg);">
+{% endif %}
+  <div class="container">
+      <div class="item-wrapper">
+          <div class="item">
+          {% if maintenance_mode_title %}
+              <h1>{{maintenance_mode_title}}</h1>
+          {% endif %}
+          {% if maintenance_mode_description %}
+              <p>{{maintenance_mode_description}}</p>
+          {% endif %}
+          </div>
+      </div>
+  </div>
+</section>
+<!--End Maintenance Mode -->
+
+{% else %}
+
+
+<!--Coming Soon Mode -->
+{% if background_image_coming_soon_url %}
+  <section class="coming-maintenance bg-image dt-section" style="background-image: url({{background_image_coming_soon_url}});">
+{% else %}
+  <section class="coming-maintenance bg-image dt-section" style="background-image: url({{base_url}}sites/default/files/2022-08/maintenance.jpg);">
+{% endif %}
+<div class="container">
+    <div class="item-wrapper">
+        <div class="item">
+            <h1>{{coming_soon_title}}</h1>
+            <p>{{coming_soon_description}}</p>
+            <div id="fh5co-main-content">
+            <div class="dt js-dt">
+                <div class="dtc js-dtc">
+                <div id="clockdiv" class="cs-counter">
+                    <div class="cs-counter">
+                    <div class="cs-date">
+                        <div class="date_expired"></div>
+                        <span class="days"></span>
+                        <div class="counting-title">DAYS</div>
+                    </div>
+                    <div class="cs-date">
+                        <div class="date_expired"></div>
+                        <span class="hours"></span>
+                        <div class="counting-title">HOURS</div>
+                    </div>
+                    <div class="cs-date">
+                        <div class="date_expired"></div>
+                        <span class="minutes"></span>
+                        <div class="counting-title">MINS</div>
+                    </div>
+                    <div class="cs-date">
+                        <div class="date_expired"></div>
+                        <span class="seconds"></span>
+                        <div class="counting-title">SECS</div>
+                    </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+</div>
+  </section>
+<!--End Coming Soon Mode -->
+
+{% endif %}
+

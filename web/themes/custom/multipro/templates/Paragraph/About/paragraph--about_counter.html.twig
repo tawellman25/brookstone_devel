@@ -1,0 +1,26 @@
+
+{% if content.field_style_of_image_and_counter.0['#markup'] == 'Image before counter' %}
+<div class="col-lg-6 col-md-6 col-12">
+    <div class="image-counter">
+        <div class="image">
+            <img src="{{file_url(content.field_image['#items'].entity.uri.value)}}" alt="Image">
+        </div>
+        <div class="counter counter-style-1">
+            <div class="value"><span data-purecounter-start="0" data-purecounter-end="{{content.field_count.0}}" class="purecounter"></span><span>{{content.field_suffix.0}}</span></div>
+            <h6>{{content.field_title.0}}</h6>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="col-lg-6 col-md-6 col-12">
+    <div class="image-counter">
+        <div class="counter counter-style-1">
+            <div class="value"><span data-purecounter-start="0" data-purecounter-end="{{content.field_count.0}}" class="purecounter"></span><span>{{content.field_suffix.0}}</span></div>
+            <h6>{{content.field_title.0}}</h6>
+        </div>
+        <div class="image">
+            <img src="{{file_url(content.field_image['#items'].entity.uri.value)}}" alt="Image">
+        </div>
+    </div>
+</div>
+{% endif %}

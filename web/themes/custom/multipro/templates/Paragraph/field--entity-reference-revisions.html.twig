@@ -1,0 +1,20 @@
+{% if label_hidden %}
+  {% if multiple %}
+      {% for item in items %}
+        {{ item.content }}
+      {% endfor %}
+  {% else %}
+    {% for item in items %}
+      {{ item.content }}
+    {% endfor %}
+  {% endif %}
+{% else %}
+    {{ title_attributes }}>{{ label }}
+    {% if multiple %}
+    {% endif %}
+    {% for item in items %}
+      {{ item.content }}
+    {% endfor %}
+    {% if multiple %}
+    {% endif %}
+{% endif %}

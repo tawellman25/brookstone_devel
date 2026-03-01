@@ -4,12 +4,16 @@ status: true
 dependencies:
   config:
     - eck.eck_type.equipment.sprayers
+    - field.field.equipment.sprayers.field_billable
+    - field.field.equipment.sprayers.field_date_purchased
     - field.field.equipment.sprayers.field_pictures
     - image.style.thumbnail
   module:
+    - datetime
     - field_layout
     - image
     - layout_discovery
+    - path
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -26,6 +30,19 @@ content:
     region: content
     settings: {  }
     third_party_settings: {  }
+  field_billable:
+    type: boolean_checkbox
+    weight: 25
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_date_purchased:
+    type: datetime_default
+    weight: 14
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_pictures:
     type: image_image
     weight: 11
@@ -33,6 +50,12 @@ content:
     settings:
       progress_indicator: throbber
       preview_image_style: thumbnail
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
     third_party_settings: {  }
   title:
     type: string_textfield

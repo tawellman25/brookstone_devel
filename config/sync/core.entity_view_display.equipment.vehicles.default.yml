@@ -3,21 +3,26 @@ langcode: en
 status: true
 dependencies:
   config:
-    - core.entity_view_display.comment.equipment_comments.default
     - eck.eck_type.equipment.vehicles
+    - field.field.equipment.vehicles.field_billable
     - field.field.equipment.vehicles.field_color
     - field.field.equipment.vehicles.field_comments
     - field.field.equipment.vehicles.field_date_purchased
     - field.field.equipment.vehicles.field_date_sold
     - field.field.equipment.vehicles.field_depriciated_value
+    - field.field.equipment.vehicles.field_documents
     - field.field.equipment.vehicles.field_doors
     - field.field.equipment.vehicles.field_drivetrain
     - field.field.equipment.vehicles.field_engine_size
     - field.field.equipment.vehicles.field_engine_type
     - field.field.equipment.vehicles.field_equipment_type
+    - field.field.equipment.vehicles.field_inspection_required
+    - field.field.equipment.vehicles.field_internal_cost_rate
+    - field.field.equipment.vehicles.field_last_inspection_date
     - field.field.equipment.vehicles.field_license_plate
     - field.field.equipment.vehicles.field_manufactured_year
     - field.field.equipment.vehicles.field_model
+    - field.field.equipment.vehicles.field_operating_cost_per_hour
     - field.field.equipment.vehicles.field_pictures
     - field.field.equipment.vehicles.field_public_description
     - field.field.equipment.vehicles.field_purchase_price
@@ -28,47 +33,41 @@ dependencies:
     - field.field.equipment.vehicles.field_vehicle_number
     - field.field.equipment.vehicles.field_vin
   module:
-    - comment
     - datetime
     - field_group
+    - file
     - image
     - options
     - text
-    - user
 third_party_settings:
   field_group:
     group_office_administation:
       children:
+        - field_inspection_required
+        - field_last_inspection_date
         - field_vin
         - field_license_plate
         - field_renewal_month
-        - field_date_purchased
-        - field_purchase_price
-        - field_depriciated_value
-        - field_date_sold
-        - created
-        - uid
+        - field_billable
       label: 'Office Administation'
       parent_name: ''
       region: content
-      weight: 7
+      weight: 5
       format_type: details
       format_settings:
         classes: ''
         show_empty_fields: false
         id: ''
         label_as_html: false
-        open: false
+        open: true
         description: ''
-        required_fields: false
     group_details:
       children:
-        - field_equipment_type
+        - field_vehicle_number
         - field_manufactured_year
         - field_vehicle_make
         - field_model
         - field_size
-        - field_vehicle_number
         - field_color
         - field_doors
         - field_drivetrain
@@ -77,7 +76,7 @@ third_party_settings:
       label: Details
       parent_name: ''
       region: content
-      weight: 3
+      weight: 2
       format_type: details
       format_settings:
         classes: ''
@@ -107,148 +106,119 @@ third_party_settings:
         - field_comments
       label: Notes
       parent_name: ''
-      region: content
-      weight: 5
+      region: hidden
+      weight: 17
       format_type: details
       format_settings:
         classes: ''
         show_empty_fields: false
         id: ''
         label_as_html: false
-        open: true
+        open: false
         description: ''
-        required_fields: false
 id: equipment.vehicles.default
 targetEntityType: equipment
 bundle: vehicles
 mode: default
 content:
-  created:
-    type: timestamp
-    label: hidden
+  field_billable:
+    type: boolean
+    label: inline
     settings:
-      date_format: medium
-      custom_date_format: ''
-      timezone: ''
-      tooltip:
-        date_format: ''
-        custom_date_format: ''
-      time_diff:
-        enabled: false
-        future_format: '@interval hence'
-        past_format: '@interval ago'
-        granularity: 2
-        refresh: 60
-    third_party_settings: {  }
-    weight: 22
-    region: content
-  field_color:
-    type: string
-    label: above
-    settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    weight: 12
-    region: content
-  field_comments:
-    type: comment_default
-    label: above
-    settings:
-      view_mode: default
-      pager_id: 0
-    third_party_settings: {  }
-    weight: 6
-    region: content
-  field_date_purchased:
-    type: datetime_default
-    label: above
-    settings:
-      timezone_override: ''
-      format_type: medium
-    third_party_settings: {  }
-    weight: 18
-    region: content
-  field_date_sold:
-    type: datetime_default
-    label: above
-    settings:
-      timezone_override: ''
-      format_type: medium
-    third_party_settings: {  }
-    weight: 21
-    region: content
-  field_depriciated_value:
-    type: number_decimal
-    label: above
-    settings:
-      thousand_separator: ''
-      decimal_separator: .
-      scale: 2
-      prefix_suffix: true
-    third_party_settings: {  }
-    weight: 20
-    region: content
-  field_doors:
-    type: list_default
-    label: above
-    settings: {  }
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
     third_party_settings: {  }
     weight: 13
     region: content
-  field_drivetrain:
-    type: list_default
+  field_color:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 16
+    region: content
+  field_documents:
+    type: file_default
     label: above
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_doors:
+    type: list_default
+    label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 14
+    weight: 17
+    region: content
+  field_drivetrain:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 18
     region: content
   field_engine_size:
     type: string
-    label: above
+    label: inline
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 15
+    weight: 19
     region: content
   field_engine_type:
     type: list_default
-    label: above
+    label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 16
+    weight: 20
     region: content
-  field_equipment_type:
-    type: entity_reference_label
-    label: above
+  field_inspection_required:
+    type: boolean
+    label: inline
     settings:
-      link: true
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
     third_party_settings: {  }
-    weight: 6
+    weight: 8
+    region: content
+  field_last_inspection_date:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 9
     region: content
   field_license_plate:
     type: string
-    label: above
+    label: inline
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 16
+    weight: 11
     region: content
   field_manufactured_year:
     type: number_integer
-    label: above
+    label: inline
     settings:
       thousand_separator: ''
       prefix_suffix: true
     third_party_settings: {  }
-    weight: 7
+    weight: 12
     region: content
   field_model:
     type: string
-    label: above
+    label: inline
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 9
+    weight: 14
     region: content
   field_pictures:
     type: image
@@ -266,33 +236,22 @@ content:
     label: hidden
     settings: {  }
     third_party_settings: {  }
-    weight: 2
-    region: content
-  field_purchase_price:
-    type: number_decimal
-    label: above
-    settings:
-      thousand_separator: ''
-      decimal_separator: .
-      scale: 2
-      prefix_suffix: true
-    third_party_settings: {  }
-    weight: 19
+    weight: 1
     region: content
   field_renewal_month:
     type: list_default
-    label: above
+    label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 17
+    weight: 12
     region: content
   field_size:
     type: string
-    label: above
+    label: inline
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 10
+    weight: 15
     region: content
   field_status:
     type: entity_reference_label
@@ -300,18 +259,18 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 1
+    weight: 0
     region: content
   field_vehicle_make:
     type: list_default
-    label: above
+    label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 8
+    weight: 13
     region: content
   field_vehicle_number:
     type: number_integer
-    label: above
+    label: inline
     settings:
       thousand_separator: ''
       prefix_suffix: true
@@ -320,26 +279,22 @@ content:
     region: content
   field_vin:
     type: string
-    label: above
+    label: inline
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 15
-    region: content
-  title:
-    type: string
-    label: hidden
-    settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    weight: 0
-    region: content
-  uid:
-    type: author
-    label: hidden
-    settings: {  }
-    third_party_settings: {  }
-    weight: 23
+    weight: 10
     region: content
 hidden:
   changed: true
+  created: true
+  field_comments: true
+  field_date_purchased: true
+  field_date_sold: true
+  field_depriciated_value: true
+  field_equipment_type: true
+  field_internal_cost_rate: true
+  field_operating_cost_per_hour: true
+  field_purchase_price: true
+  title: true
+  uid: true

@@ -1,0 +1,96 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_insert().
+ */
+function bos_contract_sections_attach_entity_insert(EntityInterface $entity): void {
+  _bos_contract_sections_attach_maybe_attach($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function bos_contract_sections_attach_entity_update(EntityInterface $entity): void {
+  _bos_contract_sections_attach_maybe_attach($entity);
+}
+
+/**
+ * Attach a contract_sections entity to its parent contracts.field_* reference.
+ *
+ * - Only runs when the section has field_contract set.
+ * - Uses explicit mapping to avoid guessing.
+ * - Safe for "new contracts only" Feeds imports.
+ */
+function _bos_contract_sections_attach_maybe_attach(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'contract_sections') {
+    return;
+  }
+
+  if (!$entity->hasField('field_contract') || $entity->get('field_contract')->isEmpty()) {
+    return;
+  }
+
+  /** @var \Drupal\Core\Entity\EntityInterface|null $contract */
+  $contract = $entity->get('field_contract')->entity;
+  if (!$contract || $contract->getEntityTypeId() !== 'contracts') {
+    return;
+  }
+
+  // Prevent save recursion.
+  static $in_progress = [];
+  $guard_key = $contract->id() . ':' . $entity->id();
+  if (isset($in_progress[$guard_key])) {
+    return;
+  }
+  $in_progress[$guard_key] = TRUE;
+
+  $section_bundle = $entity->bundle();
+
+  // Section bundle => Contract field that references that section bundle.
+  $map = [
+    'aerating_of_lawn' => 'field_aerating_of_lawn',
+    'aspen_twig_gall_control' => 'field_aspen_twig_gall_control',
+    'christmas_decorations' => 'field_christmas_decorations',
+    'cooley_spruce_gall_treatment' => 'field_cooley_spruce_gall_treatme',
+    'deciduous_bore_treatment' => 'field_deciduous_bore_treatment',
+    'deer_protection_wire' => 'field_deer_protection_wire_for_t',
+    'dethatching_of_lawn_areas' => 'field_dethatching_of_lawn_areas',
+    'dormant_oil_spray' => 'field_dormant_oil_spray',
+    'fall_cleanup' => 'field_fall_cleanup',
+    'fertilizing_of_shrubs_and_trees' => 'field_fertilizing_trees_shrubs',
+    'grub_prevention_on_lawn' => 'field_grub_prevention_on_lawn',
+    'ips_beetle_on_pinion_pine' => 'field_ips_beetle_on_pinion_pine',
+    'irrigation_check_ups' => 'field_irrigation_check_ups',
+    'irrigation_shut_down' => 'field_irrigation_shut_down',
+    'irrigation_start_up' => 'field_irrigation_start_up',
+    'lawn_fertilizing' => 'field_lawn_fertilizing_broadleaf',
+    'lawn_mowing_and_trimming' => 'field_lawn_mowing_and_trimming',
+    'pre_emergent' => 'field_pre_emergent',
+    'spring_cleanup' => 'field_spring_cleanup',
+    'summer_hedge_shrub_pruning' => 'field_summer_hedge_shrub_pruning',
+    'trunk_bore_prevention' => 'field_trunk_bore_prevention',
+    'weed_spraying_landscape_beds' => 'field_weed_spraying_of_landscape',
+    'weed_spraying_of_misc_areas' => 'field_weed_spraying_of_misc_area',
+  ];
+
+  $target_field = $map[$section_bundle] ?? NULL;
+  if (!$target_field || !$contract->hasField($target_field)) {
+    unset($in_progress[$guard_key]);
+    return;
+  }
+
+  // If already attached correctly, do nothing.
+  $current = $contract->get($target_field)->target_id ?? NULL;
+  if ($current && (int) $current === (int) $entity->id()) {
+    unset($in_progress[$guard_key]);
+    return;
+  }
+
+  // Attach section to contract.
+  $contract->set($target_field, ['target_id' => $entity->id()]);
+  $contract->save();
+
+  unset($in_progress[$guard_key]);
+}

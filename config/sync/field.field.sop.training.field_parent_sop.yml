@@ -1,0 +1,28 @@
+uuid: 7601eeea-acff-4838-b6e7-3cd8a57f430e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.training
+    - field.storage.sop.field_parent_sop
+id: sop.training.field_parent_sop
+field_name: field_parent_sop
+entity_type: sop
+bundle: training
+label: 'Parent SOP'
+description: 'Select the higher-level SOP this procedure belongs to.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sop'
+  handler_settings:
+    target_bundles:
+      training: training
+    sort:
+      field: field_sop_code
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: training
+field_type: entity_reference

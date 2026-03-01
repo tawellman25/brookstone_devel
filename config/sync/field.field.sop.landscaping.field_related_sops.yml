@@ -1,0 +1,36 @@
+uuid: 10ad7650-25f3-4382-b99d-2a65458f3a36
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.landscaping
+    - eck.eck_type.sop.office_administration
+    - eck.eck_type.sop.sop_governance
+    - eck.eck_type.sop.sprinkler_maintenance
+    - eck.eck_type.sop.system_procedures
+    - field.storage.sop.field_related_sops
+id: sop.landscaping.field_related_sops
+field_name: field_related_sops
+entity_type: sop
+bundle: landscaping
+label: 'Related SOPs'
+description: "<p>\r\nLink SOPs that provide <strong>context, shared standards, or cross-department awareness</strong> related to this procedure.\r\n</p>\r\n<p>\r\nDo <strong>not</strong> include Parent SOPs, child SOPs, prerequisites, or training materials.\r\n</p>\r\n<p>\r\nRelated SOPs are informational only and are <strong>not required steps</strong>.\r\n</p>\r\n<p>\r\nSee <a href=\"/teammates/sop/sop-governance/gov-sop-007\" target=\"_blank\">\r\nRelated SOPs Usage Standard\r\n</a> for full rules.\r\n</p>"
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sop'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+      office_administration: office_administration
+      sop_governance: sop_governance
+      sprinkler_maintenance: sprinkler_maintenance
+      system_procedures: system_procedures
+    sort:
+      field: field_sop_code
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: sop_governance
+field_type: entity_reference

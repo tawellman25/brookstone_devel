@@ -1,0 +1,256 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Contract Sections Audit Logger
+ *
+ * - Append-only audit log for Contract Section changes
+ * - Plain-text bullet list for "What changed"
+ * - Admin-friendly short labels
+ * - Suppresses system-driven saves via explicit request flag only
+ */
+
+define('CONTRACT_SECTIONS_AUDIT_ENTITY_TYPE', 'contract_sections_audit');
+define('CONTRACT_SECTIONS_AUDIT_BUNDLE', 'log');
+
+define('CONTRACT_SECTIONS_AUDIT_FIELD_SECTION_REF', 'field_contract_section');
+define('CONTRACT_SECTIONS_AUDIT_FIELD_ACTION', 'field_action');
+define('CONTRACT_SECTIONS_AUDIT_FIELD_SECTION_BUNDLE', 'field_section_bundle');
+define('CONTRACT_SECTIONS_AUDIT_FIELD_CHANGED_FIELDS', 'field_changed_fields');
+
+/**
+ * Returns TRUE if audit logging is suppressed for this request.
+ */
+function _contract_sections_audit_is_suppressed(): bool {
+  $request = \Drupal::requestStack()->getCurrentRequest();
+  return (bool) $request->attributes->get('contract_sections_audit_suppress', FALSE);
+}
+
+/**
+ * Admin-friendly short labels for audit display.
+ */
+function _contract_sections_audit_admin_label_map(): array {
+  return [
+    'field_do_you_want' => 'Included / Not Included',
+    'field_client_notes' => 'Client Notes',
+    'field_check_up_frequency' => 'Check-Up Frequency',
+
+    'field_mowing_frequency' => 'How Often',
+    'field_spraying_frequency' => 'How Often',
+
+    'field_aerating_season' => 'Season',
+    'field_pre_emergent_season' => 'Season',
+    'field_fertilizer_app_season' => 'Season',
+
+    'field_pre_emergent_areas' => 'Areas',
+    'field_other_areas' => 'Other Areas',
+
+    'field_service_application_notes' => 'Tech Notes',
+    'field_set_your_budget' => 'Budget',
+    'field_specific_plants' => 'Specific Plants',
+
+    'field_deer_protection_actions' => 'Take Down / Put Up',
+  ];
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function contract_sections_audit_entity_insert(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'contract_sections') {
+    return;
+  }
+  if (_contract_sections_audit_is_suppressed()) {
+    return;
+  }
+
+  _contract_sections_audit_write($entity, 'insert', []);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function contract_sections_audit_entity_update(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'contract_sections') {
+    return;
+  }
+  if (_contract_sections_audit_is_suppressed()) {
+    return;
+  }
+
+  $original = NULL;
+
+  // Prefer the built-in original if present.
+  if (!empty($entity->original) && $entity->original instanceof EntityInterface) {
+    $original = $entity->original;
+  }
+  else {
+    // BOS-correct fallback: load unchanged entity to diff against.
+    $storage = \Drupal::entityTypeManager()->getStorage('contract_sections');
+    $id = (int) $entity->id();
+    if ($id > 0 && method_exists($storage, 'loadUnchanged')) {
+      $original = $storage->loadUnchanged($id);
+    }
+    elseif ($id > 0) {
+      // Last-resort fallback.
+      $original = $storage->load($id);
+    }
+  }
+
+  // If we still can't get an original snapshot, log the update without field list.
+  if (!$original instanceof EntityInterface) {
+    _contract_sections_audit_write($entity, 'update', []);
+    return;
+  }
+
+  $changed_fields = _contract_sections_audit_get_changed_fields($original, $entity);
+  if (empty($changed_fields)) {
+    return;
+  }
+
+  _contract_sections_audit_write($entity, 'update', $changed_fields);
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function contract_sections_audit_entity_delete(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'contract_sections') {
+    return;
+  }
+  if (_contract_sections_audit_is_suppressed()) {
+    return;
+  }
+
+  _contract_sections_audit_write($entity, 'delete', []);
+}
+
+/**
+ * Determine which meaningful fields changed.
+ */
+function _contract_sections_audit_get_changed_fields(EntityInterface $original, EntityInterface $current): array {
+  $changed = [];
+
+  $exclude = [
+    // Core/system noise.
+    'type',
+    'path',
+    'uid',
+    'created',
+    'changed',
+    'revision_timestamp',
+    'revision_uid',
+    'revision_log',
+    'revision_translation_affected',
+    'default_langcode',
+    'langcode',
+    'uuid',
+    'id',
+
+    // Feeds/system metadata.
+    'feeds_item',
+
+    // Wiring / execution fields.
+    'field_contract',
+    'field_work_order',
+    'field_2nd_work_order',
+    'field_3rd_work_order',
+    'field_4th_work_order',
+    'field_chemicals_used',
+    'field_gallons_used',
+    'field_pounds_used',
+    'field_man_hours',
+
+    // Structural identity.
+    'field_service',
+  ];
+
+  foreach ($current->getFieldDefinitions() as $field_name => $definition) {
+    if (in_array($field_name, $exclude, TRUE)) {
+      continue;
+    }
+
+    if (method_exists($definition, 'isComputed') && $definition->isComputed()) {
+      continue;
+    }
+
+    if (!$current->hasField($field_name) || !$original->hasField($field_name)) {
+      continue;
+    }
+
+    if ($original->get($field_name)->getValue() != $current->get($field_name)->getValue()) {
+      $changed[] = $field_name;
+    }
+  }
+
+  return $changed;
+}
+
+/**
+ * Convert changed fields into admin-friendly bullet list (plain text).
+ */
+function _contract_sections_audit_render_bullets(EntityInterface $section, array $field_names): string {
+  $label_map = _contract_sections_audit_admin_label_map();
+  $lines = [];
+
+  foreach ($field_names as $field_name) {
+    if (isset($label_map[$field_name])) {
+      $label = $label_map[$field_name];
+    }
+    elseif ($section->hasField($field_name)) {
+      $def = $section->getFieldDefinition($field_name);
+      $label = $def ? (string) $def->getLabel() : $field_name;
+    }
+    else {
+      continue;
+    }
+
+    $label = trim($label);
+    if ($label !== '') {
+      $lines[] = '• ' . $label;
+    }
+  }
+
+  return implode("\n", array_values(array_unique($lines)));
+}
+
+/**
+ * Write the audit log entry.
+ */
+function _contract_sections_audit_write(EntityInterface $section, string $action, array $changed_fields): void {
+  if (!in_array($action, ['insert', 'update', 'delete'], TRUE)) {
+    $action = 'update';
+  }
+
+  $storage = \Drupal::entityTypeManager()->getStorage(CONTRACT_SECTIONS_AUDIT_ENTITY_TYPE);
+
+  $audit = $storage->create([
+    'type' => CONTRACT_SECTIONS_AUDIT_BUNDLE,
+  ]);
+
+  if (method_exists($audit, 'setOwnerId')) {
+    $audit->setOwnerId((int) \Drupal::currentUser()->id());
+  }
+
+  if ($audit->hasField(CONTRACT_SECTIONS_AUDIT_FIELD_SECTION_REF)) {
+    $audit->set(CONTRACT_SECTIONS_AUDIT_FIELD_SECTION_REF, (int) $section->id());
+  }
+
+  if ($audit->hasField(CONTRACT_SECTIONS_AUDIT_FIELD_ACTION)) {
+    $audit->set(CONTRACT_SECTIONS_AUDIT_FIELD_ACTION, $action);
+  }
+
+  if ($audit->hasField(CONTRACT_SECTIONS_AUDIT_FIELD_SECTION_BUNDLE)) {
+    $audit->set(CONTRACT_SECTIONS_AUDIT_FIELD_SECTION_BUNDLE, (string) $section->bundle());
+  }
+
+  if ($audit->hasField(CONTRACT_SECTIONS_AUDIT_FIELD_CHANGED_FIELDS)) {
+    $audit->set(
+      CONTRACT_SECTIONS_AUDIT_FIELD_CHANGED_FIELDS,
+      _contract_sections_audit_render_bullets($section, $changed_fields)
+    );
+  }
+
+  $audit->save();
+}

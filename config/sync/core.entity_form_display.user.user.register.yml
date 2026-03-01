@@ -4,10 +4,20 @@ status: true
 dependencies:
   config:
     - core.entity_form_mode.user.register
+    - field.field.user.user.feeds_item
+    - field.field.user.user.field_consent_updated
+    - field.field.user.user.field_credit_hold
+    - field.field.user.user.field_do_not_schedule
     - field.field.user.user.field_ok_to_email
+    - field.field.user.user.field_paperless_delivery
+    - field.field.user.user.field_qb_list_id
+    - field.field.user.user.field_qb_refnum
+    - field.field.user.user.field_service_suspension_reason
+    - field.field.user.user.field_sms_consent
     - field.field.user.user.user_picture
     - image.style.thumbnail
   module:
+    - field_group
     - field_layout
     - image
     - layout_discovery
@@ -17,6 +27,43 @@ third_party_settings:
     id: layout_onecol
     settings:
       label: ''
+  field_group:
+    group_communication_preferences:
+      children:
+        - field_paperless_delivery
+        - field_ok_to_email
+        - field_sms_consent
+        - group_community_messaging
+      label: 'Communication Preferences'
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: "Choose how you would like Brookstone Outdoors to contact you for optional communications.<br><br>\r\n\r\nThese preferences apply to newsletters, announcements, and general service updates.<br><br>\r\n\r\nUnless the Paperless option is selected below, important messages related to your services, billing, or account will continue to be sent by mail through the USPS."
+        required_fields: true
+    group_community_messaging:
+      children:
+        - comment_notify_settings
+        - contact
+      label: 'Community & Messaging'
+      region: content
+      parent_name: group_communication_preferences
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: "These settings control how you interact with other users and how you are notified about activity related to your content within the Brookstone system.<br><br>\r\nYou can choose whether other users are allowed to contact you and whether you receive email notifications when comments are added to content you’ve participated in or created."
+        required_fields: true
 _core:
   default_config_hash: FaQ9Ptcpxpg30AtiqRDtl_8zbJArHP1LPfug_s59TOA
 id: user.user.register
@@ -30,14 +77,35 @@ content:
     settings: {  }
     third_party_settings: {  }
   comment_notify_settings:
-    weight: 2
+    weight: 14
     region: content
     settings: {  }
     third_party_settings: {  }
   contact:
-    weight: 3
+    weight: 15
     region: content
     settings: {  }
+    third_party_settings: {  }
+  field_ok_to_email:
+    type: boolean_checkbox
+    weight: 11
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_paperless_delivery:
+    type: boolean_checkbox
+    weight: 10
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_sms_consent:
+    type: boolean_checkbox
+    weight: 12
+    region: content
+    settings:
+      display_label: true
     third_party_settings: {  }
   timezone:
     weight: 6
@@ -52,7 +120,13 @@ content:
     third_party_settings: {  }
 hidden:
   customer_profile_profiles: true
-  field_ok_to_email: true
+  feeds_item: true
+  field_consent_updated: true
+  field_credit_hold: true
+  field_do_not_schedule: true
+  field_qb_list_id: true
+  field_qb_refnum: true
+  field_service_suspension_reason: true
   google_analytics: true
   language: true
   path: true

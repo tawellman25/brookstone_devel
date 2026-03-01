@@ -1,0 +1,47 @@
+id: bos_contracts_residential
+label: BOS Residential Contracts (Base)
+migration_group: bos_contracts
+
+dependencies:
+  module:
+    - migrate_plus
+    - migrate_tools
+    - migrate_spreadsheet
+    - bos_contract_migrate
+
+migration_dependencies:
+  required: []
+  optional: []
+
+source:
+  plugin: spreadsheet
+  file: private://imports/BOS_Contract_import_sheet.xlsx
+  worksheet: Sheet1
+  header_row: 1
+  ids:
+    key_ID:
+      type: string
+
+process:
+  contract_key:
+    plugin: concat
+    source:
+      - Property_ID
+      - field_contract_year
+    delimiter: ':'
+
+  type:
+    plugin: default_value
+    default_value: residential
+
+  field_property:
+    plugin: get
+    source: Property_ID
+
+  field_contract_year:
+    plugin: get
+    source: field_contract_year
+
+destination:
+  plugin: 'entity:contracts'
+  default_bundle: residential

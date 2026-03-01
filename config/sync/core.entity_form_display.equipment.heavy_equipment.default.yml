@@ -4,16 +4,20 @@ status: true
 dependencies:
   config:
     - eck.eck_type.equipment.heavy_equipment
+    - field.field.equipment.heavy_equipment.field_billable
     - field.field.equipment.heavy_equipment.field_color
     - field.field.equipment.heavy_equipment.field_date_purchased
     - field.field.equipment.heavy_equipment.field_date_sold
     - field.field.equipment.heavy_equipment.field_depriciated_value
+    - field.field.equipment.heavy_equipment.field_documents
     - field.field.equipment.heavy_equipment.field_engine_size
     - field.field.equipment.heavy_equipment.field_engine_type
     - field.field.equipment.heavy_equipment.field_equipment_make
     - field.field.equipment.heavy_equipment.field_equipment_type
+    - field.field.equipment.heavy_equipment.field_internal_cost_rate
     - field.field.equipment.heavy_equipment.field_manufactured_year
     - field.field.equipment.heavy_equipment.field_model
+    - field.field.equipment.heavy_equipment.field_operating_cost_per_hour
     - field.field.equipment.heavy_equipment.field_pictures
     - field.field.equipment.heavy_equipment.field_public_description
     - field.field.equipment.heavy_equipment.field_purchase_price
@@ -25,7 +29,9 @@ dependencies:
     - image.style.thumbnail
   module:
     - datetime
+    - field_group
     - field_layout
+    - file
     - image
     - layout_discovery
     - path
@@ -35,6 +41,122 @@ third_party_settings:
     id: layout_onecol
     settings:
       label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - uid
+        - created
+        - path
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_purchase_info:
+      children:
+        - field_vin
+        - field_serial_code_number
+        - field_date_purchased
+        - field_purchase_price
+        - field_depriciated_value
+        - field_date_sold
+      label: 'Purchase Info'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Tracks the original acquisition and lifecycle details of this equipment, including purchase date, cost, depreciation, and disposition. This information supports asset valuation, replacement planning, and accurate financial reporting.'
+        required_fields: true
+    group_billing_costing:
+      children:
+        - field_billable
+        - field_rate
+        - field_internal_cost_rate
+        - field_operating_cost_per_hour
+      label: 'Billing & Costing'
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Defines how this equipment contributes to job costing and revenue, including internal cost rates, billable status, and default work order pricing. This information is used to ensure accurate estimates, consistent billing, and informed profitability analysis.'
+        required_fields: true
+    group_public_info:
+      children:
+        - field_pictures
+        - field_public_description
+      label: 'Public Info'
+      region: content
+      parent_name: ''
+      weight: 1
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: "Contains client-facing photos and descriptions of this equipment used to support proposals, service pages, and public-facing content. Information in this section is limited to what is appropriate for external audiences.<\\br>\r\n<\\br>\r\n<b>No pricing, condition, internal notes, or administrative data belongs in this section.<\\b>"
+        required_fields: true
+    group_equipment_details:
+      children:
+        - title
+        - field_status
+        - field_equipment_type
+        - field_manufactured_year
+        - field_equipment_make
+        - field_model
+        - field_engine_size
+        - field_engine_type
+        - field_color
+        - field_size
+      label: 'Equipment Details'
+      region: content
+      parent_name: ''
+      weight: 0
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: 'Defines the core identifying and technical characteristics of this equipment, including make, model, year, and physical attributes. This information supports daily operations, maintenance, and accurate equipment identification across the system.'
+        required_fields: true
+    group_compliance_documentation:
+      children:
+        - field_documents
+      label: 'Compliance & Documentation'
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Stores regulatory, inspection, and supporting documentation required to operate this equipment legally and safely, including registrations, inspections, insurance references, and official records.'
+        required_fields: true
 id: equipment.heavy_equipment.default
 targetEntityType: equipment
 bundle: heavy_equipment
@@ -42,13 +164,20 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 10
+    weight: 22
     region: content
     settings: {  }
     third_party_settings: {  }
+  field_billable:
+    type: boolean_checkbox
+    weight: 25
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
   field_color:
     type: string_textfield
-    weight: 20
+    weight: 9
     region: content
     settings:
       size: 60
@@ -56,26 +185,33 @@ content:
     third_party_settings: {  }
   field_date_purchased:
     type: datetime_default
-    weight: 11
+    weight: 14
     region: content
     settings: {  }
     third_party_settings: {  }
   field_date_sold:
     type: datetime_default
-    weight: 38
+    weight: 17
     region: content
     settings: {  }
     third_party_settings: {  }
   field_depriciated_value:
     type: number
-    weight: 14
+    weight: 16
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_documents:
+    type: file_generic
+    weight: 29
+    region: content
+    settings:
+      progress_indicator: throbber
+    third_party_settings: {  }
   field_engine_size:
     type: string_textfield
-    weight: 17
+    weight: 7
     region: content
     settings:
       size: 60
@@ -83,13 +219,13 @@ content:
     third_party_settings: {  }
   field_engine_type:
     type: options_select
-    weight: 19
+    weight: 8
     region: content
     settings: {  }
     third_party_settings: {  }
   field_equipment_make:
     type: string_textfield
-    weight: 31
+    weight: 5
     region: content
     settings:
       size: 60
@@ -97,7 +233,7 @@ content:
     third_party_settings: {  }
   field_equipment_type:
     type: entity_reference_autocomplete
-    weight: 12
+    weight: 3
     region: content
     settings:
       match_operator: CONTAINS
@@ -105,24 +241,38 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_internal_cost_rate:
+    type: number
+    weight: 27
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
   field_manufactured_year:
     type: number
-    weight: 16
+    weight: 4
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_model:
     type: string_textfield
-    weight: 18
+    weight: 6
     region: content
     settings:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_operating_cost_per_hour:
+    type: number
+    weight: 28
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
   field_pictures:
     type: image_image
-    weight: 13
+    weight: 10
     region: content
     settings:
       progress_indicator: throbber
@@ -130,7 +280,7 @@ content:
     third_party_settings: {  }
   field_public_description:
     type: text_textarea
-    weight: 22
+    weight: 11
     region: content
     settings:
       rows: 5
@@ -145,14 +295,14 @@ content:
     third_party_settings: {  }
   field_rate:
     type: number
-    weight: 39
+    weight: 26
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_serial_code_number:
     type: string_textfield
-    weight: 24
+    weight: 13
     region: content
     settings:
       size: 60
@@ -160,7 +310,7 @@ content:
     third_party_settings: {  }
   field_size:
     type: string_textfield
-    weight: 21
+    weight: 10
     region: content
     settings:
       size: 60
@@ -168,7 +318,7 @@ content:
     third_party_settings: {  }
   field_status:
     type: entity_reference_autocomplete
-    weight: 33
+    weight: 2
     region: content
     settings:
       match_operator: CONTAINS
@@ -178,7 +328,7 @@ content:
     third_party_settings: {  }
   field_vin:
     type: string_textfield
-    weight: 23
+    weight: 12
     region: content
     settings:
       size: 60
@@ -186,13 +336,13 @@ content:
     third_party_settings: {  }
   path:
     type: path
-    weight: 30
+    weight: 23
     region: content
     settings: {  }
     third_party_settings: {  }
   title:
     type: string_textfield
-    weight: -5
+    weight: 1
     region: content
     settings:
       size: 60
@@ -200,7 +350,7 @@ content:
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 5
+    weight: 21
     region: content
     settings:
       match_operator: CONTAINS

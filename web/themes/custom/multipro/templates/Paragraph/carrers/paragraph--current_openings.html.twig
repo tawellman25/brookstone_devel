@@ -1,0 +1,40 @@
+<div class="item">
+    <div class="accordion-header">
+        <button type="button" class="border-style" data-bs-toggle="collapse" data-bs-target="#twoOne{{paragraph.id()}}" aria-controls="twoOne{{paragraph.id()}}" aria-expanded="true">
+            <span class="career-name">{{content.field_title.0}} {% if content.field_tagline.0 %}<span>({{content.field_tagline.0}} Openings)</span>{% endif %}</span>
+            <span class="icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="349.999" height="200" viewBox="0 0 349.999 200">
+                    <path data-name="Path 39783" d="M361.825,390.414a23.7,23.7,0,0,1-16.027-6.837L194.955,233.531a25.682,25.682,0,0,1-6.658-24.065,24.71,24.71,0,0,1,16.756-18.041,23.593,23.593,0,0,1,23.464,5.966L362.583,330.825,496.65,197.392a23.591,23.591,0,0,1,23.463-5.966,24.712,24.712,0,0,1,16.756,18.041,25.688,25.688,0,0,1-6.658,24.065L379.367,383.577a23.643,23.643,0,0,1-17.533,6.837Z" transform="translate(-187.583 -190.433)" fill="#131517"/>
+                </svg>
+            </span>
+        </button>
+    </div>
+    {% if delta == 0 %}
+    <div id="twoOne{{paragraph.id()}}" class="accordion-collapse collapse show " data-bs-parent="#accordion2">
+    {% else %}
+    <div id="twoOne{{paragraph.id()}}" class="accordion-collapse collapse" data-bs-parent="#accordion2">
+    {% endif %}
+        <div class="item-content">
+            {{content.field_description.0}}
+            <ul class="details">
+                {{content.field_jo}}
+            </ul>
+            <h4>{{content.field_title2.0}}</h4>
+            <ul class="list-style-1">
+            {% for key,value in content.field_requirements['#items'] %}
+                <li>
+                    <div class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+                            <g data-name="Group 40485" transform="translate(-490.47 -1033.47)">
+                                <rect data-name="Rectangle 21" width="200" height="200" rx="100" transform="translate(490.47 1033.47)" fill="#131517" opacity="0.1"/>
+                                <path data-name="Path 12" d="M209.633,120.939,159.75,170.389a7.084,7.084,0,0,1-10,0l-24.886-24.884a6.987,6.987,0,0,1,0-9.954,7.085,7.085,0,0,1,10,0l20,19.908,44.884-44.474a7.016,7.016,0,1,1,9.888,9.954Z" transform="translate(423.197 992.781)" fill="#131517" fill-rule="evenodd"/>
+                            </g>
+                        </svg>
+                    </div>
+                    {{content.field_requirements[key]}}
+                </li>
+            {% endfor %}
+            <a href="#careerApplyPage" class="btn btn-primary btn-style-3 btn-sm" title="{{content.field_buy_now.0['#title']}}">{{content.field_buy_now.0['#title']}}</a>
+        </div>
+    </div>
+</div>

@@ -4,14 +4,14 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contacts.contact
-    - eck.eck_type.phone_number.profile_phone_numbers
+    - eck.eck_type.phone_number.contacts
     - field.storage.contacts.field_phone_number
 id: contacts.contact.field_phone_number
 field_name: field_phone_number
 entity_type: contacts
 bundle: contact
 label: 'Phone Numbers'
-description: ''
+description: "Phone numbers specific to this contact.</br>\r\nAccount-level phone numbers are managed separately on the client or supplier record."
 required: false
 translatable: false
 default_value: {  }
@@ -20,10 +20,10 @@ settings:
   handler: 'default:phone_number'
   handler_settings:
     target_bundles:
-      profile_phone_numbers: profile_phone_numbers
+      contacts: contacts
     sort:
       field: _none
       direction: ASC
     auto_create: false
-    auto_create_bundle: ''
+    auto_create_bundle: profile_phone_numbers
 field_type: entity_reference

@@ -4,7 +4,9 @@ status: true
 dependencies:
   config:
     - field.field.profile.teammate_profile.field_address
+    - field.field.profile.teammate_profile.field_anniversary
     - field.field.profile.teammate_profile.field_assigned_crew
+    - field.field.profile.teammate_profile.field_billing_allowed
     - field.field.profile.teammate_profile.field_birthday
     - field.field.profile.teammate_profile.field_cell_number
     - field.field.profile.teammate_profile.field_emergency_contacts
@@ -14,8 +16,12 @@ dependencies:
     - field.field.profile.teammate_profile.field_last_name
     - field.field.profile.teammate_profile.field_list_position
     - field.field.profile.teammate_profile.field_middle_name
+    - field.field.profile.teammate_profile.field_portal_allowed
     - field.field.profile.teammate_profile.field_public_viewable
+    - field.field.profile.teammate_profile.field_qb_account_number
+    - field.field.profile.teammate_profile.field_qb_list_id
     - field.field.profile.teammate_profile.field_shirt_size
+    - field.field.profile.teammate_profile.field_spouse_birthday
     - field.field.profile.teammate_profile.field_spouse_name
     - field.field.profile.teammate_profile.field_teammate_bio
     - profile.type.teammate_profile
@@ -167,6 +173,108 @@ third_party_settings:
                 third_party_settings: {  }
             weight: 14
             additional: {  }
+          407bff16-f8c0-4d11-a8f2-a0d06a2ea428:
+            uuid: 407bff16-f8c0-4d11-a8f2-a0d06a2ea428
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_billing_allowed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: boolean
+                label: above
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 15
+            additional: {  }
+          90bc6563-c0ae-4c4b-811f-303517fec6ee:
+            uuid: 90bc6563-c0ae-4c4b-811f-303517fec6ee
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_portal_allowed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: boolean
+                label: above
+                settings:
+                  format: default
+                  format_custom_false: ''
+                  format_custom_true: ''
+                third_party_settings: {  }
+            weight: 16
+            additional: {  }
+          db8d91c4-9b6a-4165-90da-dfadd2c51f00:
+            uuid: db8d91c4-9b6a-4165-90da-dfadd2c51f00
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_spouse_birthday'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: datetime_default
+                label: inline
+                settings:
+                  timezone_override: ''
+                  format_type: medium
+                third_party_settings: {  }
+            weight: 17
+            additional: {  }
+          a4f9c307-5508-48c1-bc56-c79179c3a3c3:
+            uuid: a4f9c307-5508-48c1-bc56-c79179c3a3c3
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_anniversary'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: datetime_default
+                label: inline
+                settings:
+                  timezone_override: ''
+                  format_type: medium
+                third_party_settings: {  }
+            weight: 18
+            additional: {  }
+          256c4c72-3763-4150-af75-f692dbf5dd76:
+            uuid: 256c4c72-3763-4150-af75-f692dbf5dd76
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_qb_account_number'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: above
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 19
+            additional: {  }
+          ab14280b-dad1-4017-b595-a347096e8cc8:
+            uuid: ab14280b-dad1-4017-b595-a347096e8cc8
+            region: content
+            configuration:
+              id: 'field_block:profile:teammate_profile:field_qb_list_id'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: string
+                label: above
+                settings:
+                  link_to_entity: false
+                third_party_settings: {  }
+            weight: 20
+            additional: {  }
         third_party_settings: {  }
 id: profile.teammate_profile.default
 targetEntityType: profile
@@ -186,6 +294,15 @@ content:
     third_party_settings: {  }
     weight: 14
     region: content
+  field_anniversary:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 11
+    region: content
   field_assigned_crew:
     type: entity_reference_label
     label: above
@@ -193,6 +310,16 @@ content:
       link: true
     third_party_settings: {  }
     weight: 6
+    region: content
+  field_billing_allowed:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 15
     region: content
   field_birthday:
     type: datetime_default
@@ -266,6 +393,16 @@ content:
     third_party_settings: {  }
     weight: 1
     region: content
+  field_portal_allowed:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 16
+    region: content
   field_public_viewable:
     type: boolean
     label: above
@@ -276,12 +413,37 @@ content:
     third_party_settings: {  }
     weight: 8
     region: content
+  field_qb_account_number:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 17
+    region: content
+  field_qb_list_id:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 18
+    region: content
   field_shirt_size:
     type: list_default
     label: above
     settings: {  }
     third_party_settings: {  }
     weight: 11
+    region: content
+  field_spouse_birthday:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 10
     region: content
   field_spouse_name:
     type: string

@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - field.field.taxonomy_term.services.field_banner_image
+    - field.field.taxonomy_term.services.field_brookstone_tags
     - field.field.taxonomy_term.services.field_department
     - field.field.taxonomy_term.services.field_description
     - field.field.taxonomy_term.services.field_estimate_types
@@ -72,6 +73,7 @@ third_party_settings:
         required_fields: true
     group_office_admin:
       children:
+        - name
         - field_department
         - field_work_order_service
         - field_list_order
@@ -93,9 +95,7 @@ third_party_settings:
         description: ''
         required_fields: true
     group_url_info:
-      children:
-        - name
-        - path
+      children: {  }
       label: 'URL Info'
       region: content
       parent_name: group_office_tabs
@@ -118,7 +118,7 @@ third_party_settings:
       label: 'Office Tabs'
       region: content
       parent_name: ''
-      weight: 6
+      weight: 3
       format_type: tabs
       format_settings:
         classes: ''
@@ -148,9 +148,19 @@ content:
       progress_indicator: throbber
       preview_image_style: thumbnail
     third_party_settings: {  }
+  field_brookstone_tags:
+    type: entity_reference_autocomplete
+    weight: 26
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_department:
     type: entity_reference_autocomplete
-    weight: 9
+    weight: 1
     region: content
     settings:
       match_operator: CONTAINS
@@ -170,7 +180,7 @@ content:
     third_party_settings: {  }
   field_estimate_types:
     type: entity_reference_autocomplete
-    weight: 14
+    weight: 6
     region: content
     settings:
       match_operator: CONTAINS
@@ -203,7 +213,7 @@ content:
     third_party_settings: {  }
   field_list_order:
     type: number
-    weight: 11
+    weight: 3
     region: content
     settings:
       placeholder: ''
@@ -228,7 +238,7 @@ content:
     third_party_settings: {  }
   field_service_bundle:
     type: string_textfield
-    weight: 12
+    weight: 4
     region: content
     settings:
       size: 60
@@ -244,7 +254,7 @@ content:
     third_party_settings: {  }
   field_sop_code:
     type: string_textfield
-    weight: 13
+    weight: 5
     region: content
     settings:
       size: 60
@@ -260,7 +270,7 @@ content:
     third_party_settings: {  }
   field_work_order_service:
     type: boolean_checkbox
-    weight: 10
+    weight: 2
     region: content
     settings:
       display_label: true
@@ -275,13 +285,13 @@ content:
     third_party_settings: {  }
   path:
     type: path
-    weight: 1
+    weight: 4
     region: content
     settings: {  }
     third_party_settings: {  }
   status:
     type: boolean_checkbox
-    weight: 15
+    weight: 7
     region: content
     settings:
       display_label: true

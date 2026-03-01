@@ -1,0 +1,85 @@
+services:
+  contract_residential.contract_theme_negotiator:
+    class: Drupal\contract_residential\Theme\ContractThemeNegotiator
+    arguments: ['@current_user']
+    tags:
+      - { name: theme_negotiator, priority: 1000 }
+
+  contract_residential.work_order_generator:
+    class: Drupal\contract_residential\Service\WorkOrderGenerator
+    arguments:
+      - '@entity_type.manager'
+      - '@entity_type.bundle.info'
+      - '@logger.factory'
+      - '@config.factory'
+      - '@contract_residential.work_order_enricher_manager'
+      - '@current_user'
+
+  contract_residential.work_order_enricher_manager:
+    class: Drupal\contract_residential\WorkOrderEnrichers\EnricherManager
+    arguments: [!tagged_iterator contract_residential.work_order_enricher]
+
+  contract_residential.enricher.copy_section_fields:
+    class: Drupal\contract_residential\WorkOrderEnrichers\CopySectionFieldsEnricher
+    tags:
+      - { name: contract_residential.work_order_enricher, priority: 0 }
+
+  contract_residential.enricher.generic_season_default:
+    class: Drupal\contract_residential\WorkOrderEnrichers\GenericSeasonDefaultEnricher
+    arguments: ['@entity_type.manager']
+    tags:
+      - { name: contract_residential.work_order_enricher, priority: 25 }
+
+  contract_residential.enricher.generic_service_description:
+    class: Drupal\contract_residential\WorkOrderEnrichers\GenericServiceDescriptionEnricher
+    arguments: ['@entity_type.manager']
+    tags:
+      - { name: contract_residential.work_order_enricher, priority: 80 }
+
+  contract_residential.enricher.turf_sqft:
+    class: Drupal\contract_residential\WorkOrderEnrichers\TurfSqFtEnricher
+    arguments: ['@entity_type.manager']
+    tags:
+      - { name: contract_residential.work_order_enricher, priority: 10 }
+
+  contract_residential.enricher.fertilizing_seasons:
+    class: Drupal\contract_residential\WorkOrderEnrichers\FertilizingSeasonsEnricher
+    arguments: ['@entity_type.manager']
+    tags:
+      - { name: contract_residential.work_order_enricher, priority: 20 }
+
+  contract_residential.enricher.pre_emergent_season_description:
+    class: Drupal\contract_residential\WorkOrderEnrichers\PreEmergentSeasonDescriptionEnricher
+    arguments: ['@entity_type.manager']
+    tags:
+      - { name: contract_residential.work_order_enricher, priority: 30 }
+
+  contract_residential.enricher.aeration_season_description:
+    class: Drupal\contract_residential\WorkOrderEnrichers\AerationSeasonDescriptionEnricher
+    arguments: ['@entity_type.manager']
+    tags:
+      - { name: contract_residential.work_order_enricher, priority: 35 }
+
+  contract_residential.enricher.aspen_twig_gall_season_description:
+    class: Drupal\contract_residential\WorkOrderEnrichers\AspenTwigGallSeasonDescriptionEnricher
+    arguments: ['@entity_type.manager']
+    tags:
+      - { name: contract_residential.work_order_enricher, priority: 36 }
+
+  contract_residential.enricher.christmas_decorations_description:
+    class: Drupal\contract_residential\WorkOrderEnrichers\ChristmasDecorationsDescriptionEnricher
+    tags:
+      - { name: contract_residential.work_order_enricher, priority: 40 }
+
+  contract_residential.enricher.christmas_decorations_scheduling:
+    class: Drupal\contract_residential\WorkOrderEnrichers\ChristmasDecorationsSchedulingEnricher
+    arguments: ['@entity_type.manager', '@logger.factory']
+    tags:
+      - { name: contract_residential.work_order_enricher, priority: 90 }
+
+  contract_residential.estimate_request_auto_creator:
+    class: Drupal\contract_residential\Service\EstimateRequestAutoCreator
+    arguments:
+      - '@entity_type.manager'
+      - '@current_user'
+      - '@logger.factory'

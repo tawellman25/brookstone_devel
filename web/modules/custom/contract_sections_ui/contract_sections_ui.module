@@ -1,0 +1,224 @@
+<?php
+
+/**
+ * @file
+ * UI-only helpers for modal editing of contract_sections from a Contract context.
+ */
+
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\CloseModalDialogCommand;
+use Drupal\Core\Ajax\ReplaceCommand;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
+use Drupal\views\Views;
+
+/**
+ * View machine name that provides all the section blocks (legacy multi-block UI).
+ */
+const CONTRACT_SECTIONS_UI_VIEW_ID = 'contract_sections_admin_view';
+
+/**
+ * Feature flags.
+ * Flip to TRUE when resuming development.
+ */
+const CONTRACT_SECTIONS_UI_ENABLE_SAVE_EDIT_NEXT = FALSE;
+
+/**
+ * Implements hook_entity_view().
+ *
+ * Attach the dialog library on Contract pages where modal links render.
+ */
+function contract_sections_ui_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode): void {
+  if ($entity->getEntityTypeId() !== 'contracts') {
+    return;
+  }
+
+  $build['#attached']['library'][] = 'contract_sections_ui/dialog';
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Modal-only behavior for contract_sections edit dialog:
+ * - Hide Delete
+ * - Hide Add Another
+ *
+ * IMPORTANT:
+ * - If csui_display is present (legacy multi-block UI), we AJAX-submit + ReplaceCommand.
+ * - If csui_display is NOT present (admin table UI), we DO NOT ajax-submit.
+ *   That allows normal submit + destination redirect (page refresh).
+ */
+function contract_sections_ui_form_alter(array &$form, FormStateInterface $form_state, $form_id): void {
+  $route_match = \Drupal::routeMatch();
+  if (!$route_match instanceof RouteMatchInterface) {
+    return;
+  }
+
+  // Scope to modal route only.
+  if ($route_match->getRouteName() !== 'contract_sections_ui.section_edit_dialog') {
+    return;
+  }
+
+  // Ensure this is an entity form and the entity is contract_sections.
+  $form_object = $form_state->getFormObject();
+  if (!$form_object || !method_exists($form_object, 'getEntity')) {
+    return;
+  }
+
+  $entity = $form_object->getEntity();
+  if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'contract_sections') {
+    return;
+  }
+
+  // Preserve query string on submit (helps keep modal context stable).
+  $form['#action'] = \Drupal::request()->getRequestUri();
+
+  // Hide delete action button.
+  if (isset($form['actions']['delete'])) {
+    $form['actions']['delete']['#access'] = FALSE;
+  }
+
+  // Hide any "add another item" buttons inside field widgets.
+  contract_sections_ui_hide_add_more_buttons($form);
+
+  // ------------------------------------------------------------------
+  // Save & Edit Next (disabled for now; code retained for later)
+  // ------------------------------------------------------------------
+  if (CONTRACT_SECTIONS_UI_ENABLE_SAVE_EDIT_NEXT) {
+    // Placeholder: future development.
+    // (Intentionally disabled. Leave code/functions below for later.)
+  }
+
+  // ------------------------------------------------------------------
+  // Legacy multi-block UI: csui_display => AJAX Save refreshes that block.
+  // Admin table UI: no csui_display => normal Save redirects (page refresh).
+  // ------------------------------------------------------------------
+  $display_id = (string) \Drupal::request()->query->get('csui_display');
+  $display_id_valid = (bool) (preg_match('/^block_\d+$/', $display_id));
+
+  if ($display_id_valid) {
+    // Persist display id through AJAX submit.
+    $form['contract_sections_ui_display'] = [
+      '#type' => 'hidden',
+      '#value' => $display_id,
+    ];
+
+    // AJAX-enable submit(s) so Save does NOT redirect/reload the full page,
+    // and we can ReplaceCommand the correct block wrapper.
+    if (isset($form['actions']) && is_array($form['actions'])) {
+      foreach ($form['actions'] as $key => &$action) {
+        if (!is_array($action) || empty($action['#type']) || $action['#type'] !== 'submit') {
+          continue;
+        }
+        if ($key === 'delete') {
+          continue;
+        }
+
+        $action['#ajax'] = [
+          'callback' => 'contract_sections_ui_modal_submit_ajax',
+          'event' => 'click',
+        ];
+
+        $form['#attached']['library'][] = 'core/drupal.ajax';
+      }
+      unset($action);
+    }
+  }
+}
+
+/**
+ * Legacy AJAX callback for normal Save (multi-block UI only).
+ *
+ * - On errors: return form (modal stays open)
+ * - On success: refresh the specific legacy block wrapper and close modal.
+ */
+function contract_sections_ui_modal_submit_ajax(array &$form, FormStateInterface $form_state) {
+  if ($form_state->hasAnyErrors()) {
+    return $form;
+  }
+
+  $route_match = \Drupal::routeMatch();
+  $contract = $route_match ? $route_match->getParameter('contracts') : NULL;
+
+  $display_id = (string) $form_state->getValue('contract_sections_ui_display');
+  if (!preg_match('/^block_\d+$/', $display_id)) {
+    $display_id = '';
+  }
+
+  $response = new AjaxResponse();
+
+  if ($contract instanceof EntityInterface && $contract->getEntityTypeId() === 'contracts' && $display_id !== '') {
+    $view = Views::getView(CONTRACT_SECTIONS_UI_VIEW_ID);
+    if ($view) {
+      $view->setDisplay($display_id);
+
+      // Temporarily set "current path" to the contract's alias so the View's
+      // default argument "Entity ID converted from URL path alias" works.
+      $current_path = \Drupal::service('path.current');
+      $alias_manager = \Drupal::service('path_alias.manager');
+
+      $original_path = $current_path->getPath();
+
+      $canonical_path = Url::fromRoute('entity.contracts.canonical', [
+        'contracts' => $contract->id(),
+      ])->toString();
+
+      $alias_path = $alias_manager->getAliasByPath($canonical_path);
+      if (!$alias_path) {
+        $alias_path = $canonical_path;
+      }
+
+      $current_path->setPath($alias_path);
+
+      // If your display also uses Contract ID as an argument, keep this:
+      $view->setArguments([(string) $contract->id()]);
+
+      // Force a clean run.
+      $view->preExecute();
+      $view->execute();
+      $render = $view->render();
+
+      // Restore original path immediately.
+      $current_path->setPath($original_path);
+
+      // Replace ONLY the wrapper for that display id.
+      // IMPORTANT: your markup uses 'contract-sections-view--block-1' (hyphen),
+      // while Views display ids are 'block_1' (underscore). Convert _ to -.
+      $selector = '.contract-sections-view--' . str_replace('_', '-', $display_id);
+      $response->addCommand(new ReplaceCommand($selector, $render));
+    }
+  }
+
+  $response->addCommand(new CloseModalDialogCommand());
+  return $response;
+}
+
+/**
+ * Recursively hide add_more buttons in multi-value field widgets.
+ */
+function contract_sections_ui_hide_add_more_buttons(array &$element): void {
+  foreach ($element as $key => &$child) {
+    if (!is_array($child)) {
+      continue;
+    }
+
+    // Common structure: $form['field_x']['widget']['add_more'].
+    if ($key === 'add_more' && isset($child['#type']) && $child['#type'] === 'submit') {
+      $child['#access'] = FALSE;
+      continue;
+    }
+
+    // Some widgets nest differently; hide submit buttons whose #name includes add_more.
+    if (isset($child['#type'], $child['#name']) && $child['#type'] === 'submit') {
+      $name = (string) $child['#name'];
+      if (str_contains($name, 'add_more') || str_contains($name, 'add-more')) {
+        $child['#access'] = FALSE;
+      }
+    }
+
+    contract_sections_ui_hide_add_more_buttons($child);
+  }
+}

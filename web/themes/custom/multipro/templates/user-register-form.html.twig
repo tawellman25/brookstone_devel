@@ -1,0 +1,58 @@
+ {% set base_url = url('<front>')  %}
+ {% if register_banner_image_url %}
+    <section class="page-banner" style="background-image: url({{register_banner_image_url}});">
+{% else %}
+    <section class="page-banner" style="background-image: url({{base_url}}/assets/subpage_banner.jpg);">
+{% endif %}
+    <div class="container">
+        <div class="heading">
+            <h1>{{register_banner_title}}</h1>
+            <ol class="breadcrumb">
+                 {{ drupal_block('system_breadcrumb_block') }}
+            </ol>
+        </div>
+    </div>
+</section>
+<section class="register dt-section">
+    <div class="container">
+        <div class="row s-35">
+            <div class="col-lg-7 col-md-7 col-12">
+                <div class="register-form">
+                    <form>
+                    {% if register_page_title %}
+                        <h2>{{register_page_title}}</h2>
+                    {% endif %}
+                        <div class="form-group">
+                            {{ form.account.mail }}
+                            {% if register_email_help_text %}
+                            <span>{{register_email_help_text}}</span>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            {{ form.account.name }}
+                            {% if register_name_help_text %}
+                            <span>{{register_name_help_text}}</span>
+                            {% endif %}
+                        </div>
+                        <div class="register-btn">
+                            {{form.actions}}
+                            {{ form.form_build_id }}
+                            {{ form.form_id }}
+                            <p>Already have an account? <a href="{{base_url}}user/login" class="register-link" title="Login">Login</a></p>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+            <div class="col-lg-5 col-md-5 col-12 d-none d-md-block">
+                <div class="image">
+                {% if register_image_url %}
+                    <img src="{{register_image_url}}" alt="Image">
+                {% else %}
+                    <img src="{{base_url}}/sites/default/files/2022-08/about-us-1.jpg" alt="Image">
+                {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

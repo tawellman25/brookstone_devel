@@ -1,0 +1,127 @@
+uuid: d511d844-c2ee-40d2-9f3e-02415bfedb92
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.base_field_override.contract_sections.aerating_of_lawn.created
+    - eck.eck_type.contract_sections.aerating_of_lawn
+    - field.field.contract_sections.aerating_of_lawn.field_contract
+    - field.field.contract_sections.aerating_of_lawn.field_estimate
+    - field.field.contract_sections.aerating_of_lawn.field_last_year
+  module:
+    - eck
+    - feeds_log
+    - feeds_tamper
+third_party_settings:
+  feeds_log:
+    status: true
+    operations:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+      cleaned: cleaned
+    items:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+    source: true
+  feeds_tamper:
+    tampers:
+      04a20fad-89ee-4c45-9993-37516b0f5b06:
+        uuid: 04a20fad-89ee-4c45-9993-37516b0f5b06
+        plugin: skip_on_empty
+        source: est_389_aeration
+        weight: 0
+        label: 'Skip tampers on empty'
+label: 'Residential Contract - aerating_of_lawn'
+id: residential_contract_aerating_of
+description: 'Aerating of Lawn contract section imports'
+help: ''
+import_period: -1
+import_period_per_feed: false
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:contract_sections'
+processor_configuration:
+  values:
+    type: aerating_of_lawn
+  langcode: en
+  insert_new: 1
+  update_existing: 0
+  update_non_existent: _keep
+  skip_hash_check: false
+  skip_validation: false
+  skip_validation_types: {  }
+  authorize: true
+  revision: false
+  expire: -1
+  owner_feed_author: false
+  owner_id: 1
+custom_sources:
+  contact_id:
+    value: Contact_ID
+    label: Contact_ID
+    machine_name: contact_id
+    type: csv
+  pre_389_aeration:
+    value: PRE_389_aeration
+    label: PRE_389_aeration
+    machine_name: pre_389_aeration
+    type: csv
+  est_389_aeration:
+    value: EST_389_aeration
+    label: EST_389_aeration
+    machine_name: est_389_aeration
+    type: csv
+  entered_on:
+    value: entered_on
+    label: entered_on
+    machine_name: entered_on
+    type: csv
+  contract_id:
+    value: Contract_ID
+    label: Contract_ID
+    machine_name: contract_id
+    type: csv
+mappings:
+  -
+    target: field_contract
+    map:
+      target_id: contract_id
+    settings:
+      language: ''
+      reference_by: id
+      feeds_item: guid
+      autocreate: 0
+      autocreate_bundle: residential
+  -
+    target: field_last_year
+    map:
+      value: pre_389_aeration
+    settings:
+      language: null
+  -
+    target: field_estimate
+    map:
+      value: est_389_aeration
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: created
+    map:
+      value: entered_on
+    settings:
+      language: null
+      timezone: UTC

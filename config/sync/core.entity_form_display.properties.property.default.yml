@@ -9,6 +9,7 @@ dependencies:
     - field.field.properties.property.field_call_ahead
     - field.field.properties.property.field_client_app
     - field.field.properties.property.field_cod_customer
+    - field.field.properties.property.field_contacts
     - field.field.properties.property.field_county_account_number
     - field.field.properties.property.field_front_view
     - field.field.properties.property.field_full_address
@@ -21,6 +22,7 @@ dependencies:
     - field.field.properties.property.field_nickname
     - field.field.properties.property.field_no_services
     - field.field.properties.property.field_parcel_number
+    - field.field.properties.property.field_primary_contact_ref
     - field.field.properties.property.field_property_description
     - field.field.properties.property.field_street_address
     - field.field.properties.property.field_why_cod_for_this_property
@@ -158,6 +160,23 @@ third_party_settings:
         open: true
         description: 'Most maps are moving to the individual services that we provide.  If you see maps here please take the time to move them to the service they are intended for. '
         required_fields: true
+    group_other_contacts:
+      children:
+        - field_primary_contact_ref
+        - field_contacts
+      label: 'Other Contacts'
+      region: content
+      parent_name: ''
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Attach other <b>Contacts</b> to this property here.  '
+        required_fields: true
 id: properties.property.default
 targetEntityType: properties
 bundle: property
@@ -207,6 +226,16 @@ content:
     region: content
     settings:
       display_label: true
+    third_party_settings: {  }
+  field_contacts:
+    type: entity_reference_autocomplete
+    weight: 22
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
     third_party_settings: {  }
   field_county_account_number:
     type: string_textfield
@@ -335,6 +364,16 @@ content:
     settings:
       size: 20
       placeholder: 'Example: 100000001234'
+    third_party_settings: {  }
+  field_primary_contact_ref:
+    type: entity_reference_autocomplete
+    weight: 21
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
     third_party_settings: {  }
   field_property_description:
     type: text_textarea_with_summary

@@ -1,6 +1,7 @@
 services:
   eck_bundle_clone.commands:
     class: Drupal\eck_bundle_clone\Commands\EckBundleCloneCommands
-    arguments: ['@entity_type.manager']
+    arguments:
+      - '@entity_type.manager'
     tags:
       - { name: drush.command }

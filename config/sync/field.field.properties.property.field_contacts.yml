@@ -1,0 +1,29 @@
+uuid: 6825efe3-d228-4034-b37b-0c50f9a7e938
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.contact
+    - eck.eck_type.properties.property
+    - field.storage.properties.field_contacts
+id: properties.property.field_contacts
+field_name: field_contacts
+entity_type: properties
+bundle: property
+label: 'Additional Contacts'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contacts'
+  handler_settings:
+    target_bundles:
+      contact: contact
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

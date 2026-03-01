@@ -1,0 +1,30 @@
+contract_sections_ui.section_edit_dialog:
+  path: '/contracts/{contracts}/sections/{contract_sections}/edit-dialog'
+  defaults:
+    _controller: '\Drupal\contract_sections_ui\Controller\ContractSectionDialogController::editDialog'
+    _title: 'Edit Contract Section'
+  requirements:
+    _permission: 'use contract sections ui'
+  options:
+    parameters:
+      contracts:
+        type: entity:contracts
+      contract_sections:
+        type: entity:contract_sections
+    no_cache: 'TRUE'
+
+
+contract_sections_ui.section_history_dialog:
+  path: '/contracts/{contracts}/sections/{contract_sections}/history-dialog'
+  defaults:
+    _controller: '\Drupal\contract_sections_ui\Controller\ContractSectionHistoryDialogController::historyDialog'
+    _title: 'Section History'
+  requirements:
+    _permission: 'use contract sections ui'
+  options:
+    parameters:
+      contracts:
+        type: entity:contracts
+      contract_sections:
+        type: entity:contract_sections
+    no_cache: 'TRUE'

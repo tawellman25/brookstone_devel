@@ -4,7 +4,16 @@ status: true
 dependencies:
   config:
     - core.entity_view_mode.user.compact
+    - field.field.user.user.feeds_item
+    - field.field.user.user.field_consent_updated
+    - field.field.user.user.field_credit_hold
+    - field.field.user.user.field_do_not_schedule
     - field.field.user.user.field_ok_to_email
+    - field.field.user.user.field_paperless_delivery
+    - field.field.user.user.field_qb_list_id
+    - field.field.user.user.field_qb_refnum
+    - field.field.user.user.field_service_suspension_reason
+    - field.field.user.user.field_sms_consent
     - field.field.user.user.user_picture
     - image.style.thumbnail
   module:
@@ -55,6 +64,16 @@ third_party_settings:
                 entity: layout_builder.entity
             weight: 1
             additional: {  }
+          eae43409-0d41-49fa-968c-4a8ff0f263e6:
+            uuid: eae43409-0d41-49fa-968c-4a8ff0f263e6
+            region: content
+            configuration:
+              id: 'extra_field_block:user:user:teammate_employment_notes_entity_view_1'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+            weight: 2
+            additional: {  }
         third_party_settings: {  }
 _core:
   default_config_hash: 00zr_RBdTjPjBGITD3h4c1ESQZimjdVCcHGt1trLqIY
@@ -64,6 +83,11 @@ bundle: user
 mode: compact
 content:
   flag_following:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  teammate_employment_notes_entity_view_1:
     settings: {  }
     third_party_settings: {  }
     weight: 10
@@ -81,7 +105,16 @@ content:
     region: content
 hidden:
   customer_profile_profiles: true
+  feeds_item: true
+  field_consent_updated: true
+  field_credit_hold: true
+  field_do_not_schedule: true
   field_ok_to_email: true
+  field_paperless_delivery: true
+  field_qb_list_id: true
+  field_qb_refnum: true
+  field_service_suspension_reason: true
+  field_sms_consent: true
   member_for: true
   supplier_profile_profiles: true
   teammate_profile_profiles: true

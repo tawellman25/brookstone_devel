@@ -8,8 +8,19 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Drush commands for cloning ECK bundles.
+ *
+ * IMPORTANT DESIGN DECISION:
+ * - This module clones ONLY the bundle definition + fields (+ base field overrides).
+ * - It DOES NOT clone entity_form_display / entity_view_display.
+ *
+ * Reason:
+ * Cloning display config often copies invalid/inconsistent third_party_settings
+ * (field_group / field_layout / layout builder metadata), which can corrupt the
+ * cloned bundle’s display config and cause errors when admins manage groups.
+ *
+ * After cloning, admins must configure displays/groups manually in the UI.
  */
-class EckBundleCloneCommands extends DrushCommands {
+final class EckBundleCloneCommands extends DrushCommands {
 
   /**
    * The entity type manager.
@@ -20,9 +31,6 @@ class EckBundleCloneCommands extends DrushCommands {
 
   /**
    * Constructs a new EckBundleCloneCommands object.
-   *
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *   The entity type manager.
    */
   public function __construct(EntityTypeManagerInterface $entity_type_manager) {
     parent::__construct();
@@ -39,24 +47,27 @@ class EckBundleCloneCommands extends DrushCommands {
   }
 
   /**
-   * Clone an ECK bundle including fields, displays, field groups and labels.
+   * Clone an ECK bundle (bundle config + fields + base field overrides).
+   *
+   * Displays are NOT cloned by design:
+   * - No core.entity_form_display.*
+   * - No core.entity_view_display.*
+   * - No third_party_settings copied from displays (field_group/field_layout/etc.)
    *
    * @command eck:clone-bundle
-   * @aliases eck-bundle-clone,eck:clone-bundle
+   * @aliases eck-bundle-clone
    *
    * @param string $entity_type_id
-   *   The ECK content entity type ID (e.g. "estimate").
+   *   The ECK content entity type ID (e.g. "estimate", "sop").
    * @param string $source_bundle_id
    *   The source bundle machine name.
    * @param string $new_bundle_id
    *   The new bundle machine name.
-   * @option label
-   *   (optional) The label for the new bundle. If omitted, a prettified
-   *   version of the new bundle machine name will be used.
    *
-   * @usage eck:clone-bundle estimate landscaping ssrepair
-   *   Clone the "landscaping" bundle of the "estimate" entity type to
-   *   "ssrepair".
+   * @option label
+   *   (optional) The label for the new bundle.
+   *
+   * @usage eck:clone-bundle sop system_procedures training --label="Training"
    */
   public function cloneBundle(
     string $entity_type_id,
@@ -66,33 +77,44 @@ class EckBundleCloneCommands extends DrushCommands {
   ): void {
     $bundle_entity_type_id = $entity_type_id . '_type';
 
+    if (!$this->entityTypeManager->hasDefinition($bundle_entity_type_id)) {
+      throw new \RuntimeException(sprintf(
+        'Bundle entity type "%s" does not exist. Is "%s" a valid ECK entity type?',
+        $bundle_entity_type_id,
+        $entity_type_id
+      ));
+    }
+
     $bundle_storage = $this->entityTypeManager->getStorage($bundle_entity_type_id);
 
     /** @var \Drupal\Core\Config\Entity\ConfigEntityInterface|null $source */
     $source = $bundle_storage->load($source_bundle_id);
     if (!$source) {
-      $this->logger()->error(dt('Source bundle "@bundle" not found on entity type "@type".', [
-        '@bundle' => $source_bundle_id,
-        '@type' => $entity_type_id,
-      ]));
-      return;
+      throw new \RuntimeException(sprintf(
+        'Source bundle "%s" not found for entity type "%s".',
+        $source_bundle_id,
+        $entity_type_id
+      ));
     }
 
     if ($bundle_storage->load($new_bundle_id)) {
-      $this->logger()->error(dt('Bundle with ID "@id" already exists on entity type "@type".', [
-        '@id' => $new_bundle_id,
-        '@type' => $entity_type_id,
-      ]));
-      return;
+      throw new \RuntimeException(sprintf(
+        'Target bundle "%s" already exists for entity type "%s".',
+        $new_bundle_id,
+        $entity_type_id
+      ));
     }
 
+    // Clone bundle config entity (includes 3rd-party settings on the bundle
+    // itself like Automatic Entity Label). This is safe and desired.
     $values = $source->toArray();
 
-    // ECK bundle ID is stored in "type".
+    // For ECK bundle config entities, the ID is in "type" and label in "name".
     $values['type'] = $new_bundle_id;
 
-    if (!empty($options['label'])) {
-      $values['name'] = $options['label'];
+    $label = (string) ($options['label'] ?? '');
+    if ($label !== '') {
+      $values['name'] = $label;
     }
     else {
       $values['name'] = ucfirst(str_replace('_', ' ', $new_bundle_id));
@@ -103,13 +125,12 @@ class EckBundleCloneCommands extends DrushCommands {
     $new_bundle = $bundle_storage->create($values);
     $new_bundle->save();
 
+    // Clone structural config tied to the bundle.
     $this->cloneFields($entity_type_id, $source_bundle_id, $new_bundle_id);
-    $this->cloneFormDisplays($entity_type_id, $source_bundle_id, $new_bundle_id);
-    $this->cloneViewDisplays($entity_type_id, $source_bundle_id, $new_bundle_id);
-    $this->cloneFieldGroups($entity_type_id, $source_bundle_id, $new_bundle_id);
+    $this->cloneBaseFieldOverrides($entity_type_id, $source_bundle_id, $new_bundle_id);
 
     $this->logger()->success(dt(
-      'Cloned bundle "@source" to "@new" for entity type "@type".',
+      'Cloned bundle "@source" -> "@new" for entity type "@type". Displays were NOT cloned by design; configure form/view displays and field groups manually.',
       [
         '@source' => $source_bundle_id,
         '@new' => $new_bundle_id,
@@ -121,21 +142,14 @@ class EckBundleCloneCommands extends DrushCommands {
   /**
    * Clone field instances (field_config) from one bundle to another.
    *
-   * @param string $entity_type_id
-   *   The ECK entity type ID.
-   * @param string $source_bundle_id
-   *   The source bundle machine name.
-   * @param string $new_bundle_id
-   *   The new bundle machine name.
+   * Field storage is shared between bundles, so we only create field_config
+   * entities for the new bundle.
    */
-  protected function cloneFields(
-    string $entity_type_id,
-    string $source_bundle_id,
-    string $new_bundle_id
-  ): void {
+  protected function cloneFields(string $entity_type_id, string $source_bundle_id, string $new_bundle_id): void {
     $field_config_storage = $this->entityTypeManager->getStorage('field_config');
 
     $ids = $field_config_storage->getQuery()
+      ->accessCheck(FALSE)
       ->condition('entity_type', $entity_type_id)
       ->condition('bundle', $source_bundle_id)
       ->execute();
@@ -149,63 +163,14 @@ class EckBundleCloneCommands extends DrushCommands {
     foreach ($field_configs as $field_config) {
       /** @var \Drupal\field\Entity\FieldConfig $field_config */
       $field_name = $field_config->getName();
+      $new_id = $entity_type_id . '.' . $new_bundle_id . '.' . $field_name;
 
-      $existing_id = $entity_type_id . '.' . $new_bundle_id . '.' . $field_name;
-      if ($field_config_storage->load($existing_id)) {
+      if ($field_config_storage->load($new_id)) {
         continue;
       }
 
       $duplicate = $field_config->createDuplicate();
       $duplicate->set('bundle', $new_bundle_id);
-      $duplicate->set('id', $existing_id);
-      $duplicate->set('uuid', NULL);
-      $duplicate->save();
-    }
-  }
-
-  /**
-   * Clone form displays (entity_form_display) from one bundle to another.
-   *
-   * @param string $entity_type_id
-   *   The ECK entity type ID.
-   * @param string $source_bundle_id
-   *   The source bundle machine name.
-   * @param string $new_bundle_id
-   *   The new bundle machine name.
-   */
-  protected function cloneFormDisplays(
-    string $entity_type_id,
-    string $source_bundle_id,
-    string $new_bundle_id
-  ): void {
-    $storage = $this->entityTypeManager->getStorage('entity_form_display');
-
-    $ids = $storage->getQuery()
-      ->condition('targetEntityType', $entity_type_id)
-      ->condition('bundle', $source_bundle_id)
-      ->execute();
-
-    if (!$ids) {
-      return;
-    }
-
-    $displays = $storage->loadMultiple($ids);
-
-    foreach ($displays as $display) {
-      /** @var \Drupal\Core\Entity\Display\EntityFormDisplayInterface $display */
-      $old_id = $display->id();
-      $new_id = str_replace(
-        $entity_type_id . '.' . $source_bundle_id . '.',
-        $entity_type_id . '.' . $new_bundle_id . '.',
-        $old_id
-      );
-
-      if ($storage->load($new_id)) {
-        continue;
-      }
-
-      $duplicate = $display->createDuplicate();
-      $duplicate->set('bundle', $new_bundle_id);
       $duplicate->set('id', $new_id);
       $duplicate->set('uuid', NULL);
       $duplicate->save();
@@ -213,79 +178,19 @@ class EckBundleCloneCommands extends DrushCommands {
   }
 
   /**
-   * Clone view displays (entity_view_display) from one bundle to another.
+   * Clone base field overrides from one bundle to another.
    *
-   * @param string $entity_type_id
-   *   The ECK entity type ID.
-   * @param string $source_bundle_id
-   *   The source bundle machine name.
-   * @param string $new_bundle_id
-   *   The new bundle machine name.
+   * IDs are: {entity_type}.{bundle}.{field_name}
    */
-  protected function cloneViewDisplays(
-    string $entity_type_id,
-    string $source_bundle_id,
-    string $new_bundle_id
-  ): void {
-    $storage = $this->entityTypeManager->getStorage('entity_view_display');
-
-    $ids = $storage->getQuery()
-      ->condition('targetEntityType', $entity_type_id)
-      ->condition('bundle', $source_bundle_id)
-      ->execute();
-
-    if (!$ids) {
+  protected function cloneBaseFieldOverrides(string $entity_type_id, string $source_bundle_id, string $new_bundle_id): void {
+    if (!$this->entityTypeManager->hasDefinition('base_field_override')) {
       return;
     }
 
-    $displays = $storage->loadMultiple($ids);
-
-    foreach ($displays as $display) {
-      /** @var \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display */
-      $old_id = $display->id();
-      $new_id = str_replace(
-        $entity_type_id . '.' . $source_bundle_id . '.',
-        $entity_type_id . '.' . $new_bundle_id . '.',
-        $old_id
-      );
-
-      if ($storage->load($new_id)) {
-        continue;
-      }
-
-      $duplicate = $display->createDuplicate();
-      $duplicate->set('bundle', $new_bundle_id);
-      $duplicate->set('id', $new_id);
-      $duplicate->set('uuid', NULL);
-      $duplicate->save();
-    }
-  }
-
-  /**
-   * Clone Field Group definitions from one bundle to another.
-   *
-   * Only runs if the field_group entity type exists.
-   *
-   * @param string $entity_type_id
-   *   The ECK entity type ID.
-   * @param string $source_bundle_id
-   *   The source bundle machine name.
-   * @param string $new_bundle_id
-   *   The new bundle machine name.
-   */
-  protected function cloneFieldGroups(
-    string $entity_type_id,
-    string $source_bundle_id,
-    string $new_bundle_id
-  ): void {
-    // Be defensive: only proceed if the entity type actually exists.
-    if (!$this->entityTypeManager->hasDefinition('field_group')) {
-      return;
-    }
-
-    $storage = $this->entityTypeManager->getStorage('field_group');
+    $storage = $this->entityTypeManager->getStorage('base_field_override');
 
     $ids = $storage->getQuery()
+      ->accessCheck(FALSE)
       ->condition('entity_type', $entity_type_id)
       ->condition('bundle', $source_bundle_id)
       ->execute();
@@ -294,22 +199,18 @@ class EckBundleCloneCommands extends DrushCommands {
       return;
     }
 
-    $groups = $storage->loadMultiple($ids);
+    $overrides = $storage->loadMultiple($ids);
 
-    foreach ($groups as $group) {
-      /** @var \Drupal\field_group\Entity\FieldGroup $group */
-      $old_id = $group->id();
-      $new_id = str_replace(
-        $entity_type_id . '.' . $source_bundle_id . '.',
-        $entity_type_id . '.' . $new_bundle_id . '.',
-        $old_id
-      );
+    foreach ($overrides as $override) {
+      /** @var \Drupal\Core\Config\Entity\ConfigEntityInterface $override */
+      $field_name = $override->get('field_name');
+      $new_id = $entity_type_id . '.' . $new_bundle_id . '.' . $field_name;
 
       if ($storage->load($new_id)) {
         continue;
       }
 
-      $duplicate = $group->createDuplicate();
+      $duplicate = $override->createDuplicate();
       $duplicate->set('bundle', $new_bundle_id);
       $duplicate->set('id', $new_id);
       $duplicate->set('uuid', NULL);

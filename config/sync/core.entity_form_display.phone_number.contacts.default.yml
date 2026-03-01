@@ -5,6 +5,7 @@ dependencies:
   config:
     - eck.eck_type.phone_number.contacts
     - field.field.phone_number.contacts.field_phone_number
+    - field.field.phone_number.contacts.field_phone_type
   module:
     - field_layout
     - layout_discovery
@@ -21,10 +22,16 @@ mode: default
 content:
   field_phone_number:
     type: telephone_default
-    weight: 0
+    weight: 1
     region: content
     settings:
       placeholder: ''
+    third_party_settings: {  }
+  field_phone_type:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
     third_party_settings: {  }
 hidden:
   created: true

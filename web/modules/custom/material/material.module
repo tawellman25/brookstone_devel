@@ -1,227 +1,361 @@
 <?php
 
-use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\OpenModalDialogCommand;
-use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
- * Defines supported Material bundles for price updates.
+ * Implements hook_entity_validate().
+ *
+ * BOS invariants for material_suppliers:
+ * - Exactly one row per (field_material, field_supplier) pair.
+ * - If order unit != cost unit, pack quantity must be > 0.
+ * - Minimum order quantity (if set) must be > 0.
+ * - Supplier unit cost (if set) must be > 0.
+ * - Supplier override do_not_use blocks save (effective status).
+ *
+ * No UI-only enforcement. No Work Order mutations.
  */
-const MATERIAL_PRICE_UPDATE_BUNDLES = ['irrigation'];
-
-/**
- * Implements hook_page_attachments().
- */
-function material_page_attachments(array &$attachments) {
-  $attachments['#attached']['library'][] = 'material/material';
-  \Drupal::logger('material')->notice('Material library attached.');
-}
-
-/**
- * Implements hook_form_alter().
- */
-function material_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-  // Log form ID for debugging.
-  \Drupal::logger('material')->notice('Form ID: @id', ['@id' => $form_id]);
-
-  // Check for the irrigation bundle form.
-  if ($form_id !== 'material-irrigation-edit-form') {
+function material_entity_validate(EntityInterface $entity, ConstraintViolationListInterface $violations): void {
+  if ($entity->getEntityTypeId() !== 'material_suppliers') {
     return;
   }
 
-  \Drupal::logger('material')->notice('Form alter triggered for irrigation form: @id', ['@id' => $form_id]);
-
-  // Add custom submit handler and Ajax callback.
-  $form['actions']['submit']['#submit'][] = 'material_form_submit_handler';
-  $form['actions']['submit']['#ajax'] = [
-    'callback' => 'material_open_price_confirm_modal',
-    'event' => 'click',
-    'progress' => [
-      'type' => 'throbber',
-      'message' => t('Checking price update...'),
-    ],
-  ];
-
-  // Prevent default submission.
-  $form['actions']['submit']['#submit'] = [];
-}
-
-/**
- * Custom submit handler to store form state.
- */
-function material_form_submit_handler($form, FormStateInterface $form_state) {
-  \Drupal::logger('material')->notice('Submit handler triggered for form: @id', ['@id' => $form_state->getFormObject()->getFormId()]);
-  $form_state->setTemporaryValue('material_form_state', $form_state);
-}
-
-/**
- * Ajax callback to open the price confirmation modal.
- */
-function material_open_price_confirm_modal($form, FormStateInterface $form_state) {
-  \Drupal::logger('material')->notice('Opening price confirm modal.');
-  $response = new AjaxResponse();
-  $entity = $form_state->getFormObject()->getEntity();
-
-  // Verify entity type and bundle.
-  if ($entity->getEntityTypeId() !== 'material' || !in_array($entity->bundle(), MATERIAL_PRICE_UPDATE_BUNDLES)) {
-    \Drupal::logger('material')->warning('Invalid entity type or bundle: @type/@bundle.', [
-      '@type' => $entity->getEntityTypeId(),
-      '@bundle' => $entity->bundle(),
-    ]);
-    return $response;
+  // Required relationships.
+  if (!$entity->hasField('field_material') || $entity->get('field_material')->isEmpty()) {
+    $violations->add(new ConstraintViolation(
+      'Material is required.',
+      'Material is required.',
+      [],
+      $entity,
+      'field_material',
+      NULL
+    ));
+    return;
   }
 
-  // Get cost field value.
-  $cost = NULL;
-  if ($entity->hasField('field_cost_integer') && !$entity->get('field_cost_integer')->isEmpty()) {
-    $cost = $entity->get('field_cost_integer')->value;
-  } else {
-    \Drupal::logger('material')->warning('Cost field missing or empty for Material entity: @id.', [
-      '@id' => $entity->id() ?? 'new',
-    ]);
+  if (!$entity->hasField('field_supplier') || $entity->get('field_supplier')->isEmpty()) {
+    $violations->add(new ConstraintViolation(
+      'Supplier is required.',
+      'Supplier is required.',
+      [],
+      $entity,
+      'field_supplier',
+      NULL
+    ));
+    return;
   }
 
-  // Load Business Setting config page.
-  $business_setting = \Drupal::service('config_pages.loader')->load('business_setting');
-  if (!$business_setting) {
-    \Drupal::logger('material')->warning('Failed to load business_setting config page.');
-    return $response;
+  $material_id = (int) $entity->get('field_material')->target_id;
+  $supplier_id = (int) $entity->get('field_supplier')->target_id;
+
+  // Uniqueness: one record per (material, supplier).
+  $storage = \Drupal::entityTypeManager()->getStorage('material_suppliers');
+
+  $query = $storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_material', $material_id)
+    ->condition('field_supplier', $supplier_id);
+
+  if (!$entity->isNew()) {
+    $query->condition('id', (int) $entity->id(), '<>');
   }
 
-  // Get markup field value.
-  $markup = NULL;
-  if ($business_setting->hasField('field_markup') && !$business_setting->get('field_markup')->isEmpty()) {
-    $markup = $business_setting->get('field_markup')->value;
-  } else {
-    \Drupal::logger('material')->warning('Markup field missing or empty in business_setting.');
+  $existing = $query->range(0, 1)->execute();
+  if (!empty($existing)) {
+    $violations->add(new ConstraintViolation(
+      'This Material ↔ Supplier link already exists. Only one record is allowed per (Material, Supplier) pair.',
+      'This Material ↔ Supplier link already exists. Only one record is allowed per (Material, Supplier) pair.',
+      [],
+      $entity,
+      'field_supplier',
+      NULL
+    ));
   }
 
-  // Check if we can proceed with calculation.
-  $proposed_price = NULL;
-  if ($cost > 0 && $markup > 0) {
-    $proposed_price = $cost * $markup;
-    // Round if field_installed_price is integer.
-    $field_definition = $entity->getFieldDefinition('field_installed_price');
-    if ($field_definition && $field_definition->getType() === 'integer') {
-      $proposed_price = round($proposed_price);
+  // UOM governance: if order unit != cost UOM then pack qty required (>0).
+  $order_uom = NULL;
+  $cost_uom = NULL;
+
+  if ($entity->hasField('field_order_unit') && !$entity->get('field_order_unit')->isEmpty()) {
+    $order_uom = (string) $entity->get('field_order_unit')->value;
+  }
+  if ($entity->hasField('field_cost_unit_of_measure') && !$entity->get('field_cost_unit_of_measure')->isEmpty()) {
+    $cost_uom = (string) $entity->get('field_cost_unit_of_measure')->value;
+  }
+
+  if ($order_uom && $cost_uom && $order_uom !== $cost_uom) {
+    $pack_qty = NULL;
+    if ($entity->hasField('field_pack_quantity') && !$entity->get('field_pack_quantity')->isEmpty()) {
+      $pack_qty = (int) $entity->get('field_pack_quantity')->value;
     }
-  } else {
-    \Drupal::logger('material')->warning('Cannot calculate price. Cost: @cost, Markup: @markup.', [
-      '@cost' => $cost ?? 'null',
-      '@markup' => $markup ?? 'null',
-    ]);
+    if (empty($pack_qty) || $pack_qty <= 0) {
+      $violations->add(new ConstraintViolation(
+        'Pack Quantity is required when Order Unit differs from Cost Unit of Measure.',
+        'Pack Quantity is required when Order Unit differs from Cost Unit of Measure.',
+        [],
+        $entity,
+        'field_pack_quantity',
+        NULL
+      ));
+    }
   }
 
-  // Show modal even if calculation fails (for debugging).
-  $modal_content = [
-    '#type' => 'container',
-    '#markup' => $proposed_price !== NULL
-      ? t('Do you want to update the Installed Price to @price based on the cost (@cost) and markup (@markup)?', [
-          '@price' => number_format($proposed_price, 2),
-          '@cost' => $cost,
-          '@markup' => $markup,
-        ])
-      : t('Unable to calculate price. Check cost and markup values.'),
-  ];
-
-  $modal_options = [
-    'buttons' => [
-      [
-        'text' => t('Yes, update price'),
-        'class' => ['button', 'button--primary'],
-        'ajax' => [
-          'callback' => 'material_confirm_price_update',
-          'event' => 'click',
-        ],
-      ],
-      [
-        'text' => t('No, skip'),
-        'class' => ['button'],
-        'ajax' => [
-          'callback' => 'material_skip_price_update',
-          'event' => 'click',
-        ],
-      ],
-    ],
-  ];
-
-  if ($proposed_price === NULL) {
-    $modal_options['buttons'][0]['attributes'] = ['disabled' => 'disabled'];
+  // Minimum order quantity sanity (if set).
+  if ($entity->hasField('field_minimum_order_quantity') && !$entity->get('field_minimum_order_quantity')->isEmpty()) {
+    $min_qty = (int) $entity->get('field_minimum_order_quantity')->value;
+    if ($min_qty <= 0) {
+      $violations->add(new ConstraintViolation(
+        'Minimum Order Quantity must be greater than 0 if provided.',
+        'Minimum Order Quantity must be greater than 0 if provided.',
+        [],
+        $entity,
+        'field_minimum_order_quantity',
+        NULL
+      ));
+    }
   }
 
-  $response->addCommand(new OpenModalDialogCommand(
-    t('Confirm Price Update'),
-    $modal_content,
-    [
-      'width' => '400',
-      'dialogClass' => 'material-price-confirm-modal',
-      'buttons' => $modal_options['buttons'],
-    ]
-  ));
+  // Supplier unit cost sanity (if set).
+  if ($entity->hasField('field_supplier_unit_cost') && !$entity->get('field_supplier_unit_cost')->isEmpty()) {
+    $cost_raw = $entity->get('field_supplier_unit_cost')->value;
+    $cost = is_numeric($cost_raw) ? (float) $cost_raw : NULL;
 
-  $form_state->setTemporaryValue('proposed_price', $proposed_price);
-  \Drupal::logger('material')->notice('Modal opened. Proposed price: @price, Cost: @cost, Markup: @markup.', [
-    '@price' => $proposed_price ?? 'null',
-    '@cost' => $cost ?? 'null',
-    '@markup' => $markup ?? 'null',
-  ]);
+    if ($cost === NULL) {
+      $violations->add(new ConstraintViolation(
+        'Supplier Unit Cost must be a valid number.',
+        'Supplier Unit Cost must be a valid number.',
+        [],
+        $entity,
+        'field_supplier_unit_cost',
+        NULL
+      ));
+    }
+    elseif ($cost <= 0) {
+      $violations->add(new ConstraintViolation(
+        'Supplier Unit Cost must be greater than 0 if provided.',
+        'Supplier Unit Cost must be greater than 0 if provided.',
+        [],
+        $entity,
+        'field_supplier_unit_cost',
+        NULL
+      ));
+    }
+  }
 
-  return $response;
+  // Supplier effective status enforcement (do_not_use blocks).
+  /** @var \Drupal\material\Service\MaterialSourcing $sourcing */
+  $sourcing = \Drupal::service('material.sourcing');
+  $effective_status = $sourcing->getEffectiveSupplierStatus($entity);
+
+  if ($effective_status === 'do_not_use') {
+    $violations->add(new ConstraintViolation(
+      'This supplier is marked Do Not Use for this material (effective status).',
+      'This supplier is marked Do Not Use for this material (effective status).',
+      [],
+      $entity,
+      'field_supplier_status_override',
+      NULL
+    ));
+  }
 }
 
 /**
- * Ajax callback for confirming price update.
+ * Implements hook_entity_insert().
  */
-function material_confirm_price_update($form, FormStateInterface $form_state) {
-  \Drupal::logger('material')->notice('Price update confirmed.');
-  $response = new AjaxResponse();
-  $original_form_state = $form_state->getTemporaryValue('material_form_state');
-
-  if (!$original_form_state) {
-    \Drupal::logger('material')->error('Form state not found for price update confirmation.');
-    return $response;
+function material_entity_insert(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() === 'material_suppliers') {
+    material_sync_material_pricing_from_supplier_links($entity);
   }
-
-  $entity = $original_form_state->getFormObject()->getEntity();
-  $proposed_price = $form_state->getTemporaryValue('proposed_price');
-
-  if ($entity->hasField('field_installed_price') && $proposed_price !== NULL) {
-    $entity->set('field_installed_price', $proposed_price);
-    $entity->save();
-    \Drupal::messenger()->addStatus(t('Installed Price updated to @price.', [
-      '@price' => number_format($proposed_price, 2),
-    ]));
-    \Drupal::logger('material')->notice('Installed Price set to @price for Material entity: @id.', [
-      '@price' => $proposed_price,
-      '@id' => $entity->id() ?? 'new',
-    ]);
-  } else {
-    \Drupal::logger('material')->warning('Cannot update price. Installed price field missing or proposed price invalid for Material entity: @id.', [
-      '@id' => $entity->id() ?? 'new',
-    ]);
-  }
-
-  $response->addCommand(new \Drupal\material\Ajax\UpdatePriceConfirmCommand());
-  return $response;
 }
 
 /**
- * Ajax callback for skipping price update.
+ * Implements hook_entity_update().
  */
-function material_skip_price_update($form, FormStateInterface $form_state) {
-  \Drupal::logger('material')->notice('Price update skipped.');
-  $response = new AjaxResponse();
-  $original_form_state = $form_state->getTemporaryValue('material_form_state');
+function material_entity_update(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() === 'material_suppliers') {
+    material_sync_material_pricing_from_supplier_links($entity);
+  }
+}
 
-  if (!$original_form_state) {
-    \Drupal::logger('material')->error('Form state not found for price update skip.');
-    return $response;
+/**
+ * Implements hook_entity_delete().
+ */
+function material_entity_delete(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() === 'material_suppliers') {
+    material_sync_material_pricing_from_supplier_links($entity);
+  }
+}
+
+/**
+ * Recomputes:
+ * - Material.field_cost_integer as max(field_supplier_unit_cost) across eligible links.
+ * - Material.field_installed_price as (field_cost_integer * business_setting.field_markup) when possible.
+ *
+ * Eligibility:
+ * - link has numeric supplier unit cost > 0
+ * - effective status != do_not_use
+ *
+ * Notes:
+ * - Updates ONLY Material current/default fields.
+ * - Never touches any Work Order snapshot data.
+ * - If no eligible supplier costs exist, does nothing (does NOT zero out fields).
+ */
+function material_sync_material_pricing_from_supplier_links(EntityInterface $material_supplier_link): void {
+  if ($material_supplier_link->getEntityTypeId() !== 'material_suppliers') {
+    return;
+  }
+  if (!$material_supplier_link->hasField('field_material') || $material_supplier_link->get('field_material')->isEmpty()) {
+    return;
   }
 
-  $entity = $original_form_state->getFormObject()->getEntity();
-  $entity->save();
-  \Drupal::messenger()->addStatus(t('Price update skipped.'));
+  $material_id = (int) $material_supplier_link->get('field_material')->target_id;
+  if ($material_id <= 0) {
+    return;
+  }
 
-  $response->addCommand(new \Drupal\material\Ajax\UpdatePriceConfirmCommand());
-  return $response;
+  // Load the material entity.
+  $material = \Drupal::entityTypeManager()->getStorage('material')->load($material_id);
+  if (!$material) {
+    return;
+  }
+
+  // Cost field is expected on most bundles (BOS default cost source of truth).
+  if (!$material->hasField('field_cost_integer')) {
+    return;
+  }
+
+  // Load all supplier link rows for this material.
+  $link_ids = \Drupal::entityTypeManager()->getStorage('material_suppliers')
+    ->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_material', $material_id)
+    ->execute();
+
+  if (empty($link_ids)) {
+    return;
+  }
+
+  $links = \Drupal::entityTypeManager()->getStorage('material_suppliers')->loadMultiple($link_ids);
+
+  /** @var \Drupal\material\Service\MaterialSourcing $sourcing */
+  $sourcing = \Drupal::service('material.sourcing');
+
+  $max_cost = NULL;
+
+  foreach ($links as $link) {
+    if (!$link->hasField('field_supplier_unit_cost') || $link->get('field_supplier_unit_cost')->isEmpty()) {
+      continue;
+    }
+
+    // Skip do_not_use effective status.
+    $effective_status = $sourcing->getEffectiveSupplierStatus($link);
+    if ($effective_status === 'do_not_use') {
+      continue;
+    }
+
+    $raw = $link->get('field_supplier_unit_cost')->value;
+    if (!is_numeric($raw)) {
+      continue;
+    }
+
+    $cost = (float) $raw;
+    if ($cost <= 0) {
+      continue;
+    }
+
+    if ($max_cost === NULL || $cost > $max_cost) {
+      $max_cost = $cost;
+    }
+  }
+
+  // If there were no eligible supplier costs, do not change the material.
+  if ($max_cost === NULL) {
+    return;
+  }
+
+  // Normalize to 2 decimals since supplier unit cost is scale 2.
+  $max_cost = round($max_cost, 2);
+
+  // Track whether we need to save at all.
+  $dirty = FALSE;
+
+  // Update field_cost_integer if changed.
+  $current_cost = NULL;
+  if (!$material->get('field_cost_integer')->isEmpty() && is_numeric($material->get('field_cost_integer')->value)) {
+    $current_cost = round((float) $material->get('field_cost_integer')->value, 2);
+  }
+  if ($current_cost === NULL || $current_cost !== $max_cost) {
+    $material->set('field_cost_integer', $max_cost);
+    $dirty = TRUE;
+  }
+
+  // Update field_installed_price if possible:
+  // installed_price = max_cost * business_setting.field_markup
+  if ($material->hasField('field_installed_price')) {
+    $markup = material_get_business_markup();
+    if ($markup !== NULL && $markup > 0) {
+      $installed = $max_cost * $markup;
+
+      // If installed price field is integer, round to nearest whole number.
+      $field_def = $material->getFieldDefinition('field_installed_price');
+      if ($field_def && $field_def->getType() === 'integer') {
+        $installed = (float) round($installed);
+      }
+      else {
+        $installed = (float) round($installed, 2);
+      }
+
+      $current_installed = NULL;
+      if (!$material->get('field_installed_price')->isEmpty() && is_numeric($material->get('field_installed_price')->value)) {
+        // Normalize compare to 2 decimals (or whole numbers if integer).
+        if ($field_def && $field_def->getType() === 'integer') {
+          $current_installed = (float) (int) $material->get('field_installed_price')->value;
+        }
+        else {
+          $current_installed = (float) round((float) $material->get('field_installed_price')->value, 2);
+        }
+      }
+
+      if ($current_installed === NULL || $current_installed !== $installed) {
+        $material->set('field_installed_price', $installed);
+        $dirty = TRUE;
+      }
+    }
+  }
+
+  if (!$dirty) {
+    return;
+  }
+
+  // Save once, only when changes exist.
+  $material->save();
+}
+
+/**
+ * Reads business_setting.field_markup from Config Pages.
+ *
+ * Returns NULL if the config page or field is missing/empty.
+ */
+function material_get_business_markup(): ?float {
+  if (!\Drupal::hasService('config_pages.loader')) {
+    return NULL;
+  }
+
+  $business_setting = \Drupal::service('config_pages.loader')->load('business_setting');
+  if (!$business_setting || !$business_setting->hasField('field_markup') || $business_setting->get('field_markup')->isEmpty()) {
+    return NULL;
+  }
+
+  $raw = $business_setting->get('field_markup')->value;
+  if (!is_numeric($raw)) {
+    return NULL;
+  }
+
+  $markup = (float) $raw;
+  if ($markup <= 0) {
+    return NULL;
+  }
+
+  return $markup;
 }

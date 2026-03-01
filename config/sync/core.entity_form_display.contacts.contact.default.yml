@@ -6,6 +6,9 @@ dependencies:
     - eck.eck_type.contacts.contact
     - field.field.contacts.contact.field_address
     - field.field.contacts.contact.field_birthday
+    - field.field.contacts.contact.field_contact_notes
+    - field.field.contacts.contact.field_contact_status
+    - field.field.contacts.contact.field_email
     - field.field.contacts.contact.field_first_name
     - field.field.contacts.contact.field_gender
     - field.field.contacts.contact.field_job_title
@@ -28,52 +31,47 @@ bundle: contact
 mode: default
 content:
   field_address:
-    type: inline_entity_form_complex
-    weight: 6
+    type: inline_entity_form_simple
+    weight: 9
     region: content
     settings:
       form_mode: default
       override_labels: false
       label_singular: ''
       label_plural: ''
-      allow_new: true
-      allow_existing: false
-      match_operator: CONTAINS
-      allow_duplicate: false
-      collapsible: true
-      collapsed: true
+      collapsible: false
+      collapsed: false
       revision: false
-      removed_reference: optional
     third_party_settings: {  }
   field_birthday:
     type: datetime_default
-    weight: 4
+    weight: 5
     region: content
     settings: {  }
     third_party_settings: {  }
-  field_first_name:
-    type: string_textfield
+  field_contact_notes:
+    type: string_textarea
+    weight: 10
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_contact_status:
+    type: options_select
     weight: 0
     region: content
-    settings:
-      size: 60
-      placeholder: ''
-    third_party_settings: {  }
-  field_gender:
-    type: options_select
-    weight: 3
-    region: content
     settings: {  }
     third_party_settings: {  }
-  field_job_title:
-    type: string_textfield
-    weight: 2
+  field_email:
+    type: email_default
+    weight: 7
     region: content
     settings:
-      size: 60
       placeholder: ''
+      size: 60
     third_party_settings: {  }
-  field_last_name:
+  field_first_name:
     type: string_textfield
     weight: 1
     region: content
@@ -81,27 +79,44 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_gender:
+    type: options_select
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_job_title:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_name:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_phone_number:
-    type: inline_entity_form_complex
-    weight: 7
+    type: inline_entity_form_simple
+    weight: 8
     region: content
     settings:
       form_mode: default
       override_labels: false
       label_singular: ''
       label_plural: ''
-      allow_new: true
-      allow_existing: false
-      match_operator: CONTAINS
-      allow_duplicate: false
-      collapsible: true
-      collapsed: true
+      collapsible: false
+      collapsed: false
       revision: false
-      removed_reference: optional
     third_party_settings: {  }
   field_spouse_s_name:
     type: string_textfield
-    weight: 5
+    weight: 6
     region: content
     settings:
       size: 60

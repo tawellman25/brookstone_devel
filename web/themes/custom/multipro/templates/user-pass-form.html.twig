@@ -1,0 +1,54 @@
+{% set base_url = url('<front>')  %}
+{% set base_url = url('<front>')  %}
+{% if pass_banner_image_url %}
+    <section class="page-banner" style="background-image: url({{pass_banner_image_url}});">
+{% else %}
+    <section class="page-banner" style="background-image: url({{base_url}}/assets/subpage_banner.jpg);">
+{% endif %}
+    <div class="container">
+        <div class="heading">
+        {% if pass_banner_title %}
+            <h1>{{pass_banner_title}}</h1>
+        {% endif %}
+            <ol class="breadcrumb">
+                 {{ drupal_block('system_breadcrumb_block') }}
+            </ol>
+        </div>
+    </div>
+</section>
+<section class="password-reset dt-section">
+    <div class="container">
+        <div class="row s-35">
+            <div class="col-lg-7 col-md-7 col-12">
+                <div class="password-reset-form">
+                    <form>
+                    {% if pass_page_title %}
+                        <h2>{{pass_page_title}}</h2>
+                    {% endif %}
+                        <div class="form-group">
+                            {{form.name}}
+                             {% if pass_email_help_text %}
+                                <span>{{pass_email_help_text}}</span>
+                            {% endif %}
+                        </div>
+                        <div class="password-reset-btn">
+                            {{form.actions}}
+                        </div>
+                          {{ form.form_build_id }}
+                        {{ form.form_id }}
+                    </form>
+                </div>
+            </div>
+            <div class="col-lg-5 col-md-5 col-12 d-none d-md-block">
+                <div class="image">
+                {% if pass_image_url %}
+                    <img src="{{pass_image_url}}" alt="Image">
+                {% else %}
+                    <img src="{{base_url}}/sites/default/files/2022-08/about-us-1.jpg" alt="Image">
+                {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+

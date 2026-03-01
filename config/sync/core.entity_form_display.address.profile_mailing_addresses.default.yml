@@ -6,10 +6,15 @@ dependencies:
     - eck.eck_type.address.profile_mailing_addresses
     - field.field.address.profile_mailing_addresses.field_additional_address
     - field.field.address.profile_mailing_addresses.field_address
+    - field.field.address.profile_mailing_addresses.field_address_label
     - field.field.address.profile_mailing_addresses.field_address_notes
     - field.field.address.profile_mailing_addresses.field_address_to
     - field.field.address.profile_mailing_addresses.field_address_to_additional
+    - field.field.address.profile_mailing_addresses.field_address_type
     - field.field.address.profile_mailing_addresses.field_city
+    - field.field.address.profile_mailing_addresses.field_country
+    - field.field.address.profile_mailing_addresses.field_default_billing
+    - field.field.address.profile_mailing_addresses.field_default_shipping
     - field.field.address.profile_mailing_addresses.field_old
     - field.field.address.profile_mailing_addresses.field_primary_address
     - field.field.address.profile_mailing_addresses.field_profile
@@ -17,9 +22,11 @@ dependencies:
     - field.field.address.profile_mailing_addresses.field_user
     - field.field.address.profile_mailing_addresses.field_zipcode
   module:
+    - address
     - field_group
     - field_layout
     - layout_discovery
+    - path
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -29,16 +36,15 @@ third_party_settings:
     group_administration:
       children:
         - field_user
-        - field_primary_address
-        - field_old
-        - field_address_notes
         - uid
         - created
+        - path
+        - field_old
         - field_profile
       label: Administration
       region: content
       parent_name: ''
-      weight: 8
+      weight: 14
       format_type: fieldset
       format_settings:
         classes: ''
@@ -53,13 +59,13 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 12
+    weight: 3
     region: content
     settings: {  }
     third_party_settings: {  }
   field_additional_address:
     type: string_textfield
-    weight: 4
+    weight: 8
     region: content
     settings:
       size: 60
@@ -67,15 +73,23 @@ content:
     third_party_settings: {  }
   field_address:
     type: string_textfield
-    weight: 3
+    weight: 7
     region: content
     settings:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_address_label:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 30
+      placeholder: '"Home", “Main Office,” “Billing Dept,” or “Winter Mailing”'
+    third_party_settings: {  }
   field_address_notes:
     type: string_textarea
-    weight: 10
+    weight: 13
     region: content
     settings:
       rows: 5
@@ -83,7 +97,7 @@ content:
     third_party_settings: {  }
   field_address_to:
     type: string_textfield
-    weight: 1
+    weight: 5
     region: content
     settings:
       size: 60
@@ -91,37 +105,109 @@ content:
     third_party_settings: {  }
   field_address_to_additional:
     type: string_textfield
-    weight: 2
+    weight: 6
     region: content
     settings:
       size: 60
       placeholder: ''
+    third_party_settings: {  }
+  field_address_type:
+    type: options_buttons
+    weight: 1
+    region: content
+    settings: {  }
     third_party_settings: {  }
   field_city:
     type: string_textfield
-    weight: 5
+    weight: 9
     region: content
     settings:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_country:
+    type: address_country_default
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_default_billing:
+    type: boolean_checkbox
+    weight: 2
+    region: content
+    settings:
+      display_label: true
+    third_party_settings:
+      conditional_fields:
+        da9f00cb-7e04-4f06-91b0-6825620c1448:
+          entity_type: address
+          bundle: profile_mailing_addresses
+          dependee: field_address_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                value: billing
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+  field_default_shipping:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: true
+    third_party_settings:
+      conditional_fields:
+        c248b8be-8e4c-4b28-ba93-82e175d4f4a0:
+          entity_type: address
+          bundle: profile_mailing_addresses
+          dependee: field_address_type
+          settings:
+            state: visible
+            reset: false
+            condition: value
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              -
+                value: shipping
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
   field_old:
     type: boolean_checkbox
-    weight: 9
+    weight: 5
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
   field_primary_address:
     type: boolean_checkbox
-    weight: 8
+    weight: 0
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
   field_profile:
     type: entity_reference_autocomplete
-    weight: 13
+    weight: 6
     region: content
     settings:
       match_operator: CONTAINS
@@ -131,7 +217,7 @@ content:
     third_party_settings: {  }
   field_state:
     type: string_textfield
-    weight: 6
+    weight: 10
     region: content
     settings:
       size: 60
@@ -139,7 +225,7 @@ content:
     third_party_settings: {  }
   field_user:
     type: entity_reference_autocomplete
-    weight: 7
+    weight: 1
     region: content
     settings:
       match_operator: CONTAINS
@@ -149,23 +235,21 @@ content:
     third_party_settings: {  }
   field_zipcode:
     type: string_textfield
-    weight: 7
+    weight: 11
     region: content
     settings:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-  title:
-    type: string_textfield
-    weight: 0
+  path:
+    type: path
+    weight: 4
     region: content
-    settings:
-      size: 60
-      placeholder: ''
+    settings: {  }
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 11
+    weight: 2
     region: content
     settings:
       match_operator: CONTAINS
@@ -173,4 +257,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  title: true

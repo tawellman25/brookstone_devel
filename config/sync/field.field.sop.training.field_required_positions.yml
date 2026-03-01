@@ -1,0 +1,29 @@
+uuid: 6d14133d-fd47-4664-b273-7d67be22c4b8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.positions.role
+    - eck.eck_type.sop.training
+    - field.storage.sop.field_required_positions
+id: sop.training.field_required_positions
+field_name: field_required_positions
+entity_type: sop
+bundle: training
+label: 'Required Positions'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:positions'
+  handler_settings:
+    target_bundles:
+      role: role
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

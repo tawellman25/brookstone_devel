@@ -1,0 +1,29 @@
+uuid: e3c3cebf-052a-4d47-bdd5-e03e4f492c5f
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_brookstone_tags
+    - taxonomy.vocabulary.brookstone_tags
+    - taxonomy.vocabulary.services
+id: taxonomy_term.services.field_brookstone_tags
+field_name: field_brookstone_tags
+entity_type: taxonomy_term
+bundle: services
+label: 'Brookstone Tags'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      brookstone_tags: brookstone_tags
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

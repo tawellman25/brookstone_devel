@@ -96,6 +96,7 @@ final class PropertyWorkOrderLinksBlock extends BlockBase implements ContainerFa
       'misc_services' => 'Misc Services',
       'pinion_pine_ips_beetle' => 'Pinion Pine Ips Beetle',
       'pre_emergent' => 'Pre-emergent',
+      'summer_pruning' => 'Pruning',
       'snow_removal' => 'Snow Removal',
       'special_mowing' => 'Special Mowing',
       'spring_cleanup' => 'Spring Cleanup',
@@ -105,7 +106,6 @@ final class PropertyWorkOrderLinksBlock extends BlockBase implements ContainerFa
       'sprinkler_repair' => 'Sprinkler Repair',
       'sprinkler_start_up' => 'Sprinkler Start-Up',
       'sprinkler_winterizing' => 'Sprinkler Winterizing',
-      'summer_pruning' => 'Summer Pruning',
       'trunk_bore' => 'Trunk Bore',
       'weed_pulling' => 'Weed Pulling',
     ];

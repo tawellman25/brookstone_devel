@@ -1,0 +1,122 @@
+uuid: bc05cf95-c89a-4ea7-9dc6-b784c8814495
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.brookstone_tags.field_short_description
+    - field.field.taxonomy_term.brookstone_tags.field_tag_type
+    - field.field.taxonomy_term.brookstone_tags.field_teammate_description
+    - taxonomy.vocabulary.brookstone_tags
+  module:
+    - feeds_log
+    - taxonomy
+third_party_settings:
+  feeds_log:
+    status: true
+    operations:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+      cleaned: cleaned
+    items:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+    source: true
+label: 'Brookstone Tags'
+id: brookstone_tags
+description: 'This is a feed to create and update the Brookstone Tags taxonomy.'
+help: ''
+import_period: -1
+import_period_per_feed: false
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:taxonomy_term'
+processor_configuration:
+  values:
+    vid: brookstone_tags
+  langcode: en
+  insert_new: 1
+  update_existing: 2
+  update_non_existent: _keep
+  skip_hash_check: false
+  skip_validation: false
+  skip_validation_types: {  }
+  authorize: false
+  revision: false
+  expire: -1
+  owner_feed_author: false
+  owner_id: 0
+custom_sources:
+  name:
+    value: name
+    label: name
+    machine_name: name
+    type: csv
+  field_tag_type:
+    value: field_tag_type
+    label: field_tag_type
+    machine_name: field_tag_type
+    type: csv
+  field_short_description:
+    value: field_short_description
+    label: field_short_description
+    machine_name: field_short_description
+    type: csv
+  description:
+    value: description
+    label: description
+    machine_name: description
+    type: csv
+  field_teammate_description:
+    value: field_teammate_description
+    label: field_teammate_description
+    machine_name: field_teammate_description
+    type: csv
+mappings:
+  -
+    target: name
+    map:
+      value: name
+    settings:
+      language: null
+    unique:
+      value: 1
+  -
+    target: field_tag_type
+    map:
+      value: field_tag_type
+    settings:
+      language: null
+  -
+    target: field_short_description
+    map:
+      value: field_short_description
+    settings:
+      language: null
+      format: plain_text
+  -
+    target: description
+    map:
+      value: description
+    settings:
+      language: null
+      format: plain_text
+  -
+    target: field_teammate_description
+    map:
+      value: field_teammate_description
+    settings:
+      language: null
+      format: plain_text

@@ -3,24 +3,42 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.profile.customer_profile.feeds_item
+    - field.field.profile.customer_profile.field_account_manager
     - field.field.profile.customer_profile.field_anniversary
     - field.field.profile.customer_profile.field_attention
+    - field.field.profile.customer_profile.field_billing_allowed
     - field.field.profile.customer_profile.field_birthday
+    - field.field.profile.customer_profile.field_client_status
     - field.field.profile.customer_profile.field_client_type
     - field.field.profile.customer_profile.field_company_name
     - field.field.profile.customer_profile.field_contact_email
+    - field.field.profile.customer_profile.field_contacts
     - field.field.profile.customer_profile.field_first_name
+    - field.field.profile.customer_profile.field_former_last_name
+    - field.field.profile.customer_profile.field_invoice_delivery_method
     - field.field.profile.customer_profile.field_last_name
     - field.field.profile.customer_profile.field_main_fax_number
     - field.field.profile.customer_profile.field_main_phone_number
     - field.field.profile.customer_profile.field_middle_name
+    - field.field.profile.customer_profile.field_payment_terms
     - field.field.profile.customer_profile.field_personal_name_title
+    - field.field.profile.customer_profile.field_portal_allowed
     - field.field.profile.customer_profile.field_primary_contact
     - field.field.profile.customer_profile.field_primary_contact_phone
+    - field.field.profile.customer_profile.field_primary_contact_ref
+    - field.field.profile.customer_profile.field_qb_account_number
+    - field.field.profile.customer_profile.field_qb_list_id
+    - field.field.profile.customer_profile.field_quickbooks_notes
+    - field.field.profile.customer_profile.field_salutation
     - field.field.profile.customer_profile.field_secondary_contact
     - field.field.profile.customer_profile.field_secondary_contact_phone
     - field.field.profile.customer_profile.field_spouse_birthday
+    - field.field.profile.customer_profile.field_spouse_last_name
     - field.field.profile.customer_profile.field_spouse_name
+    - field.field.profile.customer_profile.field_suffix
+    - field.field.profile.customer_profile.field_tax_exempt_certificate
+    - field.field.profile.customer_profile.field_tax_status
     - field.field.profile.customer_profile.field_website
     - profile.type.customer_profile
   module:
@@ -29,7 +47,7 @@ dependencies:
     - field_layout
     - layout_builder
     - link
-    - telephone
+    - text
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -41,6 +59,14 @@ third_party_settings:
   field_group:
     group_contact_information:
       children:
+        - field_account_manager
+        - field_primary_contact_ref
+        - field_contacts
+        - customer_profile_add_contact_entity_view_1
+        - field_attention
+        - field_quickbooks_notes
+        - field_main_phone_number
+        - field_main_fax_number
         - field_primary_contact
         - field_primary_contact_phone
         - field_secondary_contact
@@ -48,46 +74,58 @@ third_party_settings:
       label: 'Contact Information'
       parent_name: ''
       region: content
-      weight: 9
-      format_type: details
+      weight: 8
+      format_type: fieldset
       format_settings:
         classes: ''
         show_empty_fields: false
         id: ''
         label_as_html: false
-        open: false
         description: ''
-        required_fields: false
+        open: true
 id: profile.customer_profile.default
 targetEntityType: profile
 bundle: customer_profile
 mode: default
 content:
+  customer_profile_add_contact_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  field_account_manager:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 11
+    region: content
   field_anniversary:
     type: datetime_default
     label: inline
     settings:
       timezone_override: ''
-      format_type: medium
+      format_type: date_only
     third_party_settings: {  }
-    weight: 11
+    weight: 5
     region: content
   field_attention:
     type: string
-    label: inline
+    label: above
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 2
+    weight: 15
     region: content
   field_birthday:
     type: datetime_default
     label: inline
     settings:
       timezone_override: ''
-      format_type: medium
+      format_type: date_only
     third_party_settings: {  }
-    weight: 4
+    weight: 1
     region: content
   field_client_type:
     type: entity_reference_label
@@ -97,77 +135,100 @@ content:
     third_party_settings: {  }
     weight: 0
     region: content
-  field_company_name:
-    type: string
-    label: inline
-    settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    weight: 1
-    region: content
   field_contact_email:
-    type: basic_string
+    type: email_mailto
     label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 7
-    region: content
-  field_main_fax_number:
-    type: telephone_link
-    label: inline
-    settings:
-      title: ''
-    third_party_settings: {  }
     weight: 6
     region: content
-  field_main_phone_number:
-    type: telephone_link
-    label: inline
+  field_contacts:
+    type: entity_reference_label
+    label: above
     settings:
-      title: ''
+      link: true
     third_party_settings: {  }
-    weight: 5
+    weight: 13
+    region: content
+  field_main_fax_number:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 18
+    region: content
+  field_main_phone_number:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 17
     region: content
   field_primary_contact:
     type: string
-    label: inline
+    label: above
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 5
+    weight: 19
     region: content
   field_primary_contact_phone:
-    type: telephone_link
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 20
+    region: content
+  field_primary_contact_ref:
+    type: entity_reference_label
     label: inline
     settings:
-      title: ''
+      link: true
     third_party_settings: {  }
-    weight: 6
+    weight: 12
+    region: content
+  field_quickbooks_notes:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 16
     region: content
   field_secondary_contact:
     type: string
-    label: inline
+    label: above
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 7
+    weight: 21
     region: content
   field_secondary_contact_phone:
-    type: telephone_link
-    label: inline
+    type: string
+    label: hidden
     settings:
-      title: ''
+      link_to_entity: false
     third_party_settings: {  }
-    weight: 8
+    weight: 22
     region: content
   field_spouse_birthday:
     type: datetime_default
     label: inline
     settings:
       timezone_override: ''
-      format_type: medium
+      format_type: date_only
     third_party_settings: {  }
-    weight: 10
+    weight: 4
+    region: content
+  field_spouse_last_name:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
     region: content
   field_spouse_name:
     type: string
@@ -175,7 +236,7 @@ content:
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 3
+    weight: 2
     region: content
   field_website:
     type: link
@@ -187,10 +248,24 @@ content:
       rel: ''
       target: ''
     third_party_settings: {  }
-    weight: 8
+    weight: 7
     region: content
 hidden:
+  feeds_item: true
+  field_billing_allowed: true
+  field_client_status: true
+  field_company_name: true
   field_first_name: true
+  field_former_last_name: true
+  field_invoice_delivery_method: true
   field_last_name: true
   field_middle_name: true
+  field_payment_terms: true
   field_personal_name_title: true
+  field_portal_allowed: true
+  field_qb_account_number: true
+  field_qb_list_id: true
+  field_salutation: true
+  field_suffix: true
+  field_tax_exempt_certificate: true
+  field_tax_status: true

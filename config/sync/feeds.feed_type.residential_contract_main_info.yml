@@ -1,0 +1,136 @@
+uuid: f9c2be3c-a3b7-425c-9495-6bb782533df0
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.base_field_override.contracts.residential.created
+    - eck.eck_type.contracts.residential
+    - field.field.contracts.residential.field_contract_year
+    - field.field.contracts.residential.field_property
+    - field.field.contracts.residential.field_property_owner
+  module:
+    - eck
+    - feeds_log
+third_party_settings:
+  feeds_log:
+    status: true
+    operations:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+      cleaned: cleaned
+    items:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+    source: true
+label: 'Residential Contract - Main Info'
+id: residential_contract_main_info
+description: 'This is the import of manually created Residential Contracts into BOS'
+help: ''
+import_period: -1
+import_period_per_feed: false
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:contracts'
+processor_configuration:
+  values:
+    type: residential
+  langcode: en
+  insert_new: 1
+  update_existing: 2
+  update_non_existent: _keep
+  skip_hash_check: false
+  skip_validation: false
+  skip_validation_types: {  }
+  authorize: true
+  revision: false
+  expire: -1
+  owner_feed_author: false
+  owner_id: 1
+custom_sources:
+  property_id:
+    value: Property_ID
+    label: Property_ID
+    machine_name: property_id
+    type: csv
+  uid:
+    value: uid
+    label: uid
+    machine_name: uid
+    type: csv
+  entered_on:
+    value: entered_on
+    label: entered_on
+    machine_name: entered_on
+    type: csv
+  1:
+    value: '1'
+    label: '1'
+    machine_name: '1'
+    type: blank
+  2026:
+    value: '2026'
+    label: '2026'
+    machine_name: '2026'
+    type: blank
+  1117:
+    value: '1117'
+    label: '1117'
+    machine_name: '1117'
+    type: blank
+mappings:
+  -
+    target: field_property
+    map:
+      target_id: property_id
+    settings:
+      language: ''
+      reference_by: id
+      autocreate: 0
+      autocreate_bundle: property
+  -
+    target: created
+    map:
+      value: entered_on
+    settings:
+      language: ''
+      timezone: UTC
+  -
+    target: field_property_owner
+    map:
+      target_id: uid
+    settings:
+      language: null
+      reference_by: false
+      feeds_item: false
+      autocreate: false
+      autocreate_bundle: false
+  -
+    target: field_contract_year
+    map:
+      value: '2026'
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_contract_status
+    map:
+      target_id: '1117'
+    settings:
+      language: null
+      reference_by: name
+      feeds_item: false
+      autocreate: false
+      autocreate_bundle: contract_status

@@ -1,0 +1,29 @@
+uuid: 9fe6b922-33e9-4c00-88a5-f302b8abc8eb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.contact
+    - field.storage.profile.field_primary_contact_ref
+    - profile.type.customer_profile
+id: profile.customer_profile.field_primary_contact_ref
+field_name: field_primary_contact_ref
+entity_type: profile
+bundle: customer_profile
+label: 'Primary Contact'
+description: "The main point of contact for this account.</br>\r\nUsed by default for communication, coordination, and account-level questions.</br>\r\nSelect an existing contact. If it does not exist, <a href=\"/admin/content/contacts/add/contact\" target=\"_blank\">create a new contact</a> in a new tab, then return and search again by name or email."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contacts'
+  handler_settings:
+    target_bundles:
+      contact: contact
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

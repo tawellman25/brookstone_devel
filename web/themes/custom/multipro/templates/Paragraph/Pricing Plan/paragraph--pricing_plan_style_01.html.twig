@@ -1,0 +1,29 @@
+
+{% if content.field_tagline.0 == Null %}
+<div class="col-lg-4 col-md-6 col-12">
+    <div class="item">
+        <h4>{{content.field_title.0}}</h4>
+        <span class="price">{{content.field_currency.0}}{{content.field_price.0}}<span>{{content.field_period.0}}</span></span>
+        <hr>
+        <ul>
+            {{content.field_benefits}}
+        </ul>
+        <a href="{{content.field_buy_now.0['#url']}}" class="btn btn-primary btn-style-1 btn-lg" title="{{content.field_buy_now.0['#title']}}">{{content.field_buy_now.0['#title']}}</a>
+    </div>
+</div>
+{% else %}
+<div class="col-lg-4 col-md-6 col-12">
+    <div class="item recommended">
+        <h4>{{content.field_title.0}}</h4>
+        <span class="price">{{content.field_currency.0}}{{content.field_price.0}}<span>{{content.field_period.0}}</span></span>
+        <hr>
+        <ul>
+            {{content.field_benefits}}
+        </ul>
+        <a href="{{content.field_buy_now.0['#url']}}" class="btn btn-primary btn-style-1 btn-lg" title="{{content.field_buy_now.0['#title']}}">{{content.field_buy_now.0['#title']}}</a>
+        <div class="recommended-label">
+            <span>{{content.field_tagline.0}}</span>
+        </div>
+    </div>
+</div>
+{% endif %}

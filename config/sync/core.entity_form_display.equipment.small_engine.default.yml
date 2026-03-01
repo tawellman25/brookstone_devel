@@ -4,28 +4,38 @@ status: true
 dependencies:
   config:
     - eck.eck_type.equipment.small_engine
+    - field.field.equipment.small_engine.field_billable
     - field.field.equipment.small_engine.field_date_of_manufacture
     - field.field.equipment.small_engine.field_date_purchased
     - field.field.equipment.small_engine.field_depriciated_value
+    - field.field.equipment.small_engine.field_documents
     - field.field.equipment.small_engine.field_engine_size
     - field.field.equipment.small_engine.field_equipment_make
     - field.field.equipment.small_engine.field_equipment_number
     - field.field.equipment.small_engine.field_equipment_type
+    - field.field.equipment.small_engine.field_internal_cost_rate
     - field.field.equipment.small_engine.field_manufactured_year
+    - field.field.equipment.small_engine.field_manufacturer_website_item
     - field.field.equipment.small_engine.field_model
     - field.field.equipment.small_engine.field_oil_type
+    - field.field.equipment.small_engine.field_operating_cost_per_hour
     - field.field.equipment.small_engine.field_pictures
     - field.field.equipment.small_engine.field_public_description
     - field.field.equipment.small_engine.field_purchase_price
+    - field.field.equipment.small_engine.field_rate
     - field.field.equipment.small_engine.field_serial_code_number
     - field.field.equipment.small_engine.field_small_engine_type
     - field.field.equipment.small_engine.field_spec_number
+    - field.field.equipment.small_engine.field_status
     - image.style.thumbnail
   module:
     - datetime
+    - field_group
     - field_layout
+    - file
     - image
     - layout_discovery
+    - link
     - path
     - text
 third_party_settings:
@@ -33,6 +43,120 @@ third_party_settings:
     id: layout_onecol
     settings:
       label: ''
+  field_group:
+    group_equipment_details:
+      children:
+        - field_equipment_type
+        - field_equipment_number
+        - field_manufactured_year
+        - field_equipment_make
+        - field_model
+        - field_small_engine_type
+        - field_engine_size
+        - field_oil_type
+      label: 'Equipment Details'
+      region: content
+      parent_name: ''
+      weight: 1
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: 'Defines the core identifying and technical characteristics of this equipment, including make, model, year, and physical attributes. This information supports daily operations, maintenance, and accurate equipment identification across the system.'
+        required_fields: true
+    group_public_info:
+      children:
+        - field_pictures
+        - field_public_description
+      label: 'Public Info'
+      region: content
+      parent_name: ''
+      weight: 20
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: "Contains client-facing photos and descriptions of this equipment used to support proposals, service pages, and public-facing content. Information in this section is limited to what is appropriate for external audiences.<\\br>\r\n<\\br>\r\n<b>No pricing, condition, internal notes, or administrative data belongs in this section.<\\b>"
+        required_fields: true
+    group_billing_costing:
+      children:
+        - field_billable
+        - field_rate
+        - field_internal_cost_rate
+        - field_operating_cost_per_hour
+      label: 'Billing & Costing'
+      region: content
+      parent_name: ''
+      weight: 21
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Defines how this equipment contributes to job costing and revenue, including internal cost rates, billable status, and default work order pricing. This information is used to ensure accurate estimates, consistent billing, and informed profitability analysis.'
+        required_fields: true
+    group_compliance_documentation:
+      children:
+        - field_serial_code_number
+        - field_spec_number
+        - field_date_of_manufacture
+        - field_documents
+      label: 'Compliance & Documentation'
+      region: content
+      parent_name: ''
+      weight: 22
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Stores regulatory, inspection, and supporting documentation required to operate this equipment legally and safely, including registrations, inspections, insurance references, and official records.'
+        required_fields: true
+    group_purchase_info:
+      children:
+        - field_date_purchased
+        - field_purchase_price
+        - field_depriciated_value
+      label: 'Purchase Info'
+      region: content
+      parent_name: ''
+      weight: 23
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Tracks the original acquisition and lifecycle details of this equipment, including purchase date, cost, depreciation, and disposition. This information supports asset valuation, replacement planning, and accurate financial reporting.'
+        required_fields: true
+    group_office_admin:
+      children:
+        - uid
+        - created
+        - path
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 24
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: 'System and administrative metadata used for record ownership, auditing, and internal management. This section supports governance and traceability and is not intended for operational or public use.'
+        required_fields: true
 id: equipment.small_engine.default
 targetEntityType: equipment
 bundle: small_engine
@@ -40,13 +164,20 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 10
+    weight: 26
     region: content
     settings: {  }
     third_party_settings: {  }
+  field_billable:
+    type: boolean_checkbox
+    weight: 16
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
   field_date_of_manufacture:
     type: string_textfield
-    weight: 23
+    weight: 15
     region: content
     settings:
       size: 60
@@ -54,20 +185,27 @@ content:
     third_party_settings: {  }
   field_date_purchased:
     type: datetime_default
-    weight: 11
+    weight: 6
     region: content
     settings: {  }
     third_party_settings: {  }
   field_depriciated_value:
     type: number
-    weight: 14
+    weight: 8
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_documents:
+    type: file_generic
+    weight: 16
+    region: content
+    settings:
+      progress_indicator: throbber
+    third_party_settings: {  }
   field_engine_size:
     type: string_textfield
-    weight: 19
+    weight: 36
     region: content
     settings:
       size: 60
@@ -75,7 +213,7 @@ content:
     third_party_settings: {  }
   field_equipment_make:
     type: string_textfield
-    weight: 31
+    weight: 33
     region: content
     settings:
       size: 60
@@ -83,32 +221,43 @@ content:
     third_party_settings: {  }
   field_equipment_number:
     type: string_textfield
-    weight: 32
+    weight: 31
     region: content
     settings:
       size: 60
       placeholder: ''
     third_party_settings: {  }
   field_equipment_type:
-    type: entity_reference_autocomplete
-    weight: 12
+    type: options_select
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_internal_cost_rate:
+    type: number
+    weight: 18
     region: content
     settings:
-      match_operator: CONTAINS
-      match_limit: 10
-      size: 60
       placeholder: ''
     third_party_settings: {  }
   field_manufactured_year:
     type: number
-    weight: 16
+    weight: 32
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_manufacturer_website_item:
+    type: link_default
+    weight: 38
+    region: content
+    settings:
+      placeholder_url: ''
+      placeholder_title: ''
+    third_party_settings: {  }
   field_model:
     type: string_textfield
-    weight: 18
+    weight: 34
     region: content
     settings:
       size: 60
@@ -116,15 +265,22 @@ content:
     third_party_settings: {  }
   field_oil_type:
     type: string_textfield
-    weight: 24
+    weight: 37
     region: content
     settings:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_operating_cost_per_hour:
+    type: number
+    weight: 19
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
   field_pictures:
     type: image_image
-    weight: 13
+    weight: 4
     region: content
     settings:
       progress_indicator: throbber
@@ -132,7 +288,7 @@ content:
     third_party_settings: {  }
   field_public_description:
     type: text_textarea
-    weight: 17
+    weight: 5
     region: content
     settings:
       rows: 5
@@ -140,50 +296,55 @@ content:
     third_party_settings: {  }
   field_purchase_price:
     type: number
-    weight: 15
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_rate:
+    type: number
+    weight: 17
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_serial_code_number:
     type: string_textfield
-    weight: 22
+    weight: 13
     region: content
     settings:
       size: 60
       placeholder: ''
     third_party_settings: {  }
   field_small_engine_type:
-    type: options_select
-    weight: 20
+    type: options_buttons
+    weight: 35
     region: content
     settings: {  }
     third_party_settings: {  }
   field_spec_number:
     type: string_textfield
-    weight: 21
+    weight: 14
     region: content
     settings:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-  path:
-    type: path
-    weight: 30
+  field_status:
+    type: options_buttons
+    weight: 0
     region: content
     settings: {  }
     third_party_settings: {  }
-  title:
-    type: string_textfield
-    weight: -5
+  path:
+    type: path
+    weight: 27
     region: content
-    settings:
-      size: 60
-      placeholder: ''
+    settings: {  }
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 5
+    weight: 25
     region: content
     settings:
       match_operator: CONTAINS
@@ -191,4 +352,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  title: true

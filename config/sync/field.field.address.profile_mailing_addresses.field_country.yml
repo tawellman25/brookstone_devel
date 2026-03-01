@@ -1,0 +1,27 @@
+uuid: 6062026b-9794-48c5-8984-ff391fb69eaa
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.address.profile_mailing_addresses
+    - field.storage.address.field_country
+  module:
+    - address
+id: address.profile_mailing_addresses.field_country
+field_name: field_country
+entity_type: address
+bundle: profile_mailing_addresses
+label: Country
+description: "Select the country associated with this address.</br>\r\nUsed for mailing, tax, and delivery validation. Defaults to United States."
+required: false
+translatable: false
+default_value:
+  -
+    value: US
+default_value_callback: ''
+settings:
+  available_countries:
+    CA: CA
+    MX: MX
+    US: US
+field_type: address_country

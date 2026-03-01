@@ -1,0 +1,199 @@
+
+{% if content.field_variant.0['#markup'] == "style- 1" %}
+<section class="standard-blog">
+        <div class="full-width blog-details">
+            <div class="contents">
+                <div class="image">
+                    <img src="{{file_url(content.field_image['#items'].entity.uri.value)}}" alt="{{content.field_image['#items'].alt}}">
+                </div>
+                <div class="content">
+                    <span class="date">{{node.getCreatedTime|format_date('custom','d F, o')}}<span class="vl"></span>{{content.field_category.0}}</span>
+                    {{content.body}}
+                </div>
+                <div class="content">
+                    <h3>{{content.field_title_1.0}}</h3>
+                        {{content.field_description.0}}
+                        <ul class="list-style-1">
+                        {% for key,value in content.field_list_items['#items'] %}
+                        <li>
+                            <div class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+                                    <g data-name="Group 40485" transform="translate(-490.47 -1033.47)">
+                                    <rect data-name="Rectangle 21" width="200" height="200" rx="100" transform="translate(490.47 1033.47)" fill="#131517" opacity="0.1"/>
+                                    <path data-name="Path 12" d="M209.633,120.939,159.75,170.389a7.084,7.084,0,0,1-10,0l-24.886-24.884a6.987,6.987,0,0,1,0-9.954,7.085,7.085,0,0,1,10,0l20,19.908,44.884-44.474a7.016,7.016,0,1,1,9.888,9.954Z" transform="translate(423.197 992.781)" fill="#131517" fill-rule="evenodd"/>
+                                    </g>
+                                </svg>
+                            </div>
+                            {{content.field_list_items[key]}}
+                        </li>
+                        {% endfor %}   
+                    </ul>
+                </div>
+            </div>    
+            <div class="details">
+                <div class="tags-social">
+                    <ul class="tags">
+                    {% for key,value in content.field_tags['#items'] %}
+                        <li><a href="{{ content.field_tags[key]['#url'] }}" class="tag" title="{{ content.field_tags[key]['#title'] }}">{{ content.field_tags[key]['#title'] }}</a></li>
+                    {% endfor %}
+                    </ul>
+                    <ul class="social-icons">
+                        {{ drupal_block('addtoany_block') }}    
+                    </ul>
+                </div>
+                <div class="next-prev">
+                    <a href="{{next_url}}" title="Title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="349.999" viewBox="0 0 200 349.999">
+                            <path data-name="Path 39786" d="M174.242,199.981a23.7,23.7,0,0,1-16.027-6.837L7.372,43.1A25.682,25.682,0,0,1,.714,19.033,24.709,24.709,0,0,1,17.469.992,23.592,23.592,0,0,1,40.933,6.959L175,140.392,309.067,6.959A23.591,23.591,0,0,1,332.53.992a24.711,24.711,0,0,1,16.756,18.041A25.687,25.687,0,0,1,342.627,43.1L191.784,193.144a23.642,23.642,0,0,1-17.533,6.837Z" transform="translate(200) rotate(90)" fill="#131517"/>
+                        </svg>Previous Blog
+                    </a>
+                    <a href="{{prev_url}}" title="Title">Next Blog
+                        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="349.999" viewBox="0 0 200 349.999">
+                            <path data-name="Path 39785" d="M361.825,190.452a23.7,23.7,0,0,0-16.027,6.837L194.955,347.336A25.682,25.682,0,0,0,188.3,371.4a24.709,24.709,0,0,0,16.756,18.04,23.592,23.592,0,0,0,23.464-5.966L362.583,250.041,496.65,383.475a23.59,23.59,0,0,0,23.463,5.966,24.711,24.711,0,0,0,16.756-18.04,25.687,25.687,0,0,0-6.658-24.065L379.367,197.289a23.643,23.643,0,0,0-17.533-6.837Z" transform="translate(390.433 -187.583) rotate(90)" fill="#131517"/>
+                        </svg>
+                    </a>
+                </div>
+                <div class="comments">
+                {% if comment_count != 0 %}
+                    <h3>{{comment_count}} Comments</h3>
+                {% endif %}
+                    <div class="items">
+                        {{content.field_comments}}
+                    </div>
+                </div>
+            </div>
+        </div>
+</section>
+{% elseif content.field_variant.0['#markup'] == "style- 2" %}
+<section class="video-blog">
+        <div class="full-width blog-details">
+            <div class="contents">
+                <div class="video-style-2">
+                    <div class="item">
+                        <div class="image">
+                            <img src="{{file_url(content.field_image['#items'].entity.uri.value)}}" alt="{{content.field_image['#items'].alt}}">
+                            <div class="overlay">
+                                <a data-fancybox="video-gallery" data-src="https://www.youtube.com/watch?v=h1D5IFsUEFc" title="Title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+                                        <g  transform="translate(-140.348 -70.352)">
+                                            <path data-name="Path 255" d="M240.348,70.352a100.106,100.106,0,1,0,70.681,29.321,100.008,100.008,0,0,0-70.681-29.321Zm0,190.983a91.112,91.112,0,1,1,64.3-26.688,90.982,90.982,0,0,1-64.3,26.688Z" transform="translate(0 0)" fill="#131517"/>
+                                            <path data-name="Path 256" d="M347.177,226.441,294.55,195.413h0a9.024,9.024,0,0,0-13.6,7.774v62.057a8.98,8.98,0,0,0,13.6,7.764l52.627-31.028h0a9.021,9.021,0,0,0,0-15.538Z" transform="translate(-72.711 -63.864)" fill="#131517"/>
+                                        </g>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="content">
+                    <span class="date">{{node.getCreatedTime|format_date('custom','d F, o')}}<span class="vl"></span>{{content.field_category.0}}</span>
+                    {{content.body.0}}
+                </div>
+            </div>
+            <div class="details">
+                <div class="tags-social">
+                    <ul class="tags">
+                        {% for key,value in content.field_tags['#items'] %}
+                            <li><a href="{{ content.field_tags[key]['#url'] }}" class="tag" title="{{ content.field_tags[key]['#title'] }}">{{ content.field_tags[key]['#title'] }}</a></li>
+                        {% endfor %}
+                    </ul>
+                    <ul class="social-icons">
+                       {{ drupal_block('addtoany_block') }} 
+                    </ul>
+                </div>
+                <div class="next-prev">
+                    <a href="{{next_url}}" title="Title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="349.999" viewBox="0 0 200 349.999">
+                            <path data-name="Path 39786" d="M174.242,199.981a23.7,23.7,0,0,1-16.027-6.837L7.372,43.1A25.682,25.682,0,0,1,.714,19.033,24.709,24.709,0,0,1,17.469.992,23.592,23.592,0,0,1,40.933,6.959L175,140.392,309.067,6.959A23.591,23.591,0,0,1,332.53.992a24.711,24.711,0,0,1,16.756,18.041A25.687,25.687,0,0,1,342.627,43.1L191.784,193.144a23.642,23.642,0,0,1-17.533,6.837Z" transform="translate(200) rotate(90)" fill="#131517"/>
+                        </svg>Previous Blog
+                    </a>
+                    <a href="{{prev_url}}" title="Title">Next Blog
+                        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="349.999" viewBox="0 0 200 349.999">
+                            <path data-name="Path 39785" d="M361.825,190.452a23.7,23.7,0,0,0-16.027,6.837L194.955,347.336A25.682,25.682,0,0,0,188.3,371.4a24.709,24.709,0,0,0,16.756,18.04,23.592,23.592,0,0,0,23.464-5.966L362.583,250.041,496.65,383.475a23.59,23.59,0,0,0,23.463,5.966,24.711,24.711,0,0,0,16.756-18.04,25.687,25.687,0,0,0-6.658-24.065L379.367,197.289a23.643,23.643,0,0,0-17.533-6.837Z" transform="translate(390.433 -187.583) rotate(90)" fill="#131517"/>
+                        </svg>
+                    </a>
+                </div>
+                <div class="comments">
+                    <h3>{{comment_count}} Comments</h3>
+                    <div class="items">
+                        {{content.field_comments}}
+                    </div>
+                </div>
+            </div>
+        </div>
+</section>
+
+{% elseif content.field_variant.0['#markup'] == 'style- 3' %}
+<section class="gallery-blog">
+        <div class="full-width blog-details">
+            <div class="contents">
+                <div class="content">
+                    <span class="date">{{node.getCreatedTime|format_date('custom','d F, o')}}<span class="vl"></span>{{content.field_category.0}}</span>
+                    {{content.body.0}}
+                </div>
+                <div class="content">
+                    <div class="image">
+                        <img src="{{file_url(content.field_image['#items'].entity.uri.value)}}" alt="{{content.field_image['#items'].alt}}">
+                    </div>
+                </div>
+                <div class="content">
+                    <h3>{{content.field_title_1.0}}</h3>
+                    {{content.field_description.0}}
+                    <ul class="list-style-1">
+                        {% for key,value in content.field_list_items['#items'] %}
+                            <li>
+                                <div class="icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+                                        <g data-name="Group 40485" transform="translate(-490.47 -1033.47)">
+                                        <rect data-name="Rectangle 21" width="200" height="200" rx="100" transform="translate(490.47 1033.47)" fill="#131517" opacity="0.1"/>
+                                        <path data-name="Path 12" d="M209.633,120.939,159.75,170.389a7.084,7.084,0,0,1-10,0l-24.886-24.884a6.987,6.987,0,0,1,0-9.954,7.085,7.085,0,0,1,10,0l20,19.908,44.884-44.474a7.016,7.016,0,1,1,9.888,9.954Z" transform="translate(423.197 992.781)" fill="#131517" fill-rule="evenodd"/>
+                                        </g>
+                                    </svg>
+                                </div>
+                                {{content.field_list_items[key]}}
+                            </li>
+                        {% endfor %}     
+                    </ul>
+                </div>
+                <div class="content">
+                    <div class="row justify-content-center">
+                        {{content.field_blog_with_gallery}}
+                    </div>
+                </div>
+                <div class="content">
+                    <p>{{content.field_gallery_description.0}}</p>
+                </div>
+            </div>
+            <div class="details">
+                <div class="tags-social">
+                    <ul class="tags">
+                        {% for key,value in content.field_tags['#items'] %}
+                            <li><a href="{{ content.field_tags[key]['#url'] }}" class="tag" title="{{ content.field_tags[key]['#title'] }}">{{ content.field_tags[key]['#title'] }}</a></li>
+                        {% endfor %}
+                    </ul>
+                    <ul class="social-icons">
+                        {{ drupal_block('addtoany_block') }} 
+                    </ul>
+                </div>
+                <div class="next-prev">
+                    <a href="{{next_url}}" title="Title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="349.999" viewBox="0 0 200 349.999">
+                            <path data-name="Path 39786" d="M174.242,199.981a23.7,23.7,0,0,1-16.027-6.837L7.372,43.1A25.682,25.682,0,0,1,.714,19.033,24.709,24.709,0,0,1,17.469.992,23.592,23.592,0,0,1,40.933,6.959L175,140.392,309.067,6.959A23.591,23.591,0,0,1,332.53.992a24.711,24.711,0,0,1,16.756,18.041A25.687,25.687,0,0,1,342.627,43.1L191.784,193.144a23.642,23.642,0,0,1-17.533,6.837Z" transform="translate(200) rotate(90)" fill="#131517"/>
+                        </svg>Previous Blog
+                    </a>
+                    <a href="{{prev_url}}" title="Title">Next Blog
+                        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="349.999" viewBox="0 0 200 349.999">
+                            <path data-name="Path 39785" d="M361.825,190.452a23.7,23.7,0,0,0-16.027,6.837L194.955,347.336A25.682,25.682,0,0,0,188.3,371.4a24.709,24.709,0,0,0,16.756,18.04,23.592,23.592,0,0,0,23.464-5.966L362.583,250.041,496.65,383.475a23.59,23.59,0,0,0,23.463,5.966,24.711,24.711,0,0,0,16.756-18.04,25.687,25.687,0,0,0-6.658-24.065L379.367,197.289a23.643,23.643,0,0,0-17.533-6.837Z" transform="translate(390.433 -187.583) rotate(90)" fill="#131517"/>
+                        </svg>
+                    </a>
+                </div>
+                <div class="comments">
+                    <h3>{{comment_count}} Comments</h3>
+                    <div class="items">
+                        {{content.field_comments}}
+                    </div>
+                </div>
+            </div>
+        </div>
+</section> 
+{% endif %}

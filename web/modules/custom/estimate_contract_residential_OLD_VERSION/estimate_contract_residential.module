@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_insert().
+ */
+function estimate_contract_residential_entity_insert(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'contract_sections') {
+    return;
+  }
+  \Drupal::service('estimate_contract_residential.estimate_request_auto_creator')->apply($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function estimate_contract_residential_entity_update(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'contract_sections') {
+    return;
+  }
+  \Drupal::service('estimate_contract_residential.estimate_request_auto_creator')->apply($entity);
+}

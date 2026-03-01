@@ -7,6 +7,10 @@ export LC_ALL=C
 # sync-to-remote-DANGEROUS.sh
 # LIVE deploy script — rsync code only, composer install, config import.
 # SAFE DEFAULT: DRY-RUN + explicit confirmation required.
+#
+# NOTE:
+# - .vscode/, dev_scripts/, __BOS_AI/ are now DEPLOYED to LIVE and PROTECTED
+#   from deletion on LIVE (even with --delete).
 ###############################################################################
 
 REMOTE_HOST="sewardsdevel"
@@ -95,15 +99,19 @@ RSYNC_FLAGS=(
   --partial
   --safe-links
 
+  # PROTECT these on LIVE (never delete, even with --delete)
+  --filter='protect .vscode/***'
+  --filter='protect dev_scripts/***'
+  --filter='protect __BOS_AI/***'
+
+  # deps/local-only
   --exclude "vendor/"
   --exclude ".git/"
   --exclude "node_modules/"
   --exclude ".ddev/"
-  --exclude "dev_scripts/"
   --exclude ".env"
   --exclude ".env.*"
   --exclude ".idea/"
-  --exclude ".vscode/"
   --exclude "__pycache__/"
   --exclude "Thumbs.db"
   --exclude ".DS_Store"
@@ -111,6 +119,7 @@ RSYNC_FLAGS=(
   --exclude "*.swp"
   --exclude "*.bak"
 
+  # Drupal core/contrib/files
   --exclude "web/core/"
   --exclude "web/modules/contrib/"
   --exclude "web/themes/contrib/"
@@ -120,6 +129,7 @@ RSYNC_FLAGS=(
   --exclude "web/sites/default/.gitignore"
   --exclude "web/s3_uri_verification.txt"
 
+  # AWS clutter variants
   --exclude "aws/"
   --exclude "aws-sdk-php/"
   --exclude "aws_sdk/"
@@ -130,6 +140,7 @@ RSYNC_FLAGS=(
   --exclude "web/modules/custom/*/aws-sdk-php/"
   --exclude "web/modules/custom/*/aws_sdk/"
 
+  # dumps
   --exclude "*.sql"
   --exclude "*.sql.gz"
 )

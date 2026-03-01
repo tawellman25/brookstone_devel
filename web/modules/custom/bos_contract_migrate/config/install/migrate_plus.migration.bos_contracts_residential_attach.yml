@@ -1,0 +1,67 @@
+id: bos_contracts_residential_attach
+label: BOS Residential Contracts (Attach Weed Sections)
+migration_group: bos_contracts
+
+dependencies:
+  module:
+    - migrate_plus
+    - migrate_tools
+    - migrate_spreadsheet
+    - bos_contract_migrate
+
+migration_dependencies:
+  required:
+    - bos_contract_sections
+  optional: []
+
+source:
+  plugin: spreadsheet
+  file: private://imports/BOS_Contract_import_sheet.xlsx
+  worksheet: Sheet1
+  header_row: 1
+  ids:
+    contract_key:
+      type: string
+
+process:
+  contract_key:
+    plugin: concat
+    source:
+      - Property_ID
+      - field_contract_year
+    delimiter: ':'
+
+  type:
+    plugin: default_value
+    default_value: residential
+
+  # Weed keys must match source plugin output.
+  _contract_key:
+    plugin: get
+    source: contract_key
+
+  field_weed_spraying_of_landscape:
+    plugin: migration_lookup
+    migration:
+      - bos_contract_sections
+    source:
+      plugin: concat
+      source:
+        - '@_contract_key'
+        - '1277:beds'
+      delimiter: ':'
+
+  field_weed_spraying_of_misc_area:
+    plugin: migration_lookup
+    migration:
+      - bos_contract_sections
+    source:
+      plugin: concat
+      source:
+        - '@_contract_key'
+        - '1277:misc'
+      delimiter: ':'
+
+destination:
+  plugin: 'entity:contracts'
+  default_bundle: residential

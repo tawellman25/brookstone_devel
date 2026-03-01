@@ -1,23 +1,198 @@
 <?php
 
+declare(strict_types=1);
+
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Datetime\DrupalDateTime;
-use Drupal\flag\Entity\Flag;
-use Drupal\flag\FlagServiceInterface;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\contract_residential\ContractActionLogWriter;
+use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
  * Implements hook_entity_view_mode_alter().
  */
 function contract_residential_entity_view_mode_alter(&$view_mode, EntityInterface $entity, $context) {
-  // Check if the entity is of the type 'contracts' and bundle 'residential'
-  if ($entity->getEntityTypeId() == 'contracts' && $entity->bundle() == 'residential') {
+  if ($entity->getEntityTypeId() === 'contracts' && $entity->bundle() === 'residential') {
     $user = \Drupal::currentUser();
-    
-    // Check if the user has any of the specific roles
     if ($user->hasRole('site_admin') || $user->hasRole('administration') || $user->hasRole('administrator')) {
-      // Change the view mode for users with the specified roles
-      $view_mode = 'admin'; // Replace 'actual_custom_view_mode' with your view mode machine name
+      $view_mode = 'admin';
     }
   }
+}
+
+/**
+ * Implements hook_entity_validate().
+ *
+ * Friendly validation (no WSOD):
+ * - Enforce one Residential Contract per Property per Year.
+ * - Enforce Contract Year format.
+ */
+function contract_residential_entity_validate(EntityInterface $entity, ConstraintViolationListInterface $violations) {
+  if ($entity->getEntityTypeId() !== 'contracts' || $entity->bundle() !== 'residential') {
+    return;
+  }
+
+  $property_field = 'field_property';
+  $year_field = 'field_contract_year';
+
+  if (!$entity->hasField($property_field) || $entity->get($property_field)->isEmpty()) {
+    return;
+  }
+  $property_id = (int) $entity->get($property_field)->target_id;
+  if ($property_id <= 0) {
+    return;
+  }
+
+  $year = '';
+  if ($entity->hasField($year_field) && !$entity->get($year_field)->isEmpty()) {
+    $year = trim((string) $entity->get($year_field)->value);
+  }
+  $year = substr($year, 0, 4);
+
+  if ($year === '' || !preg_match('/^\d{4}$/', $year)) {
+    $violations->add(new ConstraintViolation(
+      'Contract Year must be a 4-digit year like 2026.',
+      'Contract Year must be a 4-digit year like 2026.',
+      [],
+      $entity,
+      $year_field,
+      $year
+    ));
+    return;
+  }
+
+  $query = \Drupal::entityQuery('contracts')
+    ->accessCheck(FALSE)
+    ->condition('type', 'residential')
+    ->condition($property_field, $property_id)
+    ->condition($year_field, $year);
+
+  if (!$entity->isNew()) {
+    $query->condition('id', (int) $entity->id(), '<>');
+  }
+
+  $existing = $query->range(0, 1)->execute();
+  if (!empty($existing)) {
+    $existing_id = (int) array_key_first($existing);
+
+    $violations->add(new ConstraintViolation(
+      'A Residential Contract already exists for this Property for @year (Contract ID: @id). Update the existing Contract instead.',
+      'A Residential Contract already exists for this Property for @year (Contract ID: @id). Update the existing Contract instead.',
+      ['@year' => $year, '@id' => $existing_id],
+      $entity,
+      $property_field,
+      $property_id
+    ));
+  }
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function contract_residential_entity_presave(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'contracts' || $entity->bundle() !== 'residential') {
+    return;
+  }
+
+  $year_field = 'field_contract_year';
+
+  $year = '';
+  if ($entity->hasField($year_field) && !$entity->get($year_field)->isEmpty()) {
+    $year = trim((string) $entity->get($year_field)->value);
+  }
+
+  if ($year === '') {
+    $created_ts = NULL;
+
+    if (method_exists($entity, 'getCreatedTime')) {
+      $created_ts = (int) $entity->getCreatedTime();
+    }
+    elseif ($entity->hasField('created') && !$entity->get('created')->isEmpty()) {
+      $created_ts = (int) $entity->get('created')->value;
+    }
+
+    if (!empty($created_ts) && $entity->hasField($year_field)) {
+      $entity->set($year_field, (string) date('Y', $created_ts));
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function contract_residential_entity_insert(EntityInterface $entity) {
+
+  if ($entity->getEntityTypeId() === 'contracts' && $entity->bundle() === 'residential') {
+    _contract_residential_sync_section_parent_links($entity);
+    return;
+  }
+
+  if ($entity->getEntityTypeId() === 'contract_sections') {
+    _contract_residential_stamp_parent_contract_last_updated($entity);
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function contract_residential_entity_update(EntityInterface $entity) {
+
+  if ($entity->getEntityTypeId() === 'contracts' && $entity->bundle() === 'residential') {
+    _contract_residential_sync_section_parent_links($entity);
+    _contract_residential_maybe_generate_work_orders_on_status($entity);
+    return;
+  }
+
+  if ($entity->getEntityTypeId() === 'contract_sections') {
+    _contract_residential_stamp_parent_contract_last_updated($entity);
+  }
+}
+
+/**
+ * Stamp parent Contract when a Contract Section is saved.
+ */
+function _contract_residential_stamp_parent_contract_last_updated(EntityInterface $section): void {
+  static $in_progress = FALSE;
+  if ($in_progress) {
+    return;
+  }
+
+  if (!$section->hasField('field_contract') || $section->get('field_contract')->isEmpty()) {
+    return;
+  }
+
+  $contract_id = (int) $section->get('field_contract')->target_id;
+  if ($contract_id <= 0) {
+    return;
+  }
+
+  $contract_storage = \Drupal::entityTypeManager()->getStorage('contracts');
+  $contract = $contract_storage->load($contract_id);
+  if (!$contract) {
+    return;
+  }
+
+  if (!$contract->hasField('field_last_updated_at') || !$contract->hasField('field_last_updated_by')) {
+    return;
+  }
+
+  $now = (int) \Drupal::time()->getRequestTime();
+  $uid = (int) \Drupal::currentUser()->id();
+
+  $contract->set('field_last_updated_at', $now);
+  $contract->set('field_last_updated_by', $uid);
+
+  $in_progress = TRUE;
+  try {
+    $contract->save();
+  }
+  finally {
+    $in_progress = FALSE;
+  }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function contract_residential_cron(): void {
+  _contract_residential_checkups_enqueue_dispatch(FALSE, 'cron');
 }

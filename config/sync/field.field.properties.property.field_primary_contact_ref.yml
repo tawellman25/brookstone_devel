@@ -1,0 +1,29 @@
+uuid: c9a4623e-60ae-48bf-aff9-c51cba23fad0
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.contact
+    - eck.eck_type.properties.property
+    - field.storage.properties.field_primary_contact_ref
+id: properties.property.field_primary_contact_ref
+field_name: field_primary_contact_ref
+entity_type: properties
+bundle: property
+label: 'Primary Contact'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contacts'
+  handler_settings:
+    target_bundles:
+      contact: contact
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

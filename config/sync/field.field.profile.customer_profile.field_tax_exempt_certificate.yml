@@ -1,0 +1,46 @@
+uuid: a5c929df-f784-43a4-9a6d-e48f2f20020c
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.profile.field_tax_exempt_certificate
+    - profile.type.customer_profile
+  module:
+    - file
+    - filefield_paths
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[profile:url:path]'
+      options:
+        slashes: false
+        pathauto: true
+        transliterate: false
+    file_name:
+      value: '[profile:uid:entity:display-name]_tax_exempt_certificate.[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: true
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: profile.customer_profile.field_tax_exempt_certificate
+field_name: field_tax_exempt_certificate
+entity_type: profile
+bundle: customer_profile
+label: 'Tax Exempt Certificate'
+description: "Upload the customer’s tax exemption certificate (PDF or scanned image).</br>\r\nRequired only when Tax Status is set to Tax Exempt. Keep the most current certificate on file."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'pdf jpg jpeg png'
+  max_filesize: ''
+  description_field: false
+field_type: file

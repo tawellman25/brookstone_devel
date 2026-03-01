@@ -1,0 +1,46 @@
+uuid: 54daedbb-c878-48ff-a24b-c0923c2581fb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.heavy_equipment
+    - field.storage.equipment.field_documents
+  module:
+    - file
+    - filefield_paths
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[date:custom:Y]-[date:custom:m]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[file:ffp-name-only-original].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: equipment.heavy_equipment.field_documents
+field_name: field_documents
+entity_type: equipment
+bundle: heavy_equipment
+label: Documents
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'txt pdf doc docx xml xmls cdr xls xlsx skp cmx'
+  max_filesize: ''
+  description_field: false
+field_type: file

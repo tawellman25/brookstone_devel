@@ -1,0 +1,430 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * @file
+ * Global SOP code validation + lock enforcement + completeness on approval.
+ *
+ * Applies to ALL bundles of the ECK entity type: sop.
+ *
+ * No auto-generation. Validation + guardrails only.
+ */
+
+/**
+ * Locked statuses for field_sop_status (machine values).
+ *
+ * Your values: draft, approved, active, archived
+ * LOCKED = approved, active, archived
+ */
+const SOP_CODE_VALIDATION_LOCKED_STATUSES = [
+  'approved',
+  'active',
+  'archived',
+];
+
+/**
+ * Optional bundle-specific regex overrides.
+ *
+ * - If a bundle has an entry here, SOP Code must match that regex.
+ * - If a bundle is NOT listed here, only global rules apply (required/unique/normalized/immutable).
+ *
+ * You can alter this array with hook_sop_code_validation_bundle_rules_alter().
+ */
+function sop_code_validation_bundle_rules(): array {
+  $rules = [
+    // Examples (optional):
+    // 'office_administration' => [
+    //   'regex' => '/^OFF-ADM-[A-Z0-9]{2,20}-\d{3}$/',
+    //   'example' => 'OFF-ADM-QB-001',
+    // ],
+  ];
+
+  \Drupal::moduleHandler()->alter('sop_code_validation_bundle_rules', $rules);
+  return $rules;
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Attach validation to ALL SOP edit forms.
+ * Disable SOP Code field when locked (EDIT forms only).
+ */
+function sop_code_validation_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  $form_object = $form_state->getFormObject();
+  if (!is_object($form_object) || !method_exists($form_object, 'getEntity')) {
+    return;
+  }
+
+  $entity = $form_object->getEntity();
+  if (!$entity instanceof EntityInterface) {
+    return;
+  }
+
+  if ($entity->getEntityTypeId() !== 'sop') {
+    return;
+  }
+
+  // Add SOP Code validation (global).
+  $form['#validate'][] = 'sop_code_validation_validate_form';
+
+  // Never disable SOP Code on create forms (ECK status defaults may not be on the entity yet).
+  if (
+    !$entity->isNew()
+    && sop_code_validation_is_locked($entity)
+    && isset($form['field_sop_code']['widget'][0]['value'])
+  ) {
+    $form['field_sop_code']['widget'][0]['value']['#disabled'] = TRUE;
+  }
+}
+
+/**
+ * Form validate callback (global).
+ *
+ * IMPORTANT: On ECK create forms, the entity may not yet contain submitted values.
+ * Read SOP Code from $form_state first.
+ */
+function sop_code_validation_validate_form(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!is_object($form_object) || !method_exists($form_object, 'getEntity')) {
+    return;
+  }
+
+  $entity = $form_object->getEntity();
+  if (!$entity instanceof EntityInterface) {
+    return;
+  }
+  if ($entity->getEntityTypeId() !== 'sop') {
+    return;
+  }
+
+  // Pull from submitted values first (ECK-safe).
+  $code_raw = sop_code_validation_get_code_from_form_state($form_state);
+  if ($code_raw === '') {
+    // Fallback to entity (edit forms sometimes have it).
+    $code_raw = sop_code_validation_get_code($entity);
+  }
+
+  if ($code_raw === '') {
+    $form_state->setErrorByName('field_sop_code', t('SOP Code is required.'));
+    return;
+  }
+
+  $code = sop_code_validation_normalize_code($code_raw);
+
+  // Global sanity checks (beyond regex).
+  $err = sop_code_validation_validate_segments($code);
+  if ($err !== NULL) {
+    $form_state->setErrorByName('field_sop_code', $err);
+    return;
+  }
+
+  // Bundle-specific regex (optional).
+  $bundle_rules = sop_code_validation_bundle_rules();
+  $bundle = $entity->bundle();
+
+  if (isset($bundle_rules[$bundle]['regex'])) {
+    $regex = $bundle_rules[$bundle]['regex'];
+    $example = $bundle_rules[$bundle]['example'] ?? 'EXAMPLE-CODE-001';
+    if (!preg_match($regex, $code)) {
+      $form_state->setErrorByName(
+        'field_sop_code',
+        t('Invalid SOP Code format for this bundle. Example: @example', ['@example' => $example])
+      );
+      return;
+    }
+  }
+
+  // Uniqueness.
+  if (!sop_code_validation_is_unique($code, $entity)) {
+    $form_state->setErrorByName('field_sop_code', t('That SOP Code is already in use. SOP Codes must be unique.'));
+    return;
+  }
+
+  // Immutability after lock.
+  if (sop_code_validation_is_locked($entity) && sop_code_validation_code_changed($entity, $code)) {
+    $form_state->setErrorByName('field_sop_code', t('SOP Code cannot be changed after the SOP is approved/active/archived.'));
+    return;
+  }
+}
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * Hard enforcement (covers API/import).
+ */
+function sop_code_validation_entity_presave(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'sop') {
+    return;
+  }
+
+  $code_raw = sop_code_validation_get_code($entity);
+  $code = sop_code_validation_normalize_code($code_raw);
+
+  if ($code === '') {
+    throw new EntityStorageException('SOP Code is required.');
+  }
+
+  // Global sanity checks (beyond regex).
+  $err = sop_code_validation_validate_segments($code);
+  if ($err !== NULL) {
+    throw new EntityStorageException((string) $err);
+  }
+
+  // Bundle-specific regex (optional).
+  $bundle_rules = sop_code_validation_bundle_rules();
+  $bundle = $entity->bundle();
+
+  if (isset($bundle_rules[$bundle]['regex'])) {
+    $regex = $bundle_rules[$bundle]['regex'];
+    $example = $bundle_rules[$bundle]['example'] ?? 'EXAMPLE-CODE-001';
+    if (!preg_match($regex, $code)) {
+      throw new EntityStorageException("Invalid SOP Code format for bundle '{$bundle}'. Example: {$example}");
+    }
+  }
+
+  // Uniqueness.
+  if (!sop_code_validation_is_unique($code, $entity)) {
+    throw new EntityStorageException('Duplicate SOP Code detected. SOP Codes must be unique.');
+  }
+
+  // Immutability after lock.
+  if (sop_code_validation_is_locked($entity) && sop_code_validation_code_changed($entity, $code)) {
+    throw new EntityStorageException('SOP Code cannot be changed after the SOP is approved/active/archived.');
+  }
+
+  // Completeness enforcement only when transitioning into locked status.
+  if (sop_code_validation_is_becoming_locked($entity)) {
+    sop_code_validation_enforce_completeness_on_lock($entity);
+  }
+}
+
+/**
+ * Locked when field_sop_status is in SOP_CODE_VALIDATION_LOCKED_STATUSES.
+ *
+ * field_sop_status is the ONLY source of truth for locking (ECK).
+ */
+function sop_code_validation_is_locked(EntityInterface $entity): bool {
+  $locked_statuses = SOP_CODE_VALIDATION_LOCKED_STATUSES;
+  \Drupal::moduleHandler()->alter('sop_code_validation_locked_statuses', $locked_statuses);
+
+  if (!$entity->hasField('field_sop_status')) {
+    return FALSE;
+  }
+
+  $status = (string) $entity->get('field_sop_status')->value;
+  $status = strtolower(trim($status));
+
+  // On create forms the entity object may not have the default applied yet.
+  if ($status === '') {
+    return FALSE;
+  }
+
+  return in_array($status, $locked_statuses, TRUE);
+}
+
+/**
+ * TRUE when entity is transitioning from unlocked -> locked.
+ *
+ * With your statuses, this means: draft -> approved/active/archived.
+ */
+function sop_code_validation_is_becoming_locked(EntityInterface $entity): bool {
+  if ($entity->isNew()) {
+    return sop_code_validation_is_locked($entity);
+  }
+
+  $was_locked = FALSE;
+
+  if (isset($entity->original) && $entity->original instanceof EntityInterface) {
+    $was_locked = sop_code_validation_is_locked($entity->original);
+  }
+  elseif ($entity->id() !== NULL) {
+    $stored = \Drupal::entityTypeManager()->getStorage($entity->getEntityTypeId())->load($entity->id());
+    if ($stored instanceof EntityInterface) {
+      $was_locked = sop_code_validation_is_locked($stored);
+    }
+  }
+
+  return (!$was_locked && sop_code_validation_is_locked($entity));
+}
+
+/**
+ * Enforce minimum viable SOP when becoming locked (global for all bundles).
+ *
+ * REQUIRED (global, applies to all bundles):
+ * - field_name
+ * - field_sop_owner
+ * - field_sop_purpose
+ * - field_sop_scope
+ * - field_sop_responsibilities
+ * - field_sop_steps
+ * - field_sop_version
+ *
+ * NOTE: Service (field_service) is NOT globally required because Training/GOV/WEB SOPs
+ * may not need it. Enforce it per-bundle via hook_sop_code_validation_missing_fields_alter().
+ */
+function sop_code_validation_enforce_completeness_on_lock(EntityInterface $entity): void {
+  $missing = [];
+
+  if (sop_code_validation_is_empty_plain($entity, 'field_name')) {
+    $missing[] = 'Name (field_name)';
+  }
+  if (sop_code_validation_is_empty_entityref($entity, 'field_sop_owner')) {
+    $missing[] = 'Editor (field_sop_owner)';
+  }
+  if (sop_code_validation_is_empty_formatted($entity, 'field_sop_purpose')) {
+    $missing[] = 'Purpose (field_sop_purpose)';
+  }
+  if (sop_code_validation_is_empty_formatted($entity, 'field_sop_scope')) {
+    $missing[] = 'Scope (field_sop_scope)';
+  }
+  if (sop_code_validation_is_empty_formatted($entity, 'field_sop_responsibilities')) {
+    $missing[] = 'Rules & Responsibilities (field_sop_responsibilities)';
+  }
+  if (sop_code_validation_is_empty_formatted($entity, 'field_sop_steps')) {
+    $missing[] = 'Steps & Procedures (field_sop_steps)';
+  }
+  if (sop_code_validation_is_empty_plain($entity, 'field_sop_version')) {
+    $missing[] = 'Version (field_sop_version)';
+  }
+
+  \Drupal::moduleHandler()->alter('sop_code_validation_missing_fields', $missing, $entity);
+
+  if (!empty($missing)) {
+    throw new EntityStorageException('Cannot set SOP to approved/active/archived. Missing required fields: ' . implode(', ', $missing));
+  }
+}
+
+/**
+ * Validate SOP Code segments (beyond regex).
+ */
+function sop_code_validation_validate_segments(string $code): ?\Drupal\Core\StringTranslation\TranslatableMarkup {
+  if (!preg_match('/^[A-Z0-9\-]+$/', $code)) {
+    return t('SOP Code may only contain uppercase letters, numbers, and hyphens.');
+  }
+
+  $parts = explode('-', $code);
+  if (count($parts) < 4) {
+    return t('SOP Code must contain at least 4 parts separated by hyphens (example: OFF-ADM-QB-001).');
+  }
+
+  $last = end($parts);
+  if (!preg_match('/^\d{3}$/', (string) $last)) {
+    return t('SOP Code must end in a 3-digit sequence (example: OFF-ADM-QB-001).');
+  }
+
+  return NULL;
+}
+
+/**
+ * Get SOP Code (from stored entity).
+ */
+function sop_code_validation_get_code(EntityInterface $entity): string {
+  if (!$entity->hasField('field_sop_code')) {
+    return '';
+  }
+  $value = $entity->get('field_sop_code')->value;
+  return is_string($value) ? $value : '';
+}
+
+/**
+ * Get SOP Code from submitted form values (ECK-safe).
+ */
+function sop_code_validation_get_code_from_form_state(FormStateInterface $form_state): string {
+  $field = $form_state->getValue('field_sop_code');
+
+  // Typical structure: ['0' => ['value' => '...']]
+  if (is_array($field)) {
+    if (isset($field[0]['value']) && is_string($field[0]['value'])) {
+      return $field[0]['value'];
+    }
+    // Sometimes: ['value' => '...']
+    if (isset($field['value']) && is_string($field['value'])) {
+      return $field['value'];
+    }
+  }
+
+  return '';
+}
+
+/**
+ * Normalize SOP Code for validation/uniqueness.
+ */
+function sop_code_validation_normalize_code(string $code): string {
+  $code = trim($code);
+  $code = str_replace(["\u{2010}", "\u{2011}", "\u{2012}", "\u{2013}", "\u{2014}", "\u{2212}"], '-', $code);
+  $code = strtoupper($code);
+  $code = preg_replace('/\s+/', '', $code) ?? $code;
+  return $code;
+}
+
+/**
+ * Uniqueness across all SOP entities.
+ */
+function sop_code_validation_is_unique(string $code_norm, EntityInterface $entity): bool {
+  $query = \Drupal::entityQuery('sop')
+    ->accessCheck(FALSE)
+    ->condition('field_sop_code', $code_norm);
+
+  if (!$entity->isNew() && $entity->id() !== NULL) {
+    $query->condition('id', (int) $entity->id(), '<>');
+  }
+
+  $ids = $query->range(0, 1)->execute();
+  return empty($ids);
+}
+
+/**
+ * Detect if SOP Code changed compared to original/stored.
+ */
+function sop_code_validation_code_changed(EntityInterface $entity, string $code_norm): bool {
+  if ($entity->isNew()) {
+    return FALSE;
+  }
+
+  if (isset($entity->original) && $entity->original instanceof EntityInterface) {
+    $orig = sop_code_validation_normalize_code(sop_code_validation_get_code($entity->original));
+    return $orig !== $code_norm;
+  }
+
+  if ($entity->id() !== NULL) {
+    $stored = \Drupal::entityTypeManager()->getStorage($entity->getEntityTypeId())->load($entity->id());
+    if ($stored instanceof EntityInterface) {
+      $orig = sop_code_validation_normalize_code(sop_code_validation_get_code($stored));
+      return $orig !== $code_norm;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Empty checks.
+ */
+function sop_code_validation_is_empty_plain(EntityInterface $entity, string $field): bool {
+  if (!$entity->hasField($field)) {
+    return TRUE;
+  }
+  $value = (string) $entity->get($field)->value;
+  return trim($value) === '';
+}
+
+function sop_code_validation_is_empty_entityref(EntityInterface $entity, string $field): bool {
+  if (!$entity->hasField($field)) {
+    return TRUE;
+  }
+  return $entity->get($field)->isEmpty();
+}
+
+function sop_code_validation_is_empty_formatted(EntityInterface $entity, string $field): bool {
+  if (!$entity->hasField($field)) {
+    return TRUE;
+  }
+  $value = (string) $entity->get($field)->value;
+  $plain = trim(strip_tags($value));
+  return $plain === '';
+}

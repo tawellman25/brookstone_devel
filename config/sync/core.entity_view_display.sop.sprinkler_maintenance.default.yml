@@ -7,6 +7,8 @@ dependencies:
     - field.field.sop.sprinkler_maintenance.field_materials_involved
     - field.field.sop.sprinkler_maintenance.field_name
     - field.field.sop.sprinkler_maintenance.field_parent_sop
+    - field.field.sop.sprinkler_maintenance.field_prerequisites
+    - field.field.sop.sprinkler_maintenance.field_related_sops
     - field.field.sop.sprinkler_maintenance.field_service
     - field.field.sop.sprinkler_maintenance.field_sop__kpis
     - field.field.sop.sprinkler_maintenance.field_sop_code
@@ -32,7 +34,7 @@ third_party_settings:
       label: Attachments
       parent_name: ''
       region: content
-      weight: 5
+      weight: 7
       format_type: details
       format_settings:
         classes: ''
@@ -44,10 +46,11 @@ third_party_settings:
         required_fields: false
     group_creation_details:
       children:
-        - field_teammate_manual_pages
+        - field_sop_code
         - field_sop_owner
         - field_sop_status
         - field_sop_version
+        - field_service
         - field_sop_last_reviewed
         - uid
         - created
@@ -55,7 +58,7 @@ third_party_settings:
       label: 'Office Admin'
       parent_name: ''
       region: content
-      weight: 8
+      weight: 10
       format_type: details
       format_settings:
         classes: ''
@@ -71,7 +74,7 @@ third_party_settings:
       label: 'Tools and Resources'
       parent_name: ''
       region: content
-      weight: 6
+      weight: 8
       format_type: details
       format_settings:
         classes: ''
@@ -87,7 +90,7 @@ third_party_settings:
       label: 'Key Performance Indicators'
       parent_name: ''
       region: content
-      weight: 7
+      weight: 9
       format_type: details
       format_settings:
         classes: ''
@@ -119,7 +122,7 @@ content:
         granularity: 2
         refresh: 60
     third_party_settings: {  }
-    weight: 18
+    weight: 8
     region: content
   created:
     type: timestamp
@@ -138,7 +141,7 @@ content:
         granularity: 2
         refresh: 60
     third_party_settings: {  }
-    weight: 17
+    weight: 7
     region: content
   field_materials_involved:
     type: entity_reference_label
@@ -154,7 +157,31 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 19
+    weight: 5
+    region: content
+  field_prerequisites:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_related_sops:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_service:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
     region: content
   field_sop__kpis:
     type: text_default
@@ -178,7 +205,7 @@ content:
       timezone_override: ''
       format_type: medium
     third_party_settings: {  }
-    weight: 15
+    weight: 5
     region: content
   field_sop_owner:
     type: entity_reference_label
@@ -186,14 +213,14 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 12
+    weight: 1
     region: content
   field_sop_purpose:
     type: text_default
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 1
+    weight: 0
     region: content
   field_sop_responsibilities:
     type: text_default
@@ -207,14 +234,14 @@ content:
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 2
+    weight: 1
     region: content
   field_sop_status:
     type: list_default
     label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 13
+    weight: 2
     region: content
   field_sop_steps:
     type: text_default
@@ -236,7 +263,7 @@ content:
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 14
+    weight: 3
     region: content
   sop_file_attachments_entity_view_1:
     settings: {  }
@@ -249,9 +276,8 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 16
+    weight: 6
     region: content
 hidden:
   field_name: true
-  field_service: true
   title: true

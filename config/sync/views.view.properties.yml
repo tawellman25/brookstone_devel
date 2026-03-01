@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - field.storage.properties.field_aerial_view
+    - field.storage.properties.field_full_address
     - field.storage.properties.field_geofield
     - field.storage.properties.field_nickname
     - image.style.max_1300x1300
@@ -97,6 +98,72 @@ display:
               action_id: views_bulk_operations_delete_entity
               preconfiguration:
                 label_override: 'Delete Properties'
+        id_1:
+          id: id_1
+          table: properties_field_data
+          field: id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: properties
+          entity_field: id
+          plugin_id: field
+          label: 'Property ID'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
         view_properties:
           id: view_properties
           table: properties
@@ -241,6 +308,69 @@ display:
             prefix: ''
             suffix: ''
             target: _blank
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_full_address:
+          id: field_full_address
+          table: properties__field_full_address
+          field: field_full_address
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Full Address'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
             nl2br: false
             max_length: 0
             word_boundary: true
@@ -772,7 +902,7 @@ display:
           exposed: true
           expose:
             operator_id: id_op
-            label: ID
+            label: 'Property ID'
             description: ''
             use_operator: false
             operator: id_op
@@ -787,12 +917,12 @@ display:
               anonymous: '0'
               administrator: '0'
               site_admin: '0'
+              site_assistant: '0'
               administration: '0'
               supervisor: '0'
               teammates: '0'
               client: '0'
               user: '0'
-              supplier: '0'
             min_placeholder: ''
             max_placeholder: ''
             placeholder: ''
@@ -920,7 +1050,7 @@ display:
           plugin_id: text
           empty: true
           content:
-            value: '<a class="button--primary button js-form-submit form-submit" target="_blank" href="/admin/content/properties/add/property?destination=/admin/office/properties">Add New Property</a> <a class="button--primary button js-form-submit form-submit" target="_blank" href="/admin/people/create">Add Client</a> <a class="button--primary button js-form-submit form-submit" target="_blank" href="/admin/content/ownership_record/add/record?destination=/admin/office/properties">Change Ownership</a>'
+            value: '<a class="button--primary button js-form-submit form-submit" target="_blank" href="/admin/content/properties/add/property?destination=/admin/properties">Add New Property</a> <a class="button--primary button js-form-submit form-submit" target="_blank" href="/admin/people/create">Add Client</a> <a class="button--primary button js-form-submit form-submit" target="_blank" href="/admin/content/ownership_record/add/record?destination=/admin/properties">Change Ownership</a>'
             format: full_html
           tokenize: false
       footer: {  }
@@ -935,6 +1065,7 @@ display:
         - user.roles
       tags:
         - 'config:field.storage.properties.field_aerial_view'
+        - 'config:field.storage.properties.field_full_address'
         - 'config:field.storage.properties.field_geofield'
         - 'config:field.storage.properties.field_nickname'
   page_1:
@@ -961,5 +1092,6 @@ display:
         - user.roles
       tags:
         - 'config:field.storage.properties.field_aerial_view'
+        - 'config:field.storage.properties.field_full_address'
         - 'config:field.storage.properties.field_geofield'
         - 'config:field.storage.properties.field_nickname'

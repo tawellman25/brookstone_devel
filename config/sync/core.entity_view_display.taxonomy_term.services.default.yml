@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - field.field.taxonomy_term.services.field_banner_image
+    - field.field.taxonomy_term.services.field_brookstone_tags
     - field.field.taxonomy_term.services.field_department
     - field.field.taxonomy_term.services.field_description
     - field.field.taxonomy_term.services.field_estimate_types
@@ -27,28 +28,28 @@ targetEntityType: taxonomy_term
 bundle: services
 mode: default
 content:
-  field_department:
-    type: entity_reference_label
-    label: above
-    settings:
-      link: true
-    third_party_settings: {  }
-    weight: 6
-    region: content
-  field_description:
-    type: text_default
-    label: hidden
-    settings: {  }
-    third_party_settings: {  }
-    weight: 2
-    region: content
-  field_estimate_types:
+  field_brookstone_tags:
     type: entity_reference_label
     label: above
     settings:
       link: true
     third_party_settings: {  }
     weight: 5
+    region: content
+  field_department:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
     region: content
   field_iconic_image:
     type: image
@@ -61,19 +62,11 @@ content:
     third_party_settings: {  }
     weight: 1
     region: content
-  field_service_bundle:
+  field_other_names:
     type: string
-    label: above
+    label: hidden
     settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    weight: 3
-    region: content
-  field_sop_code:
-    type: string
-    label: inline
-    settings:
-      link_to_entity: false
+      link_to_entity: true
     third_party_settings: {  }
     weight: 4
     region: content
@@ -88,10 +81,12 @@ content:
 hidden:
   description: true
   field_banner_image: true
+  field_estimate_types: true
   field_home_page: true
   field_home_page_slide: true
   field_list_order: true
-  field_other_names: true
   field_parent_service: true
+  field_service_bundle: true
   field_service_name: true
+  field_sop_code: true
   field_work_order_service: true

@@ -1,0 +1,256 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Supported URL params on Contact add/edit:
+ * - bos_host=profile|property
+ * - bos_host_id=<entity id>
+ * - bos_field=field_contacts|field_primary_contact_ref
+ */
+function bos_contact_attach_form_alter(array &$form, FormStateInterface $form_state, $form_id): void {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object || !method_exists($form_object, 'getEntity')) {
+    return;
+  }
+
+  $entity = $form_object->getEntity();
+  if (!$entity instanceof ContentEntityInterface) {
+    return;
+  }
+
+  // Only act on Contact entity forms.
+  if ($entity->getEntityTypeId() !== 'contacts') {
+    return;
+  }
+
+  $request = \Drupal::requestStack()->getCurrentRequest();
+  if (!$request) {
+    return;
+  }
+
+  $host = (string) $request->query->get('bos_host', '');
+  $host_id = (int) $request->query->get('bos_host_id', 0);
+  $field_name = (string) $request->query->get('bos_field', '');
+
+  if ($host === '' || $host_id <= 0 || $field_name === '') {
+    return;
+  }
+
+  $allowed_fields = [
+    'field_contacts',
+    'field_primary_contact_ref',
+  ];
+  if (!in_array($field_name, $allowed_fields, TRUE)) {
+    return;
+  }
+
+  if (isset($form['actions']) && is_array($form['actions'])) {
+    foreach ($form['actions'] as &$action) {
+      if (is_array($action) && (($action['#type'] ?? '') === 'submit')) {
+        $action['#submit'][] = 'bos_contact_attach_contact_submit';
+      }
+    }
+  }
+}
+
+/**
+ * Submit handler: attach Contact to host entity.
+ */
+function bos_contact_attach_contact_submit(array &$form, FormStateInterface $form_state): void {
+  $request = \Drupal::requestStack()->getCurrentRequest();
+  if (!$request) {
+    return;
+  }
+
+  $host = (string) $request->query->get('bos_host', '');
+  $host_id = (int) $request->query->get('bos_host_id', 0);
+  $field_name = (string) $request->query->get('bos_field', '');
+
+  $allowed_fields = [
+    'field_contacts',
+    'field_primary_contact_ref',
+  ];
+  if ($host === '' || $host_id <= 0 || $field_name === '' || !in_array($field_name, $allowed_fields, TRUE)) {
+    return;
+  }
+
+  $form_object = $form_state->getFormObject();
+  if (!$form_object || !method_exists($form_object, 'getEntity')) {
+    return;
+  }
+
+  /** @var \Drupal\Core\Entity\ContentEntityInterface|null $contact */
+  $contact = $form_object->getEntity();
+  if (!$contact instanceof ContentEntityInterface) {
+    return;
+  }
+
+  $contact_id = (int) $contact->id();
+  if ($contact_id <= 0) {
+    return;
+  }
+
+  $etm = \Drupal::entityTypeManager();
+
+  // Hard mapping + definition checks (no guessing).
+  $host_entity_type_id = NULL;
+  if ($host === 'profile') {
+    $host_entity_type_id = $etm->hasDefinition('profile') ? 'profile' : NULL;
+  }
+  elseif ($host === 'property') {
+    $host_entity_type_id = $etm->hasDefinition('properties') ? 'properties' : NULL;
+  }
+  if (!$host_entity_type_id) {
+    return;
+  }
+
+  $storage = $etm->getStorage($host_entity_type_id);
+  /** @var \Drupal\Core\Entity\ContentEntityInterface|null $host_entity */
+  $host_entity = $storage->load($host_id);
+
+  if (!$host_entity instanceof ContentEntityInterface) {
+    return;
+  }
+
+  // Hard bundle guards (no guessing).
+  if ($host === 'profile' && $host_entity->bundle() !== 'customer_profile') {
+    return;
+  }
+  if ($host === 'property' && $host_entity->bundle() !== 'property') {
+    return;
+  }
+
+  // Security: only attach if current user can update the host entity.
+  if (!$host_entity->access('update', \Drupal::currentUser())) {
+    return;
+  }
+
+  if (!$host_entity->hasField($field_name)) {
+    return;
+  }
+
+  $field = $host_entity->get($field_name);
+  $cardinality = $field->getFieldDefinition()->getFieldStorageDefinition()->getCardinality();
+
+  // Single-value: overwrite.
+  if ($cardinality === 1) {
+    $host_entity->set($field_name, ['target_id' => $contact_id]);
+    $host_entity->save();
+    return;
+  }
+
+  // Multi-value: append if not already present.
+  $existing_ids = [];
+  foreach ($field->getValue() as $item) {
+    if (isset($item['target_id'])) {
+      $existing_ids[] = (int) $item['target_id'];
+    }
+  }
+
+  if (!in_array($contact_id, $existing_ids, TRUE)) {
+    $field->appendItem(['target_id' => $contact_id]);
+    $host_entity->save();
+  }
+}
+
+/**
+ * Implements hook_entity_predelete().
+ *
+ * Cleanup Contact references from:
+ * - profile:customer_profile
+ * - properties:property
+ */
+function bos_contact_attach_entity_predelete(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'contacts') {
+    return;
+  }
+
+  $contact_id = (int) $entity->id();
+  if ($contact_id <= 0) {
+    return;
+  }
+
+  $etm = \Drupal::entityTypeManager();
+
+  if ($etm->hasDefinition('profile')) {
+    bos_contact_attach_cleanup_refs_on_host('profile', 'customer_profile', $contact_id);
+  }
+  if ($etm->hasDefinition('properties')) {
+    bos_contact_attach_cleanup_refs_on_host('properties', 'property', $contact_id);
+  }
+}
+
+/**
+ * Remove references to a Contact from host entities.
+ */
+function bos_contact_attach_cleanup_refs_on_host(string $entity_type_id, string $bundle, int $contact_id): void {
+  $etm = \Drupal::entityTypeManager();
+
+  if (!$etm->hasDefinition($entity_type_id)) {
+    return;
+  }
+
+  $storage = $etm->getStorage($entity_type_id);
+  $definition = $etm->getDefinition($entity_type_id);
+  $bundle_key = (string) ($definition->getKey('bundle') ?? '');
+
+  $query = \Drupal::entityQuery($entity_type_id)->accessCheck(FALSE);
+
+  // Bundle constraint (uses the entity type's real bundle key).
+  if ($bundle_key !== '') {
+    $query->condition($bundle_key, $bundle);
+  }
+
+  $or = $query->orConditionGroup()
+    ->condition('field_contacts.target_id', $contact_id)
+    ->condition('field_primary_contact_ref.target_id', $contact_id);
+
+  $query->condition($or);
+
+  $ids = $query->execute();
+  if (empty($ids)) {
+    return;
+  }
+
+  /** @var \Drupal\Core\Entity\ContentEntityInterface[] $hosts */
+  $hosts = $storage->loadMultiple($ids);
+
+  foreach ($hosts as $host) {
+    $changed = FALSE;
+
+    // Remove from multi field_contacts.
+    if ($host->hasField('field_contacts') && !$host->get('field_contacts')->isEmpty()) {
+      $new = [];
+      foreach ($host->get('field_contacts')->getValue() as $item) {
+        if ((int) ($item['target_id'] ?? 0) !== $contact_id) {
+          $new[] = $item;
+        }
+        else {
+          $changed = TRUE;
+        }
+      }
+      if ($changed) {
+        $host->set('field_contacts', $new);
+      }
+    }
+
+    // Clear single field_primary_contact_ref.
+    if ($host->hasField('field_primary_contact_ref') && !$host->get('field_primary_contact_ref')->isEmpty()) {
+      if ((int) $host->get('field_primary_contact_ref')->target_id === $contact_id) {
+        $host->set('field_primary_contact_ref', NULL);
+        $changed = TRUE;
+      }
+    }
+
+    if ($changed) {
+      $host->save();
+    }
+  }
+}

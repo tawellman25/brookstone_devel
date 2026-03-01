@@ -6,15 +6,25 @@ dependencies:
     - eck.eck_type.address.contact_address
     - field.field.address.contact_address.field_additional_address
     - field.field.address.contact_address.field_address
+    - field.field.address.contact_address.field_address_type
     - field.field.address.contact_address.field_city
     - field.field.address.contact_address.field_primary_address
     - field.field.address.contact_address.field_state
     - field.field.address.contact_address.field_zipcode
+  module:
+    - options
 id: address.contact_address.default
 targetEntityType: address
 bundle: contact_address
 mode: default
 content:
+  field_address_type:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
   field_primary_address:
     type: boolean
     label: hidden

@@ -1,0 +1,31 @@
+estimate.convert_to_work_order:
+  path: '/estimate/{estimate}/convert-to-work-order'
+  defaults:
+    _form: '\Drupal\estimate\Form\EstimateConvertToWorkOrderConfirmForm'
+    _title: 'Convert to Work Order'
+  requirements:
+    _custom_access: '\Drupal\estimate\Access\EstimateConvertToWorkOrderAccess::access'
+  options:
+    parameters:
+      estimate:
+        type: entity:estimate
+
+estimate.reports.accepted_missing_work_order:
+  path: '/admin/estimate/accepted-missing-work-order'
+  defaults:
+    _controller: '\Drupal\estimate\Controller\AcceptedEstimatesMissingWorkOrderController::build'
+    _title_callback: '\Drupal\estimate\Controller\AcceptedEstimatesMissingWorkOrderController::title'
+  requirements:
+    _permission: 'view estimate reports'
+
+estimate.estimate_request_create_contact_confirm:
+  path: '/estimate-request/{estimate_request}/create-contact'
+  defaults:
+    _form: '\Drupal\estimate\Form\EstimateRequestCreateOrLinkContactConfirmForm'
+    _title: 'Create/Link Contact'
+  requirements:
+    _permission: 'create contacts from estimate requests'
+  options:
+    parameters:
+      estimate_request:
+        type: entity:estimate_request

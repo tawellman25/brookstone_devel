@@ -1,0 +1,148 @@
+{#
+/**
+ * @file
+ * Theme override for the basic structure of a single Drupal page.
+ *
+ * Variables:
+ * - logged_in: A flag indicating if user is logged in.
+ * - root_path: The root path of the current page (e.g., node, admin, user).
+ * - node_type: The content type for the current node, if the page is a node.
+ * - head_title: List of text elements that make up the head_title variable.
+ *   May contain one or more of the following:
+ *   - title: The title of the page.
+ *   - name: The name of the site.
+ *   - slogan: The slogan of the site.
+ * - page_top: Initial rendered markup. This should be printed before 'page'.
+ * - page: The rendered page markup.
+ * - page_bottom: Closing rendered markup. This variable should be printed after
+ *   'page'.
+ * - db_offline: A flag indicating if the database is offline.
+ * - placeholder_token: The token for generating head, css, js and js-bottom
+ *   placeholders.
+ *
+ * @see template_preprocess_html()
+ */
+#}
+{%
+  set body_classes = [
+    logged_in ? 'user-logged-in',
+    root_path ? 'not-frontpage' : 'path-' ~ root_path|clean_class,
+    not root_path ? 'path-frontpage' : 'path-' ~ root_path|clean_class,
+    node_type ? 'page-node-type-' ~ node_type|clean_class,
+    db_offline ? 'db-offline',
+  ]
+%}
+<!DOCTYPE html>
+{% if default_color == 1 %}
+ <html{{ html_attributes }}>
+{% else %}
+ <html{{ html_attributes }} style=" --bs-primary: {{primary_color}}; --bs-secondary: {{secondary_color}};" >
+{% endif %}
+  <head>
+    <head-placeholder token="{{ placeholder_token }}">
+    <title>{{ head_title|safe_join(' | ') }}</title>
+    <css-placeholder token="{{ placeholder_token }}">
+    <js-placeholder token="{{ placeholder_token }}">
+    <style type="text/css">
+      {{ styles }}
+    </style>
+  </head>
+  <body{{ attributes.addClass(body_classes) }}>
+    <!-- page preloader -->
+    {% if loader == 1 %}
+    <div id="page-loader" class="page-loader active">
+        <div class="loading"></div>
+    </div>
+    {% endif %}
+     <!-- end of page preloader -->
+    <div id="page_content">
+    <a href="#main-content" class="visually-hidden focusable skip-link">
+      {{ 'Skip to main content'|t }}
+    </a>
+    {{ page_top }}
+    {{ page }}
+    {# Demo Code #}
+    <div class="pt-skins-panel pt-skin-demo d-none">
+      <div class="control-panel"><i class="fa fa-cog fa-spin"></i></div>
+        <div class="panel-skins-content">
+          <div class="title">HEADER STYLE</div>
+          <div class="text-center">
+            <select class="form-control" id="item_list">
+              {% if header_style %}
+                {% if '1' in header_style|render|render %}
+                  <option value="header-1" selected >Header Style 1</option>
+                  {% else %}
+                  <option value="header-1">Header Style 1</option>
+                {% endif %}
+                {% if '2' in header_style|render|render %}
+                  <option value="header-2" selected >Header Style 2</option>
+                  {% else %}
+                  <option value="header-2">Header Style 2</option>
+                {% endif %}
+                {% if '3' in header_style|render|render %}
+                  <option value="header-3" selected >Header Style 3</option>
+                  {% else %}
+                  <option value="header-3">Header Style 3</option>
+                {% endif %}
+              {% endif %}
+            </select>
+          </div>
+          <div class="title">Sticky Menu</div>
+          <div class="form-check mb-2">
+              {% if sticky == 1 %}
+                <input type="checkbox" class="form-check-input" id="Check1" checked="checked">
+                <label class="form-check-label" for="Check1">Sticky Menu</label>
+              {% else %}
+                <input type="checkbox" class="form-check-input" id="Check1">
+                <label class="form-check-label" for="Check1">Sticky Menu</label>
+              {% endif %}
+          </div>
+          <div class="clearfix"></div>
+          <div class="title">{{ 'COLOR SKINS'|t }}</div>
+          <button id="pt-reset-color" class="btn-primary btn btn-style-4">Reset Colors</button>
+          {% if color_set %}
+            <div class="title">{{ 'COLOR SCHEMES '|t }}</div>
+            <div class="text-center row">
+              {% for item in color_set %}
+                <a class="item-color p-0 mb-2 col-md-6" 
+                  data-primary_color="{{item.colors.primary_color}}" 
+                  data-secondary_color="{{item.colors.secondary_color}}" 
+                  data-category='{{item.title}}'>
+                  <div class="row h-100 align-items-center">
+                    <div class="col-4 col-md-4 p-0">
+                      <div class="primary_bar" style="background-color: {{item.colors.primary_color}}"></div>
+                      <div class="secondary_bar" style="background-color: {{item.colors.secondary_color}}"></div>
+                    </div>
+                    <div class="col-8 col-md-8 p-0">
+                      <span class="color_set_title">{{item.name}}</span>
+                    </div>
+                  </div>
+                </a>
+              {% endfor %}
+            </div>
+            <div class="clearfix"></div>
+          {% endif %}
+        </div>
+      </div>
+    {{ page_bottom }}
+    </div>
+    <!-- Header change loader -->
+    <div id="loader">
+      <div class="loading"></div>
+    </div>
+    <!-- End of header change loader -->
+    <!-- Scroll top -->
+    <a href="#" class="back-to-top active">
+        <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 45 45">
+            <g transform="translate(45) rotate(90)">
+                <g transform="translate(35.438 45) rotate(180)">
+                    <path d="M25.792,21.463,4.779.451a1.418,1.418,0,0,0-2.074,0L.451,2.706a1.418,1.418,0,0,0,0,2.074L18.171,22.5.451,40.221a1.418,1.418,0,0,0,0,2.074l2.254,2.254a1.419,1.419,0,0,0,2.074,0L25.791,23.538a1.42,1.42,0,0,0,0-2.075Z"></path>
+                </g>
+            </g>
+        </svg>
+    </a>
+    <!-- End of scroll top -->
+    {# Demo Code #}
+    <js-bottom-placeholder token="{{ placeholder_token }}">
+  </body>
+</html>

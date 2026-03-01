@@ -1,0 +1,400 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Url;
+use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
+
+/**
+ * @file
+ * Estimate module glue code.
+ *
+ * This file contains ONLY hook implementations and small, module-local helpers.
+ * Heavy business logic lives in services.
+ *
+ * Responsibilities:
+ * - Attach scope code uniqueness constraint (service_scope_elements.field_scope_code)
+ * - Estimate Request intake soft warnings + readiness validation gate (optional)
+ * - Estimate Items pricing math (presave)
+ * - Estimate total rollup triggers
+ * - Revision enforcement trigger
+ * - Convert to Work Order entity operation
+ */
+
+/* ---------------------------------------------------------------------------
+ * Taxonomy Scope Code Uniqueness
+ * --------------------------------------------------------------------------- */
+
+/**
+ * Implements hook_entity_bundle_field_info_alter().
+ *
+ * Enforces normalized uniqueness on:
+ * taxonomy_term bundle = service_scope_elements
+ * field_scope_code
+ */
+function estimate_entity_bundle_field_info_alter(array &$fields, EntityTypeInterface $entity_type, string $bundle): void {
+  if ($entity_type->id() !== 'taxonomy_term') {
+    return;
+  }
+  if ($bundle !== 'service_scope_elements') {
+    return;
+  }
+  if (!isset($fields['field_scope_code'])) {
+    return;
+  }
+
+  $fields['field_scope_code']->addConstraint('ScopeCodeUnique', [
+    'vocabulary' => 'service_scope_elements',
+    'field' => 'field_scope_code',
+  ]);
+}
+
+/* ---------------------------------------------------------------------------
+ * Entity Presave (single hook)
+ * --------------------------------------------------------------------------- */
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * Note:
+ * - This hook must remain SINGLE (do not define another).
+ * - Contains three flows:
+ *   1) estimate_request: soft warnings only (never blocks)
+ *   2) estimate_items: line math
+ *   3) estimate: revision enforcement (+ optional defaults)
+ */
+function estimate_entity_presave(EntityInterface $entity): void {
+
+  /* ---------------------------------------
+   * Estimate Request: soft intake warnings
+   * --------------------------------------- */
+  if ($entity->getEntityTypeId() === 'estimate_request') {
+    _estimate_request_add_intake_warnings($entity);
+    return;
+  }
+
+  /* -----------------------------
+   * Estimate Items pricing engine
+   * ----------------------------- */
+  if ($entity->getEntityTypeId() === 'estimate_items') {
+
+    if (!$entity->hasField('field_quantity') ||
+        !$entity->hasField('field_unit_price') ||
+        !$entity->hasField('field_cost_subtotal') ||
+        !$entity->hasField('field_line_total')) {
+      return;
+    }
+
+    $qty = (int) ($entity->get('field_quantity')->value ?? 0);
+    $unit = (float) ($entity->get('field_unit_price')->value ?? 0);
+
+    // Defensive: disallow negative quantities/prices.
+    if ($qty < 0) {
+      $qty = 0;
+    }
+    if ($unit < 0) {
+      $unit = 0.0;
+    }
+
+    $subtotal = (float) ($qty * $unit);
+
+    // Optional markup field exists on some bundles (equipment/materials/subcontractor).
+    $markup = 0.0;
+    if ($entity->hasField('field_markup') && !$entity->get('field_markup')->isEmpty()) {
+      $markup = (float) $entity->get('field_markup')->value;
+
+      // Normalize: allow either "10" or "0.10".
+      if ($markup > 1) {
+        $markup = $markup / 100;
+      }
+      // Defensive clamp.
+      if ($markup < 0) {
+        $markup = 0.0;
+      }
+    }
+
+    $line_total = (float) ($subtotal * (1 + $markup));
+
+    $entity->set('field_cost_subtotal', $subtotal);
+    $entity->set('field_line_total', $line_total);
+
+    return;
+  }
+
+  /* -----------------------------
+   * Estimate revision enforcement
+   * ----------------------------- */
+  if ($entity->getEntityTypeId() === 'estimate') {
+
+    // Optional default assignment (only if the field exists).
+    if ($entity->hasField('field_assigned_to') && $entity->get('field_assigned_to')->isEmpty()) {
+      $entity->set('field_assigned_to', \Drupal::currentUser()->id());
+    }
+
+    /** @var \Drupal\estimate\Service\EstimateRevisionManager $rm */
+    $rm = \Drupal::service('estimate.revision_manager');
+    $rm->enforce($entity);
+
+    return;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Estimate Request - Readiness Validation Gate (optional)
+ * --------------------------------------------------------------------------- */
+
+/**
+ * Implements hook_entity_validate().
+ *
+ * Hard validation ONLY when transitioning Estimate Request to a configured
+ * "Ready to Estimate" status.
+ *
+ * IMPORTANT:
+ * - This is OPTIONAL and will do nothing unless estimate.settings contains:
+ *   estimate_request_ready_status_tid
+ * - Never blocks intake unless you explicitly configure that TID.
+ */
+function estimate_entity_validate(EntityInterface $entity, ConstraintViolationListInterface $violations): void {
+  if ($entity->getEntityTypeId() !== 'estimate_request') {
+    return;
+  }
+
+  $ready_tid = (int) \Drupal::config('estimate.settings')->get('estimate_request_ready_status_tid');
+  if ($ready_tid <= 0) {
+    // Not configured => no blocking validation.
+    return;
+  }
+
+  $status_field = _estimate_request_get_status_field_name($entity);
+  $new_status_tid = _estimate_request_get_status_tid($entity);
+  if ($new_status_tid <= 0) {
+    return;
+  }
+
+  // Only enforce when transitioning to Ready.
+  if ($new_status_tid !== $ready_tid) {
+    return;
+  }
+
+  // If already Ready and staying Ready, do nothing.
+  $old_status_tid = 0;
+  if (isset($entity->original) && $entity->original instanceof EntityInterface) {
+    $old_status_tid = _estimate_request_get_status_tid($entity->original);
+  }
+  if ($old_status_tid === $ready_tid) {
+    return;
+  }
+
+  $missing = _estimate_request_missing_ready_requirements($entity);
+
+  if (!empty($missing)) {
+    $msg = 'Cannot mark Ready to Estimate until the following are set: ' . implode(', ', $missing) . '.';
+
+    // Attach violation to the status field.
+    $violations->add(new ConstraintViolation(
+      $msg,
+      $msg,
+      [],
+      $entity,
+      $status_field,
+      (string) $new_status_tid
+    ));
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Estimate Request - Helpers
+ * --------------------------------------------------------------------------- */
+
+/**
+ * Soft warnings shown to UI users on save.
+ *
+ * Never blocks saving. Never auto-changes status.
+ */
+function _estimate_request_add_intake_warnings(EntityInterface $req): void {
+  // Avoid spamming during CLI runs (drush, cron, imports).
+  if (PHP_SAPI === 'cli') {
+    return;
+  }
+
+  $request = \Drupal::requestStack()->getCurrentRequest();
+  if (!$request) {
+    return;
+  }
+
+  // Warn if no contact info at all.
+  $has_contact_entity = $req->hasField('field_contact') && !$req->get('field_contact')->isEmpty();
+  $has_name = $req->hasField('field_requestor_name') && trim((string) ($req->get('field_requestor_name')->value ?? '')) !== '';
+  $has_phone = $req->hasField('field_requestor_phone') && trim((string) ($req->get('field_requestor_phone')->value ?? '')) !== '';
+  $has_email = $req->hasField('field_requestor_email') && trim((string) ($req->get('field_requestor_email')->value ?? '')) !== '';
+
+  if (!$has_contact_entity && !$has_name && !$has_phone && !$has_email) {
+    \Drupal::messenger()->addWarning('No contact information has been provided (no Contact linked and no Requestor Name/Phone/Email entered).');
+  }
+
+  // Helpful warnings (non-blocking).
+  if ($req->hasField('field_property') && $req->get('field_property')->isEmpty()) {
+    \Drupal::messenger()->addWarning('Property is not linked yet. This can be completed after intake, but should be confirmed before estimating and before converting an accepted Estimate into a Work Order.');
+  }
+
+  if ($req->hasField('field_owner') && $req->get('field_owner')->isEmpty()) {
+    \Drupal::messenger()->addWarning('Owner is not confirmed yet. Owner is the point-in-time billing/authorization authority for this request.');
+  }
+
+  if ($req->hasField('field_service') && $req->get('field_service')->isEmpty()) {
+    \Drupal::messenger()->addWarning('No Service Estimate(s) Requested have been selected yet. Select Service(s) before generating Estimates from this request.');
+  }
+}
+
+/**
+ * Returns the Estimate Request status field name (default: field_status).
+ */
+function _estimate_request_get_status_field_name(EntityInterface $req): string {
+  if ($req->hasField('field_status')) {
+    return 'field_status';
+  }
+
+  foreach (['field_estimate_request_status', 'field_request_status', 'status'] as $candidate) {
+    if ($req->hasField($candidate)) {
+      return $candidate;
+    }
+  }
+
+  return 'field_status';
+}
+
+/**
+ * Get the current status term id from an Estimate Request.
+ */
+function _estimate_request_get_status_tid(EntityInterface $req): int {
+  $field = _estimate_request_get_status_field_name($req);
+  if (!$req->hasField($field) || $req->get($field)->isEmpty()) {
+    return 0;
+  }
+  return (int) ($req->get($field)->target_id ?? 0);
+}
+
+/**
+ * Hard readiness requirements for "Ready to Estimate".
+ *
+ * Returns a list of human-readable missing labels.
+ *
+ * IMPORTANT:
+ * This is a readiness gate for estimate generation, not intake.
+ */
+function _estimate_request_missing_ready_requirements(EntityInterface $req): array {
+  $missing = [];
+
+  // Property required at readiness.
+  if ($req->hasField('field_property') && $req->get('field_property')->isEmpty()) {
+    $missing[] = 'Property';
+  }
+
+  // Owner snapshot required at readiness (point-in-time).
+  if ($req->hasField('field_owner') && $req->get('field_owner')->isEmpty()) {
+    $missing[] = 'Owner';
+  }
+
+  // At least one service required to generate estimates deterministically.
+  if ($req->hasField('field_service') && $req->get('field_service')->isEmpty()) {
+    $missing[] = 'Service Estimate(s) Requested';
+  }
+
+  // Require either a linked Contact OR at least one requestor detail.
+  $has_contact_entity = $req->hasField('field_contact') && !$req->get('field_contact')->isEmpty();
+  $has_name = $req->hasField('field_requestor_name') && trim((string) ($req->get('field_requestor_name')->value ?? '')) !== '';
+  $has_phone = $req->hasField('field_requestor_phone') && trim((string) ($req->get('field_requestor_phone')->value ?? '')) !== '';
+  $has_email = $req->hasField('field_requestor_email') && trim((string) ($req->get('field_requestor_email')->value ?? '')) !== '';
+
+  if (!$has_contact_entity && !$has_name && !$has_phone && !$has_email) {
+    $missing[] = 'Contact or Requestor info (Name/Phone/Email)';
+  }
+
+  return $missing;
+}
+
+/* ---------------------------------------------------------------------------
+ * Estimate Total Rollup Triggers
+ * --------------------------------------------------------------------------- */
+
+/**
+ * Implements hook_entity_insert().
+ */
+function estimate_entity_insert(EntityInterface $entity): void {
+  estimate__maybe_recalculate_total($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function estimate_entity_update(EntityInterface $entity): void {
+  estimate__maybe_recalculate_total($entity);
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function estimate_entity_delete(EntityInterface $entity): void {
+  estimate__maybe_recalculate_total($entity);
+}
+
+/**
+ * Recalculate parent estimate total when estimate_items change.
+ */
+function estimate__maybe_recalculate_total(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_items') {
+    return;
+  }
+
+  if (!$entity->hasField('field_estimate') || $entity->get('field_estimate')->isEmpty()) {
+    return;
+  }
+
+  $estimate_id = (int) $entity->get('field_estimate')->target_id;
+  if ($estimate_id <= 0) {
+    return;
+  }
+
+  /** @var \Drupal\estimate\Service\EstimateTotalCalculator $calculator */
+  $calculator = \Drupal::service('estimate.total_calculator');
+  $calculator->recalculate($estimate_id);
+}
+
+/* ---------------------------------------------------------------------------
+ * Estimate Entity Operations (Convert to Work Order)
+ * --------------------------------------------------------------------------- */
+
+/**
+ * Implements hook_entity_operation_alter().
+ */
+function estimate_entity_operation_alter(array &$operations, EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate') {
+    return;
+  }
+
+  $operations['convert_to_work_order'] = [
+    'title' => t('Convert to Work Order'),
+    'url' => Url::fromRoute('estimate.convert_to_work_order', [
+      'estimate' => $entity->id(),
+    ]),
+    'weight' => 50,
+  ];
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* Internal helpers (do not call outside this module)                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * IMPORTANT:
+ * This file intentionally does NOT contain:
+ * - Work Order conversion logic (belongs in WorkOrderConverter service).
+ * - Revision enforcement logic (belongs in EstimateRevisionManager service).
+ * - Stage term ID constants (must be config in estimate.settings).
+ *
+ * Those live in services/classes so they can be tested and reused.
+ */

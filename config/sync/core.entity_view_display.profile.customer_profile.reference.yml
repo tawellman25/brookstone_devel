@@ -1,0 +1,124 @@
+uuid: 24c24911-3cce-4b90-be9c-af1754f1b338
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.profile.reference
+    - field.field.profile.customer_profile.feeds_item
+    - field.field.profile.customer_profile.field_account_manager
+    - field.field.profile.customer_profile.field_anniversary
+    - field.field.profile.customer_profile.field_attention
+    - field.field.profile.customer_profile.field_billing_allowed
+    - field.field.profile.customer_profile.field_birthday
+    - field.field.profile.customer_profile.field_client_status
+    - field.field.profile.customer_profile.field_client_type
+    - field.field.profile.customer_profile.field_company_name
+    - field.field.profile.customer_profile.field_contact_email
+    - field.field.profile.customer_profile.field_contacts
+    - field.field.profile.customer_profile.field_first_name
+    - field.field.profile.customer_profile.field_former_last_name
+    - field.field.profile.customer_profile.field_invoice_delivery_method
+    - field.field.profile.customer_profile.field_last_name
+    - field.field.profile.customer_profile.field_main_fax_number
+    - field.field.profile.customer_profile.field_main_phone_number
+    - field.field.profile.customer_profile.field_middle_name
+    - field.field.profile.customer_profile.field_payment_terms
+    - field.field.profile.customer_profile.field_personal_name_title
+    - field.field.profile.customer_profile.field_portal_allowed
+    - field.field.profile.customer_profile.field_primary_contact
+    - field.field.profile.customer_profile.field_primary_contact_phone
+    - field.field.profile.customer_profile.field_primary_contact_ref
+    - field.field.profile.customer_profile.field_qb_account_number
+    - field.field.profile.customer_profile.field_qb_list_id
+    - field.field.profile.customer_profile.field_quickbooks_notes
+    - field.field.profile.customer_profile.field_salutation
+    - field.field.profile.customer_profile.field_secondary_contact
+    - field.field.profile.customer_profile.field_secondary_contact_phone
+    - field.field.profile.customer_profile.field_spouse_birthday
+    - field.field.profile.customer_profile.field_spouse_last_name
+    - field.field.profile.customer_profile.field_spouse_name
+    - field.field.profile.customer_profile.field_suffix
+    - field.field.profile.customer_profile.field_tax_exempt_certificate
+    - field.field.profile.customer_profile.field_tax_status
+    - field.field.profile.customer_profile.field_website
+    - profile.type.customer_profile
+  module:
+    - field_layout
+    - layout_builder
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  layout_builder:
+    enabled: false
+    allow_custom: false
+id: profile.customer_profile.reference
+targetEntityType: profile
+bundle: customer_profile
+mode: reference
+content:
+  customer_profile_add_contact_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_attention:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_client_type:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_company_name:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  feeds_item: true
+  field_account_manager: true
+  field_anniversary: true
+  field_billing_allowed: true
+  field_birthday: true
+  field_client_status: true
+  field_contact_email: true
+  field_contacts: true
+  field_first_name: true
+  field_former_last_name: true
+  field_invoice_delivery_method: true
+  field_last_name: true
+  field_main_fax_number: true
+  field_main_phone_number: true
+  field_middle_name: true
+  field_payment_terms: true
+  field_personal_name_title: true
+  field_portal_allowed: true
+  field_primary_contact: true
+  field_primary_contact_phone: true
+  field_primary_contact_ref: true
+  field_qb_account_number: true
+  field_qb_list_id: true
+  field_quickbooks_notes: true
+  field_salutation: true
+  field_secondary_contact: true
+  field_secondary_contact_phone: true
+  field_spouse_birthday: true
+  field_spouse_last_name: true
+  field_spouse_name: true
+  field_suffix: true
+  field_tax_exempt_certificate: true
+  field_tax_status: true
+  field_website: true

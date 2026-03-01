@@ -1,0 +1,25 @@
+uuid: 840fcbc8-339d-4f73-b79d-8a1bed4f60c3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.snow_removal
+    - field.storage.sop.field_sop_owner
+id: sop.snow_removal.field_sop_owner
+field_name: field_sop_owner
+entity_type: sop
+bundle: snow_removal
+label: Editor
+description: '[current-user:teammate_profile:field_first_name], this is the teammate responsible for maintaining this SOP.'
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

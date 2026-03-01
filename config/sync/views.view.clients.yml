@@ -11,8 +11,10 @@ dependencies:
     - field.storage.profile.field_middle_name
     - field.storage.profile.field_personal_name_title
     - field.storage.profile.field_primary_contact
+    - field.storage.profile.field_qb_account_number
     - field.storage.profile.field_secondary_contact
     - field.storage.profile.field_spouse_name
+    - field.storage.user.field_qb_refnum
     - system.menu.admin
     - user.role.administration
     - user.role.administrator
@@ -42,6 +44,135 @@ display:
     display_options:
       title: Clients
       fields:
+        field_qb_account_number:
+          id: field_qb_account_number
+          table: profile__field_qb_account_number
+          field: field_qb_account_number
+          relationship: profile
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        profile_id:
+          id: profile_id
+          table: profile
+          field: profile_id
+          relationship: profile
+          group_type: group
+          admin_label: ''
+          entity_type: profile
+          entity_field: profile_id
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
         uid:
           id: uid
           table: users_field_data
@@ -52,11 +183,11 @@ display:
           entity_type: user
           entity_field: uid
           plugin_id: field
-          label: 'User ID'
+          label: IDs
           exclude: false
           alter:
-            alter_text: false
-            text: ''
+            alter_text: true
+            text: "User ID:     {{ uid }}</br>\r\nProfile ID:  {{ profile_id }}</br>\r\nQB_REF#:   {{ field_qb_account_number }}"
             make_link: false
             path: ''
             absolute: false
@@ -290,7 +421,7 @@ display:
           admin_label: ''
           plugin_id: field
           label: Title
-          exclude: false
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -353,10 +484,10 @@ display:
           admin_label: ''
           plugin_id: field
           label: First
-          exclude: false
+          exclude: true
           alter:
-            alter_text: false
-            text: ''
+            alter_text: true
+            text: '{{ field_first_name }} '
             make_link: false
             path: ''
             absolute: false
@@ -416,7 +547,7 @@ display:
           admin_label: ''
           plugin_id: field
           label: Middle
-          exclude: false
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -479,7 +610,7 @@ display:
           admin_label: ''
           plugin_id: field
           label: Last
-          exclude: false
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -542,10 +673,10 @@ display:
           admin_label: ''
           plugin_id: field
           label: Spouse
-          exclude: false
+          exclude: true
           alter:
-            alter_text: false
-            text: ''
+            alter_text: true
+            text: '{{ field_first_name }}& {{ field_spouse_name }} {{ field_last_name }}'
             make_link: false
             path: ''
             absolute: false
@@ -578,7 +709,7 @@ display:
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
-          empty: ''
+          empty: '{{ field_first_name }}{{ field_last_name }}'
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
@@ -730,11 +861,11 @@ display:
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: Company
+          label: Name
           exclude: false
           alter:
             alter_text: true
-            text: "<b>{{ field_company_name }}</b></br>\r\n<b>Primary Contact: </b>{{ field_primary_contact }}</br>\r\n<b>Secondary Contact: </b>{{ field_secondary_contact }}"
+            text: "<b>{{ field_company_name }}</b></br>\r\n<b>Primary Contact: </b>{{ field_primary_contact }}{{ field_personal_name_title }}</br>\r\n<b>Secondary Contact: </b>{{ field_secondary_contact }}"
             make_link: false
             path: ''
             absolute: false
@@ -767,7 +898,7 @@ display:
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
-          empty: ''
+          empty: '{{ field_spouse_name }}'
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
@@ -1044,6 +1175,65 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
+        mail:
+          id: mail
+          table: users_field_data
+          field: mail
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: user
+          entity_field: mail
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: mail_op
+            label: Email
+            description: ''
+            use_operator: false
+            operator: mail_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: mail
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              site_assistant: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+            placeholder: ''
+            autocomplete_filter: 0
+            autocomplete_min_chars: '0'
+            autocomplete_items: '10'
+            autocomplete_field: mail
+            autocomplete_raw_suggestion: 1
+            autocomplete_raw_dropdown: 1
+            autocomplete_dependent: 0
+            autocomplete_contextual: 0
+            autocomplete_autosubmit: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
         field_company_name_value:
           id: field_company_name_value
           table: profile__field_company_name
@@ -1265,6 +1455,118 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
+        uid_raw:
+          id: uid_raw
+          table: users_field_data
+          field: uid_raw
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: user
+          plugin_id: numeric
+          operator: '='
+          value:
+            min: ''
+            max: ''
+            value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: uid_raw_op
+            label: 'BOS UID/Quickbooks Account No.'
+            description: 'User ID / QB Account No.'
+            use_operator: false
+            operator: uid_raw_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: uid_raw
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              site_assistant: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+            min_placeholder: ''
+            max_placeholder: ''
+            placeholder: ''
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          use_tokens: 0
+        field_qb_refnum_value:
+          id: field_qb_refnum_value
+          table: user__field_qb_refnum
+          field: field_qb_refnum_value
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: string
+          operator: '='
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_qb_refnum_value_op
+            label: 'QuickBooks Reference Number'
+            description: ''
+            use_operator: false
+            operator: field_qb_refnum_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_qb_refnum_value
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              site_assistant: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+            placeholder: ''
+            autocomplete_filter: 0
+            autocomplete_min_chars: '0'
+            autocomplete_items: '10'
+            autocomplete_field: field_qb_refnum
+            autocomplete_raw_suggestion: 1
+            autocomplete_raw_dropdown: 1
+            autocomplete_dependent: 0
+            autocomplete_contextual: 0
+            autocomplete_autosubmit: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
       filter_groups:
         operator: AND
         groups:
@@ -1451,6 +1753,7 @@ display:
         - 'config:field.storage.profile.field_middle_name'
         - 'config:field.storage.profile.field_personal_name_title'
         - 'config:field.storage.profile.field_primary_contact'
+        - 'config:field.storage.profile.field_qb_account_number'
         - 'config:field.storage.profile.field_secondary_contact'
         - 'config:field.storage.profile.field_spouse_name'
   block_1:
@@ -1470,8 +1773,138 @@ display:
           entity_type: user
           entity_field: uid
           plugin_id: field
-          label: 'User ID'
-          exclude: false
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        profile_id:
+          id: profile_id
+          table: profile
+          field: profile_id
+          relationship: profile
+          group_type: group
+          admin_label: ''
+          entity_type: profile
+          entity_field: profile_id
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_qb_refnum:
+          id: field_qb_refnum
+          table: user__field_qb_refnum
+          field: field_qb_refnum
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'QuickBooks Reference Number'
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -1512,10 +1945,9 @@ display:
           empty_zero: false
           hide_alter_empty: true
           click_sort_column: value
-          type: number_integer
+          type: string
           settings:
-            thousand_separator: ''
-            prefix_suffix: true
+            link_to_entity: false
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -1526,19 +1958,19 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        field_client_type:
-          id: field_client_type
-          table: profile__field_client_type
-          field: field_client_type
-          relationship: profile
+        nothing_2:
+          id: nothing_2
+          table: views
+          field: nothing
+          relationship: none
           group_type: group
           admin_label: ''
-          plugin_id: field
-          label: Type
+          plugin_id: custom
+          label: IDs
           exclude: false
           alter:
-            alter_text: false
-            text: ''
+            alter_text: true
+            text: "<b>User ID:</b>  {{ uid }}</br>\r\n<b>Profile ID:</b>  {{ profile_id }}</br>\r\n<b>QB-REF:</b>  {{ field_qb_refnum }}"
             make_link: false
             path: ''
             absolute: false
@@ -1572,6 +2004,55 @@ display:
           element_wrapper_class: ''
           element_default_classes: true
           empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: false
+        field_client_type:
+          id: field_client_type
+          table: profile__field_client_type
+          field: field_client_type
+          relationship: profile
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: '<a class="button--primary button js-form-submit form-submit" href="{{ edit_profile }}">Please Finish Profile</a>'
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
@@ -1642,147 +2123,23 @@ display:
           text: edit
           output_url_as_text: true
           absolute: false
-        field_first_name:
-          id: field_first_name
-          table: profile__field_first_name
-          field: field_first_name
-          relationship: profile
+        name:
+          id: name
+          table: users_field_data
+          field: name
+          relationship: none
           group_type: group
           admin_label: ''
+          entity_type: user
+          entity_field: name
           plugin_id: field
-          label: First
-          exclude: true
+          label: ''
+          exclude: false
           alter:
             alter_text: false
             text: ''
             make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: string
-          settings:
-            link_to_entity: false
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        field_middle_name:
-          id: field_middle_name
-          table: profile__field_middle_name
-          field: field_middle_name
-          relationship: profile
-          group_type: group
-          admin_label: ''
-          plugin_id: field
-          label: Middle
-          exclude: true
-          alter:
-            alter_text: true
-            text: ' {{ field_middle_name }}'
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: string
-          settings:
-            link_to_entity: false
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        field_last_name:
-          id: field_last_name
-          table: profile__field_last_name
-          field: field_last_name
-          relationship: profile
-          group_type: group
-          admin_label: ''
-          plugin_id: field
-          label: Last
-          exclude: true
-          alter:
-            alter_text: true
-            text: '{{ field_personal_name_title }}{{ field_first_name }}{{ field_middle_name }} {{ field_last_name }}'
-            make_link: false
-            path: '{{ edit_profile }}'
+            path: '{{ view_user }}'
             absolute: false
             external: false
             replace_spaces: false
@@ -1796,8 +2153,8 @@ display:
             target: _blank
             nl2br: false
             max_length: 0
-            word_boundary: true
-            ellipsis: true
+            word_boundary: false
+            ellipsis: false
             more_link: false
             more_link_text: ''
             more_link_path: ''
@@ -1809,18 +2166,18 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
-          empty: '<a class="button--primary button js-form-submit form-submit" href="{{ edit_profile }}">Please Finish Profile</a>'
+          empty: ''
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
           click_sort_column: value
-          type: string
+          type: user_name
           settings:
-            link_to_entity: false
+            link_to_entity: true
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -1840,7 +2197,7 @@ display:
           admin_label: ''
           plugin_id: field
           label: Title
-          exclude: true
+          exclude: false
           alter:
             alter_text: true
             text: '{{ field_personal_name_title }} '
@@ -1883,7 +2240,7 @@ display:
           click_sort_column: value
           type: string
           settings:
-            link_to_entity: false
+            link_to_entity: true
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -1894,19 +2251,19 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        field_spouse_name:
-          id: field_spouse_name
-          table: profile__field_spouse_name
-          field: field_spouse_name
+        field_first_name:
+          id: field_first_name
+          table: profile__field_first_name
+          field: field_first_name
           relationship: profile
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: Spouse
+          label: First
           exclude: true
           alter:
             alter_text: true
-            text: '<b>Spouse: </b>{{ field_spouse_name }}'
+            text: '{{ field_first_name }}'
             make_link: false
             path: ''
             absolute: false
@@ -1939,7 +2296,7 @@ display:
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
-          empty: ''
+          empty: "{{ name }}</br>\r\n</br>\r\n<a class=\"button--primary button js-form-submit form-submit\" href=\"{{ edit_profile }}?edit[field_first_name][widget][0]['value']={{ name }}\" target=\"_blank\">Please Finish Profile</a>"
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
@@ -1957,6 +2314,244 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        field_middle_name:
+          id: field_middle_name
+          table: profile__field_middle_name
+          field: field_middle_name
+          relationship: profile
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Middle
+          exclude: true
+          alter:
+            alter_text: true
+            text: '{{ field_first_name }} {{ field_middle_name }}'
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: '{{ field_first_name }}'
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_last_name:
+          id: field_last_name
+          table: profile__field_last_name
+          field: field_last_name
+          relationship: profile
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Last
+          exclude: true
+          alter:
+            alter_text: true
+            text: '{{ field_middle_name }} {{ field_last_name }}'
+            make_link: false
+            path: '{{ edit_profile }}'
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: _blank
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: '{{ field_middle_name }}'
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_spouse_name:
+          id: field_spouse_name
+          table: profile__field_spouse_name
+          field: field_spouse_name
+          relationship: profile
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Spouse
+          exclude: true
+          alter:
+            alter_text: true
+            text: "{{ field_last_name }}\r\n</br><b>Spouse: </b>{{ field_spouse_name }}"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: '{{ field_last_name }}'
+          hide_empty: true
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        nothing_4:
+          id: nothing_4
+          table: views
+          field: nothing
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: custom
+          label: ''
+          exclude: true
+          alter:
+            alter_text: true
+            text: "{{ field_first_name }}{{ field_middle_name }}{{ field_last_name }}\r\n{{ field_spouse_name }}\r\ntest"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: sdfhgdfgh
+          hide_empty: true
+          empty_zero: false
+          hide_alter_empty: true
         field_primary_contact:
           id: field_primary_contact
           table: profile__field_primary_contact
@@ -2128,7 +2723,7 @@ display:
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
-          empty: ''
+          empty: '{{ field_spouse_name }}'
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
@@ -2146,21 +2741,20 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        name:
-          id: name
-          table: users_field_data
-          field: name
+        view_user:
+          id: view_user
+          table: users
+          field: view_user
           relationship: none
           group_type: group
           admin_label: ''
           entity_type: user
-          entity_field: name
-          plugin_id: field
-          label: Name
-          exclude: false
+          plugin_id: entity_link
+          label: ''
+          exclude: true
           alter:
-            alter_text: true
-            text: "{{ name }}{{ field_company_name }}</br>\r\n{{ field_last_name }}</br>\r\n{{ field_spouse_name }}"
+            alter_text: false
+            text: ''
             make_link: false
             path: ''
             absolute: false
@@ -2176,8 +2770,8 @@ display:
             target: ''
             nl2br: false
             max_length: 0
-            word_boundary: false
-            ellipsis: false
+            word_boundary: true
+            ellipsis: true
             more_link: false
             more_link_text: ''
             more_link_path: ''
@@ -2189,7 +2783,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -2197,20 +2791,58 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          click_sort_column: value
-          type: user_name
-          settings:
-            link_to_entity: true
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
+          text: view
+          output_url_as_text: true
+          absolute: false
+        nothing_1:
+          id: nothing_1
+          table: views
+          field: nothing
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: custom
+          label: ''
+          exclude: false
+          alter:
+            alter_text: true
+            text: "<h6>{{ field_client_type }}</h6>\r\n{{ field_company_name }}"
+            make_link: true
+            path: '{{ view_user }}'
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: _blank
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
         view:
           id: view
           table: views
@@ -2514,6 +3146,7 @@ display:
         - 'config:field.storage.profile.field_primary_contact'
         - 'config:field.storage.profile.field_secondary_contact'
         - 'config:field.storage.profile.field_spouse_name'
+        - 'config:field.storage.user.field_qb_refnum'
   page_1:
     id: page_1
     display_title: Page
@@ -2548,5 +3181,6 @@ display:
         - 'config:field.storage.profile.field_middle_name'
         - 'config:field.storage.profile.field_personal_name_title'
         - 'config:field.storage.profile.field_primary_contact'
+        - 'config:field.storage.profile.field_qb_account_number'
         - 'config:field.storage.profile.field_secondary_contact'
         - 'config:field.storage.profile.field_spouse_name'

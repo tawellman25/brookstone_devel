@@ -1,0 +1,289 @@
+uuid: c03e4db8-fd5d-4750-85c5-8b851cb74d3e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop.spray
+    - field.field.sop.spray.field_materials_involved
+    - field.field.sop.spray.field_name
+    - field.field.sop.spray.field_parent_sop
+    - field.field.sop.spray.field_prerequisites
+    - field.field.sop.spray.field_related_sops
+    - field.field.sop.spray.field_service
+    - field.field.sop.spray.field_sop__kpis
+    - field.field.sop.spray.field_sop_code
+    - field.field.sop.spray.field_sop_last_reviewed
+    - field.field.sop.spray.field_sop_owner
+    - field.field.sop.spray.field_sop_purpose
+    - field.field.sop.spray.field_sop_responsibilities
+    - field.field.sop.spray.field_sop_scope
+    - field.field.sop.spray.field_sop_status
+    - field.field.sop.spray.field_sop_steps
+    - field.field.sop.spray.field_sop_tools_and_resources
+    - field.field.sop.spray.field_sop_version
+  module:
+    - colorbox
+    - datetime
+    - field_group
+    - options
+    - text
+third_party_settings:
+  field_group:
+    group_attachments:
+      children:
+        - sop_file_attachments_entity_view_1
+      label: Attachments
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_tools_and_resources:
+      children:
+        - field_materials_involved
+        - field_sop_tools_and_resources
+      label: 'Tools and Resources'
+      parent_name: ''
+      region: content
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+    group_key_performance_indicators:
+      children:
+        - field_sop__kpis
+      label: 'Key Performance Indicators'
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+    group_office_admin:
+      children:
+        - field_sop_status
+        - uid
+        - created
+        - changed
+        - field_parent_sop
+        - field_service
+        - field_sop_code
+        - field_sop_last_reviewed
+        - field_sop_owner
+        - field_sop_version
+      label: 'Office Admin'
+      parent_name: ''
+      region: content
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+id: sop.spray.default
+targetEntityType: sop
+bundle: spray
+mode: default
+content:
+  changed:
+    type: timestamp
+    label: above
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  created:
+    type: timestamp
+    label: above
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_materials_involved:
+    type: colorbox_view_modes
+    label: above
+    settings:
+      colorbox_view_mode: ''
+      colorbox_modal_view_mode: ''
+      colorbox_gallery: post
+      colorbox_gallery_custom: ''
+    third_party_settings: {  }
+    weight: 19
+    region: content
+  field_parent_sop:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  field_prerequisites:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_related_sops:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_service:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 16
+    region: content
+  field_sop__kpis:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_sop_code:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 17
+    region: content
+  field_sop_last_reviewed:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 18
+    region: content
+  field_sop_owner:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 19
+    region: content
+  field_sop_purpose:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_sop_responsibilities:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_sop_scope:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_sop_status:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_sop_steps:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_sop_tools_and_resources:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 20
+    region: content
+  field_sop_version:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 20
+    region: content
+  sop_file_attachments_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  uid:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 12
+    region: content
+hidden:
+  field_name: true
+  title: true

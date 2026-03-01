@@ -1,0 +1,116 @@
+uuid: 0fe350c9-08b9-405d-8430-07b2b61ff2a7
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.user.user.field_qb_refnum
+  module:
+    - feeds_log
+    - user
+third_party_settings:
+  feeds_log:
+    status: true
+    operations:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+      cleaned: cleaned
+    items:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+    source: true
+label: 'QuickBooks User'
+id: quickbooks_user
+description: 'This is a feed of the QuickBooks Client List'
+help: ''
+import_period: -1
+import_period_per_feed: false
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:user'
+processor_configuration:
+  values: {  }
+  langcode: en
+  insert_new: 1
+  update_existing: 0
+  update_non_existent: _keep
+  skip_hash_check: false
+  skip_validation: false
+  skip_validation_types: {  }
+  authorize: false
+  revision: false
+  expire: -1
+  owner_feed_author: false
+  owner_id: 0
+custom_sources:
+  user_email:
+    value: user_email
+    label: user_email
+    machine_name: user_email
+    type: csv
+  username:
+    value: username
+    label: username
+    machine_name: username
+    type: csv
+  role:
+    value: role
+    label: role
+    machine_name: role
+    type: csv
+  field_qb_refnum:
+    value: field_qb_refnum
+    label: field_qb_refnum
+    machine_name: field_qb_refnum
+    type: csv
+mappings:
+  -
+    target: mail
+    map:
+      value: user_email
+    settings:
+      defuse: false
+    unique: {  }
+  -
+    target: name
+    map:
+      value: username
+    settings: {  }
+    unique: {  }
+  -
+    target: roles
+    map:
+      target_id: role
+    settings:
+      reference_by: id
+      allowed_roles:
+        administrator: administrator
+        site_admin: site_admin
+        site_assistant: site_assistant
+        administration: administration
+        supervisor: supervisor
+        teammates: teammates
+        client: client
+        user: user
+      autocreate: false
+      revoke_roles: false
+  -
+    target: field_qb_refnum
+    map:
+      value: field_qb_refnum
+    settings:
+      language: null
+    unique:
+      value: 1

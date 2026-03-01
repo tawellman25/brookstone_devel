@@ -1,0 +1,47 @@
+id: bos_contract_sections
+label: BOS Contract Sections
+migration_group: bos_contracts
+
+migration_dependencies:
+  required:
+    - bos_contracts_residential
+  optional: []
+
+dependencies:
+  module:
+    - migrate_plus
+    - migrate_tools
+    - migrate_spreadsheet
+    - bos_contract_migrate
+
+source:
+  plugin: bos_contract_sections_spreadsheet
+  file: private://imports/BOS_Contract_import_sheet.xlsx
+  worksheet: Sheet1
+  header_row: 1
+  ids:
+    section_key:
+      type: string
+
+process:
+  type:
+    plugin: get
+    source: bundle
+
+  field_contract:
+    plugin: migration_lookup
+    migration:
+      - bos_contracts_residential
+    source: contract_key
+
+  field_last_year:
+    plugin: get
+    source: last_year
+
+  field_estimate:
+    plugin: get
+    source: estimate
+
+
+destination:
+  plugin: 'entity:contract_sections'

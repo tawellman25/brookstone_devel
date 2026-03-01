@@ -1,0 +1,134 @@
+{% import _self as menus %}
+
+{#
+  We call a macro which calls itself to render the full tree.
+  @see http://twig.sensiolabs.org/doc/tags/macro.html
+#}
+{{ menus.menu_links(items, attributes, 0) }}
+
+{% macro menu_links(items, attributes, menu_level) %}
+	{% import _self as menus %}
+	{% if menu_level == 0 %}
+		<ul class="navbar-nav ms-auto">
+			{% if items %}
+				{% for item in items %}
+					{% if item.below %}
+						{%
+                  set classes = [
+                    'nav-link' ,
+                    item.in_active_trail ? 'active',
+                  ]
+                %}
+						{% if item.url.getOption('attributes')['link-type'] in 'mega_menu_0' %}
+							<li class="nav-item dropdown mega-menu">
+								<a {{ item.attributes.addClass(classes)}} data-bs-toggle="dropdown" aria-current="page" href="{{item.url}}" title="{{ item.title }}">{{item.title}}
+									<div class="arrow d-lg-none">
+										<span>
+											<svg xmlns="http://www.w3.org/2000/svg" width="349.999" height="200" viewbox="0 0 349.999 200">
+												<path data-name="Path 39783" d="M361.825,390.414a23.7,23.7,0,0,1-16.027-6.837L194.955,233.531a25.682,25.682,0,0,1-6.658-24.065,24.71,24.71,0,0,1,16.756-18.041,23.593,23.593,0,0,1,23.464,5.966L362.583,330.825,496.65,197.392a23.591,23.591,0,0,1,23.463-5.966,24.712,24.712,0,0,1,16.756,18.041,25.688,25.688,0,0,1-6.658,24.065L379.367,383.577a23.643,23.643,0,0,1-17.533,6.837Z" transform="translate(-187.583 -190.433)" fill="#131517"/>
+											</svg>
+										</span>
+									</div>
+								</a>
+								<ul class="dropdown-menu dropdown-wrapper rounded-0 primary-color" data-bs-popper="none">
+									{{ menus.menu_links(item.below, attributes, menu_level + 1) }}
+								</ul>
+							</li>
+						{% else %}
+							<li class="nav-item dropdown">
+								<a {{ item.attributes.addClass(classes)}} data-bs-toggle="dropdown" aria-current="page" href="{{item.url}}" title="{{ item.title }}">{{item.title}}
+									<div class="arrow">
+										<span>
+											<svg xmlns="http://www.w3.org/2000/svg" width="349.999" height="200" viewbox="0 0 349.999 200">
+												<path data-name="Path 39783" d="M361.825,390.414a23.7,23.7,0,0,1-16.027-6.837L194.955,233.531a25.682,25.682,0,0,1-6.658-24.065,24.71,24.71,0,0,1,16.756-18.041,23.593,23.593,0,0,1,23.464,5.966L362.583,330.825,496.65,197.392a23.591,23.591,0,0,1,23.463-5.966,24.712,24.712,0,0,1,16.756,18.041,25.688,25.688,0,0,1-6.658,24.065L379.367,383.577a23.643,23.643,0,0,1-17.533,6.837Z" transform="translate(-187.583 -190.433)" fill="#131517"/>
+											</svg>
+										</span>
+									</div>
+								</a>
+								<ul class="dropdown-wrapper dropdown-menu rounded-0 primary-color">
+									{{ menus.menu_links(item.below, attributes, menu_level + 1) }}
+								</ul>
+							</li>
+						{% endif %}
+					{% else %}
+						{%
+                    set classes = [
+                      'nav-link' ,
+                      item.in_active_trail ? 'active',
+                    ]
+                  %}
+						<li class="nav-item">
+							<a {{ item.attributes.addClass(classes)}} href="{{ item.url }}" title="{{ item.title }}">{{ item.title }}</a>
+						</li>
+					{% endif %}
+				{% endfor %}
+			{% endif %}
+		</ul>
+	{% elseif menu_level == 1 %}
+		{% if items %}
+			{% for item in items %}
+				{% if item.below %}
+					{% if item.url.getOption('attributes')['link-type'] in 'mega_menu_1' %}
+						<li>
+							<ul>
+								{{ menus.menu_links(item.below, attributes, menu_level + 1) }}
+							</ul>
+						</li>
+					{% else %}
+						<li class="dropdown-item dropdown-submenu">
+							<a class="drop-toggle" href="{{ item.url }}" title="{{ item.title }}">{{ item.title }}
+								<span class="arrow">
+									<svg xmlns="http://www.w3.org/2000/svg" width="200" height="349.999" viewbox="0 0 200 349.999">
+										<path data-name="Path 39785" d="M361.825,190.452a23.7,23.7,0,0,0-16.027,6.837L194.955,347.336A25.682,25.682,0,0,0,188.3,371.4a24.709,24.709,0,0,0,16.756,18.04,23.592,23.592,0,0,0,23.464-5.966L362.583,250.041,496.65,383.475a23.59,23.59,0,0,0,23.463,5.966,24.711,24.711,0,0,0,16.756-18.04,25.687,25.687,0,0,0-6.658-24.065L379.367,197.289a23.643,23.643,0,0,0-17.533-6.837Z" transform="translate(390.433 -187.583) rotate(90)" fill="#131517"/>
+									</svg>
+								</span>
+							</a>
+							<ul class="dropdown-menu collapse">
+								{{ menus.menu_links(item.below, attributes, menu_level + 1) }}
+							</ul>
+						</li>
+					{% endif %}
+				{% else %}
+					<li class="dropdown-item">
+						<a href="{{ item.url }}" title="{{ item.title }}">{{ item.title }}</a>
+					</li>
+				{% endif %}
+			{% endfor %}
+		{% endif %}
+	{% elseif menu_level == 2 %}
+		{% if items %}
+			{% for item in items %}
+				{% if item.below %}
+					<li class="dropdown-item">
+						<a href="{{ item.url }}" title="{{ item.title }}">{{ item.title }}</a>
+						<ul class="dropdown-menu dropdown-submenu" data-bs-popper="none">
+							{{ menus.menu_links(item.below, attributes, menu_level + 1) }}
+						</ul>
+					</li>
+				{% else %}
+					{% if item.url.getOption('attributes')['link-type'] in 'mega_menu_2' %}
+						<li class="dropdown-item">
+							<a href="{{ item.url }}" title="{{ item.title }}">{{ item.title }}</a>
+						</li>
+					{% else %}
+						<li class="dropdown-item">
+							<a href="{{ item.url }}" title="{{ item.title }}">{{ item.title }}</a>
+						</li>
+					{% endif %}
+				{% endif %}
+			{% endfor %}
+		{% endif %}
+	{% elseif menu_level == 3 %}
+		{% if items %}
+			{% for item in items %}
+				<li>
+					{% if not item.url.toString %}
+						<span class="dropdown-item" href="{{ item.url }}">{{ item.title }}</span>
+					{% else %}
+						<a href="{{ item.url }}">{{ item.title }}</a>
+					{% endif %}
+				</li>
+			{% endfor %}
+		{% endif %}
+	{% endif %}
+{% endmacro %}

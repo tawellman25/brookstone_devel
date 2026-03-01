@@ -1,0 +1,174 @@
+uuid: 723d93da-4961-46b9-b196-2819f0736f19
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.user.preferences
+    - field.field.user.user.feeds_item
+    - field.field.user.user.field_consent_updated
+    - field.field.user.user.field_credit_hold
+    - field.field.user.user.field_do_not_schedule
+    - field.field.user.user.field_ok_to_email
+    - field.field.user.user.field_paperless_delivery
+    - field.field.user.user.field_qb_list_id
+    - field.field.user.user.field_qb_refnum
+    - field.field.user.user.field_service_suspension_reason
+    - field.field.user.user.field_sms_consent
+    - field.field.user.user.user_picture
+    - image.style.thumbnail
+  module:
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - user
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_quickbooks:
+      children:
+        - field_qb_list_id
+        - field_qb_refnum
+      label: QuickBooks
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: "These fields link this account to its corresponding record in QuickBooks.</br>\r\n\r\nThey are used for imports, exports, reporting, and system integrations between BOS and QuickBooks.</br>\r\n\r\n• Values should only be entered or updated by office or administrative staff</br>\r\n• Incorrect entries can cause duplicate customers or broken syncs</br>\r\n• Leave blank if this account has not yet been created in QuickBooks</br>\r\n</br>\r\nDo not modify unless you understand the downstream accounting impact."
+        required_fields: true
+    group_communication_preferences:
+      children:
+        - field_paperless_delivery
+        - field_ok_to_email
+        - field_sms_consent
+        - language
+        - group_community_messaging
+      label: 'Communication Preferences'
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: "Choose how you would like Brookstone Outdoors to contact you for optional communications.<br><br>\r\n\r\nThese preferences apply to newsletters, announcements, and general service updates.<br><br>\r\n\r\nUnless the Paperless option is selected below, important messages related to your services, billing, or account will continue to be sent by mail through the USPS."
+        required_fields: true
+    group_community_messaging:
+      children:
+        - contact
+        - comment_notify_settings
+      label: 'Community & Messaging'
+      region: content
+      parent_name: group_communication_preferences
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: "These settings control how you interact with other users and how you are notified about activity related to your content within the Brookstone system.<br><br>\r\nYou can choose whether other users are allowed to contact you and whether you receive email notifications when comments are added to content you’ve participated in or created."
+        required_fields: true
+    group_internal_account_flags:
+      children:
+        - field_credit_hold
+        - field_do_not_schedule
+        - field_service_suspension_reason
+      label: 'Internal Account Flags'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'Office-only controls used to manage account exceptions and workflow restrictions. These settings can affect billing and scheduling behavior across BOS.'
+        required_fields: true
+_core:
+  default_config_hash: FaQ9Ptcpxpg30AtiqRDtl_8zbJArHP1LPfug_s59TOA
+id: user.user.preferences
+targetEntityType: user
+bundle: user
+mode: preferences
+content:
+  account:
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  comment_notify_settings:
+    weight: 14
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  contact:
+    weight: 13
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_ok_to_email:
+    type: boolean_checkbox
+    weight: 10
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_paperless_delivery:
+    type: boolean_checkbox
+    weight: 9
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_sms_consent:
+    type: boolean_checkbox
+    weight: 11
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  language:
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  timezone:
+    weight: 6
+    region: content
+  user_picture:
+    type: image_image
+    weight: 1
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+hidden:
+  customer_profile_profiles: true
+  feeds_item: true
+  field_consent_updated: true
+  field_credit_hold: true
+  field_do_not_schedule: true
+  field_qb_list_id: true
+  field_qb_refnum: true
+  field_service_suspension_reason: true
+  google_analytics: true
+  path: true
+  supplier_profile_profiles: true
+  teammate_profile_profiles: true

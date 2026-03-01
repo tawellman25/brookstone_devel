@@ -4,8 +4,11 @@ status: true
 dependencies:
   config:
     - eck.eck_type.equipment.sprayers
+    - field.field.equipment.sprayers.field_billable
+    - field.field.equipment.sprayers.field_date_purchased
     - field.field.equipment.sprayers.field_pictures
   module:
+    - datetime
     - image
     - user
 id: equipment.sprayers.default
@@ -31,6 +34,25 @@ content:
         refresh: 60
     third_party_settings: {  }
     weight: 0
+    region: content
+  field_billable:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_date_purchased:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 3
     region: content
   field_pictures:
     type: image

@@ -163,7 +163,7 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   exit 0
 fi
 
-[[ "$RUN_COMPOSER" -eq 1 ]] && remote "cd '${REMOTE_ROOT}' && composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader"
+[[ "$RUN_COMPOSER" -eq 1 ]] && remote "cd '${REMOTE_ROOT}' && composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --ignore-platform-req=ext-redis"
 [[ "$RUN_CIM" -eq 1 ]] && remote "cd '${REMOTE_ROOT}' && drush cim -y"
 [[ "$RUN_CR" -eq 1 ]] && remote "cd '${REMOTE_ROOT}' && drush cr -y"
 

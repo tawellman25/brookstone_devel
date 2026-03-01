@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * @file
+ * Registers Spray SOP code format and completeness rules.
+ *
+ * All validation (format, uniqueness, immutability, completeness) is handled
+ * by sop_code_validation. This module only registers bundle-specific rules.
+ */
+
+/**
+ * Implements hook_sop_code_validation_bundle_rules_alter().
+ *
+ * Register the Spray SOP code format.
+ * Expected: SPR-<TYPE>-<SEQUENCE>
+ * Example:  SPR-WED-001
+ */
+function sop_spray_sop_code_validation_bundle_rules_alter(array &$rules): void {
+  $rules['spray'] = [
+    'regex' => '/^SPR-[A-Z0-9]{2,20}-\d{3}$/',
+    'example' => 'SPR-WED-001',
+  ];
+}
+
+/**
+ * Implements hook_sop_code_validation_missing_fields_alter().
+ *
+ * Require field_service for Spray SOPs when becoming locked.
+ */
+function sop_spray_sop_code_validation_missing_fields_alter(array &$missing, EntityInterface $entity): void {
+  if ($entity->bundle() !== 'spray') {
+    return;
+  }
+
+  if (!$entity->hasField('field_service') || $entity->get('field_service')->isEmpty()) {
+    $missing[] = 'Service (field_service)';
+  }
+}

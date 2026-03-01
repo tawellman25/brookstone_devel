@@ -1,0 +1,28 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file
+ * Registers Training SOP code format with sop_code_validation.
+ *
+ * All validation (format, uniqueness, immutability, completeness) is handled
+ * by sop_code_validation. This module only registers the bundle-specific regex.
+ *
+ * field_service is NOT required for Training SOPs on lock — training materials
+ * are cross-service by design.
+ */
+
+/**
+ * Implements hook_sop_code_validation_bundle_rules_alter().
+ *
+ * Register the Training SOP code format.
+ * Expected: TRN-<TYPE>-<SEQUENCE>
+ * Example:  TRN-ONB-001
+ */
+function sop_training_sop_code_validation_bundle_rules_alter(array &$rules): void {
+  $rules['training'] = [
+    'regex' => '/^TRN-[A-Z0-9]{2,20}-\d{3}$/',
+    'example' => 'TRN-ONB-001',
+  ];
+}

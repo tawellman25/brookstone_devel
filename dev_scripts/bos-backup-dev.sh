@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SRC="$HOME/code/brookstone"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SRC="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEST_BASE="/mnt/d/Backups/brookstone-dev"
 STAMP="$(date +%Y%m%d_%H%M%S)"
 DEST="${DEST_BASE}/dev-${STAMP}"
+
+command -v rsync >/dev/null 2>&1 || { echo "ERROR: rsync not found"; exit 1; }
+
+if [[ ! -d "$DEST_BASE" ]]; then
+  echo "ERROR: Backup destination not found: $DEST_BASE"
+  echo "       Is /mnt/d mounted?"
+  exit 1
+fi
 
 echo "Backing up DEV..."
 echo "Source: $SRC"
@@ -28,4 +37,3 @@ rsync -av \
 echo
 echo "Backup complete:"
 echo "$DEST"
-

@@ -15,7 +15,9 @@ export LC_ALL=C
 
 REMOTE_HOST="sewardsdevel"
 REMOTE_ROOT="/home/sewardsdevel9/sewards10"
-LOCAL_ROOT="${HOME}/code/brookstone"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOCAL_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 DRY_RUN=1
 REQUIRE_CONFIRM=1
@@ -46,8 +48,6 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-LOCAL_ROOT="$(cd "${LOCAL_ROOT/#\~/$HOME}" && pwd)"
-
 remote() {
   ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "bash -lc '$*'"
 }
@@ -64,9 +64,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-[[ -d "$LOCAL_ROOT" ]] || die "LOCAL_ROOT not found"
-
 log "Preflight checks…"
+command -v rsync >/dev/null 2>&1 || die "rsync not found"
+[[ -d "$LOCAL_ROOT" ]] || die "LOCAL_ROOT not found: $LOCAL_ROOT"
 ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "true" >/dev/null
 remote "cd '${REMOTE_ROOT}' >/dev/null"
 remote "command -v drush >/dev/null"

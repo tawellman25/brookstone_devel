@@ -1,0 +1,114 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_landscape_lighting_entity_presave(EntityInterface $entity) {
+    // Initialize $grand_total at the start.
+    $grand_total = 0;
+    $labor_subtotal = 0;
+    $totalTrip = 0;
+    $totalDump = 0;
+
+    // Check if it's a Work Order entity of the 'landscape_lighting' bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'landscape_lighting') {
+
+        // Check if the Work Order is marked as 'Complete'.
+        $statusTermId = $entity->get('field_status')->target_id ?? 0;
+        if ($statusTermId != 1097) {
+            return;
+        }
+
+        $config_pages_loader = \Drupal::service('config_pages.loader');
+        $business_settings = $config_pages_loader->load('business_setting');
+
+        if ($business_settings) {
+            $hourlyRate = $business_settings->get('field_maintenance_crew_labor')->value;
+            $hourlyBillingIncrement = $business_settings->get('field_hour_billing_increment')->value;
+            $hourlyMinimum = $business_settings->get('field_cleanup_labor_minimum')->value;
+
+            $totalTime = $entity->get('field_total_time')->value;
+
+            if ($totalTime > $hourlyMinimum) {
+                $totalMinutes = $totalTime * 60;
+                $totalTimeIncrements = ceil($totalMinutes / $hourlyBillingIncrement);
+                $hourlyIncrement = $hourlyBillingIncrement / 60;
+                $hourlyRateIncrement = $hourlyRate * $hourlyIncrement;
+                $labor_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
+            } else {
+                $labor_subtotal = $hourlyRate;
+            }
+
+            $entity->set('field_labor_total', $labor_subtotal);
+        }
+
+        $workOrderId = $entity->id();
+
+        // NO NEED TO UPDATE PROPERTY INFO FROM SIGN OFF
+
+        // Labor from above
+        if ($labor_subtotal > 0) {
+            $grand_total += $labor_subtotal;
+        }
+
+        // Trip Fee calculated by wo_sign_off and written to field_trip_fee.
+        $totalTrip = $entity->get('field_trip_fee')->value;
+        if ($totalTrip > 0) {
+            $grand_total += $totalTrip;
+        }
+
+        // Dump Fees from related 'wo_material_dumping' entities.
+        $dumpTotal = get_landscape_lighting_total_dump_fees($entity->id());
+        if ($dumpTotal > 0) {
+            $entity->set('field_dump_fee_total', $dumpTotal);
+            $grand_total += $dumpTotal;
+        }
+
+        // Rental Fees from related 'wo_rental_equipment' entities.
+        $rental_fee_total = get_landscape_lighting_total_rental_fees($workOrderId);
+        if ($rental_fee_total > 0) {
+            $entity->set('field_rental_total', $rental_fee_total);
+            $grand_total += $rental_fee_total;
+        }
+
+        // Office billing adjustment.
+        $billingAdjustment = $entity->get('field_billing_adjustment')->value;
+        $grand_total += $billingAdjustment;
+
+        if ($grand_total > 0) {
+            $entity->set('field_wo_total', $grand_total);
+        }
+    }
+}
+
+/**
+ * Calculates the total Dump fees for a given Work Order.
+ */
+function get_landscape_lighting_total_dump_fees($workOrderId) {
+    $database = \Drupal::database();
+
+    $query = $database->select('wo_material_dumping__field_dump_total', 'dump_fees');
+    $query->join('wo_material_dumping__field_work_order', 'work_order', 'dump_fees.entity_id = work_order.entity_id');
+    $query->condition('work_order.field_work_order_target_id', $workOrderId);
+    $query->addExpression('SUM(dump_fees.field_dump_total_value)', 'total_dump_fee');
+    $result = $query->execute()->fetchField();
+
+    return $result ? $result : 0;
+}
+
+/**
+ * Calculates the total Rental Equipment fees for a given Work Order.
+ */
+function get_landscape_lighting_total_rental_fees($workOrderId) {
+    $database = \Drupal::database();
+
+    $query = $database->select('wo_rental_equipment__field_receipt_total_cost', 'rental_fees');
+    $query->join('wo_rental_equipment__field_rented_for', 'work_order', 'rental_fees.entity_id = work_order.entity_id');
+    $query->condition('work_order.field_rented_for_target_id', $workOrderId);
+    $query->addExpression('SUM(rental_fees.field_receipt_total_cost_value)', 'total_rental_fee');
+    $result = $query->execute()->fetchField();
+
+    return $result ? $result : 0;
+}

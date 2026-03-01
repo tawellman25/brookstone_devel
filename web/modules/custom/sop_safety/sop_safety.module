@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * @file
+ * Registers Safety SOP code format and completeness rules.
+ *
+ * All validation (format, uniqueness, immutability, completeness) is handled
+ * by sop_code_validation. This module only registers bundle-specific rules.
+ */
+
+/**
+ * Implements hook_sop_code_validation_bundle_rules_alter().
+ *
+ * Register the Safety SOP code format.
+ * Expected: SAF-<TYPE>-<SEQUENCE>
+ * Example:  SAF-GEN-001
+ */
+function sop_safety_sop_code_validation_bundle_rules_alter(array &$rules): void {
+  $rules['safety'] = [
+    'regex' => '/^SAF-[A-Z0-9]{2,20}-\d{3}$/',
+    'example' => 'SAF-GEN-001',
+  ];
+}
+
+/**
+ * Implements hook_sop_code_validation_missing_fields_alter().
+ *
+ * Require field_service for Safety SOPs when becoming locked.
+ */
+function sop_safety_sop_code_validation_missing_fields_alter(array &$missing, EntityInterface $entity): void {
+  if ($entity->bundle() !== 'safety') {
+    return;
+  }
+
+  if (!$entity->hasField('field_service') || $entity->get('field_service')->isEmpty()) {
+    $missing[] = 'Service (field_service)';
+  }
+}

@@ -1,0 +1,154 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_backflow_testing_entity_presave(EntityInterface $entity) {
+    // Initialize $grand_total at the start.
+    $grand_total = 0;
+    $labor_subtotal = 0;
+    $totalTrip = 0;
+
+    // Check if it's a Work Order entity of the 'backflow_testing' bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'backflow_testing') {
+
+        // Check if the Work Order is marked as 'Complete'.
+        $statusTermId = $entity->get('field_status')->target_id ?? 0;
+        if ($statusTermId != 1097) {
+            return;
+        }
+
+        $workOrderId = $entity->id();
+
+        $config_pages_loader = \Drupal::service('config_pages.loader');
+        $business_settings = $config_pages_loader->load('business_setting');
+
+        if ($business_settings) {
+            $hourlyRate = $business_settings->get('field_sprinkler_technician_rate')->value;
+            $hourlyBillingIncrement = $business_settings->get('field_hour_billing_increment')->value;
+            $hourlyMinimum = $business_settings->get('field_sprinkler_tech_minimum')->value;
+
+            // field_total_time is set by wo_sign_off before this presave runs.
+            $totalTime = $entity->get('field_total_time')->value;
+
+            if ($totalTime > $hourlyMinimum) {
+                $totalMinutes = $totalTime * 60;
+                $totalTimeIncrements = ceil($totalMinutes / $hourlyBillingIncrement);
+                $hourlyIncrement = $hourlyBillingIncrement / 60;
+                $hourlyRateIncrement = $hourlyRate * $hourlyIncrement;
+                $labor_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
+            } else {
+                $labor_subtotal = $hourlyRate * $hourlyMinimum;
+            }
+
+            $entity->set('field_labor_total', $labor_subtotal);
+        }
+
+        // Labor from above
+        if ($labor_subtotal > 0) {
+            $grand_total += $labor_subtotal;
+        }
+
+        // Material Costs (parts used during testing).
+        $material_subtotal = get_backflow_testing_total_material_price($workOrderId);
+        if ($material_subtotal > 0) {
+            $entity->set('field_material_chemical_total', $material_subtotal);
+            $grand_total += $material_subtotal;
+        }
+
+        // Trip Fee calculated by wo_sign_off and written to field_trip_fee.
+        $totalTrip = $entity->get('field_trip_fee')->value;
+        if ($totalTrip > 0) {
+            $grand_total += $totalTrip;
+        }
+
+        // Rental Fees from related 'wo_rental_equipment' entities.
+        $rental_fee_total = get_backflow_testing_total_rental_fees($workOrderId);
+        if ($rental_fee_total > 0) {
+            $entity->set('field_rental_total', $rental_fee_total);
+            $grand_total += $rental_fee_total;
+        }
+
+        // Office billing adjustment.
+        $billingAdjustment = $entity->get('field_billing_adjustment')->value;
+        $grand_total += $billingAdjustment;
+
+        if ($grand_total > 0) {
+            $entity->set('field_wo_total', $grand_total);
+        }
+    }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function wo_backflow_testing_entity_insert(EntityInterface $entity) {
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'backflow_testing') {
+        _wo_backflow_testing_handle_work_order($entity);
+    }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function wo_backflow_testing_entity_update(EntityInterface $entity) {
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'backflow_testing') {
+        _wo_backflow_testing_handle_work_order($entity);
+    }
+}
+
+/**
+ * Handles work order completion write-back for backflow_testing.
+ *
+ * NOTE: property_sprinkler_system:system does not yet have a dedicated backflow
+ * test date field. When that field is added (e.g. field_last_backflow_test_date),
+ * load property_sprinkler_system by field_property here and write the completion
+ * date back, following the wo_sprinkler_start_up pattern.
+ */
+function _wo_backflow_testing_handle_work_order(EntityInterface $entity) {
+    $statusTermId = $entity->get('field_status')->target_id ?? 0;
+    if ($statusTermId != 1097) {
+        return;
+    }
+
+    // TODO: Write last backflow test date back to property_sprinkler_system:system
+    // once the field exists. Load by:
+    //   field_property = $entity->get('field_property')->target_id
+    //   type = 'system'
+    // Then set field_last_backflow_test_date and save.
+}
+
+/**
+ * Calculates the total Materials cost for a backflow testing Work Order.
+ */
+function get_backflow_testing_total_material_price($workOrderId) {
+    $database = \Drupal::database();
+
+    $query = $database->select('wo_material_list_item__field_subtotal_w_markup', 'subtotal');
+    $query->join('wo_material_list_item', 'items', 'subtotal.entity_id = items.id');
+    $query->join('wo_material_list_item__field_list_id', 'list_id', 'items.id = list_id.entity_id');
+    $query->join('wo_material_list__field_work_order', 'work_order', 'list_id.field_list_id_target_id = work_order.entity_id');
+    $query->condition('work_order.field_work_order_target_id', $workOrderId);
+    $query->addExpression('SUM(subtotal.field_subtotal_w_markup_value)', 'total_subtotal_w_markup');
+    $result = $query->execute()->fetchField();
+
+    return $result ? $result : 0;
+}
+
+/**
+ * Calculates the total Rental Equipment fees for a backflow testing Work Order.
+ */
+function get_backflow_testing_total_rental_fees($workOrderId) {
+    $database = \Drupal::database();
+
+    $query = $database->select('wo_rental_equipment__field_receipt_total_cost', 'rental_fees');
+    $query->join('wo_rental_equipment__field_rented_for', 'work_order', 'rental_fees.entity_id = work_order.entity_id');
+    $query->condition('work_order.field_rented_for_target_id', $workOrderId);
+    $query->addExpression('SUM(rental_fees.field_receipt_total_cost_value)', 'total_rental_fee');
+    $result = $query->execute()->fetchField();
+
+    return $result ? $result : 0;
+}

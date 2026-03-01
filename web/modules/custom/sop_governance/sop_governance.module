@@ -1,0 +1,28 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * @file
+ * Registers SOP Governance code format with sop_code_validation.
+ *
+ * All validation (format, uniqueness, immutability, completeness) is handled
+ * by sop_code_validation. This module only registers the bundle-specific regex.
+ *
+ * field_service is NOT required for Governance SOPs on lock — governance
+ * documents are organisation-wide and not tied to a specific service.
+ */
+
+/**
+ * Implements hook_sop_code_validation_bundle_rules_alter().
+ *
+ * Register the SOP Governance code format.
+ * Expected: GOV-<TYPE>-<SEQUENCE>
+ * Example:  GOV-SOP-001
+ */
+function sop_governance_sop_code_validation_bundle_rules_alter(array &$rules): void {
+  $rules['sop_governance'] = [
+    'regex' => '/^GOV-[A-Z0-9]{2,20}-\d{3}$/',
+    'example' => 'GOV-SOP-001',
+  ];
+}

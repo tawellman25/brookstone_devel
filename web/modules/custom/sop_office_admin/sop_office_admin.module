@@ -2,196 +2,29 @@
 
 declare(strict_types=1);
 
-use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityStorageException;
-use Drupal\Core\Form\FormStateInterface;
-
 /**
  * @file
- * Validation helpers for SOP codes (Office Admin bundle).
+ * Registers Office Administration SOP code format with sop_code_validation.
  *
- * This module intentionally DOES NOT auto-generate SOP codes.
- * It enforces:
- * - Required format for Office Admin SOPs.
- * - Uniqueness across all SOP entities.
- * - Immutability after approval/publish.
+ * All validation (format, uniqueness, immutability, completeness) is handled
+ * by sop_code_validation. This module only registers the bundle-specific regex.
+ *
+ * Previously this module implemented its own validation with an inconsistent
+ * lock check (moderation_state / field_sop_approved / isPublished). That logic
+ * has been removed; locking is now driven exclusively by field_sop_status
+ * (consistent with sop_code_validation).
  */
 
 /**
- * Office Admin SOP code regex.
+ * Implements hook_sop_code_validation_bundle_rules_alter().
  *
+ * Register the Office Admin SOP code format.
  * Expected: OFF-ADM-<SERVICE>-<SEQUENCE>
  * Example:  OFF-ADM-QB-001
  */
-const SOP_OFFICE_ADMIN_CODE_REGEX = '/^OFF-ADM-[A-Z0-9]{2,20}-\d{3}$/';
-
-/**
- * Implements hook_form_FORM_ID_alter().
- *
- * Attach validation to the Office Admin SOP add/edit form.
- */
-function sop_office_admin_form_sop_office_administration_form_alter(array &$form, FormStateInterface $form_state): void {
-  $form['#validate'][] = 'sop_office_admin_validate_sop_code';
-}
-
-/**
- * Form validation callback: enforce SOP code rules.
- */
-function sop_office_admin_validate_sop_code(array &$form, FormStateInterface $form_state): void {
-  $entity = $form_state->getFormObject()->getEntity();
-  if (!$entity instanceof EntityInterface) {
-    return;
-  }
-
-  // Only validate SOP entities and only this bundle.
-  if ($entity->getEntityTypeId() !== 'sop' || $entity->bundle() !== 'office_administration') {
-    return;
-  }
-
-  $code = sop_office_admin_get_sop_code_value($entity);
-  if ($code === '') {
-    $form_state->setErrorByName('field_sop_code', t('SOP Code is required.'));
-    return;
-  }
-
-  // Normalize to uppercase/trim for validation checks (do not auto-save changes).
-  $code_norm = strtoupper(trim($code));
-
-  // Format validation.
-  if (!preg_match(SOP_OFFICE_ADMIN_CODE_REGEX, $code_norm)) {
-    $form_state->setErrorByName(
-      'field_sop_code',
-      t('Invalid SOP Code format. Office Admin SOP codes must match OFF-ADM-<SERVICE>-<SEQUENCE> (example: OFF-ADM-QB-001). Use uppercase letters/numbers; sequence must be 3 digits.')
-    );
-    return;
-  }
-
-  // Uniqueness validation (across all SOP entities).
-  if (!sop_office_admin_is_sop_code_unique($code_norm, $entity)) {
-    $form_state->setErrorByName('field_sop_code', t('That SOP Code is already in use. SOP Codes must be unique.'));
-    return;
-  }
-
-  // Immutability after approval/publish (prevent changes).
-  if (sop_office_admin_is_locked($entity) && sop_office_admin_sop_code_changed($entity, $code_norm)) {
-    $form_state->setErrorByName('field_sop_code', t('SOP Code cannot be changed after the SOP is approved/published.'));
-    return;
-  }
-}
-
-/**
- * Implements hook_entity_presave().
- *
- * Safety net so code cannot be altered via API/import once locked.
- */
-function sop_office_admin_entity_presave(EntityInterface $entity): void {
-  // Only SOP entities and only this bundle.
-  if ($entity->getEntityTypeId() !== 'sop' || $entity->bundle() !== 'office_administration') {
-    return;
-  }
-
-  $code = sop_office_admin_get_sop_code_value($entity);
-  $code_norm = strtoupper(trim($code));
-
-  // Basic required/format enforcement.
-  if ($code_norm === '' || !preg_match(SOP_OFFICE_ADMIN_CODE_REGEX, $code_norm)) {
-    throw new EntityStorageException('Invalid or missing SOP Code for Office Admin SOP. Expected OFF-ADM-<SERVICE>-<SEQUENCE> (example: OFF-ADM-QB-001).');
-  }
-
-  // Uniqueness enforcement.
-  if (!sop_office_admin_is_sop_code_unique($code_norm, $entity)) {
-    throw new EntityStorageException('Duplicate SOP Code detected. SOP Codes must be unique.');
-  }
-
-  // Locked enforcement.
-  if (sop_office_admin_is_locked($entity) && sop_office_admin_sop_code_changed($entity, $code_norm)) {
-    throw new EntityStorageException('SOP Code cannot be changed after the SOP is approved/published.');
-  }
-}
-
-/**
- * Get SOP code field value safely.
- */
-function sop_office_admin_get_sop_code_value(EntityInterface $entity): string {
-  if (!$entity->hasField('field_sop_code')) {
-    return '';
-  }
-  $value = $entity->get('field_sop_code')->value;
-  return is_string($value) ? $value : '';
-}
-
-/**
- * Check if SOP code is unique across SOP entities, excluding current entity.
- */
-function sop_office_admin_is_sop_code_unique(string $code_norm, EntityInterface $entity): bool {
-  $query = \Drupal::entityQuery('sop')
-    ->accessCheck(FALSE)
-    ->condition('field_sop_code', $code_norm);
-
-  // Exclude self on edit.
-  if (!$entity->isNew() && $entity->id() !== NULL) {
-    $query->condition('id', (int) $entity->id(), '<>');
-  }
-
-  $ids = $query->range(0, 1)->execute();
-  return empty($ids);
-}
-
-/**
- * Determine whether this SOP is locked (approved/published).
- *
- * Supports either:
- * - content moderation field "moderation_state" with a state like "approved" or "published"
- * - a boolean field "field_sop_approved" (true = locked)
- */
-function sop_office_admin_is_locked(EntityInterface $entity): bool {
-  // Moderation state check.
-  if ($entity->hasField('moderation_state')) {
-    $state = (string) $entity->get('moderation_state')->value;
-    $state = strtolower(trim($state));
-    if (in_array($state, ['approved', 'published'], TRUE)) {
-      return TRUE;
-    }
-  }
-
-  // Simple boolean check.
-  if ($entity->hasField('field_sop_approved')) {
-    return (bool) $entity->get('field_sop_approved')->value;
-  }
-
-  // Fallback: treat "published" status as locked if present.
-  if (method_exists($entity, 'isPublished')) {
-    return (bool) $entity->isPublished();
-  }
-
-  return FALSE;
-}
-
-/**
- * Detect if SOP code changed compared to the stored/original entity.
- */
-function sop_office_admin_sop_code_changed(EntityInterface $entity, string $code_norm): bool {
-  // New entities are not locked by definition; treat as not changed.
-  if ($entity->isNew()) {
-    return FALSE;
-  }
-
-  // Drupal sets $entity->original for updates in many save flows.
-  if (isset($entity->original) && $entity->original instanceof EntityInterface) {
-    $orig_code = sop_office_admin_get_sop_code_value($entity->original);
-    $orig_norm = strtoupper(trim($orig_code));
-    return $orig_norm !== $code_norm;
-  }
-
-  // If original isn't available, load from storage as a fallback.
-  if ($entity->id() !== NULL) {
-    $stored = \Drupal::entityTypeManager()->getStorage($entity->getEntityTypeId())->load($entity->id());
-    if ($stored instanceof EntityInterface) {
-      $orig_code = sop_office_admin_get_sop_code_value($stored);
-      $orig_norm = strtoupper(trim($orig_code));
-      return $orig_norm !== $code_norm;
-    }
-  }
-
-  return FALSE;
+function sop_office_admin_sop_code_validation_bundle_rules_alter(array &$rules): void {
+  $rules['office_administration'] = [
+    'regex' => '/^OFF-ADM-[A-Z0-9]{2,20}-\d{3}$/',
+    'example' => 'OFF-ADM-QB-001',
+  ];
 }

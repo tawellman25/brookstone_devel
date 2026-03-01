@@ -308,8 +308,8 @@ function sop_code_validation_validate_segments(string $code): ?\Drupal\Core\Stri
   }
 
   $parts = explode('-', $code);
-  if (count($parts) < 4) {
-    return t('SOP Code must contain at least 4 parts separated by hyphens (example: OFF-ADM-QB-001).');
+  if (count($parts) < 3) {
+    return t('SOP Code must contain at least 3 parts separated by hyphens (example: LGT-EXT-001 or OFF-ADM-QB-001).');
   }
 
   $last = end($parts);

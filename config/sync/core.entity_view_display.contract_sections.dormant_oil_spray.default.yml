@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contract_sections.dormant_oil_spray
+    - field.field.contract_sections.dormant_oil_spray.feeds_item
     - field.field.contract_sections.dormant_oil_spray.field_chemicals_used
     - field.field.contract_sections.dormant_oil_spray.field_client_notes
     - field.field.contract_sections.dormant_oil_spray.field_contract
@@ -11,6 +12,7 @@ dependencies:
     - field.field.contract_sections.dormant_oil_spray.field_estimate
     - field.field.contract_sections.dormant_oil_spray.field_gallons_used
     - field.field.contract_sections.dormant_oil_spray.field_last_year
+    - field.field.contract_sections.dormant_oil_spray.field_service
     - field.field.contract_sections.dormant_oil_spray.field_work_order
   module:
     - field_group
@@ -122,6 +124,14 @@ content:
     third_party_settings: {  }
     weight: 3
     region: content
+  field_service:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
   field_work_order:
     type: entity_reference_label
     label: above
@@ -139,3 +149,4 @@ content:
     region: content
 hidden:
   changed: true
+  feeds_item: true

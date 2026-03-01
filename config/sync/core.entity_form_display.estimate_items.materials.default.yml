@@ -5,14 +5,18 @@ dependencies:
   config:
     - eck.eck_type.estimate_items.materials
     - field.field.estimate_items.materials.field_cost_subtotal
+    - field.field.estimate_items.materials.field_estimate
     - field.field.estimate_items.materials.field_line_total
     - field.field.estimate_items.materials.field_markup
     - field.field.estimate_items.materials.field_material
+    - field.field.estimate_items.materials.field_phase
+    - field.field.estimate_items.materials.field_pricing_class
     - field.field.estimate_items.materials.field_quantity
     - field.field.estimate_items.materials.field_unit_price
   module:
     - field_layout
     - layout_discovery
+    - path
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -34,6 +38,16 @@ content:
     weight: 14
     region: content
     settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 31
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
       placeholder: ''
     third_party_settings: {  }
   field_line_total:
@@ -60,6 +74,22 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_phase:
+    type: entity_reference_autocomplete
+    weight: 32
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_pricing_class:
+    type: options_select
+    weight: 33
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_quantity:
     type: number
     weight: 11
@@ -73,6 +103,12 @@ content:
     region: content
     settings:
       placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
     third_party_settings: {  }
   title:
     type: string_textfield

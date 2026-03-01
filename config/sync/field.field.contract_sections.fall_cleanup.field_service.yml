@@ -1,0 +1,29 @@
+uuid: 82980815-ad5a-4e5c-85fd-16dc8b4b6a24
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.fall_cleanup
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:e93f49df-f19b-4db3-a307-31c4cb4365b5'
+id: contract_sections.fall_cleanup.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: fall_cleanup
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: e93f49df-f19b-4db3-a307-31c4cb4365b5
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

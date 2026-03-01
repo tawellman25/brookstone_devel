@@ -1,0 +1,29 @@
+uuid: 31b944db-52b2-4e77-bf06-68893a74d7cc
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.christmas_decorations
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:509e128a-f38d-4435-8a4e-0f09a827c7cf'
+id: contract_sections.christmas_decorations.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: christmas_decorations
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 509e128a-f38d-4435-8a4e-0f09a827c7cf
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

@@ -1,0 +1,70 @@
+uuid: 6700da0d-bf66-4411-9334-6368f02c8ac5
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.service_scope_elements.feeds_item
+    - field.field.taxonomy_term.service_scope_elements.field_internal_only
+    - field.field.taxonomy_term.service_scope_elements.field_scope_code
+    - taxonomy.vocabulary.service_scope_elements
+  module:
+    - field_layout
+    - layout_discovery
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: taxonomy_term.service_scope_elements.default
+targetEntityType: taxonomy_term
+bundle: service_scope_elements
+mode: default
+content:
+  description:
+    type: text_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_internal_only:
+    type: boolean_checkbox
+    weight: 101
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_scope_code:
+    type: string_textfield
+    weight: 102
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  name:
+    type: string_textfield
+    weight: -5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    weight: 100
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+hidden:
+  feeds_item: true

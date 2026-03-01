@@ -1,0 +1,43 @@
+uuid: 7114307d-776e-46fb-8f25-dbb91949dd6f
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.service_scope_elements.feeds_item
+    - field.field.taxonomy_term.service_scope_elements.field_internal_only
+    - field.field.taxonomy_term.service_scope_elements.field_scope_code
+    - taxonomy.vocabulary.service_scope_elements
+  module:
+    - text
+id: taxonomy_term.service_scope_elements.default
+targetEntityType: taxonomy_term
+bundle: service_scope_elements
+mode: default
+content:
+  description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_internal_only:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_scope_code:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+hidden:
+  feeds_item: true

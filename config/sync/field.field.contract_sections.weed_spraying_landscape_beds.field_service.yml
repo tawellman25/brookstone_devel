@@ -1,0 +1,29 @@
+uuid: fbffc2d6-65ff-465e-8986-764292efcbb5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.weed_spraying_landscape_beds
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:c886cac9-6a0e-413d-a3b4-8fceaa076186'
+id: contract_sections.weed_spraying_landscape_beds.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: weed_spraying_landscape_beds
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: c886cac9-6a0e-413d-a3b4-8fceaa076186
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

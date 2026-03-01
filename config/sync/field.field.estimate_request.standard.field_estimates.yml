@@ -1,0 +1,29 @@
+uuid: 04f87cef-f341-4ca2-922d-eaf11761f242
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - eck.eck_type.estimate_request.standard
+    - field.storage.estimate_request.field_estimates
+id: estimate_request.standard.field_estimates
+field_name: field_estimates
+entity_type: estimate_request
+bundle: standard
+label: Estimates
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

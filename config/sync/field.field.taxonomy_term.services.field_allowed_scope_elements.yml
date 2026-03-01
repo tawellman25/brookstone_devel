@@ -1,0 +1,29 @@
+uuid: 4825a89d-cd71-4b9b-9b9f-f9a06bb8e4ca
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_allowed_scope_elements
+    - taxonomy.vocabulary.service_scope_elements
+    - taxonomy.vocabulary.services
+id: taxonomy_term.services.field_allowed_scope_elements
+field_name: field_allowed_scope_elements
+entity_type: taxonomy_term
+bundle: services
+label: 'Allowed Scope Elements'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      service_scope_elements: service_scope_elements
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

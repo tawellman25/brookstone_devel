@@ -1,0 +1,29 @@
+uuid: b290befc-5518-4170-86d6-dbf564b722ba
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.spring_cleanup
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:596f315b-82a6-4bd3-8d00-e11ed65dc179'
+id: contract_sections.spring_cleanup.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: spring_cleanup
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 596f315b-82a6-4bd3-8d00-e11ed65dc179
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

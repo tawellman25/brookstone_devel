@@ -8,7 +8,9 @@ dependencies:
     - field.field.work_order.aspen_twig_gall.field_billing_adjustment
     - field.field.work_order.aspen_twig_gall.field_billing_notes
     - field.field.work_order.aspen_twig_gall.field_client_app_wo_number
+    - field.field.work_order.aspen_twig_gall.field_contact
     - field.field.work_order.aspen_twig_gall.field_contract
+    - field.field.work_order.aspen_twig_gall.field_estimate
     - field.field.work_order.aspen_twig_gall.field_estimated_price
     - field.field.work_order.aspen_twig_gall.field_how_many_trees
     - field.field.work_order.aspen_twig_gall.field_invoiced
@@ -30,7 +32,6 @@ dependencies:
     - field.field.work_order.aspen_twig_gall.field_work_todo_description
   module:
     - allowed_formats
-    - comment
     - field_group
     - field_layout
     - layout_discovery
@@ -106,6 +107,8 @@ third_party_settings:
         - field_scheduled
         - field_printed
         - field_service
+        - field_estimate
+        - field_contact
         - flag
         - created
         - uid
@@ -129,7 +132,7 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 33
+    weight: 35
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -163,9 +166,29 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_contact:
+    type: entity_reference_autocomplete
+    weight: 33
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_contract:
     type: entity_reference_autocomplete
     weight: 28
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 32
     region: content
     settings:
       match_operator: CONTAINS
@@ -289,12 +312,6 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
-  field_work_order_notes:
-    type: comment_default
-    weight: 5
-    region: content
-    settings: {  }
-    third_party_settings: {  }
   field_work_todo_description:
     type: text_textarea
     weight: 3
@@ -307,19 +324,19 @@ content:
         hide_help: '1'
         hide_guidelines: '0'
   flag:
-    weight: 32
+    weight: 34
     region: content
     settings: {  }
     third_party_settings: {  }
   path:
     type: path
-    weight: 35
+    weight: 37
     region: content
     settings: {  }
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 34
+    weight: 36
     region: content
     settings:
       match_operator: CONTAINS
@@ -329,4 +346,5 @@ content:
     third_party_settings: {  }
 hidden:
   field_work_order_id: true
+  field_work_order_notes: true
   title: true

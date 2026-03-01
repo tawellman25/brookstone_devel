@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contract_sections.grub_prevention_on_lawn
+    - field.field.contract_sections.grub_prevention_on_lawn.feeds_item
     - field.field.contract_sections.grub_prevention_on_lawn.field_chemicals_used
     - field.field.contract_sections.grub_prevention_on_lawn.field_client_notes
     - field.field.contract_sections.grub_prevention_on_lawn.field_contract
@@ -11,6 +12,7 @@ dependencies:
     - field.field.contract_sections.grub_prevention_on_lawn.field_estimate
     - field.field.contract_sections.grub_prevention_on_lawn.field_last_year
     - field.field.contract_sections.grub_prevention_on_lawn.field_pounds_used
+    - field.field.contract_sections.grub_prevention_on_lawn.field_service
     - field.field.contract_sections.grub_prevention_on_lawn.field_work_order
   module:
     - field_group
@@ -144,6 +146,14 @@ content:
     third_party_settings: {  }
     weight: 4
     region: content
+  field_service:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
   field_work_order:
     type: entity_reference_label
     label: above
@@ -159,4 +169,5 @@ content:
     third_party_settings: {  }
     weight: 6
     region: content
-hidden: {  }
+hidden:
+  feeds_item: true

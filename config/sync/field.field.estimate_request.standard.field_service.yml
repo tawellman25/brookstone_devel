@@ -1,0 +1,25 @@
+uuid: deb52f90-e0f8-434b-85fe-d582a67de23b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_request.standard
+    - field.storage.estimate_request.field_service
+id: estimate_request.standard.field_service
+field_name: field_service
+entity_type: estimate_request
+bundle: standard
+label: 'Service Estimate(s) Requested'
+description: 'Select the services that estimates were requested for.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: estimate_request_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

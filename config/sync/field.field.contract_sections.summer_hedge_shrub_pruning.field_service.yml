@@ -1,0 +1,29 @@
+uuid: 4cdc459e-0ace-4daa-bad9-27c681482dc5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.summer_hedge_shrub_pruning
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:1e3cc9ea-cd97-4256-af07-9d1c58942efa'
+id: contract_sections.summer_hedge_shrub_pruning.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: summer_hedge_shrub_pruning
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 1e3cc9ea-cd97-4256-af07-9d1c58942efa
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

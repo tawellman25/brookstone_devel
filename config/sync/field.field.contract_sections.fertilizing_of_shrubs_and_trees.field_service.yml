@@ -1,0 +1,29 @@
+uuid: ab85af4d-d404-4024-8f51-b7ecf1cd2c57
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.fertilizing_of_shrubs_and_trees
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:bfc7aef4-9e34-445f-aa36-ae399da38289'
+id: contract_sections.fertilizing_of_shrubs_and_trees.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: fertilizing_of_shrubs_and_trees
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: bfc7aef4-9e34-445f-aa36-ae399da38289
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

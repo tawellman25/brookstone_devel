@@ -1,0 +1,29 @@
+uuid: e8f8f818-b248-417b-8a40-3694f4270ee3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.contact
+    - eck.eck_type.estimate_request.standard
+    - field.storage.estimate_request.field_contact
+id: estimate_request.standard.field_contact
+field_name: field_contact
+entity_type: estimate_request
+bundle: standard
+label: Contact
+description: "Select a related Contact connected to this Property (manager, HOA, spouse, etc.).</br>\r\nThis field does not override the Owner."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contacts'
+  handler_settings:
+    target_bundles:
+      contact: contact
+    sort:
+      field: title
+      direction: ASC
+    auto_create: true
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: 8e996dc8-c031-4888-9209-4c7ebd42400d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - eck.eck_type.estimate_action_log.log
+    - field.storage.estimate_action_log.field_estimate
+id: estimate_action_log.log.field_estimate
+field_name: field_estimate
+entity_type: estimate_action_log
+bundle: log
+label: Estimate
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

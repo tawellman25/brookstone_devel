@@ -1,0 +1,33 @@
+uuid: a9505bc0-cb08-43d2-9ab1-ccfbf98bc13e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_action_log.log
+    - eck.eck_type.contracts.commercial
+    - eck.eck_type.contracts.residential
+    - eck.eck_type.contracts.snow_removal
+    - field.storage.contract_action_log.field_contract
+id: contract_action_log.log.field_contract
+field_name: field_contract
+entity_type: contract_action_log
+bundle: log
+label: Contract
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contracts'
+  handler_settings:
+    target_bundles:
+      commercial: commercial
+      residential: residential
+      snow_removal: snow_removal
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: residential
+field_type: entity_reference

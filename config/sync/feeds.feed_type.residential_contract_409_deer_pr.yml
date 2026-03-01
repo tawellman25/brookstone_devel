@@ -1,0 +1,113 @@
+uuid: 8fd48212-09a7-4e51-b9f2-50406b6be7e8
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.base_field_override.contract_sections.deer_protection_wire.created
+    - eck.eck_type.contract_sections.deer_protection_wire
+    - field.field.contract_sections.deer_protection_wire.field_contract
+    - field.field.contract_sections.deer_protection_wire.field_estimate
+    - field.field.contract_sections.deer_protection_wire.field_last_year
+  module:
+    - eck
+    - feeds_log
+third_party_settings:
+  feeds_log:
+    status: true
+    operations:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+      cleaned: cleaned
+    items:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+    source: true
+label: 'Residential Contract - 409_deer_protection'
+id: residential_contract_409_deer_pr
+description: "Contract's 409 Deer Protection Section"
+help: ''
+import_period: -1
+import_period_per_feed: false
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:contract_sections'
+processor_configuration:
+  values:
+    type: deer_protection_wire
+  langcode: en
+  insert_new: 1
+  update_existing: 0
+  update_non_existent: _keep
+  skip_hash_check: false
+  skip_validation: false
+  skip_validation_types: {  }
+  authorize: true
+  revision: false
+  expire: -1
+  owner_feed_author: false
+  owner_id: 1
+custom_sources:
+  contract_id:
+    value: Contract_ID
+    label: Contract_ID
+    machine_name: contract_id
+    type: csv
+  entered_on:
+    value: entered_on
+    label: entered_on
+    machine_name: entered_on
+    type: csv
+  pre_409_deer_protection:
+    value: PRE_409_deer_protection
+    label: PRE_409_deer_protection
+    machine_name: pre_409_deer_protection
+    type: csv
+  est_409_deer_protection:
+    value: EST_409_deer_protection
+    label: EST_409_deer_protection
+    machine_name: est_409_deer_protection
+    type: csv
+mappings:
+  -
+    target: field_contract
+    map:
+      target_id: contract_id
+    settings:
+      language: ''
+      reference_by: id
+      feeds_item: guid
+      autocreate: 0
+      autocreate_bundle: residential
+  -
+    target: created
+    map:
+      value: entered_on
+    settings:
+      language: null
+      timezone: UTC
+  -
+    target: field_last_year
+    map:
+      value: pre_409_deer_protection
+    settings:
+      language: null
+  -
+    target: field_estimate
+    map:
+      value: est_409_deer_protection
+    settings:
+      language: null
+    unique: {  }

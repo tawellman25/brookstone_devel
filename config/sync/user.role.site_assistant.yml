@@ -4,37 +4,173 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contacts.emergency_contacts
+    - eck.eck_type.contract_notes.note
+    - eck.eck_type.contract_sections_audit.log
     - eck.eck_type.department.details
     - eck.eck_type.equipment.vehicles
+    - eck.eck_type.estimate_items.materials
+    - eck.eck_type.lawn_and_garden_pests.weed_types
+    - eck.eck_type.material.annuals
+    - eck.eck_type.material.brass
+    - eck.eck_type.material.copper
+    - eck.eck_type.material.decorative_rock
+    - eck.eck_type.material.electric
+    - eck.eck_type.material.galv
+    - eck.eck_type.material.irrigation
+    - eck.eck_type.material.landscape
+    - eck.eck_type.material.misc
+    - eck.eck_type.material.pavers
+    - eck.eck_type.material.plants
+    - eck.eck_type.material.poly
+    - eck.eck_type.material.pumps
+    - eck.eck_type.material.pvc
+    - eck.eck_type.material.shrubs
+    - eck.eck_type.material.sod
+    - eck.eck_type.material.trees
+    - eck.eck_type.material.xmas
+    - eck.eck_type.material_suppliers.supplier
     - eck.eck_type.positions.role
     - eck.eck_type.property_system_controller.controller
     - eck.eck_type.supplier.supplier
+    - eck.eck_type.wo_material_dumping.load
+    - eck.eck_type.wo_material_list.material_list
+    - eck.eck_type.wo_material_list_item.items
     - filter.format.full_ai_html
     - filter.format.full_html
   module:
+    - contract_sections_ui
+    - eck
     - eck_bundle_permissions
     - filter
+    - form_mode_control
+    - system
+    - toolbar
 id: site_assistant
 label: 'Site Assistant'
 weight: -6
 is_admin: null
 permissions:
+  - 'access contract_sections_audit entity listing'
+  - 'access toolbar'
   - 'create contacts entities of bundle emergency_contacts'
+  - 'create contract_notes entities of bundle note'
+  - 'create contract_sections_audit entities of bundle log'
   - 'create equipment entities of bundle vehicles'
+  - 'create lawn_and_garden_pests entities of bundle weed_types'
+  - 'create material entities'
+  - 'create material entities of bundle annuals'
+  - 'create material entities of bundle brass'
+  - 'create material entities of bundle copper'
+  - 'create material entities of bundle decorative_rock'
+  - 'create material entities of bundle electric'
+  - 'create material entities of bundle galv'
+  - 'create material entities of bundle irrigation'
+  - 'create material entities of bundle landscape'
+  - 'create material entities of bundle misc'
+  - 'create material entities of bundle pavers'
+  - 'create material entities of bundle plants'
+  - 'create material entities of bundle poly'
+  - 'create material entities of bundle pumps'
+  - 'create material entities of bundle pvc'
+  - 'create material entities of bundle shrubs'
+  - 'create material entities of bundle sod'
+  - 'create material entities of bundle trees'
+  - 'create material entities of bundle xmas'
+  - 'create material_suppliers entities'
+  - 'create material_suppliers entities of bundle supplier'
   - 'create positions entities of bundle role'
   - 'create property_system_controller entities of bundle controller'
   - 'create supplier entities of bundle supplier'
+  - 'create wo_material_list entities of bundle material_list'
+  - 'create wo_material_list_item entities of bundle items'
   - 'delete own contacts entities of bundle emergency_contacts'
   - 'edit any contacts entities of bundle emergency_contacts'
+  - 'edit any contract_notes entities of bundle note'
   - 'edit any department entities of bundle details'
+  - 'edit any lawn_and_garden_pests entities of bundle weed_types'
+  - 'edit any material entities of bundle annuals'
+  - 'edit any material entities of bundle brass'
+  - 'edit any material entities of bundle copper'
+  - 'edit any material entities of bundle decorative_rock'
+  - 'edit any material entities of bundle electric'
+  - 'edit any material entities of bundle galv'
+  - 'edit any material entities of bundle irrigation'
+  - 'edit any material entities of bundle landscape'
+  - 'edit any material entities of bundle misc'
+  - 'edit any material entities of bundle pavers'
+  - 'edit any material entities of bundle plants'
+  - 'edit any material entities of bundle poly'
+  - 'edit any material entities of bundle pumps'
+  - 'edit any material entities of bundle pvc'
+  - 'edit any material entities of bundle shrubs'
+  - 'edit any material entities of bundle sod'
+  - 'edit any material entities of bundle trees'
+  - 'edit any material entities of bundle xmas'
+  - 'edit any material_suppliers entities'
+  - 'edit any material_suppliers entities of bundle supplier'
   - 'edit any positions entities of bundle role'
   - 'edit any property_system_controller entities of bundle controller'
   - 'edit any supplier entities of bundle supplier'
+  - 'edit any wo_material_list entities of bundle material_list'
+  - 'edit any wo_material_list_item entities of bundle items'
   - 'edit own contacts entities of bundle emergency_contacts'
+  - 'edit own estimate_items entities of bundle materials'
+  - 'edit own lawn_and_garden_pests entities of bundle weed_types'
+  - 'edit own material entities of bundle annuals'
+  - 'edit own material entities of bundle brass'
+  - 'edit own material entities of bundle copper'
+  - 'edit own material entities of bundle decorative_rock'
+  - 'edit own material entities of bundle electric'
+  - 'edit own material entities of bundle galv'
+  - 'edit own material entities of bundle irrigation'
+  - 'edit own material entities of bundle landscape'
+  - 'edit own material entities of bundle misc'
+  - 'edit own material entities of bundle pavers'
+  - 'edit own material entities of bundle plants'
+  - 'edit own material entities of bundle poly'
+  - 'edit own material entities of bundle pumps'
+  - 'edit own material entities of bundle pvc'
+  - 'edit own material entities of bundle shrubs'
+  - 'edit own material entities of bundle sod'
+  - 'edit own material entities of bundle trees'
+  - 'edit own material entities of bundle xmas'
+  - 'edit own material_suppliers entities'
+  - 'edit own material_suppliers entities of bundle supplier'
+  - 'edit own wo_material_dumping entities of bundle load'
+  - 'edit own wo_material_list entities of bundle material_list'
+  - 'edit own wo_material_list_item entities of bundle items'
+  - 'use  The form mode default linked to  contract_sections_audit entity( log )'
+  - 'use contract sections ui'
   - 'use text format full_ai_html'
   - 'use text format full_html'
   - 'view any contacts entities of bundle emergency_contacts'
+  - 'view any contract_notes entities of bundle note'
+  - 'view any contract_sections_audit entities'
+  - 'view any contract_sections_audit entities of bundle log'
   - 'view any department entities of bundle details'
+  - 'view any lawn_and_garden_pests entities of bundle weed_types'
+  - 'view any material entities of bundle brass'
+  - 'view any material entities of bundle copper'
+  - 'view any material entities of bundle electric'
+  - 'view any material entities of bundle galv'
+  - 'view any material entities of bundle irrigation'
+  - 'view any material entities of bundle landscape'
+  - 'view any material entities of bundle misc'
+  - 'view any material entities of bundle pavers'
+  - 'view any material entities of bundle plants'
+  - 'view any material entities of bundle poly'
+  - 'view any material entities of bundle pumps'
+  - 'view any material entities of bundle pvc'
+  - 'view any material entities of bundle shrubs'
+  - 'view any material entities of bundle sod'
+  - 'view any material entities of bundle trees'
+  - 'view any material entities of bundle xmas'
+  - 'view any material_suppliers entities'
+  - 'view any material_suppliers entities of bundle supplier'
   - 'view any property_system_controller entities of bundle controller'
   - 'view any supplier entities of bundle supplier'
   - 'view own contacts entities of bundle emergency_contacts'
+  - 'view own contract_sections_audit entities of bundle log'
+  - 'view own lawn_and_garden_pests entities of bundle weed_types'
+  - 'view own material_suppliers entities'
+  - 'view the administration theme'

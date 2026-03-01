@@ -1,0 +1,29 @@
+uuid: 34bd17e5-9121-491c-844a-7f5986164a66
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.lawn_fertilizing
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:b744cc46-115a-44c0-bf41-edb5d59ab7d1'
+id: contract_sections.lawn_fertilizing.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: lawn_fertilizing
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: b744cc46-115a-44c0-bf41-edb5d59ab7d1
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

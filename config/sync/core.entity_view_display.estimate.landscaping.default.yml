@@ -4,22 +4,20 @@ status: true
 dependencies:
   config:
     - eck.eck_type.estimate.landscaping
-    - field.field.estimate.landscaping.field_address
     - field.field.estimate.landscaping.field_assigned_to
-    - field.field.estimate.landscaping.field_client_requested
-    - field.field.estimate.landscaping.field_email
+    - field.field.estimate.landscaping.field_estimate_request
     - field.field.estimate.landscaping.field_estimate_total
     - field.field.estimate.landscaping.field_estimate_type
-    - field.field.estimate.landscaping.field_line_items
-    - field.field.estimate.landscaping.field_name
-    - field.field.estimate.landscaping.field_new_client
-    - field.field.estimate.landscaping.field_phone
-    - field.field.estimate.landscaping.field_property
+    - field.field.estimate.landscaping.field_estimated_duration_days
+    - field.field.estimate.landscaping.field_is_current_revision
+    - field.field.estimate.landscaping.field_requires_subs
+    - field.field.estimate.landscaping.field_revision_number
+    - field.field.estimate.landscaping.field_revision_of
+    - field.field.estimate.landscaping.field_scope_elements
+    - field.field.estimate.landscaping.field_scope_summary
     - field.field.estimate.landscaping.field_stage
     - field.field.estimate.landscaping.field_work_order
-    - field.field.estimate.landscaping.field_zipcode
   module:
-    - editablefields
     - field_group
     - text
 third_party_settings:
@@ -152,12 +150,13 @@ content:
     third_party_settings: {  }
     weight: 8
     region: content
-  field_client_requested:
-    type: text_default
-    label: hidden
-    settings: {  }
+  field_estimate_request:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
     third_party_settings: {  }
-    weight: 6
+    weight: 12
     region: content
   field_estimate_total:
     type: number_decimal
@@ -170,21 +169,66 @@ content:
     third_party_settings: {  }
     weight: 8
     region: content
-  field_line_items:
-    type: editablefields_formatter
-    label: hidden
+  field_estimated_duration_days:
+    type: number_integer
+    label: above
     settings:
-      form_mode: default
-      behaviour: inline
-      bypass_access: 0
-      fallback_access: 0
-      display_mode_access: default
-      fallback_edit: 0
-      display_mode_edit: work_order
-      fields_ajax_trigger: ''
-      fields_ajax_trigger_event: change
+      thousand_separator: ''
+      prefix_suffix: true
     third_party_settings: {  }
-    weight: 10
+    weight: 18
+    region: content
+  field_is_current_revision:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  field_requires_subs:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 17
+    region: content
+  field_revision_number:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  field_revision_of:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_scope_elements:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 16
+    region: content
+  field_scope_summary:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 19
     region: content
   field_stage:
     type: entity_reference_label
@@ -197,15 +241,8 @@ content:
 hidden:
   changed: true
   created: true
-  field_address: true
   field_assigned_to: true
-  field_email: true
   field_estimate_type: true
-  field_name: true
-  field_new_client: true
-  field_phone: true
-  field_property: true
   field_work_order: true
-  field_zipcode: true
   title: true
   uid: true

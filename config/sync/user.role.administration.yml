@@ -18,6 +18,7 @@ dependencies:
     - eck.eck_type.client_type.client_type
     - eck.eck_type.contacts.contact
     - eck.eck_type.contacts.emergency_contacts
+    - eck.eck_type.contract_notes.note
     - eck.eck_type.contract_sections.aerating_of_lawn
     - eck.eck_type.contract_sections.aspen_twig_gall_control
     - eck.eck_type.contract_sections.christmas_decorations
@@ -41,6 +42,7 @@ dependencies:
     - eck.eck_type.contract_sections.trunk_bore_prevention
     - eck.eck_type.contract_sections.weed_spraying_landscape_beds
     - eck.eck_type.contract_sections.weed_spraying_of_misc_areas
+    - eck.eck_type.contract_sections_audit.log
     - eck.eck_type.contracts.commercial
     - eck.eck_type.contracts.residential
     - eck.eck_type.contracts.snow_removal
@@ -58,6 +60,7 @@ dependencies:
     - eck.eck_type.equipment.vehicles
     - eck.eck_type.equipment_check_in_out.check_in
     - eck.eck_type.equipment_status_update.update
+    - eck.eck_type.estimate_items.materials
     - eck.eck_type.handbook.cover
     - eck.eck_type.handbook.page
     - eck.eck_type.lawn_and_garden_pests.weed_types
@@ -80,6 +83,7 @@ dependencies:
     - eck.eck_type.material.sod
     - eck.eck_type.material.trees
     - eck.eck_type.material.xmas
+    - eck.eck_type.material_suppliers.supplier
     - eck.eck_type.ownership_record.record
     - eck.eck_type.phone_number.contacts
     - eck.eck_type.phone_number.profile_phone_numbers
@@ -227,6 +231,7 @@ dependencies:
     - comment
     - comment_notify
     - contact
+    - contract_sections_ui
     - dropzonejs
     - eck
     - eck_bundle_permissions
@@ -252,6 +257,7 @@ weight: -5
 is_admin: null
 permissions:
   - 'access contract_sections entity listing'
+  - 'access contract_sections_audit entity listing'
   - 'access contracts entity listing'
   - 'access help pages'
   - 'access shortcuts'
@@ -291,6 +297,7 @@ permissions:
   - 'create contacts entities'
   - 'create contacts entities of bundle contact'
   - 'create contacts entities of bundle emergency_contacts'
+  - 'create contract_notes entities of bundle note'
   - 'create contract_sections entities'
   - 'create contract_sections entities of bundle aerating_of_lawn'
   - 'create contract_sections entities of bundle aspen_twig_gall_control'
@@ -314,6 +321,7 @@ permissions:
   - 'create contract_sections entities of bundle trunk_bore_prevention'
   - 'create contract_sections entities of bundle weed_spraying_landscape_beds'
   - 'create contract_sections entities of bundle weed_spraying_of_misc_areas'
+  - 'create contract_sections_audit entities of bundle log'
   - 'create contracts entities'
   - 'create contracts entities of bundle commercial'
   - 'create contracts entities of bundle residential'
@@ -365,6 +373,8 @@ permissions:
   - 'create material entities of bundle sod'
   - 'create material entities of bundle trees'
   - 'create material entities of bundle xmas'
+  - 'create material_suppliers entities'
+  - 'create material_suppliers entities of bundle supplier'
   - 'create media'
   - 'create ownership_record entities'
   - 'create ownership_record entities of bundle record'
@@ -555,6 +565,7 @@ permissions:
   - 'delete any contracts entities of bundle residential'
   - 'delete any contracts entities of bundle snow_removal'
   - 'delete any phone_number entities of bundle contacts'
+  - 'delete any phone_number entities of bundle profile_phone_numbers'
   - 'delete any wo_chemicals_used entities of bundle aspen_twig_gall'
   - 'delete any wo_chemicals_used entities of bundle cooley_spruce_gall'
   - 'delete any wo_chemicals_used entities of bundle deciduous_bore'
@@ -779,6 +790,7 @@ permissions:
   - 'edit any contacts entities'
   - 'edit any contacts entities of bundle contact'
   - 'edit any contacts entities of bundle emergency_contacts'
+  - 'edit any contract_notes entities of bundle note'
   - 'edit any contract_sections entities'
   - 'edit any contract_sections entities of bundle aerating_of_lawn'
   - 'edit any contract_sections entities of bundle aspen_twig_gall_control'
@@ -853,6 +865,8 @@ permissions:
   - 'edit any material entities of bundle sod'
   - 'edit any material entities of bundle trees'
   - 'edit any material entities of bundle xmas'
+  - 'edit any material_suppliers entities'
+  - 'edit any material_suppliers entities of bundle supplier'
   - 'edit any ownership_record entities'
   - 'edit any ownership_record entities of bundle record'
   - 'edit any page content'
@@ -1055,6 +1069,7 @@ permissions:
   - 'edit own equipment_check_in_out entities of bundle check_in'
   - 'edit own equipment_status_update entities'
   - 'edit own equipment_status_update entities of bundle update'
+  - 'edit own estimate_items entities of bundle materials'
   - 'edit own forum content'
   - 'edit own handbook entities of bundle cover'
   - 'edit own handbook entities of bundle page'
@@ -1081,6 +1096,8 @@ permissions:
   - 'edit own material entities of bundle sod'
   - 'edit own material entities of bundle trees'
   - 'edit own material entities of bundle xmas'
+  - 'edit own material_suppliers entities'
+  - 'edit own material_suppliers entities of bundle supplier'
   - 'edit own ownership_record entities'
   - 'edit own ownership_record entities of bundle record'
   - 'edit own page content'
@@ -1214,6 +1231,14 @@ permissions:
   - 'execute bookmark_unflag node'
   - 'execute clone_material_items_action all'
   - 'execute comment_unpublish_by_keyword_action comment'
+  - 'execute contract_residential_mark_approved all'
+  - 'execute contract_residential_mark_changes_entered all'
+  - 'execute contract_residential_mark_ready_to_send all'
+  - 'execute contract_residential_mark_received_back all'
+  - 'execute contract_residential_mark_sent_posted all'
+  - 'execute contract_section_set_do_you_want_no all'
+  - 'execute contract_section_set_do_you_want_request_quote all'
+  - 'execute contract_section_set_do_you_want_yes all'
   - 'execute create_aerating_work_order_action all'
   - 'execute create_and_schedule_sprinkler_check_up_work_orders_action all'
   - 'execute create_aspen_twig_gall_work_order_action all'
@@ -1232,6 +1257,9 @@ permissions:
   - 'execute create_fertilizing_trees_and_shrubs_work_order_action all'
   - 'execute create_grub_prevention_work_order_action all'
   - 'execute create_pinion_pine_ips_beetle_work_order_action all'
+  - 'execute create_pinyon_pine_ips_beetle_fall_work_order_action all'
+  - 'execute create_pinyon_pine_ips_beetle_spring_work_order_action all'
+  - 'execute create_pinyon_pine_ips_beetle_summer_work_order_action all'
   - 'execute create_pre_emergent_work_order_action all'
   - 'execute create_spring_cleanup_work_order_action all'
   - 'execute create_sprinkler_start_up_work_order_action all'
@@ -1248,17 +1276,26 @@ permissions:
   - 'execute entity:publish_action client_type'
   - 'execute entity:publish_action comment'
   - 'execute entity:publish_action contacts'
+  - 'execute entity:publish_action contract_notes'
   - 'execute entity:publish_action contract_sections'
+  - 'execute entity:publish_action contract_sections_audit'
   - 'execute entity:publish_action contracts'
   - 'execute entity:publish_action county'
   - 'execute entity:publish_action crew_types'
+  - 'execute entity:publish_action department'
   - 'execute entity:publish_action employment'
   - 'execute entity:publish_action equipment'
   - 'execute entity:publish_action equipment_check_in_out'
   - 'execute entity:publish_action equipment_status_update'
+  - 'execute entity:publish_action estimate'
+  - 'execute entity:publish_action estimate_items'
+  - 'execute entity:publish_action estimate_notes'
+  - 'execute entity:publish_action handbook'
   - 'execute entity:publish_action lawn_and_garden_pests'
+  - 'execute entity:publish_action manual'
   - 'execute entity:publish_action manufacturer'
   - 'execute entity:publish_action material'
+  - 'execute entity:publish_action material_suppliers'
   - 'execute entity:publish_action media'
   - 'execute entity:publish_action menu_link_content'
   - 'execute entity:publish_action node'
@@ -1266,6 +1303,7 @@ permissions:
   - 'execute entity:publish_action paragraph'
   - 'execute entity:publish_action path_alias'
   - 'execute entity:publish_action phone_number'
+  - 'execute entity:publish_action positions'
   - 'execute entity:publish_action profile'
   - 'execute entity:publish_action properties'
   - 'execute entity:publish_action property'
@@ -1282,14 +1320,18 @@ permissions:
   - 'execute entity:publish_action property_sprinkler_system'
   - 'execute entity:publish_action property_ss_sources'
   - 'execute entity:publish_action property_ss_zones'
+  - 'execute entity:publish_action property_system_controller'
   - 'execute entity:publish_action property_zone_watering_time'
+  - 'execute entity:publish_action redirect'
   - 'execute entity:publish_action scheduling'
   - 'execute entity:publish_action site_content'
   - 'execute entity:publish_action site_landing_page'
+  - 'execute entity:publish_action sop'
   - 'execute entity:publish_action sprinkler_system_types'
   - 'execute entity:publish_action sprinkler_types'
   - 'execute entity:publish_action sq_ft_break_points'
   - 'execute entity:publish_action state'
+  - 'execute entity:publish_action supplier'
   - 'execute entity:publish_action taxonomy_term'
   - 'execute entity:publish_action testimonial'
   - 'execute entity:publish_action time_clock_entry'
@@ -1299,6 +1341,7 @@ permissions:
   - 'execute entity:publish_action wo_material_dumping'
   - 'execute entity:publish_action wo_material_list'
   - 'execute entity:publish_action wo_material_list_item'
+  - 'execute entity:publish_action wo_notes'
   - 'execute entity:publish_action wo_rental_equipment'
   - 'execute entity:publish_action wo_spraying_conditions'
   - 'execute entity:publish_action wo_status_updates'
@@ -1326,17 +1369,26 @@ permissions:
   - 'execute entity:unpublish_action client_type'
   - 'execute entity:unpublish_action comment'
   - 'execute entity:unpublish_action contacts'
+  - 'execute entity:unpublish_action contract_notes'
   - 'execute entity:unpublish_action contract_sections'
+  - 'execute entity:unpublish_action contract_sections_audit'
   - 'execute entity:unpublish_action contracts'
   - 'execute entity:unpublish_action county'
   - 'execute entity:unpublish_action crew_types'
+  - 'execute entity:unpublish_action department'
   - 'execute entity:unpublish_action employment'
   - 'execute entity:unpublish_action equipment'
   - 'execute entity:unpublish_action equipment_check_in_out'
   - 'execute entity:unpublish_action equipment_status_update'
+  - 'execute entity:unpublish_action estimate'
+  - 'execute entity:unpublish_action estimate_items'
+  - 'execute entity:unpublish_action estimate_notes'
+  - 'execute entity:unpublish_action handbook'
   - 'execute entity:unpublish_action lawn_and_garden_pests'
+  - 'execute entity:unpublish_action manual'
   - 'execute entity:unpublish_action manufacturer'
   - 'execute entity:unpublish_action material'
+  - 'execute entity:unpublish_action material_suppliers'
   - 'execute entity:unpublish_action media'
   - 'execute entity:unpublish_action menu_link_content'
   - 'execute entity:unpublish_action node'
@@ -1344,6 +1396,7 @@ permissions:
   - 'execute entity:unpublish_action paragraph'
   - 'execute entity:unpublish_action path_alias'
   - 'execute entity:unpublish_action phone_number'
+  - 'execute entity:unpublish_action positions'
   - 'execute entity:unpublish_action profile'
   - 'execute entity:unpublish_action properties'
   - 'execute entity:unpublish_action property'
@@ -1360,14 +1413,18 @@ permissions:
   - 'execute entity:unpublish_action property_sprinkler_system'
   - 'execute entity:unpublish_action property_ss_sources'
   - 'execute entity:unpublish_action property_ss_zones'
+  - 'execute entity:unpublish_action property_system_controller'
   - 'execute entity:unpublish_action property_zone_watering_time'
+  - 'execute entity:unpublish_action redirect'
   - 'execute entity:unpublish_action scheduling'
   - 'execute entity:unpublish_action site_content'
   - 'execute entity:unpublish_action site_landing_page'
+  - 'execute entity:unpublish_action sop'
   - 'execute entity:unpublish_action sprinkler_system_types'
   - 'execute entity:unpublish_action sprinkler_types'
   - 'execute entity:unpublish_action sq_ft_break_points'
   - 'execute entity:unpublish_action state'
+  - 'execute entity:unpublish_action supplier'
   - 'execute entity:unpublish_action taxonomy_term'
   - 'execute entity:unpublish_action testimonial'
   - 'execute entity:unpublish_action time_clock_entry'
@@ -1377,6 +1434,7 @@ permissions:
   - 'execute entity:unpublish_action wo_material_dumping'
   - 'execute entity:unpublish_action wo_material_list'
   - 'execute entity:unpublish_action wo_material_list_item'
+  - 'execute entity:unpublish_action wo_notes'
   - 'execute entity:unpublish_action wo_rental_equipment'
   - 'execute entity:unpublish_action wo_spraying_conditions'
   - 'execute entity:unpublish_action wo_status_updates'
@@ -1390,14 +1448,19 @@ permissions:
   - 'execute invoiced_flag work_order'
   - 'execute invoiced_unflag work_order'
   - 'execute mark_equipment_active_action all'
+  - 'execute mark_work_order_canceled_action all'
   - 'execute mark_work_order_invoiced_action all'
+  - 'execute mark_work_order_not_canceled_action all'
   - 'execute mark_work_order_not_invoiced_action all'
+  - 'execute mark_work_order_not_warrantied_action all'
+  - 'execute mark_work_order_warrantied_action all'
   - 'execute node_assign_owner_action node'
   - 'execute node_make_sticky_action node'
   - 'execute node_make_unsticky_action node'
   - 'execute node_promote_action node'
   - 'execute node_unpromote_action node'
   - 'execute node_unpublish_by_keyword_action node'
+  - 'execute properties_ensure_sprinkler_info_action properties'
   - 'execute put_on_landscape_weed_spray_route_action all'
   - 'execute put_on_misc_weed_spray_route_action all'
   - 'execute put_on_mow_route_action all'
@@ -1492,6 +1555,7 @@ permissions:
   - 'use  The form mode default linked to  comment entity( work_order_notes )'
   - 'use  The form mode default linked to  config_pages entity( business_setting )'
   - 'use  The form mode default linked to  contacts entity( contact )'
+  - 'use  The form mode default linked to  contract_sections_audit entity( log )'
   - 'use  The form mode default linked to  county entity( county )'
   - 'use  The form mode default linked to  employment entity( notes )'
   - 'use  The form mode default linked to  equipment entity( heavy_equipment )'
@@ -1682,6 +1746,7 @@ permissions:
   - 'use  The form mode register linked to  user entity( user )'
   - 'use add another'
   - 'use advanced search'
+  - 'use contract sections ui'
   - 'use text format basic_html'
   - 'use text format full_html'
   - 'view all media revisions'
@@ -1709,6 +1774,7 @@ permissions:
   - 'view any contacts entities'
   - 'view any contacts entities of bundle contact'
   - 'view any contacts entities of bundle emergency_contacts'
+  - 'view any contract_notes entities of bundle note'
   - 'view any contract_sections entities'
   - 'view any contract_sections entities of bundle aerating_of_lawn'
   - 'view any contract_sections entities of bundle aspen_twig_gall_control'
@@ -1733,6 +1799,8 @@ permissions:
   - 'view any contract_sections entities of bundle trunk_bore_prevention'
   - 'view any contract_sections entities of bundle weed_spraying_landscape_beds'
   - 'view any contract_sections entities of bundle weed_spraying_of_misc_areas'
+  - 'view any contract_sections_audit entities'
+  - 'view any contract_sections_audit entities of bundle log'
   - 'view any contracts entities'
   - 'view any contracts entities of bundle commercial'
   - 'view any contracts entities of bundle residential'
@@ -1784,6 +1852,8 @@ permissions:
   - 'view any material entities of bundle sod'
   - 'view any material entities of bundle trees'
   - 'view any material entities of bundle xmas'
+  - 'view any material_suppliers entities'
+  - 'view any material_suppliers entities of bundle supplier'
   - 'view any ownership_record entities'
   - 'view any ownership_record entities of bundle record'
   - 'view any phone_number entities'
@@ -1982,6 +2052,7 @@ permissions:
   - 'view own contract_sections entities of bundle trunk_bore_prevention'
   - 'view own contract_sections entities of bundle weed_spraying_landscape_beds'
   - 'view own contract_sections entities of bundle weed_spraying_of_misc_areas'
+  - 'view own contract_sections_audit entities of bundle log'
   - 'view own contracts entities'
   - 'view own contracts entities of bundle commercial'
   - 'view own contracts entities of bundle residential'
@@ -2019,6 +2090,7 @@ permissions:
   - 'view own material entities of bundle sod'
   - 'view own material entities of bundle trees'
   - 'view own material entities of bundle xmas'
+  - 'view own material_suppliers entities'
   - 'view own ownership_record entities of bundle record'
   - 'view own phone_number entities of bundle contacts'
   - 'view own phone_number entities of bundle profile_phone_numbers'

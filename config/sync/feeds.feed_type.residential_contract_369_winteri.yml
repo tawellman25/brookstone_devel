@@ -1,0 +1,113 @@
+uuid: ffc2486c-99c8-46b1-8457-a7f9439708d1
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.base_field_override.contract_sections.irrigation_shut_down.created
+    - eck.eck_type.contract_sections.irrigation_shut_down
+    - field.field.contract_sections.irrigation_shut_down.field_contract
+    - field.field.contract_sections.irrigation_shut_down.field_estimate
+    - field.field.contract_sections.irrigation_shut_down.field_last_year
+  module:
+    - eck
+    - feeds_log
+third_party_settings:
+  feeds_log:
+    status: true
+    operations:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+      cleaned: cleaned
+    items:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+    source: true
+label: 'Residential Contract - 369_winterizing'
+id: residential_contract_369_winteri
+description: "Contract's 369_winterizing Section"
+help: ''
+import_period: -1
+import_period_per_feed: false
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:contract_sections'
+processor_configuration:
+  values:
+    type: irrigation_shut_down
+  langcode: en
+  insert_new: 1
+  update_existing: 2
+  update_non_existent: _keep
+  skip_hash_check: false
+  skip_validation: false
+  skip_validation_types: {  }
+  authorize: true
+  revision: false
+  expire: -1
+  owner_feed_author: false
+  owner_id: 1
+custom_sources:
+  contract_id:
+    value: Contract_ID
+    label: Contract_ID
+    machine_name: contract_id
+    type: csv
+  entered_on:
+    value: entered_on
+    label: entered_on
+    machine_name: entered_on
+    type: csv
+  pre_369_winterizing:
+    value: PRE_369_winterizing
+    label: PRE_369_winterizing
+    machine_name: pre_369_winterizing
+    type: csv
+  est_369_winterizing:
+    value: EST_369_winterizing
+    label: EST_369_winterizing
+    machine_name: est_369_winterizing
+    type: csv
+mappings:
+  -
+    target: field_contract
+    map:
+      target_id: contract_id
+    settings:
+      language: ''
+      reference_by: id
+      feeds_item: guid
+      autocreate: 0
+      autocreate_bundle: residential
+  -
+    target: created
+    map:
+      value: entered_on
+    settings:
+      language: null
+      timezone: UTC
+  -
+    target: field_last_year
+    map:
+      value: pre_369_winterizing
+    settings:
+      language: null
+  -
+    target: field_estimate
+    map:
+      value: est_369_winterizing
+    settings:
+      language: null
+    unique: {  }

@@ -5,12 +5,15 @@ dependencies:
   config:
     - core.entity_view_mode.contract_sections.admin
     - eck.eck_type.contract_sections.aerating_of_lawn
+    - field.field.contract_sections.aerating_of_lawn.feeds_item
     - field.field.contract_sections.aerating_of_lawn.field_aerating_season
     - field.field.contract_sections.aerating_of_lawn.field_client_notes
     - field.field.contract_sections.aerating_of_lawn.field_contract
     - field.field.contract_sections.aerating_of_lawn.field_do_you_want
     - field.field.contract_sections.aerating_of_lawn.field_estimate
+    - field.field.contract_sections.aerating_of_lawn.field_estimate_request
     - field.field.contract_sections.aerating_of_lawn.field_last_year
+    - field.field.contract_sections.aerating_of_lawn.field_service
     - field.field.contract_sections.aerating_of_lawn.field_work_order
     - views.view.contract_sections_admin_view
   module:
@@ -33,7 +36,7 @@ third_party_settings:
       label: 'Office Administation'
       parent_name: ''
       region: content
-      weight: 7
+      weight: 3
       format_type: fieldset
       format_settings:
         classes: ''
@@ -51,42 +54,11 @@ third_party_settings:
         layout_settings:
           label: ''
         components:
-          82d50556-5915-4e6c-b2ad-9bbd4817f248:
-            uuid: 82d50556-5915-4e6c-b2ad-9bbd4817f248
+          f56c686a-f19b-41fb-a4e4-77df9b0e5c71:
+            uuid: f56c686a-f19b-41fb-a4e4-77df9b0e5c71
             region: content
             configuration:
-              id: 'field_block:contract_sections:aerating_of_lawn:changed'
-              label: Changed
-              label_display: '0'
-              provider: layout_builder
-              context_mapping:
-                entity: layout_builder.entity
-                view_mode: '@rules.current_date_context:current_date'
-              formatter:
-                type: timestamp
-                label: inline
-                settings:
-                  date_format: short
-                  custom_date_format: ''
-                  timezone: ''
-                  tooltip:
-                    date_format: long
-                    custom_date_format: ''
-                  time_diff:
-                    enabled: false
-                    future_format: '@interval hence'
-                    past_format: '@interval ago'
-                    granularity: 2
-                    refresh: 60
-                    description: ''
-                third_party_settings: {  }
-            weight: 7
-            additional: {  }
-          e1de2229-5882-45d5-a008-7d3a3200d242:
-            uuid: e1de2229-5882-45d5-a008-7d3a3200d242
-            region: content
-            configuration:
-              id: 'views_block:contract_sections_admin_view-block_14'
+              id: 'views_block:contract_sections_admin_view-block_1'
               label: ''
               label_display: '0'
               provider: views
@@ -94,7 +66,22 @@ third_party_settings:
               views_label: ''
               items_per_page: none
               exposed: {  }
-            weight: 6
+            weight: 9
+            additional: {  }
+          f174e072-0437-4da5-a080-ebd06e55c64b:
+            uuid: f174e072-0437-4da5-a080-ebd06e55c64b
+            region: content
+            configuration:
+              id: 'extra_field_block:contract_sections:aerating_of_lawn:contract_sections_audit_log_entity_view_1'
+              label: 'EVA: Contract - Sections - Audit Log - EVA'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                settings: {  }
+                third_party_settings: {  }
+            weight: 10
             additional: {  }
         third_party_settings: {  }
 id: contract_sections.aerating_of_lawn.admin
@@ -146,7 +133,7 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 5
+    weight: 1
     region: content
   field_client_notes:
     type: string
@@ -154,7 +141,7 @@ content:
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 6
+    weight: 2
     region: content
   field_contract:
     type: entity_reference_label
@@ -169,7 +156,7 @@ content:
     label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 4
+    weight: 0
     region: content
   field_estimate:
     type: string
@@ -197,4 +184,8 @@ content:
     weight: 5
     region: content
 hidden:
+  feeds_item: true
+  field_estimate_request: true
+  field_service: true
   field_work_order: true
+  title: true

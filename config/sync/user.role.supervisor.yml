@@ -18,6 +18,7 @@ dependencies:
     - eck.eck_type.client_type.client_type
     - eck.eck_type.contacts.contact
     - eck.eck_type.contacts.emergency_contacts
+    - eck.eck_type.contract_notes.note
     - eck.eck_type.contract_sections.aerating_of_lawn
     - eck.eck_type.contract_sections.aspen_twig_gall_control
     - eck.eck_type.contract_sections.christmas_decorations
@@ -41,6 +42,7 @@ dependencies:
     - eck.eck_type.contract_sections.trunk_bore_prevention
     - eck.eck_type.contract_sections.weed_spraying_landscape_beds
     - eck.eck_type.contract_sections.weed_spraying_of_misc_areas
+    - eck.eck_type.contract_sections_audit.log
     - eck.eck_type.contracts.commercial
     - eck.eck_type.contracts.residential
     - eck.eck_type.contracts.snow_removal
@@ -58,6 +60,7 @@ dependencies:
     - eck.eck_type.equipment.vehicles
     - eck.eck_type.equipment_check_in_out.check_in
     - eck.eck_type.equipment_status_update.update
+    - eck.eck_type.estimate_items.materials
     - eck.eck_type.handbook.cover
     - eck.eck_type.handbook.page
     - eck.eck_type.lawn_and_garden_pests.weed_types
@@ -80,6 +83,7 @@ dependencies:
     - eck.eck_type.material.sod
     - eck.eck_type.material.trees
     - eck.eck_type.material.xmas
+    - eck.eck_type.material_suppliers.supplier
     - eck.eck_type.ownership_record.record
     - eck.eck_type.phone_number.contacts
     - eck.eck_type.phone_number.profile_phone_numbers
@@ -240,6 +244,7 @@ label: Supervisor
 weight: -4
 is_admin: null
 permissions:
+  - 'access contract_sections_audit entity listing'
   - 'access help pages'
   - 'access shortcuts'
   - 'access site-wide contact form'
@@ -257,6 +262,7 @@ permissions:
   - 'create client_app entities'
   - 'create client_app entities of bundle app'
   - 'create contacts entities of bundle emergency_contacts'
+  - 'create contract_notes entities of bundle note'
   - 'create customer_profile profile'
   - 'create document media'
   - 'create employment entities'
@@ -296,6 +302,7 @@ permissions:
   - 'create material entities of bundle sod'
   - 'create material entities of bundle trees'
   - 'create material entities of bundle xmas'
+  - 'create material_suppliers entities of bundle supplier'
   - 'create media'
   - 'create ownership_record entities'
   - 'create ownership_record entities of bundle record'
@@ -517,6 +524,8 @@ permissions:
   - 'edit any material entities of bundle sod'
   - 'edit any material entities of bundle trees'
   - 'edit any material entities of bundle xmas'
+  - 'edit any material_suppliers entities'
+  - 'edit any material_suppliers entities of bundle supplier'
   - 'edit any page content'
   - 'edit any phone_number entities'
   - 'edit any phone_number entities of bundle contacts'
@@ -701,6 +710,7 @@ permissions:
   - 'edit own equipment_check_in_out entities of bundle check_in'
   - 'edit own equipment_status_update entities'
   - 'edit own equipment_status_update entities of bundle update'
+  - 'edit own estimate_items entities of bundle materials'
   - 'edit own forum content'
   - 'edit own help_manual content'
   - 'edit own image media'
@@ -725,6 +735,8 @@ permissions:
   - 'edit own material entities of bundle sod'
   - 'edit own material entities of bundle trees'
   - 'edit own material entities of bundle xmas'
+  - 'edit own material_suppliers entities'
+  - 'edit own material_suppliers entities of bundle supplier'
   - 'edit own ownership_record entities'
   - 'edit own ownership_record entities of bundle record'
   - 'edit own page content'
@@ -868,6 +880,9 @@ permissions:
   - 'execute create_fertilizing_trees_and_shrubs_work_order_action all'
   - 'execute create_grub_prevention_work_order_action all'
   - 'execute create_pinion_pine_ips_beetle_work_order_action all'
+  - 'execute create_pinyon_pine_ips_beetle_fall_work_order_action all'
+  - 'execute create_pinyon_pine_ips_beetle_spring_work_order_action all'
+  - 'execute create_pinyon_pine_ips_beetle_summer_work_order_action all'
   - 'execute create_pre_emergent_work_order_action all'
   - 'execute create_spring_cleanup_work_order_action all'
   - 'execute create_sprinkler_start_up_work_order_action all'
@@ -943,6 +958,7 @@ permissions:
   - 'use  The form mode default linked to  comment entity( employment_note_comments )'
   - 'use  The form mode default linked to  comment entity( equipment_comments )'
   - 'use  The form mode default linked to  comment entity( work_order_notes )'
+  - 'use  The form mode default linked to  contract_sections_audit entity( log )'
   - 'use  The form mode default linked to  county entity( county )'
   - 'use  The form mode default linked to  employment entity( notes )'
   - 'use  The form mode default linked to  equipment entity( heavy_equipment )'
@@ -1159,6 +1175,7 @@ permissions:
   - 'view any contacts entities'
   - 'view any contacts entities of bundle contact'
   - 'view any contacts entities of bundle emergency_contacts'
+  - 'view any contract_notes entities of bundle note'
   - 'view any contract_sections entities'
   - 'view any contract_sections entities of bundle aerating_of_lawn'
   - 'view any contract_sections entities of bundle aspen_twig_gall_control'
@@ -1183,6 +1200,8 @@ permissions:
   - 'view any contract_sections entities of bundle trunk_bore_prevention'
   - 'view any contract_sections entities of bundle weed_spraying_landscape_beds'
   - 'view any contract_sections entities of bundle weed_spraying_of_misc_areas'
+  - 'view any contract_sections_audit entities'
+  - 'view any contract_sections_audit entities of bundle log'
   - 'view any contracts entities'
   - 'view any contracts entities of bundle commercial'
   - 'view any contracts entities of bundle residential'
@@ -1234,6 +1253,8 @@ permissions:
   - 'view any material entities of bundle sod'
   - 'view any material entities of bundle trees'
   - 'view any material entities of bundle xmas'
+  - 'view any material_suppliers entities'
+  - 'view any material_suppliers entities of bundle supplier'
   - 'view any ownership_record entities'
   - 'view any ownership_record entities of bundle record'
   - 'view any phone_number entities'
@@ -1403,11 +1424,14 @@ permissions:
   - 'view own address entities'
   - 'view own contacts entities of bundle emergency_contacts'
   - 'view own contract_sections entities'
+  - 'view own contract_sections_audit entities of bundle log'
   - 'view own contracts entities'
   - 'view own customer_profile profile'
   - 'view own employment entities of bundle notes'
+  - 'view own lawn_and_garden_pests entities of bundle weed_types'
   - 'view own material entities of bundle annuals'
   - 'view own material entities of bundle decorative_rock'
+  - 'view own material_suppliers entities'
   - 'view own phone_number entities of bundle contacts'
   - 'view own phone_number entities of bundle profile_phone_numbers'
   - 'view own phone_number entities of bundle suppliers'

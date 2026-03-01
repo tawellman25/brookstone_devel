@@ -1,0 +1,29 @@
+uuid: d1a11fc4-056a-42f7-ae40-cedb5a9b6de6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.ips_beetle_on_pinion_pine
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:b91405cb-7c9e-4229-9dae-91078c95e32a'
+id: contract_sections.ips_beetle_on_pinion_pine.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: ips_beetle_on_pinion_pine
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: b91405cb-7c9e-4229-9dae-91078c95e32a
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

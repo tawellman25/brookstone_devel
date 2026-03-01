@@ -1,0 +1,70 @@
+uuid: 93c67eed-1f9c-40c4-be6e-871d94e4925a
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_form_mode.contract_sections.client
+    - eck.eck_type.contract_sections.winter_pruning
+    - field.field.contract_sections.winter_pruning.field_client_notes
+    - field.field.contract_sections.winter_pruning.field_contract
+    - field.field.contract_sections.winter_pruning.field_do_you_want
+    - field.field.contract_sections.winter_pruning.field_estimate
+    - field.field.contract_sections.winter_pruning.field_last_year
+    - field.field.contract_sections.winter_pruning.field_man_hours
+    - field.field.contract_sections.winter_pruning.field_service
+    - field.field.contract_sections.winter_pruning.field_set_your_budget
+    - field.field.contract_sections.winter_pruning.field_specific_plants
+    - field.field.contract_sections.winter_pruning.field_work_order
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: contract_sections.winter_pruning.client
+targetEntityType: contract_sections
+bundle: winter_pruning
+mode: client
+content:
+  field_client_notes:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_do_you_want:
+    type: options_buttons
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_set_your_budget:
+    type: number
+    weight: 1
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_specific_plants:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_contract: true
+  field_estimate: true
+  field_last_year: true
+  field_man_hours: true
+  field_service: true
+  field_work_order: true
+  path: true
+  title: true
+  uid: true

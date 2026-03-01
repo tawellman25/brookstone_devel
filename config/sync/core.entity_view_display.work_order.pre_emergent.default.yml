@@ -8,9 +8,11 @@ dependencies:
     - field.field.work_order.pre_emergent.field_billing_adjustment
     - field.field.work_order.pre_emergent.field_billing_notes
     - field.field.work_order.pre_emergent.field_client_app_wo_number
+    - field.field.work_order.pre_emergent.field_contact
     - field.field.work_order.pre_emergent.field_contract
     - field.field.work_order.pre_emergent.field_current_turf_sq_footage
     - field.field.work_order.pre_emergent.field_die_total
+    - field.field.work_order.pre_emergent.field_estimate
     - field.field.work_order.pre_emergent.field_estimated_price
     - field.field.work_order.pre_emergent.field_invoiced
     - field.field.work_order.pre_emergent.field_labor_total
@@ -41,7 +43,7 @@ third_party_settings:
       label: 'Spraying Condition'
       parent_name: ''
       region: content
-      weight: 11
+      weight: 10
       format_type: details
       format_settings:
         classes: ''
@@ -72,13 +74,13 @@ third_party_settings:
         - field_total_time
         - field_trip_fee
         - field_trucks
-        - field_wo_total
         - field_work_order_id
+        - field_wo_total
         - wo_current_property_owner_entity_view_1
       label: 'Office Administation'
       parent_name: ''
       region: hidden
-      weight: 21
+      weight: 22
       format_type: details
       format_settings:
         classes: ''
@@ -93,7 +95,7 @@ third_party_settings:
       label: Schedule
       parent_name: ''
       region: content
-      weight: 7
+      weight: 6
       format_type: details
       format_settings:
         classes: ''
@@ -108,7 +110,7 @@ third_party_settings:
       label: Photos
       parent_name: ''
       region: content
-      weight: 14
+      weight: 13
       format_type: details
       format_settings:
         classes: ''
@@ -122,7 +124,7 @@ third_party_settings:
       label: Files
       parent_name: ''
       region: hidden
-      weight: 20
+      weight: 21
       format_type: fieldset
       format_settings:
         classes: ''
@@ -138,7 +140,7 @@ third_party_settings:
       label: Hours
       parent_name: ''
       region: content
-      weight: 13
+      weight: 12
       format_type: details
       format_settings:
         classes: ''
@@ -153,7 +155,7 @@ third_party_settings:
       label: 'Chemicals Used'
       parent_name: ''
       region: content
-      weight: 12
+      weight: 11
       format_type: details
       format_settings:
         classes: ''
@@ -167,7 +169,7 @@ third_party_settings:
       label: Notes
       parent_name: ''
       region: content
-      weight: 4
+      weight: 3
       format_type: details
       format_settings:
         classes: ''
@@ -183,7 +185,7 @@ third_party_settings:
       label: 'Property Pre-Emergent Info'
       parent_name: ''
       region: content
-      weight: 6
+      weight: 5
       format_type: details
       format_settings:
         classes: ''
@@ -198,7 +200,7 @@ third_party_settings:
       label: 'Contract Details'
       parent_name: ''
       region: content
-      weight: 5
+      weight: 4
       format_type: details
       format_settings:
         classes: ''
@@ -221,6 +223,14 @@ content:
     third_party_settings: {  }
     weight: 0
     region: content
+  field_contact:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 16
+    region: content
   field_pre_emergent_season:
     type: entity_reference_label
     label: inline
@@ -239,7 +249,7 @@ content:
   flag_work_order_timer:
     settings: {  }
     third_party_settings: {  }
-    weight: 10
+    weight: 9
     region: content
   wo_chemicals_used_entity_view_1:
     settings: {  }
@@ -284,7 +294,7 @@ content:
   wo_sign_off_entity_view_4:
     settings: {  }
     third_party_settings: {  }
-    weight: 15
+    weight: 14
     region: content
   wo_spraying_conditions_entity_view_1:
     settings: {  }
@@ -294,12 +304,12 @@ content:
   wo_time_clock_buttons_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 8
+    weight: 7
     region: content
   wo_time_clock_buttons_entity_view_2:
     settings: {  }
     third_party_settings: {  }
-    weight: 9
+    weight: 8
     region: content
   wo_time_clock_entries_total_entity_view_1:
     settings: {  }
@@ -315,6 +325,7 @@ hidden:
   field_contract: true
   field_current_turf_sq_footage: true
   field_die_total: true
+  field_estimate: true
   field_estimated_price: true
   field_invoiced: true
   field_labor_total: true

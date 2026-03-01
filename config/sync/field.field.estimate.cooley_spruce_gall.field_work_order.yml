@@ -1,0 +1,29 @@
+uuid: 58f5e543-bc9a-438e-8b24-44372657099d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.cooley_spruce_gall
+    - eck.eck_type.work_order.cooley_spruce_gall
+    - field.storage.estimate.field_work_order
+id: estimate.cooley_spruce_gall.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: cooley_spruce_gall
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      cooley_spruce_gall: cooley_spruce_gall
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: cooley_spruce_gall
+field_type: entity_reference

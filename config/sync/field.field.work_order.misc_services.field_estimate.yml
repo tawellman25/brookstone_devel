@@ -1,0 +1,29 @@
+uuid: 1cecd451-66b4-42bf-b07a-c16165f1004d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - eck.eck_type.work_order.misc_services
+    - field.storage.work_order.field_estimate
+id: work_order.misc_services.field_estimate
+field_name: field_estimate
+entity_type: work_order
+bundle: misc_services
+label: Estimate
+description: "References the Estimate this Work Order was generated from.\r\n\r\nThis field is set automatically when a Work Order is created from an Estimate. \r\nDo not modify after Work Order creation.\r\n\r\nManual Work Orders should leave this field empty.\r\n\r\nUsed for:\r\n- Traceability from execution back to pricing intent\r\n- Reporting and margin analysis\r\n- Preventing duplicate Work Order creation from the same Estimate\r\n\r\nThis field does not control pricing. All Work Order totals are snapshots and remain independent of the Estimate after creation."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

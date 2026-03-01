@@ -4,11 +4,13 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contract_sections.irrigation_shut_down
+    - field.field.contract_sections.irrigation_shut_down.feeds_item
     - field.field.contract_sections.irrigation_shut_down.field_client_notes
     - field.field.contract_sections.irrigation_shut_down.field_contract
     - field.field.contract_sections.irrigation_shut_down.field_do_you_want
     - field.field.contract_sections.irrigation_shut_down.field_estimate
     - field.field.contract_sections.irrigation_shut_down.field_last_year
+    - field.field.contract_sections.irrigation_shut_down.field_service
     - field.field.contract_sections.irrigation_shut_down.field_work_order
   module:
     - field_group
@@ -121,6 +123,14 @@ content:
     third_party_settings: {  }
     weight: 3
     region: content
+  field_service:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
   field_work_order:
     type: entity_reference_label
     label: above
@@ -136,4 +146,5 @@ content:
     third_party_settings: {  }
     weight: 6
     region: content
-hidden: {  }
+hidden:
+  feeds_item: true

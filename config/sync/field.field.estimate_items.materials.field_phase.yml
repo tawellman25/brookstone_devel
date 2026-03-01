@@ -1,0 +1,33 @@
+uuid: 2a7240a4-c0c3-402b-82ad-c483ba651518
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_items.materials
+    - field.storage.estimate_items.field_phase
+    - taxonomy.vocabulary.estimate_phase
+  content:
+    - 'taxonomy_term:estimate_phase:fb6f5e82-0155-4d5c-9ea0-791c9366897a'
+id: estimate_items.materials.field_phase
+field_name: field_phase
+entity_type: estimate_items
+bundle: materials
+label: Phase
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: fb6f5e82-0155-4d5c-9ea0-791c9366897a
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      estimate_phase: estimate_phase
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

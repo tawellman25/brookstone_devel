@@ -1,0 +1,113 @@
+uuid: a639f178-914b-40b2-a324-1b324fec96be
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.base_field_override.contract_sections.dethatching_of_lawn_areas.created
+    - eck.eck_type.contract_sections.dethatching_of_lawn_areas
+    - field.field.contract_sections.dethatching_of_lawn_areas.field_contract
+    - field.field.contract_sections.dethatching_of_lawn_areas.field_estimate
+    - field.field.contract_sections.dethatching_of_lawn_areas.field_last_year
+  module:
+    - eck
+    - feeds_log
+third_party_settings:
+  feeds_log:
+    status: true
+    operations:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+      cleaned: cleaned
+    items:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+    source: true
+label: 'Residential Contract - 404_dethatching'
+id: residential_contract_404_dethatc
+description: 'Dethatching contract section imports'
+help: ''
+import_period: -1
+import_period_per_feed: false
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:contract_sections'
+processor_configuration:
+  values:
+    type: dethatching_of_lawn_areas
+  langcode: en
+  insert_new: 1
+  update_existing: 0
+  update_non_existent: _keep
+  skip_hash_check: false
+  skip_validation: false
+  skip_validation_types: {  }
+  authorize: true
+  revision: false
+  expire: -1
+  owner_feed_author: false
+  owner_id: 1
+custom_sources:
+  contract_id:
+    value: Contract_ID
+    label: Contract_ID
+    machine_name: contract_id
+    type: csv
+  entered_on:
+    value: entered_on
+    label: entered_on
+    machine_name: entered_on
+    type: csv
+  pre_404_dethatching:
+    value: PRE_404_dethatching
+    label: PRE_404_dethatching
+    machine_name: pre_404_dethatching
+    type: csv
+  est_404_dethatching:
+    value: EST_404_dethatching
+    label: EST_404_dethatching
+    machine_name: est_404_dethatching
+    type: csv
+mappings:
+  -
+    target: field_contract
+    map:
+      target_id: contract_id
+    settings:
+      language: null
+      reference_by: title
+      feeds_item: false
+      autocreate: false
+      autocreate_bundle: residential
+  -
+    target: created
+    map:
+      value: entered_on
+    settings:
+      language: null
+      timezone: UTC
+  -
+    target: field_last_year
+    map:
+      value: pre_404_dethatching
+    settings:
+      language: null
+  -
+    target: field_estimate
+    map:
+      value: est_404_dethatching
+    settings:
+      language: null
+    unique: {  }

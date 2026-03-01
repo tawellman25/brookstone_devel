@@ -1,0 +1,29 @@
+uuid: dd698644-6ad7-4cd3-b4fc-1f07354b85e6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.trunk_bore_prevention
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:eb5bdd96-c1d8-4f98-9de9-00e505897ccd'
+id: contract_sections.trunk_bore_prevention.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: trunk_bore_prevention
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: eb5bdd96-c1d8-4f98-9de9-00e505897ccd
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

@@ -4,12 +4,16 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contract_sections.summer_hedge_shrub_pruning
+    - field.field.contract_sections.summer_hedge_shrub_pruning.feeds_item
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_2nd_work_order
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_client_notes
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_contract
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_do_you_want
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_estimate
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_last_year
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_man_hours
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_service
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_set_your_budget
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_specific_plants
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_work_order
   module:
@@ -20,8 +24,6 @@ third_party_settings:
   field_group:
     group_office_administation:
       children:
-        - field_last_year
-        - field_estimate
         - field_man_hours
         - created
         - uid
@@ -31,12 +33,29 @@ third_party_settings:
       label: 'Office Administation'
       parent_name: ''
       region: content
-      weight: 9
+      weight: 5
       format_type: details
       format_settings:
         classes: ''
         show_empty_fields: false
         id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_last_year:
+      children:
+        - field_last_year
+        - field_estimate
+      label: 'Last Year'
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
         open: false
         description: ''
         required_fields: false
@@ -89,7 +108,7 @@ content:
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 6
+    weight: 2
     region: content
   field_contract:
     type: entity_reference_label
@@ -104,7 +123,7 @@ content:
     label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 4
+    weight: 0
     region: content
   field_estimate:
     type: string
@@ -135,13 +154,24 @@ content:
     third_party_settings: {  }
     weight: 3
     region: content
+  field_set_your_budget:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
   field_specific_plants:
     type: string
     label: inline
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 5
+    weight: 1
     region: content
   field_work_order:
     type: entity_reference_label
@@ -158,4 +188,8 @@ content:
     third_party_settings: {  }
     weight: 5
     region: content
-hidden: {  }
+hidden:
+  feeds_item: true
+  field_2nd_work_order: true
+  field_service: true
+  title: true

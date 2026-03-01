@@ -7,8 +7,10 @@ dependencies:
     - field.field.work_order.christmas_decorations.field_billing_adjustment
     - field.field.work_order.christmas_decorations.field_billing_notes
     - field.field.work_order.christmas_decorations.field_client_app_wo_number
+    - field.field.work_order.christmas_decorations.field_contact
     - field.field.work_order.christmas_decorations.field_contract
     - field.field.work_order.christmas_decorations.field_dump_fee_total
+    - field.field.work_order.christmas_decorations.field_estimate
     - field.field.work_order.christmas_decorations.field_estimated_price
     - field.field.work_order.christmas_decorations.field_invoiced
     - field.field.work_order.christmas_decorations.field_labor_total
@@ -28,7 +30,6 @@ dependencies:
     - field.field.work_order.christmas_decorations.field_work_todo_description
   module:
     - allowed_formats
-    - comment
     - field_group
     - field_layout
     - layout_discovery
@@ -102,11 +103,12 @@ third_party_settings:
         - field_scheduled
         - field_printed
         - field_service
+        - field_estimate
+        - field_contact
         - flag
         - created
         - uid
         - path
-        - field_work_order_notes
       label: 'System Info'
       region: content
       parent_name: ''
@@ -126,7 +128,7 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 15
+    weight: 17
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -153,6 +155,16 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_contact:
+    type: entity_reference_autocomplete
+    weight: 15
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_contract:
     type: entity_reference_autocomplete
     weight: 10
@@ -168,6 +180,16 @@ content:
     weight: 7
     region: content
     settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 14
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
       placeholder: ''
     third_party_settings: {  }
   field_estimated_price:
@@ -276,12 +298,6 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
-  field_work_order_notes:
-    type: comment_default
-    weight: 18
-    region: content
-    settings: {  }
-    third_party_settings: {  }
   field_work_todo_description:
     type: text_textarea
     weight: 3
@@ -294,19 +310,19 @@ content:
         hide_help: '1'
         hide_guidelines: '0'
   flag:
-    weight: 14
+    weight: 16
     region: content
     settings: {  }
     third_party_settings: {  }
   path:
     type: path
-    weight: 17
+    weight: 19
     region: content
     settings: {  }
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 16
+    weight: 18
     region: content
     settings:
       match_operator: CONTAINS
@@ -316,4 +332,5 @@ content:
     third_party_settings: {  }
 hidden:
   field_work_order_id: true
+  field_work_order_notes: true
   title: true

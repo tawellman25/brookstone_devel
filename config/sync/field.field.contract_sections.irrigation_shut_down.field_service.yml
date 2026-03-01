@@ -1,0 +1,29 @@
+uuid: ae5e81bd-0290-457a-8f4a-aad1aac6571e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_shut_down
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:68f5473e-2a88-4615-9e5d-8c03840571fd'
+id: contract_sections.irrigation_shut_down.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: irrigation_shut_down
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 68f5473e-2a88-4615-9e5d-8c03840571fd
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

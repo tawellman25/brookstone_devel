@@ -1,0 +1,109 @@
+uuid: 7aae50d2-1bc2-408b-a366-84641115ac24
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.service_scope_elements.field_internal_only
+    - field.field.taxonomy_term.service_scope_elements.field_scope_code
+    - taxonomy.vocabulary.service_scope_elements
+  module:
+    - feeds_log
+    - taxonomy
+third_party_settings:
+  feeds_log:
+    status: true
+    operations:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+      cleaned: cleaned
+    items:
+      created: created
+      updated: updated
+      deleted: deleted
+      skipped: skipped
+      failed: failed
+    source: true
+label: 'Service Scope Elements'
+id: service_scope_elements
+description: 'Importing of Service Scope Elements'
+help: ''
+import_period: -1
+import_period_per_feed: false
+fetcher: upload
+fetcher_configuration:
+  allowed_extensions: 'txt csv tsv xml opml'
+  directory: 'public://feeds'
+parser: csv
+parser_configuration:
+  delimiter: ','
+  no_headers: false
+  line_limit: 100
+processor: 'entity:taxonomy_term'
+processor_configuration:
+  values:
+    vid: service_scope_elements
+  langcode: en
+  insert_new: 1
+  update_existing: 2
+  update_non_existent: _keep
+  skip_hash_check: false
+  skip_validation: false
+  skip_validation_types: {  }
+  authorize: false
+  revision: false
+  expire: -1
+  owner_feed_author: false
+  owner_id: 0
+custom_sources:
+  label:
+    value: label
+    label: label
+    machine_name: label
+    type: csv
+  code:
+    value: code
+    label: code
+    machine_name: code
+    type: csv
+  description:
+    value: description
+    label: description
+    machine_name: description
+    type: csv
+  internal:
+    value: internal
+    label: internal
+    machine_name: internal
+    type: csv
+mappings:
+  -
+    target: name
+    map:
+      value: label
+    settings:
+      language: null
+    unique: {  }
+  -
+    target: field_scope_code
+    map:
+      value: code
+    settings:
+      language: null
+    unique:
+      value: 1
+  -
+    target: description
+    map:
+      value: description
+    settings:
+      language: null
+      format: plain_text
+  -
+    target: field_internal_only
+    map:
+      value: internal
+    settings:
+      language: null

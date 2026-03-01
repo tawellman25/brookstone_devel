@@ -1,0 +1,29 @@
+uuid: ed9a76d7-c18d-4d32-935f-6bbf11bd3305
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_items.subcontractor
+    - eck.eck_type.supplier.supplier
+    - field.storage.estimate_items.field_supplier
+id: estimate_items.subcontractor.field_supplier
+field_name: field_supplier
+entity_type: estimate_items
+bundle: subcontractor
+label: Supplier
+description: 'Select the external company performing this portion of the work. This field should only be used for subcontracted labor or specialty services billed to Brookstone. Internal crew work must use the Labor bundle instead. The selected subcontractor represents the base cost provider for this line item.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:supplier'
+  handler_settings:
+    target_bundles:
+      supplier: supplier
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

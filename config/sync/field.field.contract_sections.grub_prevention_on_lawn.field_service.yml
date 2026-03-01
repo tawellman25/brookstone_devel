@@ -1,0 +1,29 @@
+uuid: 435b4d03-df38-404f-8aa4-9daf421fb8ed
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.grub_prevention_on_lawn
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:6de9369f-2af8-4378-ab21-05cc3eaadd75'
+id: contract_sections.grub_prevention_on_lawn.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: grub_prevention_on_lawn
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 6de9369f-2af8-4378-ab21-05cc3eaadd75
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

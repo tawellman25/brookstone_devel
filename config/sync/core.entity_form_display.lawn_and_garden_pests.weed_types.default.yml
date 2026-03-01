@@ -8,6 +8,10 @@ dependencies:
     - field.field.lawn_and_garden_pests.weed_types.field_banner_image
     - field.field.lawn_and_garden_pests.weed_types.field_common_name
     - field.field.lawn_and_garden_pests.weed_types.field_description
+    - field.field.lawn_and_garden_pests.weed_types.field_growth_stage_mature
+    - field.field.lawn_and_garden_pests.weed_types.field_growth_stage_seeded
+    - field.field.lawn_and_garden_pests.weed_types.field_growth_stage_succulent
+    - field.field.lawn_and_garden_pests.weed_types.field_growth_stage_vegetative
     - field.field.lawn_and_garden_pests.weed_types.field_iconic_image
     - field.field.lawn_and_garden_pests.weed_types.field_leaf_category
     - field.field.lawn_and_garden_pests.weed_types.field_life_cycle
@@ -25,6 +29,7 @@ dependencies:
     - field_layout
     - image
     - layout_discovery
+    - path
     - text
 third_party_settings:
   field_layout:
@@ -36,16 +41,36 @@ third_party_settings:
       children:
         - uid
         - created
+        - path
       label: 'Office Administation'
       region: content
       parent_name: ''
-      weight: 14
+      weight: 15
       format_type: details
       format_settings:
         classes: ''
         show_empty_fields: false
         id: ''
         open: false
+        description: ''
+        required_fields: true
+    group_growth_stage_pictures:
+      children:
+        - field_growth_stage_succulent
+        - field_growth_stage_vegetative
+        - field_growth_stage_mature
+        - field_growth_stage_seeded
+      label: 'Growth Stage - Pictures'
+      region: content
+      parent_name: ''
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
         description: ''
         required_fields: true
 id: lawn_and_garden_pests.weed_types.default
@@ -61,7 +86,7 @@ content:
     third_party_settings: {  }
   field_appearance:
     type: text_textarea
-    weight: 8
+    weight: 9
     region: content
     settings:
       rows: 5
@@ -69,7 +94,7 @@ content:
     third_party_settings: {  }
   field_banner_image:
     type: image_image
-    weight: 13
+    weight: 14
     region: content
     settings:
       progress_indicator: throbber
@@ -85,7 +110,7 @@ content:
     third_party_settings: {  }
   field_description:
     type: text_textarea_with_summary
-    weight: 10
+    weight: 11
     region: content
     settings:
       rows: 9
@@ -93,9 +118,41 @@ content:
       placeholder: ''
       show_summary: false
     third_party_settings: {  }
+  field_growth_stage_mature:
+    type: image_image
+    weight: 33
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_growth_stage_seeded:
+    type: image_image
+    weight: 34
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_growth_stage_succulent:
+    type: image_image
+    weight: 31
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_growth_stage_vegetative:
+    type: image_image
+    weight: 32
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
   field_iconic_image:
     type: image_image
-    weight: 12
+    weight: 1
     region: content
     settings:
       progress_indicator: throbber
@@ -103,25 +160,17 @@ content:
     third_party_settings: {  }
   field_leaf_category:
     type: options_select
-    weight: 4
+    weight: 5
     region: content
     settings: {  }
     third_party_settings: {  }
   field_life_cycle:
     type: options_select
-    weight: 5
+    weight: 6
     region: content
     settings: {  }
     third_party_settings: {  }
   field_plant_family:
-    type: string_textfield
-    weight: 1
-    region: content
-    settings:
-      size: 60
-      placeholder: ''
-    third_party_settings: {  }
-  field_plant_genus:
     type: string_textfield
     weight: 2
     region: content
@@ -129,7 +178,7 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-  field_plant_species:
+  field_plant_genus:
     type: string_textfield
     weight: 3
     region: content
@@ -137,9 +186,17 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_plant_species:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_size:
     type: string_textfield
-    weight: 7
+    weight: 8
     region: content
     settings:
       size: 60
@@ -147,7 +204,7 @@ content:
     third_party_settings: {  }
   field_weed_categories:
     type: entity_reference_autocomplete
-    weight: 9
+    weight: 10
     region: content
     settings:
       match_operator: CONTAINS
@@ -157,7 +214,7 @@ content:
     third_party_settings: {  }
   field_weed_control_tips:
     type: text_textfield
-    weight: 11
+    weight: 12
     region: content
     settings:
       size: 60
@@ -168,11 +225,17 @@ content:
         hide_guidelines: '1'
   field_where:
     type: string_textfield
-    weight: 6
+    weight: 7
     region: content
     settings:
       size: 60
       placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 16
+    region: content
+    settings: {  }
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete

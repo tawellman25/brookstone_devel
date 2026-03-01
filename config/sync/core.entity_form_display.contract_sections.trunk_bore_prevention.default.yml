@@ -11,6 +11,7 @@ dependencies:
     - field.field.contract_sections.trunk_bore_prevention.field_estimate
     - field.field.contract_sections.trunk_bore_prevention.field_gallons_used
     - field.field.contract_sections.trunk_bore_prevention.field_last_year
+    - field.field.contract_sections.trunk_bore_prevention.field_service
     - field.field.contract_sections.trunk_bore_prevention.field_work_order
   module:
     - field_group
@@ -33,7 +34,7 @@ third_party_settings:
       label: Admin
       region: content
       parent_name: ''
-      weight: 6
+      weight: 3
       format_type: details_sidebar
       format_settings:
         classes: ''
@@ -100,6 +101,16 @@ content:
     settings:
       display_label: false
     third_party_settings: {  }
+  field_service:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_work_order:
     type: entity_reference_autocomplete
     weight: 8
@@ -112,4 +123,6 @@ content:
     third_party_settings: {  }
 hidden:
   created: true
+  path: true
+  title: true
   uid: true

@@ -1,0 +1,107 @@
+uuid: 484a89ec-9848-4d07-9e84-e89decbb066d
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.material.teammate
+    - eck.eck_type.material.trees
+    - field.field.material.trees.field_bloom_time
+    - field.field.material.trees.field_care_instructions
+    - field.field.material.trees.field_cultivar
+    - field.field.material.trees.field_description
+    - field.field.material.trees.field_fall_color
+    - field.field.material.trees.field_flower_color
+    - field.field.material.trees.field_height
+    - field.field.material.trees.field_installed_price
+    - field.field.material.trees.field_main_image
+    - field.field.material.trees.field_plant_color
+    - field.field.material.trees.field_plant_family
+    - field.field.material.trees.field_plant_genus
+    - field.field.material.trees.field_plant_species
+    - field.field.material.trees.field_price
+    - field.field.material.trees.field_quantity_in_stock
+    - field.field.material.trees.field_water_use
+    - field.field.material.trees.field_width
+  module:
+    - user
+id: material.trees.teammate
+targetEntityType: material
+bundle: trees
+mode: teammate
+content:
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_price:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_quantity_in_stock:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  material_supplier_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  field_bloom_time: true
+  field_care_instructions: true
+  field_cultivar: true
+  field_description: true
+  field_fall_color: true
+  field_flower_color: true
+  field_height: true
+  field_installed_price: true
+  field_main_image: true
+  field_plant_color: true
+  field_plant_family: true
+  field_plant_genus: true
+  field_plant_species: true
+  field_water_use: true
+  field_width: true

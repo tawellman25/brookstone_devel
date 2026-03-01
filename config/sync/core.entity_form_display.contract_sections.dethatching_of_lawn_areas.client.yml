@@ -5,16 +5,19 @@ dependencies:
   config:
     - core.entity_form_mode.contract_sections.client
     - eck.eck_type.contract_sections.dethatching_of_lawn_areas
+    - field.field.contract_sections.dethatching_of_lawn_areas.feeds_item
     - field.field.contract_sections.dethatching_of_lawn_areas.field_client_notes
     - field.field.contract_sections.dethatching_of_lawn_areas.field_contract
     - field.field.contract_sections.dethatching_of_lawn_areas.field_do_you_want
     - field.field.contract_sections.dethatching_of_lawn_areas.field_estimate
     - field.field.contract_sections.dethatching_of_lawn_areas.field_last_year
+    - field.field.contract_sections.dethatching_of_lawn_areas.field_service
     - field.field.contract_sections.dethatching_of_lawn_areas.field_work_order
   module:
     - field_group
     - field_layout
     - layout_discovery
+    - path
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -83,7 +86,15 @@ content:
     settings:
       display_label: false
     third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
 hidden:
   created: true
+  feeds_item: true
+  field_service: true
   field_work_order: true
   uid: true

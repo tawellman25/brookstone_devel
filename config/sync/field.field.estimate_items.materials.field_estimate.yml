@@ -1,0 +1,29 @@
+uuid: 81f6dd74-c2dd-428c-acaa-93119ecd7879
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - eck.eck_type.estimate_items.materials
+    - field.storage.estimate_items.field_estimate
+id: estimate_items.materials.field_estimate
+field_name: field_estimate
+entity_type: estimate_items
+bundle: materials
+label: Estimate
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

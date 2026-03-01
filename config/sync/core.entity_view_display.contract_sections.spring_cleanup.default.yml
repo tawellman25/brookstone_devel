@@ -4,12 +4,14 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contract_sections.spring_cleanup
+    - field.field.contract_sections.spring_cleanup.feeds_item
     - field.field.contract_sections.spring_cleanup.field_client_notes
     - field.field.contract_sections.spring_cleanup.field_contract
     - field.field.contract_sections.spring_cleanup.field_do_you_want
     - field.field.contract_sections.spring_cleanup.field_estimate
     - field.field.contract_sections.spring_cleanup.field_last_year
     - field.field.contract_sections.spring_cleanup.field_man_hours
+    - field.field.contract_sections.spring_cleanup.field_service
     - field.field.contract_sections.spring_cleanup.field_set_your_budget
     - field.field.contract_sections.spring_cleanup.field_specific_plants
     - field.field.contract_sections.spring_cleanup.field_work_order
@@ -136,6 +138,14 @@ content:
     third_party_settings: {  }
     weight: 3
     region: content
+  field_service:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
   field_set_your_budget:
     type: number_decimal
     label: inline
@@ -170,4 +180,5 @@ content:
     third_party_settings: {  }
     weight: 6
     region: content
-hidden: {  }
+hidden:
+  feeds_item: true

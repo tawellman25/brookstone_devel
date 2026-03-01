@@ -1,0 +1,29 @@
+uuid: c594f1ee-9078-4212-b460-38d253ebb215
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.plants
+    - field.storage.material.field_bloom_time
+    - taxonomy.vocabulary.bloom_time
+id: material.plants.field_bloom_time
+field_name: field_bloom_time
+entity_type: material
+bundle: plants
+label: 'Bloom Time'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      bloom_time: bloom_time
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

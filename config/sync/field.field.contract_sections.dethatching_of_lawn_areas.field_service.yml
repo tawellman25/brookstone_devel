@@ -1,0 +1,29 @@
+uuid: 7a20099f-771b-4471-a6b5-47185ac73923
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.dethatching_of_lawn_areas
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:00a9ca79-dbe6-40ce-a516-093d91a3e2e2'
+id: contract_sections.dethatching_of_lawn_areas.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: dethatching_of_lawn_areas
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 00a9ca79-dbe6-40ce-a516-093d91a3e2e2
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

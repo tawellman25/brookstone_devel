@@ -7,9 +7,17 @@ dependencies:
     - field.storage.contract_sections.field_client_notes
     - field.storage.contract_sections.field_last_year
     - field.storage.contract_sections.field_specific_plants
+    - user.role.administration
+    - user.role.administrator
+    - user.role.client
+    - user.role.site_admin
+    - user.role.site_assistant
+    - user.role.supervisor
+    - user.role.teammates
   module:
     - eck
     - eva
+    - user
     - views_url_path_arguments
 id: wo_summer_pruning_contract_info
 label: 'WO - Summer Pruning Contract Info'
@@ -297,8 +305,16 @@ display:
           sort_asc_label: Asc
           sort_desc_label: Desc
       access:
-        type: none
-        options: {  }
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            site_assistant: site_assistant
+            administration: administration
+            supervisor: supervisor
+            teammates: teammates
+            client: client
       cache:
         type: tag
         options: {  }
@@ -324,8 +340,8 @@ display:
           title: ''
           default_argument_type: views_url_path
           default_argument_options:
-            provide_static_segments: 0
             segments: ''
+            provide_static_segments: false
           summary_options:
             base_path: ''
             count: true
@@ -435,6 +451,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
+        - user.roles
       tags:
         - 'config:field.storage.contract_sections.field_client_notes'
         - 'config:field.storage.contract_sections.field_last_year'
@@ -455,6 +472,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
+        - user.roles
       tags:
         - 'config:field.storage.contract_sections.field_client_notes'
         - 'config:field.storage.contract_sections.field_last_year'

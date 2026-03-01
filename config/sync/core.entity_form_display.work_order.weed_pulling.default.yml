@@ -7,8 +7,10 @@ dependencies:
     - field.field.work_order.weed_pulling.field_billing_adjustment
     - field.field.work_order.weed_pulling.field_billing_notes
     - field.field.work_order.weed_pulling.field_client_app_wo_number
+    - field.field.work_order.weed_pulling.field_contact
     - field.field.work_order.weed_pulling.field_contract
     - field.field.work_order.weed_pulling.field_dump_fee_total
+    - field.field.work_order.weed_pulling.field_estimate
     - field.field.work_order.weed_pulling.field_estimated_price
     - field.field.work_order.weed_pulling.field_invoiced
     - field.field.work_order.weed_pulling.field_labor_total
@@ -28,7 +30,6 @@ dependencies:
     - field.field.work_order.weed_pulling.field_work_todo_description
   module:
     - allowed_formats
-    - comment
     - field_group
     - field_layout
     - layout_discovery
@@ -60,6 +61,7 @@ third_party_settings:
     group_billing:
       children:
         - field_estimated_price
+        - field_trucks
         - field_total_time
         - group_subtotals
         - field_billing_adjustment
@@ -87,7 +89,7 @@ third_party_settings:
       label: Subtotals
       region: content
       parent_name: group_billing
-      weight: 9
+      weight: 10
       format_type: fieldset
       format_settings:
         classes: ''
@@ -98,6 +100,8 @@ third_party_settings:
     group_system_info:
       children:
         - field_contract
+        - field_estimate
+        - field_contact
         - field_scheduled
         - field_printed
         - field_service
@@ -105,7 +109,6 @@ third_party_settings:
         - created
         - uid
         - path
-        - field_work_order_notes
       label: 'System Info'
       region: content
       parent_name: group_office_admin
@@ -125,20 +128,20 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 14
+    weight: 16
     region: content
     settings: {  }
     third_party_settings: {  }
   field_billing_adjustment:
     type: number
-    weight: 10
+    weight: 11
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_billing_notes:
     type: string_textfield
-    weight: 12
+    weight: 13
     region: content
     settings:
       size: 30
@@ -149,6 +152,16 @@ content:
     weight: 2
     region: content
     settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_contact:
+    type: entity_reference_autocomplete
+    weight: 11
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
       size: 60
       placeholder: ''
     third_party_settings: {  }
@@ -169,6 +182,16 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 10
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_estimated_price:
     type: number
     weight: 7
@@ -178,7 +201,7 @@ content:
     third_party_settings: {  }
   field_invoiced:
     type: boolean_checkbox
-    weight: 13
+    weight: 14
     region: content
     settings:
       display_label: true
@@ -192,7 +215,7 @@ content:
     third_party_settings: {  }
   field_printed:
     type: boolean_checkbox
-    weight: 11
+    weight: 13
     region: content
     settings:
       display_label: true
@@ -216,14 +239,14 @@ content:
     third_party_settings: {  }
   field_scheduled:
     type: boolean_checkbox
-    weight: 10
+    weight: 12
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
   field_service:
     type: entity_reference_autocomplete
-    weight: 12
+    weight: 14
     region: content
     settings:
       match_operator: CONTAINS
@@ -249,7 +272,7 @@ content:
     third_party_settings: {  }
   field_total_time:
     type: number
-    weight: 8
+    weight: 9
     region: content
     settings:
       placeholder: ''
@@ -263,23 +286,17 @@ content:
     third_party_settings: {  }
   field_trucks:
     type: number
-    weight: 18
+    weight: 8
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_wo_total:
     type: number
-    weight: 11
+    weight: 12
     region: content
     settings:
       placeholder: ''
-    third_party_settings: {  }
-  field_work_order_notes:
-    type: comment_default
-    weight: 18
-    region: content
-    settings: {  }
     third_party_settings: {  }
   field_work_todo_description:
     type: text_textarea
@@ -293,19 +310,19 @@ content:
         hide_help: '1'
         hide_guidelines: '0'
   flag:
-    weight: 13
+    weight: 15
     region: content
     settings: {  }
     third_party_settings: {  }
   path:
     type: path
-    weight: 17
+    weight: 18
     region: content
     settings: {  }
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 15
+    weight: 17
     region: content
     settings:
       match_operator: CONTAINS
@@ -315,4 +332,5 @@ content:
     third_party_settings: {  }
 hidden:
   field_work_order_id: true
+  field_work_order_notes: true
   title: true

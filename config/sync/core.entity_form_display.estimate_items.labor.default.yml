@@ -5,9 +5,14 @@ dependencies:
   config:
     - eck.eck_type.estimate_items.labor
     - field.field.estimate_items.labor.field_cost_subtotal
+    - field.field.estimate_items.labor.field_estimate
+    - field.field.estimate_items.labor.field_labor_class
     - field.field.estimate_items.labor.field_labor_type
     - field.field.estimate_items.labor.field_line_total
+    - field.field.estimate_items.labor.field_phase
+    - field.field.estimate_items.labor.field_pricing_class
     - field.field.estimate_items.labor.field_quantity
+    - field.field.estimate_items.labor.field_rate_per_ksqft
     - field.field.estimate_items.labor.field_unit_price
   module:
     - field_layout
@@ -29,6 +34,22 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 31
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_labor_class:
+    type: options_select
+    weight: 34
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_labor_type:
     type: entity_reference_autocomplete
     weight: 1
@@ -46,9 +67,32 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_phase:
+    type: entity_reference_autocomplete
+    weight: 32
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_pricing_class:
+    type: options_select
+    weight: 33
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_quantity:
     type: number
     weight: 0
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_rate_per_ksqft:
+    type: number
+    weight: 35
     region: content
     settings:
       placeholder: ''

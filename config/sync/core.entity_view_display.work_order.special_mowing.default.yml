@@ -3,16 +3,17 @@ langcode: en
 status: true
 dependencies:
   config:
-    - core.entity_view_display.comment.work_order_notes.default
     - eck.eck_type.work_order.special_mowing
     - field.field.work_order.special_mowing.field_atv_total
     - field.field.work_order.special_mowing.field_billing_adjustment
     - field.field.work_order.special_mowing.field_billing_notes
     - field.field.work_order.special_mowing.field_client_app_wo_number
+    - field.field.work_order.special_mowing.field_contact
     - field.field.work_order.special_mowing.field_contract
     - field.field.work_order.special_mowing.field_current_turf_sq_footage
     - field.field.work_order.special_mowing.field_day_of_week_to_mow
     - field.field.work_order.special_mowing.field_dump_fee_total
+    - field.field.work_order.special_mowing.field_estimate
     - field.field.work_order.special_mowing.field_estimated_price
     - field.field.work_order.special_mowing.field_invoiced
     - field.field.work_order.special_mowing.field_labor_total
@@ -33,7 +34,6 @@ dependencies:
     - field.field.work_order.special_mowing.field_work_order_notes
     - field.field.work_order.special_mowing.field_work_todo_description
   module:
-    - comment
     - options
     - text
     - user
@@ -83,7 +83,7 @@ content:
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 21
+    weight: 22
     region: content
   field_mowing_assigned_to:
     type: entity_reference_label
@@ -91,7 +91,7 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 20
+    weight: 21
     region: content
   field_property:
     type: entity_reference_label
@@ -117,15 +117,6 @@ content:
     third_party_settings: {  }
     weight: 5
     region: content
-  field_work_order_notes:
-    type: comment_default
-    label: above
-    settings:
-      view_mode: default
-      pager_id: 0
-    third_party_settings: {  }
-    weight: 22
-    region: content
   field_work_todo_description:
     type: text_default
     label: above
@@ -136,7 +127,7 @@ content:
   flag_work_order_timer:
     settings: {  }
     third_party_settings: {  }
-    weight: 19
+    weight: 20
     region: content
   title:
     type: string
@@ -166,45 +157,57 @@ content:
   wo_hours_grouping_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 11
+    weight: 13
     region: content
   wo_media_photos_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 12
+    weight: 14
+    region: content
+  wo_notes_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
     region: content
   wo_rented_equipment_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 13
+    weight: 15
+    region: content
+  wo_scheduled_teammate_view_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 12
     region: content
   wo_sign_off_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 15
+    weight: 16
     region: content
   wo_time_clock_buttons_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 16
+    weight: 17
     region: content
   wo_time_clock_buttons_entity_view_2:
     settings: {  }
     third_party_settings: {  }
-    weight: 17
+    weight: 18
     region: content
   wo_time_clock_entries_total_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 18
+    weight: 19
     region: content
 hidden:
   changed: true
   field_atv_total: true
   field_billing_adjustment: true
   field_billing_notes: true
+  field_contact: true
   field_contract: true
   field_dump_fee_total: true
+  field_estimate: true
   field_estimated_price: true
   field_invoiced: true
   field_labor_total: true
@@ -218,3 +221,4 @@ hidden:
   field_trip_fee: true
   field_wo_total: true
   field_work_order_id: true
+  field_work_order_notes: true

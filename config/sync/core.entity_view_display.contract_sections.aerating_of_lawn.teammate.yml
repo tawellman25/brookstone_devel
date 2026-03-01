@@ -5,12 +5,15 @@ dependencies:
   config:
     - core.entity_view_mode.contract_sections.teammate
     - eck.eck_type.contract_sections.aerating_of_lawn
+    - field.field.contract_sections.aerating_of_lawn.feeds_item
     - field.field.contract_sections.aerating_of_lawn.field_aerating_season
     - field.field.contract_sections.aerating_of_lawn.field_client_notes
     - field.field.contract_sections.aerating_of_lawn.field_contract
     - field.field.contract_sections.aerating_of_lawn.field_do_you_want
     - field.field.contract_sections.aerating_of_lawn.field_estimate
+    - field.field.contract_sections.aerating_of_lawn.field_estimate_request
     - field.field.contract_sections.aerating_of_lawn.field_last_year
+    - field.field.contract_sections.aerating_of_lawn.field_service
     - field.field.contract_sections.aerating_of_lawn.field_work_order
   module:
     - field_group
@@ -134,6 +137,14 @@ content:
     third_party_settings: {  }
     weight: 2
     region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
   uid:
     type: author
     label: inline
@@ -142,4 +153,7 @@ content:
     weight: 5
     region: content
 hidden:
+  feeds_item: true
+  field_estimate_request: true
+  field_service: true
   field_work_order: true

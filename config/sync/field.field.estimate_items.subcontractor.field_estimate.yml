@@ -1,0 +1,29 @@
+uuid: e7297b91-19e0-40ae-ab3e-8810dae49b39
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - eck.eck_type.estimate_items.subcontractor
+    - field.storage.estimate_items.field_estimate
+id: estimate_items.subcontractor.field_estimate
+field_name: field_estimate
+entity_type: estimate_items
+bundle: subcontractor
+label: Estimate
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

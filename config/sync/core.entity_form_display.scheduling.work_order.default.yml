@@ -6,6 +6,7 @@ dependencies:
     - eck.eck_type.scheduling.work_order
     - field.field.scheduling.work_order.field_assigned_to
     - field.field.scheduling.work_order.field_date
+    - field.field.scheduling.work_order.field_estimate
     - field.field.scheduling.work_order.field_notify_assigned_teammate
     - field.field.scheduling.work_order.field_rrule
     - field.field.scheduling.work_order.field_scheduled
@@ -36,6 +37,7 @@ third_party_settings:
         - uid
         - field_rrule
         - field_scheduled_date_and_time
+        - field_estimate
       label: 'Office Administation'
       region: content
       parent_name: ''
@@ -88,6 +90,16 @@ content:
       remove_seconds: false
       duration_overlay: true
       separator: to
+    third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 8
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
     third_party_settings: {  }
   field_notify_assigned_teammate:
     type: boolean_checkbox

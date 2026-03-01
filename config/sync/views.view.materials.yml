@@ -3,16 +3,27 @@ langcode: en
 status: true
 dependencies:
   config:
+    - eck.eck_type.material.irrigation
     - field.storage.material.field_cost_integer
+    - field.storage.material.field_installed_price
     - field.storage.material.field_main_image
+    - field.storage.material.field_manufacturer_item_number
     - field.storage.material.field_price
-    - field.storage.material.field_suppliers
+    - field.storage.material.field_price_updated
     - image.style.thumbnail
     - system.menu.admin
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.site_assistant
+    - user.role.supervisor
+    - user.role.teammates
   module:
     - colorbox
     - eck
+    - user
     - views_bulk_operations
+    - views_field_view
 id: materials
 label: Materials
 module: views
@@ -167,7 +178,7 @@ display:
           entity_field: type
           plugin_id: field
           label: Type
-          exclude: false
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -232,7 +243,7 @@ display:
           entity_field: id
           plugin_id: field
           label: ID
-          exclude: false
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -474,15 +485,15 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        field_suppliers:
-          id: field_suppliers
-          table: material__field_suppliers
-          field: field_suppliers
+        field_manufacturer_item_number:
+          id: field_manufacturer_item_number
+          table: material__field_manufacturer_item_number
+          field: field_manufacturer_item_number
           relationship: none
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: Supplier
+          label: 'MFG #'
           exclude: false
           alter:
             alter_text: false
@@ -523,11 +534,128 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          click_sort_column: target_id
-          type: entity_reference_label
+          click_sort_column: value
+          type: string
           settings:
-            link: true
-          group_column: target_id
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        view:
+          id: view
+          table: views
+          field: view
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: view
+          label: 'Supplier - Item#/SKU - Cost'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          view: material_supplier_info
+          display: block_1
+          arguments: '{{ raw_fields.id }}'
+        field_price_updated:
+          id: field_price_updated
+          table: material__field_price_updated
+          field: field_price_updated
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Updated
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: boolean
+          settings:
+            format: unicode-yes-no
+            format_custom_false: ''
+            format_custom_true: ''
+          group_column: value
           group_columns: {  }
           group_rows: true
           delta_limit: 0
@@ -603,8 +731,8 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        field_price:
-          id: field_price
+        field_price_1:
+          id: field_price_1
           table: material__field_price
           field: field_price
           relationship: none
@@ -612,7 +740,7 @@ display:
           admin_label: ''
           plugin_id: field
           label: Price
-          exclude: false
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -649,6 +777,72 @@ display:
           element_wrapper_class: ''
           element_default_classes: true
           empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_decimal
+          settings:
+            thousand_separator: ','
+            decimal_separator: .
+            scale: 2
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_installed_price:
+          id: field_installed_price
+          table: material__field_installed_price
+          field: field_installed_price
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Price
+          exclude: false
+          alter:
+            alter_text: true
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: '{{ field_price_1 }}'
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
@@ -721,27 +915,9 @@ display:
           hide_alter_empty: true
           destination: false
       pager:
-        type: full
+        type: none
         options:
           offset: 0
-          pagination_heading_level: h4
-          items_per_page: 50
-          total_pages: null
-          id: 0
-          tags:
-            next: ››
-            previous: ‹‹
-            first: '« First'
-            last: 'Last »'
-          expose:
-            items_per_page: false
-            items_per_page_label: 'Items per page'
-            items_per_page_options: '5, 10, 25, 50'
-            items_per_page_options_all: false
-            items_per_page_options_all_label: '- All -'
-            offset: false
-            offset_label: Offset
-          quantity: 9
       exposed_form:
         type: basic
         options:
@@ -753,10 +929,17 @@ display:
           sort_asc_label: Asc
           sort_desc_label: Desc
       access:
-        type: none
-        options: {  }
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            site_assistant: site_assistant
+            administration: administration
+            supervisor: supervisor
+            teammates: teammates
       cache:
-        type: tag
+        type: none
         options: {  }
       empty:
         area:
@@ -797,19 +980,19 @@ display:
             operator_list: {  }
             identifier: field_name_value
             required: false
-            remember: false
+            remember: true
             multiple: false
             remember_roles:
-              authenticated: authenticated
+              administrator: administrator
+              site_admin: site_admin
+              site_assistant: site_assistant
+              administration: administration
+              supervisor: supervisor
+              teammates: teammates
               anonymous: '0'
-              administrator: '0'
-              site_admin: '0'
-              administration: '0'
-              supervisor: '0'
-              teammates: '0'
+              authenticated: '0'
               client: '0'
               user: '0'
-              supplier: '0'
             placeholder: ''
             autocomplete_filter: 0
             autocomplete_min_chars: '0'
@@ -899,7 +1082,8 @@ display:
           entity_field: type
           plugin_id: bundle
           operator: in
-          value: {  }
+          value:
+            irrigation: irrigation
           group: 1
           exposed: true
           expose:
@@ -911,20 +1095,20 @@ display:
             operator_limit_selection: false
             operator_list: {  }
             identifier: type
-            required: false
-            remember: false
+            required: true
+            remember: true
             multiple: false
             remember_roles:
-              authenticated: authenticated
+              administrator: administrator
+              site_admin: site_admin
+              site_assistant: site_assistant
+              administration: administration
+              supervisor: supervisor
+              teammates: teammates
               anonymous: '0'
-              administrator: '0'
-              site_admin: '0'
-              administration: '0'
-              supervisor: '0'
-              teammates: '0'
+              authenticated: '0'
               client: '0'
               user: '0'
-              supplier: '0'
             reduce: false
           is_grouped: false
           group_info:
@@ -938,50 +1122,41 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
-        field_supplier_name_value:
-          id: field_supplier_name_value
-          table: supplier__field_supplier_name
-          field: field_supplier_name_value
-          relationship: field_suppliers
+        field_price_updated_value:
+          id: field_price_updated_value
+          table: material__field_price_updated
+          field: field_price_updated_value
+          relationship: none
           group_type: group
           admin_label: ''
-          plugin_id: string
-          operator: contains
-          value: ''
+          plugin_id: boolean
+          operator: '='
+          value: All
           group: 1
           exposed: true
           expose:
-            operator_id: field_supplier_name_value_op
-            label: Supplier
+            operator_id: ''
+            label: Updated
             description: ''
             use_operator: false
-            operator: field_supplier_name_value_op
+            operator: field_price_updated_value_op
             operator_limit_selection: false
             operator_list: {  }
-            identifier: supplier
+            identifier: field_price_updated_value
             required: false
-            remember: false
+            remember: true
             multiple: false
             remember_roles:
-              authenticated: authenticated
+              administrator: administrator
+              site_admin: site_admin
+              site_assistant: site_assistant
+              administration: administration
+              supervisor: supervisor
+              teammates: teammates
               anonymous: '0'
-              administrator: '0'
-              site_admin: '0'
-              administration: '0'
-              supervisor: '0'
-              teammates: '0'
+              authenticated: '0'
               client: '0'
               user: '0'
-            placeholder: ''
-            autocomplete_filter: 0
-            autocomplete_min_chars: '0'
-            autocomplete_items: '10'
-            autocomplete_field: ''
-            autocomplete_raw_suggestion: 1
-            autocomplete_raw_dropdown: 1
-            autocomplete_dependent: 0
-            autocomplete_contextual: 0
-            autocomplete_autosubmit: 0
           is_grouped: false
           group_info:
             label: ''
@@ -1016,16 +1191,17 @@ display:
             operator_list: {  }
             identifier: field_name_value_1
             required: false
-            remember: false
+            remember: true
             multiple: false
             remember_roles:
-              authenticated: authenticated
+              administrator: administrator
+              site_admin: site_admin
+              site_assistant: site_assistant
+              administration: administration
+              supervisor: supervisor
+              teammates: teammates
               anonymous: '0'
-              administrator: '0'
-              site_admin: '0'
-              administration: '0'
-              supervisor: '0'
-              teammates: '0'
+              authenticated: '0'
               client: '0'
               user: '0'
             placeholder: ''
@@ -1072,6 +1248,63 @@ display:
             operator_list: {  }
             identifier: field_manufacturer_item_number_value
             required: false
+            remember: true
+            multiple: false
+            remember_roles:
+              administrator: administrator
+              site_admin: site_admin
+              site_assistant: site_assistant
+              administration: administration
+              supervisor: supervisor
+              teammates: teammates
+              anonymous: '0'
+              authenticated: '0'
+              client: '0'
+              user: '0'
+            placeholder: ''
+            autocomplete_filter: 0
+            autocomplete_min_chars: '0'
+            autocomplete_items: '10'
+            autocomplete_field: ''
+            autocomplete_raw_suggestion: 1
+            autocomplete_raw_dropdown: 1
+            autocomplete_dependent: 0
+            autocomplete_contextual: 0
+            autocomplete_autosubmit: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+        field_discontinued_value:
+          id: field_discontinued_value
+          table: material__field_discontinued
+          field: field_discontinued_value
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: boolean
+          operator: '='
+          value: '0'
+          group: 1
+          exposed: true
+          expose:
+            operator_id: ''
+            label: Discontinued
+            description: ''
+            use_operator: false
+            operator: field_discontinued_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_discontinued_value
+            required: false
             remember: false
             multiple: false
             remember_roles:
@@ -1085,16 +1318,6 @@ display:
               teammates: '0'
               client: '0'
               user: '0'
-            placeholder: ''
-            autocomplete_filter: 0
-            autocomplete_min_chars: '0'
-            autocomplete_items: '10'
-            autocomplete_field: ''
-            autocomplete_raw_suggestion: 1
-            autocomplete_raw_dropdown: 1
-            autocomplete_dependent: 0
-            autocomplete_contextual: 0
-            autocomplete_autosubmit: 0
           is_grouped: false
           group_info:
             label: ''
@@ -1154,19 +1377,10 @@ display:
         options:
           query_comment: ''
           disable_sql_rewrite: false
-          distinct: false
+          distinct: true
           replica: false
           query_tags: {  }
       relationships:
-        field_suppliers:
-          id: field_suppliers
-          table: material__field_suppliers
-          field: field_suppliers
-          relationship: none
-          group_type: group
-          admin_label: Supplier
-          plugin_id: standard
-          required: false
         field_manufacturer:
           id: field_manufacturer
           table: material__field_manufacturer
@@ -1187,7 +1401,7 @@ display:
           plugin_id: text
           empty: false
           content:
-            value: "<a class=\"button--primary button js-form-submit form-submit\" target=\"_blank\" href=\"/admin/content/material/add?destination=/admin/office/materials\">Add Material</a>\r\n<a class=\"button--primary button js-form-submit form-submit\" target=\"_blank\" href=\"/admin/content/manufacturer/add/manufacturer?destination=/admin/office/materials\">Add Manufacturer</a>\r\n<a class=\"button--primary button js-form-submit form-submit\" target=\"_blank\" href=\"/admin/content/supplier/add/supplier?destination=admin/office/supplier\">Add Supplier</a>\r\n<a class=\"button--primary button js-form-submit form-submit\" target=\"_blank\" href=\"/admin/materials/chemicals\">Chemicals List</a>"
+            value: "<a class=\"button--primary button js-form-submit form-submit\" target=\"_blank\" href=\"/admin/content/material/add?destination=/admin/materials\">Add Material</a>\r\n<a class=\"button--primary button js-form-submit form-submit\" target=\"_blank\" href=\"/admin/content/manufacturer/add/manufacturer?destination=/admin/materials/manufacturers\">Add Manufacturer</a>\r\n<a class=\"button--primary button js-form-submit form-submit\" target=\"_blank\" href=\"/admin/content/supplier/add/supplier?destination=admin/office/suppliers\">Add Supplier</a>\r\n<a class=\"button--primary button js-form-submit form-submit\" target=\"_blank\" href=\"/admin/materials/chemicals\">Chemicals List</a>"
             format: full_html
           tokenize: false
       footer: {  }
@@ -1198,12 +1412,14 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - url.query_args
+        - user.roles
       tags:
         - 'config:field.storage.material.field_cost_integer'
+        - 'config:field.storage.material.field_installed_price'
         - 'config:field.storage.material.field_main_image'
+        - 'config:field.storage.material.field_manufacturer_item_number'
         - 'config:field.storage.material.field_price'
-        - 'config:field.storage.material.field_suppliers'
+        - 'config:field.storage.material.field_price_updated'
   page_1:
     id: page_1
     display_title: Page
@@ -1227,9 +1443,11 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - url.query_args
+        - user.roles
       tags:
         - 'config:field.storage.material.field_cost_integer'
+        - 'config:field.storage.material.field_installed_price'
         - 'config:field.storage.material.field_main_image'
+        - 'config:field.storage.material.field_manufacturer_item_number'
         - 'config:field.storage.material.field_price'
-        - 'config:field.storage.material.field_suppliers'
+        - 'config:field.storage.material.field_price_updated'

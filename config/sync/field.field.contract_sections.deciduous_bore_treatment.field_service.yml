@@ -1,0 +1,29 @@
+uuid: 9c60bae3-c261-467a-af13-0c2bd992dff0
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.deciduous_bore_treatment
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:b3e375c3-2bda-46ec-9499-f81ed6079220'
+id: contract_sections.deciduous_bore_treatment.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: deciduous_bore_treatment
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: b3e375c3-2bda-46ec-9499-f81ed6079220
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

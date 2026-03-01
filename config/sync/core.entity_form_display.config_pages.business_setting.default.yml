@@ -62,6 +62,8 @@ dependencies:
     - field.field.config_pages.business_setting.field_min_bag_increment
     - field.field.config_pages.business_setting.field_minimum_spray_fee
     - field.field.config_pages.business_setting.field_other_minimum_time
+    - field.field.config_pages.business_setting.field_overseeding_labor
+    - field.field.config_pages.business_setting.field_overseeding_seed_markup
     - field.field.config_pages.business_setting.field_pre_emergent_coverage
     - field.field.config_pages.business_setting.field_pre_emergent_rate
     - field.field.config_pages.business_setting.field_pre_emergt_min_time
@@ -149,7 +151,7 @@ third_party_settings:
       label: 'Trip Fees'
       region: content
       parent_name: ''
-      weight: 14
+      weight: 12
       format_type: details
       format_settings:
         classes: ''
@@ -210,7 +212,7 @@ third_party_settings:
       label: 'Spray Rates'
       region: content
       parent_name: ''
-      weight: 9
+      weight: 10
       format_type: details
       format_settings:
         classes: ''
@@ -331,7 +333,7 @@ third_party_settings:
       label: 'Snow Removal'
       region: content
       parent_name: ''
-      weight: 13
+      weight: 11
       format_type: details
       format_settings:
         classes: ''
@@ -528,9 +530,26 @@ third_party_settings:
     group_snow_removal_labor:
       children: {  }
       label: 'Snow Removal'
-      region: hidden
+      region: content
       parent_name: ''
-      weight: 20
+      weight: 14
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_overseeding:
+      children:
+        - field_overseeding_labor
+        - field_overseeding_seed_markup
+      label: Overseeding
+      region: content
+      parent_name: ''
+      weight: 9
       format_type: details
       format_settings:
         classes: ''
@@ -970,10 +989,46 @@ content:
     third_party_settings: {  }
   field_other_minimum_time:
     type: number
-    weight: 15
+    weight: 13
     region: content
     settings:
       placeholder: ''
+    third_party_settings: {  }
+  field_overseeding_labor:
+    type: inline_entity_form_complex
+    weight: 132
+    region: content
+    settings:
+      form_mode: default
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      allow_new: true
+      allow_existing: true
+      match_operator: CONTAINS
+      allow_duplicate: true
+      collapsible: false
+      collapsed: false
+      revision: false
+      removed_reference: delete
+    third_party_settings: {  }
+  field_overseeding_seed_markup:
+    type: inline_entity_form_complex
+    weight: 133
+    region: content
+    settings:
+      form_mode: default
+      override_labels: false
+      label_singular: ''
+      label_plural: ''
+      allow_new: true
+      allow_existing: true
+      match_operator: CONTAINS
+      allow_duplicate: true
+      collapsible: false
+      collapsed: false
+      revision: false
+      removed_reference: delete
     third_party_settings: {  }
   field_pre_emergent_coverage:
     type: number

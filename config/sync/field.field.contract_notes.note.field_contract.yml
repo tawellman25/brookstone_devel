@@ -1,0 +1,33 @@
+uuid: 5e4d2ecb-1dde-42eb-89d6-ab5d78194c74
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_notes.note
+    - eck.eck_type.contracts.commercial
+    - eck.eck_type.contracts.residential
+    - eck.eck_type.contracts.snow_removal
+    - field.storage.contract_notes.field_contract
+id: contract_notes.note.field_contract
+field_name: field_contract
+entity_type: contract_notes
+bundle: note
+label: Contract
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contracts'
+  handler_settings:
+    target_bundles:
+      commercial: commercial
+      residential: residential
+      snow_removal: snow_removal
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: commercial
+field_type: entity_reference

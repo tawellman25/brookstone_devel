@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contract_sections.weed_spraying_landscape_beds
+    - field.field.contract_sections.weed_spraying_landscape_beds.feeds_item
     - field.field.contract_sections.weed_spraying_landscape_beds.field_chemicals_used
     - field.field.contract_sections.weed_spraying_landscape_beds.field_client_notes
     - field.field.contract_sections.weed_spraying_landscape_beds.field_contract
@@ -11,6 +12,7 @@ dependencies:
     - field.field.contract_sections.weed_spraying_landscape_beds.field_estimate
     - field.field.contract_sections.weed_spraying_landscape_beds.field_gallons_used
     - field.field.contract_sections.weed_spraying_landscape_beds.field_last_year
+    - field.field.contract_sections.weed_spraying_landscape_beds.field_service
     - field.field.contract_sections.weed_spraying_landscape_beds.field_spraying_frequency
     - field.field.contract_sections.weed_spraying_landscape_beds.field_work_order
   module:
@@ -143,6 +145,14 @@ content:
     third_party_settings: {  }
     weight: 7
     region: content
+  field_service:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
   field_spraying_frequency:
     type: entity_reference_label
     label: inline
@@ -166,4 +176,5 @@ content:
     third_party_settings: {  }
     weight: 11
     region: content
-hidden: {  }
+hidden:
+  feeds_item: true

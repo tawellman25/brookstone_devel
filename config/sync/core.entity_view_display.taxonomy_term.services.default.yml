@@ -3,16 +3,20 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.taxonomy_term.services.field_allowed_scope_elements
     - field.field.taxonomy_term.services.field_banner_image
     - field.field.taxonomy_term.services.field_brookstone_tags
+    - field.field.taxonomy_term.services.field_default_estimate_item_temp
     - field.field.taxonomy_term.services.field_department
     - field.field.taxonomy_term.services.field_description
+    - field.field.taxonomy_term.services.field_estimate_service
     - field.field.taxonomy_term.services.field_estimate_types
     - field.field.taxonomy_term.services.field_home_page
     - field.field.taxonomy_term.services.field_home_page_slide
     - field.field.taxonomy_term.services.field_iconic_image
     - field.field.taxonomy_term.services.field_list_order
     - field.field.taxonomy_term.services.field_other_names
+    - field.field.taxonomy_term.services.field_parent_component
     - field.field.taxonomy_term.services.field_parent_service
     - field.field.taxonomy_term.services.field_service_bundle
     - field.field.taxonomy_term.services.field_service_name
@@ -21,6 +25,7 @@ dependencies:
     - field.field.taxonomy_term.services.field_work_order_service
     - taxonomy.vocabulary.services
   module:
+    - entity_reference_revisions
     - image
     - text
 id: taxonomy_term.services.default
@@ -28,6 +33,14 @@ targetEntityType: taxonomy_term
 bundle: services
 mode: default
 content:
+  field_allowed_scope_elements:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
   field_brookstone_tags:
     type: entity_reference_label
     label: above
@@ -35,6 +48,15 @@ content:
       link: true
     third_party_settings: {  }
     weight: 5
+    region: content
+  field_default_estimate_item_temp:
+    type: entity_reference_revisions_entity_view
+    label: above
+    settings:
+      view_mode: default
+      link: ''
+    third_party_settings: {  }
+    weight: 8
     region: content
   field_department:
     type: entity_reference_label
@@ -50,6 +72,16 @@ content:
     settings: {  }
     third_party_settings: {  }
     weight: 3
+    region: content
+  field_estimate_service:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 9
     region: content
   field_iconic_image:
     type: image
@@ -69,6 +101,16 @@ content:
       link_to_entity: true
     third_party_settings: {  }
     weight: 4
+    region: content
+  field_parent_component:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 6
     region: content
   field_subtitle:
     type: string

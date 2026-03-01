@@ -5,16 +5,19 @@ dependencies:
   config:
     - core.entity_form_mode.contract_sections.client
     - eck.eck_type.contract_sections.irrigation_shut_down
+    - field.field.contract_sections.irrigation_shut_down.feeds_item
     - field.field.contract_sections.irrigation_shut_down.field_client_notes
     - field.field.contract_sections.irrigation_shut_down.field_contract
     - field.field.contract_sections.irrigation_shut_down.field_do_you_want
     - field.field.contract_sections.irrigation_shut_down.field_estimate
     - field.field.contract_sections.irrigation_shut_down.field_last_year
+    - field.field.contract_sections.irrigation_shut_down.field_service
     - field.field.contract_sections.irrigation_shut_down.field_work_order
   module:
     - field_group
     - field_layout
     - layout_discovery
+    - path
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -83,7 +86,15 @@ content:
     settings:
       display_label: false
     third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
 hidden:
   created: true
+  feeds_item: true
+  field_service: true
   field_work_order: true
   uid: true

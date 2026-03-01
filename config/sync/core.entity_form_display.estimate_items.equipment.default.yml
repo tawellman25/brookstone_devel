@@ -7,13 +7,17 @@ dependencies:
     - field.field.estimate_items.equipment.field_cost_subtotal
     - field.field.estimate_items.equipment.field_equipment
     - field.field.estimate_items.equipment.field_equipment_for
+    - field.field.estimate_items.equipment.field_estimate
     - field.field.estimate_items.equipment.field_line_total
     - field.field.estimate_items.equipment.field_markup
+    - field.field.estimate_items.equipment.field_phase
+    - field.field.estimate_items.equipment.field_pricing_class
     - field.field.estimate_items.equipment.field_quantity
     - field.field.estimate_items.equipment.field_unit_price
   module:
     - field_layout
     - layout_discovery
+    - path
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -57,6 +61,16 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 31
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_line_total:
     type: number
     weight: 16
@@ -71,6 +85,22 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_phase:
+    type: entity_reference_autocomplete
+    weight: 32
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_pricing_class:
+    type: options_select
+    weight: 33
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_quantity:
     type: number
     weight: 11
@@ -84,6 +114,12 @@ content:
     region: content
     settings:
       placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
     third_party_settings: {  }
   title:
     type: string_textfield

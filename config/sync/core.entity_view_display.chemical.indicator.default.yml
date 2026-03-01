@@ -6,15 +6,24 @@ dependencies:
     - eck.eck_type.chemical.indicator
     - field.field.chemical.indicator.field_applications
     - field.field.chemical.indicator.field_description
+    - field.field.chemical.indicator.field_label_pic
     - field.field.chemical.indicator.field_logo
     - field.field.chemical.indicator.field_manufacturer
     - field.field.chemical.indicator.field_material_cost
     - field.field.chemical.indicator.field_material_form
+    - field.field.chemical.indicator.field_msds_sheet_update_link
     - field.field.chemical.indicator.field_name
+    - field.field.chemical.indicator.field_product_label_file
+    - field.field.chemical.indicator.field_safety_data_sheet
     - field.field.chemical.indicator.field_supplier
     - field.field.chemical.indicator.field_unit_of_measure_fertilizer
+    - image.style.max_1300x1300
+    - image.style.max_2600x2600
   module:
+    - colorbox
+    - file
     - image
+    - link
     - options
     - text
 id: chemical.indicator.default
@@ -55,6 +64,20 @@ content:
     third_party_settings: {  }
     weight: 7
     region: content
+  field_label_pic:
+    type: colorbox
+    label: hidden
+    settings:
+      colorbox_image_style: max_2600x2600
+      colorbox_gallery: post
+      colorbox_gallery_custom: ''
+      colorbox_caption: auto
+      colorbox_caption_custom: ''
+      colorbox_node_style: max_1300x1300
+      colorbox_node_style_first: max_1300x1300
+    third_party_settings: {  }
+    weight: 1
+    region: content
   field_logo:
     type: image
     label: above
@@ -92,6 +115,18 @@ content:
     third_party_settings: {  }
     weight: 19
     region: content
+  field_msds_sheet_update_link:
+    type: link
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 7
+    region: content
   field_name:
     type: string
     label: above
@@ -99,6 +134,22 @@ content:
       link_to_entity: false
     third_party_settings: {  }
     weight: 3
+    region: content
+  field_product_label_file:
+    type: file_default
+    label: above
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_safety_data_sheet:
+    type: file_default
+    label: above
+    settings:
+      use_description_as_link_text: true
+    third_party_settings: {  }
+    weight: 9
     region: content
   field_supplier:
     type: entity_reference_label

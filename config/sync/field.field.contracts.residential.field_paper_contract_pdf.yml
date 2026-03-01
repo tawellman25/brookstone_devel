@@ -21,17 +21,17 @@ third_party_settings:
       value: '[contracts:title].[file:ffp-extension-original]'
       options:
         slashes: false
-        pathauto: false
+        pathauto: true
         transliterate: false
     redirect: false
     retroactive_update: false
-    active_updating: false
+    active_updating: true
 id: contracts.residential.field_paper_contract_pdf
 field_name: field_paper_contract_pdf
 entity_type: contracts
 bundle: residential
 label: 'Paper Contract PDF'
-description: 'Please scan paper Contract as a PDF and upload it here.  This will allow supervisors and teammates to check the contract without having to contact the office.'
+description: "Upload the <b>signed paper contract</b> here.\r\nYou may upload a single PDF or up to two clear photos (JPG/PNG) showing the front and back of the signed contract.\r\nThis allows supervisors and teammates to review the contract without needing to contact the office."
 required: false
 translatable: false
 default_value: {  }
@@ -40,7 +40,7 @@ settings:
   handler: 'default:file'
   handler_settings: {  }
   file_directory: '[date:custom:Y]-[date:custom:m]'
-  file_extensions: pdf
+  file_extensions: 'pdf jpg jpeg png'
   max_filesize: ''
   description_field: false
 field_type: file

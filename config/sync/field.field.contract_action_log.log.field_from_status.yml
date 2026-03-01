@@ -1,0 +1,29 @@
+uuid: 3116ec71-885d-40fd-bb47-e3337c46caa1
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_action_log.log
+    - field.storage.contract_action_log.field_from_status
+    - taxonomy.vocabulary.contract_status
+id: contract_action_log.log.field_from_status
+field_name: field_from_status
+entity_type: contract_action_log
+bundle: log
+label: 'From Status'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      contract_status: contract_status
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

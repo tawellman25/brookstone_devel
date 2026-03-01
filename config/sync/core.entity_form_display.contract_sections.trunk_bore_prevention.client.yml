@@ -12,11 +12,13 @@ dependencies:
     - field.field.contract_sections.trunk_bore_prevention.field_estimate
     - field.field.contract_sections.trunk_bore_prevention.field_gallons_used
     - field.field.contract_sections.trunk_bore_prevention.field_last_year
+    - field.field.contract_sections.trunk_bore_prevention.field_service
     - field.field.contract_sections.trunk_bore_prevention.field_work_order
   module:
     - field_group
     - field_layout
     - layout_discovery
+    - path
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -100,7 +102,14 @@ content:
     settings:
       display_label: false
     third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
 hidden:
   created: true
+  field_service: true
   field_work_order: true
   uid: true

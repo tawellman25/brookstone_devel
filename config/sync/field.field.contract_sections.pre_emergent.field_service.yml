@@ -1,0 +1,29 @@
+uuid: 73609c95-bbe6-42bd-8a77-47214d8886e7
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.pre_emergent
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:5d7091c7-71aa-42cd-8b8e-76a347ba2bc6'
+id: contract_sections.pre_emergent.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: pre_emergent
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 5d7091c7-71aa-42cd-8b8e-76a347ba2bc6
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

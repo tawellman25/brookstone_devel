@@ -1,0 +1,29 @@
+uuid: c5fe6955-9ef0-4ccf-9569-db3f1de34a0b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_check_ups
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:341bf835-2d4e-4eff-9db4-867581663ac3'
+id: contract_sections.irrigation_check_ups.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: irrigation_check_ups
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 341bf835-2d4e-4eff-9db4-867581663ac3
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

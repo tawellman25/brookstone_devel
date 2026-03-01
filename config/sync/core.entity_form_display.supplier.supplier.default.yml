@@ -4,12 +4,24 @@ status: true
 dependencies:
   config:
     - eck.eck_type.supplier.supplier
+    - field.field.supplier.supplier.field_account_number
     - field.field.supplier.supplier.field_address
     - field.field.supplier.supplier.field_contacts
+    - field.field.supplier.supplier.field_delivery_available
     - field.field.supplier.supplier.field_logo
     - field.field.supplier.supplier.field_notes
+    - field.field.supplier.supplier.field_ordering_email
+    - field.field.supplier.supplier.field_ordering_method
+    - field.field.supplier.supplier.field_ordering_portal_url
+    - field.field.supplier.supplier.field_payment_notes
+    - field.field.supplier.supplier.field_payment_terms
     - field.field.supplier.supplier.field_phone_numbers
+    - field.field.supplier.supplier.field_pickup_location_notes
+    - field.field.supplier.supplier.field_purchase_notes
+    - field.field.supplier.supplier.field_shipping_notes
+    - field.field.supplier.supplier.field_standard_lead_time_days
     - field.field.supplier.supplier.field_supplier_name
+    - field.field.supplier.supplier.field_supplier_status
     - field.field.supplier.supplier.field_supplier_type
     - field.field.supplier.supplier.field_website
     - image.style.thumbnail
@@ -21,6 +33,7 @@ dependencies:
     - layout_discovery
     - link
     - path
+    - text
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -121,6 +134,14 @@ content:
     region: content
     settings: {  }
     third_party_settings: {  }
+  field_account_number:
+    type: string_textfield
+    weight: 33
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_address:
     type: inline_entity_form_simple
     weight: 4
@@ -147,6 +168,13 @@ content:
       collapsed: false
       revision: false
     third_party_settings: {  }
+  field_delivery_available:
+    type: boolean_checkbox
+    weight: 38
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
   field_logo:
     type: image_image
     weight: 1
@@ -163,6 +191,42 @@ content:
       rows: 5
       placeholder: ''
     third_party_settings: {  }
+  field_ordering_email:
+    type: email_default
+    weight: 34
+    region: content
+    settings:
+      placeholder: ''
+      size: 60
+    third_party_settings: {  }
+  field_ordering_method:
+    type: options_select
+    weight: 36
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_ordering_portal_url:
+    type: link_default
+    weight: 35
+    region: content
+    settings:
+      placeholder_url: ''
+      placeholder_title: ''
+    third_party_settings: {  }
+  field_payment_notes:
+    type: text_textarea
+    weight: 44
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_payment_terms:
+    type: options_select
+    weight: 43
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_phone_numbers:
     type: inline_entity_form_simple
     weight: 3
@@ -176,6 +240,37 @@ content:
       collapsed: false
       revision: false
     third_party_settings: {  }
+  field_pickup_location_notes:
+    type: text_textarea
+    weight: 41
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_purchase_notes:
+    type: text_textarea
+    weight: 37
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_shipping_notes:
+    type: text_textarea
+    weight: 40
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_standard_lead_time_days:
+    type: number
+    weight: 39
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
   field_supplier_name:
     type: string_textfield
     weight: 0
@@ -183,6 +278,12 @@ content:
     settings:
       size: 60
       placeholder: ''
+    third_party_settings: {  }
+  field_supplier_status:
+    type: options_select
+    weight: 42
+    region: content
+    settings: {  }
     third_party_settings: {  }
   field_supplier_type:
     type: options_buttons

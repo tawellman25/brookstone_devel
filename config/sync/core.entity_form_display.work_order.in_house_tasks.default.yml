@@ -6,7 +6,9 @@ dependencies:
     - eck.eck_type.work_order.in_house_tasks
     - field.field.work_order.in_house_tasks.field_billing_adjustment
     - field.field.work_order.in_house_tasks.field_billing_notes
+    - field.field.work_order.in_house_tasks.field_contact
     - field.field.work_order.in_house_tasks.field_dump_fee_total
+    - field.field.work_order.in_house_tasks.field_estimate
     - field.field.work_order.in_house_tasks.field_invoiced
     - field.field.work_order.in_house_tasks.field_labor_total
     - field.field.work_order.in_house_tasks.field_material_chemical_total
@@ -68,11 +70,12 @@ third_party_settings:
         required_fields: true
     group_system_info:
       children:
-        - created
-        - uid
-        - field_printed
-        - field_work_order_id
+        - field_estimate
+        - field_contact
         - field_service
+        - uid
+        - created
+        - field_printed
         - path
       label: 'System Info'
       region: content
@@ -93,7 +96,7 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 4
+    weight: 9
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -112,11 +115,31 @@ content:
       size: 30
       placeholder: ''
     third_party_settings: {  }
+  field_contact:
+    type: entity_reference_autocomplete
+    weight: 6
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_dump_fee_total:
     type: number
     weight: 10
     region: content
     settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
       placeholder: ''
     third_party_settings: {  }
   field_invoiced:
@@ -142,7 +165,7 @@ content:
     third_party_settings: {  }
   field_printed:
     type: boolean_checkbox
-    weight: 6
+    weight: 10
     region: content
     settings:
       display_label: true
@@ -173,7 +196,7 @@ content:
     third_party_settings: {  }
   field_service:
     type: entity_reference_autocomplete
-    weight: 8
+    weight: 7
     region: content
     settings:
       match_operator: CONTAINS
@@ -189,7 +212,7 @@ content:
     third_party_settings: {  }
   field_supervisor:
     type: entity_reference_autocomplete
-    weight: 0
+    weight: 1
     region: content
     settings:
       match_operator: CONTAINS
@@ -218,13 +241,6 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
-  field_work_order_id:
-    type: number
-    weight: 7
-    region: content
-    settings:
-      placeholder: ''
-    third_party_settings: {  }
   field_work_order_notes:
     type: comment_default
     weight: 2
@@ -233,7 +249,7 @@ content:
     third_party_settings: {  }
   field_work_todo_description:
     type: text_textarea
-    weight: 1
+    weight: 2
     region: content
     settings:
       rows: 5
@@ -249,13 +265,13 @@ content:
     third_party_settings: {  }
   path:
     type: path
-    weight: 9
+    weight: 11
     region: content
     settings: {  }
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 5
+    weight: 8
     region: content
     settings:
       match_operator: CONTAINS
@@ -264,4 +280,5 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
+  field_work_order_id: true
   title: true

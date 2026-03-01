@@ -4,12 +4,14 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contract_sections.irrigation_check_ups
+    - field.field.contract_sections.irrigation_check_ups.feeds_item
     - field.field.contract_sections.irrigation_check_ups.field_check_up_frequency
     - field.field.contract_sections.irrigation_check_ups.field_client_notes
     - field.field.contract_sections.irrigation_check_ups.field_contract
     - field.field.contract_sections.irrigation_check_ups.field_do_you_want
     - field.field.contract_sections.irrigation_check_ups.field_estimate
     - field.field.contract_sections.irrigation_check_ups.field_last_year
+    - field.field.contract_sections.irrigation_check_ups.field_service
     - field.field.contract_sections.irrigation_check_ups.field_work_order
   module:
     - field_group
@@ -130,6 +132,14 @@ content:
     third_party_settings: {  }
     weight: 3
     region: content
+  field_service:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
   field_work_order:
     type: entity_reference_label
     label: above
@@ -145,4 +155,5 @@ content:
     third_party_settings: {  }
     weight: 5
     region: content
-hidden: {  }
+hidden:
+  feeds_item: true

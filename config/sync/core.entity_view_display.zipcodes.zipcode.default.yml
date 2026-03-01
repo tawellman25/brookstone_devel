@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - eck.eck_type.zipcodes.zipcode
+    - field.field.zipcodes.zipcode.field_check_up_route_day
     - field.field.zipcodes.zipcode.field_city
     - field.field.zipcodes.zipcode.field_county
     - field.field.zipcodes.zipcode.field_state
@@ -11,6 +12,7 @@ dependencies:
     - field.field.zipcodes.zipcode.field_zipcode
     - field.field.zipcodes.zipcode.field_zipcode_description
   module:
+    - options
     - text
 id: zipcodes.zipcode.default
 targetEntityType: zipcodes
@@ -35,6 +37,13 @@ content:
         refresh: 60
     third_party_settings: {  }
     weight: 1
+    region: content
+  field_check_up_route_day:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
     region: content
   field_city:
     type: entity_reference_label

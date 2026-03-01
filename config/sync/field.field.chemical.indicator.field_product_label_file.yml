@@ -1,0 +1,46 @@
+uuid: dbd8251b-1769-408a-9e6b-83717e21c392
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.chemical.indicator
+    - field.storage.chemical.field_product_label_file
+  module:
+    - file
+    - filefield_paths
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: chemical/fertilizer/labels/files
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: '[file:ffp-name-only-original].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: chemical.indicator.field_product_label_file
+field_name: field_product_label_file
+entity_type: chemical
+bundle: indicator
+label: 'Product Label File'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: chemical/fertilizer/labels/files
+  file_extensions: 'txt pdf'
+  max_filesize: ''
+  description_field: false
+field_type: file

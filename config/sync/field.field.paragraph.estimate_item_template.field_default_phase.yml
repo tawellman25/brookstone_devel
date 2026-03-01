@@ -1,0 +1,33 @@
+uuid: a488deab-f3f2-40ba-bc0a-7abefa899bba
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.paragraph.field_default_phase
+    - paragraphs.paragraphs_type.estimate_item_template
+    - taxonomy.vocabulary.estimate_phase
+  content:
+    - 'taxonomy_term:estimate_phase:fb6f5e82-0155-4d5c-9ea0-791c9366897a'
+id: paragraph.estimate_item_template.field_default_phase
+field_name: field_default_phase
+entity_type: paragraph
+bundle: estimate_item_template
+label: 'Default Phase'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: fb6f5e82-0155-4d5c-9ea0-791c9366897a
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      estimate_phase: estimate_phase
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contract_sections.lawn_fertilizing
+    - field.field.contract_sections.lawn_fertilizing.feeds_item
     - field.field.contract_sections.lawn_fertilizing.field_2nd_work_order
     - field.field.contract_sections.lawn_fertilizing.field_3rd_work_order
     - field.field.contract_sections.lawn_fertilizing.field_4th_work_order
@@ -15,6 +16,7 @@ dependencies:
     - field.field.contract_sections.lawn_fertilizing.field_fertilizer_app_season
     - field.field.contract_sections.lawn_fertilizing.field_last_year
     - field.field.contract_sections.lawn_fertilizing.field_pounds_used
+    - field.field.contract_sections.lawn_fertilizing.field_service
     - field.field.contract_sections.lawn_fertilizing.field_work_order
   module:
     - field_group
@@ -183,6 +185,14 @@ content:
     third_party_settings: {  }
     weight: 4
     region: content
+  field_service:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
   field_work_order:
     type: entity_reference_label
     label: above
@@ -198,4 +208,5 @@ content:
     third_party_settings: {  }
     weight: 6
     region: content
-hidden: {  }
+hidden:
+  feeds_item: true

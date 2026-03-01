@@ -1,0 +1,29 @@
+uuid: 9ddda667-9500-4238-b86a-142f40f56a03
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_action_log.request_log
+    - eck.eck_type.estimate_request.standard
+    - field.storage.estimate_action_log.field_request
+id: estimate_action_log.request_log.field_request
+field_name: field_request
+entity_type: estimate_action_log
+bundle: request_log
+label: Request
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate_request'
+  handler_settings:
+    target_bundles:
+      standard: standard
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

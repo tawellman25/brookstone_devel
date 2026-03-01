@@ -1,0 +1,29 @@
+uuid: 680e8357-2c23-4ae6-9b44-7e1a01169199
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.lawn_mowing_and_trimming
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:4d31dcff-b6b7-4e77-b082-71d7ffbec452'
+id: contract_sections.lawn_mowing_and_trimming.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: lawn_mowing_and_trimming
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 4d31dcff-b6b7-4e77-b082-71d7ffbec452
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: 42f35f59-51c1-4e78-937a-5b903afb4f1e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_start_up
+    - eck.eck_type.work_order.christmas_decorations
+    - field.storage.contract_sections.field_2nd_work_order
+id: contract_sections.irrigation_start_up.field_2nd_work_order
+field_name: field_2nd_work_order
+entity_type: contract_sections
+bundle: irrigation_start_up
+label: 'Take Down Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      christmas_decorations: christmas_decorations
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: christmas_decorations
+field_type: entity_reference

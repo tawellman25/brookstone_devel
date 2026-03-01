@@ -1,0 +1,80 @@
+uuid: 2f5f4699-a56d-41a2-b732-5fa61ce5d322
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.paragraph.estimate_item_template.field_default_label
+    - field.field.paragraph.estimate_item_template.field_default_markup_percent
+    - field.field.paragraph.estimate_item_template.field_default_phase
+    - field.field.paragraph.estimate_item_template.field_default_pricing_class
+    - field.field.paragraph.estimate_item_template.field_default_quantity
+    - field.field.paragraph.estimate_item_template.field_default_unit_price
+    - field.field.paragraph.estimate_item_template.field_item_bundle_type
+    - paragraphs.paragraphs_type.estimate_item_template
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: paragraph.estimate_item_template.default
+targetEntityType: paragraph
+bundle: estimate_item_template
+mode: default
+content:
+  field_default_label:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_default_markup_percent:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_default_phase:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_default_pricing_class:
+    type: options_select
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_default_quantity:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_default_unit_price:
+    type: number
+    weight: 6
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_item_bundle_type:
+    type: options_select
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  created: true
+  status: true

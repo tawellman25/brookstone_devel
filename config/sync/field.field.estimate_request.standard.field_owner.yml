@@ -1,0 +1,38 @@
+uuid: 9fc2ce0b-f446-44af-bda9-11be762b4a6a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_request.standard
+    - field.storage.estimate_request.field_owner
+id: estimate_request.standard.field_owner
+field_name: field_owner
+entity_type: estimate_request
+bundle: standard
+label: Owner
+description: "Select the legal <b>Property Owner</b> responsible for this Estimate Request at the time it is created.</br>\r\nThis field represents the billing and authorization authority for this request and is stored as a point-in-time snapshot.</br>\r\nIf property ownership changes in the future, this value will not update automatically."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        client: client
+        administrator: '0'
+        site_admin: '0'
+        site_assistant: '0'
+        administration: '0'
+        supervisor: '0'
+        teammates: '0'
+        user: '0'
+    include_anonymous: true
+field_type: entity_reference

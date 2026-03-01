@@ -7,8 +7,10 @@ dependencies:
     - field.field.work_order.summer_pruning.field_billing_adjustment
     - field.field.work_order.summer_pruning.field_billing_notes
     - field.field.work_order.summer_pruning.field_client_app_wo_number
+    - field.field.work_order.summer_pruning.field_contact
     - field.field.work_order.summer_pruning.field_contract
     - field.field.work_order.summer_pruning.field_dump_fee_total
+    - field.field.work_order.summer_pruning.field_estimate
     - field.field.work_order.summer_pruning.field_estimated_price
     - field.field.work_order.summer_pruning.field_invoiced
     - field.field.work_order.summer_pruning.field_labor_total
@@ -104,9 +106,9 @@ third_party_settings:
         classes: ''
         show_empty_fields: false
         id: ''
-        open: false
+        label_as_html: false
+        open: true
         description: ''
-        required_fields: false
     group_contract_information:
       children:
         - wo_summer_pruning_contract_info_entity_view_1
@@ -132,15 +134,6 @@ content:
       link_to_entity: false
     third_party_settings: {  }
     weight: 0
-    region: content
-  field_trucks:
-    type: number_integer
-    label: above
-    settings:
-      thousand_separator: ''
-      prefix_suffix: true
-    third_party_settings: {  }
-    weight: 12
     region: content
   field_work_todo_description:
     type: text_default
@@ -209,8 +202,10 @@ hidden:
   created: true
   field_billing_adjustment: true
   field_billing_notes: true
+  field_contact: true
   field_contract: true
   field_dump_fee_total: true
+  field_estimate: true
   field_estimated_price: true
   field_invoiced: true
   field_labor_total: true
@@ -223,6 +218,7 @@ hidden:
   field_supervisor: true
   field_total_time: true
   field_trip_fee: true
+  field_trucks: true
   field_wo_total: true
   field_work_order_id: true
   field_work_order_notes: true

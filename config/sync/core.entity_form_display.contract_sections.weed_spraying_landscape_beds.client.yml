@@ -5,6 +5,7 @@ dependencies:
   config:
     - core.entity_form_mode.contract_sections.client
     - eck.eck_type.contract_sections.weed_spraying_landscape_beds
+    - field.field.contract_sections.weed_spraying_landscape_beds.feeds_item
     - field.field.contract_sections.weed_spraying_landscape_beds.field_chemicals_used
     - field.field.contract_sections.weed_spraying_landscape_beds.field_client_notes
     - field.field.contract_sections.weed_spraying_landscape_beds.field_contract
@@ -12,12 +13,14 @@ dependencies:
     - field.field.contract_sections.weed_spraying_landscape_beds.field_estimate
     - field.field.contract_sections.weed_spraying_landscape_beds.field_gallons_used
     - field.field.contract_sections.weed_spraying_landscape_beds.field_last_year
+    - field.field.contract_sections.weed_spraying_landscape_beds.field_service
     - field.field.contract_sections.weed_spraying_landscape_beds.field_spraying_frequency
     - field.field.contract_sections.weed_spraying_landscape_beds.field_work_order
   module:
     - field_group
     - field_layout
     - layout_discovery
+    - path
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -107,7 +110,15 @@ content:
     region: content
     settings: {  }
     third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
 hidden:
   created: true
+  feeds_item: true
+  field_service: true
   field_work_order: true
   uid: true

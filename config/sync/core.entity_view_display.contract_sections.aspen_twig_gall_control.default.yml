@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contract_sections.aspen_twig_gall_control
+    - field.field.contract_sections.aspen_twig_gall_control.feeds_item
     - field.field.contract_sections.aspen_twig_gall_control.field_chemicals_used
     - field.field.contract_sections.aspen_twig_gall_control.field_client_notes
     - field.field.contract_sections.aspen_twig_gall_control.field_contract
@@ -11,6 +12,7 @@ dependencies:
     - field.field.contract_sections.aspen_twig_gall_control.field_estimate
     - field.field.contract_sections.aspen_twig_gall_control.field_gallons_used
     - field.field.contract_sections.aspen_twig_gall_control.field_last_year
+    - field.field.contract_sections.aspen_twig_gall_control.field_service
     - field.field.contract_sections.aspen_twig_gall_control.field_work_order
   module:
     - field_group
@@ -30,7 +32,7 @@ third_party_settings:
       label: 'Office Administation'
       parent_name: ''
       region: content
-      weight: 8
+      weight: 3
       format_type: fieldset
       format_settings:
         classes: ''
@@ -77,7 +79,7 @@ content:
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 7
+    weight: 1
     region: content
   field_contract:
     type: entity_reference_label
@@ -92,7 +94,7 @@ content:
     label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 6
+    weight: 0
     region: content
   field_estimate:
     type: string
@@ -127,7 +129,7 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 8
+    weight: 2
     region: content
   uid:
     type: author
@@ -138,3 +140,6 @@ content:
     region: content
 hidden:
   changed: true
+  feeds_item: true
+  field_service: true
+  title: true

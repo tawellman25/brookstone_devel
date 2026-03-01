@@ -1,0 +1,29 @@
+uuid: 78d64aa7-97e0-48b5-850d-4cd95087b754
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.cooley_spruce_gall_treatment
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:0b600a78-ab90-4576-984b-991beb2d80ce'
+id: contract_sections.cooley_spruce_gall_treatment.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: cooley_spruce_gall_treatment
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 0b600a78-ab90-4576-984b-991beb2d80ce
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

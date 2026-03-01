@@ -1,0 +1,33 @@
+uuid: 637cf4d1-eb09-44c1-a636-b2e2d6c27c49
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_items.subcontractor
+    - field.storage.estimate_items.field_phase
+    - taxonomy.vocabulary.estimate_phase
+  content:
+    - 'taxonomy_term:estimate_phase:fb6f5e82-0155-4d5c-9ea0-791c9366897a'
+id: estimate_items.subcontractor.field_phase
+field_name: field_phase
+entity_type: estimate_items
+bundle: subcontractor
+label: Phase
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: fb6f5e82-0155-4d5c-9ea0-791c9366897a
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      estimate_phase: estimate_phase
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

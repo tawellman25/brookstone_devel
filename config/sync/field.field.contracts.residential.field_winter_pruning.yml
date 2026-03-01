@@ -1,0 +1,29 @@
+uuid: 6fd3c27b-650b-4781-b60c-1e73da654454
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.winter_pruning
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_winter_pruning
+id: contracts.residential.field_winter_pruning
+field_name: field_winter_pruning
+entity_type: contracts
+bundle: residential
+label: 'Winter Pruning'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contract_sections'
+  handler_settings:
+    target_bundles:
+      winter_pruning: winter_pruning
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

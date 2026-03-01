@@ -3,16 +3,20 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.taxonomy_term.services.field_allowed_scope_elements
     - field.field.taxonomy_term.services.field_banner_image
     - field.field.taxonomy_term.services.field_brookstone_tags
+    - field.field.taxonomy_term.services.field_default_estimate_item_temp
     - field.field.taxonomy_term.services.field_department
     - field.field.taxonomy_term.services.field_description
+    - field.field.taxonomy_term.services.field_estimate_service
     - field.field.taxonomy_term.services.field_estimate_types
     - field.field.taxonomy_term.services.field_home_page
     - field.field.taxonomy_term.services.field_home_page_slide
     - field.field.taxonomy_term.services.field_iconic_image
     - field.field.taxonomy_term.services.field_list_order
     - field.field.taxonomy_term.services.field_other_names
+    - field.field.taxonomy_term.services.field_parent_component
     - field.field.taxonomy_term.services.field_parent_service
     - field.field.taxonomy_term.services.field_service_bundle
     - field.field.taxonomy_term.services.field_service_name
@@ -26,6 +30,7 @@ dependencies:
     - field_layout
     - image
     - layout_discovery
+    - paragraphs
     - path
     - text
 third_party_settings:
@@ -41,6 +46,7 @@ third_party_settings:
         - field_iconic_image
         - field_banner_image
         - field_other_names
+        - field_brookstone_tags
       label: 'Public View'
       region: content
       parent_name: group_office_tabs
@@ -76,11 +82,15 @@ third_party_settings:
         - name
         - field_department
         - field_work_order_service
+        - field_estimate_service
+        - field_parent_component
         - field_list_order
         - field_service_bundle
         - field_sop_code
         - field_estimate_types
+        - field_allowed_scope_elements
         - status
+        - field_default_estimate_item_temp
       label: 'Office Admin'
       region: content
       parent_name: group_office_tabs
@@ -94,27 +104,11 @@ third_party_settings:
         formatter: open
         description: ''
         required_fields: true
-    group_url_info:
-      children: {  }
-      label: 'URL Info'
-      region: content
-      parent_name: group_office_tabs
-      weight: 8
-      format_type: tab
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        label_as_html: false
-        formatter: closed
-        description: ''
-        required_fields: true
     group_office_tabs:
       children:
         - group_public_view
         - group_promoted
         - group_office_admin
-        - group_url_info
       label: 'Office Tabs'
       region: content
       parent_name: ''
@@ -134,15 +128,25 @@ mode: default
 content:
   description:
     type: text_textarea
-    weight: 8
+    weight: 28
     region: content
     settings:
       rows: 5
       placeholder: ''
     third_party_settings: {  }
+  field_allowed_scope_elements:
+    type: entity_reference_autocomplete
+    weight: 9
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_banner_image:
     type: image_image
-    weight: 10
+    weight: 30
     region: content
     settings:
       progress_indicator: throbber
@@ -150,13 +154,31 @@ content:
     third_party_settings: {  }
   field_brookstone_tags:
     type: entity_reference_autocomplete
-    weight: 26
+    weight: 32
     region: content
     settings:
       match_operator: CONTAINS
       match_limit: 10
       size: 60
       placeholder: ''
+    third_party_settings: {  }
+  field_default_estimate_item_temp:
+    type: paragraphs
+    weight: 11
+    region: content
+    settings:
+      title: Paragraph
+      title_plural: Paragraphs
+      edit_mode: open
+      closed_mode: summary
+      autocollapse: none
+      closed_mode_threshold: 0
+      add_mode: dropdown
+      form_display_mode: default
+      default_paragraph_type: ''
+      features:
+        collapse_edit_all: collapse_edit_all
+        duplicate: duplicate
     third_party_settings: {  }
   field_department:
     type: entity_reference_autocomplete
@@ -178,9 +200,16 @@ content:
       placeholder: ''
       show_summary: false
     third_party_settings: {  }
+  field_estimate_service:
+    type: boolean_checkbox
+    weight: 3
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
   field_estimate_types:
     type: entity_reference_autocomplete
-    weight: 6
+    weight: 8
     region: content
     settings:
       match_operator: CONTAINS
@@ -205,7 +234,7 @@ content:
     third_party_settings: {  }
   field_iconic_image:
     type: image_image
-    weight: 9
+    weight: 29
     region: content
     settings:
       progress_indicator: throbber
@@ -213,18 +242,25 @@ content:
     third_party_settings: {  }
   field_list_order:
     type: number
-    weight: 3
+    weight: 5
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_other_names:
     type: string_textfield
-    weight: 11
+    weight: 31
     region: content
     settings:
       size: 60
       placeholder: ''
+    third_party_settings: {  }
+  field_parent_component:
+    type: boolean_checkbox
+    weight: 4
+    region: content
+    settings:
+      display_label: true
     third_party_settings: {  }
   field_parent_service:
     type: entity_reference_autocomplete
@@ -238,7 +274,7 @@ content:
     third_party_settings: {  }
   field_service_bundle:
     type: string_textfield
-    weight: 4
+    weight: 6
     region: content
     settings:
       size: 60
@@ -254,7 +290,7 @@ content:
     third_party_settings: {  }
   field_sop_code:
     type: string_textfield
-    weight: 5
+    weight: 7
     region: content
     settings:
       size: 60
@@ -262,7 +298,7 @@ content:
     third_party_settings: {  }
   field_subtitle:
     type: string_textfield
-    weight: 7
+    weight: 27
     region: content
     settings:
       size: 60
@@ -291,7 +327,7 @@ content:
     third_party_settings: {  }
   status:
     type: boolean_checkbox
-    weight: 7
+    weight: 10
     region: content
     settings:
       display_label: true

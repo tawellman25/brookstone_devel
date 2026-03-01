@@ -6,7 +6,9 @@ dependencies:
     - eck.eck_type.work_order.sprinkler_design
     - field.field.work_order.sprinkler_design.field_billing_adjustment
     - field.field.work_order.sprinkler_design.field_billing_notes
+    - field.field.work_order.sprinkler_design.field_contact
     - field.field.work_order.sprinkler_design.field_contract
+    - field.field.work_order.sprinkler_design.field_estimate
     - field.field.work_order.sprinkler_design.field_estimated_price
     - field.field.work_order.sprinkler_design.field_invoiced
     - field.field.work_order.sprinkler_design.field_labor_total
@@ -25,7 +27,6 @@ dependencies:
     - field.field.work_order.sprinkler_design.field_work_todo_description
   module:
     - allowed_formats
-    - comment
     - field_group
     - field_layout
     - layout_discovery
@@ -41,7 +42,6 @@ third_party_settings:
       children:
         - group_billing
         - group_system_info
-        - field_work_order_notes
       label: 'Office Administation'
       region: content
       parent_name: ''
@@ -99,9 +99,10 @@ third_party_settings:
         - flag
         - field_contract
         - field_service
+        - field_estimate
+        - field_contact
         - field_status
         - field_scheduled
-        - field_work_order_id
         - field_printed
         - path
       label: 'System Info'
@@ -142,9 +143,29 @@ content:
       size: 30
       placeholder: ''
     third_party_settings: {  }
+  field_contact:
+    type: entity_reference_autocomplete
+    weight: 12
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_contract:
     type: entity_reference_autocomplete
     weight: 9
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 11
     region: content
     settings:
       match_operator: CONTAINS
@@ -175,7 +196,7 @@ content:
     third_party_settings: {  }
   field_printed:
     type: boolean_checkbox
-    weight: 14
+    weight: 16
     region: content
     settings:
       display_label: true
@@ -192,7 +213,7 @@ content:
     third_party_settings: {  }
   field_scheduled:
     type: boolean_checkbox
-    weight: 12
+    weight: 14
     region: content
     settings:
       display_label: true
@@ -209,7 +230,7 @@ content:
     third_party_settings: {  }
   field_status:
     type: entity_reference_autocomplete
-    weight: 11
+    weight: 13
     region: content
     settings:
       match_operator: CONTAINS
@@ -255,19 +276,6 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
-  field_work_order_id:
-    type: number
-    weight: 13
-    region: content
-    settings:
-      placeholder: ''
-    third_party_settings: {  }
-  field_work_order_notes:
-    type: comment_default
-    weight: 6
-    region: content
-    settings: {  }
-    third_party_settings: {  }
   field_work_todo_description:
     type: text_textarea
     weight: 2
@@ -286,7 +294,7 @@ content:
     third_party_settings: {  }
   path:
     type: path
-    weight: 15
+    weight: 17
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -301,4 +309,6 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
+  field_work_order_id: true
+  field_work_order_notes: true
   title: true

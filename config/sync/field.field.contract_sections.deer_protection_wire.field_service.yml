@@ -1,0 +1,29 @@
+uuid: 12322631-ceb6-4ffc-8712-b6158e51966e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.deer_protection_wire
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:42fc7685-038b-4f10-a0d9-4338caaf3e99'
+id: contract_sections.deer_protection_wire.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: deer_protection_wire
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 42fc7685-038b-4f10-a0d9-4338caaf3e99
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

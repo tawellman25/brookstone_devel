@@ -5,12 +5,16 @@ dependencies:
   config:
     - core.entity_view_mode.contract_sections.teammate
     - eck.eck_type.contract_sections.summer_hedge_shrub_pruning
+    - field.field.contract_sections.summer_hedge_shrub_pruning.feeds_item
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_2nd_work_order
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_client_notes
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_contract
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_do_you_want
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_estimate
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_last_year
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_man_hours
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_service
+    - field.field.contract_sections.summer_hedge_shrub_pruning.field_set_your_budget
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_specific_plants
     - field.field.contract_sections.summer_hedge_shrub_pruning.field_work_order
   module:
@@ -139,6 +143,17 @@ content:
     third_party_settings: {  }
     weight: 3
     region: content
+  field_set_your_budget:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
   field_specific_plants:
     type: string
     label: inline
@@ -146,6 +161,14 @@ content:
       link_to_entity: false
     third_party_settings: {  }
     weight: 5
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
     region: content
   uid:
     type: author
@@ -155,4 +178,7 @@ content:
     weight: 5
     region: content
 hidden:
+  feeds_item: true
+  field_2nd_work_order: true
+  field_service: true
   field_work_order: true

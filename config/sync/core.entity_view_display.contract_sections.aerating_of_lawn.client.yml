@@ -5,12 +5,15 @@ dependencies:
   config:
     - core.entity_view_mode.contract_sections.client
     - eck.eck_type.contract_sections.aerating_of_lawn
+    - field.field.contract_sections.aerating_of_lawn.feeds_item
     - field.field.contract_sections.aerating_of_lawn.field_aerating_season
     - field.field.contract_sections.aerating_of_lawn.field_client_notes
     - field.field.contract_sections.aerating_of_lawn.field_contract
     - field.field.contract_sections.aerating_of_lawn.field_do_you_want
     - field.field.contract_sections.aerating_of_lawn.field_estimate
+    - field.field.contract_sections.aerating_of_lawn.field_estimate_request
     - field.field.contract_sections.aerating_of_lawn.field_last_year
+    - field.field.contract_sections.aerating_of_lawn.field_service
     - field.field.contract_sections.aerating_of_lawn.field_work_order
   module:
     - field_group
@@ -30,7 +33,7 @@ third_party_settings:
       label: 'Office Administation'
       parent_name: ''
       region: content
-      weight: 7
+      weight: 3
       format_type: fieldset
       format_settings:
         classes: ''
@@ -91,7 +94,7 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 5
+    weight: 1
     region: content
   field_client_notes:
     type: string
@@ -99,7 +102,7 @@ content:
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 6
+    weight: 2
     region: content
   field_contract:
     type: entity_reference_label
@@ -114,7 +117,7 @@ content:
     label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 4
+    weight: 0
     region: content
   field_estimate:
     type: string
@@ -142,4 +145,8 @@ content:
     weight: 5
     region: content
 hidden:
+  feeds_item: true
+  field_estimate_request: true
+  field_service: true
   field_work_order: true
+  title: true

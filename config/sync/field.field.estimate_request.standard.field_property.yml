@@ -1,0 +1,29 @@
+uuid: 79c49f42-c8d3-481d-a2f2-37dff67258ae
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_request.standard
+    - eck.eck_type.properties.property
+    - field.storage.estimate_request.field_property
+id: estimate_request.standard.field_property
+field_name: field_property
+entity_type: estimate_request
+bundle: standard
+label: Property
+description: "Select the <b>Property</b> associated with this Estimate Request.</br>\r\nThe <b>Property</b> defines the physical location of the work and links this request to ownership, service history, and future Work Orders.</br>\r\nThis may be completed after initial intake but must be entered and confirmed before converting an accepted Estimate into a Work Order."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:properties'
+  handler_settings:
+    target_bundles:
+      property: property
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

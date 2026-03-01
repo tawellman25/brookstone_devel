@@ -5,12 +5,16 @@ dependencies:
   config:
     - eck.eck_type.estimate_items.materials
     - field.field.estimate_items.materials.field_cost_subtotal
+    - field.field.estimate_items.materials.field_estimate
     - field.field.estimate_items.materials.field_line_total
     - field.field.estimate_items.materials.field_markup
     - field.field.estimate_items.materials.field_material
+    - field.field.estimate_items.materials.field_phase
+    - field.field.estimate_items.materials.field_pricing_class
     - field.field.estimate_items.materials.field_quantity
     - field.field.estimate_items.materials.field_unit_price
   module:
+    - options
     - user
 id: estimate_items.materials.default
 targetEntityType: estimate_items
@@ -47,6 +51,14 @@ content:
     third_party_settings: {  }
     weight: 4
     region: content
+  field_estimate:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
+    region: content
   field_line_total:
     type: number_decimal
     label: above
@@ -76,6 +88,21 @@ content:
       link: true
     third_party_settings: {  }
     weight: 3
+    region: content
+  field_phase:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_pricing_class:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
     region: content
   field_quantity:
     type: number_integer

@@ -3,6 +3,8 @@ langcode: en
 status: true
 dependencies:
   config:
+    - core.base_field_override.contracts.residential.created
+    - core.base_field_override.contracts.residential.uid
     - core.entity_view_mode.contracts.admin
     - eck.eck_type.contracts.residential
     - field.field.contracts.residential.feeds_item
@@ -27,6 +29,8 @@ dependencies:
     - field.field.contracts.residential.field_irrigation_check_ups
     - field.field.contracts.residential.field_irrigation_shut_down
     - field.field.contracts.residential.field_irrigation_start_up
+    - field.field.contracts.residential.field_last_update_by
+    - field.field.contracts.residential.field_last_updated_at
     - field.field.contracts.residential.field_lawn_fertilizing_broadleaf
     - field.field.contracts.residential.field_lawn_mowing_and_trimming
     - field.field.contracts.residential.field_misc_services
@@ -42,26 +46,277 @@ dependencies:
     - field.field.contracts.residential.field_weed_spraying_of_landscape
     - field.field.contracts.residential.field_weed_spraying_of_misc_area
     - field.field.contracts.residential.field_weeds_in_shrubs_removal
+    - field.field.contracts.residential.field_winter_pruning
+    - views.view.contract_action_log_contact_timeline
+    - views.view.contract_notes
+    - views.view.contract_residential_header
+    - views.view.contract_scanned_copy
+    - views.view.contract_sections_admin_table
   module:
     - field_group
     - file
     - geocoder_field
     - layout_builder
+    - layout_discovery
     - options
+    - views
 third_party_settings:
   layout_builder:
-    enabled: false
+    enabled: true
     allow_custom: false
+    sections:
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: Top
+          context_mapping: {  }
+        components: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_twocol_section
+        layout_settings:
+          label: 'Contract PDF & Notes'
+          context_mapping: {  }
+          column_widths: 25-75
+        components:
+          0b4d8452-3985-4502-bd67-6e130acf6d79:
+            uuid: 0b4d8452-3985-4502-bd67-6e130acf6d79
+            region: second
+            configuration:
+              id: 'views_block:contract_notes-block_1'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 1
+            additional: {  }
+          4384389a-691b-41ec-aa97-a0d209fb2d69:
+            uuid: 4384389a-691b-41ec-aa97-a0d209fb2d69
+            region: first
+            configuration:
+              id: 'views_block:contract_scanned_copy-block_1'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 3
+            additional: {  }
+          cb26b521-7be5-4257-a3f5-063e74febcaa:
+            uuid: cb26b521-7be5-4257-a3f5-063e74febcaa
+            region: first
+            configuration:
+              id: 'views_block:contract_residential_header-block_1'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 1
+            additional: {  }
+        third_party_settings: {  }
+      -
+        layout_id: layout_onecol
+        layout_settings:
+          label: ''
+        components:
+          3576b40b-6314-4463-9937-9372e9177568:
+            uuid: 3576b40b-6314-4463-9937-9372e9177568
+            region: content
+            configuration:
+              id: 'field_block:contracts:residential:field_misc_services'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: geocoder_geocode_formatter
+                label: inline
+                settings:
+                  dumper: wkt
+                  providers: {  }
+                third_party_settings: {  }
+            weight: 7
+            additional: {  }
+          2c46aa6a-6b70-41f1-95f2-2b201a2643d6:
+            uuid: 2c46aa6a-6b70-41f1-95f2-2b201a2643d6
+            region: content
+            configuration:
+              id: 'field_block:contracts:residential:field_ip_address_of_submitter'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: geocoder_geocode_formatter
+                label: inline
+                settings:
+                  dumper: wkt
+                  providers: {  }
+                third_party_settings: {  }
+            weight: 9
+            additional: {  }
+          741219a2-0e5e-45df-9012-32f40776d5f9:
+            uuid: 741219a2-0e5e-45df-9012-32f40776d5f9
+            region: content
+            configuration:
+              id: 'field_block:contracts:residential:created'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: timestamp
+                label: inline
+                settings:
+                  date_format: short
+                  custom_date_format: ''
+                  timezone: ''
+                  tooltip:
+                    date_format: long
+                    custom_date_format: ''
+                  time_diff:
+                    enabled: false
+                    future_format: '@interval hence'
+                    past_format: '@interval ago'
+                    granularity: 2
+                    refresh: 60
+                    description: ''
+                third_party_settings: {  }
+            weight: 10
+            additional: {  }
+          b48c3c72-1c83-4e86-bbb6-3495dca71201:
+            uuid: b48c3c72-1c83-4e86-bbb6-3495dca71201
+            region: content
+            configuration:
+              id: 'field_block:contracts:residential:uid'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: inline
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 11
+            additional: {  }
+          dbfcecc9-2e19-4c59-9111-0b129d25ab0f:
+            uuid: dbfcecc9-2e19-4c59-9111-0b129d25ab0f
+            region: content
+            configuration:
+              id: 'field_block:contracts:residential:changed'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: timestamp
+                label: inline
+                settings:
+                  date_format: short
+                  custom_date_format: ''
+                  timezone: ''
+                  tooltip:
+                    date_format: long
+                    custom_date_format: ''
+                  time_diff:
+                    enabled: false
+                    future_format: '@interval hence'
+                    past_format: '@interval ago'
+                    granularity: 2
+                    refresh: 60
+                    description: ''
+                third_party_settings: {  }
+            weight: 12
+            additional: {  }
+          caee1890-d7b9-48c1-99c3-006d486edbfc:
+            uuid: caee1890-d7b9-48c1-99c3-006d486edbfc
+            region: content
+            configuration:
+              id: 'field_block:contracts:residential:field_last_update_by'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: entity_reference_label
+                label: above
+                settings:
+                  link: true
+                third_party_settings: {  }
+            weight: 13
+            additional: {  }
+          7377b830-ef4c-43f9-8a32-73bad9807a21:
+            uuid: 7377b830-ef4c-43f9-8a32-73bad9807a21
+            region: content
+            configuration:
+              id: 'field_block:contracts:residential:field_last_updated_at'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: timestamp
+                label: above
+                settings:
+                  date_format: medium
+                  custom_date_format: ''
+                  timezone: ''
+                  tooltip:
+                    date_format: long
+                    custom_date_format: ''
+                  time_diff:
+                    enabled: false
+                    future_format: '@interval hence'
+                    past_format: '@interval ago'
+                    granularity: 2
+                    refresh: 60
+                third_party_settings: {  }
+            weight: 14
+            additional: {  }
+          04a8aefc-4c8d-4bb7-8cba-ad1b16bab624:
+            uuid: 04a8aefc-4c8d-4bb7-8cba-ad1b16bab624
+            region: content
+            configuration:
+              id: 'views_block:contract_sections_admin_table-block_1'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 8
+            additional: {  }
+          e712b32e-6a24-4879-9b10-4fcb9ae4a640:
+            uuid: e712b32e-6a24-4879-9b10-4fcb9ae4a640
+            region: content
+            configuration:
+              id: 'views_block:contract_action_log_contact_timeline-block_1'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 15
+            additional: {  }
+        third_party_settings: {  }
   field_group:
     group_office_admin:
       children:
         - created
         - uid
         - changed
+        - field_last_update_by
+        - field_last_updated_at
       label: 'Office Administation'
       parent_name: ''
       region: content
-      weight: 30
+      weight: 28
       format_type: fieldset
       format_settings:
         classes: ''
@@ -77,7 +332,7 @@ third_party_settings:
       label: 'Aspen Twig Gall Control'
       parent_name: ''
       region: content
-      weight: 5
+      weight: 6
       format_type: details
       format_settings:
         classes: ''
@@ -92,7 +347,7 @@ third_party_settings:
       label: Pre-emergent
       parent_name: ''
       region: content
-      weight: 6
+      weight: 18
       format_type: details
       format_settings:
         classes: ''
@@ -107,7 +362,7 @@ third_party_settings:
       label: 'Dormant Oil Spray'
       parent_name: ''
       region: content
-      weight: 7
+      weight: 11
       format_type: details
       format_settings:
         classes: ''
@@ -122,7 +377,7 @@ third_party_settings:
       label: 'Fertilizing Trees and Shrubs'
       parent_name: ''
       region: content
-      weight: 8
+      weight: 14
       format_type: details
       format_settings:
         classes: ''
@@ -137,7 +392,7 @@ third_party_settings:
       label: 'Ips beetle on Pinion Pine'
       parent_name: ''
       region: content
-      weight: 9
+      weight: 16
       format_type: details
       format_settings:
         classes: ''
@@ -152,7 +407,7 @@ third_party_settings:
       label: 'Trunk Bore Prevention'
       parent_name: ''
       region: content
-      weight: 10
+      weight: 19
       format_type: details
       format_settings:
         classes: ''
@@ -167,7 +422,7 @@ third_party_settings:
       label: 'Deciduous Bore Treatment'
       parent_name: ''
       region: content
-      weight: 11
+      weight: 9
       format_type: details
       format_settings:
         classes: ''
@@ -182,7 +437,7 @@ third_party_settings:
       label: 'Cooley Spruce Gall Treatment'
       parent_name: ''
       region: content
-      weight: 12
+      weight: 7
       format_type: details
       format_settings:
         classes: ''
@@ -194,7 +449,7 @@ third_party_settings:
     group_lawn_fertilizing_broadleaf:
       children:
         - field_lawn_fertilizing_broadleaf
-      label: 'Lawn Fertilizing & Broadleaf Control'
+      label: 'Fertilizing Lawn & Broadleaf Control'
       parent_name: ''
       region: content
       weight: 13
@@ -207,12 +462,11 @@ third_party_settings:
         open: true
         description: ''
     group_weed_spraying_of_landscape:
-      children:
-        - field_weed_spraying_of_landscape
+      children: {  }
       label: 'Weed Spraying of Landscape Bed Areas'
       parent_name: ''
-      region: content
-      weight: 14
+      region: hidden
+      weight: 29
       format_type: details
       format_settings:
         classes: ''
@@ -223,11 +477,13 @@ third_party_settings:
         description: ''
     group_weed_spraying_of_misc_area:
       children:
+        - field_weed_spraying_of_landscape
         - field_weed_spraying_of_misc_area
-      label: 'Weed Spraying of Misc Areas'
+        - field_weeds_in_shrubs_removal
+      label: 'Weed Spraying'
       parent_name: ''
       region: content
-      weight: 15
+      weight: 25
       format_type: details
       format_settings:
         classes: ''
@@ -242,7 +498,7 @@ third_party_settings:
       label: 'Grub Prevention on Lawn'
       parent_name: ''
       region: content
-      weight: 16
+      weight: 15
       format_type: details
       format_settings:
         classes: ''
@@ -272,7 +528,7 @@ third_party_settings:
       label: 'Aerating of Lawn'
       parent_name: ''
       region: content
-      weight: 18
+      weight: 5
       format_type: details
       format_settings:
         classes: ''
@@ -287,7 +543,7 @@ third_party_settings:
       label: 'Dethatching of Lawn Areas'
       parent_name: ''
       region: content
-      weight: 19
+      weight: 10
       format_type: details
       format_settings:
         classes: ''
@@ -317,7 +573,7 @@ third_party_settings:
       label: 'Summer Hedge & Shrub Pruning'
       parent_name: ''
       region: content
-      weight: 21
+      weight: 24
       format_type: details
       format_settings:
         classes: ''
@@ -332,7 +588,7 @@ third_party_settings:
       label: 'Fall Cleanup'
       parent_name: ''
       region: content
-      weight: 22
+      weight: 12
       format_type: details
       format_settings:
         classes: ''
@@ -344,10 +600,10 @@ third_party_settings:
     group_irrigation_start_up:
       children:
         - field_irrigation_start_up
-      label: 'Irrigation Start Up'
+      label: 'Sprinkler Start Up'
       parent_name: ''
       region: content
-      weight: 23
+      weight: 22
       format_type: details
       format_settings:
         classes: ''
@@ -359,10 +615,10 @@ third_party_settings:
     group_irrigation_shut_down:
       children:
         - field_irrigation_shut_down
-      label: 'Irrigation Shut Down'
+      label: 'Sprinklet Winterizing'
       parent_name: ''
       region: content
-      weight: 24
+      weight: 23
       format_type: details
       format_settings:
         classes: ''
@@ -377,7 +633,7 @@ third_party_settings:
       label: 'Deer Protection Wire for Trees and Shrubs'
       parent_name: ''
       region: content
-      weight: 25
+      weight: 8
       format_type: details
       format_settings:
         classes: ''
@@ -389,10 +645,10 @@ third_party_settings:
     group_irrigation_check_ups:
       children:
         - field_irrigation_check_ups
-      label: 'Irrigation Check Ups'
+      label: 'Sprinkler Check Ups'
       parent_name: ''
       region: content
-      weight: 26
+      weight: 21
       format_type: details
       format_settings:
         classes: ''
@@ -409,7 +665,7 @@ third_party_settings:
       label: 'Client Entering Information'
       parent_name: ''
       region: content
-      weight: 29
+      weight: 27
       format_type: details
       format_settings:
         classes: ''
@@ -643,6 +899,33 @@ content:
     third_party_settings: {  }
     weight: 22
     region: content
+  field_last_update_by:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 37
+    region: content
+  field_last_updated_at:
+    type: timestamp
+    label: above
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 38
+    region: content
   field_lawn_fertilizing_broadleaf:
     type: entity_reference_entity_view
     label: hidden
@@ -668,7 +951,7 @@ content:
       dumper: wkt
       providers: {  }
     third_party_settings: {  }
-    weight: 27
+    weight: 26
     region: content
   field_paper_contract_pdf:
     type: file_default
@@ -753,7 +1036,7 @@ content:
     label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 28
+    weight: 17
     region: content
   uid:
     type: entity_reference_label
@@ -769,4 +1052,5 @@ hidden:
   field_contract_submitted: true
   field_old_contract_id: true
   field_old_nid: true
+  field_winter_pruning: true
   title: true

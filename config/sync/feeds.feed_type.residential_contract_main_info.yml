@@ -5,6 +5,7 @@ dependencies:
   config:
     - core.base_field_override.contracts.residential.created
     - eck.eck_type.contracts.residential
+    - field.field.contracts.residential.field_contract_status
     - field.field.contracts.residential.field_contract_year
     - field.field.contracts.residential.field_property
     - field.field.contracts.residential.field_property_owner
@@ -90,6 +91,16 @@ custom_sources:
     label: '1117'
     machine_name: '1117'
     type: blank
+  year:
+    value: year
+    label: year
+    machine_name: year
+    type: csv
+  field_contract_status:
+    value: field_contract_status
+    label: field_contract_status
+    machine_name: field_contract_status
+    type: csv
 mappings:
   -
     target: field_property
@@ -112,25 +123,25 @@ mappings:
     map:
       target_id: uid
     settings:
-      language: null
-      reference_by: false
-      feeds_item: false
-      autocreate: false
+      language: ''
+      reference_by: uid
+      feeds_item: guid
+      autocreate: 0
       autocreate_bundle: false
   -
     target: field_contract_year
     map:
-      value: '2026'
+      value: year
     settings:
       language: null
     unique: {  }
   -
     target: field_contract_status
     map:
-      target_id: '1117'
+      target_id: field_contract_status
     settings:
-      language: null
-      reference_by: name
-      feeds_item: false
-      autocreate: false
+      language: ''
+      reference_by: tid
+      feeds_item: guid
+      autocreate: 0
       autocreate_bundle: contract_status

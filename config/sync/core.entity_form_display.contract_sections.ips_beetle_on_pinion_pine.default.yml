@@ -4,8 +4,10 @@ status: true
 dependencies:
   config:
     - eck.eck_type.contract_sections.ips_beetle_on_pinion_pine
+    - field.field.contract_sections.ips_beetle_on_pinion_pine.feeds_item
     - field.field.contract_sections.ips_beetle_on_pinion_pine.field_2nd_work_order
     - field.field.contract_sections.ips_beetle_on_pinion_pine.field_3rd_work_order
+    - field.field.contract_sections.ips_beetle_on_pinion_pine.field_4th_work_order
     - field.field.contract_sections.ips_beetle_on_pinion_pine.field_chemicals_used
     - field.field.contract_sections.ips_beetle_on_pinion_pine.field_client_notes
     - field.field.contract_sections.ips_beetle_on_pinion_pine.field_contract
@@ -13,6 +15,7 @@ dependencies:
     - field.field.contract_sections.ips_beetle_on_pinion_pine.field_estimate
     - field.field.contract_sections.ips_beetle_on_pinion_pine.field_gallons_used
     - field.field.contract_sections.ips_beetle_on_pinion_pine.field_last_year
+    - field.field.contract_sections.ips_beetle_on_pinion_pine.field_service
     - field.field.contract_sections.ips_beetle_on_pinion_pine.field_work_order
   module:
     - field_group
@@ -34,6 +37,7 @@ third_party_settings:
         - field_work_order
         - field_2nd_work_order
         - field_3rd_work_order
+        - field_4th_work_order
       label: Admin
       region: content
       parent_name: ''
@@ -66,6 +70,16 @@ content:
   field_3rd_work_order:
     type: entity_reference_autocomplete
     weight: 10
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_4th_work_order:
+    type: entity_reference_autocomplete
+    weight: 11
     region: content
     settings:
       match_operator: CONTAINS
@@ -137,5 +151,8 @@ content:
     third_party_settings: {  }
 hidden:
   created: true
+  feeds_item: true
+  field_service: true
   path: true
+  title: true
   uid: true

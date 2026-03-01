@@ -11,6 +11,7 @@ dependencies:
     - field.field.contract_sections.christmas_decorations.field_estimate
     - field.field.contract_sections.christmas_decorations.field_last_year
     - field.field.contract_sections.christmas_decorations.field_man_hours
+    - field.field.contract_sections.christmas_decorations.field_service
     - field.field.contract_sections.christmas_decorations.field_set_your_budget
     - field.field.contract_sections.christmas_decorations.field_take_down_estimate
     - field.field.contract_sections.christmas_decorations.field_work_order
@@ -30,13 +31,13 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 10
+    weight: 11
     region: content
     settings: {  }
     third_party_settings: {  }
   field_2nd_work_order:
     type: entity_reference_autocomplete
-    weight: 8
+    weight: 9
     region: content
     settings:
       match_operator: CONTAINS
@@ -54,7 +55,7 @@ content:
     third_party_settings: {  }
   field_contract:
     type: entity_reference_autocomplete
-    weight: 4
+    weight: 5
     region: content
     settings:
       match_operator: CONTAINS
@@ -70,7 +71,7 @@ content:
     third_party_settings: {  }
   field_estimate:
     type: string_textfield
-    weight: 2
+    weight: 3
     region: content
     settings:
       size: 30
@@ -78,14 +79,14 @@ content:
     third_party_settings: {  }
   field_last_year:
     type: boolean_checkbox
-    weight: 3
+    weight: 4
     region: content
     settings:
       display_label: false
     third_party_settings: {  }
   field_man_hours:
     type: number
-    weight: 8
+    weight: 10
     region: content
     settings:
       placeholder: ''
@@ -99,7 +100,7 @@ content:
     third_party_settings: {  }
   field_take_down_estimate:
     type: string_textfield
-    weight: 7
+    weight: 8
     region: content
     settings:
       size: 30
@@ -107,7 +108,7 @@ content:
     third_party_settings: {  }
   field_work_order:
     type: entity_reference_autocomplete
-    weight: 5
+    weight: 7
     region: content
     settings:
       match_operator: CONTAINS
@@ -117,13 +118,13 @@ content:
     third_party_settings: {  }
   path:
     type: path
-    weight: 30
+    weight: 12
     region: content
     settings: {  }
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 5
+    weight: 6
     region: content
     settings:
       match_operator: CONTAINS
@@ -131,4 +132,6 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  field_service: true
+  title: true

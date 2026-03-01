@@ -1,0 +1,29 @@
+uuid: fe32be1e-dbbd-4a91-918f-00bd55d7f728
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.contact
+    - eck.eck_type.work_order.deer_prevention
+    - field.storage.work_order.field_contact
+id: work_order.deer_prevention.field_contact
+field_name: field_contact
+entity_type: work_order
+bundle: deer_prevention
+label: Contact
+description: "Primary communication contact for this Work Order.\r\n\r\nWhen a Work Order is generated from an Estimate Request, this field is set automatically to the request contact.\r\n\r\nThis field defines who crews or office staff should communicate with regarding scheduling, access, approvals, and job-specific questions.\r\n\r\nThis field does not define property ownership and does not replace Contract or Client references.\r\n\r\nManual Work Orders may select a contact when communication context differs from the primary property contact."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contacts'
+  handler_settings:
+    target_bundles:
+      contact: contact
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

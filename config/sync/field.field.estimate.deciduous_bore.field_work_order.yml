@@ -1,0 +1,29 @@
+uuid: 590b8fb9-9f91-483c-b451-2b86806865de
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.deciduous_bore
+    - eck.eck_type.work_order.deciduous_bore
+    - field.storage.estimate.field_work_order
+id: estimate.deciduous_bore.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: deciduous_bore
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      deciduous_bore: deciduous_bore
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: deciduous_bore
+field_type: entity_reference

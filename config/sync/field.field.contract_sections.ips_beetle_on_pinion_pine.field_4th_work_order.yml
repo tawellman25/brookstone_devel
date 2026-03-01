@@ -1,0 +1,29 @@
+uuid: 2243e0d7-6fef-4539-aa96-ee64fc9dad1e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.ips_beetle_on_pinion_pine
+    - eck.eck_type.work_order.fertilizing
+    - field.storage.contract_sections.field_4th_work_order
+id: contract_sections.ips_beetle_on_pinion_pine.field_4th_work_order
+field_name: field_4th_work_order
+entity_type: contract_sections
+bundle: ips_beetle_on_pinion_pine
+label: 'Early Spring Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      fertilizing: fertilizing
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

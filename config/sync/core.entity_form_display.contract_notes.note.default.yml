@@ -1,0 +1,45 @@
+uuid: 9b1639df-0c95-418c-9278-5ef3c86ff5ef
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_notes.note
+    - field.field.contract_notes.note.field_contract
+    - field.field.contract_notes.note.field_note
+  module:
+    - field_layout
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: contract_notes.note.default
+targetEntityType: contract_notes
+bundle: note
+mode: default
+content:
+  field_contract:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_note:
+    type: text_textarea
+    weight: 0
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  title: true
+  uid: true

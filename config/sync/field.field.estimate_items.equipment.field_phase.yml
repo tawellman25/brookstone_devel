@@ -1,0 +1,33 @@
+uuid: 092fe302-fc42-44ab-ba82-10440aa62c45
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_items.equipment
+    - field.storage.estimate_items.field_phase
+    - taxonomy.vocabulary.estimate_phase
+  content:
+    - 'taxonomy_term:estimate_phase:fb6f5e82-0155-4d5c-9ea0-791c9366897a'
+id: estimate_items.equipment.field_phase
+field_name: field_phase
+entity_type: estimate_items
+bundle: equipment
+label: Phase
+description: ''
+required: true
+translatable: false
+default_value:
+  -
+    target_uuid: fb6f5e82-0155-4d5c-9ea0-791c9366897a
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      estimate_phase: estimate_phase
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

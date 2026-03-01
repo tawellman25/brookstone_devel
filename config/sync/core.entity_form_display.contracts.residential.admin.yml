@@ -28,6 +28,8 @@ dependencies:
     - field.field.contracts.residential.field_irrigation_check_ups
     - field.field.contracts.residential.field_irrigation_shut_down
     - field.field.contracts.residential.field_irrigation_start_up
+    - field.field.contracts.residential.field_last_update_by
+    - field.field.contracts.residential.field_last_updated_at
     - field.field.contracts.residential.field_lawn_fertilizing_broadleaf
     - field.field.contracts.residential.field_lawn_mowing_and_trimming
     - field.field.contracts.residential.field_misc_services
@@ -43,6 +45,7 @@ dependencies:
     - field.field.contracts.residential.field_weed_spraying_of_landscape
     - field.field.contracts.residential.field_weed_spraying_of_misc_area
     - field.field.contracts.residential.field_weeds_in_shrubs_removal
+    - field.field.contracts.residential.field_winter_pruning
   module:
     - field_group
     - field_layout
@@ -121,7 +124,7 @@ content:
     third_party_settings: {  }
   field_aerating_of_lawn:
     type: inline_entity_form_simple
-    weight: 16
+    weight: 4
     region: content
     settings:
       form_mode: admin
@@ -147,7 +150,7 @@ content:
     third_party_settings: {  }
   field_christmas_decorations:
     type: inline_entity_form_simple
-    weight: 26
+    weight: 6
     region: content
     settings:
       form_mode: admin
@@ -194,7 +197,7 @@ content:
     third_party_settings: {  }
   field_cooley_spruce_gall_treatme:
     type: inline_entity_form_simple
-    weight: 11
+    weight: 7
     region: content
     settings:
       form_mode: admin
@@ -207,7 +210,7 @@ content:
     third_party_settings: {  }
   field_deciduous_bore_treatment:
     type: inline_entity_form_simple
-    weight: 10
+    weight: 8
     region: content
     settings:
       form_mode: admin
@@ -220,7 +223,7 @@ content:
     third_party_settings: {  }
   field_deer_protection_wire_for_t:
     type: inline_entity_form_simple
-    weight: 25
+    weight: 9
     region: content
     settings:
       form_mode: admin
@@ -233,7 +236,7 @@ content:
     third_party_settings: {  }
   field_dethatching_of_lawn_areas:
     type: inline_entity_form_simple
-    weight: 17
+    weight: 10
     region: content
     settings:
       form_mode: admin
@@ -246,7 +249,7 @@ content:
     third_party_settings: {  }
   field_dormant_oil_spray:
     type: inline_entity_form_simple
-    weight: 7
+    weight: 11
     region: content
     settings:
       form_mode: admin
@@ -259,7 +262,7 @@ content:
     third_party_settings: {  }
   field_fall_cleanup:
     type: inline_entity_form_simple
-    weight: 21
+    weight: 12
     region: content
     settings:
       form_mode: admin
@@ -272,7 +275,7 @@ content:
     third_party_settings: {  }
   field_fertilizing_trees_shrubs:
     type: inline_entity_form_simple
-    weight: 4
+    weight: 13
     region: content
     settings:
       form_mode: admin
@@ -285,7 +288,7 @@ content:
     third_party_settings: {  }
   field_grub_prevention_on_lawn:
     type: inline_entity_form_simple
-    weight: 18
+    weight: 14
     region: content
     settings:
       form_mode: admin
@@ -306,7 +309,7 @@ content:
     third_party_settings: {  }
   field_ips_beetle_on_pinion_pine:
     type: inline_entity_form_simple
-    weight: 8
+    weight: 15
     region: content
     settings:
       form_mode: admin
@@ -319,7 +322,7 @@ content:
     third_party_settings: {  }
   field_irrigation_check_ups:
     type: inline_entity_form_simple
-    weight: 23
+    weight: 17
     region: content
     settings:
       form_mode: admin
@@ -332,7 +335,7 @@ content:
     third_party_settings: {  }
   field_irrigation_shut_down:
     type: inline_entity_form_simple
-    weight: 24
+    weight: 18
     region: content
     settings:
       form_mode: admin
@@ -345,7 +348,7 @@ content:
     third_party_settings: {  }
   field_irrigation_start_up:
     type: inline_entity_form_simple
-    weight: 22
+    weight: 16
     region: content
     settings:
       form_mode: admin
@@ -358,7 +361,7 @@ content:
     third_party_settings: {  }
   field_lawn_fertilizing_broadleaf:
     type: inline_entity_form_simple
-    weight: 12
+    weight: 19
     region: content
     settings:
       form_mode: admin
@@ -371,7 +374,7 @@ content:
     third_party_settings: {  }
   field_lawn_mowing_and_trimming:
     type: inline_entity_form_simple
-    weight: 15
+    weight: 20
     region: content
     settings:
       form_mode: admin
@@ -413,7 +416,7 @@ content:
     third_party_settings: {  }
   field_pre_emergent:
     type: inline_entity_form_simple
-    weight: 6
+    weight: 21
     region: content
     settings:
       form_mode: admin
@@ -446,7 +449,7 @@ content:
     third_party_settings: {  }
   field_spring_cleanup:
     type: inline_entity_form_simple
-    weight: 19
+    weight: 22
     region: content
     settings:
       form_mode: admin
@@ -459,7 +462,7 @@ content:
     third_party_settings: {  }
   field_summer_hedge_shrub_pruning:
     type: inline_entity_form_simple
-    weight: 20
+    weight: 23
     region: content
     settings:
       form_mode: admin
@@ -472,7 +475,7 @@ content:
     third_party_settings: {  }
   field_trunk_bore_prevention:
     type: inline_entity_form_simple
-    weight: 9
+    weight: 24
     region: content
     settings:
       form_mode: admin
@@ -485,7 +488,7 @@ content:
     third_party_settings: {  }
   field_weed_spraying_of_landscape:
     type: inline_entity_form_simple
-    weight: 13
+    weight: 25
     region: content
     settings:
       form_mode: admin
@@ -498,7 +501,7 @@ content:
     third_party_settings: {  }
   field_weed_spraying_of_misc_area:
     type: inline_entity_form_simple
-    weight: 14
+    weight: 26
     region: content
     settings:
       form_mode: admin
@@ -527,5 +530,8 @@ content:
     third_party_settings: {  }
 hidden:
   feeds_item: true
+  field_last_update_by: true
+  field_last_updated_at: true
+  field_winter_pruning: true
   path: true
   title: true

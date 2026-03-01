@@ -1,0 +1,29 @@
+uuid: 2aec52b4-1815-4027-9395-26ea96e1216a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_action_log.request_log
+    - field.storage.estimate_action_log.field_to_status
+    - taxonomy.vocabulary.estimate_request_status
+id: estimate_action_log.request_log.field_to_status
+field_name: field_to_status
+entity_type: estimate_action_log
+bundle: request_log
+label: 'To Status'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      estimate_request_status: estimate_request_status
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

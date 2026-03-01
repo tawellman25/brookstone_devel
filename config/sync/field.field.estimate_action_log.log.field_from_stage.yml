@@ -1,0 +1,29 @@
+uuid: 5e387aa1-7413-4375-bf6f-0e36deb40d8e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_action_log.log
+    - field.storage.estimate_action_log.field_from_stage
+    - taxonomy.vocabulary.estimate_stage
+id: estimate_action_log.log.field_from_stage
+field_name: field_from_stage
+entity_type: estimate_action_log
+bundle: log
+label: 'From Stage'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      estimate_stage: estimate_stage
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

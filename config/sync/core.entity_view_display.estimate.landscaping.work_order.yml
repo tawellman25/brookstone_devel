@@ -5,22 +5,20 @@ dependencies:
   config:
     - core.entity_view_mode.estimate.work_order
     - eck.eck_type.estimate.landscaping
-    - field.field.estimate.landscaping.field_address
     - field.field.estimate.landscaping.field_assigned_to
-    - field.field.estimate.landscaping.field_client_requested
-    - field.field.estimate.landscaping.field_email
+    - field.field.estimate.landscaping.field_estimate_request
     - field.field.estimate.landscaping.field_estimate_total
     - field.field.estimate.landscaping.field_estimate_type
-    - field.field.estimate.landscaping.field_line_items
-    - field.field.estimate.landscaping.field_name
-    - field.field.estimate.landscaping.field_new_client
-    - field.field.estimate.landscaping.field_phone
-    - field.field.estimate.landscaping.field_property
+    - field.field.estimate.landscaping.field_estimated_duration_days
+    - field.field.estimate.landscaping.field_is_current_revision
+    - field.field.estimate.landscaping.field_requires_subs
+    - field.field.estimate.landscaping.field_revision_number
+    - field.field.estimate.landscaping.field_revision_of
+    - field.field.estimate.landscaping.field_scope_elements
+    - field.field.estimate.landscaping.field_scope_summary
     - field.field.estimate.landscaping.field_stage
     - field.field.estimate.landscaping.field_work_order
-    - field.field.estimate.landscaping.field_zipcode
   module:
-    - editablefields
     - field_group
     - layout_builder
 third_party_settings:
@@ -165,36 +163,20 @@ content:
     third_party_settings: {  }
     weight: 6
     region: content
-  field_line_items:
-    type: editablefields_formatter
-    label: hidden
-    settings:
-      form_mode: default
-      behaviour: inline
-      bypass_access: false
-      fallback_access: false
-      display_mode_access: ''
-      fallback_edit: false
-      display_mode_edit: ''
-      fields_ajax_trigger: ''
-      fields_ajax_trigger_event: change
-    third_party_settings: {  }
-    weight: 10
-    region: content
 hidden:
   changed: true
   created: true
-  field_address: true
   field_assigned_to: true
-  field_client_requested: true
-  field_email: true
+  field_estimate_request: true
   field_estimate_type: true
-  field_name: true
-  field_new_client: true
-  field_phone: true
-  field_property: true
+  field_estimated_duration_days: true
+  field_is_current_revision: true
+  field_requires_subs: true
+  field_revision_number: true
+  field_revision_of: true
+  field_scope_elements: true
+  field_scope_summary: true
   field_stage: true
   field_work_order: true
-  field_zipcode: true
   title: true
   uid: true

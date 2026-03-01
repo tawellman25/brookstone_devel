@@ -1,0 +1,29 @@
+uuid: 32e6946e-e9ff-4be8-90c7-97d730e42c4c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.dormant_oil_spray
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:4a3d6b8e-134a-4fcb-a523-0e4858497cb3'
+id: contract_sections.dormant_oil_spray.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: dormant_oil_spray
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 4a3d6b8e-134a-4fcb-a523-0e4858497cb3
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

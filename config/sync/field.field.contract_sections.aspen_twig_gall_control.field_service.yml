@@ -1,0 +1,29 @@
+uuid: 5d690ba0-f40d-4f7c-8c3c-55cfbe705ef6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.aspen_twig_gall_control
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:45afa451-b2c3-45a3-883a-71b8c1ec2367'
+id: contract_sections.aspen_twig_gall_control.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: aspen_twig_gall_control
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 45afa451-b2c3-45a3-883a-71b8c1ec2367
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

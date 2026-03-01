@@ -7,9 +7,11 @@ dependencies:
     - field.field.work_order.sprinkler_installation.field_billing_adjustment
     - field.field.work_order.sprinkler_installation.field_billing_notes
     - field.field.work_order.sprinkler_installation.field_client_app_wo_number
+    - field.field.work_order.sprinkler_installation.field_contact
     - field.field.work_order.sprinkler_installation.field_contract
     - field.field.work_order.sprinkler_installation.field_design_plan_images
     - field.field.work_order.sprinkler_installation.field_dump_fee_total
+    - field.field.work_order.sprinkler_installation.field_estimate
     - field.field.work_order.sprinkler_installation.field_estimated_price
     - field.field.work_order.sprinkler_installation.field_invoiced
     - field.field.work_order.sprinkler_installation.field_labor_total
@@ -30,7 +32,6 @@ dependencies:
     - image.style.thumbnail
   module:
     - allowed_formats
-    - comment
     - field_group
     - field_layout
     - image
@@ -48,7 +49,6 @@ third_party_settings:
         - field_status
         - group_billing
         - group_system_info
-        - field_work_order_notes
       label: 'Office Administation'
       region: content
       parent_name: ''
@@ -63,16 +63,16 @@ third_party_settings:
         required_fields: true
     group_system_info:
       children:
-        - title
         - uid
         - created
         - flag
         - field_contract
+        - field_estimate
+        - field_contact
         - field_service
         - field_scheduled
         - field_printed
         - path
-        - field_work_order_id
       label: 'System Info'
       region: content
       parent_name: group_office_admin
@@ -158,6 +158,16 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_contact:
+    type: entity_reference_autocomplete
+    weight: 6
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_contract:
     type: entity_reference_autocomplete
     weight: 4
@@ -181,6 +191,16 @@ content:
     weight: 23
     region: content
     settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
       placeholder: ''
     third_party_settings: {  }
   field_estimated_price:
@@ -213,7 +233,7 @@ content:
     third_party_settings: {  }
   field_printed:
     type: boolean_checkbox
-    weight: 8
+    weight: 9
     region: content
     settings:
       display_label: true
@@ -237,14 +257,14 @@ content:
     third_party_settings: {  }
   field_scheduled:
     type: boolean_checkbox
-    weight: 7
+    weight: 8
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
   field_service:
     type: entity_reference_autocomplete
-    weight: 5
+    weight: 7
     region: content
     settings:
       match_operator: CONTAINS
@@ -289,19 +309,6 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
-  field_work_order_id:
-    type: number
-    weight: 10
-    region: content
-    settings:
-      placeholder: ''
-    third_party_settings: {  }
-  field_work_order_notes:
-    type: comment_default
-    weight: 9
-    region: content
-    settings: {  }
-    third_party_settings: {  }
   field_work_todo_description:
     type: text_textarea
     weight: 4
@@ -320,17 +327,9 @@ content:
     third_party_settings: {  }
   path:
     type: path
-    weight: 9
+    weight: 10
     region: content
     settings: {  }
-    third_party_settings: {  }
-  title:
-    type: string_textfield
-    weight: 0
-    region: content
-    settings:
-      size: 60
-      placeholder: ''
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
@@ -342,4 +341,7 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  field_work_order_id: true
+  field_work_order_notes: true
+  title: true

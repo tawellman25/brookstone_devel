@@ -1,0 +1,29 @@
+uuid: 8c539e7c-253d-4ab0-b145-07786ec00f37
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.winter_pruning
+    - field.storage.contract_sections.field_service
+  content:
+    - 'taxonomy_term:services:285f77c6-ae42-4cbb-9edd-569c4cebedcc'
+id: contract_sections.winter_pruning.field_service
+field_name: field_service
+entity_type: contract_sections
+bundle: winter_pruning
+label: Service
+description: "Select the service this contract section represents.<br><br>\r\nThis service determines which Work Order type will be created and controls how this section is scheduled, estimated, and reported."
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 285f77c6-ae42-4cbb-9edd-569c4cebedcc
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: wo_services_references
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

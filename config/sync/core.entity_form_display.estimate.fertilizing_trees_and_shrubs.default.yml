@@ -1,0 +1,59 @@
+uuid: f8c03c9b-9cfa-4b4e-b05e-1284d54d54c4
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.fertilizing_trees_and_shrubs
+    - field.field.estimate.fertilizing_trees_and_shrubs.field_is_current_revision
+  module:
+    - field_layout
+    - layout_discovery
+    - path
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: estimate.fertilizing_trees_and_shrubs.default
+targetEntityType: estimate
+bundle: fertilizing_trees_and_shrubs
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_is_current_revision:
+    type: boolean_checkbox
+    weight: 18
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: -5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

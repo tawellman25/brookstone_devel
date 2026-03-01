@@ -30,12 +30,13 @@ public function generate(array $options = ['force' => FALSE]) : void {
 
   // Use the module helper so cron + drush share the same guard logic.
   if (function_exists('_contract_residential_checkups_enqueue_dispatch')) {
-    _contract_residential_checkups_enqueue_dispatch($force, 'drush');
-    $this->logger()->success(
-      $force
-        ? 'Forced dispatch enqueued.'
-        : 'Dispatch enqueued (daily-guarded).'
-    );
+    $dispatched = _contract_residential_checkups_enqueue_dispatch($force, 'drush');
+    if ($dispatched) {
+      $this->logger()->success($force ? 'Forced dispatch enqueued.' : 'Dispatch enqueued.');
+    }
+    else {
+      $this->logger()->notice('Already dispatched today — skipped. Use --force to override.');
+    }
     return;
   }
 

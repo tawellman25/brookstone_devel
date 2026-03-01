@@ -196,3 +196,57 @@ function _contract_residential_stamp_parent_contract_last_updated(EntityInterfac
 function contract_residential_cron(): void {
   _contract_residential_checkups_enqueue_dispatch(FALSE, 'cron');
 }
+
+/**
+ * Enqueue the checkup dispatch item, guarded to run at most once per day.
+ *
+ * Pushes one 'dispatch' item onto the contract_residential_checkup_generator
+ * queue. The queue worker (ContractResidentialCheckupGeneratorQueueWorker)
+ * fans that out into individual per-section 'process_section' items on the
+ * same queue.
+ *
+ * A daily guard via Drupal State prevents duplicate dispatches when cron
+ * runs more than once in a day. Pass $force = TRUE to bypass the guard
+ * (e.g. drush bos:checkups:generate --force).
+ *
+ * State key:  contract_residential.checkups_last_dispatch_date
+ * Queue name: contract_residential_checkup_generator
+ *
+ * @param bool $force
+ *   Skip the daily guard and enqueue regardless of last dispatch date.
+ * @param string $source
+ *   Caller identifier included in the queue item and the log entry
+ *   ('cron', 'drush').
+ */
+function _contract_residential_checkups_enqueue_dispatch(bool $force, string $source): bool {
+  $state_key = 'contract_residential.checkups_last_dispatch_date';
+  $queue_name = 'contract_residential_checkup_generator';
+  $today = date('Y-m-d');
+
+  if (!$force) {
+    $last_dispatch = (string) \Drupal::state()->get($state_key, '');
+    if ($last_dispatch === $today) {
+      return FALSE;
+    }
+  }
+
+  \Drupal::queue($queue_name)->createItem([
+    'op' => 'dispatch',
+    'queued_at' => \Drupal::time()->getRequestTime(),
+    'source' => $source,
+  ]);
+
+  \Drupal::state()->set($state_key, $today);
+
+  \Drupal::logger('contract_residential_checkups')->info(
+    'Checkup dispatch enqueued. Source: @source. Force: @force. Date: @date. Queue: @queue.',
+    [
+      '@source' => $source,
+      '@force' => $force ? 'yes' : 'no',
+      '@date' => $today,
+      '@queue' => $queue_name,
+    ]
+  );
+
+  return TRUE;
+}

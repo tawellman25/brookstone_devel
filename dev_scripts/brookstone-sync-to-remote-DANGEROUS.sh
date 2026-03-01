@@ -5,10 +5,20 @@ export LC_ALL=C
 
 ###############################################################################
 # sync-to-remote-DANGEROUS.sh
-# LIVE deploy script — rsync code only, composer install, config import.
+# LIVE deploy script — rsync code, composer install, drush cr.
 # SAFE DEFAULT: DRY-RUN + explicit confirmation required.
 #
+# Usage:
+#   --live              Execute a real deploy (default: dry-run)
+#   --dry-run           Force dry-run (default)
+#   --yes               Skip confirmation prompt
+#   --cim               Run drush cim after composer install (opt-in)
+#   --no-maintenance    Skip maintenance mode
+#   --skip-composer     Skip composer install
+#   --skip-cr           Skip drush cr
+#
 # NOTE:
+# - Config import (drush cim) does NOT run by default. Pass --cim to enable.
 # - .vscode/, dev_scripts/, __BOS_AI/ are local-only and excluded from sync.
 #   They will not be sent to LIVE and will not be deleted from LIVE.
 ###############################################################################
@@ -23,7 +33,7 @@ DRY_RUN=1
 REQUIRE_CONFIRM=1
 USE_MAINTENANCE=1
 RUN_COMPOSER=1
-RUN_CIM=1
+RUN_CIM=0
 RUN_CR=1
 
 LOCK_NAME=".deploy-lock-brookstone"
@@ -41,7 +51,7 @@ while [[ $# -gt 0 ]]; do
     --yes) REQUIRE_CONFIRM=0 ;;
     --no-maintenance) USE_MAINTENANCE=0 ;;
     --skip-composer) RUN_COMPOSER=0 ;;
-    --skip-cim) RUN_CIM=0 ;;
+    --cim) RUN_CIM=1 ;;
     --skip-cr) RUN_CR=0 ;;
     *) die "Unknown option: $1" ;;
   esac
@@ -167,4 +177,4 @@ fi
 [[ "$RUN_CIM" -eq 1 ]] && remote "cd '${REMOTE_ROOT}' && drush cim -y"
 [[ "$RUN_CR" -eq 1 ]] && remote "cd '${REMOTE_ROOT}' && drush cr -y"
 
-log "Deploy complete (code + vendor + config; DB untouched; files on S3)."
+log "Deploy complete (code + vendor${RUN_CIM:+, config import}; DB untouched; files on S3)."

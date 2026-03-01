@@ -9,8 +9,8 @@ export LC_ALL=C
 # SAFE DEFAULT: DRY-RUN + explicit confirmation required.
 #
 # NOTE:
-# - .vscode/, dev_scripts/, __BOS_AI/ are now DEPLOYED to LIVE and PROTECTED
-#   from deletion on LIVE (even with --delete).
+# - .vscode/, dev_scripts/, __BOS_AI/ are local-only and excluded from sync.
+#   They will not be sent to LIVE and will not be deleted from LIVE.
 ###############################################################################
 
 REMOTE_HOST="brookstone"
@@ -99,10 +99,10 @@ RSYNC_FLAGS=(
   --partial
   --safe-links
 
-  # PROTECT these on LIVE (never delete, even with --delete)
-  --filter='protect .vscode/***'
-  --filter='protect dev_scripts/***'
-  --filter='protect __BOS_AI/***'
+  # local-only dev directories — exclude from sync entirely (not sent, not deleted on LIVE)
+  --exclude ".vscode/"
+  --exclude "dev_scripts/"
+  --exclude "__BOS_AI/"
 
   # deps/local-only
   --exclude "vendor/"

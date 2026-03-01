@@ -113,10 +113,7 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
     $section_storage = $this->etm->getStorage('contract_sections');
 
     $query = $section_storage->getQuery()
-      ->accessCheck(FALSE)
-      ->exists('field_contract')
-      ->exists('field_service')
-      ->exists('field_check_up_frequency');
+      ->accessCheck(FALSE);
 
     $ids = $query->execute();
     if (!$ids) {
@@ -407,8 +404,8 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
     $storage = $this->etm->getStorage('scheduling');
     $query = $storage->getQuery()->accessCheck(FALSE);
     $query->condition('type', 'work_order');
-    $query->condition('field_date.value', $start->format('Y-m-d'), '>=');
-    $query->condition('field_date.value', $end->format('Y-m-d'), '<=');
+    $query->condition('field_date.value', $start->getTimestamp(), '>=');
+    $query->condition('field_date.value', $end->getTimestamp(), '<=');
 
     $ids = $query->execute();
     return $ids ? array_values($ids) : [];
@@ -445,13 +442,13 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
         continue;
       }
 
-      if ((int) ($wo->get('field_contract')->target_id ?? 0) !== $contract_id) {
+      if (!$wo->hasField('field_contract') || (int) ($wo->get('field_contract')->target_id ?? 0) !== $contract_id) {
         continue;
       }
-      if ((int) ($wo->get('field_property')->target_id ?? 0) !== $property_id) {
+      if (!$wo->hasField('field_property') || (int) ($wo->get('field_property')->target_id ?? 0) !== $property_id) {
         continue;
       }
-      if ((int) ($wo->get('field_service')->target_id ?? 0) !== $service_tid) {
+      if (!$wo->hasField('field_service') || (int) ($wo->get('field_service')->target_id ?? 0) !== $service_tid) {
         continue;
       }
 
@@ -497,13 +494,13 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
         continue;
       }
 
-      if ((int) ($wo->get('field_contract')->target_id ?? 0) !== $contract_id) {
+      if (!$wo->hasField('field_contract') || (int) ($wo->get('field_contract')->target_id ?? 0) !== $contract_id) {
         continue;
       }
-      if ((int) ($wo->get('field_property')->target_id ?? 0) !== $property_id) {
+      if (!$wo->hasField('field_property') || (int) ($wo->get('field_property')->target_id ?? 0) !== $property_id) {
         continue;
       }
-      if ((int) ($wo->get('field_service')->target_id ?? 0) !== $service_tid) {
+      if (!$wo->hasField('field_service') || (int) ($wo->get('field_service')->target_id ?? 0) !== $service_tid) {
         continue;
       }
 
@@ -538,13 +535,13 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
         continue;
       }
 
-      if ((int) ($wo->get('field_contract')->target_id ?? 0) !== $contract_id) {
+      if (!$wo->hasField('field_contract') || (int) ($wo->get('field_contract')->target_id ?? 0) !== $contract_id) {
         continue;
       }
-      if ((int) ($wo->get('field_property')->target_id ?? 0) !== $property_id) {
+      if (!$wo->hasField('field_property') || (int) ($wo->get('field_property')->target_id ?? 0) !== $property_id) {
         continue;
       }
-      if ((int) ($wo->get('field_service')->target_id ?? 0) !== $service_tid) {
+      if (!$wo->hasField('field_service') || (int) ($wo->get('field_service')->target_id ?? 0) !== $service_tid) {
         continue;
       }
 
@@ -583,7 +580,9 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
       'created' => $this->time->getRequestTime(),
       'field_work_order' => $work_order_id,
       'field_date' => [
-        'value' => $due_date->format('Y-m-d'),
+        'value' => $due_date->getTimestamp(),
+        'end_value' => $due_date->getTimestamp(),
+        'duration' => 1439,
       ],
       'field_scheduled' => 1,
       'field_scheduled_firm' => 0,

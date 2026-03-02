@@ -59,8 +59,22 @@ final class EstimateRequestAutoCreator {
   private const REQ_FIELD_CONTRACT = 'field_contract';
   private const REQ_FIELD_SECTION = 'field_contract_section';
   private const REQ_FIELD_PRIORITY = 'field_priority';
+  private const REQ_FIELD_PROPERTY = 'field_property';
+  private const REQ_FIELD_OWNER = 'field_owner';
+  private const REQ_FIELD_ASSIGNED_TO = 'field_assigned_to';
   private const REQ_FIELD_SERVICE = 'field_service';
   private const REQ_FIELD_STATUS = 'field_status';
+
+  /**
+   * Contract entity fields read to populate the estimate request.
+   */
+  private const CONTRACT_FIELD_PROPERTY = 'field_property';
+  private const CONTRACT_FIELD_OWNER = 'field_property_owner';
+
+  /**
+   * Service term field that holds the default estimator user reference.
+   */
+  private const SERVICE_FIELD_DEFAULT_ESTIMATOR = 'field_default_estimator';
 
   /**
    * Defaults.
@@ -168,17 +182,9 @@ final class EstimateRequestAutoCreator {
       self::REQ_FIELD_PRIORITY => self::DEFAULT_PRIORITY,
     ];
 
-    // Try to set Contract from the section if present.
+    // Populate field_contract from the section.
     if ($section->hasField(self::REQ_FIELD_CONTRACT)) {
-      // Unlikely field name matches; but if it does, use it directly.
       $cid = (int) ($section->get(self::REQ_FIELD_CONTRACT)->target_id ?? 0);
-      if ($cid > 0) {
-        $values[self::REQ_FIELD_CONTRACT] = ['target_id' => $cid];
-      }
-    }
-    // Common section->contract field patterns. Adjust if your section uses something else.
-    elseif ($section->hasField('field_contract')) {
-      $cid = (int) ($section->get('field_contract')->target_id ?? 0);
       if ($cid > 0) {
         $values[self::REQ_FIELD_CONTRACT] = ['target_id' => $cid];
       }
@@ -190,17 +196,43 @@ final class EstimateRequestAutoCreator {
       }
     }
 
-    // Try to set Service from section if present.
+    // Populate field_property and field_owner by loading the resolved contract.
+    $contract_id = (int) ($values[self::REQ_FIELD_CONTRACT]['target_id'] ?? 0);
+    if ($contract_id > 0) {
+      $contract = $this->entityTypeManager->getStorage('contracts')->load($contract_id);
+      if ($contract !== NULL) {
+        if ($contract->hasField(self::CONTRACT_FIELD_PROPERTY)) {
+          $pid = (int) ($contract->get(self::CONTRACT_FIELD_PROPERTY)->target_id ?? 0);
+          if ($pid > 0) {
+            $values[self::REQ_FIELD_PROPERTY] = ['target_id' => $pid];
+          }
+        }
+        if ($contract->hasField(self::CONTRACT_FIELD_OWNER)) {
+          $uid = (int) ($contract->get(self::CONTRACT_FIELD_OWNER)->target_id ?? 0);
+          if ($uid > 0) {
+            $values[self::REQ_FIELD_OWNER] = ['target_id' => $uid];
+          }
+        }
+      }
+    }
+
+    // Populate field_service from the section.
     if ($section->hasField(self::REQ_FIELD_SERVICE)) {
       $tid = (int) ($section->get(self::REQ_FIELD_SERVICE)->target_id ?? 0);
       if ($tid > 0) {
         $values[self::REQ_FIELD_SERVICE] = ['target_id' => $tid];
       }
     }
-    elseif ($section->hasField('field_service')) {
-      $tid = (int) ($section->get('field_service')->target_id ?? 0);
-      if ($tid > 0) {
-        $values[self::REQ_FIELD_SERVICE] = ['target_id' => $tid];
+
+    // Populate field_assigned_to from the service term's field_default_estimator.
+    $service_tid = (int) ($values[self::REQ_FIELD_SERVICE]['target_id'] ?? 0);
+    if ($service_tid > 0) {
+      $service_term = $this->entityTypeManager->getStorage('taxonomy_term')->load($service_tid);
+      if ($service_term !== NULL && $service_term->hasField(self::SERVICE_FIELD_DEFAULT_ESTIMATOR)) {
+        $estimator_uid = (int) ($service_term->get(self::SERVICE_FIELD_DEFAULT_ESTIMATOR)->target_id ?? 0);
+        if ($estimator_uid > 0) {
+          $values[self::REQ_FIELD_ASSIGNED_TO] = ['target_id' => $estimator_uid];
+        }
       }
     }
 

@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_insert().
+ */
+function estimate_notifications_entity_insert(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_request') {
+    return;
+  }
+  \Drupal::service('estimate_notifications.estimate_request_notifier')->applyInsert($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function estimate_notifications_entity_update(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_request') {
+    return;
+  }
+  \Drupal::service('estimate_notifications.estimate_request_notifier')->applyUpdate($entity);
+}
+
+/**
+ * Implements hook_mail().
+ */
+function estimate_notifications_mail($key, &$message, $params) {
+  if ($key === 'assignment_notification') {
+    $message['subject'] = $params['subject'] ?? 'New Estimate Request Assigned';
+    $message['body'] = is_array($params['body']) ? $params['body'] : [$params['body']];
+    $message['mimemail']['text'] = implode('', $params['body']);
+    $message['plain'] = is_array($params['plain']) ? implode("\n", $params['plain']) : $params['plain'];
+    $message['headers']['Content-Type'] = 'text/html; charset=UTF-8';
+  }
+}

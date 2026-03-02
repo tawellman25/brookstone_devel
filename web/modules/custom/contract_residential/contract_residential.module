@@ -250,3 +250,51 @@ function _contract_residential_checkups_enqueue_dispatch(bool $force, string $so
 
   return TRUE;
 }
+
+/**
+ * Sync field_contract back-reference on every referenced contract section.
+ *
+ * When a residential contract is saved, iterate over all section reference
+ * fields and ensure each referenced contract_sections entity has its
+ * field_contract pointing back to this contract.
+ */
+function _contract_residential_sync_section_parent_links(EntityInterface $entity): void {
+  $field_definitions = \Drupal::service('entity_field.manager')
+    ->getFieldDefinitions('contracts', 'residential');
+
+  $contract_id = (int) $entity->id();
+  $section_storage = \Drupal::entityTypeManager()->getStorage('contract_sections');
+
+  foreach ($field_definitions as $field_name => $definition) {
+    if ($definition->getType() !== 'entity_reference') {
+      continue;
+    }
+    $settings = $definition->getSettings();
+    if (empty($settings['target_type']) || $settings['target_type'] !== 'contract_sections') {
+      continue;
+    }
+    if ($entity->get($field_name)->isEmpty()) {
+      continue;
+    }
+
+    foreach ($entity->get($field_name) as $item) {
+      $section_id = $item->target_id;
+      if (empty($section_id)) {
+        continue;
+      }
+      $section = $section_storage->load($section_id);
+      if (!$section) {
+        continue;
+      }
+      if (!$section->hasField('field_contract')) {
+        continue;
+      }
+      $current_ref = $section->get('field_contract')->target_id;
+      if ((int) $current_ref === $contract_id) {
+        continue;
+      }
+      $section->set('field_contract', $contract_id);
+      $section->save();
+    }
+  }
+}

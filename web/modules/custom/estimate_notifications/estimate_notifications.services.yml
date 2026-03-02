@@ -1,0 +1,8 @@
+services:
+  estimate_notifications.estimate_request_notifier:
+    class: Drupal\estimate_notifications\Service\EstimateRequestNotifier
+    arguments:
+      - '@entity_type.manager'
+      - '@logger.factory'
+      - '@current_user'
+      - '@plugin.manager.mail'

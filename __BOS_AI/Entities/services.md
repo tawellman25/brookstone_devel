@@ -43,6 +43,25 @@ Rules:
 
 ---
 
+### field_default_estimator (entity_reference → user)
+
+Meaning:
+- Stores the default estimator (user, teammates role) to be auto-assigned when an
+  Estimate Request is created for this service.
+
+Rules:
+- Optional. If empty, field_assigned_to on the resulting Estimate Request is left unset.
+- Handler filter: teammates role only. No other roles are selectable in the UI.
+- Default value on new terms: uid 1443 (Gerald Reeves).
+
+Usage:
+- EstimateRequestAutoCreator reads this field when auto-creating an estimate_request
+  from a Contract Section (field_do_you_want = '3').
+- The value is written to estimate_request.field_assigned_to at creation time.
+- Setting this field triggers the estimate_notifications assignment email to the estimator.
+
+---
+
 ## How Services Drive BOS
 
 ### Contract Sections

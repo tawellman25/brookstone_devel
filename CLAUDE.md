@@ -330,6 +330,7 @@ Located in `web/modules/custom/`. Modules are grouped by the `package` key in th
 | `estimate` | Full estimating domain: Estimate Requests, Estimates, revision chains, WO conversion |
 | `estimate_items` | Line-item pricing engine (labor/materials/equipment/subcontractor bundles) |
 | `estimates` | Estimate and lead workflow integration |
+| `estimate_notifications` | Sends assignment email to estimator when `field_assigned_to` is set on `estimate_request`. Fires on insert (if assigned) and on update (empty → populated transition only). |
 
 ### Work Order — per-bundle modules (package: Work Orders)
 One module per WO service bundle. Each implements `hook_entity_presave` to calculate totals on completion and writes "last completed" data back to `property_*` detail entities.

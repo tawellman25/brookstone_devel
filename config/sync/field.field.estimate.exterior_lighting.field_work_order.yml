@@ -1,0 +1,29 @@
+uuid: be98f807-9e19-4ac9-84f9-cdf43ee38779
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.exterior_lighting
+    - eck.eck_type.work_order.exterior_lighting
+    - field.storage.estimate.field_work_order
+id: estimate.exterior_lighting.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: exterior_lighting
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      exterior_lighting: exterior_lighting
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: exterior_lighting
+field_type: entity_reference

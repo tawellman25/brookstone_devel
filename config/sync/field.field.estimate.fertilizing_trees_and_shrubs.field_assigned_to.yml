@@ -1,0 +1,29 @@
+uuid: 88061a54-00c5-4954-8e38-04a715f7608a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.fertilizing_trees_and_shrubs
+    - field.storage.estimate.field_assigned_to
+  content:
+    - 'user:user:04140ad1-bc72-49a6-b12f-19e53aaf21b1'
+id: estimate.fertilizing_trees_and_shrubs.field_assigned_to
+field_name: field_assigned_to
+entity_type: estimate
+bundle: fertilizing_trees_and_shrubs
+label: 'Assigned To'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 04140ad1-bc72-49a6-b12f-19e53aaf21b1
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

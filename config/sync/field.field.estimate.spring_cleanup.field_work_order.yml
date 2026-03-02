@@ -1,0 +1,29 @@
+uuid: da0709ae-c81b-4dfb-a1c1-4f474a3c29c4
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.spring_cleanup
+    - eck.eck_type.work_order.spring_cleanup
+    - field.storage.estimate.field_work_order
+id: estimate.spring_cleanup.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: spring_cleanup
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      spring_cleanup: spring_cleanup
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: spring_cleanup
+field_type: entity_reference

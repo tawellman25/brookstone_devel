@@ -1,0 +1,29 @@
+uuid: f4e21370-22f1-47c9-a3f4-3fae01f0ae45
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.sprinkler_winterizing
+    - eck.eck_type.work_order.sprinkler_winterizing
+    - field.storage.estimate.field_work_order
+id: estimate.sprinkler_winterizing.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: sprinkler_winterizing
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      sprinkler_winterizing: sprinkler_winterizing
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: sprinkler_winterizing
+field_type: entity_reference

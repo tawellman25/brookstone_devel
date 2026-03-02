@@ -4,7 +4,14 @@ status: true
 dependencies:
   config:
     - eck.eck_type.estimate.sprinkler_winterizing
+    - field.field.estimate.sprinkler_winterizing.field_assigned_to
+    - field.field.estimate.sprinkler_winterizing.field_estimate_request
+    - field.field.estimate.sprinkler_winterizing.field_estimate_total
     - field.field.estimate.sprinkler_winterizing.field_is_current_revision
+    - field.field.estimate.sprinkler_winterizing.field_revision_number
+    - field.field.estimate.sprinkler_winterizing.field_revision_of
+    - field.field.estimate.sprinkler_winterizing.field_stage
+    - field.field.estimate.sprinkler_winterizing.field_work_order
   module:
     - field_layout
     - layout_discovery
@@ -31,6 +38,66 @@ content:
     region: content
     settings:
       display_label: true
+    third_party_settings: {  }
+  field_assigned_to:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate_request:
+    type: entity_reference_autocomplete
+    weight: 15
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate_total:
+    type: number
+    weight: 14
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_revision_number:
+    type: number
+    weight: 17
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_revision_of:
+    type: entity_reference_autocomplete
+    weight: 16
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_stage:
+    type: options_select
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
     third_party_settings: {  }
   path:
     type: path

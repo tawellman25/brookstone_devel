@@ -1,0 +1,33 @@
+uuid: 94333eed-664a-4dd0-9233-19281ad42bee
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.sprinkler_check_up
+    - field.storage.estimate.field_stage
+    - taxonomy.vocabulary.estimate_stage
+  content:
+    - 'taxonomy_term:estimate_stage:863a00e0-b80a-4712-a4d3-b175f7bea5fd'
+id: estimate.sprinkler_check_up.field_stage
+field_name: field_stage
+entity_type: estimate
+bundle: sprinkler_check_up
+label: Stage
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 863a00e0-b80a-4712-a4d3-b175f7bea5fd
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      estimate_stage: estimate_stage
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

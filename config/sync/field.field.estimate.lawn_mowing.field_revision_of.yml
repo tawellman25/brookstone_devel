@@ -1,0 +1,28 @@
+uuid: 4bedf424-74ba-483d-ada2-0ab12e25d076
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.lawn_mowing
+    - field.storage.estimate.field_revision_of
+id: estimate.lawn_mowing.field_revision_of
+field_name: field_revision_of
+entity_type: estimate
+bundle: lawn_mowing
+label: 'Revision of'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      lawn_mowing: lawn_mowing
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: lawn_mowing
+field_type: entity_reference

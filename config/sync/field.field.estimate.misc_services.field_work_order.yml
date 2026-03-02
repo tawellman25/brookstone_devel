@@ -1,0 +1,29 @@
+uuid: 38b36b36-9af1-4b41-9504-5105e62945fe
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.misc_services
+    - eck.eck_type.work_order.misc_services
+    - field.storage.estimate.field_work_order
+id: estimate.misc_services.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: misc_services
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      misc_services: misc_services
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: misc_services
+field_type: entity_reference

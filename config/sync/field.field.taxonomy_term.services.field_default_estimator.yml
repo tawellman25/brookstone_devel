@@ -1,0 +1,38 @@
+uuid: 17ae6823-7fc2-460a-8713-5288d9672403
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_default_estimator
+    - taxonomy.vocabulary.services
+id: taxonomy_term.services.field_default_estimator
+field_name: field_default_estimator
+entity_type: taxonomy_term
+bundle: services
+label: 'Default Estimator'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        teammates: teammates
+        administrator: '0'
+        site_admin: '0'
+        site_assistant: '0'
+        administration: '0'
+        supervisor: '0'
+        client: '0'
+        user: '0'
+    include_anonymous: false
+field_type: entity_reference

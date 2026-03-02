@@ -1,0 +1,29 @@
+uuid: e57844a1-f60a-4bf9-af7d-baaa23892a9a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.sprinkler_repair
+    - eck.eck_type.work_order.sprinkler_repair
+    - field.storage.estimate.field_work_order
+id: estimate.sprinkler_repair.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: sprinkler_repair
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      sprinkler_repair: sprinkler_repair
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: sprinkler_repair
+field_type: entity_reference

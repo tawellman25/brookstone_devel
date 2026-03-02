@@ -1,0 +1,29 @@
+uuid: 462cc0b1-ea08-4d7a-a756-26e33b2304de
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.weed_spraying
+    - eck.eck_type.estimate_request.standard
+    - field.storage.estimate.field_estimate_request
+id: estimate.weed_spraying.field_estimate_request
+field_name: field_estimate_request
+entity_type: estimate
+bundle: weed_spraying
+label: 'Estimate Request'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate_request'
+  handler_settings:
+    target_bundles:
+      standard: standard
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

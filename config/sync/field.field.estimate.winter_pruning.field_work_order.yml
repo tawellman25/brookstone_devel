@@ -1,0 +1,29 @@
+uuid: 4532090c-0c5e-4e86-89e0-3b1c7f264788
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.winter_pruning
+    - eck.eck_type.work_order.winter_pruning
+    - field.storage.estimate.field_work_order
+id: estimate.winter_pruning.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: winter_pruning
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      winter_pruning: winter_pruning
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: winter_pruning
+field_type: entity_reference

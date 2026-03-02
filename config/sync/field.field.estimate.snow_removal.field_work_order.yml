@@ -1,0 +1,29 @@
+uuid: 2968620a-09ba-404d-b10c-4c4b0a47f0b8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.snow_removal
+    - eck.eck_type.work_order.snow_removal
+    - field.storage.estimate.field_work_order
+id: estimate.snow_removal.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: snow_removal
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      snow_removal: snow_removal
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: snow_removal
+field_type: entity_reference

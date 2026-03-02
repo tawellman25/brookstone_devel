@@ -1,0 +1,29 @@
+uuid: df628fdc-9fc7-4e71-a128-cded552908eb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.sprinkler_installation
+    - field.storage.estimate.field_assigned_to
+  content:
+    - 'user:user:04140ad1-bc72-49a6-b12f-19e53aaf21b1'
+id: estimate.sprinkler_installation.field_assigned_to
+field_name: field_assigned_to
+entity_type: estimate
+bundle: sprinkler_installation
+label: 'Assigned To'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 04140ad1-bc72-49a6-b12f-19e53aaf21b1
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

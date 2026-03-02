@@ -56,10 +56,10 @@ All scripts are in `dev_scripts/`. They require SSH host aliases configured in `
 # LIVE deploy — will ask you to type LIVE to confirm
 ./dev_scripts/brookstone-sync-to-remote-DANGEROUS.sh --live
 
-# Other flags: --skip-composer  --skip-cim  --skip-cr  --no-maintenance  --yes
+# Other flags: --skip-composer  --cim  --skip-cr  --no-maintenance  --yes
 ```
 
-The deploy script rsyncs code to live, then runs `composer install --no-dev`, `drush cim`, and `drush cr` on the remote. **The DB is never touched by the deploy.** Directories `.vscode/`, `dev_scripts/`, and `__BOS_AI/` are protected from deletion on live even with `--delete`.
+The deploy script rsyncs code to live, then runs `composer install --no-dev` and `drush cr` on the remote. Config import (`drush cim`) does **not** run by default — pass `--cim` to enable it. **The DB is never touched by the deploy.** Directories `.vscode/`, `dev_scripts/`, and `__BOS_AI/` are protected from deletion on live even with `--delete`.
 
 ## Custom Drush Commands
 
@@ -415,6 +415,10 @@ All Drupal config is exported to `config/sync/` and deployed via `drush cim`. Th
 - `web/sites/*/settings*.php`, `web/*/services*.yml` — environment secrets
 - `web/sites/*/files/` — user files (on S3)
 - `*.sql.gz`, `*.sql` — database dumps
+
+## Known Issues / Pending Renames
+
+- **`estimate.pinyon_pine_ips_beetle` → `work_order.pinion_pine_ips_beetle` spelling mismatch.** The estimate bundle uses `pinyon` (correct botanical spelling); the work_order bundle uses `pinion` (legacy typo). The `field_work_order` field on `estimate.pinyon_pine_ips_beetle` intentionally targets `work_order.pinion_pine_ips_beetle`. Do not "fix" that reference until the work_order bundle is renamed to `work_order.pinyon_pine_ips_beetle` — renaming the WO bundle requires coordinated changes to config, the `wo_pinion_pine_ips_beetle` module, and any views/reports that reference it by name.
 
 ## BOS Architectural Rules
 

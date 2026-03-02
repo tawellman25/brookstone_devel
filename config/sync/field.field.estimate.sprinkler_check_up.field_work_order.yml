@@ -1,0 +1,29 @@
+uuid: d06ff62d-8fcc-428e-97ae-2b9ef04aa5f8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.sprinkler_check_up
+    - eck.eck_type.work_order.sprinkler_check_up
+    - field.storage.estimate.field_work_order
+id: estimate.sprinkler_check_up.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: sprinkler_check_up
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      sprinkler_check_up: sprinkler_check_up
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: sprinkler_check_up
+field_type: entity_reference

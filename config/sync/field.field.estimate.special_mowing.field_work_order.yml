@@ -1,0 +1,29 @@
+uuid: 2b38f3fa-a16f-4b34-b612-8cd18fb7c0b9
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.special_mowing
+    - eck.eck_type.work_order.special_mowing
+    - field.storage.estimate.field_work_order
+id: estimate.special_mowing.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: special_mowing
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      special_mowing: special_mowing
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: special_mowing
+field_type: entity_reference

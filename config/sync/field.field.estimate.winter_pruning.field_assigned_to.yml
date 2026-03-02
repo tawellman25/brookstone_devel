@@ -1,0 +1,29 @@
+uuid: 4678b4d4-7a42-494a-ad6b-dc8c25588580
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.winter_pruning
+    - field.storage.estimate.field_assigned_to
+  content:
+    - 'user:user:04140ad1-bc72-49a6-b12f-19e53aaf21b1'
+id: estimate.winter_pruning.field_assigned_to
+field_name: field_assigned_to
+entity_type: estimate
+bundle: winter_pruning
+label: 'Assigned To'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 04140ad1-bc72-49a6-b12f-19e53aaf21b1
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

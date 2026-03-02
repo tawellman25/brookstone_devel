@@ -1,0 +1,29 @@
+uuid: aebdbd79-bab4-4c71-9d74-a6853f830e41
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.winter_pruning
+    - eck.eck_type.estimate_request.standard
+    - field.storage.estimate.field_estimate_request
+id: estimate.winter_pruning.field_estimate_request
+field_name: field_estimate_request
+entity_type: estimate
+bundle: winter_pruning
+label: 'Estimate Request'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate_request'
+  handler_settings:
+    target_bundles:
+      standard: standard
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

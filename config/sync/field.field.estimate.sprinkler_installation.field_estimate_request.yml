@@ -1,0 +1,29 @@
+uuid: b11db92b-d08e-4a64-894e-d90849a8dd71
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.sprinkler_installation
+    - eck.eck_type.estimate_request.standard
+    - field.storage.estimate.field_estimate_request
+id: estimate.sprinkler_installation.field_estimate_request
+field_name: field_estimate_request
+entity_type: estimate
+bundle: sprinkler_installation
+label: 'Estimate Request'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate_request'
+  handler_settings:
+    target_bundles:
+      standard: standard
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

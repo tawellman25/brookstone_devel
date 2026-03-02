@@ -8,7 +8,6 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
-use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\taxonomy\TermInterface;
 
 /**
@@ -60,7 +59,6 @@ final class EstimateRequestAutoCreator {
   private const REQ_FIELD_CONTRACT = 'field_contract';
   private const REQ_FIELD_SECTION = 'field_contract_section';
   private const REQ_FIELD_PRIORITY = 'field_priority';
-  private const REQ_FIELD_REQUESTED_BY = 'field_requested_by';
   private const REQ_FIELD_SERVICE = 'field_service';
   private const REQ_FIELD_STATUS = 'field_status';
 
@@ -80,7 +78,6 @@ final class EstimateRequestAutoCreator {
 
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
-    private readonly AccountProxyInterface $currentUser,
     private readonly LoggerChannelFactoryInterface $loggerFactory,
   ) {}
 
@@ -169,7 +166,6 @@ final class EstimateRequestAutoCreator {
       'type' => self::REQUEST_BUNDLE,
       self::REQ_FIELD_SECTION => ['target_id' => (int) $section->id()],
       self::REQ_FIELD_PRIORITY => self::DEFAULT_PRIORITY,
-      self::REQ_FIELD_REQUESTED_BY => ['target_id' => (int) $this->currentUser->id()],
     ];
 
     // Try to set Contract from the section if present.

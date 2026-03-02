@@ -1,0 +1,29 @@
+uuid: 6e118dcb-e801-41b1-96f3-1571dd1a50e9
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.pre_emergent
+    - field.storage.estimate.field_assigned_to
+  content:
+    - 'user:user:04140ad1-bc72-49a6-b12f-19e53aaf21b1'
+id: estimate.pre_emergent.field_assigned_to
+field_name: field_assigned_to
+entity_type: estimate
+bundle: pre_emergent
+label: 'Assigned To'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 04140ad1-bc72-49a6-b12f-19e53aaf21b1
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

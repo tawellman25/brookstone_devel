@@ -1,0 +1,29 @@
+uuid: 96da9565-700e-434f-a3d7-e829446957b9
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.fertilizing_trees_and_shrubs
+    - eck.eck_type.estimate_request.standard
+    - field.storage.estimate.field_estimate_request
+id: estimate.fertilizing_trees_and_shrubs.field_estimate_request
+field_name: field_estimate_request
+entity_type: estimate
+bundle: fertilizing_trees_and_shrubs
+label: 'Estimate Request'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate_request'
+  handler_settings:
+    target_bundles:
+      standard: standard
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: 47d08fbc-4c9c-4419-8ef3-4d465dc53945
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.christmas_decorations
+    - field.storage.estimate.field_assigned_to
+  content:
+    - 'user:user:04140ad1-bc72-49a6-b12f-19e53aaf21b1'
+id: estimate.christmas_decorations.field_assigned_to
+field_name: field_assigned_to
+entity_type: estimate
+bundle: christmas_decorations
+label: 'Assigned To'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: 04140ad1-bc72-49a6-b12f-19e53aaf21b1
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

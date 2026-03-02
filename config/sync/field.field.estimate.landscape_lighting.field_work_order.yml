@@ -1,0 +1,29 @@
+uuid: a1ce562b-022c-4417-915f-faa13cb48261
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscape_lighting
+    - eck.eck_type.work_order.landscape_lighting
+    - field.storage.estimate.field_work_order
+id: estimate.landscape_lighting.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: landscape_lighting
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      landscape_lighting: landscape_lighting
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: landscape_lighting
+field_type: entity_reference

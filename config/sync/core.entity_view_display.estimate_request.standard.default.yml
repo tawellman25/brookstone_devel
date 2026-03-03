@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - eck.eck_type.estimate_request.standard
+    - field.field.estimate_request.standard.field_assigned_to
     - field.field.estimate_request.standard.field_client_requested
     - field.field.estimate_request.standard.field_contact
     - field.field.estimate_request.standard.field_contract
@@ -45,6 +46,14 @@ content:
         refresh: 60
     third_party_settings: {  }
     weight: 0
+    region: content
+  field_assigned_to:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
     region: content
   field_client_requested:
     type: text_default

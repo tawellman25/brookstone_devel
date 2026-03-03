@@ -1,0 +1,38 @@
+uuid: 1194c447-0203-41a8-b09e-2eff1a5adb1b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_request.standard
+    - field.storage.estimate_request.field_assigned_to
+id: estimate_request.standard.field_assigned_to
+field_name: field_assigned_to
+entity_type: estimate_request
+bundle: standard
+label: 'Assigned To'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+    filter:
+      type: role
+      role:
+        teammates: teammates
+        administrator: '0'
+        site_admin: '0'
+        site_assistant: '0'
+        administration: '0'
+        supervisor: '0'
+        client: '0'
+        user: '0'
+    include_anonymous: false
+field_type: entity_reference

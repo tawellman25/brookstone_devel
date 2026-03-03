@@ -1,0 +1,47 @@
+uuid: 8ae5916e-8237-4290-8714-53a3eeed8771
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contracts.residential
+    - field.storage.contracts.field_paper_quote_pdf
+  module:
+    - file
+    - filefield_paths
+third_party_settings:
+  filefield_paths:
+    enabled: true
+    file_path:
+      value: '[contracts:url:path]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    file_name:
+      value: 'paper_quote_[contracts:title].[file:ffp-extension-original]'
+      options:
+        slashes: false
+        pathauto: false
+        transliterate: false
+    temp_location: ''
+    redirect: false
+    retroactive_update: false
+    active_updating: false
+id: contracts.residential.field_paper_quote_pdf
+field_name: field_paper_quote_pdf
+entity_type: contracts
+bundle: residential
+label: 'Paper Quote PDF'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'pdf jpg jpeg png'
+  max_filesize: ''
+  description_field: false
+field_type: file

@@ -6,6 +6,7 @@ dependencies:
     - eck.eck_type.estimate.aerating
     - field.field.estimate.aerating.field_access_constraints
     - field.field.estimate.aerating.field_assigned_to
+    - field.field.estimate.aerating.field_contract_section
     - field.field.estimate.aerating.field_estimate_request
     - field.field.estimate.aerating.field_estimate_total
     - field.field.estimate.aerating.field_is_current_revision
@@ -48,6 +49,16 @@ content:
   field_assigned_to:
     type: entity_reference_autocomplete
     weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract_section:
+    type: entity_reference_autocomplete
+    weight: 16
     region: content
     settings:
       match_operator: CONTAINS

@@ -5,6 +5,7 @@ dependencies:
   config:
     - eck.eck_type.estimate.sprinkler_design
     - field.field.estimate.sprinkler_design.field_assigned_to
+    - field.field.estimate.sprinkler_design.field_contract_section
     - field.field.estimate.sprinkler_design.field_estimate_request
     - field.field.estimate.sprinkler_design.field_estimate_total
     - field.field.estimate.sprinkler_design.field_is_current_revision
@@ -32,16 +33,19 @@ content:
     region: content
     settings: {  }
     third_party_settings: {  }
-  field_is_current_revision:
-    type: boolean_checkbox
-    weight: 18
-    region: content
-    settings:
-      display_label: true
-    third_party_settings: {  }
   field_assigned_to:
     type: entity_reference_autocomplete
     weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract_section:
+    type: entity_reference_autocomplete
+    weight: 16
     region: content
     settings:
       match_operator: CONTAINS
@@ -65,6 +69,13 @@ content:
     region: content
     settings:
       placeholder: ''
+    third_party_settings: {  }
+  field_is_current_revision:
+    type: boolean_checkbox
+    weight: 18
+    region: content
+    settings:
+      display_label: true
     third_party_settings: {  }
   field_revision_number:
     type: number

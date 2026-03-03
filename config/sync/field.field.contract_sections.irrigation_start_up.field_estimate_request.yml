@@ -1,0 +1,29 @@
+uuid: 4e0256f2-81e8-439e-8ba3-3495f0cc4e51
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_start_up
+    - eck.eck_type.estimate_request.standard
+    - field.storage.contract_sections.field_estimate_request
+id: contract_sections.irrigation_start_up.field_estimate_request
+field_name: field_estimate_request
+entity_type: contract_sections
+bundle: irrigation_start_up
+label: 'Estimate Request'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate_request'
+  handler_settings:
+    target_bundles:
+      standard: standard
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

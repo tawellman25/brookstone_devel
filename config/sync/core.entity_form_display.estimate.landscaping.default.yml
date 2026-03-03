@@ -5,6 +5,7 @@ dependencies:
   config:
     - eck.eck_type.estimate.landscaping
     - field.field.estimate.landscaping.field_assigned_to
+    - field.field.estimate.landscaping.field_contract_section
     - field.field.estimate.landscaping.field_estimate_request
     - field.field.estimate.landscaping.field_estimate_total
     - field.field.estimate.landscaping.field_estimate_type
@@ -99,6 +100,16 @@ content:
   field_assigned_to:
     type: entity_reference_autocomplete
     weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract_section:
+    type: entity_reference_autocomplete
+    weight: 16
     region: content
     settings:
       match_operator: CONTAINS

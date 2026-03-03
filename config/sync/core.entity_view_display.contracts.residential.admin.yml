@@ -37,6 +37,7 @@ dependencies:
     - field.field.contracts.residential.field_old_contract_id
     - field.field.contracts.residential.field_old_nid
     - field.field.contracts.residential.field_paper_contract_pdf
+    - field.field.contracts.residential.field_paper_quote_pdf
     - field.field.contracts.residential.field_pre_emergent
     - field.field.contracts.residential.field_property
     - field.field.contracts.residential.field_property_owner
@@ -49,6 +50,7 @@ dependencies:
     - field.field.contracts.residential.field_winter_pruning
     - views.view.contract_action_log_contact_timeline
     - views.view.contract_notes
+    - views.view.contract_paper_quote
     - views.view.contract_residential_header
     - views.view.contract_scanned_copy
     - views.view.contract_sections_admin_table
@@ -120,6 +122,20 @@ third_party_settings:
               items_per_page: none
               exposed: {  }
             weight: 1
+            additional: {  }
+          a753f8c9-cb46-46b5-8ef6-4cd2c9b2329b:
+            uuid: a753f8c9-cb46-46b5-8ef6-4cd2c9b2329b
+            region: first
+            configuration:
+              id: 'views_block:contract_paper_quote-block_1'
+              label: ''
+              label_display: '0'
+              provider: views
+              context_mapping: {  }
+              views_label: ''
+              items_per_page: none
+              exposed: {  }
+            weight: 4
             additional: {  }
         third_party_settings: {  }
       -
@@ -1052,5 +1068,6 @@ hidden:
   field_contract_submitted: true
   field_old_contract_id: true
   field_old_nid: true
+  field_paper_quote_pdf: true
   field_winter_pruning: true
   title: true

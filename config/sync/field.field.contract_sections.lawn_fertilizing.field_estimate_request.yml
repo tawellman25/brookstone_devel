@@ -1,0 +1,29 @@
+uuid: 271bab6f-73ed-444c-b8ad-3c97474520c4
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.lawn_fertilizing
+    - eck.eck_type.estimate_request.standard
+    - field.storage.contract_sections.field_estimate_request
+id: contract_sections.lawn_fertilizing.field_estimate_request
+field_name: field_estimate_request
+entity_type: contract_sections
+bundle: lawn_fertilizing
+label: 'Estimate Request'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate_request'
+  handler_settings:
+    target_bundles:
+      standard: standard
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

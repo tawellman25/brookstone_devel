@@ -17,3 +17,13 @@ function estimate_contract_residential_entity_update(EntityInterface $entity): v
   }
   \Drupal::service('contract_residential.estimate_request_auto_creator')->apply($entity);
 }
+
+/**
+ * Implements hook_entity_delete().
+ */
+function estimate_contract_residential_entity_delete(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_request') {
+    return;
+  }
+  \Drupal::service('contract_residential.estimate_request_auto_creator')->onRequestDeleted($entity);
+}

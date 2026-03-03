@@ -149,6 +149,63 @@ final class EstimateRequestAutoCreator {
   }
 
   /**
+   * Clean up contract section back-reference when an Estimate Request is deleted.
+   *
+   * Call from hook_entity_delete.
+   */
+  public function onRequestDeleted(EntityInterface $request): void {
+    if ($request->getEntityTypeId() !== self::REQUEST_ENTITY_TYPE) {
+      return;
+    }
+
+    // Find the contract section that points to this request.
+    if (!$request->hasField(self::REQ_FIELD_SECTION)) {
+      return;
+    }
+
+    $section_id = (int) ($request->get(self::REQ_FIELD_SECTION)->target_id ?? 0);
+    if ($section_id <= 0) {
+      return;
+    }
+
+    $section = $this->entityTypeManager->getStorage(self::SECTION_ENTITY_TYPE)->load($section_id);
+    if ($section === NULL) {
+      return;
+    }
+
+    if (!$section->hasField(self::SECTION_REQUEST_POINTER_FIELD)) {
+      return;
+    }
+
+    $pointer = (int) ($section->get(self::SECTION_REQUEST_POINTER_FIELD)->target_id ?? 0);
+    if ($pointer !== (int) $request->id()) {
+      return;
+    }
+
+    self::$savingSectionGuard[$section_id] = TRUE;
+    try {
+      $section->set(self::SECTION_REQUEST_POINTER_FIELD, NULL);
+      $section->save();
+
+      $this->loggerFactory->get('contract_residential')
+        ->info('Cleared Estimate Request pointer on Contract Section @sid (request @rid deleted).', [
+          '@sid' => $section_id,
+          '@rid' => (int) $request->id(),
+        ]);
+    }
+    catch (\Throwable $e) {
+      $this->loggerFactory->get('contract_residential')
+        ->error('Failed clearing Estimate Request pointer on Contract Section @sid: @msg', [
+          '@sid' => $section_id,
+          '@msg' => $e->getMessage(),
+        ]);
+    }
+    finally {
+      unset(self::$savingSectionGuard[$section_id]);
+    }
+  }
+
+  /**
    * Find an existing Estimate Request id by contract section reference.
    */
   private function findExistingRequestIdBySection(int $section_id): int {

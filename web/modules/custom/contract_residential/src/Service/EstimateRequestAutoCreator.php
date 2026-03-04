@@ -61,7 +61,6 @@ final class EstimateRequestAutoCreator {
   private const REQ_FIELD_PRIORITY = 'field_priority';
   private const REQ_FIELD_PROPERTY = 'field_property';
   private const REQ_FIELD_OWNER = 'field_owner';
-  private const REQ_FIELD_ASSIGNED_TO = 'field_assigned_to';
   private const REQ_FIELD_SERVICE = 'field_service';
   private const REQ_FIELD_STATUS = 'field_status';
 
@@ -70,11 +69,6 @@ final class EstimateRequestAutoCreator {
    */
   private const CONTRACT_FIELD_PROPERTY = 'field_property';
   private const CONTRACT_FIELD_OWNER = 'field_property_owner';
-
-  /**
-   * Service term field that holds the default estimator user reference.
-   */
-  private const SERVICE_FIELD_DEFAULT_ESTIMATOR = 'field_default_estimator';
 
   /**
    * Defaults.
@@ -99,53 +93,59 @@ final class EstimateRequestAutoCreator {
    * Apply rule to a just-saved Contract Section.
    *
    * Call from hook_entity_insert and hook_entity_update.
+   *
+   * @return int|null
+   *   The created estimate request ID, or NULL if no request was created.
    */
-  public function apply(EntityInterface $section): void {
+  public function apply(EntityInterface $section): ?int {
     // Only act on Contract Sections.
     if ($section->getEntityTypeId() !== self::SECTION_ENTITY_TYPE) {
-      return;
+      return NULL;
     }
 
     // Must have trigger field + pointer field.
     if (!$section->hasField(self::SECTION_DO_YOU_WANT_FIELD) || !$section->hasField(self::SECTION_REQUEST_POINTER_FIELD)) {
-      return;
+      return NULL;
     }
 
     $sid = (int) $section->id();
     if ($sid <= 0) {
       // Should not happen for insert/update hooks, but be safe.
-      return;
+      return NULL;
     }
 
     // Recursion guard (we re-save the section to write the pointer).
     if (!empty(self::$savingSectionGuard[$sid])) {
-      return;
+      return NULL;
     }
 
     // Only trigger when saved as Request Quote.
     $trigger_value = (string) ($section->get(self::SECTION_DO_YOU_WANT_FIELD)->value ?? '');
     if ($trigger_value !== self::DO_YOU_WANT_REQUEST_QUOTE_VALUE) {
-      return;
+      return NULL;
     }
 
     // If pointer already set, nothing to do.
     $existing_pointer = (int) ($section->get(self::SECTION_REQUEST_POINTER_FIELD)->target_id ?? 0);
     if ($existing_pointer > 0) {
-      return;
+      return NULL;
     }
 
     // Fallback: if pointer missing but a request already exists for this section, reuse it.
     $existing_req_id = $this->findExistingRequestIdBySection($sid);
     if ($existing_req_id > 0) {
       $this->writePointerBackToSection($section, $existing_req_id);
-      return;
+      return NULL;
     }
 
     // Create new request.
     $req_id = $this->createEstimateRequestForSection($section);
     if ($req_id > 0) {
       $this->writePointerBackToSection($section, $req_id);
+      return $req_id;
     }
+
+    return NULL;
   }
 
   /**
@@ -278,18 +278,6 @@ final class EstimateRequestAutoCreator {
       $tid = (int) ($section->get(self::REQ_FIELD_SERVICE)->target_id ?? 0);
       if ($tid > 0) {
         $values[self::REQ_FIELD_SERVICE] = ['target_id' => $tid];
-      }
-    }
-
-    // Populate field_assigned_to from the service term's field_default_estimator.
-    $service_tid = (int) ($values[self::REQ_FIELD_SERVICE]['target_id'] ?? 0);
-    if ($service_tid > 0) {
-      $service_term = $this->entityTypeManager->getStorage('taxonomy_term')->load($service_tid);
-      if ($service_term !== NULL && $service_term->hasField(self::SERVICE_FIELD_DEFAULT_ESTIMATOR)) {
-        $estimator_uid = (int) ($service_term->get(self::SERVICE_FIELD_DEFAULT_ESTIMATOR)->target_id ?? 0);
-        if ($estimator_uid > 0) {
-          $values[self::REQ_FIELD_ASSIGNED_TO] = ['target_id' => $estimator_uid];
-        }
       }
     }
 

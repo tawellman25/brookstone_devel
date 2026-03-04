@@ -1,25 +1,18 @@
-uuid: 6ce0b2c2-f10b-434a-a9bd-b318c29be14c
+uuid: 9cc09e9e-b0cd-4ef3-8a2d-ea1fd4b5c60d
 langcode: en
 status: true
 dependencies:
   config:
-    - field.storage.contract_action_log.field_context
-    - field.storage.contract_action_log.field_from_status
-    - field.storage.contract_action_log.field_to_status
-    - user.role.administration
-    - user.role.administrator
-    - user.role.site_admin
-    - user.role.site_assistant
+    - field.storage.estimate_request.field_status
   module:
     - eck
-    - user
     - views_url_path_arguments
-id: contract_action_log_contact_timeline
-label: 'Contract Action Log — Contact Timeline'
+id: estimate_request_title_and_status
+label: 'Estimate Request - Title and Status'
 module: views
 description: ''
 tag: ''
-base_table: contract_action_log_field_data
+base_table: estimate_request_field_data
 base_field: id
 display:
   default:
@@ -28,11 +21,11 @@ display:
     display_plugin: default
     position: 0
     display_options:
-      title: Timeline
+      title: ''
       fields:
         title:
           id: title
-          table: contract_action_log_field_data
+          table: estimate_request_field_data
           field: title
           relationship: none
           group_type: group
@@ -95,18 +88,18 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        created:
-          id: created
-          table: contract_action_log_field_data
-          field: created
+        id:
+          id: id
+          table: estimate_request_field_data
+          field: id
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: contract_action_log
-          entity_field: created
+          entity_type: estimate_request
+          entity_field: id
           plugin_id: field
-          label: 'Entered on'
-          exclude: false
+          label: ''
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -138,7 +131,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -147,21 +140,10 @@ display:
           empty_zero: false
           hide_alter_empty: true
           click_sort_column: value
-          type: timestamp
+          type: number_integer
           settings:
-            date_format: short
-            custom_date_format: ''
-            timezone: ''
-            tooltip:
-              date_format: long
-              custom_date_format: ''
-            time_diff:
-              enabled: false
-              future_format: '@interval hence'
-              past_format: '@interval ago'
-              granularity: 2
-              refresh: 60
-              description: ''
+            thousand_separator: ''
+            prefix_suffix: true
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -172,18 +154,16 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        uid:
-          id: uid
-          table: contract_action_log_field_data
-          field: uid
+        field_status:
+          id: field_status
+          table: estimate_request__field_status
+          field: field_status
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: contract_action_log
-          entity_field: uid
           plugin_id: field
-          label: By
-          exclude: false
+          label: ''
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -215,7 +195,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -237,16 +217,18 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        field_from_status:
-          id: field_from_status
-          table: contract_action_log__field_from_status
-          field: field_from_status
-          relationship: none
+        title_1:
+          id: title_1
+          table: properties_field_data
+          field: title
+          relationship: field_property
           group_type: group
           admin_label: ''
+          entity_type: properties
+          entity_field: title
           plugin_id: field
-          label: 'From Status'
-          exclude: false
+          label: ''
+          exclude: true
           alter:
             alter_text: false
             text: ''
@@ -278,133 +260,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: target_id
-          type: entity_reference_label
-          settings:
-            link: true
-          group_column: target_id
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        field_to_status:
-          id: field_to_status
-          table: contract_action_log__field_to_status
-          field: field_to_status
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: field
-          label: 'To Status'
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: target_id
-          type: entity_reference_label
-          settings:
-            link: true
-          group_column: target_id
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        field_context:
-          id: field_context
-          table: contract_action_log__field_context
-          field: field_context
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: field
-          label: Context
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -413,8 +269,9 @@ display:
           empty_zero: false
           hide_alter_empty: true
           click_sort_column: value
-          type: basic_string
-          settings: {  }
+          type: string
+          settings:
+            link_to_entity: false
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -425,28 +282,60 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        nothing:
+          id: nothing
+          table: views
+          field: nothing
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: custom
+          label: ''
+          exclude: false
+          alter:
+            alter_text: true
+            text: "<h2>Estimate Request #{{ id }} - {{ field_status }}</br>\r\n{{ title_1 }}</h2>"
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: false
       pager:
-        type: full
+        type: some
         options:
           offset: 0
-          pagination_heading_level: h4
-          items_per_page: 100
-          total_pages: null
-          id: 0
-          tags:
-            next: ››
-            previous: ‹‹
-            first: '« First'
-            last: 'Last »'
-          expose:
-            items_per_page: false
-            items_per_page_label: 'Items per page'
-            items_per_page_options: '5, 10, 25, 50'
-            items_per_page_options_all: false
-            items_per_page_options_all_label: '- All -'
-            offset: false
-            offset_label: Offset
-          quantity: 9
+          items_per_page: 1
       exposed_form:
         type: basic
         options:
@@ -458,43 +347,22 @@ display:
           sort_asc_label: Asc
           sort_desc_label: Desc
       access:
-        type: role
-        options:
-          role:
-            administrator: administrator
-            site_admin: site_admin
-            site_assistant: site_assistant
-            administration: administration
+        type: none
+        options: {  }
       cache:
         type: tag
         options: {  }
       empty: {  }
-      sorts:
-        created:
-          id: created
-          table: contract_action_log_field_data
-          field: created
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: contract_action_log
-          entity_field: created
-          plugin_id: date
-          order: ASC
-          expose:
-            label: ''
-            field_identifier: ''
-          exposed: false
-          granularity: minute
+      sorts: {  }
       arguments:
         id:
           id: id
-          table: contracts_field_data
+          table: estimate_request_field_data
           field: id
-          relationship: field_contract
+          relationship: none
           group_type: group
           admin_label: ''
-          entity_type: contracts
+          entity_type: estimate_request
           entity_field: id
           plugin_id: numeric
           default_action: default
@@ -526,66 +394,9 @@ display:
           not: false
       filters: {  }
       style:
-        type: table
-        options:
-          grouping:
-            -
-              field: created_1
-              rendered: true
-              rendered_strip: false
-          row_class: ''
-          default_row_class: true
-          columns:
-            title: title
-            created: created
-            field_from_status: field_from_status
-            field_to_status: field_to_status
-            created_1: created_1
-          default: '-1'
-          info:
-            title:
-              sortable: false
-              default_sort_order: asc
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
-            created:
-              sortable: false
-              default_sort_order: asc
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
-            field_from_status:
-              sortable: false
-              default_sort_order: asc
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
-            field_to_status:
-              sortable: false
-              default_sort_order: asc
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
-            created_1:
-              sortable: false
-              default_sort_order: asc
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
-          override: true
-          sticky: false
-          summary: ''
-          empty_table: false
-          caption: ''
-          description: ''
+        type: default
       row:
-        type: 'entity:contract_action_log'
+        type: fields
       query:
         type: views_query
         options:
@@ -595,13 +406,13 @@ display:
           replica: false
           query_tags: {  }
       relationships:
-        field_contract:
-          id: field_contract
-          table: contract_action_log__field_contract
-          field: field_contract
+        field_property:
+          id: field_property
+          table: estimate_request__field_property
+          field: field_property
           relationship: none
           group_type: group
-          admin_label: Contracts
+          admin_label: 'field_property: Properties'
           plugin_id: standard
           required: false
       header: {  }
@@ -613,48 +424,20 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - url.query_args
-        - user.roles
       tags:
-        - 'config:field.storage.contract_action_log.field_context'
-        - 'config:field.storage.contract_action_log.field_from_status'
-        - 'config:field.storage.contract_action_log.field_to_status'
+        - 'config:field.storage.estimate_request.field_status'
   block_1:
     id: block_1
     display_title: Block
     display_plugin: block
-    position: 2
-    display_options:
-      display_extenders: {  }
-    cache_metadata:
-      max-age: -1
-      contexts:
-        - 'languages:language_content'
-        - 'languages:language_interface'
-        - url
-        - url.query_args
-        - user.roles
-      tags:
-        - 'config:field.storage.contract_action_log.field_context'
-        - 'config:field.storage.contract_action_log.field_from_status'
-        - 'config:field.storage.contract_action_log.field_to_status'
-  page_1:
-    id: page_1
-    display_title: Page
-    display_plugin: page
     position: 1
     display_options:
       display_extenders: {  }
-      path: admin/office/contacts/action-log
     cache_metadata:
       max-age: -1
       contexts:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - url.query_args
-        - user.roles
       tags:
-        - 'config:field.storage.contract_action_log.field_context'
-        - 'config:field.storage.contract_action_log.field_from_status'
-        - 'config:field.storage.contract_action_log.field_to_status'
+        - 'config:field.storage.estimate_request.field_status'

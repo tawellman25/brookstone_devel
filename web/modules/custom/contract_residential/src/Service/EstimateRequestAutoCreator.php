@@ -8,6 +8,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\contract_residential\ContractActionLogWriter;
 use Drupal\taxonomy\TermInterface;
 
 /**
@@ -287,18 +288,54 @@ final class EstimateRequestAutoCreator {
       $values[self::REQ_FIELD_STATUS] = ['target_id' => (int) $new_term->id()];
     }
 
-    // Optional: set a human-readable label/title if the entity supports it.
-    // ECK often uses "title" as a base property; safe to set if present.
-    $title = $this->buildRequestTitle($section);
-    if (!empty($title)) {
-      $values['title'] = $title;
-    }
+    // Temporary title — updated with the entity ID after save.
+    $values['title'] = 'Estimate Request - Pending';
 
     try {
       $req = $storage->create($values);
       $req->save();
 
       $rid = (int) $req->id();
+
+      // Update title to include the entity ID (may already be set by hook_entity_insert).
+      $expected_title = 'Estimate Request #' . $rid;
+      if ($req->label() !== $expected_title) {
+        $req->set('title', $expected_title);
+        $req->save();
+      }
+
+      // Log to contract action log (failure must never block creation).
+      $contract_id = (int) ($values[self::REQ_FIELD_CONTRACT]['target_id'] ?? 0);
+      if ($contract_id > 0) {
+        try {
+          $contract = $this->entityTypeManager->getStorage('contracts')->load($contract_id);
+          if ($contract !== NULL) {
+            $log_context = [
+              'estimate_request_id' => $rid,
+            ];
+            $service_tid = (int) ($values[self::REQ_FIELD_SERVICE]['target_id'] ?? 0);
+            if ($service_tid > 0) {
+              $term = $this->entityTypeManager->getStorage('taxonomy_term')->load($service_tid);
+              if ($term !== NULL) {
+                $log_context['service'] = $term->label();
+              }
+            }
+            if ($req->hasField('field_assigned_to') && !$req->get('field_assigned_to')->isEmpty()) {
+              $log_context['assigned_to'] = (int) $req->get('field_assigned_to')->target_id;
+            }
+            $log_context['url'] = $req->toUrl('canonical')->setAbsolute(TRUE)->toString();
+            ContractActionLogWriter::writeEvent($contract, 'estimate_request_created', 'system', $log_context);
+          }
+        }
+        catch (\Throwable $e) {
+          $this->loggerFactory->get('contract_residential')
+            ->warning('Failed writing action log for Estimate Request @rid: @msg', [
+              '@rid' => $rid,
+              '@msg' => $e->getMessage(),
+            ]);
+        }
+      }
+
       $this->loggerFactory->get('contract_residential')
         ->info('Created Estimate Request @rid for Contract Section @sid (Request Quote).', [
           '@rid' => $rid,
@@ -370,28 +407,6 @@ final class EstimateRequestAutoCreator {
 
     $term = $storage->load(array_values($ids)[0]);
     return ($term instanceof TermInterface) ? $term : NULL;
-  }
-
-  /**
-   * Build a sensible title if the entity supports "title".
-   */
-  private function buildRequestTitle(EntityInterface $section): string {
-    $sid = (int) $section->id();
-    if ($sid <= 0) {
-      return '';
-    }
-
-    $contract_id = 0;
-    if ($section->hasField('field_contract')) {
-      $contract_id = (int) ($section->get('field_contract')->target_id ?? 0);
-    }
-    elseif ($section->hasField('field_parent_contract')) {
-      $contract_id = (int) ($section->get('field_parent_contract')->target_id ?? 0);
-    }
-
-    return $contract_id > 0
-      ? sprintf('Estimate Request – Contract %d – Section %d', $contract_id, $sid)
-      : sprintf('Estimate Request – Section %d', $sid);
   }
 
 }

@@ -8,7 +8,7 @@ use Drupal\Core\Entity\EntityInterface;
  * Implements hook_module_implements_alter().
  */
 function estimate_intake_module_implements_alter(array &$implementations, string $hook): void {
-  if ($hook === 'entity_presave' && isset($implementations['estimate_intake'])) {
+  if (($hook === 'entity_presave' || $hook === 'entity_insert') && isset($implementations['estimate_intake'])) {
     // Move estimate_intake to the front so fields are populated
     // before estimate's warning builder checks them.
     $group = $implementations['estimate_intake'];
@@ -135,5 +135,25 @@ function estimate_intake_entity_presave(EntityInterface $entity): void {
     foreach ($messages as $msg) {
       $messenger->addStatus($msg);
     }
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ *
+ * Assigns "Estimate Request #ID" title to manually-created estimate requests
+ * that have empty, generic, or default titles.
+ */
+function estimate_intake_entity_insert(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_request' || $entity->bundle() !== 'standard') {
+    return;
+  }
+
+  $title = trim((string) ($entity->label() ?? ''));
+  $generic_titles = ['', 'Standard', 'Estimate Request - Pending'];
+
+  if (in_array($title, $generic_titles, TRUE)) {
+    $entity->set('title', 'Estimate Request #' . $entity->id());
+    $entity->save();
   }
 }

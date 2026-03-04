@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * @file
+ * Suppresses known contrib module warnings from staff-facing UI.
+ */
+
+/**
+ * Implements hook_init() via set_error_handler on module load.
+ */
+function bos_error_filter_init() {
+  set_error_handler('bos_error_filter_error_handler', E_WARNING);
+}
+
+/**
+ * Custom error handler to suppress known contrib warnings.
+ */
+function bos_error_filter_error_handler(int $errno, string $errstr, string $errfile, int $errline): bool {
+  // Suppress the known form_mode_control null foreach warning.
+  // TODO: Remove once form_mode_control patch is applied.
+  if (
+    $errno === E_WARNING &&
+    str_contains($errfile, 'form_mode_control/form_mode_control.module') &&
+    str_contains($errstr, 'foreach() argument must be of type array|object, null given')
+  ) {
+    return TRUE;
+  }
+
+  return FALSE;
+}

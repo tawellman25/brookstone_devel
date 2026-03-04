@@ -1,0 +1,128 @@
+<?php
+
+/**
+ * @file
+ * Syncs measured sq ft from wo_tasks_list tasks to property_landscape_details.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\eck\Entity\EckEntity;
+
+/**
+ * Implements hook_entity_insert().
+ */
+function bos_property_sync_entity_insert(EntityInterface $entity) {
+  bos_property_sync_handle_task_save($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function bos_property_sync_entity_update(EntityInterface $entity) {
+  bos_property_sync_handle_task_save($entity);
+}
+
+/**
+ * Core sync logic — fires on insert and update of wo_tasks_list tasks.
+ */
+function bos_property_sync_handle_task_save(EntityInterface $entity) {
+  // Only act on the two target bundles.
+  if ($entity->getEntityTypeId() !== 'wo_tasks_list') {
+    return;
+  }
+  if (!in_array($entity->bundle(), ['dethatching', 'aerating'])) {
+    return;
+  }
+
+  // Must have a measured sq ft value.
+  if ($entity->get('field_measured_sq_ft')->isEmpty()) {
+    return;
+  }
+
+  $measured_sq_ft = (float) $entity->get('field_measured_sq_ft')->value;
+
+  // Load the parent Work Order via field_work_order.
+  if ($entity->get('field_work_order')->isEmpty()) {
+    return;
+  }
+  $work_order = $entity->get('field_work_order')->entity;
+  if (!$work_order) {
+    return;
+  }
+
+  // Load the Property via field_property on the Work Order.
+  if ($work_order->get('field_property')->isEmpty()) {
+    return;
+  }
+  $property = $work_order->get('field_property')->entity;
+  if (!$property) {
+    return;
+  }
+  $property_id = $property->id();
+
+  // Find existing property_landscape_details for this property.
+  $storage = \Drupal::entityTypeManager()->getStorage('property_landscape_details');
+  $existing = $storage->loadByProperties([
+    'field_property' => $property_id,
+    'type' => 'current',
+  ]);
+
+  if (!empty($existing)) {
+    $landscape = reset($existing);
+    $existing_sq_ft = !$landscape->get('field_turf_sq_footage')->isEmpty()
+      ? (float) $landscape->get('field_turf_sq_footage')->value
+      : NULL;
+
+    if ($existing_sq_ft === NULL) {
+      // Blank — write it.
+      $landscape->set('field_turf_sq_footage', $measured_sq_ft);
+      $landscape->save();
+    }
+    elseif ($existing_sq_ft !== $measured_sq_ft) {
+      // Conflict — notify office staff via billing notes on the Work Order.
+      bos_property_sync_append_billing_note(
+        $work_order,
+        $measured_sq_ft,
+        $existing_sq_ft
+      );
+    }
+    // If equal, nothing to do.
+  }
+  else {
+    // No property_landscape_details exists — create one.
+    $landscape = $storage->create([
+      'type' => 'current',
+      'title' => 'Landscape Details',
+      'field_property' => $property_id,
+      'field_turf_sq_footage' => $measured_sq_ft,
+      'status' => 1,
+    ]);
+    $landscape->save();
+  }
+}
+
+/**
+ * Appends a conflict warning to field_billing_notes on the Work Order.
+ */
+function bos_property_sync_append_billing_note(EntityInterface $work_order, float $measured, float $existing) {
+  $timestamp = \Drupal::service('date.formatter')->format(
+    \Drupal::time()->getCurrentTime(),
+    'custom',
+    'm/d/Y g:ia'
+  );
+
+  $conflict_note = sprintf(
+    '[SQ FT MISMATCH %s] Task measured: %s sq ft — Property on file: %s sq ft. Office review required.',
+    $timestamp,
+    number_format($measured, 0),
+    number_format($existing, 0)
+  );
+
+  $current_notes = $work_order->get('field_billing_notes')->value ?? '';
+  $updated_notes = $current_notes
+    ? $current_notes . "\n" . $conflict_note
+    : $conflict_note;
+
+  $work_order->set('field_billing_notes', $updated_notes);
+  $work_order->save();
+}

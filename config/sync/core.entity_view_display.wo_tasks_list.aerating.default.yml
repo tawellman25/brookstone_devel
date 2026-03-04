@@ -5,6 +5,7 @@ dependencies:
   config:
     - eck.eck_type.wo_tasks_list.aerating
     - field.field.wo_tasks_list.aerating.field_aerating_equipment_used
+    - field.field.wo_tasks_list.aerating.field_measured_sq_ft
     - field.field.wo_tasks_list.aerating.field_sprinkler_heads_marked
     - field.field.wo_tasks_list.aerating.field_sprinkler_heads_we_marked
     - field.field.wo_tasks_list.aerating.field_work_order
@@ -22,6 +23,17 @@ content:
       link: true
     third_party_settings: {  }
     weight: 0
+    region: content
+  field_measured_sq_ft:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ','
+      decimal_separator: .
+      scale: 0
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 3
     region: content
   field_sprinkler_heads_marked:
     type: list_default

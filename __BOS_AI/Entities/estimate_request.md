@@ -26,6 +26,17 @@ field_status | entity_reference | Status
 
 ---
 
+## Title Format
+
+All estimate requests use the title format `Estimate Request #[id]`.
+
+This is set automatically by `estimate_intake` module's `hook_entity_insert`. Titles
+matching empty, `'Standard'`, or `'Estimate Request - Pending'` are replaced with the
+canonical format after the entity receives its ID. Custom titles entered by users are
+preserved.
+
+---
+
 ## Entry Points
 
 ### 1. Contract Path (Auto-Created)
@@ -39,10 +50,13 @@ Fields auto-populated at creation:
 - field_service        → copied from section.field_service
 - field_property       → loaded from contract.field_property
 - field_owner          → loaded from contract.field_property_owner
-- field_assigned_to    → read from service_term.field_default_estimator (if set)
 - field_priority       → 'normal' (hardcoded default)
 - field_status         → 'New' (term lookup by name in estimate_request_status vocab)
-- title                → 'Estimate Request – Contract {N} – Section {N}'
+- title                → 'Estimate Request #[id]' (set after save)
+
+Note: `field_assigned_to` comes from the entity field default value (configured in UI),
+not from the service taxonomy term. The `estimate_notifications` module sends the
+assignment email based on that default.
 
 Idempotency rules:
 - If contract_sections.field_estimate_request already set → do nothing.
@@ -54,6 +68,19 @@ Idempotency rules:
 An office user creates an estimate_request directly via the admin UI.
 All fields populated manually. No auto-creation side effects.
 
+The `estimate_intake` module fires on presave to auto-populate BOS record links:
+- `field_property` — matched from `field_requestor_address` via LIKE query on
+  `properties.property.field_street_address`. Only auto-set if exactly one match.
+- `field_owner` — loaded from the latest `ownership_record.record` for the matched property.
+- `field_contact` — matched by email (direct field) or phone (two-step via `phone_number`
+  sub-entity). If no match found, a new `contacts.contact` + `phone_number.contacts`
+  sub-entity is created.
+
+Only empty fields are populated — manual entries always win. Phone numbers are normalized
+to digits only before lookup and storage.
+
+Assignment email fires via estimate_notifications if field_assigned_to is set.
+
 ---
 
 ## Governance
@@ -61,6 +88,7 @@ All fields populated manually. No auto-creation side effects.
 - One Estimate Request is the umbrella for all estimates on a given service opportunity.
 - field_estimates allows all 34 estimate bundles (field updated 2025-12-06).
 - Intake must not be blocked if Property does not exist; Property creation is explicit.
-- Contact creation is explicit; no auto-creation from request fields.
+- Contact auto-creation is handled by `estimate_intake` only when requestor fields are
+  populated and no existing contact matches by email or phone.
 - field_assigned_to triggers the estimate_notifications email when populated
   (insert: if set; update: empty → value transition only).

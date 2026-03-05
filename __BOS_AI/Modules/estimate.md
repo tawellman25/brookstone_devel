@@ -297,9 +297,11 @@ Automated sequence:
 2. EstimateRequestAutoCreator (estimate_contract_residential module) creates
    an estimate_request.standard with all available fields pre-populated from
    the section and its parent contract (see estimate_request.md for field mapping).
-3. field_assigned_to is set from service_term.field_default_estimator if present.
-4. Back-reference written to contract_sections.field_estimate_request.
-5. estimate_notifications module fires; sends assignment email to field_assigned_to
+3. field_assigned_to comes from entity field default (configured in UI to office manager).
+4. Title set to 'Estimate Request #[id]' after save.
+5. Contract action log entry written (event key: 'estimate_request_created').
+6. Back-reference written to contract_sections.field_estimate_request.
+7. estimate_notifications module fires; sends assignment email to field_assigned_to
    user if field_assigned_to was just set (insert with value, or empty → value on update).
 
 Office steps after auto-creation:
@@ -316,7 +318,7 @@ Assignment email fires via estimate_notifications if field_assigned_to is set.
 
 ---
 
-# 11. Known Gaps (Estimate Workflow — As of 2026-03-02)
+# 11. Known Gaps (Estimate Workflow — As of 2026-03-05)
 
 The following workflow steps exist in design but are not yet implemented in code:
 
@@ -328,6 +330,8 @@ The following workflow steps exist in design but are not yet implemented in code
 | Client acceptance UI | No client-facing portal page or email link to accept/decline an estimate |
 | Client notification on estimate delivery | No outbound email to client when an estimate is ready for review |
 | Re-assignment notification | estimate_notifications only handles initial assignment (empty → value); reassignment email not yet implemented |
+| EVA view on contract | No view showing linked estimate requests on the contract detail page — not yet built |
+| Contract action log URL rendering | field_context URL stored by estimate_request_created event is plain text; not yet rendered as a clickable link |
 
 ---
 

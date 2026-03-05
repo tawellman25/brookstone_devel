@@ -421,10 +421,6 @@ All Drupal config is exported to `config/sync/` and deployed via `drush cim`. Th
 
 - **`estimate.pinyon_pine_ips_beetle` → `work_order.pinion_pine_ips_beetle` spelling mismatch.** The estimate bundle uses `pinyon` (correct botanical spelling); the work_order bundle uses `pinion` (legacy typo). The `field_work_order` field on `estimate.pinyon_pine_ips_beetle` intentionally targets `work_order.pinion_pine_ips_beetle`. Do not "fix" that reference until the work_order bundle is renamed to `work_order.pinyon_pine_ips_beetle` — renaming the WO bundle requires coordinated changes to config, the `wo_pinion_pine_ips_beetle` module, and any views/reports that reference it by name.
 
-- **`_estimate_contract_residential_OLD_VERSION/` directory.** A prior version of the `estimate_contract_residential` module existed in `estimate_contract_residential_OLD_VERSION/`. Drupal's `ExtensionDiscovery` was silently loading it instead of the correct module. Resolved by renaming to `_estimate_contract_residential_OLD_VERSION/` (leading underscore). It is dead code — do not restore or reference.
-
-- **`form_mode_control` contrib warning.** The `form_mode_control` module emits a `foreach()` warning on non-array in staff-facing UI. Suppressed by the `bos_error_filter` module via a custom error handler in `hook_init()`. This is a contrib bug workaround, not a fix — monitor for upstream resolution.
-
 ## BOS Architectural Rules
 
 From `__BOS_AI/README.md` and `__BOS_AI/Entities/01_entities_policy.md`:

@@ -12,6 +12,7 @@ dependencies:
     - field.field.wo_tasks_list.dethatching.field_work_order
   module:
     - conditional_fields
+    - field_group
     - field_layout
     - layout_discovery
 third_party_settings:
@@ -19,14 +20,39 @@ third_party_settings:
     id: layout_onecol
     settings:
       label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_work_order
+        - uid
+        - created
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
 id: wo_tasks_list.dethatching.admin
 targetEntityType: wo_tasks_list
 bundle: dethatching
 mode: admin
 content:
+  created:
+    type: datetime_timestamp
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_dethatching_equipment_used:
     type: entity_reference_autocomplete
-    weight: 0
+    weight: 1
     region: content
     settings:
       match_operator: CONTAINS
@@ -34,15 +60,22 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_measured_sq_ft:
+    type: number
+    weight: 0
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
   field_sprinkler_heads_marked:
     type: options_select
-    weight: 1
+    weight: 2
     region: content
     settings: {  }
     third_party_settings: {  }
   field_sprinkler_heads_we_marked:
     type: options_select
-    weight: 2
+    weight: 3
     region: content
     settings: {  }
     third_party_settings:
@@ -67,7 +100,17 @@ content:
             selector: ''
   field_work_order:
     type: entity_reference_autocomplete
-    weight: 2
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 5
     region: content
     settings:
       match_operator: CONTAINS
@@ -76,8 +119,5 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
-  created: true
-  field_measured_sq_ft: true
   path: true
   title: true
-  uid: true

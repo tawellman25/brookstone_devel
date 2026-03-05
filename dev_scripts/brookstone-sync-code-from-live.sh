@@ -4,8 +4,8 @@ export LANG=C
 export LC_ALL=C
 
 # ====== Config ======
-REMOTE_HOST="sewardsdevel"                  # SSH Host alias from ~/.ssh/config
-REMOTE_ROOT="/home/sewardsdevel9/sewards10" # Composer project root (contains web/)
+REMOTE_HOST="brookstone"                      # SSH Host alias from ~/.ssh/config
+REMOTE_ROOT="/home/brookstoneadmin/brookstone" # Composer project root (contains web/)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

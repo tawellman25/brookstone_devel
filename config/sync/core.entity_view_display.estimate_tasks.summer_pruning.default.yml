@@ -1,0 +1,65 @@
+uuid: e1f2a3b4-d017-4c7b-8d9e-f0a1b2c3d4e5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_tasks.summer_pruning
+    - field.field.estimate_tasks.summer_pruning.field_estimate
+    - field.field.estimate_tasks.summer_pruning.field_estimated_time
+    - field.field.estimate_tasks.summer_pruning.field_num_shrubs
+    - field.field.estimate_tasks.summer_pruning.field_num_trees
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: estimate_tasks.summer_pruning.default
+targetEntityType: estimate_tasks
+bundle: summer_pruning
+mode: default
+content:
+  field_estimate:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: -10
+    region: content
+  field_estimated_time:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_num_shrubs:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_num_trees:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  created: true
+  title: true
+  uid: true

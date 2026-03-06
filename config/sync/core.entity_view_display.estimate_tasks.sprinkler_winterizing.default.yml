@@ -1,0 +1,60 @@
+uuid: e1f2a3b4-d016-4c7b-8d9e-f0a1b2c3d4e5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_tasks.sprinkler_winterizing
+    - field.field.estimate_tasks.sprinkler_winterizing.field_controller_type
+    - field.field.estimate_tasks.sprinkler_winterizing.field_estimate
+    - field.field.estimate_tasks.sprinkler_winterizing.field_num_zones
+    - field.field.estimate_tasks.sprinkler_winterizing.field_sprinkler_system_type
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: estimate_tasks.sprinkler_winterizing.default
+targetEntityType: estimate_tasks
+bundle: sprinkler_winterizing
+mode: default
+content:
+  field_controller_type:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_estimate:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: -10
+    region: content
+  field_num_zones:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_sprinkler_system_type:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  created: true
+  title: true
+  uid: true

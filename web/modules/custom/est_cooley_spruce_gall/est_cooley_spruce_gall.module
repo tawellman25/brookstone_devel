@@ -1,0 +1,137 @@
+<?php
+
+/**
+ * @file
+ * Estimate Task module for Cooley Spruce Gall.
+ *
+ * Calculates estimate total from gallon-based chemical cost + sprayer fee + labor.
+ * Syncs field_num_trees to property_landscape_details on save.
+ */
+
+use Drupal\config_pages\Entity\ConfigPages;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function est_cooley_spruce_gall_entity_presave($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'cooley_spruce_gall') {
+    return;
+  }
+
+  $gallons = (float) $entity->get('field_gallons')->value;
+  $estimatedTime = (float) $entity->get('field_estimated_time')->value;
+  if (empty($gallons) || $gallons <= 0 || empty($estimatedTime) || $estimatedTime <= 0) {
+    return;
+  }
+
+  $businessSettings = ConfigPages::config('business_setting');
+  if (!$businessSettings) {
+    \Drupal::logger('est_cooley_spruce_gall')->error('Business settings config page not found.');
+    return;
+  }
+
+  // Chemical cost.
+  $cooleyRate = (float) $businessSettings->get('field_cooley_spruce_gall_rate')->value;
+  $chemical = $gallons * $cooleyRate;
+
+  // Sprayer fee (4-hour blocks).
+  $sprayerRate = (float) $businessSettings->get('field_tree_sprayer_rate')->value;
+  $sprayer = ceil($estimatedTime / 4) * $sprayerRate;
+
+  // Labor with minimum time guarantee.
+  $sprayLabor = (float) $businessSettings->get('field_spray_crew_labor')->value;
+  $sprayMinTime = (float) $businessSettings->get('field_spray_minimum_time')->value;
+  $laborTime = max($estimatedTime, $sprayMinTime);
+  $labor = $laborTime * $sprayLabor;
+
+  // TODO: Add trip fee when field_trip_fee is added to estimate_tasks.
+  $billingAdj = (float) ($entity->get('field_billing_adjustment')->value ?? 0);
+  $total = $chemical + $sprayer + $labor + $billingAdj;
+  $entity->set('field_estimate_total', $total);
+
+  \Drupal::logger('est_cooley_spruce_gall')->info(
+    'EST Cooley Spruce Gall presave: gallons=@gal, chemical=@chem, sprayer=@spray, labor=@labor, adj=@adj, total=@total',
+    [
+      '@gal' => $gallons,
+      '@chem' => $chemical,
+      '@spray' => $sprayer,
+      '@labor' => $labor,
+      '@adj' => $billingAdj,
+      '@total' => $total,
+    ]
+  );
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function est_cooley_spruce_gall_entity_insert($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'cooley_spruce_gall') {
+    return;
+  }
+  _est_cooley_spruce_gall_sync_property($entity, 'field_number_of_trees_bluespruce');
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function est_cooley_spruce_gall_entity_update($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'cooley_spruce_gall') {
+    return;
+  }
+  _est_cooley_spruce_gall_sync_property($entity, 'field_number_of_trees_bluespruce');
+}
+
+/**
+ * Syncs tree count to property_landscape_details:current.
+ */
+function _est_cooley_spruce_gall_sync_property($entity, string $propertyField) {
+  $numTrees = (int) $entity->get('field_num_trees')->value;
+  if (empty($numTrees) || $numTrees <= 0) {
+    return;
+  }
+
+  // Traverse: estimate_tasks → estimate → estimate_request → property.
+  $estimateRef = $entity->get('field_estimate')->referencedEntities();
+  if (empty($estimateRef)) {
+    return;
+  }
+  $estimate = reset($estimateRef);
+
+  $requestRef = $estimate->get('field_estimate_request')->referencedEntities();
+  if (empty($requestRef)) {
+    return;
+  }
+  $request = reset($requestRef);
+
+  $propertyRef = $request->get('field_property')->referencedEntities();
+  if (empty($propertyRef)) {
+    return;
+  }
+  $property = reset($propertyRef);
+  $propertyId = $property->id();
+
+  $landscapeEntities = \Drupal::entityTypeManager()
+    ->getStorage('property_landscape_details')
+    ->loadByProperties([
+      'field_property' => $propertyId,
+      'type' => 'current',
+    ]);
+
+  if (empty($landscapeEntities)) {
+    \Drupal::logger('est_cooley_spruce_gall')->warning(
+      'No property_landscape_details:current found for property @id.',
+      ['@id' => $propertyId]
+    );
+    return;
+  }
+
+  $landscapeEntity = reset($landscapeEntities);
+  $landscapeEntity->set($propertyField, $numTrees);
+  $landscapeEntity->save();
+
+  \Drupal::logger('est_cooley_spruce_gall')->info(
+    'EST Cooley Spruce Gall: synced @field=@val to property @id.',
+    ['@field' => $propertyField, '@val' => $numTrees, '@id' => $propertyId]
+  );
+}

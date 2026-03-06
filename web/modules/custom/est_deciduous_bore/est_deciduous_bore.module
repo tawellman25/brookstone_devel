@@ -1,0 +1,141 @@
+<?php
+
+/**
+ * @file
+ * Estimate Task module for Deciduous Bore.
+ *
+ * Calculates estimate total from tree-count chemical cost + sprayer fee + labor.
+ * Syncs field_num_trees to property_landscape_details on save.
+ */
+
+use Drupal\config_pages\Entity\ConfigPages;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function est_deciduous_bore_entity_presave($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'deciduous_bore') {
+    return;
+  }
+
+  $numTrees = (int) $entity->get('field_num_trees')->value;
+  $estimatedTime = (float) $entity->get('field_estimated_time')->value;
+  if (empty($numTrees) || $numTrees <= 0 || empty($estimatedTime) || $estimatedTime <= 0) {
+    return;
+  }
+
+  $businessSettings = ConfigPages::config('business_setting');
+  if (!$businessSettings) {
+    \Drupal::logger('est_deciduous_bore')->error('Business settings config page not found.');
+    return;
+  }
+
+  // Chemical cost — tiered on tree count breakpoint.
+  $breakpoint = (int) $businessSettings->get('field_deciduous_bore_tree_count_break')->value;
+  $rateUnder = (float) $businessSettings->get('field_deciduous_bore_rate')->value;
+  $rateOver = (float) $businessSettings->get('field_deciduous_bore_over_rate')->value;
+  $chemical = ($numTrees <= $breakpoint)
+    ? $numTrees * $rateUnder
+    : $numTrees * $rateOver;
+
+  // Sprayer fee (4-hour blocks).
+  $sprayerRate = (float) $businessSettings->get('field_tree_sprayer_rate')->value;
+  $sprayer = ceil($estimatedTime / 4) * $sprayerRate;
+
+  // Labor with minimum time guarantee.
+  $sprayLabor = (float) $businessSettings->get('field_spray_crew_labor')->value;
+  $sprayMinTime = (float) $businessSettings->get('field_spray_minimum_time')->value;
+  $laborTime = max($estimatedTime, $sprayMinTime);
+  $labor = $laborTime * $sprayLabor;
+
+  // TODO: Add trip fee when field_trip_fee is added to estimate_tasks.
+  $billingAdj = (float) ($entity->get('field_billing_adjustment')->value ?? 0);
+  $total = $chemical + $sprayer + $labor + $billingAdj;
+  $entity->set('field_estimate_total', $total);
+
+  \Drupal::logger('est_deciduous_bore')->info(
+    'EST Deciduous Bore presave: trees=@trees, chemical=@chem, sprayer=@spray, labor=@labor, adj=@adj, total=@total',
+    [
+      '@trees' => $numTrees,
+      '@chem' => $chemical,
+      '@spray' => $sprayer,
+      '@labor' => $labor,
+      '@adj' => $billingAdj,
+      '@total' => $total,
+    ]
+  );
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function est_deciduous_bore_entity_insert($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'deciduous_bore') {
+    return;
+  }
+  _est_deciduous_bore_sync_property($entity, 'field_number_of_trees_deciduous');
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function est_deciduous_bore_entity_update($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'deciduous_bore') {
+    return;
+  }
+  _est_deciduous_bore_sync_property($entity, 'field_number_of_trees_deciduous');
+}
+
+/**
+ * Syncs tree count to property_landscape_details:current.
+ */
+function _est_deciduous_bore_sync_property($entity, string $propertyField) {
+  $numTrees = (int) $entity->get('field_num_trees')->value;
+  if (empty($numTrees) || $numTrees <= 0) {
+    return;
+  }
+
+  // Traverse: estimate_tasks → estimate → estimate_request → property.
+  $estimateRef = $entity->get('field_estimate')->referencedEntities();
+  if (empty($estimateRef)) {
+    return;
+  }
+  $estimate = reset($estimateRef);
+
+  $requestRef = $estimate->get('field_estimate_request')->referencedEntities();
+  if (empty($requestRef)) {
+    return;
+  }
+  $request = reset($requestRef);
+
+  $propertyRef = $request->get('field_property')->referencedEntities();
+  if (empty($propertyRef)) {
+    return;
+  }
+  $property = reset($propertyRef);
+  $propertyId = $property->id();
+
+  $landscapeEntities = \Drupal::entityTypeManager()
+    ->getStorage('property_landscape_details')
+    ->loadByProperties([
+      'field_property' => $propertyId,
+      'type' => 'current',
+    ]);
+
+  if (empty($landscapeEntities)) {
+    \Drupal::logger('est_deciduous_bore')->warning(
+      'No property_landscape_details:current found for property @id.',
+      ['@id' => $propertyId]
+    );
+    return;
+  }
+
+  $landscapeEntity = reset($landscapeEntities);
+  $landscapeEntity->set($propertyField, $numTrees);
+  $landscapeEntity->save();
+
+  \Drupal::logger('est_deciduous_bore')->info(
+    'EST Deciduous Bore: synced @field=@val to property @id.',
+    ['@field' => $propertyField, '@val' => $numTrees, '@id' => $propertyId]
+  );
+}

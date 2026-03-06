@@ -1,0 +1,158 @@
+<?php
+
+/**
+ * @file
+ * Estimate Task module for Dethatching.
+ *
+ * Calculates estimate total from sq ft breakpoint pricing plus dump/rental fees.
+ * Syncs field_turf_sq_footage to property_landscape_details on save.
+ */
+
+use Drupal\config_pages\Entity\ConfigPages;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function est_dethatching_entity_presave($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'dethatching') {
+    return;
+  }
+
+  $sqFt = (float) $entity->get('field_sq_ft')->value;
+  if (empty($sqFt) || $sqFt <= 0) {
+    return;
+  }
+
+  $businessSettings = ConfigPages::config('business_setting');
+  if (!$businessSettings) {
+    \Drupal::logger('est_dethatching')->error('Business settings config page not found.');
+    return;
+  }
+
+  $dethatchingRate = _est_dethatching_calculate_cost($sqFt, $businessSettings);
+  if ($dethatchingRate === NULL) {
+    \Drupal::logger('est_dethatching')->warning('No dethatching breakpoint rate found for @sqft sq ft.', ['@sqft' => $sqFt]);
+    return;
+  }
+
+  $dumpFee = (float) ($businessSettings->get('field_dump_fee')->value ?? 0);
+  $rentalFee = (float) ($businessSettings->get('field_rental_fee')->value ?? 0);
+  $billingAdj = (float) ($entity->get('field_billing_adjustment')->value ?? 0);
+  $total = $dethatchingRate + $dumpFee + $rentalFee + $billingAdj;
+  $entity->set('field_estimate_total', $total);
+
+  \Drupal::logger('est_dethatching')->info(
+    'EST Dethatching presave: sqFt=@sqft, rate=@rate, dump=@dump, rental=@rental, adj=@adj, total=@total',
+    [
+      '@sqft' => $sqFt,
+      '@rate' => $dethatchingRate,
+      '@dump' => $dumpFee,
+      '@rental' => $rentalFee,
+      '@adj' => $billingAdj,
+      '@total' => $total,
+    ]
+  );
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function est_dethatching_entity_insert($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'dethatching') {
+    return;
+  }
+  _est_dethatching_sync_property($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function est_dethatching_entity_update($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'dethatching') {
+    return;
+  }
+  _est_dethatching_sync_property($entity);
+}
+
+/**
+ * Syncs sq ft to property_landscape_details:current.
+ */
+function _est_dethatching_sync_property($entity) {
+  $sqFt = (float) $entity->get('field_sq_ft')->value;
+  if (empty($sqFt) || $sqFt <= 0) {
+    return;
+  }
+
+  // Traverse: estimate_tasks → estimate → estimate_request → property.
+  $estimateRef = $entity->get('field_estimate')->referencedEntities();
+  if (empty($estimateRef)) {
+    return;
+  }
+  $estimate = reset($estimateRef);
+
+  $requestRef = $estimate->get('field_estimate_request')->referencedEntities();
+  if (empty($requestRef)) {
+    return;
+  }
+  $request = reset($requestRef);
+
+  $propertyRef = $request->get('field_property')->referencedEntities();
+  if (empty($propertyRef)) {
+    return;
+  }
+  $property = reset($propertyRef);
+  $propertyId = $property->id();
+
+  $landscapeEntities = \Drupal::entityTypeManager()
+    ->getStorage('property_landscape_details')
+    ->loadByProperties([
+      'field_property' => $propertyId,
+      'type' => 'current',
+    ]);
+
+  if (empty($landscapeEntities)) {
+    \Drupal::logger('est_dethatching')->warning(
+      'No property_landscape_details:current found for property @id.',
+      ['@id' => $propertyId]
+    );
+    return;
+  }
+
+  $landscapeEntity = reset($landscapeEntities);
+  $landscapeEntity->set('field_turf_sq_footage', $sqFt);
+  $landscapeEntity->save();
+
+  \Drupal::logger('est_dethatching')->info(
+    'EST Dethatching: synced field_turf_sq_footage=@sqft to property @id.',
+    ['@sqft' => $sqFt, '@id' => $propertyId]
+  );
+}
+
+/**
+ * Calculates dethatching cost from sq ft breakpoint pricing.
+ *
+ * @param float $sqFt
+ *   Square footage to price.
+ * @param \Drupal\config_pages\Entity\ConfigPages $businessSettings
+ *   Business settings config page entity.
+ *
+ * @return float|null
+ *   Matched rate, or NULL if no breakpoints configured.
+ */
+function _est_dethatching_calculate_cost(float $sqFt, ConfigPages $businessSettings): ?float {
+  $dethatchingPricing = $businessSettings->get('field_dethatching_pricing')->referencedEntities();
+  if (empty($dethatchingPricing)) {
+    return NULL;
+  }
+
+  $matchedRate = NULL;
+  foreach ($dethatchingPricing as $breakpointEntity) {
+    $breakpoint = (float) $breakpointEntity->get('field_sq_ft_break_point')->value;
+    $rate = (float) $breakpointEntity->get('field_sq_ft_price')->value;
+    if ($sqFt >= $breakpoint) {
+      $matchedRate = $rate;
+    }
+  }
+
+  return $matchedRate;
+}

@@ -4,7 +4,9 @@ status: true
 dependencies:
   config:
     - eck.eck_type.estimate_tasks.dethatching
+    - field.field.estimate_tasks.dethatching.field_billing_adjustment
     - field.field.estimate_tasks.dethatching.field_estimate
+    - field.field.estimate_tasks.dethatching.field_estimate_total
     - field.field.estimate_tasks.dethatching.field_estimated_time
     - field.field.estimate_tasks.dethatching.field_sq_ft
   module:
@@ -20,6 +22,13 @@ targetEntityType: estimate_tasks
 bundle: dethatching
 mode: default
 content:
+  field_billing_adjustment:
+    type: number
+    weight: 50
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
   field_estimate:
     type: entity_reference_autocomplete
     weight: -10
@@ -28,6 +37,13 @@ content:
       match_operator: CONTAINS
       match_limit: 10
       size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate_total:
+    type: number
+    weight: 51
+    region: content
+    settings:
       placeholder: ''
     third_party_settings: {  }
   field_estimated_time:

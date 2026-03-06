@@ -142,18 +142,141 @@ function estimate_intake_entity_presave(EntityInterface $entity): void {
  * Implements hook_entity_insert().
  *
  * Assigns "Estimate Request #ID" title to manually-created estimate requests
- * that have empty, generic, or default titles.
+ * that have empty, generic, or default titles. Then auto-creates an estimate
+ * entity if the request's service term has field_estimate_service enabled.
  */
 function estimate_intake_entity_insert(EntityInterface $entity): void {
   if ($entity->getEntityTypeId() !== 'estimate_request' || $entity->bundle() !== 'standard') {
     return;
   }
 
+  // --- Title assignment ---
   $title = trim((string) ($entity->label() ?? ''));
   $generic_titles = ['', 'Standard', 'Estimate Request - Pending'];
 
   if (in_array($title, $generic_titles, TRUE)) {
     $entity->set('title', 'Estimate Request #' . $entity->id());
     $entity->save();
+  }
+
+  // --- Auto-create estimate entity from service term ---
+  try {
+    _estimate_intake_create_estimate($entity);
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('estimate_intake')
+      ->error('Estimate auto-creation failed for request #@rid: @msg', [
+        '@rid' => $entity->id(),
+        '@msg' => $e->getMessage(),
+      ]);
+  }
+}
+
+/**
+ * Creates an estimate entity for a new estimate request.
+ *
+ * Reads the service term's field_service_bundle to determine the estimate
+ * bundle. Skips silently if field_estimate_service is not enabled.
+ */
+function _estimate_intake_create_estimate(EntityInterface $request): void {
+  // 1. Load field_service taxonomy term.
+  if (!$request->hasField('field_service') || $request->get('field_service')->isEmpty()) {
+    return;
+  }
+  $service_tid = (int) $request->get('field_service')->target_id;
+  if ($service_tid <= 0) {
+    return;
+  }
+  $service_term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->load($service_tid);
+  if ($service_term === NULL) {
+    return;
+  }
+
+  // 2. Read field_service_bundle — estimate bundle machine name.
+  if (!$service_term->hasField('field_service_bundle') || $service_term->get('field_service_bundle')->isEmpty()) {
+    return;
+  }
+  $bundle = trim((string) $service_term->get('field_service_bundle')->value);
+  if ($bundle === '') {
+    return;
+  }
+
+  // 3. Check field_estimate_service boolean — skip if not an estimate service.
+  if (!$service_term->hasField('field_estimate_service') || $service_term->get('field_estimate_service')->isEmpty()) {
+    return;
+  }
+  if (!(bool) $service_term->get('field_estimate_service')->value) {
+    return;
+  }
+
+  // 4. Verify estimate bundle exists.
+  $bundle_info = \Drupal::service('entity_type.bundle.info')->getBundleInfo('estimate');
+  if (!isset($bundle_info[$bundle])) {
+    \Drupal::logger('estimate_intake')
+      ->warning('Estimate bundle @bundle does not exist (service term @tid). Skipping auto-creation for request #@rid.', [
+        '@bundle' => $bundle,
+        '@tid' => $service_tid,
+        '@rid' => $request->id(),
+      ]);
+    \Drupal::messenger()->addWarning(t('Estimate bundle "@bundle" does not exist. Estimate was not auto-created.', [
+      '@bundle' => $bundle,
+    ]));
+    return;
+  }
+
+  // 5. Build estimate entity values.
+  $values = [
+    'type' => $bundle,
+    'title' => 'Estimate - Pending',
+    'field_estimate_request' => ['target_id' => (int) $request->id()],
+    'field_revision_number' => 1,
+    'field_is_current_revision' => TRUE,
+  ];
+
+  // field_assigned_to from service term's field_default_estimator.
+  if ($service_term->hasField('field_default_estimator') && !$service_term->get('field_default_estimator')->isEmpty()) {
+    $values['field_assigned_to'] = ['target_id' => (int) $service_term->get('field_default_estimator')->target_id];
+  }
+
+  // 6. Create and save estimate.
+  $estimate_storage = \Drupal::entityTypeManager()->getStorage('estimate');
+  $estimate = $estimate_storage->create($values);
+  $estimate->save();
+  $estimate_id = (int) $estimate->id();
+
+  // 7. Update title with entity ID.
+  $estimate->set('title', 'Estimate #' . $estimate_id);
+  $estimate->save();
+
+  // 8. Add estimate to request's field_estimates and resave request.
+  if ($request->hasField('field_estimates')) {
+    $current = $request->get('field_estimates')->getValue();
+    $current[] = ['target_id' => $estimate_id];
+    $request->set('field_estimates', $current);
+    $request->save();
+  }
+
+  // 9. Log success.
+  \Drupal::logger('estimate_intake')
+    ->info('Created estimate #@eid (@bundle) for request #@rid.', [
+      '@eid' => $estimate_id,
+      '@bundle' => $bundle,
+      '@rid' => $request->id(),
+    ]);
+
+  // 10. Status message.
+  $estimator_name = '';
+  if (isset($values['field_assigned_to'])) {
+    $estimator = \Drupal::entityTypeManager()->getStorage('user')->load($values['field_assigned_to']['target_id']);
+    $estimator_name = $estimator ? $estimator->getDisplayName() : ('user ' . $values['field_assigned_to']['target_id']);
+  }
+  if ($estimator_name !== '') {
+    \Drupal::messenger()->addStatus(t('Estimate #@eid created and assigned to @name.', [
+      '@eid' => $estimate_id,
+      '@name' => $estimator_name,
+    ]));
+  }
+  else {
+    \Drupal::messenger()->addStatus(t('Estimate #@eid created.', ['@eid' => $estimate_id]));
   }
 }

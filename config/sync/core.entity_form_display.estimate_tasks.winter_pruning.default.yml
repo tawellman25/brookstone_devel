@@ -1,0 +1,58 @@
+uuid: d1e2f3a4-c018-4b6a-9c8d-e0f1a2b3c4d5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_tasks.winter_pruning
+    - field.field.estimate_tasks.winter_pruning.field_estimate
+    - field.field.estimate_tasks.winter_pruning.field_estimated_time
+    - field.field.estimate_tasks.winter_pruning.field_num_fruit_trees
+    - field.field.estimate_tasks.winter_pruning.field_num_trees
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: estimate_tasks.winter_pruning.default
+targetEntityType: estimate_tasks
+bundle: winter_pruning
+mode: default
+content:
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: -10
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimated_time:
+    type: number
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_num_fruit_trees:
+    type: number
+    weight: 1
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_num_trees:
+    type: number
+    weight: 0
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  title: true
+  uid: true

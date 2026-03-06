@@ -1,0 +1,50 @@
+uuid: d1e2f3a4-c009-4b6a-9c8d-e0f1a2b3c4d5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_tasks.fertilizing
+    - field.field.estimate_tasks.fertilizing.field_estimate
+    - field.field.estimate_tasks.fertilizing.field_estimated_time
+    - field.field.estimate_tasks.fertilizing.field_sq_ft
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: estimate_tasks.fertilizing.default
+targetEntityType: estimate_tasks
+bundle: fertilizing
+mode: default
+content:
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: -10
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimated_time:
+    type: number
+    weight: 1
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_sq_ft:
+    type: number
+    weight: 0
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  title: true
+  uid: true

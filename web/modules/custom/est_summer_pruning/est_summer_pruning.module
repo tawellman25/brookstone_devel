@@ -1,0 +1,138 @@
+<?php
+
+/**
+ * @file
+ * Estimate Task module for Summer Pruning.
+ *
+ * Calculates estimate total from increment-based labor + dump fee + rental fee.
+ * Syncs field_num_shrubs to property_landscape_details on save.
+ */
+
+use Drupal\config_pages\Entity\ConfigPages;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function est_summer_pruning_entity_presave($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'summer_pruning') {
+    return;
+  }
+
+  $estimatedTime = (float) $entity->get('field_estimated_time')->value;
+  if (empty($estimatedTime) || $estimatedTime <= 0) {
+    return;
+  }
+
+  $businessSettings = ConfigPages::config('business_setting');
+  if (!$businessSettings) {
+    \Drupal::logger('est_summer_pruning')->error('Business settings config page not found.');
+    return;
+  }
+
+  // Increment-based labor with minimum time guarantee.
+  $billingIncrement = (float) $businessSettings->get('field_hour_billing_increment')->value;
+  $laborRate = (float) $businessSettings->get('field_maintenance_crew_labor')->value;
+  $hourlyMinimum = (float) $businessSettings->get('field_cleanup_labor_minimum')->value;
+  $totalMinutes = $estimatedTime * 60;
+  $totalIncrements = ceil($totalMinutes / $billingIncrement);
+  $hourlyIncrement = $billingIncrement / 60;
+  $laborSubtotal = $totalIncrements * $hourlyIncrement * $laborRate;
+  if ($estimatedTime < $hourlyMinimum) {
+    $laborSubtotal = $laborRate * $hourlyMinimum;
+  }
+
+  $dumpFee = (float) ($businessSettings->get('field_dump_fee')->value ?? 0);
+  $rentalFee = (float) ($businessSettings->get('field_rental_fee')->value ?? 0);
+
+  // TODO: Add trip fee when field_trip_fee is added to estimate_tasks.
+  $billingAdj = (float) ($entity->get('field_billing_adjustment')->value ?? 0);
+  $total = $laborSubtotal + $dumpFee + $rentalFee + $billingAdj;
+  $entity->set('field_estimate_total', $total);
+
+  \Drupal::logger('est_summer_pruning')->info(
+    'EST Summer Pruning presave: time=@time, increments=@inc, labor=@labor, dump=@dump, rental=@rental, adj=@adj, total=@total',
+    [
+      '@time' => $estimatedTime,
+      '@inc' => $totalIncrements,
+      '@labor' => $laborSubtotal,
+      '@dump' => $dumpFee,
+      '@rental' => $rentalFee,
+      '@adj' => $billingAdj,
+      '@total' => $total,
+    ]
+  );
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function est_summer_pruning_entity_insert($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'summer_pruning') {
+    return;
+  }
+  _est_summer_pruning_sync_property($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function est_summer_pruning_entity_update($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'summer_pruning') {
+    return;
+  }
+  _est_summer_pruning_sync_property($entity);
+}
+
+/**
+ * Syncs shrub count to property_landscape_details:current.
+ */
+function _est_summer_pruning_sync_property($entity) {
+  $numShrubs = (int) $entity->get('field_num_shrubs')->value;
+  if (empty($numShrubs) || $numShrubs <= 0) {
+    return;
+  }
+
+  // Traverse: estimate_tasks → estimate → estimate_request → property.
+  $estimateRef = $entity->get('field_estimate')->referencedEntities();
+  if (empty($estimateRef)) {
+    return;
+  }
+  $estimate = reset($estimateRef);
+
+  $requestRef = $estimate->get('field_estimate_request')->referencedEntities();
+  if (empty($requestRef)) {
+    return;
+  }
+  $request = reset($requestRef);
+
+  $propertyRef = $request->get('field_property')->referencedEntities();
+  if (empty($propertyRef)) {
+    return;
+  }
+  $property = reset($propertyRef);
+  $propertyId = $property->id();
+
+  $landscapeEntities = \Drupal::entityTypeManager()
+    ->getStorage('property_landscape_details')
+    ->loadByProperties([
+      'field_property' => $propertyId,
+      'type' => 'current',
+    ]);
+
+  if (empty($landscapeEntities)) {
+    \Drupal::logger('est_summer_pruning')->warning(
+      'No property_landscape_details:current found for property @id.',
+      ['@id' => $propertyId]
+    );
+    return;
+  }
+
+  $landscapeEntity = reset($landscapeEntities);
+  $landscapeEntity->set('field_number_of_shrubs', $numShrubs);
+  $landscapeEntity->save();
+
+  \Drupal::logger('est_summer_pruning')->info(
+    'EST Summer Pruning: synced field_number_of_shrubs=@val to property @id.',
+    ['@val' => $numShrubs, '@id' => $propertyId]
+  );
+}

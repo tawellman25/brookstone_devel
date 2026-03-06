@@ -1,0 +1,136 @@
+<?php
+
+/**
+ * @file
+ * Estimate Task module for Fertilizing Trees and Shrubs.
+ *
+ * Calculates estimate total from chemical cost + spreader fee + spray labor.
+ * Syncs field_num_shrubs to property_landscape_details on save.
+ */
+
+use Drupal\config_pages\Entity\ConfigPages;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function est_fertilizing_trees_and_shrubs_entity_presave($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'fertilizing_trees_and_shrubs') {
+    return;
+  }
+
+  $numTrees = (int) $entity->get('field_num_trees')->value;
+  $numShrubs = (int) $entity->get('field_num_shrubs')->value;
+  $estimatedTime = (float) $entity->get('field_estimated_time')->value;
+  if (($numTrees + $numShrubs) <= 0 || empty($estimatedTime) || $estimatedTime <= 0) {
+    return;
+  }
+
+  $businessSettings = ConfigPages::config('business_setting');
+  if (!$businessSettings) {
+    \Drupal::logger('est_fertilizing_trees_and_shrubs')->error('Business settings config page not found.');
+    return;
+  }
+
+  // Chemical cost — simplified: (trees + shrubs) × fertilizer tree rate.
+  $fertTreeRate = (float) $businessSettings->get('field_fertilizer_tree_rate')->value;
+  $spreaderFee = (float) ($businessSettings->get('field_spreader_fee')->value ?? 0);
+  $chemical = ($numTrees + $numShrubs) * $fertTreeRate;
+
+  // Spray crew labor with minimum time guarantee.
+  $sprayLabor = (float) $businessSettings->get('field_spray_crew_labor')->value;
+  $sprayMinTime = (float) $businessSettings->get('field_spray_minimum_time')->value;
+  $laborTime = max($estimatedTime, $sprayMinTime);
+  $labor = $laborTime * $sprayLabor;
+
+  // TODO: Add trip fee when field_trip_fee is added to estimate_tasks.
+  $billingAdj = (float) ($entity->get('field_billing_adjustment')->value ?? 0);
+  $total = $chemical + $spreaderFee + $labor + $billingAdj;
+  $entity->set('field_estimate_total', $total);
+
+  \Drupal::logger('est_fertilizing_trees_and_shrubs')->info(
+    'EST Fert Trees/Shrubs presave: trees=@trees, shrubs=@shrubs, chemical=@chem, spreader=@spread, labor=@labor, adj=@adj, total=@total',
+    [
+      '@trees' => $numTrees,
+      '@shrubs' => $numShrubs,
+      '@chem' => $chemical,
+      '@spread' => $spreaderFee,
+      '@labor' => $labor,
+      '@adj' => $billingAdj,
+      '@total' => $total,
+    ]
+  );
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function est_fertilizing_trees_and_shrubs_entity_insert($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'fertilizing_trees_and_shrubs') {
+    return;
+  }
+  _est_fertilizing_trees_and_shrubs_sync_property($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function est_fertilizing_trees_and_shrubs_entity_update($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'fertilizing_trees_and_shrubs') {
+    return;
+  }
+  _est_fertilizing_trees_and_shrubs_sync_property($entity);
+}
+
+/**
+ * Syncs shrub count to property_landscape_details:current.
+ */
+function _est_fertilizing_trees_and_shrubs_sync_property($entity) {
+  $numShrubs = (int) $entity->get('field_num_shrubs')->value;
+  if (empty($numShrubs) || $numShrubs <= 0) {
+    return;
+  }
+
+  // Traverse: estimate_tasks → estimate → estimate_request → property.
+  $estimateRef = $entity->get('field_estimate')->referencedEntities();
+  if (empty($estimateRef)) {
+    return;
+  }
+  $estimate = reset($estimateRef);
+
+  $requestRef = $estimate->get('field_estimate_request')->referencedEntities();
+  if (empty($requestRef)) {
+    return;
+  }
+  $request = reset($requestRef);
+
+  $propertyRef = $request->get('field_property')->referencedEntities();
+  if (empty($propertyRef)) {
+    return;
+  }
+  $property = reset($propertyRef);
+  $propertyId = $property->id();
+
+  $landscapeEntities = \Drupal::entityTypeManager()
+    ->getStorage('property_landscape_details')
+    ->loadByProperties([
+      'field_property' => $propertyId,
+      'type' => 'current',
+    ]);
+
+  if (empty($landscapeEntities)) {
+    \Drupal::logger('est_fertilizing_trees_and_shrubs')->warning(
+      'No property_landscape_details:current found for property @id.',
+      ['@id' => $propertyId]
+    );
+    return;
+  }
+
+  $landscapeEntity = reset($landscapeEntities);
+  $landscapeEntity->set('field_number_of_shrubs', $numShrubs);
+  $landscapeEntity->save();
+
+  \Drupal::logger('est_fertilizing_trees_and_shrubs')->info(
+    'EST Fert Trees/Shrubs: synced field_number_of_shrubs=@val to property @id.',
+    ['@val' => $numShrubs, '@id' => $propertyId]
+  );
+}

@@ -182,7 +182,7 @@ function _wo_grub_prevention_handle_work_order(EntityInterface $entity, $operati
     $propertyId = $entity->get('field_property')->target_id ?? null;
 
     // Load 'property_spraying_info' entities by 'field_property'.
-    $propertySprayingInfo = \Drupal::entityTypeManager()->getStorage('property_fertilizing_info')->loadByProperties([
+    $propertySprayingInfo = \Drupal::entityTypeManager()->getStorage('property_spraying_info')->loadByProperties([
         'field_property' => $propertyId,
         'type' => 'grub_prevention',
     ]);
@@ -193,9 +193,9 @@ function _wo_grub_prevention_handle_work_order(EntityInterface $entity, $operati
             $sprayingInfoEntity = reset($propertySprayingInfo);
             
             if ($sprayingInfoEntity) {
-                $sprayingInfoEntity->set('field_fertilizer_lbs_applied', $poundsUsed);
-                $sprayingInfoEntity->set('field_fertilized_last', $signOffDateFormated);
-                $sprayingInfoEntity->set('field_fertilized_last_by', $signOffBy);
+                $sprayingInfoEntity->set('field_last_amount_applied', $poundsUsed);
+                $sprayingInfoEntity->set('field_last_applied_date', $signOffDateFormated);
+                $sprayingInfoEntity->set('field_last_applied_by', $signOffBy);
             }
             // Save the updated Property Grub Prevention Info entity.
             $sprayingInfoEntity->save();

@@ -87,6 +87,9 @@ function wo_aspen_twig_gall_entity_presave(EntityInterface $entity) {
             $entity->set('field_task_rate', $treeTotal);
         }
 
+        // Trip Fee Calculated in the wo_sign_off and saved to work_order's field_trip_fee
+        $totalTrip = $entity->get('field_trip_fee')->value;
+
         // Enter Aspen Tree Rate Total
         if ($treeTotal > 0) {
             $grand_total += $treeTotal;

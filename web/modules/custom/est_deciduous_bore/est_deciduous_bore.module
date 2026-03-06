@@ -48,9 +48,9 @@ function est_deciduous_bore_entity_presave($entity) {
   $laborTime = max($estimatedTime, $sprayMinTime);
   $labor = $laborTime * $sprayLabor;
 
-  // TODO: Add trip fee when field_trip_fee is added to estimate_tasks.
+  $tripFee = (float) ($entity->get('field_trip_fee')->value ?? 0);
   $billingAdj = (float) ($entity->get('field_billing_adjustment')->value ?? 0);
-  $total = $chemical + $sprayer + $labor + $billingAdj;
+  $total = $chemical + $sprayer + $labor + $tripFee + $billingAdj;
   $entity->set('field_estimate_total', $total);
 
   \Drupal::logger('est_deciduous_bore')->info(

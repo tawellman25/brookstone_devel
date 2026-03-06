@@ -37,8 +37,9 @@ function est_special_mowing_entity_presave($entity) {
   $hourlyIncrement = $billingIncrement / 60;
   $laborSubtotal = $totalIncrements * $hourlyIncrement * $laborRate;
 
+  $tripFee = (float) ($entity->get('field_trip_fee')->value ?? 0);
   $billingAdj = (float) ($entity->get('field_billing_adjustment')->value ?? 0);
-  $total = $laborSubtotal + $billingAdj;
+  $total = $laborSubtotal + $tripFee + $billingAdj;
   $entity->set('field_estimate_total', $total);
 
   \Drupal::logger('est_special_mowing')->info(

@@ -1,0 +1,60 @@
+<?php
+
+/**
+ * @file
+ * Estimate Task module for Sprinkler Winterizing.
+ *
+ * Calculates estimate total from base fee + zone surcharge + pump surcharge.
+ */
+
+use Drupal\config_pages\Entity\ConfigPages;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function est_sprinkler_winterizing_entity_presave($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'sprinkler_winterizing') {
+    return;
+  }
+
+  $numZones = (int) $entity->get('field_num_zones')->value;
+  $systemTypeRef = $entity->get('field_sprinkler_system_type')->referencedEntities();
+  $systemTypeId = !empty($systemTypeRef) ? reset($systemTypeRef)->id() : 0;
+
+  if ($numZones <= 0) {
+    \Drupal::logger('est_sprinkler_winterizing')->warning(
+      'Zone count is 0 or empty for estimate task @id. Estimator should audit sprinkler info on property page first.',
+      ['@id' => $entity->id() ?? 'new']
+    );
+  }
+
+  $businessSettings = ConfigPages::config('business_setting');
+  if (!$businessSettings) {
+    \Drupal::logger('est_sprinkler_winterizing')->error('Business settings config page not found.');
+    return;
+  }
+
+  $baseFee = (float) $businessSettings->get('field_winterizing_base_fee')->value;
+  $zoneSurcharge = (float) $businessSettings->get('field_zone_surcharge')->value;
+  $pumpSurcharge = (float) ($businessSettings->get('field_pump_surcharge')->value ?? 0);
+  $billingAdj = (float) ($entity->get('field_billing_adjustment')->value ?? 0);
+
+  // Pump surcharge for non-domestic water systems (not system type 13).
+  $pumpFee = ($systemTypeId != 13 && $systemTypeId > 0) ? $pumpSurcharge : 0;
+
+  // TODO: Add trip fee when field_trip_fee is added to estimate_tasks.
+  $total = $baseFee + ($numZones * $zoneSurcharge) + $pumpFee + $billingAdj;
+  $entity->set('field_estimate_total', $total);
+
+  \Drupal::logger('est_sprinkler_winterizing')->info(
+    'EST Sprinkler Winterizing presave: zones=@zones, base=@base, zoneSurcharge=@zsur, pumpFee=@pump, adj=@adj, total=@total',
+    [
+      '@zones' => $numZones,
+      '@base' => $baseFee,
+      '@zsur' => $numZones * $zoneSurcharge,
+      '@pump' => $pumpFee,
+      '@adj' => $billingAdj,
+      '@total' => $total,
+    ]
+  );
+}

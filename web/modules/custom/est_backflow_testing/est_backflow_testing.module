@@ -1,0 +1,122 @@
+<?php
+
+/**
+ * @file
+ * Estimate Task module for Backflow Testing.
+ *
+ * Calculates estimate total from backflow count × testing rate.
+ * Syncs field_num_backflows to property_landscape_details on save.
+ */
+
+use Drupal\config_pages\Entity\ConfigPages;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function est_backflow_testing_entity_presave($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'backflow_testing') {
+    return;
+  }
+
+  $numBackflows = (int) $entity->get('field_num_backflows')->value;
+  if (empty($numBackflows) || $numBackflows <= 0) {
+    return;
+  }
+
+  $businessSettings = ConfigPages::config('business_setting');
+  if (!$businessSettings) {
+    \Drupal::logger('est_backflow_testing')->error('Business settings config page not found.');
+    return;
+  }
+
+  $backflowRate = (float) $businessSettings->get('field_backflow_testing_rate')->value;
+  $billingAdj = (float) ($entity->get('field_billing_adjustment')->value ?? 0);
+  $total = ($numBackflows * $backflowRate) + $billingAdj;
+  // TODO: Add trip fee when field_trip_fee is added to estimate_tasks.
+  // Note: repairs billed separately — this estimate covers testing only.
+  $entity->set('field_estimate_total', $total);
+
+  \Drupal::logger('est_backflow_testing')->info(
+    'EST Backflow Testing presave: backflows=@bf, rate=@rate, adj=@adj, total=@total',
+    [
+      '@bf' => $numBackflows,
+      '@rate' => $backflowRate,
+      '@adj' => $billingAdj,
+      '@total' => $total,
+    ]
+  );
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function est_backflow_testing_entity_insert($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'backflow_testing') {
+    return;
+  }
+  _est_backflow_testing_sync_property($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function est_backflow_testing_entity_update($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'backflow_testing') {
+    return;
+  }
+  _est_backflow_testing_sync_property($entity);
+}
+
+/**
+ * Syncs backflow count to property_landscape_details:current.
+ */
+function _est_backflow_testing_sync_property($entity) {
+  $numBackflows = (int) $entity->get('field_num_backflows')->value;
+  if (empty($numBackflows) || $numBackflows <= 0) {
+    return;
+  }
+
+  // Traverse: estimate_tasks → estimate → estimate_request → property.
+  $estimateRef = $entity->get('field_estimate')->referencedEntities();
+  if (empty($estimateRef)) {
+    return;
+  }
+  $estimate = reset($estimateRef);
+
+  $requestRef = $estimate->get('field_estimate_request')->referencedEntities();
+  if (empty($requestRef)) {
+    return;
+  }
+  $request = reset($requestRef);
+
+  $propertyRef = $request->get('field_property')->referencedEntities();
+  if (empty($propertyRef)) {
+    return;
+  }
+  $property = reset($propertyRef);
+  $propertyId = $property->id();
+
+  $landscapeEntities = \Drupal::entityTypeManager()
+    ->getStorage('property_landscape_details')
+    ->loadByProperties([
+      'field_property' => $propertyId,
+      'type' => 'current',
+    ]);
+
+  if (empty($landscapeEntities)) {
+    \Drupal::logger('est_backflow_testing')->warning(
+      'No property_landscape_details:current found for property @id.',
+      ['@id' => $propertyId]
+    );
+    return;
+  }
+
+  $landscapeEntity = reset($landscapeEntities);
+  $landscapeEntity->set('field_num_backflows', $numBackflows);
+  $landscapeEntity->save();
+
+  \Drupal::logger('est_backflow_testing')->info(
+    'EST Backflow Testing: synced field_num_backflows=@val to property @id.',
+    ['@val' => $numBackflows, '@id' => $propertyId]
+  );
+}

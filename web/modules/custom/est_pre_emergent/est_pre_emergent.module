@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * @file
+ * Estimate Task module for Pre Emergent.
+ *
+ * Calculates estimate total from coverage-based chemical + dye + spray labor + sprayer fee.
+ */
+
+use Drupal\config_pages\Entity\ConfigPages;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function est_pre_emergent_entity_presave($entity) {
+  if ($entity->getEntityTypeId() !== 'estimate_tasks' || $entity->bundle() !== 'pre_emergent') {
+    return;
+  }
+
+  $sqFtBeds = (float) $entity->get('field_sq_ft_landscape_beds')->value;
+  $sqFtOpen = (float) $entity->get('field_sq_ft_open_areas')->value;
+  $estimatedTime = (float) $entity->get('field_estimated_time')->value;
+  $totalSqFt = $sqFtBeds + $sqFtOpen;
+  if ($totalSqFt <= 0) {
+    return;
+  }
+
+  $businessSettings = ConfigPages::config('business_setting');
+  if (!$businessSettings) {
+    \Drupal::logger('est_pre_emergent')->error('Business settings config page not found.');
+    return;
+  }
+
+  $coverage = (float) $businessSettings->get('field_pre_emergent_coverage')->value;
+  $preEmergentRate = (float) $businessSettings->get('field_pre_emergent_rate')->value;
+  $dyeRate = (float) $businessSettings->get('field_dye_rate')->value;
+  $sprayLabor = (float) $businessSettings->get('field_spray_crew_labor')->value;
+  $sprayMinTime = (float) $businessSettings->get('field_pre_emergt_min_time')->value;
+  $sprayerRate = (float) $businessSettings->get('field_tree_sprayer_rate')->value;
+  $billingAdj = (float) ($entity->get('field_billing_adjustment')->value ?? 0);
+
+  // Chemical: gallons needed from coverage rate.
+  $gallonsNeeded = ($coverage > 0) ? ($totalSqFt / $coverage) * 100 : 0;
+  $chemical = $gallonsNeeded * $preEmergentRate;
+  $dye = ($gallonsNeeded / 100) * $dyeRate;
+
+  // Spray crew labor with minimum time guarantee.
+  $laborTime = max($estimatedTime, $sprayMinTime);
+  $labor = $laborTime * $sprayLabor;
+
+  // Sprayer fee (4-hour blocks).
+  $sprayer = ceil($estimatedTime / 4) * $sprayerRate;
+
+  // TODO: Add trip fee when field_trip_fee is added to estimate_tasks.
+  $total = $chemical + $dye + $labor + $sprayer + $billingAdj;
+  $entity->set('field_estimate_total', $total);
+
+  \Drupal::logger('est_pre_emergent')->info(
+    'EST Pre Emergent presave: sqFt=@sqft, gallons=@gal, chemical=@chem, dye=@dye, labor=@labor, sprayer=@spray, adj=@adj, total=@total',
+    [
+      '@sqft' => $totalSqFt,
+      '@gal' => $gallonsNeeded,
+      '@chem' => $chemical,
+      '@dye' => $dye,
+      '@labor' => $labor,
+      '@spray' => $sprayer,
+      '@adj' => $billingAdj,
+      '@total' => $total,
+    ]
+  );
+}

@@ -2,6 +2,9 @@ uuid: 1a8d3eca-f18a-4d2d-b49b-639c8e8cb0b0
 langcode: en
 status: true
 dependencies:
+  module:
+    - block_visibility_groups
+    - system
   theme:
     - brookstone_olivero
 _core:
@@ -17,4 +20,12 @@ settings:
   label: 'Primary admin actions'
   label_display: '0'
   provider: core
-visibility: {  }
+visibility:
+  condition_group:
+    id: condition_group
+    negate: false
+    block_visibility_group: ''
+  request_path:
+    id: request_path
+    negate: true
+    pages: '/estimate_request/*'

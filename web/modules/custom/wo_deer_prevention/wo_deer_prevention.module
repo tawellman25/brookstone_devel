@@ -36,6 +36,7 @@ function wo_deer_prevention_entity_presave(EntityInterface $entity) {
             $minAllottedTime = $business_settings->get('field_hour_billing_increment')->value; // Assume this is in minutes for the calculation.
             $hourlyRate = $business_settings->get('field_maintenance_crew_labor')->value;
             $hourlyBillingIncrement = $business_settings->get('field_hour_billing_increment')->value;
+            $hourlyMinimum = $business_settings->get('field_cleanup_labor_minimum')->value;
             $timeSpent = get_hours_for_deer_prevention($entity->id()); // Total hours of all man that clocked in.
             $trucks = $entity->get('field_trucks')->value;
 

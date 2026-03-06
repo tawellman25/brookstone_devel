@@ -40,7 +40,7 @@ function wo_fertilizing_entity_presave(EntityInterface $entity) {
             $fertilizerMinimum = $business_settings->get('field_fertilizing_minimum')->value;
             $fertilizer6k20k = $business_settings->get('field_fetilizing_6k_20k_per_ft')->value;
             $fertilizer20k80k = $business_settings->get('field_fetilize_20k_80k_per_ft')->value;
-            $fertilizer80kPlus = $business_settings->get('field_fetilize_20k_80k_per_ft')->value;
+            $fertilizer80kPlus = $business_settings->get('field_fetilizing_80k_plus_per_ft')->value;
 
             $equipmentFeee = $business_settings->get('field_spreader_charge')->value;
 
@@ -104,9 +104,11 @@ function wo_fertilizing_entity_presave(EntityInterface $entity) {
                     $fert20kPlus = $fertSqFt * $fertilizer20k80k;
                     $fertilizingRate = $fertilizerMinimum + $fert6kPlus + $fert20kPlus;
                 } else {
+                    $fert6kPlus = 14000 * $fertilizer6k20k;
+                    $fert20kPlus = 60000 * $fertilizer20k80k;
                     $fertSqFt = $lawnSqFt - 80000;
                     $fert80kPlus = $fertSqFt * $fertilizer80kPlus;
-                    $fertilizingRate = $fertilizerMinimum + $fert80kPlus;
+                    $fertilizingRate = $fertilizerMinimum + $fert6kPlus + $fert20kPlus + $fert80kPlus;
                 }
             } else {
                 // Handle case where $lawnSqFt is still 0 (neither source provided a value)

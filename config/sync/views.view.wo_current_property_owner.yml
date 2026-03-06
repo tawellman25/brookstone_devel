@@ -5,6 +5,12 @@ dependencies:
   config:
     - field.storage.ownership_record.field_property_owner
     - field.storage.phone_number.field_phone_number
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.site_assistant
+    - user.role.supervisor
+    - user.role.teammates
   module:
     - eck
     - eva
@@ -287,8 +293,15 @@ display:
           sort_asc_label: Asc
           sort_desc_label: Desc
       access:
-        type: none
-        options: {  }
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            site_assistant: site_assistant
+            administration: administration
+            supervisor: supervisor
+            teammates: teammates
       cache:
         type: tag
         options: {  }
@@ -318,7 +331,7 @@ display:
           group_type: group
           admin_label: ''
           plugin_id: standard
-          order: ASC
+          order: DESC
           expose:
             label: ''
             field_identifier: ''
@@ -462,6 +475,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
+        - user.roles
       tags:
         - 'config:field.storage.ownership_record.field_property_owner'
         - 'config:field.storage.phone_number.field_phone_number'
@@ -478,6 +492,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
+        - user.roles
       tags:
         - 'config:field.storage.ownership_record.field_property_owner'
         - 'config:field.storage.phone_number.field_phone_number'
@@ -496,6 +511,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
+        - user.roles
       tags:
         - 'config:field.storage.ownership_record.field_property_owner'
         - 'config:field.storage.phone_number.field_phone_number'

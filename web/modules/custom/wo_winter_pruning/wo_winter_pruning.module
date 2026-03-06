@@ -38,7 +38,7 @@ function wo_winter_pruning_entity_presave(EntityInterface $entity) {
                 $hourlyRateIncrement = $hourlyRate * $hourlyIncrement;
                 $labor_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
             } else {
-                $labor_subtotal = $hourlyRate;
+                $labor_subtotal = $hourlyRate * $hourlyMinimum;
             }
 
             $entity->set('field_labor_total', $labor_subtotal);

@@ -71,7 +71,7 @@ function wo_aerating_entity_presave(EntityInterface $entity) {
  */
 function wo_aerating_entity_insert(EntityInterface $entity) {
     // Check if it's the right entity type and bundle.
-    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'fertilizing') {
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'aerating') {
       // Perform actions specific to when a new work order of the 'fertilizing' bundle is created.
       _wo_aerating_handle_work_order($entity, 'insert');
     }
@@ -82,7 +82,7 @@ function wo_aerating_entity_insert(EntityInterface $entity) {
  */
 function wo_aerating_entity_update(EntityInterface $entity) {
     // Check if it's the right entity type and bundle.
-    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'fertilizing') {
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'aerating') {
         // Perform actions specific to when a work order of the 'fertilizing' bundle is updated.
         _wo_aerating_handle_work_order($entity, 'update');
     }

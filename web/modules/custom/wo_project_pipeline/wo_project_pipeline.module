@@ -1,0 +1,70 @@
+<?php
+
+/**
+ * @file
+ * Computes pre-mobilization gate fields for landscaping and sprinkler
+ * installation work orders.
+ */
+
+/**
+ * Implements hook_entity_presave().
+ */
+function wo_project_pipeline_entity_presave(\Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'work_order') {
+    return;
+  }
+
+  $bundle = $entity->bundle();
+  if (!in_array($bundle, ['landscaping', 'sprinkler_installation'], TRUE)) {
+    return;
+  }
+
+  _wo_project_pipeline_compute_locate_deadline($entity);
+  _wo_project_pipeline_compute_locate_overdue($entity);
+}
+
+/**
+ * Computes field_locate_deadline from field_locate_request_date + 3 business days.
+ */
+function _wo_project_pipeline_compute_locate_deadline($entity) {
+  $requested = (bool) $entity->get('field_locate_requested')->value;
+  $request_date_value = $entity->get('field_locate_request_date')->value;
+
+  if (!$requested || empty($request_date_value)) {
+    $entity->set('field_locate_deadline', NULL);
+    return;
+  }
+
+  // Parse the request date (date-only field stored as Y-m-d).
+  $date = new \DateTime($request_date_value);
+  $business_days_added = 0;
+
+  while ($business_days_added < 3) {
+    $date->modify('+1 day');
+    $day_of_week = (int) $date->format('N');
+    // Skip Saturday (6) and Sunday (7).
+    if ($day_of_week < 6) {
+      $business_days_added++;
+    }
+  }
+
+  $entity->set('field_locate_deadline', $date->format('Y-m-d'));
+}
+
+/**
+ * Computes field_locate_overdue based on deadline, cleared status, and today's date.
+ */
+function _wo_project_pipeline_compute_locate_overdue($entity) {
+  $deadline_value = $entity->get('field_locate_deadline')->value;
+  $cleared = (bool) $entity->get('field_locate_cleared')->value;
+
+  if (empty($deadline_value) || $cleared) {
+    $entity->set('field_locate_overdue', FALSE);
+    return;
+  }
+
+  $today = new \DateTime(date('Y-m-d', \Drupal::time()->getRequestTime()));
+  $deadline = new \DateTime($deadline_value);
+
+  $entity->set('field_locate_overdue', $today > $deadline);
+}

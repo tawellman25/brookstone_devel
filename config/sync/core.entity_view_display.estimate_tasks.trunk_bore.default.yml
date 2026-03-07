@@ -1,0 +1,115 @@
+uuid: 5ca0bc8a-2b77-4273-8d5f-5ab334dfaf5d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_tasks.trunk_bore
+    - field.field.estimate_tasks.trunk_bore.field_avg_height
+    - field.field.estimate_tasks.trunk_bore.field_billing_adjustment
+    - field.field.estimate_tasks.trunk_bore.field_estimate
+    - field.field.estimate_tasks.trunk_bore.field_estimate_total
+    - field.field.estimate_tasks.trunk_bore.field_trip_fee
+    - field.field.estimate_tasks.trunk_bore.field_estimated_time
+    - field.field.estimate_tasks.trunk_bore.field_gallons
+    - field.field.estimate_tasks.trunk_bore.field_num_trees
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: estimate_tasks.trunk_bore.default
+targetEntityType: estimate_tasks
+bundle: trunk_bore
+mode: default
+content:
+  field_avg_height:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_billing_adjustment:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 50
+    region: content
+  field_estimate:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: -10
+    region: content
+  field_estimate_total:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 51
+    region: content
+  field_estimated_time:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_gallons:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_num_trees:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_trip_fee:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ','
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 49
+    region: content
+hidden:
+  changed: true
+  created: true
+  title: true
+  uid: true

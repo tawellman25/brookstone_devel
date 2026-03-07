@@ -17,8 +17,14 @@ dependencies:
     - field.field.estimate.landscaping.field_scope_elements
     - field.field.estimate.landscaping.field_scope_summary
     - field.field.estimate.landscaping.field_stage
+    - field.field.estimate.landscaping.field_contract_signed
+    - field.field.estimate.landscaping.field_deposit_amount
+    - field.field.estimate.landscaping.field_deposit_date
+    - field.field.estimate.landscaping.field_deposit_received
+    - field.field.estimate.landscaping.field_linked_work_order
     - field.field.estimate.landscaping.field_work_order
   module:
+    - datetime
     - field_group
     - field_layout
     - layout_discovery
@@ -117,6 +123,33 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_contract_signed:
+    type: boolean_checkbox
+    weight: 24
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_deposit_amount:
+    type: number
+    weight: 26
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_deposit_date:
+    type: datetime_default
+    weight: 27
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_deposit_received:
+    type: boolean_checkbox
+    weight: 25
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
   field_estimate_request:
     type: entity_reference_autocomplete
     weight: 15
@@ -157,6 +190,16 @@ content:
     region: content
     settings:
       display_label: true
+    third_party_settings: {  }
+  field_linked_work_order:
+    type: entity_reference_autocomplete
+    weight: 28
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
     third_party_settings: {  }
   field_requires_subs:
     type: boolean_checkbox

@@ -17,8 +17,14 @@ dependencies:
     - field.field.estimate.landscaping.field_scope_elements
     - field.field.estimate.landscaping.field_scope_summary
     - field.field.estimate.landscaping.field_stage
+    - field.field.estimate.landscaping.field_contract_signed
+    - field.field.estimate.landscaping.field_deposit_amount
+    - field.field.estimate.landscaping.field_deposit_date
+    - field.field.estimate.landscaping.field_deposit_received
+    - field.field.estimate.landscaping.field_linked_work_order
     - field.field.estimate.landscaping.field_work_order
   module:
+    - datetime
     - field_group
     - text
 third_party_settings:
@@ -151,6 +157,11 @@ content:
     third_party_settings: {  }
     weight: 8
     region: content
+  estimate_tasks_on_estimate_eva_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
   field_contract_section:
     type: entity_reference_label
     label: above
@@ -158,6 +169,46 @@ content:
       link: true
     third_party_settings: {  }
     weight: 13
+    region: content
+  field_contract_signed:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 20
+    region: content
+  field_deposit_amount:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 22
+    region: content
+  field_deposit_date:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 23
+    region: content
+  field_deposit_received:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 21
     region: content
   field_estimate_request:
     type: entity_reference_label
@@ -196,6 +247,14 @@ content:
       format_custom_true: ''
     third_party_settings: {  }
     weight: 15
+    region: content
+  field_linked_work_order:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 24
     region: content
   field_requires_subs:
     type: boolean

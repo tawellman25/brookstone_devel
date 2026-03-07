@@ -12,8 +12,14 @@ dependencies:
     - field.field.estimate.sprinkler_installation.field_revision_number
     - field.field.estimate.sprinkler_installation.field_revision_of
     - field.field.estimate.sprinkler_installation.field_stage
+    - field.field.estimate.sprinkler_installation.field_contract_signed
+    - field.field.estimate.sprinkler_installation.field_deposit_amount
+    - field.field.estimate.sprinkler_installation.field_deposit_date
+    - field.field.estimate.sprinkler_installation.field_deposit_received
+    - field.field.estimate.sprinkler_installation.field_linked_work_order
     - field.field.estimate.sprinkler_installation.field_work_order
   module:
+    - datetime
     - field_layout
     - layout_discovery
     - path
@@ -53,6 +59,33 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_contract_signed:
+    type: boolean_checkbox
+    weight: 24
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_deposit_amount:
+    type: number
+    weight: 26
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_deposit_date:
+    type: datetime_default
+    weight: 27
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_deposit_received:
+    type: boolean_checkbox
+    weight: 25
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
   field_estimate_request:
     type: entity_reference_autocomplete
     weight: 15
@@ -76,6 +109,16 @@ content:
     region: content
     settings:
       display_label: true
+    third_party_settings: {  }
+  field_linked_work_order:
+    type: entity_reference_autocomplete
+    weight: 28
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
     third_party_settings: {  }
   field_revision_number:
     type: number

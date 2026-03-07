@@ -31,9 +31,21 @@ dependencies:
     - field.field.work_order.landscaping.field_work_order_id
     - field.field.work_order.landscaping.field_work_order_notes
     - field.field.work_order.landscaping.field_work_todo_description
+    - field.field.work_order.landscaping.field_locate_requested
+    - field.field.work_order.landscaping.field_locate_request_date
+    - field.field.work_order.landscaping.field_locate_cleared
+    - field.field.work_order.landscaping.field_locate_clear_date
+    - field.field.work_order.landscaping.field_locate_deadline
+    - field.field.work_order.landscaping.field_locate_overdue
+    - field.field.work_order.landscaping.field_customer_notified
+    - field.field.work_order.landscaping.field_customer_notified_date
+    - field.field.work_order.landscaping.field_materials_staged
+    - field.field.work_order.landscaping.field_start_date
+    - field.field.work_order.landscaping.field_estimated_duration_days
     - image.style.thumbnail
   module:
     - allowed_formats
+    - datetime
     - field_group
     - field_layout
     - image
@@ -144,6 +156,32 @@ third_party_settings:
         open: false
         description: ''
         required_fields: true
+    group_pre_mobilization:
+      children:
+        - field_locate_requested
+        - field_locate_request_date
+        - field_locate_deadline
+        - field_locate_overdue
+        - field_locate_cleared
+        - field_locate_clear_date
+        - field_customer_notified
+        - field_customer_notified_date
+        - field_materials_staged
+        - field_start_date
+        - field_estimated_duration_days
+      label: Pre-Mobilization
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
 id: work_order.landscaping.default
 targetEntityType: work_order
 bundle: landscaping
@@ -198,6 +236,19 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_customer_notified:
+    type: boolean_checkbox
+    weight: 36
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_customer_notified_date:
+    type: datetime_default
+    weight: 37
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_design_plan_images:
     type: image_image
     weight: 4
@@ -221,6 +272,13 @@ content:
       match_operator: CONTAINS
       match_limit: 10
       size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimated_duration_days:
+    type: number
+    weight: 40
+    region: content
+    settings:
       placeholder: ''
     third_party_settings: {  }
   field_estimated_man_hours:
@@ -251,12 +309,58 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_locate_clear_date:
+    type: datetime_default
+    weight: 35
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_locate_cleared:
+    type: boolean_checkbox
+    weight: 34
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_locate_deadline:
+    type: datetime_default
+    weight: 32
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_locate_overdue:
+    type: boolean_checkbox
+    weight: 33
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_locate_request_date:
+    type: datetime_default
+    weight: 31
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_locate_requested:
+    type: boolean_checkbox
+    weight: 30
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
   field_material_chemical_total:
     type: number
     weight: 15
     region: content
     settings:
       placeholder: ''
+    third_party_settings: {  }
+  field_materials_staged:
+    type: boolean_checkbox
+    weight: 38
+    region: content
+    settings:
+      display_label: true
     third_party_settings: {  }
   field_printed:
     type: boolean_checkbox
@@ -298,6 +402,12 @@ content:
       match_limit: 10
       size: 60
       placeholder: ''
+    third_party_settings: {  }
+  field_start_date:
+    type: datetime_default
+    weight: 39
+    region: content
+    settings: {  }
     third_party_settings: {  }
   field_status:
     type: options_select

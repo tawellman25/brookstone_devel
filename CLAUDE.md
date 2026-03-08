@@ -331,6 +331,9 @@ Located in `web/modules/custom/`. Modules are grouped by the `package` key in th
 | `estimate_items` | Line-item pricing engine (labor/materials/equipment/subcontractor bundles) |
 | `estimates` | Estimate and lead workflow integration |
 | `estimate_notifications` | Sends assignment email to estimator when `field_assigned_to` is set on `estimate_request`. Fires on insert (if assigned) and on update (empty → populated transition only). |
+| `estimate_intake` | Presave: property/owner/contact lookup + scoring from field_requestor_address. Insert: loops over all field_service values, creates one estimate per service (field_estimate_service=TRUE only), auto-creates estimate_tasks entity per bundle. |
+| `est_aerating`, `est_aspen_twig_gall`, `est_backflow_testing`, `est_cooley_spruce_gall`, `est_deciduous_bore`, `est_deer_prevention`, `est_dethatching`, `est_dormant_oil`, `est_fertilizing`, `est_fertilizing_trees_and_shrubs`, `est_lawn_mowing`, `est_pinyon_pine_ips_beetle`, `est_pre_emergent`, `est_special_mowing`, `est_sprinkler_start_up`, `est_sprinkler_winterizing`, `est_summer_pruning`, `est_trunk_bore`, `est_winter_pruning` (19 modules) | Per-bundle estimate_tasks calculation modules. Each implements hook_entity_presave to calculate field_estimate_total and sync property data. Package: Estimate Tasks |
+| `estimate_request_cards` | Block plugins rendering Owner card and Contact card on estimate_request display pages. Traverses user→customer_profile→address/phone and contacts→address/phone relationship chains. |
 
 ### Work Order — per-bundle modules (package: Work Orders)
 One module per WO service bundle. Each implements `hook_entity_presave` to calculate totals on completion and writes "last completed" data back to `property_*` detail entities.
@@ -399,6 +402,12 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 | `scheduling_date_migration` | One-time: migrates scheduling dates from old to new field |
 | `work_order_notes_migration` | One-time: migrates WO comments to `wo_notes` ECK entity |
 | `sewards_custom` | Legacy module (migration-era) |
+
+## Entity Field Reference Notes
+
+1. **`phone_number.profile_phone_numbers`** links to user via `field_user` (NOT `field_profile_attached_to` — that field is labeled "Old User Reference" and is deprecated).
+2. **`address.profile_mailing_addresses`** (bundle machine name) links to user via `field_user` (NOT `field_profile` — that field is labeled "Old Profile" and is deprecated). Bundle name is `profile_mailing_addresses`, not `userprofile_mailing_addresses`.
+3. **`phone_number.contacts`** has NO back-reference field to `contacts.contact` — the relationship is a forward reference from `contacts.contact.field_phone_number` → `phone_number.contacts`. Always traverse forward from the contact entity.
 
 ## Configuration Management
 

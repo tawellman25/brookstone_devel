@@ -1,0 +1,242 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+
+/**
+ * Implements hook_entity_extra_field_info().
+ */
+function estimate_request_cards_entity_extra_field_info(): array {
+  return [
+    'estimate_request' => [
+      'standard' => [
+        'display' => [
+          'owner_card' => [
+            'label' => t('Owner Card'),
+            'description' => t('Owner name, address, and phone.'),
+            'weight' => 10,
+            'visible' => TRUE,
+          ],
+          'contact_card' => [
+            'label' => t('Contact Card'),
+            'description' => t('Contact name, address, phone, and email.'),
+            'weight' => 11,
+            'visible' => TRUE,
+          ],
+        ],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_entity_view().
+ */
+function estimate_request_cards_entity_view(
+  array &$build,
+  EntityInterface $entity,
+  EntityViewDisplayInterface $display,
+  string $view_mode
+): void {
+  if ($entity->getEntityTypeId() !== 'estimate_request') {
+    return;
+  }
+
+  $entity_type_manager = \Drupal::entityTypeManager();
+
+  // --- OWNER CARD ---
+  if ($display->getComponent('owner_card')) {
+    try {
+      $owner_html = '';
+
+      if (!$entity->get('field_owner')->isEmpty()) {
+        $owner = $entity->get('field_owner')->entity;
+
+        if ($owner) {
+          // Load customer_profile.
+          $profiles = $entity_type_manager->getStorage('profile')
+            ->loadByProperties([
+              'uid' => $owner->id(),
+              'type' => 'customer_profile',
+              'status' => 1,
+            ]);
+          $profile = $profiles ? reset($profiles) : NULL;
+
+          // Name.
+          $name = '';
+          if ($profile) {
+            $first = $profile->hasField('field_first_name') ? (string) $profile->get('field_first_name')->value : '';
+            $last  = $profile->hasField('field_last_name')  ? (string) $profile->get('field_last_name')->value  : '';
+            $name  = trim($first . ' ' . $last);
+          }
+          if (empty($name)) {
+            $name = $owner->getDisplayName();
+          }
+
+          // Primary phone from phone_number.profile_phone_numbers via field_user.
+          $phone = '';
+          $phone_entities = $entity_type_manager->getStorage('phone_number')
+            ->loadByProperties([
+              'type' => 'profile_phone_numbers',
+              'field_user' => $owner->id(),
+            ]);
+          foreach ($phone_entities as $pe) {
+            if ($pe->hasField('field_primary_phone') && (bool) $pe->get('field_primary_phone')->value) {
+              $phone = (string) $pe->get('field_phone_number')->value;
+              break;
+            }
+          }
+          if (empty($phone) && !empty($phone_entities)) {
+            $first_phone = reset($phone_entities);
+            $phone = (string) $first_phone->get('field_phone_number')->value;
+          }
+
+          // Mailing address from address.profile_mailing_addresses via field_user.
+          $addr_line = $city = $state = $zip = '';
+          $addresses = $entity_type_manager->getStorage('address')
+            ->loadByProperties([
+              'type' => 'profile_mailing_addresses',
+              'field_user' => $owner->id(),
+            ]);
+          $addr_entity = NULL;
+          foreach ($addresses as $ae) {
+            if ($ae->hasField('field_primary_address') && (bool) $ae->get('field_primary_address')->value) {
+              $addr_entity = $ae;
+              break;
+            }
+          }
+          if (!$addr_entity && !empty($addresses)) {
+            $addr_entity = reset($addresses);
+          }
+          if ($addr_entity) {
+            $addr_line = (string) $addr_entity->get('field_address')->value;
+            $city      = (string) $addr_entity->get('field_city')->value;
+            $state     = (string) $addr_entity->get('field_state')->value;
+            $zip       = (string) $addr_entity->get('field_zipcode')->value;
+          }
+
+          // Fallback address from field_property.
+          if (empty($addr_line) && !$entity->get('field_property')->isEmpty()) {
+            $property = $entity->get('field_property')->entity;
+            if ($property) {
+              $addr_line = (string) $property->get('field_street_address')->value;
+              if (!$property->get('field_zipcode_reference')->isEmpty()) {
+                $zip_ref = $property->get('field_zipcode_reference')->entity;
+                if ($zip_ref) {
+                  $zip = (string) $zip_ref->get('field_zipcode')->value;
+                  if ($zip_ref->hasField('field_city') && !$zip_ref->get('field_city')->isEmpty()) {
+                    $city_entity = $zip_ref->get('field_city')->entity;
+                    if ($city_entity && $city_entity->hasField('field_city_name')) {
+                      $city = (string) $city_entity->get('field_city_name')->value;
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // Build HTML.
+          $owner_html .= '<div class="er-card er-card--owner">';
+          $owner_html .= '<h3 class="er-card__role">Owner</h3>';
+          if ($name) {
+            $owner_html .= '<div class="er-card__name">' . htmlspecialchars($name) . '</div>';
+          }
+          if ($addr_line) {
+            $owner_html .= '<div class="er-card__address">' . htmlspecialchars($addr_line);
+            if ($city || $state || $zip) {
+              $owner_html .= '<br>' . htmlspecialchars(trim($city . ', ' . $state . ' ' . $zip));
+            }
+            $owner_html .= '</div>';
+          }
+          if ($phone) {
+            $owner_html .= '<div class="er-card__phone">Primary Phone: ' . htmlspecialchars($phone) . '</div>';
+          }
+          $owner_html .= '</div>';
+        }
+      }
+
+      $build['owner_card'] = [
+        '#markup' => $owner_html ?: '<div class="er-card er-card--owner er-card--empty">No owner information available.</div>',
+        '#weight' => 10,
+      ];
+    }
+    catch (\Throwable $e) {
+      \Drupal::logger('estimate_request_cards')->error('Owner card error: @msg', ['@msg' => $e->getMessage()]);
+      $build['owner_card'] = ['#markup' => ''];
+    }
+  }
+
+  // --- CONTACT CARD ---
+  if ($display->getComponent('contact_card')) {
+    try {
+      $contact_html = '';
+
+      if (!$entity->get('field_contact')->isEmpty()) {
+        $contact = $entity->get('field_contact')->entity;
+
+        if ($contact) {
+          // Name.
+          $first = $contact->hasField('field_first_name') ? (string) $contact->get('field_first_name')->value : '';
+          $last  = $contact->hasField('field_last_name')  ? (string) $contact->get('field_last_name')->value  : '';
+          $name  = trim($first . ' ' . $last);
+
+          // Email.
+          $email = $contact->hasField('field_email') ? (string) $contact->get('field_email')->value : '';
+
+          // Phone via forward reference: contacts.contact.field_phone_number → phone_number.contacts.
+          $phone = '';
+          if ($contact->hasField('field_phone_number') && !$contact->get('field_phone_number')->isEmpty()) {
+            $first_phone = $contact->get('field_phone_number')->entity;
+            if ($first_phone) {
+              $phone = (string) $first_phone->get('field_phone_number')->value;
+            }
+          }
+
+          // Address via forward reference: contacts.contact.field_address → address.contact_address.
+          $addr_line = $city = $state = $zip = '';
+          if ($contact->hasField('field_address') && !$contact->get('field_address')->isEmpty()) {
+            $addr_entity = $contact->get('field_address')->entity;
+            if ($addr_entity) {
+              $addr_line = (string) $addr_entity->get('field_address')->value;
+              $city      = (string) $addr_entity->get('field_city')->value;
+              $state     = (string) $addr_entity->get('field_state')->value;
+              $zip       = (string) $addr_entity->get('field_zipcode')->value;
+            }
+          }
+
+          // Build HTML.
+          $contact_html .= '<div class="er-card er-card--contact">';
+          $contact_html .= '<h3 class="er-card__role">Contact</h3>';
+          if ($name) {
+            $contact_html .= '<div class="er-card__name">' . htmlspecialchars($name) . '</div>';
+          }
+          if ($addr_line) {
+            $contact_html .= '<div class="er-card__address">' . htmlspecialchars($addr_line);
+            if ($city || $state || $zip) {
+              $contact_html .= '<br>' . htmlspecialchars(trim($city . ', ' . $state . ' ' . $zip));
+            }
+            $contact_html .= '</div>';
+          }
+          if ($phone) {
+            $contact_html .= '<div class="er-card__phone">Phone: ' . htmlspecialchars($phone) . '</div>';
+          }
+          if ($email) {
+            $contact_html .= '<div class="er-card__email">Email: ' . htmlspecialchars($email) . '</div>';
+          }
+          $contact_html .= '</div>';
+        }
+      }
+
+      $build['contact_card'] = [
+        '#markup' => $contact_html ?: '<div class="er-card er-card--contact er-card--empty">No contact information available.</div>',
+        '#weight' => 11,
+      ];
+    }
+    catch (\Throwable $e) {
+      \Drupal::logger('estimate_request_cards')->error('Contact card error: @msg', ['@msg' => $e->getMessage()]);
+      $build['contact_card'] = ['#markup' => ''];
+    }
+  }
+}

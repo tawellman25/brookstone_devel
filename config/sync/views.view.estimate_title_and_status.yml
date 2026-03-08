@@ -5,7 +5,6 @@ dependencies:
   config:
     - field.storage.estimate.field_estimate_request
     - field.storage.estimate_request.field_property
-    - field.storage.estimate_request.field_service
     - user.role.administration
     - user.role.administrator
     - user.role.site_admin
@@ -14,7 +13,6 @@ dependencies:
     - user.role.teammates
   module:
     - eck
-    - taxonomy
     - user
     - views_url_path_arguments
 id: estimate_title_and_status
@@ -99,15 +97,17 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        field_service:
-          id: field_service
-          table: estimate_request__field_service
-          field: field_service
-          relationship: field_estimate_request
+        type:
+          id: type
+          table: estimate_field_data
+          field: type
+          relationship: none
           group_type: group
           admin_label: ''
+          entity_type: estimate
+          entity_field: type
           plugin_id: field
-          label: ''
+          label: 'Service Type'
           exclude: true
           alter:
             alter_text: false
@@ -148,11 +148,11 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          click_sort_column: target_id
-          type: entity_reference_label
+          click_sort_column: value
+          type: string
           settings:
-            link: false
-          group_column: target_id
+            link_to_entity: false
+          group_column: value
           group_columns: {  }
           group_rows: true
           delta_limit: 0
@@ -370,7 +370,7 @@ display:
           exclude: false
           alter:
             alter_text: true
-            text: "<h4>{{ field_service }}</h4>\r\n<h1>{{ title }}</h1>\r\n<div>{{ title_1 }}</div>"
+            text: "<h4>{{ type }}</h4>\r\n<h1>{{ title }}</h1>\r\n<div>{{ title_1 }}</div>"
             make_link: false
             path: ''
             absolute: false
@@ -520,7 +520,6 @@ display:
       tags:
         - 'config:field.storage.estimate.field_estimate_request'
         - 'config:field.storage.estimate_request.field_property'
-        - 'config:field.storage.estimate_request.field_service'
   block_1:
     id: block_1
     display_title: Block
@@ -538,4 +537,3 @@ display:
       tags:
         - 'config:field.storage.estimate.field_estimate_request'
         - 'config:field.storage.estimate_request.field_property'
-        - 'config:field.storage.estimate_request.field_service'

@@ -22,18 +22,13 @@ dependencies:
   module:
     - field_group
     - options
-    - telephone
     - text
 third_party_settings:
   field_group:
     group_contact_info:
       children:
-        - field_owner
-        - field_contact
-        - field_requestor_name
-        - field_requestor_address
-        - field_requestor_phone
-        - field_requestor_email
+        - owner_card
+        - contact_card
       label: 'Contact Info'
       parent_name: ''
       region: content
@@ -52,6 +47,11 @@ targetEntityType: estimate_request
 bundle: standard
 mode: default
 content:
+  contact_card:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
   estimate_request_estimates_eva_1:
     settings: {  }
     third_party_settings: {  }
@@ -72,14 +72,6 @@ content:
     third_party_settings: {  }
     weight: 5
     region: content
-  field_contact:
-    type: entity_reference_label
-    label: inline
-    settings:
-      link: true
-    third_party_settings: {  }
-    weight: 8
-    region: content
   field_contract:
     type: entity_reference_label
     label: hidden
@@ -87,14 +79,6 @@ content:
       link: true
     third_party_settings: {  }
     weight: 1
-    region: content
-  field_owner:
-    type: entity_reference_label
-    label: inline
-    settings:
-      link: true
-    third_party_settings: {  }
-    weight: 7
     region: content
   field_priority:
     type: list_default
@@ -111,42 +95,22 @@ content:
     third_party_settings: {  }
     weight: 0
     region: content
-  field_requestor_address:
-    type: string
-    label: inline
-    settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    weight: 10
-    region: content
-  field_requestor_email:
-    type: basic_string
-    label: inline
+  owner_card:
     settings: {  }
     third_party_settings: {  }
-    weight: 12
-    region: content
-  field_requestor_name:
-    type: string
-    label: inline
-    settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    weight: 9
-    region: content
-  field_requestor_phone:
-    type: telephone_link
-    label: inline
-    settings:
-      title: ''
-    third_party_settings: {  }
-    weight: 11
+    weight: 10
     region: content
 hidden:
   changed: true
   created: true
+  field_contact: true
   field_contract_section: true
   field_estimates: true
+  field_owner: true
+  field_requestor_address: true
+  field_requestor_email: true
+  field_requestor_name: true
+  field_requestor_phone: true
   field_service: true
   field_status: true
   title: true

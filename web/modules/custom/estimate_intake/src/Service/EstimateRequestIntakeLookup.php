@@ -19,20 +19,51 @@ final class EstimateRequestIntakeLookup {
   ) {}
 
   /**
-   * Find properties matching an address string.
+   * Finds properties matching a typed address string.
+   * Parses address into components, scores each candidate match.
    *
-   * @return \Drupal\Core\Entity\EntityInterface[]
+   * @param string $address
+   *   Raw address typed by staff (may include city, state, zip).
+   *
+   * @return array
+   *   Scored matches: [['entity' => $property, 'score' => int], ...]
+   *   Sorted by score DESC. Empty array if no matches.
    */
   public function findProperties(string $address): array {
-    if ($address === '') {
+    if (empty(trim($address))) {
       return [];
     }
 
+    // Parse address components.
+    // Expected formats: "123 Main St" or "123 Main St, Delta, CO 81416"
+    $parts = array_map('trim', explode(',', $address));
+    $streetOnly = $parts[0] ?? '';
+    $cityRaw = $parts[1] ?? '';
+    $stateZipRaw = $parts[2] ?? '';
+
+    // Extract zip code (5 digits).
+    $zip = '';
+    if (preg_match('/\b(\d{5})\b/', $stateZipRaw, $zipMatch)) {
+      $zip = $zipMatch[1];
+    }
+    // Also check if zip is in part[1] (e.g. "Delta CO 81416").
+    if (empty($zip) && preg_match('/\b(\d{5})\b/', $cityRaw, $zipMatch)) {
+      $zip = $zipMatch[1];
+    }
+
+    // Normalize city — strip state abbreviation and zip.
+    $city = trim(preg_replace('/\b[A-Z]{2}\b|\b\d{5}\b/', '', strtolower($cityRaw)));
+
+    if (empty($streetOnly)) {
+      return [];
+    }
+
+    // Query properties by street only (LIKE on street number + name).
     $storage = $this->entityTypeManager->getStorage('properties');
     $ids = $storage->getQuery()
       ->accessCheck(FALSE)
       ->condition('type', 'property')
-      ->condition('field_street_address', '%' . $address . '%', 'LIKE')
+      ->condition('field_street_address', '%' . $streetOnly . '%', 'LIKE')
       ->range(0, 20)
       ->execute();
 
@@ -40,7 +71,62 @@ final class EstimateRequestIntakeLookup {
       return [];
     }
 
-    return $storage->loadMultiple($ids);
+    $properties = $storage->loadMultiple($ids);
+
+    $scored = [];
+    foreach ($properties as $property) {
+      $score = 0;
+
+      // Street match (always true since we queried on it, but score it).
+      $storedStreet = strtolower($property->get('field_street_address')->value ?? '');
+      $searchStreet = strtolower($streetOnly);
+      if (str_contains($storedStreet, $searchStreet) || str_contains($searchStreet, $storedStreet)) {
+        $score += 1;
+      }
+
+      // Zip match via field_zipcode_reference → zipcodes.field_zipcode.
+      if (!empty($zip) && !$property->get('field_zipcode_reference')->isEmpty()) {
+        $zipcodeRef = $property->get('field_zipcode_reference')->referencedEntities();
+        if (!empty($zipcodeRef)) {
+          $zipEntity = reset($zipcodeRef);
+          $storedZip = $zipEntity->get('field_zipcode')->value ?? '';
+          if ($storedZip === $zip) {
+            $score += 2;
+          }
+        }
+      }
+
+      // City match via field_zipcode_reference → zipcodes.field_city → city.field_city_name.
+      if (!empty($city) && !$property->get('field_zipcode_reference')->isEmpty()) {
+        $zipcodeRef = $property->get('field_zipcode_reference')->referencedEntities();
+        if (!empty($zipcodeRef)) {
+          $zipEntity = reset($zipcodeRef);
+          $storedCity = '';
+          if ($zipEntity->hasField('field_city') && !$zipEntity->get('field_city')->isEmpty()) {
+            $cityEntities = $zipEntity->get('field_city')->referencedEntities();
+            if (!empty($cityEntities)) {
+              $cityEntity = reset($cityEntities);
+              if ($cityEntity->hasField('field_city_name')) {
+                $storedCity = strtolower($cityEntity->get('field_city_name')->value ?? '');
+              }
+            }
+          }
+          if (!empty($storedCity) && str_contains($storedCity, $city)) {
+            $score += 1;
+          }
+        }
+      }
+
+      $scored[] = [
+        'entity' => $property,
+        'score' => $score,
+      ];
+    }
+
+    // Sort by score descending.
+    usort($scored, fn($a, $b) => $b['score'] <=> $a['score']);
+
+    return $scored;
   }
 
   /**
@@ -138,7 +224,15 @@ final class EstimateRequestIntakeLookup {
    * @return array{properties: EntityInterface[], owner_uid: int|null, contact_id: int, contact_created: bool}
    */
   public function orchestrate(string $address, string $first_name, string $last_name, string $phone, string $email): array {
-    $properties = $this->findProperties($address);
+    $scored = $this->findProperties($address);
+
+    // Resolve scored matches to a flat properties array for the caller.
+    $properties = [];
+    if (!empty($scored)) {
+      $topScore = $scored[0]['score'];
+      $topMatches = array_values(array_filter($scored, fn($m) => $m['score'] === $topScore));
+      $properties = array_map(fn($m) => $m['entity'], $topMatches);
+    }
 
     $owner_uid = NULL;
     if (count($properties) === 1) {

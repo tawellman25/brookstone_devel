@@ -66,6 +66,22 @@ The deploy script rsyncs code to live, then runs `composer install --no-dev` and
 ```bash
 ddev drush ms-audit          # Audit material↔supplier link records (duplicates, missing pack qty, bad SKUs)
                              # Alias: drush material-supplier:audit
+
+ddev drush eck:clone-bundle <entity_type> <source_bundle> <new_bundle> [--label="Label"]
+                             # Clone an ECK bundle (definition + fields + base field overrides)
+                             # Does NOT clone form/view displays — configure those manually after
+                             # Alias: drush eck-bundle-clone
+                             # Example: ddev drush eck:clone-bundle sop system_procedures training --label="Training"
+
+ddev drush bos:contracts:sections-backfill [--dry-run] [--limit=N] [--start-id=N] [--contract-id=N]
+                             # Backfill contract_sections.field_contract from residential contract slot fields
+                             # Only sets field_contract when empty; never overwrites; logs conflicts
+                             # Alias: drush bos-cs-backfill
+
+ddev drush bos:checkups:generate [--force]
+                             # Enqueue the irrigation check-up generator dispatcher
+                             # Shares guard logic with cron (skips if already dispatched today)
+                             # Use --force to override the daily guard
 ```
 
 ## Architecture Overview

@@ -76,7 +76,7 @@ If `field_preferred_supplier` exists and is set to TRUE:
 
 ---
 
-### 5) Supplier Item Number Normalization (Auto-clean)
+### 4) Supplier Item Number Normalization (Auto-clean)
 
 On save, if `field_supplier_item_number` exists:
 
@@ -140,7 +140,7 @@ web/modules/custom/material_supplier/
 Key hooks implemented:
 
 * `material_supplier_entity_validate()` — rules 1, 2, and 3
-* `material_supplier_entity_presave()` — rule 5
+* `material_supplier_entity_presave()` — rule 4
 
 ---
 

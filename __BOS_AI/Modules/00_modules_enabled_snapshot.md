@@ -1,9 +1,11 @@
 # BOS Enabled Modules — Snapshot
 
+> **Note:** This snapshot lists contrib modules only. Custom modules are documented in CLAUDE.md and in individual files under `Modules/`.
+
 Source:
 - drush config:get core.extension module
 
-This file is a factual snapshot of all enabled modules.
+This file is a factual snapshot of all enabled contrib modules.
 No policy, tiering, or approval is implied.
 
 ---

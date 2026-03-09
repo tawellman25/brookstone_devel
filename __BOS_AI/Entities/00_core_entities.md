@@ -22,13 +22,13 @@ __BOS_AI/Entities/
   ├── properties.md                    (Core)
   ├── work_orders.md                   (Core)
   ├── contracts.md                     (Core)
-  ├── profiles.md                      (Supporting)
   ├── users.md                         (Supporting - core user entity)
-  ├── contacts.md                      (Supporting)
-  ├── estimates.md                     (Supporting)
+  ├── people_org_reference_entities.md (Supporting - contacts, address, phone)
+  ├── estimate.md                      (Supporting)
+  ├── estimate_request.md              (Supporting)
   ├── equipment.md                     (Supporting)
-  ├── materials.md                     (Supporting)
-  └── sops.md                          (Governance)
+  ├── material.md                      (Supporting)
+  └── sop_content_knowledge_entities.md (Governance)
 
 Rules:
 - One entity per file.
@@ -113,16 +113,15 @@ These are important, but BOS can still operate if they are refactored or replace
 
 ### Identity & Relationships
 - `users.md` (core Drupal User entity)
-- `profiles.md` (Profile module)
-- `contacts.md` (non-user contact records)
+- `people_org_reference_entities.md` (contacts, address, phone_number, profiles)
 
 ### Operations Support
-- `estimates.md`
+- `estimate.md` / `estimate_request.md`
 - `equipment.md`
-- `materials.md`
+- `material.md`
 
 ### Governance
-- `sops.md`
+- `sop_content_knowledge_entities.md`
 
 ---
 
@@ -135,9 +134,6 @@ These are important, but BOS can still operate if they are refactored or replace
 
 ---
 
-## Next Files to Create (Minimum)
+## File Status
 
-- 01_entities_policy.md
-- properties.md
-- work_orders.md
-- contracts.md
+All core entity files listed above have been created.

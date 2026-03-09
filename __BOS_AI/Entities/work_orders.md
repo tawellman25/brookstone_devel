@@ -32,15 +32,16 @@ grub_prevention | Grub Prevention
 in_house_tasks | In House Tasks
 landscaping | Landscaping
 lawn_mowing | Lawn Mowing
-lighting_landscape | Landscape Lighting
-lighting_exterior | Exterior Building Lighting
+landscape_lighting | Landscape Lighting
+exterior_lighting | Exterior Building Lighting
+estimate | Estimate
 misc_services | Misc Services
 pinion_pine_ips_beetle | Pinyon Pine Ips Beetle
 pre_emergent | Pre-emergent
 snow_removal | Snow Removal
 special_mowing | Special Mowing
 spring_cleanup | Spring Cleanup
-sprinkler_backflow | Backflow Testing
+backflow_testing | Backflow Testing
 sprinkler_check_up | Sprinkler Check-Up
 sprinkler_design | Sprinkler Design
 sprinkler_installation | Sprinkler Installation
@@ -51,6 +52,7 @@ summer_pruning | Pruning
 trunk_bore | Trunk Bore
 weed_pulling | Weed Pulling
 weed_spraying | Weed Spraying
+winter_pruning | Winter Pruning
 
 ---
 

@@ -196,7 +196,7 @@ Users must support reporting by:
 User access and permissions in BOS are controlled by Drupal Roles.
 
 Role definitions, intent, and governance rules are documented in:
-- `roles.md`
+- `user_roles.md`
 
 Users may have multiple roles.
 Profiles do not grant permissions; roles do.

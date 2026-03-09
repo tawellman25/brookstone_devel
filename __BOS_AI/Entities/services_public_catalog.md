@@ -103,8 +103,8 @@ Format:
 ## Lighting
 
 1505 | Lighting | WO=0 | bundle=-
-- 1647 | Landscape Lighting | WO=1 | bundle=lighting_landscape
-- 1648 | Exterior Lighting | WO=1 | bundle=lighting_exterior
+- 1647 | Landscape Lighting | WO=1 | bundle=landscape_lighting
+- 1648 | Exterior Lighting | WO=1 | bundle=exterior_lighting
 - 396 | Holiday Decorations | WO=1 | bundle=christmas_decorations
 
 ---

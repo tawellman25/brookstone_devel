@@ -209,7 +209,7 @@ Planned direction:
 ## Lifecycle Rules (All Bundles)
 
 - Contracts are not deleted by default.
-- Lifecycle is managed via status (Draft / Active / Expired / Cancelled).
+- Lifecycle is managed via status. (See `contract_status.md` for the full 12-status lifecycle.)
 - Only Active contracts may generate new Work Orders.
 
 ---
@@ -241,7 +241,7 @@ BOS creates an append-only audit trail for **Contract Sections**.
 - **What:** stored as `field_action` (insert/update/delete), `field_section_bundle`, and `field_changed_fields` (JSON list of changed field machine names).
 
 ### Implementation
-- Audit entity type: `contract_sections_audit_log`
+- Audit entity type: `contract_sections_audit`
 - Bundle: `log`
 - Created by module: `contract_sections_audit`
 - Log entries are system-generated and must not be created/edited/deleted manually.

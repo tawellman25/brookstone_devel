@@ -1,6 +1,8 @@
 # Estimate Tasks Entity Design
 ## `estimate_tasks` ECK Entity Type
 
+> **Status: Draft/Planning** — This document contains incomplete sections marked with `?` placeholders. It is a design worksheet, not authoritative specification.
+
 Fill in the **Property Sync?** column and add any **Additional Fees** or **Notes** per service.
 
 ---

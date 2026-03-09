@@ -11,6 +11,29 @@ BOS exists to:
 BOS is **not** an ERP in user-facing language.
 BOS may integrate with accounting systems (e.g., QuickBooks), but does not replace them.
 
+## Directory Structure
+
+| Directory | Contents |
+|---|---|
+| `Entities/` | Entity type specifications: fields, bundles, relationships, invariants |
+| `Modules/` | Custom module architecture: hooks, services, business logic |
+| `Governance/` | Design charters, authority models, bundle specifications |
+| `Rules/` | Business rules: pricing, costing, identity |
+| `Prompts/` | AI interaction guides and prompt templates |
+| `Mappings/` | Field label mappings and cross-references |
+| `automation/` | Automation specifications (e.g., check-up generator) |
+| `drush_commands/` | Custom Drush command documentation |
+| `Archive/` | Retired/historical documents (not authoritative) |
+
+### Key Entry Points
+
+- **Start here:** `Entities/00_core_entities.md` — the operational spine
+- **Entity policy:** `Entities/01_entities_policy.md` — rules for all entity decisions
+- **Data flow:** `Entities/02_bos_data_flow_map.md` — how data moves through BOS
+- **UI flow:** `Entities/03_bos_ui_flow_map.md` — user workflows
+- **Module tiers:** `Modules/01_modules_tier_policy.md` — contrib module governance
+- **WO modules:** `Modules/wo_bundle_modules.md` — the wo_* module pattern
+
 ## Platform
 - Drupal 10 (Drupal 11 compatible)
 - Heavy use of custom modules
@@ -38,7 +61,7 @@ BOS may integrate with accounting systems (e.g., QuickBooks), but does not repla
 - SOP Codes are immutable once approved
 
 ## AI Usage Rules
-- Files in `/bos-ai/` are authoritative
+- Files in `__BOS_AI/` are authoritative
 - Code must conform to these documents
 - If code conflicts with these rules, the conflict must be surfaced
 - Do not invent entities, bundles, or rules not defined here

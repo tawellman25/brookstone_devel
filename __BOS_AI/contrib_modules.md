@@ -53,6 +53,7 @@ recaptcha
 redirect
 smart_date
 smtp
+s3fs
 stage_file_proxy
 symfony_mailer
 token
@@ -130,7 +131,6 @@ jquery_ui_autocomplete
 jquery_ui_datepicker
 jquery_ui_menu
 jquery_ui_slider
-jquery_ui_touch_punch
 jquery_ui_touch_punch
 linkicon
 mailer_transport

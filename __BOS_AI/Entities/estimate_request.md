@@ -1,3 +1,25 @@
+# estimate_request
+
+## Entity Type
+- **Machine name:** `estimate_request`
+- **Provider:** ECK
+- **Bundles:** `standard`
+
+## Purpose
+Intake container for the estimating workflow. One estimate_request can generate multiple estimates (one per service). Links owner, contact, property, and requested services.
+
+## Key Relationships
+- `field_owner` → `user` (client role)
+- `field_contact` → `contacts.contact`
+- `field_property` → `properties`
+- `field_contract` → `contracts`
+- `field_service` → taxonomy `services` (multi-value)
+- `field_estimates` → `estimate` (multi-value, reverse reference)
+
+---
+
+## Fields (standard bundle)
+
 === standard | Standard ===
 id | integer | ID
 uuid | uuid | UUID

@@ -259,8 +259,8 @@ Format: tid | label | WO | EST | bundle
 404 | Dethatching                 | WO=1 | EST=1 | bundle=dethatching
 388 | Pruning                     | WO=0 | EST=0 | bundle=- (grouping term — children handle execution)
 412 | Summer Pruning              | WO=1 | EST=1 | bundle=summer_pruning
-    | Winter Tree Pruning         | WO=1 | EST=1 | bundle=winter_pruning (child of Pruning — term pending creation)
-    | Fruit Tree Pruning          | WO=1 | EST=1 | bundle=fruit_tree_pruning (child of Pruning — term pending creation)
+    | Winter Tree Pruning         | WO=1 | EST=1 | bundle=winter_pruning (child of Pruning) **[PENDING — term not yet created]**
+    | Fruit Tree Pruning          | WO=1 | EST=1 | bundle=fruit_tree_pruning (child of Pruning) **[PENDING — term not yet created]**
 416 | Weed Pulling in Shrubs      | WO=1 | EST=0 | bundle=weed_pulling
 409 | Deer Prevention Wire        | WO=1 | EST=1 | bundle=deer_prevention
 390 | Misc Services               | WO=1 | EST=0 | bundle=misc_services
@@ -314,8 +314,8 @@ Format: tid | label | WO | EST | bundle
 
 ### Lighting
 1505| Lighting                    | WO=0 | EST=0 | bundle=-
-1647| Landscape Lighting          | WO=1 | EST=0 | bundle=lighting_landscape
-1648| Exterior Lighting           | WO=1 | EST=0 | bundle=lighting_exterior
+1647| Landscape Lighting          | WO=1 | EST=0 | bundle=landscape_lighting
+1648| Exterior Lighting           | WO=1 | EST=0 | bundle=exterior_lighting
 396 | Holiday Decorations         | WO=1 | EST=0 | bundle=christmas_decorations
 
 ### Other

@@ -1,4 +1,4 @@
-# BOS — Work Order Status Authority Model (Draft)
+# BOS — Work Order Status Authority Model
 
 ## Purpose
 

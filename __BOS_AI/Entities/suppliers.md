@@ -181,9 +181,7 @@ Those are handled by:
 
 ---
 
-## Next Related Work
+## Related Work
 
-- Define `material_suppliers` fields
-- Add supplier pricing + priority per material
-- Build Material‑centric supplier views for office staff
+Material-supplier linkage, pricing, and priority are now fully implemented. See `material_suppliers.md` and the `material_supplier` module documentation in `../Modules/material_supplier_module.md`.
 

@@ -73,6 +73,7 @@ summer_hedge_shrub_pruning | Summer Hedge & Shrub Pruning
 trunk_bore_prevention | Trunk Bore Prevention
 weed_spraying_landscape_beds | Weed spraying of landscape bed areas
 weed_spraying_of_misc_areas | Weed Spraying of Misc Areas
+winter_pruning | Winter Pruning
 
 ---
 

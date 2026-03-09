@@ -1,4 +1,4 @@
-# Contract Section Audit Log (contract_sections_audit_log)
+# Contract Section Audit Log (contract_sections_audit)
 
 Purpose: Append-only, system-generated audit trail for **Contract Sections** changes. Tracks **who** changed a section, **when**, and **what** changed (field-level list), plus section bundle context.
 
@@ -6,14 +6,14 @@ Purpose: Append-only, system-generated audit trail for **Contract Sections** cha
 
 ## Entity Type
 
-- **ECK Entity Type (machine name):** `contract_sections_audit_log`
+- **ECK Entity Type (machine name):** `contract_sections_audit`
 - **Label (admin):** Contract - Sections - Audit Log
-- **Enabled:** `status: true`
+- **Enabled:** `status: false`
 - **Base fields enabled (ECK entity type flags):**
   - `uid: true` (Author = who made the change)
   - `created: true` (Created = when the change happened)
   - `changed: true` (when the log row itself was last touched; should not change in normal use)
-  - `title: false` (logs do not have titles; prevents label-related issues)
+  - `title: true`
 
 > **Truth sources**
 > - **Who:** base field `uid` (Author/Owner)
@@ -78,7 +78,7 @@ Purpose: Append-only, system-generated audit trail for **Contract Sections** cha
 
 ## Permissions / Access
 
-Recommended permissions for entity type `contract_sections_audit_log`:
+Recommended permissions for entity type `contract_sections_audit`:
 
 - **Create:** none (no roles)
 - **Edit:** none (no roles)
@@ -122,12 +122,12 @@ Contract Sections should have labels/titles enabled to avoid Drupal UI issues (e
 ## Operational Checks
 
 ### Confirm entity type config
-- `eck.eck_entity_type.contract_sections_audit_log` should show:
-  - `status: true`
+- `eck.eck_entity_type.contract_sections_audit` should show:
+  - `status: false`
   - `uid: true`
   - `created: true`
   - `changed: true`
-  - `title: false`
+  - `title: true`
 
 ### Smoke test (manual)
 - Edit any Contract Section and save.
@@ -160,7 +160,7 @@ Recommended View: “Contract Section Change Log”
 
 ## Machine Name Reference
 
-- Audit entity type: `contract_sections_audit_log`
+- Audit entity type: `contract_sections_audit`
 - Audit bundle: `log`
 - Fields:
   - `field_contract_section`

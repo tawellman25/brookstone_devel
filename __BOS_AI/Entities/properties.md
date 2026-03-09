@@ -75,7 +75,7 @@ Invariant:
 - If a property requires an external app workflow, field_client_app must be populated.
 
 - field_app_note (text_long)
-  - Field/mobile-specific notes for crews regardomg the use of the app for this particular property.
+  - Field/mobile-specific notes for crews regarding the use of the app for this particular property.
 
 ---
 
@@ -160,7 +160,7 @@ Notes:
   - Global note surfaced on all Work Orders for this property.
 
 - field_property_description (text_with_summary)
-  - Publice facing narrative description.
+  - Public facing narrative description.
 
 - field_aerial_view (image)
 - field_front_view (image)

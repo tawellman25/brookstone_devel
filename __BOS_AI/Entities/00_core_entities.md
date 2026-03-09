@@ -120,6 +120,10 @@ These are important, but BOS can still operate if they are refactored or replace
 - `equipment.md`
 - `material.md`
 
+### Configuration / Rate Tables
+- `business_setting.md` (config_pages — central rate table for all billing calculations)
+- `taxonomy_vocabularies.md` (43 vocabularies — services, statuses, classifications)
+
 ### Governance
 - `sop_content_knowledge_entities.md`
 

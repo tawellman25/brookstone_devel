@@ -6,6 +6,9 @@ dependencies:
     - eck.eck_type.work_order.pre_emergent
     - field.storage.properties.field_geofield
     - field.storage.properties.field_nickname
+    - field.storage.property_spraying_info.field_last_amount_applied
+    - field.storage.property_spraying_info.field_last_applied_by
+    - field.storage.property_spraying_info.field_last_applied_date
     - field.storage.work_order.field_pre_emergent_season
     - field.storage.work_order.field_property
     - field.storage.work_order.field_scheduled
@@ -34,6 +37,7 @@ dependencies:
     - 'taxonomy_term:wo_status:e3f6cee6-869b-4029-ab9e-869ba3fa9a69'
   module:
     - better_exposed_filters
+    - datetime
     - eck
     - geofield
     - geofield_map
@@ -1314,6 +1318,16 @@ display:
           admin_label: City
           plugin_id: standard
           required: false
+        reverse__property_spraying_info__field_property:
+          id: reverse__property_spraying_info__field_property
+          table: properties_field_data
+          field: reverse__property_spraying_info__field_property
+          relationship: field_property
+          group_type: group
+          admin_label: 'Spray Info'
+          entity_type: properties
+          plugin_id: entity_reverse
+          required: false
       header:
         view:
           id: view
@@ -1518,69 +1532,6 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        field_nickname:
-          id: field_nickname
-          table: properties__field_nickname
-          field: field_nickname
-          relationship: field_property
-          group_type: group
-          admin_label: ''
-          plugin_id: field
-          label: ''
-          exclude: true
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: string
-          settings:
-            link_to_entity: false
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
         field_pre_emergent_season:
           id: field_pre_emergent_season
           table: work_order__field_pre_emergent_season
@@ -1635,6 +1586,262 @@ display:
           settings:
             link: true
           group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_last_amount_applied:
+          id: field_last_amount_applied
+          table: property_spraying_info__field_last_amount_applied
+          field: field_last_amount_applied
+          relationship: reverse__property_spraying_info__field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Last Amount Applied'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_decimal
+          settings:
+            thousand_separator: ''
+            decimal_separator: .
+            scale: 2
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_last_applied_by:
+          id: field_last_applied_by
+          table: property_spraying_info__field_last_applied_by
+          field: field_last_applied_by
+          relationship: reverse__property_spraying_info__field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: true
+            text: 'By {{ field_last_applied_by }}'
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: false
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_last_applied_date:
+          id: field_last_applied_date
+          table: property_spraying_info__field_last_applied_date
+          field: field_last_applied_date
+          relationship: reverse__property_spraying_info__field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Last Applied Date'
+          exclude: true
+          alter:
+            alter_text: true
+            text: 'On {{ field_last_applied_date }}'
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: datetime_default
+          settings:
+            timezone_override: ''
+            format_type: date_only
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_nickname:
+          id: field_nickname
+          table: properties__field_nickname
+          field: field_nickname
+          relationship: field_property
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
           group_columns: {  }
           group_rows: true
           delta_limit: 0
@@ -1784,7 +1991,7 @@ display:
           exclude: false
           alter:
             alter_text: true
-            text: "<b>{{ field_nickname }}</b></br>\r\n{{ field_property }}</br>\r\n{{ field_last_amount_applied }}</br>\r\n</br>\r\n{{ title }}"
+            text: "<b>{{ field_nickname }}</b></br>\r\n{{ field_property }}</br>\r\n{{ field_last_amount_applied }}</br>\r\n{{ field_last_applied_by }}</br>\r\n{{ field_last_applied_date }}</br>\r\n</br>\r\n{{ title }}"
             make_link: false
             path: '{{ view_work_order }}'
             absolute: false
@@ -2212,6 +2419,9 @@ display:
       tags:
         - 'config:field.storage.properties.field_geofield'
         - 'config:field.storage.properties.field_nickname'
+        - 'config:field.storage.property_spraying_info.field_last_amount_applied'
+        - 'config:field.storage.property_spraying_info.field_last_applied_by'
+        - 'config:field.storage.property_spraying_info.field_last_applied_date'
         - 'config:field.storage.work_order.field_pre_emergent_season'
         - 'config:field.storage.work_order.field_property'
         - 'config:field.storage.work_order.field_scheduled'

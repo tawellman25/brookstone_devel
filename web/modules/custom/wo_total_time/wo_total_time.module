@@ -33,15 +33,6 @@ function wo_total_time_entity_presave(EntityInterface $entity) {
     $teammate_id = $entity->hasField('field_teammate') && !$entity->get('field_teammate')->isEmpty() ? $entity->get('field_teammate')->target_id : 'None';
     $original_uid = $entity->getOwnerId();
 
-    \Drupal::logger('wo_total_time')->notice('Presave Debug: Route=@route, Method=@method, IsNew=@is_new, CurrentUser=@current, Teammate=@teammate, OriginalUID=@uid', [
-      '@route' => $route,
-      '@method' => $method,
-      '@is_new' => $entity->isNew() ? 'Yes' : 'No',
-      '@current' => $current_user,
-      '@teammate' => $teammate_id,
-      '@uid' => $original_uid,
-    ]);
-
     // Simplified manual entry check: Any POST request for now.
     $is_manual_entry = $request->getMethod() === 'POST';
 
@@ -60,12 +51,6 @@ function wo_total_time_entity_presave(EntityInterface $entity) {
           '@uid' => $original_uid,
         ]);
       }
-    }
-    else {
-      \Drupal::logger('wo_total_time')->notice('Not updating UID: ManualEntry=@manual, TeammateExists=@teammate', [
-        '@manual' => $is_manual_entry ? 'Yes' : 'No',
-        '@teammate' => $teammate_id === 'None' ? 'No' : 'Yes',
-      ]);
     }
   }
 }

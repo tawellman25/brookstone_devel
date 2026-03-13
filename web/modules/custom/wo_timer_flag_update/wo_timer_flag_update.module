@@ -148,8 +148,6 @@ function wo_timer_flag_update_preprocess_flag(&$variables) {
     // Attach the custom CSS library.
     $variables['#attached']['library'][] = 'wo_timer_flag_update/flag-timer';
 
-    // Debug: Log the flag state, classes, link text, and template context.
-    \Drupal::logger('wo_timer_flag_update')->notice('Flag state for work_order_timer: ' . ($is_flagged ? 'Flagged' : 'Unflagged') . ' | Classes: ' . implode(', ', $variables['attributes']['class']) . ' | Link text: ' . $link_text . ' | Rendered link_text: ' . print_r($variables['link_text'], TRUE) . ' | Template context: ' . print_r(['title' => $variables['title'], 'link_text_raw' => $variables['link_text_raw']], TRUE));
   }
 }
 

@@ -446,6 +446,14 @@ All Drupal config is exported to `config/sync/` and deployed via `drush cim`. Th
 
 - **`estimate.pinyon_pine_ips_beetle` → `work_order.pinion_pine_ips_beetle` spelling mismatch.** The estimate bundle uses `pinyon` (correct botanical spelling); the work_order bundle uses `pinion` (legacy typo). The `field_work_order` field on `estimate.pinyon_pine_ips_beetle` intentionally targets `work_order.pinion_pine_ips_beetle`. Do not "fix" that reference until the work_order bundle is renamed to `work_order.pinyon_pine_ips_beetle` — renaming the WO bundle requires coordinated changes to config, the `wo_pinion_pine_ips_beetle` module, and any views/reports that reference it by name.
 
+## Patched Contrib Modules
+
+- **`form_mode_control`** — requires a patch to fix a `foreach` on null `$defaults`. Applied via:
+  ```bash
+  sed -i 's/foreach (\$defaults as \$entityTypeId/foreach (\$defaults ?? [] as \$entityTypeId/' web/modules/contrib/form_mode_control/form_mode_control.module
+  ```
+  NOTE: `contrib/` is excluded from rsync deploy — patch must be re-applied manually on live after `composer update`/`composer install`.
+
 ## BOS Architectural Rules
 
 From `__BOS_AI/README.md` and `__BOS_AI/Entities/01_entities_policy.md`:
@@ -486,3 +494,7 @@ From `__BOS_AI/Entities/03_bos_ui_flow_map.md`:
 | Admin | Services taxonomy | Maintain WO service flags and bundle mappings |
 
 Contract Section editing opens in a **modal dialog** from the Contract page. Two patterns: Admin Table (preferred, page-refresh on save) and legacy EVA/multi-block (AJAX block refresh).
+
+## Change Log
+
+- **2026-03-12** — Removed debug logging from `wo_total_time` (Presave Debug, Not updating UID notices) and `wo_timer_flag_update` (Flag state notice). Updated `teammate_pre_emergent_wos` view config.

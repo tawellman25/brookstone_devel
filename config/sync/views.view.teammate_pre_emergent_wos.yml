@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - eck.eck_type.property_spraying_info.pre_emergent
     - eck.eck_type.work_order.pre_emergent
     - field.storage.properties.field_geofield
     - field.storage.properties.field_nickname
@@ -1262,6 +1263,48 @@ display:
             autocomplete_raw_suggestion: 1
             autocomplete_raw_dropdown: 1
             autocomplete_dependent: 0
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+        type_1:
+          id: type_1
+          table: property_spraying_info_field_data
+          field: type
+          relationship: reverse__property_spraying_info__field_property
+          group_type: group
+          admin_label: ''
+          entity_type: property_spraying_info
+          entity_field: type
+          plugin_id: bundle
+          operator: in
+          value:
+            pre_emergent: pre_emergent
+          group: 1
+          exposed: false
+          expose:
+            operator_id: ''
+            label: ''
+            description: ''
+            use_operator: false
+            operator: ''
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: ''
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            reduce: false
           is_grouped: false
           group_info:
             label: ''

@@ -6,22 +6,22 @@ dependencies:
     - eck.eck_type.estimate.landscaping
     - field.field.estimate.landscaping.field_assigned_to
     - field.field.estimate.landscaping.field_contract_section
+    - field.field.estimate.landscaping.field_contract_signed
+    - field.field.estimate.landscaping.field_deposit_amount
+    - field.field.estimate.landscaping.field_deposit_date
+    - field.field.estimate.landscaping.field_deposit_received
     - field.field.estimate.landscaping.field_estimate_request
     - field.field.estimate.landscaping.field_estimate_total
     - field.field.estimate.landscaping.field_estimate_type
     - field.field.estimate.landscaping.field_estimated_duration_days
     - field.field.estimate.landscaping.field_is_current_revision
+    - field.field.estimate.landscaping.field_linked_work_order
     - field.field.estimate.landscaping.field_requires_subs
     - field.field.estimate.landscaping.field_revision_number
     - field.field.estimate.landscaping.field_revision_of
     - field.field.estimate.landscaping.field_scope_elements
     - field.field.estimate.landscaping.field_scope_summary
     - field.field.estimate.landscaping.field_stage
-    - field.field.estimate.landscaping.field_contract_signed
-    - field.field.estimate.landscaping.field_deposit_amount
-    - field.field.estimate.landscaping.field_deposit_date
-    - field.field.estimate.landscaping.field_deposit_received
-    - field.field.estimate.landscaping.field_linked_work_order
     - field.field.estimate.landscaping.field_work_order
   module:
     - datetime
@@ -30,13 +30,11 @@ dependencies:
 third_party_settings:
   field_group:
     group_client_information:
-      children:
-        - estimate_new_client_info_entity_view_1
-        - estimate_current_client_info_entity_view_1
+      children: {  }
       label: 'Client Information'
       parent_name: ''
       region: content
-      weight: 1
+      weight: 2
       format_type: fieldset
       format_settings:
         classes: ''
@@ -52,7 +50,7 @@ third_party_settings:
       label: Notes
       parent_name: ''
       region: content
-      weight: 3
+      weight: 7
       format_type: details
       format_settings:
         classes: ''
@@ -67,7 +65,7 @@ third_party_settings:
       label: Photos
       parent_name: group_notes
       region: content
-      weight: 9
+      weight: 10
       format_type: details
       format_settings:
         classes: ''
@@ -83,7 +81,7 @@ third_party_settings:
       label: Files
       parent_name: group_notes
       region: content
-      weight: 10
+      weight: 11
       format_type: details
       format_settings:
         classes: ''
@@ -95,11 +93,13 @@ third_party_settings:
         required_fields: false
     group_client_requested:
       children:
-        - field_client_requested
+        - field_scope_summary
+        - field_scope_elements
+        - field_requires_subs
       label: 'Client Requested'
       parent_name: ''
       region: content
-      weight: 2
+      weight: 3
       format_type: fieldset
       format_settings:
         classes: ''
@@ -109,11 +109,11 @@ third_party_settings:
         description: ''
     group_items:
       children:
-        - field_line_items
-      label: Items
+        - estimate_items_landscaping_entity_view_1
+      label: 'Labor, Materials and Service Items'
       parent_name: ''
       region: content
-      weight: 7
+      weight: 9
       format_type: details
       format_settings:
         classes: ''
@@ -122,6 +122,75 @@ third_party_settings:
         label_as_html: false
         open: true
         description: ''
+    group_office_admin:
+      children:
+        - field_contract_section
+        - field_revision_of
+        - field_revision_number
+        - field_is_current_revision
+        - field_contract_signed
+        - field_deposit_received
+        - field_deposit_amount
+        - field_deposit_date
+        - field_linked_work_order
+      label: 'Office Admin'
+      parent_name: ''
+      region: content
+      weight: 12
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_labor_estimate:
+      children: {  }
+      label: 'Labor Estimate'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+    group_equipment_estimate:
+      children: {  }
+      label: 'Equipment Estimate'
+      parent_name: ''
+      region: content
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_contracted_services:
+      children: {  }
+      label: 'Contracted Services'
+      parent_name: ''
+      region: content
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
 id: estimate.landscaping.default
 targetEntityType: estimate
 bundle: landscaping
@@ -135,12 +204,17 @@ content:
   estimate_designs_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 4
+    weight: 6
     region: content
   estimate_files_entity_view_1:
     settings: {  }
     third_party_settings: {  }
     weight: 11
+    region: content
+  estimate_items_landscaping_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
     region: content
   estimate_media_photos_entity_view_1:
     settings: {  }
@@ -160,63 +234,55 @@ content:
   estimate_tasks_on_estimate_eva_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 10
+    weight: 4
     region: content
   field_contract_section:
     type: entity_reference_label
-    label: above
+    label: inline
     settings:
       link: true
     third_party_settings: {  }
-    weight: 13
+    weight: 9
     region: content
   field_contract_signed:
     type: boolean
-    label: above
+    label: inline
     settings:
       format: default
       format_custom_false: ''
       format_custom_true: ''
     third_party_settings: {  }
-    weight: 20
+    weight: 13
     region: content
   field_deposit_amount:
     type: number_decimal
-    label: above
+    label: inline
     settings:
       thousand_separator: ''
       decimal_separator: .
       scale: 2
       prefix_suffix: true
     third_party_settings: {  }
-    weight: 22
+    weight: 15
     region: content
   field_deposit_date:
     type: datetime_default
-    label: above
+    label: inline
     settings:
       timezone_override: ''
       format_type: medium
     third_party_settings: {  }
-    weight: 23
+    weight: 16
     region: content
   field_deposit_received:
     type: boolean
-    label: above
+    label: inline
     settings:
       format: default
       format_custom_false: ''
       format_custom_true: ''
     third_party_settings: {  }
-    weight: 21
-    region: content
-  field_estimate_request:
-    type: entity_reference_label
-    label: above
-    settings:
-      link: true
-    third_party_settings: {  }
-    weight: 12
+    weight: 14
     region: content
   field_estimate_total:
     type: number_decimal
@@ -227,7 +293,7 @@ content:
       scale: 2
       prefix_suffix: true
     third_party_settings: {  }
-    weight: 8
+    weight: 1
     region: content
   field_estimated_duration_days:
     type: number_integer
@@ -236,52 +302,52 @@ content:
       thousand_separator: ''
       prefix_suffix: true
     third_party_settings: {  }
-    weight: 18
+    weight: 5
     region: content
   field_is_current_revision:
     type: boolean
-    label: above
+    label: inline
     settings:
       format: default
       format_custom_false: ''
       format_custom_true: ''
     third_party_settings: {  }
-    weight: 15
+    weight: 12
     region: content
   field_linked_work_order:
     type: entity_reference_label
-    label: above
+    label: hidden
     settings:
       link: true
     third_party_settings: {  }
-    weight: 24
+    weight: 17
     region: content
   field_requires_subs:
     type: boolean
-    label: above
+    label: hidden
     settings:
-      format: default
+      format: custom
       format_custom_false: ''
-      format_custom_true: ''
+      format_custom_true: 'Project Requires Subs'
     third_party_settings: {  }
-    weight: 17
+    weight: 11
     region: content
   field_revision_number:
     type: number_integer
-    label: above
+    label: inline
     settings:
       thousand_separator: ''
       prefix_suffix: true
     third_party_settings: {  }
-    weight: 14
+    weight: 11
     region: content
   field_revision_of:
     type: entity_reference_label
-    label: above
+    label: inline
     settings:
       link: true
     third_party_settings: {  }
-    weight: 13
+    weight: 10
     region: content
   field_scope_elements:
     type: entity_reference_label
@@ -289,14 +355,14 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 16
+    weight: 10
     region: content
   field_scope_summary:
     type: text_default
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 19
+    weight: 9
     region: content
   field_stage:
     type: entity_reference_label
@@ -310,6 +376,7 @@ hidden:
   changed: true
   created: true
   field_assigned_to: true
+  field_estimate_request: true
   field_estimate_type: true
   field_work_order: true
   title: true

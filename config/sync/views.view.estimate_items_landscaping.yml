@@ -1,25 +1,31 @@
-uuid: 25e3557c-8870-43e2-bab2-dd6d61e649b0
+uuid: 95af9a8f-8d8d-4b62-9e9d-1e31f113b6bd
 langcode: en
 status: true
 dependencies:
   config:
-    - field.storage.properties.field_nickname
+    - eck.eck_type.estimate_items.materials
+    - field.storage.estimate_items.field_line_total
+    - field.storage.estimate_items.field_phase
+    - field.storage.estimate_items.field_pricing_class
+    - field.storage.estimate_items.field_quantity
+    - field.storage.estimate_items.field_unit_price
     - user.role.administration
     - user.role.administrator
     - user.role.site_admin
-    - user.role.site_assistant
     - user.role.supervisor
     - user.role.teammates
   module:
     - eck
+    - eva
+    - options
     - user
     - views_url_path_arguments
-id: estimate_title_and_status
-label: 'Estimate — Title and Status'
+id: estimate_items_landscaping
+label: 'Estimate Items — Landscaping'
 module: views
-description: ''
+description: 'Displays estimate line items (labor, materials, equipment, subcontractor) on the Landscaping estimate default view mode via EVA.'
 tag: ''
-base_table: estimate_field_data
+base_table: estimate_items_field_data
 base_field: id
 display:
   default:
@@ -28,86 +34,19 @@ display:
     display_plugin: default
     position: 0
     display_options:
-      title: ''
       fields:
-        id:
-          id: id
-          table: estimate_field_data
-          field: id
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: estimate
-          entity_field: id
-          plugin_id: field
-          label: ''
-          exclude: true
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: number_integer
-          settings:
-            thousand_separator: ''
-            prefix_suffix: true
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
         type:
           id: type
-          table: estimate_field_data
+          table: estimate_items_field_data
           field: type
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: estimate
+          entity_type: estimate_items
           entity_field: type
           plugin_id: field
-          label: 'Service Type'
-          exclude: true
+          label: Type
+          exclude: false
           alter:
             alter_text: false
             text: ''
@@ -139,7 +78,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: false
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -161,18 +100,16 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        title:
-          id: title
-          table: estimate_field_data
-          field: title
+        field_phase:
+          id: field_phase
+          table: estimate_items__field_phase
+          field: field_phase
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: null
-          entity_field: title
           plugin_id: field
-          label: ''
-          exclude: true
+          label: Phase
+          exclude: false
           alter:
             alter_text: false
             text: ''
@@ -204,7 +141,70 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: false
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: false
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_pricing_class:
+          id: field_pricing_class
+          table: estimate_items__field_pricing_class
+          field: field_pricing_class
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Class
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -213,9 +213,8 @@ display:
           empty_zero: false
           hide_alter_empty: true
           click_sort_column: value
-          type: string
-          settings:
-            link_to_entity: false
+          type: list_default
+          settings: {  }
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -226,18 +225,16 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        id_1:
-          id: id_1
-          table: properties_field_data
-          field: id
-          relationship: field_property
+        field_quantity:
+          id: field_quantity
+          table: estimate_items__field_quantity
+          field: field_quantity
+          relationship: none
           group_type: group
           admin_label: ''
-          entity_type: properties
-          entity_field: id
           plugin_id: field
-          label: ''
-          exclude: true
+          label: Qty
+          exclude: false
           alter:
             alter_text: false
             text: ''
@@ -269,7 +266,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: false
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -280,7 +277,7 @@ display:
           click_sort_column: value
           type: number_integer
           settings:
-            thousand_separator: ''
+            thousand_separator: ','
             prefix_suffix: true
           group_column: value
           group_columns: {  }
@@ -292,212 +289,19 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        field_nickname:
-          id: field_nickname
-          table: properties__field_nickname
-          field: field_nickname
-          relationship: field_property
-          group_type: group
-          admin_label: ''
-          plugin_id: field
-          label: ''
-          exclude: true
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: string
-          settings:
-            link_to_entity: false
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        title_2:
-          id: title_2
-          table: estimate_request_field_data
-          field: title
-          relationship: field_estimate_request
-          group_type: group
-          admin_label: ''
-          entity_type: estimate_request
-          entity_field: title
-          plugin_id: field
-          label: ''
-          exclude: true
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: string
-          settings:
-            link_to_entity: true
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        title_1:
-          id: title_1
-          table: properties_field_data
-          field: title
-          relationship: field_property
-          group_type: group
-          admin_label: ''
-          entity_type: properties
-          entity_field: title
-          plugin_id: field
-          label: ''
-          exclude: true
-          alter:
-            alter_text: true
-            text: '{{ field_nickname }} at {{ title_1 }}'
-            make_link: true
-            path: '/properties/{{ id_1 }}'
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: _blank
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: string
-          settings:
-            link_to_entity: false
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        nothing:
-          id: nothing
-          table: views
-          field: nothing
+        field_unit_price:
+          id: field_unit_price
+          table: estimate_items__field_unit_price
+          field: field_unit_price
           relationship: none
           group_type: group
           admin_label: ''
-          plugin_id: custom
-          label: ''
+          plugin_id: field
+          label: 'Unit Price'
           exclude: false
           alter:
-            alter_text: true
-            text: "<h1>{{ title }}</h1>\r\n<div>Part of {{ title_2 }} for {{ title_1 }}</div>"
+            alter_text: false
+            text: ''
             make_link: false
             path: ''
             absolute: false
@@ -526,19 +330,101 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: false
+          element_label_colon: true
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
           empty: ''
           hide_empty: false
           empty_zero: false
-          hide_alter_empty: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_decimal
+          settings:
+            thousand_separator: ','
+            decimal_separator: .
+            scale: 2
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_line_total:
+          id: field_line_total
+          table: estimate_items__field_line_total
+          field: field_line_total
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Line Total'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_decimal
+          settings:
+            thousand_separator: ','
+            decimal_separator: .
+            scale: 2
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
       pager:
-        type: some
+        type: none
         options:
           offset: 0
-          items_per_page: 1
       exposed_form:
         type: basic
         options:
@@ -553,28 +439,66 @@ display:
         type: role
         options:
           role:
-            teammates: teammates
-            supervisor: supervisor
-            administration: administration
-            site_assistant: site_assistant
-            site_admin: site_admin
             administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+            teammates: teammates
       cache:
         type: tag
         options: {  }
-      empty: {  }
-      sorts: {  }
-      arguments:
-        id:
-          id: id
-          table: estimate_field_data
-          field: id
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: estimate
-          entity_field: id
-          plugin_id: numeric
+          plugin_id: text
+          empty: true
+          content:
+            value: "No estimate items have been added yet.</br>\r\n</br>\r\n<a href=\"/admin/content/estimate_items/add/materials?edit[field_estimate][widget][0][target_id]={{ raw_arguments.field_estimate_target_id }}&destination=/estimate/{{ raw_arguments.field_estimate_target_id }}\"\r\n   class=\"button button--primary use-ajax\"\r\n   data-dialog-type=\"modal\"\r\n   data-dialog-options='{\"width\":800}'>\r\n  + Add Material\r\n</a>"
+            format: full_html
+          tokenize: true
+      sorts:
+        field_phase_target_id:
+          id: field_phase_target_id
+          table: estimate_items__field_phase
+          field: field_phase_target_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: standard
+          order: ASC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
+        type:
+          id: type
+          table: estimate_items_field_data
+          field: type
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: estimate_items
+          entity_field: type
+          plugin_id: standard
+          order: ASC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
+      arguments:
+        field_estimate_target_id:
+          id: field_estimate_target_id
+          table: estimate_items__field_estimate
+          field: field_estimate_target_id
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: entity_target_id
           default_action: default
           exception:
             value: all
@@ -595,18 +519,174 @@ display:
             sort_order: asc
             number_of_records: 0
             format: default_summary
-          specify_validation: false
+          specify_validation: true
           validate:
-            type: none
+            type: 'entity:estimate'
             fail: 'not found'
-          validate_options: {  }
+          validate_options:
+            bundles: {  }
+            access: true
+            operation: view
+            multiple: 0
           break_phrase: false
           not: false
-      filters: {  }
+      filters:
+        field_pricing_class_value:
+          id: field_pricing_class_value
+          table: estimate_items__field_pricing_class
+          field: field_pricing_class_value
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: list_field
+          operator: not
+          value:
+            internal_only: internal_only
+          group: 1
+          exposed: false
+          expose:
+            operator_id: ''
+            label: ''
+            description: ''
+            use_operator: false
+            operator: ''
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: ''
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            reduce: false
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+        type:
+          id: type
+          table: estimate_items_field_data
+          field: type
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: estimate_items
+          entity_field: type
+          plugin_id: bundle
+          operator: in
+          value:
+            materials: materials
+          group: 1
+          exposed: false
+          expose:
+            operator_id: ''
+            label: ''
+            description: ''
+            use_operator: false
+            operator: ''
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: ''
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            reduce: false
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
       style:
-        type: default
+        type: table
+        options:
+          grouping:
+            -
+              field: field_phase
+              rendered: true
+              rendered_strip: false
+          row_class: ''
+          default_row_class: true
+          columns:
+            type: type
+            field_phase: field_phase
+            field_pricing_class: field_pricing_class
+            field_quantity: field_quantity
+            field_unit_price: field_unit_price
+            field_line_total: field_line_total
+          default: field_line_total
+          info:
+            type:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_phase:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_pricing_class:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_quantity:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_unit_price:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_line_total:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          override: true
+          sticky: false
+          summary: ''
+          empty_table: true
+          caption: ''
+          description: ''
       row:
         type: fields
+        options:
+          default_field_elements: true
+          inline: {  }
+          separator: ''
+          hide_empty: false
       query:
         type: views_query
         options:
@@ -615,25 +695,7 @@ display:
           distinct: false
           replica: false
           query_tags: {  }
-      relationships:
-        field_estimate_request:
-          id: field_estimate_request
-          table: estimate__field_estimate_request
-          field: field_estimate_request
-          relationship: none
-          group_type: group
-          admin_label: 'field_estimate_request: Estimate Request'
-          plugin_id: standard
-          required: false
-        field_property:
-          id: field_property
-          table: estimate_request__field_property
-          field: field_property
-          relationship: field_estimate_request
-          group_type: group
-          admin_label: 'field_property: Properties'
-          plugin_id: standard
-          required: false
+      relationships: {  }
       header: {  }
       footer: {  }
       display_extenders: {  }
@@ -645,14 +707,26 @@ display:
         - url
         - user.roles
       tags:
-        - 'config:field.storage.properties.field_nickname'
-  block_1:
-    id: block_1
-    display_title: Block
-    display_plugin: block
+        - 'config:field.storage.estimate_items.field_line_total'
+        - 'config:field.storage.estimate_items.field_phase'
+        - 'config:field.storage.estimate_items.field_pricing_class'
+        - 'config:field.storage.estimate_items.field_quantity'
+        - 'config:field.storage.estimate_items.field_unit_price'
+  entity_view_1:
+    id: entity_view_1
+    display_title: 'Estimate Items'
+    display_plugin: entity_view
     position: 1
     display_options:
+      title: 'Estimate Items'
       display_extenders: {  }
+      entity_type: estimate
+      bundles:
+        - landscaping
+      show_title: false
+      argument_mode: id
+      default_argument: ''
+      eva_hide_empty: false
     cache_metadata:
       max-age: -1
       contexts:
@@ -661,4 +735,8 @@ display:
         - url
         - user.roles
       tags:
-        - 'config:field.storage.properties.field_nickname'
+        - 'config:field.storage.estimate_items.field_line_total'
+        - 'config:field.storage.estimate_items.field_phase'
+        - 'config:field.storage.estimate_items.field_pricing_class'
+        - 'config:field.storage.estimate_items.field_quantity'
+        - 'config:field.storage.estimate_items.field_unit_price'

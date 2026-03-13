@@ -1,12 +1,13 @@
-uuid: 95af9a8f-8d8d-4b62-9e9d-1e31f113b6bd
+uuid: 6d985550-9d79-4ef0-a255-e96215a8e7e6
 langcode: en
 status: true
 dependencies:
   config:
-    - eck.eck_type.estimate_items.materials
+    - eck.eck_type.estimate_items.labor
+    - field.storage.estimate_items.field_labor_class
+    - field.storage.estimate_items.field_labor_type
     - field.storage.estimate_items.field_line_total
     - field.storage.estimate_items.field_phase
-    - field.storage.estimate_items.field_pricing_class
     - field.storage.estimate_items.field_quantity
     - field.storage.estimate_items.field_unit_price
     - user.role.administration
@@ -20,10 +21,10 @@ dependencies:
     - options
     - user
     - views_url_path_arguments
-id: estimate_items_landscaping
-label: 'Estimate Items — Landscaping'
+id: estimate_items_labor
+label: 'Estimate Items — Labor'
 module: views
-description: 'Displays estimate line items (labor, materials, equipment, subcontractor) on the Landscaping estimate default view mode via EVA.'
+description: 'Displays labor estimate line items on estimate view modes via EVA.'
 tag: ''
 base_table: estimate_items_field_data
 base_field: id
@@ -35,80 +36,15 @@ display:
     position: 0
     display_options:
       fields:
-        type:
-          id: type
-          table: estimate_items_field_data
-          field: type
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: estimate_items
-          entity_field: type
-          plugin_id: field
-          label: Type
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: string
-          settings:
-            link_to_entity: false
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        field_phase:
-          id: field_phase
-          table: estimate_items__field_phase
-          field: field_phase
+        field_labor_type:
+          id: field_labor_type
+          table: estimate_items__field_labor_type
+          field: field_labor_type
           relationship: none
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: Phase
+          label: 'Labor Type'
           exclude: false
           alter:
             alter_text: false
@@ -163,15 +99,15 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        field_pricing_class:
-          id: field_pricing_class
-          table: estimate_items__field_pricing_class
-          field: field_pricing_class
+        field_labor_class:
+          id: field_labor_class
+          table: estimate_items__field_labor_class
+          field: field_labor_class
           relationship: none
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: Class
+          label: 'Labor Class'
           exclude: false
           alter:
             alter_text: false
@@ -216,6 +152,69 @@ display:
           type: list_default
           settings: {  }
           group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_phase:
+          id: field_phase
+          table: estimate_items__field_phase
+          field: field_phase
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Phase
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: false
+          group_column: target_id
           group_columns: {  }
           group_rows: true
           delta_limit: 0
@@ -458,7 +457,13 @@ display:
           plugin_id: text
           empty: true
           content:
-            value: "No estimate items have been added yet.</br>\r\n</br>\r\n<a href=\"/admin/content/estimate_items/add/materials?edit[field_estimate][widget][0][target_id]={{ raw_arguments.field_estimate_target_id }}&destination=/estimate/{{ raw_arguments.field_estimate_target_id }}\"\r\n   class=\"button button--primary use-ajax\"\r\n   data-dialog-type=\"modal\"\r\n   data-dialog-options='{\"width\":800}'>\r\n  + Add Material\r\n</a>"
+            value: |-
+              <a href="/admin/content/estimate_items/add/labor?edit[field_estimate][widget][0][target_id]={{ raw_arguments.field_estimate_target_id }}&destination=/estimate/{{ raw_arguments.field_estimate_target_id }}"
+                 class="button button--primary use-ajax"
+                 data-dialog-type="modal"
+                 data-dialog-options='{"width":800}'>
+                + Add Labor Item
+              </a>
             format: full_html
           tokenize: true
       sorts:
@@ -583,7 +588,7 @@ display:
           plugin_id: bundle
           operator: in
           value:
-            materials: materials
+            labor: labor
           group: 1
           exposed: false
           expose:
@@ -624,15 +629,22 @@ display:
           row_class: ''
           default_row_class: true
           columns:
-            type: type
+            field_labor_type: field_labor_type
+            field_labor_class: field_labor_class
             field_phase: field_phase
-            field_pricing_class: field_pricing_class
             field_quantity: field_quantity
             field_unit_price: field_unit_price
             field_line_total: field_line_total
           default: field_line_total
           info:
-            type:
+            field_labor_type:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_labor_class:
               sortable: false
               default_sort_order: asc
               align: ''
@@ -640,13 +652,6 @@ display:
               empty_column: false
               responsive: ''
             field_phase:
-              sortable: false
-              default_sort_order: asc
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
-            field_pricing_class:
               sortable: false
               default_sort_order: asc
               align: ''
@@ -697,7 +702,26 @@ display:
           query_tags: {  }
       relationships: {  }
       header: {  }
-      footer: {  }
+      footer:
+        area_text_1:
+          id: area_text_1
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: false
+          content:
+            value: |-
+              <a href="/admin/content/estimate_items/add/labor?edit[field_estimate][widget][0][target_id]={{ raw_arguments.field_estimate_target_id }}&destination=/estimate/{{ raw_arguments.field_estimate_target_id }}"
+                 class="button button--primary use-ajax"
+                 data-dialog-type="modal"
+                 data-dialog-options='{"width":800}'>
+                + Add Another Labor Item
+              </a>
+            format: full_html
+          tokenize: true
       display_extenders: {  }
     cache_metadata:
       max-age: -1
@@ -707,18 +731,19 @@ display:
         - url
         - user.roles
       tags:
+        - 'config:field.storage.estimate_items.field_labor_class'
+        - 'config:field.storage.estimate_items.field_labor_type'
         - 'config:field.storage.estimate_items.field_line_total'
         - 'config:field.storage.estimate_items.field_phase'
-        - 'config:field.storage.estimate_items.field_pricing_class'
         - 'config:field.storage.estimate_items.field_quantity'
         - 'config:field.storage.estimate_items.field_unit_price'
   entity_view_1:
     id: entity_view_1
-    display_title: 'Estimate Items'
+    display_title: Landscaping
     display_plugin: entity_view
     position: 1
     display_options:
-      title: 'Estimate Items'
+      title: Landscaping
       display_extenders: {  }
       entity_type: estimate
       bundles:
@@ -735,8 +760,38 @@ display:
         - url
         - user.roles
       tags:
+        - 'config:field.storage.estimate_items.field_labor_class'
+        - 'config:field.storage.estimate_items.field_labor_type'
         - 'config:field.storage.estimate_items.field_line_total'
         - 'config:field.storage.estimate_items.field_phase'
-        - 'config:field.storage.estimate_items.field_pricing_class'
+        - 'config:field.storage.estimate_items.field_quantity'
+        - 'config:field.storage.estimate_items.field_unit_price'
+  entity_view_2:
+    id: entity_view_2
+    display_title: 'Sprinkler Installation'
+    display_plugin: entity_view
+    position: 2
+    display_options:
+      title: 'Sprinkler Installation'
+      display_extenders: {  }
+      entity_type: estimate
+      bundles:
+        - sprinkler_installation
+      show_title: false
+      argument_mode: id
+      default_argument: ''
+      eva_hide_empty: false
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - user.roles
+      tags:
+        - 'config:field.storage.estimate_items.field_labor_class'
+        - 'config:field.storage.estimate_items.field_labor_type'
+        - 'config:field.storage.estimate_items.field_line_total'
+        - 'config:field.storage.estimate_items.field_phase'
         - 'config:field.storage.estimate_items.field_quantity'
         - 'config:field.storage.estimate_items.field_unit_price'

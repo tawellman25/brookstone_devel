@@ -19,10 +19,14 @@ dependencies:
     - field.field.material.sod.field_supplier_item_number
     - field.field.material.sod.field_supplier_website_item_link
     - field.field.material.sod.field_suppliers
+    - image.style.thumbnail
   module:
     - field_layout
+    - image
     - layout_discovery
+    - link
     - path
+    - text
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -39,9 +43,121 @@ content:
     region: content
     settings: {  }
     third_party_settings: {  }
+  field_cost_integer:
+    type: number
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_coverage_per_pallet:
+    type: number
+    weight: 13
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_description:
+    type: text_textarea_with_summary
+    weight: 15
+    region: content
+    settings:
+      rows: 9
+      summary_rows: 3
+      placeholder: ''
+      show_summary: false
+    third_party_settings: {  }
+  field_front_promoted:
+    type: boolean_checkbox
+    weight: 17
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_last_restocked_date:
+    type: datetime_timestamp
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_lead_time:
+    type: number
+    weight: 9
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_main_image:
+    type: image_image
+    weight: 14
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_material_tags:
+    type: entity_reference_autocomplete_tags
+    weight: 16
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_price:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_price_updated:
+    type: boolean_checkbox
+    weight: 4
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_quantity_in_stock:
+    type: number
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_roll_or_pallet:
+    type: options_select
+    weight: 12
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_sod_variety:
+    type: string_textfield
+    weight: 11
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_supplier_item_number:
+    type: string_textfield
+    weight: 6
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_supplier_website_item_link:
+    type: link_default
+    weight: 7
+    region: content
+    settings:
+      placeholder_url: ''
+      placeholder_title: ''
+    third_party_settings: {  }
   field_suppliers:
     type: entity_reference_autocomplete
-    weight: 19
+    weight: 5
     region: content
     settings:
       match_operator: CONTAINS
@@ -57,7 +173,7 @@ content:
     third_party_settings: {  }
   title:
     type: string_textfield
-    weight: -5
+    weight: 1
     region: content
     settings:
       size: 60
@@ -73,18 +189,4 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden:
-  field_cost_integer: true
-  field_coverage_per_pallet: true
-  field_description: true
-  field_last_restocked_date: true
-  field_lead_time: true
-  field_main_image: true
-  field_material_tags: true
-  field_price: true
-  field_price_updated: true
-  field_quantity_in_stock: true
-  field_roll_or_pallet: true
-  field_sod_variety: true
-  field_supplier_item_number: true
-  field_supplier_website_item_link: true
+hidden: {  }

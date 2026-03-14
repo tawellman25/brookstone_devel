@@ -4,7 +4,11 @@ status: true
 dependencies:
   config:
     - eck.eck_type.estimate_items.labor
+    - field.storage.estimate_items.field_crew_size
+    - field.storage.estimate_items.field_estimate
+    - field.storage.estimate_items.field_hours_per_day
     - field.storage.estimate_items.field_labor_class
+    - field.storage.estimate_items.field_labor_days
     - field.storage.estimate_items.field_labor_type
     - field.storage.estimate_items.field_line_total
     - field.storage.estimate_items.field_phase
@@ -224,6 +228,200 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        field_crew_size:
+          id: field_crew_size
+          table: estimate_items__field_crew_size
+          field: field_crew_size
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: '# Men'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_hours_per_day:
+          id: field_hours_per_day
+          table: estimate_items__field_hours_per_day
+          field: field_hours_per_day
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Hours/Day
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_decimal
+          settings:
+            thousand_separator: ''
+            decimal_separator: .
+            scale: 2
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_labor_days:
+          id: field_labor_days
+          table: estimate_items__field_labor_days
+          field: field_labor_days
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Days
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: true
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
         field_quantity:
           id: field_quantity
           table: estimate_items__field_quantity
@@ -420,6 +618,120 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        field_estimate:
+          id: field_estimate
+          table: estimate_items__field_estimate
+          field: field_estimate
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: Estimate
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: true
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        operations:
+          id: operations
+          table: estimate_items
+          field: operations
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: estimate_items
+          plugin_id: entity_operations
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          destination: false
       pager:
         type: none
         options:
@@ -457,13 +769,7 @@ display:
           plugin_id: text
           empty: true
           content:
-            value: |-
-              <a href="/admin/content/estimate_items/add/labor?edit[field_estimate][widget][0][target_id]={{ raw_arguments.field_estimate_target_id }}&destination=/estimate/{{ raw_arguments.field_estimate_target_id }}"
-                 class="button button--primary use-ajax"
-                 data-dialog-type="modal"
-                 data-dialog-options='{"width":800}'>
-                + Add Labor Item
-              </a>
+            value: "<a href=\"/admin/content/estimate_items/add/labor?edit[field_estimate][widget][0][target_id]={{ raw_arguments.field_estimate_target_id }}&destination=/estimate/{{ raw_arguments.field_estimate_target_id }}\"\r\n   class=\"button button--primary use-ajax\"\r\n   data-dialog-type=\"modal\"\r\n   data-dialog-options='{\"width\":800}'>\r\n  + Add Labor Item\r\n</a>"
             format: full_html
           tokenize: true
       sorts:
@@ -536,49 +842,6 @@ display:
           break_phrase: false
           not: false
       filters:
-        field_pricing_class_value:
-          id: field_pricing_class_value
-          table: estimate_items__field_pricing_class
-          field: field_pricing_class_value
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: list_field
-          operator: not
-          value:
-            included: included
-            optional: optional
-            internal_only: internal_only
-          group: 1
-          exposed: false
-          expose:
-            operator_id: ''
-            label: ''
-            description: ''
-            use_operator: false
-            operator: ''
-            operator_limit_selection: false
-            operator_list: {  }
-            identifier: ''
-            required: false
-            remember: false
-            multiple: false
-            remember_roles:
-              authenticated: authenticated
-            reduce: false
-          is_grouped: false
-          group_info:
-            label: ''
-            description: ''
-            identifier: ''
-            optional: true
-            widget: select
-            multiple: false
-            remember: false
-            default_group: All
-            default_group_multiple: {  }
-            group_items: {  }
-          reduce_duplicates: false
         type:
           id: type
           table: estimate_items_field_data
@@ -621,6 +884,47 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
+        field_pricing_class_value:
+          id: field_pricing_class_value
+          table: estimate_items__field_pricing_class
+          field: field_pricing_class_value
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: list_field
+          operator: not
+          value:
+            internal_only: internal_only
+          group: 1
+          exposed: false
+          expose:
+            operator_id: ''
+            label: ''
+            description: ''
+            use_operator: false
+            operator: ''
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: ''
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            reduce: false
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          reduce_duplicates: false
       style:
         type: table
         options:
@@ -716,13 +1020,7 @@ display:
           plugin_id: text
           empty: false
           content:
-            value: |-
-              <a href="/admin/content/estimate_items/add/labor?edit[field_estimate][widget][0][target_id]={{ raw_arguments.field_estimate_target_id }}&destination=/estimate/{{ raw_arguments.field_estimate_target_id }}"
-                 class="button button--primary use-ajax"
-                 data-dialog-type="modal"
-                 data-dialog-options='{"width":800}'>
-                + Add Another Labor Item
-              </a>
+            value: "<a href=\"/admin/content/estimate_items/add/labor?edit[field_estimate][widget][0][target_id]={{ raw_arguments.field_estimate_target_id }}&destination=/estimate/{{ raw_arguments.field_estimate_target_id }}\"\r\n   class=\"button button--primary use-ajax\"\r\n   data-dialog-type=\"modal\"\r\n   data-dialog-options='{\"width\":800}'>\r\n  + Add Another Labor Item\r\n</a>"
             format: full_html
           tokenize: true
       display_extenders: {  }
@@ -734,7 +1032,11 @@ display:
         - url
         - user.roles
       tags:
+        - 'config:field.storage.estimate_items.field_crew_size'
+        - 'config:field.storage.estimate_items.field_estimate'
+        - 'config:field.storage.estimate_items.field_hours_per_day'
         - 'config:field.storage.estimate_items.field_labor_class'
+        - 'config:field.storage.estimate_items.field_labor_days'
         - 'config:field.storage.estimate_items.field_labor_type'
         - 'config:field.storage.estimate_items.field_line_total'
         - 'config:field.storage.estimate_items.field_phase'
@@ -763,7 +1065,11 @@ display:
         - url
         - user.roles
       tags:
+        - 'config:field.storage.estimate_items.field_crew_size'
+        - 'config:field.storage.estimate_items.field_estimate'
+        - 'config:field.storage.estimate_items.field_hours_per_day'
         - 'config:field.storage.estimate_items.field_labor_class'
+        - 'config:field.storage.estimate_items.field_labor_days'
         - 'config:field.storage.estimate_items.field_labor_type'
         - 'config:field.storage.estimate_items.field_line_total'
         - 'config:field.storage.estimate_items.field_phase'
@@ -792,7 +1098,11 @@ display:
         - url
         - user.roles
       tags:
+        - 'config:field.storage.estimate_items.field_crew_size'
+        - 'config:field.storage.estimate_items.field_estimate'
+        - 'config:field.storage.estimate_items.field_hours_per_day'
         - 'config:field.storage.estimate_items.field_labor_class'
+        - 'config:field.storage.estimate_items.field_labor_days'
         - 'config:field.storage.estimate_items.field_labor_type'
         - 'config:field.storage.estimate_items.field_line_total'
         - 'config:field.storage.estimate_items.field_phase'

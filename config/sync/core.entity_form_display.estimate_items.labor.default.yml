@@ -30,48 +30,58 @@ targetEntityType: estimate_items
 bundle: labor
 mode: default
 content:
-  field_labor_class:
-    type: options_select
-    weight: 3
-    region: content
-    settings: {  }
-    third_party_settings: {  }
-  field_labor_type:
-    type: entity_reference_autocomplete
-    weight: 2
-    region: content
-    settings:
-      match_operator: CONTAINS
-      match_limit: 10
-      size: 60
-      placeholder: ''
-    third_party_settings: {  }
-  field_phase:
-    type: entity_reference_autocomplete
+  field_crew_size:
+    type: number
     weight: 0
     region: content
     settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
       match_operator: CONTAINS
       match_limit: 10
       size: 60
       placeholder: ''
     third_party_settings: {  }
-  field_pricing_class:
-    type: options_select
-    weight: 1
-    region: content
-    settings: {  }
-    third_party_settings: {  }
-  field_quantity:
+  field_hours_per_day:
     type: number
-    weight: 4
+    weight: 1
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_labor_class:
+    type: options_buttons
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_labor_days:
+    type: number
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_phase:
+    type: options_buttons
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_pricing_class:
+    type: options_buttons
+    weight: 5
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_unit_price:
     type: number
-    weight: 5
+    weight: 3
     region: content
     settings:
       placeholder: ''
@@ -79,11 +89,9 @@ content:
 hidden:
   created: true
   field_cost_subtotal: true
-  field_crew_size: true
-  field_estimate: true
-  field_hours_per_day: true
-  field_labor_days: true
+  field_labor_type: true
   field_line_total: true
+  field_quantity: true
   field_rate_per_ksqft: true
   path: true
   title: true

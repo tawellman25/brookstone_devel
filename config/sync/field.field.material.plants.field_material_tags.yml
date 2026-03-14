@@ -1,0 +1,29 @@
+uuid: e76420ea-c0d3-46c1-abef-764695b23ae7
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.plants
+    - field.storage.material.field_material_tags
+    - taxonomy.vocabulary.material_tags
+id: material.plants.field_material_tags
+field_name: field_material_tags
+entity_type: material
+bundle: plants
+label: 'Material Tags'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      material_tags: material_tags
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

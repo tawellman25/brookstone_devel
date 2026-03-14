@@ -10,6 +10,7 @@ dependencies:
     - field.storage.estimate_items.field_phase
     - field.storage.estimate_items.field_quantity
     - field.storage.estimate_items.field_unit_price
+    - field.storage.material.field_unit_of_measure
     - user.role.administration
     - user.role.administrator
     - user.role.site_admin
@@ -291,6 +292,68 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        field_unit_of_measure:
+          id: field_unit_of_measure
+          table: material__field_unit_of_measure
+          field: field_unit_of_measure
+          relationship: field_material
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: list_default
+          settings: {  }
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
         field_unit_price:
           id: field_unit_price
           table: estimate_items__field_unit_price
@@ -299,11 +362,11 @@ display:
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: 'Unit Price'
+          label: Cost
           exclude: false
           alter:
-            alter_text: false
-            text: ''
+            alter_text: true
+            text: '{{ field_unit_price }} {{ field_unit_of_measure }}'
             make_link: false
             path: ''
             absolute: false
@@ -365,7 +428,7 @@ display:
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: 'Cost Subtotal'
+          label: Subtotal
           exclude: false
           alter:
             alter_text: false
@@ -431,7 +494,7 @@ display:
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: 'Line Total'
+          label: 'With Markup'
           exclude: false
           alter:
             alter_text: false
@@ -806,7 +869,16 @@ display:
           distinct: false
           replica: false
           query_tags: {  }
-      relationships: {  }
+      relationships:
+        field_material:
+          id: field_material
+          table: estimate_items__field_material
+          field: field_material
+          relationship: none
+          group_type: group
+          admin_label: Material
+          plugin_id: standard
+          required: false
       header: {  }
       footer:
         area:
@@ -837,6 +909,7 @@ display:
         - 'config:field.storage.estimate_items.field_phase'
         - 'config:field.storage.estimate_items.field_quantity'
         - 'config:field.storage.estimate_items.field_unit_price'
+        - 'config:field.storage.material.field_unit_of_measure'
   entity_view_1:
     id: entity_view_1
     display_title: Landscaping
@@ -866,6 +939,7 @@ display:
         - 'config:field.storage.estimate_items.field_phase'
         - 'config:field.storage.estimate_items.field_quantity'
         - 'config:field.storage.estimate_items.field_unit_price'
+        - 'config:field.storage.material.field_unit_of_measure'
   entity_view_2:
     id: entity_view_2
     display_title: 'Sprinkler Installation'
@@ -915,3 +989,4 @@ display:
         - 'config:field.storage.estimate_items.field_phase'
         - 'config:field.storage.estimate_items.field_quantity'
         - 'config:field.storage.estimate_items.field_unit_price'
+        - 'config:field.storage.material.field_unit_of_measure'

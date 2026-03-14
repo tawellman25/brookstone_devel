@@ -16,6 +16,18 @@ function estimate_items_entity_presave(EntityInterface $entity): void {
 
   switch ($bundle) {
     case 'labor':
+      // Compute total hours from crew size × hours/day × days.
+      if (
+        $entity->hasField('field_crew_size') && !$entity->get('field_crew_size')->isEmpty() &&
+        $entity->hasField('field_hours_per_day') && !$entity->get('field_hours_per_day')->isEmpty() &&
+        $entity->hasField('field_labor_days') && !$entity->get('field_labor_days')->isEmpty()
+      ) {
+        $crew_size = (int) $entity->get('field_crew_size')->value;
+        $hours_per_day = (float) $entity->get('field_hours_per_day')->value;
+        $labor_days = (int) $entity->get('field_labor_days')->value;
+        $entity->set('field_quantity', $crew_size * $hours_per_day * $labor_days);
+      }
+
       $hours = (float) ($entity->get('field_quantity')->value ?? 0);
       $rate = (float) ($entity->get('field_unit_price')->value ?? 0);
       $subtotal = $hours * $rate;

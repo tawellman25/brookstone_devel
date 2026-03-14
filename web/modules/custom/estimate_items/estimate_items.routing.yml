@@ -1,0 +1,7 @@
+estimate_items.material_cost:
+  path: '/bos/api/material-cost/{material_id}'
+  defaults:
+    _controller: '\Drupal\estimate_items\Controller\MaterialCostController::getCost'
+  requirements:
+    _role: 'authenticated'
+    material_id: '\d+'

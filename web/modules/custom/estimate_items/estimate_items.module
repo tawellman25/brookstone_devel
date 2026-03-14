@@ -77,6 +77,15 @@ function estimate_items_entity_presave(EntityInterface $entity): void {
 }
 
 /**
+ * Attach material cost lookup JS to estimate_items materials form.
+ */
+function estimate_items_form_alter(&$form, $form_state, $form_id): void {
+  if (in_array($form_id, ['eck_entity_estimate_items_materials_form', 'eck_entity_estimate_items_materials_edit_form'])) {
+    $form['#attached']['library'][] = 'estimate_items/material_cost_lookup';
+  }
+}
+
+/**
  * After create → update parent estimate.
  */
 function estimate_items_entity_insert(EntityInterface $entity): void {

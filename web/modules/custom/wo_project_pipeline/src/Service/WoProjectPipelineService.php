@@ -318,34 +318,53 @@ class WoProjectPipelineService {
     }
     self::$processing['req_' . $request_id] = TRUE;
 
-    try {
-      // Guard: must have Landscaping (TID 364) in field_service.
-      $services = $estimate_request->get('field_service')->getValue();
-      $service_tids = array_column($services, 'target_id');
-      if (!in_array(364, array_map('intval', $service_tids), TRUE)) {
-        return;
-      }
+    // Guard: must have Landscaping (TID 364) in field_service.
+    $services = $estimate_request->get('field_service')->getValue();
+    $service_tids = array_column($services, 'target_id');
+    if (!in_array(364, array_map('intval', $service_tids), TRUE)) {
+      return;
+    }
 
-      // Guard: no container estimate already exists for this request.
-      $existing = $this->entityTypeManager
+    try {
+      // Look for any existing landscaping estimate linked to this request.
+      $existing_ids = $this->entityTypeManager
         ->getStorage('estimate')
         ->getQuery()
         ->accessCheck(FALSE)
         ->condition('field_estimate_request', $estimate_request->id())
         ->condition('type', 'landscaping')
-        ->condition('field_is_container', 1)
         ->execute();
-      if (!empty($existing)) {
+
+      if (!empty($existing_ids)) {
+        $estimates = $this->entityTypeManager
+          ->getStorage('estimate')
+          ->loadMultiple($existing_ids);
+
+        foreach ($estimates as $est) {
+          // Already has a container — nothing to do.
+          if (!empty($est->get('field_is_container')->value)) {
+            return;
+          }
+        }
+
+        // Promote the first non-container estimate to container.
+        $container = reset($estimates);
+        $container->set('field_is_container', TRUE);
+        $container->save();
+
+        $this->logger()->notice(
+          'Promoted estimate @est_id to container for estimate_request @req_id.',
+          ['@est_id' => $container->id(), '@req_id' => $estimate_request->id()]
+        );
         return;
       }
 
-      // Load assigned_to from estimate_request.
+      // Fallback: no existing estimate found — create container from scratch.
       $assigned_to = NULL;
       if (!$estimate_request->get('field_assigned_to')->isEmpty()) {
         $assigned_to = $estimate_request->get('field_assigned_to')->target_id;
       }
 
-      // Create container estimate.
       $estimate_values = [
         'type' => 'landscaping',
         'title' => 'Landscaping — ER#' . $estimate_request->id(),
@@ -364,7 +383,9 @@ class WoProjectPipelineService {
       $estimate->save();
 
       // Write back to estimate_request field_estimates.
-      $estimate_request->get('field_estimates')->appendItem(['target_id' => $estimate->id()]);
+      $estimate_request->get('field_estimates')->appendItem([
+        'target_id' => $estimate->id(),
+      ]);
       $estimate_request->save();
 
       $this->logger()->notice(
@@ -373,14 +394,14 @@ class WoProjectPipelineService {
       );
     }
     catch (\Throwable $e) {
-      $this->logger()->error('Failed to create container estimate from request @id: @message', [
-        '@id' => $estimate_request->id(),
-        '@message' => $e->getMessage(),
-      ]);
+      $this->logger()->error(
+        'Failed to create/promote container estimate from request @id: @message',
+        ['@id' => $estimate_request->id(), '@message' => $e->getMessage()]
+      );
     }
-    finally {
-      unset(self::$processing['req_' . $request_id]);
-    }
+    // Note: req_ keys are intentionally never unset — once a container
+    // estimate is created (or attempted) for a request in this PHP process,
+    // the guard prevents any further attempts for the same request.
   }
 
   /**

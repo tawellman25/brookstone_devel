@@ -75,10 +75,17 @@ function _wo_project_pipeline_compute_locate_overdue($entity) {
  * Implements hook_entity_insert().
  */
 function wo_project_pipeline_entity_insert(EntityInterface $entity) {
+  // Estimate → WO pipeline trigger.
   if ($entity->getEntityTypeId() === 'estimate' &&
       in_array($entity->bundle(), ['landscaping', 'sprinkler_installation'], TRUE)) {
     \Drupal::service('wo_project_pipeline.pipeline_service')
       ->createWorkOrderFromEstimate($entity);
+  }
+
+  // Estimate request → auto-create container estimate.
+  if ($entity->getEntityTypeId() === 'estimate_request') {
+    \Drupal::service('wo_project_pipeline.pipeline_service')
+      ->maybeCreateContainerEstimate($entity);
   }
 }
 
@@ -86,9 +93,11 @@ function wo_project_pipeline_entity_insert(EntityInterface $entity) {
  * Implements hook_entity_update().
  */
 function wo_project_pipeline_entity_update(EntityInterface $entity) {
+  // Estimate → WO pipeline trigger.
   if ($entity->getEntityTypeId() === 'estimate' &&
       in_array($entity->bundle(), ['landscaping', 'sprinkler_installation'], TRUE)) {
     \Drupal::service('wo_project_pipeline.pipeline_service')
       ->createWorkOrderFromEstimate($entity);
   }
+  // Note: do NOT auto-create container on update — only on insert.
 }

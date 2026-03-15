@@ -6,24 +6,26 @@ dependencies:
     - eck.eck_type.estimate.landscaping
     - field.field.estimate.landscaping.field_assigned_to
     - field.field.estimate.landscaping.field_contract_section
-    - field.field.estimate.landscaping.field_contract_signed
-    - field.field.estimate.landscaping.field_deposit_amount
-    - field.field.estimate.landscaping.field_deposit_date
-    - field.field.estimate.landscaping.field_deposit_received
     - field.field.estimate.landscaping.field_estimate_request
     - field.field.estimate.landscaping.field_estimate_total
     - field.field.estimate.landscaping.field_estimate_type
     - field.field.estimate.landscaping.field_estimated_duration_days
+    - field.field.estimate.landscaping.field_is_container
     - field.field.estimate.landscaping.field_is_current_revision
+    - field.field.estimate.landscaping.field_mobil_deposit_amount
+    - field.field.estimate.landscaping.field_mobil_deposit_date
+    - field.field.estimate.landscaping.field_mobil_deposit_received
+    - field.field.estimate.landscaping.field_parent_estimate
     - field.field.estimate.landscaping.field_requires_subs
     - field.field.estimate.landscaping.field_revision_number
     - field.field.estimate.landscaping.field_revision_of
     - field.field.estimate.landscaping.field_scope_elements
     - field.field.estimate.landscaping.field_scope_summary
+    - field.field.estimate.landscaping.field_signing_deposit_date
+    - field.field.estimate.landscaping.field_signing_deposit_received
     - field.field.estimate.landscaping.field_stage
     - field.field.estimate.landscaping.field_work_order
   module:
-    - datetime
     - field_group
     - text
 third_party_settings:
@@ -260,46 +262,6 @@ content:
     third_party_settings: {  }
     weight: 15
     region: content
-  field_contract_signed:
-    type: boolean
-    label: above
-    settings:
-      format: default
-      format_custom_false: ''
-      format_custom_true: ''
-    third_party_settings: {  }
-    weight: 16
-    region: content
-  field_deposit_amount:
-    type: number_decimal
-    label: above
-    settings:
-      thousand_separator: ''
-      decimal_separator: .
-      scale: 2
-      prefix_suffix: true
-    third_party_settings: {  }
-    weight: 18
-    region: content
-  field_deposit_date:
-    type: datetime_default
-    label: above
-    settings:
-      timezone_override: ''
-      format_type: medium
-    third_party_settings: {  }
-    weight: 19
-    region: content
-  field_deposit_received:
-    type: boolean
-    label: above
-    settings:
-      format: default
-      format_custom_false: ''
-      format_custom_true: ''
-    third_party_settings: {  }
-    weight: 17
-    region: content
   field_estimate_total:
     type: number_decimal
     label: inline
@@ -386,6 +348,13 @@ hidden:
   field_assigned_to: true
   field_estimate_request: true
   field_estimate_type: true
+  field_is_container: true
+  field_mobil_deposit_amount: true
+  field_mobil_deposit_date: true
+  field_mobil_deposit_received: true
+  field_parent_estimate: true
+  field_signing_deposit_date: true
+  field_signing_deposit_received: true
   field_work_order: true
   title: true
   uid: true

@@ -6,24 +6,26 @@ dependencies:
     - eck.eck_type.estimate.landscaping
     - field.field.estimate.landscaping.field_assigned_to
     - field.field.estimate.landscaping.field_contract_section
-    - field.field.estimate.landscaping.field_contract_signed
-    - field.field.estimate.landscaping.field_deposit_amount
-    - field.field.estimate.landscaping.field_deposit_date
-    - field.field.estimate.landscaping.field_deposit_received
     - field.field.estimate.landscaping.field_estimate_request
     - field.field.estimate.landscaping.field_estimate_total
     - field.field.estimate.landscaping.field_estimate_type
     - field.field.estimate.landscaping.field_estimated_duration_days
+    - field.field.estimate.landscaping.field_is_container
     - field.field.estimate.landscaping.field_is_current_revision
+    - field.field.estimate.landscaping.field_mobil_deposit_amount
+    - field.field.estimate.landscaping.field_mobil_deposit_date
+    - field.field.estimate.landscaping.field_mobil_deposit_received
+    - field.field.estimate.landscaping.field_parent_estimate
     - field.field.estimate.landscaping.field_requires_subs
     - field.field.estimate.landscaping.field_revision_number
     - field.field.estimate.landscaping.field_revision_of
     - field.field.estimate.landscaping.field_scope_elements
     - field.field.estimate.landscaping.field_scope_summary
+    - field.field.estimate.landscaping.field_signing_deposit_date
+    - field.field.estimate.landscaping.field_signing_deposit_received
     - field.field.estimate.landscaping.field_stage
     - field.field.estimate.landscaping.field_work_order
   module:
-    - datetime
     - field_group
     - field_layout
     - layout_discovery
@@ -121,33 +123,6 @@ content:
       match_limit: 10
       size: 60
       placeholder: ''
-    third_party_settings: {  }
-  field_contract_signed:
-    type: boolean_checkbox
-    weight: 24
-    region: content
-    settings:
-      display_label: true
-    third_party_settings: {  }
-  field_deposit_amount:
-    type: number
-    weight: 26
-    region: content
-    settings:
-      placeholder: ''
-    third_party_settings: {  }
-  field_deposit_date:
-    type: datetime_default
-    weight: 27
-    region: content
-    settings: {  }
-    third_party_settings: {  }
-  field_deposit_received:
-    type: boolean_checkbox
-    weight: 25
-    region: content
-    settings:
-      display_label: true
     third_party_settings: {  }
   field_estimate_request:
     type: entity_reference_autocomplete
@@ -296,4 +271,11 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
+  field_is_container: true
+  field_mobil_deposit_amount: true
+  field_mobil_deposit_date: true
+  field_mobil_deposit_received: true
+  field_parent_estimate: true
+  field_signing_deposit_date: true
+  field_signing_deposit_received: true
   title: true

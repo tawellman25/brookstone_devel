@@ -11,6 +11,7 @@ use Drupal\config_pages\ConfigPagesLoaderServiceInterface;
 
 /**
  * Creates work orders from accepted estimates (landscaping, sprinkler_installation).
+ * Auto-creates container estimates from estimate requests.
  */
 class WoProjectPipelineService {
 
@@ -28,7 +29,10 @@ class WoProjectPipelineService {
   ) {}
 
   /**
-   * Creates a work order from an accepted estimate.
+   * Creates work order(s) from an accepted estimate.
+   *
+   * Landscaping: container estimate → one WO per child component estimate.
+   * Sprinkler installation: single estimate → single WO.
    */
   public function createWorkOrderFromEstimate(EntityInterface $estimate): void {
     $estimate_id = (int) $estimate->id();
@@ -39,29 +43,184 @@ class WoProjectPipelineService {
     }
 
     try {
-      // Bundle guard.
       $bundle = $estimate->bundle();
-      if (!in_array($bundle, ['landscaping', 'sprinkler_installation'], TRUE)) {
+
+      if ($bundle === 'landscaping') {
+        $this->createWoFromLandscaping($estimate);
+      }
+      elseif ($bundle === 'sprinkler_installation') {
+        $this->createWoFromSprinklerInstallation($estimate);
+      }
+    }
+    catch (\Throwable $e) {
+      $this->logger()->error('Failed to create WO from estimate @id: @message', [
+        '@id' => $estimate_id,
+        '@message' => $e->getMessage(),
+      ]);
+    }
+  }
+
+  /**
+   * Landscaping pipeline: container estimate → one WO per child component.
+   */
+  protected function createWoFromLandscaping(EntityInterface $container): void {
+    $container_id = (int) $container->id();
+
+    // Must be a container estimate.
+    if (empty($container->get('field_is_container')->value)) {
+      return;
+    }
+
+    // Mobilization deposit must be received.
+    if (empty($container->get('field_mobil_deposit_received')->value)) {
+      return;
+    }
+
+    self::$processing[$container_id] = TRUE;
+
+    try {
+      // Load business setting markup multiplier.
+      $markup_multiplier = 1.30;
+      $business_settings = $this->configPagesLoader->load('business_setting');
+      if ($business_settings && !$business_settings->get('field_markup')->isEmpty()) {
+        $markup_multiplier = (float) $business_settings->get('field_markup')->value;
+      }
+
+      // Load estimate_request for property/contact/service.
+      $estimate_request = NULL;
+      if (!$container->get('field_estimate_request')->isEmpty()) {
+        $estimate_request = $this->entityTypeManager
+          ->getStorage('estimate_request')
+          ->load($container->get('field_estimate_request')->target_id);
+      }
+
+      if (!$estimate_request) {
+        $this->logger()->warning('Container estimate @id has no estimate_request — cannot create WOs.', [
+          '@id' => $container_id,
+        ]);
         return;
       }
 
-      // Contract signed guard.
-      if (empty($estimate->get('field_contract_signed')->value)) {
+      // Find child component estimates.
+      $child_ids = $this->entityTypeManager
+        ->getStorage('estimate')
+        ->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('type', 'landscaping')
+        ->condition('field_parent_estimate', $container_id)
+        ->execute();
+
+      if (empty($child_ids)) {
+        $this->logger()->warning('Container estimate @id has no child components — cannot create WOs.', [
+          '@id' => $container_id,
+        ]);
         return;
       }
 
-      // Deposit received guard.
-      if (empty($estimate->get('field_deposit_received')->value)) {
-        return;
+      $children = $this->entityTypeManager
+        ->getStorage('estimate')
+        ->loadMultiple($child_ids);
+
+      $wo_storage = $this->entityTypeManager->getStorage('work_order');
+      $wo_count = 0;
+
+      foreach ($children as $child) {
+        // Skip if this child already has a linked WO (duplicate guard per component).
+        if (!$child->get('field_work_order')->isEmpty()) {
+          continue;
+        }
+
+        $wo_values = [
+          'type' => 'landscaping',
+          'title' => 'WO - ' . $child->label(),
+          'field_status' => 1503,
+          'field_estimate' => $child->id(),
+          'field_estimated_price' => $child->get('field_estimate_total')->value ?? 0,
+        ];
+
+        // Copy property from estimate_request.
+        if (!$estimate_request->get('field_property')->isEmpty()) {
+          $wo_values['field_property'] = $estimate_request->get('field_property')->target_id;
+        }
+
+        // Copy contact from estimate_request.
+        if (!$estimate_request->get('field_contact')->isEmpty()) {
+          $wo_values['field_contact'] = $estimate_request->get('field_contact')->target_id;
+        }
+
+        // Set service from component's field_estimate_type (landscape component term).
+        if ($child->hasField('field_estimate_type') && !$child->get('field_estimate_type')->isEmpty()) {
+          $wo_values['field_service'] = $child->get('field_estimate_type')->target_id;
+        }
+        elseif (!$estimate_request->get('field_service')->isEmpty()) {
+          $wo_values['field_service'] = $estimate_request->get('field_service')->target_id;
+        }
+
+        // Copy scope summary if available.
+        if ($child->hasField('field_scope_summary') && !$child->get('field_scope_summary')->isEmpty()) {
+          $wo_values['field_work_todo_description'] = $child->get('field_scope_summary')->value;
+        }
+
+        // Copy estimated duration if available.
+        if ($child->hasField('field_estimated_duration_days') && !$child->get('field_estimated_duration_days')->isEmpty()) {
+          $wo_values['field_estimated_duration_days'] = $child->get('field_estimated_duration_days')->value;
+        }
+
+        $wo = $wo_storage->create($wo_values);
+        $wo->save();
+        $wo_id = (int) $wo->id();
+
+        // Transfer materials from this child's estimate_items.
+        $this->transferMaterials((int) $child->id(), $wo_id, $wo->label(), $markup_multiplier);
+
+        // Write back linked WO to the child component estimate.
+        self::$processing[(int) $child->id()] = TRUE;
+        $child->set('field_work_order', $wo_id);
+        $child->set('field_stage', 1418);
+        $child->save();
+        unset(self::$processing[(int) $child->id()]);
+
+        $wo_count++;
       }
 
-      // Duplicate guard — already has a linked WO.
-      if (!$estimate->get('field_work_order')->isEmpty()) {
-        return;
-      }
+      // Set container estimate stage to Accepted.
+      $container->set('field_stage', 1418);
+      $container->save();
 
-      self::$processing[$estimate_id] = TRUE;
+      $this->logger()->notice('@count WOs created from container estimate @id.', [
+        '@count' => $wo_count,
+        '@id' => $container_id,
+      ]);
+    }
+    finally {
+      unset(self::$processing[$container_id]);
+    }
+  }
 
+  /**
+   * Sprinkler installation pipeline: single estimate → single WO.
+   */
+  protected function createWoFromSprinklerInstallation(EntityInterface $estimate): void {
+    $estimate_id = (int) $estimate->id();
+
+    // Contract signed guard.
+    if (empty($estimate->get('field_contract_signed')->value)) {
+      return;
+    }
+
+    // Signing deposit received guard.
+    if (empty($estimate->get('field_signing_deposit_received')->value)) {
+      return;
+    }
+
+    // Duplicate guard — already has a linked WO.
+    if (!$estimate->get('field_work_order')->isEmpty()) {
+      return;
+    }
+
+    self::$processing[$estimate_id] = TRUE;
+
+    try {
       // Load business setting markup multiplier.
       $markup_multiplier = 1.30;
       $business_settings = $this->configPagesLoader->load('business_setting');
@@ -87,7 +246,7 @@ class WoProjectPipelineService {
       // Create work order.
       $wo_storage = $this->entityTypeManager->getStorage('work_order');
       $wo_values = [
-        'type' => $bundle,
+        'type' => 'sprinkler_installation',
         'title' => 'WO - ' . $estimate->label(),
         'field_status' => 1503,
         'field_estimate' => $estimate_id,
@@ -124,13 +283,11 @@ class WoProjectPipelineService {
 
       $wo_id = (int) $wo->id();
 
-      // Set estimate stage to Accepted.
-      $estimate->set('field_stage', 1418);
-
       // Transfer materials from estimate_items.
       $this->transferMaterials($estimate_id, $wo_id, $wo->label(), $markup_multiplier);
 
-      // Write back linked WO to estimate.
+      // Set estimate stage to Accepted and write back linked WO.
+      $estimate->set('field_stage', 1418);
       $estimate->set('field_work_order', $wo_id);
       $estimate->save();
 
@@ -139,14 +296,90 @@ class WoProjectPipelineService {
         '@est_id' => $estimate_id,
       ]);
     }
+    finally {
+      unset(self::$processing[$estimate_id]);
+    }
+  }
+
+  /**
+   * Auto-creates a container Landscaping estimate when an estimate_request
+   * includes Landscaping (TID 364) in field_service.
+   */
+  public function maybeCreateContainerEstimate(EntityInterface $estimate_request): void {
+    // Guard: only standard bundle.
+    if ($estimate_request->bundle() !== 'standard') {
+      return;
+    }
+
+    // Recursion guard.
+    $request_id = (int) $estimate_request->id();
+    if (isset(self::$processing['req_' . $request_id])) {
+      return;
+    }
+    self::$processing['req_' . $request_id] = TRUE;
+
+    try {
+      // Guard: must have Landscaping (TID 364) in field_service.
+      $services = $estimate_request->get('field_service')->getValue();
+      $service_tids = array_column($services, 'target_id');
+      if (!in_array(364, array_map('intval', $service_tids), TRUE)) {
+        return;
+      }
+
+      // Guard: no container estimate already exists for this request.
+      $existing = $this->entityTypeManager
+        ->getStorage('estimate')
+        ->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('field_estimate_request', $estimate_request->id())
+        ->condition('type', 'landscaping')
+        ->condition('field_is_container', 1)
+        ->execute();
+      if (!empty($existing)) {
+        return;
+      }
+
+      // Load assigned_to from estimate_request.
+      $assigned_to = NULL;
+      if (!$estimate_request->get('field_assigned_to')->isEmpty()) {
+        $assigned_to = $estimate_request->get('field_assigned_to')->target_id;
+      }
+
+      // Create container estimate.
+      $estimate_values = [
+        'type' => 'landscaping',
+        'title' => 'Landscaping — ER#' . $estimate_request->id(),
+        'field_estimate_request' => $estimate_request->id(),
+        'field_is_container' => TRUE,
+        'field_stage' => 1412,
+      ];
+
+      if ($assigned_to) {
+        $estimate_values['field_assigned_to'] = $assigned_to;
+      }
+
+      $estimate = $this->entityTypeManager
+        ->getStorage('estimate')
+        ->create($estimate_values);
+      $estimate->save();
+
+      // Write back to estimate_request field_estimates.
+      $estimate_request->get('field_estimates')->appendItem(['target_id' => $estimate->id()]);
+      $estimate_request->save();
+
+      $this->logger()->notice(
+        'Container estimate @est_id created from estimate_request @req_id.',
+        ['@est_id' => $estimate->id(), '@req_id' => $estimate_request->id()]
+      );
+    }
     catch (\Throwable $e) {
-      $this->logger()->error('Failed to create WO from estimate @id: @message', [
-        '@id' => $estimate_id,
+      $this->logger()->error('Failed to create container estimate from request @id: @message', [
+        '@id' => $estimate_request->id(),
         '@message' => $e->getMessage(),
       ]);
     }
     finally {
-      unset(self::$processing[$estimate_id]);
+      unset(self::$processing['req_' . $request_id]);
     }
   }
 

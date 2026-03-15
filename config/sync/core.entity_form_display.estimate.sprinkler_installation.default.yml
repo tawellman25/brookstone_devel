@@ -7,18 +7,17 @@ dependencies:
     - field.field.estimate.sprinkler_installation.field_assigned_to
     - field.field.estimate.sprinkler_installation.field_contract_section
     - field.field.estimate.sprinkler_installation.field_contract_signed
-    - field.field.estimate.sprinkler_installation.field_deposit_amount
-    - field.field.estimate.sprinkler_installation.field_deposit_date
     - field.field.estimate.sprinkler_installation.field_deposit_received
     - field.field.estimate.sprinkler_installation.field_estimate_request
     - field.field.estimate.sprinkler_installation.field_estimate_total
     - field.field.estimate.sprinkler_installation.field_is_current_revision
     - field.field.estimate.sprinkler_installation.field_revision_number
     - field.field.estimate.sprinkler_installation.field_revision_of
+    - field.field.estimate.sprinkler_installation.field_signing_deposit_date
+    - field.field.estimate.sprinkler_installation.field_signing_deposit_received
     - field.field.estimate.sprinkler_installation.field_stage
     - field.field.estimate.sprinkler_installation.field_work_order
   module:
-    - datetime
     - field_layout
     - layout_discovery
     - path
@@ -64,19 +63,6 @@ content:
     region: content
     settings:
       display_label: true
-    third_party_settings: {  }
-  field_deposit_amount:
-    type: number
-    weight: 26
-    region: content
-    settings:
-      placeholder: ''
-    third_party_settings: {  }
-  field_deposit_date:
-    type: datetime_default
-    weight: 27
-    region: content
-    settings: {  }
     third_party_settings: {  }
   field_deposit_received:
     type: boolean_checkbox
@@ -166,4 +152,6 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  field_signing_deposit_date: true
+  field_signing_deposit_received: true

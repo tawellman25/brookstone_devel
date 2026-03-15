@@ -56,7 +56,7 @@ class WoProjectPipelineService {
       }
 
       // Duplicate guard — already has a linked WO.
-      if (!$estimate->get('field_linked_work_order')->isEmpty()) {
+      if (!$estimate->get('field_work_order')->isEmpty()) {
         return;
       }
 
@@ -128,7 +128,7 @@ class WoProjectPipelineService {
       $this->transferMaterials($estimate_id, $wo_id, $wo->label(), $markup_multiplier);
 
       // Write back linked WO to estimate.
-      $estimate->set('field_linked_work_order', $wo_id);
+      $estimate->set('field_work_order', $wo_id);
       $estimate->save();
 
       $this->logger()->notice('Work order @wo_id created from estimate @est_id.', [

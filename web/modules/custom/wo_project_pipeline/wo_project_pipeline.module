@@ -3,8 +3,10 @@
 /**
  * @file
  * Computes pre-mobilization gate fields for landscaping and sprinkler
- * installation work orders.
+ * installation work orders. Creates work orders from accepted estimates.
  */
+
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Implements hook_entity_presave().
@@ -67,4 +69,26 @@ function _wo_project_pipeline_compute_locate_overdue($entity) {
   $deadline = new \DateTime($deadline_value);
 
   $entity->set('field_locate_overdue', $today > $deadline);
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function wo_project_pipeline_entity_insert(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'estimate' &&
+      in_array($entity->bundle(), ['landscaping', 'sprinkler_installation'], TRUE)) {
+    \Drupal::service('wo_project_pipeline.pipeline_service')
+      ->createWorkOrderFromEstimate($entity);
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function wo_project_pipeline_entity_update(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() === 'estimate' &&
+      in_array($entity->bundle(), ['landscaping', 'sprinkler_installation'], TRUE)) {
+    \Drupal::service('wo_project_pipeline.pipeline_service')
+      ->createWorkOrderFromEstimate($entity);
+  }
 }

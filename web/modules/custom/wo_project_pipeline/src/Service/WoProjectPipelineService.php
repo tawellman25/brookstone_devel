@@ -124,6 +124,9 @@ class WoProjectPipelineService {
 
       $wo_id = (int) $wo->id();
 
+      // Set estimate stage to Accepted.
+      $estimate->set('field_stage', 1418);
+
       // Transfer materials from estimate_items.
       $this->transferMaterials($estimate_id, $wo_id, $wo->label(), $markup_multiplier);
 

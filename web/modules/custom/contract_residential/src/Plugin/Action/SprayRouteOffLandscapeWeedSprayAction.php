@@ -50,14 +50,10 @@ class SprayRouteOffLandscapeWeedSprayAction extends ViewsBulkOperationsActionBas
 
       $weedSpray_want = $landscapeWeedSpray_section->get('field_do_you_want')->value;
 
-      // Check if the value is not null and matches the pattern.
-      if ($weedSpray_want !== null) {
-        // Check if the estimate text contains a hyphen.
-        if ($weedSpray_want == 0) {
-          // If Weed Pulling is marked as No, Set message.
-          $messenger->addError("Contract $contract_id does NOT require Weed Misc Weed Spraying.");
-          return;
-        } 
+      // Check if weed spraying is wanted (1 = Yes, 2 = No).
+      if ($weedSpray_want === '2') {
+        $messenger->addError("Contract #$contract_id does NOT require Landscape Bed Weed Spraying.");
+        return;
       }
 
       // Load the Property referenced in the Contract.

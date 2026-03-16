@@ -41,7 +41,7 @@ class SprayRouteOffMiscWeedSprayAction extends ViewsBulkOperationsActionBase {
         return;
       }
 
-      // Load the referenced Pre-emergent entity.
+      // Load the referenced Misc Weed Spray section.
       $miscWeedSpray_id = $contract->get('field_weed_spraying_of_misc_area')->target_id;
       $miscWeedSpray_section = $entity_type_manager->getStorage('contract_sections')->load($miscWeedSpray_id);
       if (!$miscWeedSpray_section) {
@@ -49,23 +49,12 @@ class SprayRouteOffMiscWeedSprayAction extends ViewsBulkOperationsActionBase {
         return;
       }
 
-      $landscapeWeedSpray_id = $contract->get('field_weed_spraying_of_landscape')->target_id;
-      $landscapeWeedSpray_section = $entity_type_manager->getStorage('contract_sections')->load($landscapeWeedSpray_id);
-      if (!$landscapeWeedSpray_section) {
-        $messenger->addError('Referenced Misc Weed Spray entity not found.');
-        return;
-      }
-
       $weedSpray_want = $miscWeedSpray_section->get('field_do_you_want')->value;
 
-      // Check if the value is not null and matches the pattern.
-      if ($weedSpray_want !== null) {
-        // Check if the estimate text contains a hyphen.
-        if ($weedSpray_want == 0) {
-          // If Weed Pulling is marked as No, Set message.
-          $messenger->addError("Contract $contract_id does NOT require Weed Misc Weed Spraying.");
-          return;
-        } 
+      // Check if weed spraying is wanted (1 = Yes, 2 = No).
+      if ($weedSpray_want === '2') {
+        $messenger->addError("Contract #$contract_id does NOT require Misc Weed Spraying.");
+        return;
       }
 
       // Load the Property referenced in the Contract.

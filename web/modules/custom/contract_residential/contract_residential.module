@@ -128,6 +128,7 @@ function contract_residential_entity_insert(EntityInterface $entity) {
 
   if ($entity->getEntityTypeId() === 'contract_sections') {
     _contract_residential_stamp_parent_contract_last_updated($entity);
+    _contract_residential_maybe_sync_weed_spray_route($entity);
   }
 }
 
@@ -144,6 +145,7 @@ function contract_residential_entity_update(EntityInterface $entity) {
 
   if ($entity->getEntityTypeId() === 'contract_sections') {
     _contract_residential_stamp_parent_contract_last_updated($entity);
+    _contract_residential_maybe_sync_weed_spray_route($entity);
   }
 }
 
@@ -307,4 +309,133 @@ function _contract_residential_sync_section_parent_links(EntityInterface $entity
       $section->save();
     }
   }
+}
+
+/**
+ * Syncs property_spraying_info:weed_spraying when weed spray contract sections
+ * are saved.
+ *
+ * Replicates the logic from the SprayRouteOn/Off VBO actions but fires
+ * automatically on section save. Only processes 2026+ contracts.
+ */
+function _contract_residential_maybe_sync_weed_spray_route(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'contract_sections') {
+    return;
+  }
+  $bundle = $entity->bundle();
+  if (!in_array($bundle, [
+    'weed_spraying_landscape_beds',
+    'weed_spraying_of_misc_areas',
+  ], TRUE)) {
+    return;
+  }
+
+  if ($entity->get('field_do_you_want')->isEmpty()) {
+    return;
+  }
+  $do_you_want = (string) $entity->get('field_do_you_want')->value;
+
+  // Load parent contract via field_contract.
+  if ($entity->get('field_contract')->isEmpty()) {
+    return;
+  }
+  $contract = \Drupal::entityTypeManager()
+    ->getStorage('contracts')
+    ->load($entity->get('field_contract')->target_id);
+  if (!$contract) {
+    return;
+  }
+
+  // Only process current year contracts (2026+).
+  $contract_year = (int) ($contract->get('field_contract_year')->value ?? 0);
+  if ($contract_year < 2026) {
+    return;
+  }
+
+  // Load property from contract.
+  if ($contract->get('field_property')->isEmpty()) {
+    return;
+  }
+  $property_id = (int) $contract->get('field_property')->target_id;
+
+  // Find existing property_spraying_info:weed_spraying for this property.
+  $spray_infos = \Drupal::entityTypeManager()
+    ->getStorage('property_spraying_info')
+    ->loadByProperties([
+      'type' => 'weed_spraying',
+      'field_property' => $property_id,
+    ]);
+
+  if (empty($spray_infos)) {
+    // No weed spray record exists — only create if do_you_want = Yes.
+    if ($do_you_want !== '1') {
+      return;
+    }
+    $spray_info = \Drupal::entityTypeManager()
+      ->getStorage('property_spraying_info')
+      ->create([
+        'type' => 'weed_spraying',
+        'field_property' => $property_id,
+        'uid' => \Drupal::currentUser()->id(),
+      ]);
+  }
+  else {
+    $spray_info = reset($spray_infos);
+  }
+
+  // Get frequency if do_you_want = Yes.
+  $frequency_id = NULL;
+  if ($do_you_want === '1'
+      && $entity->hasField('field_spraying_frequency')
+      && !$entity->get('field_spraying_frequency')->isEmpty()) {
+    $frequency_id = (int) $entity->get('field_spraying_frequency')->target_id;
+  }
+
+  if ($bundle === 'weed_spraying_landscape_beds') {
+    if ($do_you_want === '1') {
+      $spray_info->set('field_weed_beds_contracted', TRUE);
+      $spray_info->set('field_spray_route', TRUE);
+      if ($frequency_id) {
+        $spray_info->set('field_beds_spraying_frequency', $frequency_id);
+      }
+    }
+    else {
+      $spray_info->set('field_weed_beds_contracted', FALSE);
+      // Only remove from route if misc is also not contracted.
+      $misc_contracted = (bool) $spray_info->get('field_weed_misc_contracted')->value;
+      if (!$misc_contracted) {
+        $spray_info->set('field_spray_route', FALSE);
+      }
+    }
+  }
+
+  if ($bundle === 'weed_spraying_of_misc_areas') {
+    if ($do_you_want === '1') {
+      $spray_info->set('field_weed_misc_contracted', TRUE);
+      $spray_info->set('field_spray_route', TRUE);
+      if ($frequency_id) {
+        $spray_info->set('field_misc_spraying_frequency', $frequency_id);
+      }
+    }
+    else {
+      $spray_info->set('field_weed_misc_contracted', FALSE);
+      // Only remove from route if beds are also not contracted.
+      $beds_contracted = (bool) $spray_info->get('field_weed_beds_contracted')->value;
+      if (!$beds_contracted) {
+        $spray_info->set('field_spray_route', FALSE);
+      }
+    }
+  }
+
+  $spray_info->save();
+
+  \Drupal::logger('contract_residential')->notice(
+    'Weed spray route updated for property @pid from contract section @cid (@bundle): do_you_want=@want',
+    [
+      '@pid' => $property_id,
+      '@cid' => $entity->id(),
+      '@bundle' => $bundle,
+      '@want' => $do_you_want,
+    ]
+  );
 }

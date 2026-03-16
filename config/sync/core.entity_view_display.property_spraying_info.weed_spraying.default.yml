@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - eck.eck_type.property_spraying_info.weed_spraying
+    - field.field.property_spraying_info.weed_spraying.field_active_contract_year
     - field.field.property_spraying_info.weed_spraying.field_beds_spraying_frequency
     - field.field.property_spraying_info.weed_spraying.field_last_amount_applied
     - field.field.property_spraying_info.weed_spraying.field_last_applied_by
@@ -193,6 +194,23 @@ third_party_settings:
                 third_party_settings: {  }
             weight: 1
             additional: {  }
+          aea243cb-3277-4a2b-8c82-adef91ddfc3c:
+            uuid: aea243cb-3277-4a2b-8c82-adef91ddfc3c
+            region: first
+            configuration:
+              id: 'field_block:property_spraying_info:weed_spraying:field_active_contract_year'
+              label_display: '0'
+              context_mapping:
+                entity: layout_builder.entity
+              formatter:
+                type: number_integer
+                label: above
+                settings:
+                  thousand_separator: ''
+                  prefix_suffix: true
+                third_party_settings: {  }
+            weight: 8
+            additional: {  }
         third_party_settings: {  }
       -
         layout_id: layout_onecol
@@ -267,6 +285,15 @@ content:
     third_party_settings: {  }
     weight: 0
     region: content
+  field_active_contract_year:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 20
+    region: first
   field_beds_spraying_frequency:
     type: entity_reference_label
     label: above

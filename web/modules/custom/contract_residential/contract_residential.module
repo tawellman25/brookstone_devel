@@ -395,6 +395,7 @@ function _contract_residential_maybe_sync_weed_spray_route(EntityInterface $enti
     if ($do_you_want === '1') {
       $spray_info->set('field_weed_beds_contracted', TRUE);
       $spray_info->set('field_spray_route', TRUE);
+      $spray_info->set('field_active_contract_year', $contract_year);
       if ($frequency_id) {
         $spray_info->set('field_beds_spraying_frequency', $frequency_id);
       }
@@ -405,6 +406,7 @@ function _contract_residential_maybe_sync_weed_spray_route(EntityInterface $enti
       $misc_contracted = (bool) $spray_info->get('field_weed_misc_contracted')->value;
       if (!$misc_contracted) {
         $spray_info->set('field_spray_route', FALSE);
+        $spray_info->set('field_active_contract_year', NULL);
       }
     }
   }
@@ -413,6 +415,7 @@ function _contract_residential_maybe_sync_weed_spray_route(EntityInterface $enti
     if ($do_you_want === '1') {
       $spray_info->set('field_weed_misc_contracted', TRUE);
       $spray_info->set('field_spray_route', TRUE);
+      $spray_info->set('field_active_contract_year', $contract_year);
       if ($frequency_id) {
         $spray_info->set('field_misc_spraying_frequency', $frequency_id);
       }
@@ -423,6 +426,7 @@ function _contract_residential_maybe_sync_weed_spray_route(EntityInterface $enti
       $beds_contracted = (bool) $spray_info->get('field_weed_beds_contracted')->value;
       if (!$beds_contracted) {
         $spray_info->set('field_spray_route', FALSE);
+        $spray_info->set('field_active_contract_year', NULL);
       }
     }
   }

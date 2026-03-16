@@ -32,6 +32,65 @@ display:
     display_options:
       title: 'Weed Spray Reconciliation 2026'
       fields:
+        views_bulk_operations_bulk_form:
+          id: views_bulk_operations_bulk_form
+          table: views
+          field: views_bulk_operations_bulk_form
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: views_bulk_operations_bulk_form
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          batch: true
+          batch_size: 10
+          form_step: true
+          buttons: false
+          action_title: Action
+          clear_on_exposed: false
+          selected_actions: {  }
+          include_exclude: exclude
+          preconfiguration: {  }
+          force_selection_info: false
         field_route_order:
           id: field_route_order
           table: property_spraying_info__field_route_order
@@ -740,6 +799,66 @@ display:
             max_placeholder: ''
             placeholder: ''
           is_grouped: false
+        field_active_contract_year_empty:
+          id: field_active_contract_year_empty
+          table: property_spraying_info__field_active_contract_year
+          field: field_active_contract_year_value
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: numeric
+          operator: empty
+          value:
+            min: ''
+            max: ''
+            value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_active_contract_year_empty_op
+            label: 'No 2026 Contract'
+            description: 'Show only properties with no active contract year'
+            use_operator: true
+            operator: field_active_contract_year_empty_op
+            operator_limit_selection: true
+            operator_list:
+              empty: empty
+              'not empty': 'not empty'
+            identifier: field_active_contract_year_empty
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            min_placeholder: ''
+            max_placeholder: ''
+            placeholder: ''
+          is_grouped: true
+          group_info:
+            label: 'No 2026 Contract'
+            description: ''
+            identifier: field_active_contract_year_empty
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items:
+              1:
+                title: 'Missing Contract Year'
+                operator: empty
+                value:
+                  min: ''
+                  max: ''
+                  value: ''
+              2:
+                title: 'Has Contract Year'
+                operator: 'not empty'
+                value:
+                  min: ''
+                  max: ''
+                  value: ''
       style:
         type: table
         options:
@@ -755,6 +874,7 @@ display:
             field_spray_route: field_spray_route
             field_last_applied_date: field_last_applied_date
             field_active_contract_year: field_active_contract_year
+            views_bulk_operations_bulk_form: views_bulk_operations_bulk_form
           default: field_route_order
           info:
             field_route_order:
@@ -808,6 +928,13 @@ display:
               responsive: ''
             field_active_contract_year:
               sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            views_bulk_operations_bulk_form:
+              sortable: false
               default_sort_order: asc
               align: ''
               separator: ''

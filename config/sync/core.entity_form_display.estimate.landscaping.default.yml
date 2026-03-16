@@ -26,6 +26,7 @@ dependencies:
     - field.field.estimate.landscaping.field_stage
     - field.field.estimate.landscaping.field_work_order
   module:
+    - datetime
     - field_group
     - field_layout
     - layout_discovery
@@ -38,12 +39,7 @@ third_party_settings:
       label: ''
   field_group:
     group_new_client:
-      children:
-        - field_name
-        - field_address
-        - field_zipcode
-        - field_phone
-        - field_email
+      children: {  }
       label: 'New Client'
       region: content
       parent_name: ''
@@ -59,14 +55,27 @@ third_party_settings:
         required_fields: true
     group_office_admin:
       children:
-        - field_estimate_type
+        - field_estimate_total
+        - field_is_container
+        - field_parent_estimate
+        - field_contract_section
+        - field_estimate_request
+        - field_revision_of
+        - field_revision_number
+        - field_is_current_revision
         - created
         - uid
         - path
+        - field_mobil_deposit_received
+        - field_mobil_deposit_amount
+        - field_mobil_deposit_date
+        - field_signing_deposit_received
+        - field_signing_deposit_date
+        - field_work_order
       label: 'Office Admin'
       region: content
       parent_name: ''
-      weight: 8
+      weight: 6
       format_type: details
       format_settings:
         classes: ''
@@ -78,12 +87,14 @@ third_party_settings:
         required_fields: true
     group_items:
       children:
-        - field_line_items
-        - field_estimate_total
+        - field_estimated_duration_days
+        - field_scope_summary
+        - field_scope_elements
+        - field_requires_subs
       label: Items
       region: content
       parent_name: ''
-      weight: 7
+      weight: 5
       format_type: details
       format_settings:
         classes: ''
@@ -100,13 +111,13 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 8
+    weight: 20
     region: content
     settings: {  }
     third_party_settings: {  }
   field_assigned_to:
     type: entity_reference_autocomplete
-    weight: 5
+    weight: 2
     region: content
     settings:
       match_operator: CONTAINS
@@ -116,7 +127,7 @@ content:
     third_party_settings: {  }
   field_contract_section:
     type: entity_reference_autocomplete
-    weight: 16
+    weight: 15
     region: content
     settings:
       match_operator: CONTAINS
@@ -126,7 +137,7 @@ content:
     third_party_settings: {  }
   field_estimate_request:
     type: entity_reference_autocomplete
-    weight: 15
+    weight: 16
     region: content
     settings:
       match_operator: CONTAINS
@@ -136,14 +147,14 @@ content:
     third_party_settings: {  }
   field_estimate_total:
     type: number
-    weight: 14
+    weight: 12
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_estimate_type:
     type: entity_reference_autocomplete
-    weight: 6
+    weight: 3
     region: content
     settings:
       match_operator: CONTAINS
@@ -153,35 +164,72 @@ content:
     third_party_settings: {  }
   field_estimated_duration_days:
     type: number
-    weight: 21
+    weight: 12
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
-  field_is_current_revision:
+  field_is_container:
     type: boolean_checkbox
-    weight: 18
+    weight: 13
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
+  field_is_current_revision:
+    type: boolean_checkbox
+    weight: 19
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_mobil_deposit_amount:
+    type: number
+    weight: 24
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_mobil_deposit_date:
+    type: datetime_default
+    weight: 25
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_mobil_deposit_received:
+    type: boolean_checkbox
+    weight: 23
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_parent_estimate:
+    type: entity_reference_autocomplete
+    weight: 14
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_requires_subs:
     type: boolean_checkbox
-    weight: 20
+    weight: 15
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
   field_revision_number:
     type: number
-    weight: 17
+    weight: 18
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_revision_of:
     type: entity_reference_autocomplete
-    weight: 16
+    weight: 17
     region: content
     settings:
       match_operator: CONTAINS
@@ -191,7 +239,7 @@ content:
     third_party_settings: {  }
   field_scope_elements:
     type: entity_reference_autocomplete
-    weight: 19
+    weight: 14
     region: content
     settings:
       match_operator: CONTAINS
@@ -201,21 +249,34 @@ content:
     third_party_settings: {  }
   field_scope_summary:
     type: text_textarea
-    weight: 22
+    weight: 13
     region: content
     settings:
       rows: 5
       placeholder: ''
     third_party_settings: {  }
+  field_signing_deposit_date:
+    type: datetime_default
+    weight: 27
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_signing_deposit_received:
+    type: boolean_checkbox
+    weight: 26
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
   field_stage:
     type: options_select
-    weight: 2
+    weight: 1
     region: content
     settings: {  }
     third_party_settings: {  }
   field_work_order:
     type: entity_reference_autocomplete
-    weight: 0
+    weight: 28
     region: content
     settings:
       match_operator: CONTAINS
@@ -256,13 +317,13 @@ content:
               recurse: '0'
   path:
     type: path
-    weight: 10
+    weight: 22
     region: content
     settings: {  }
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 9
+    weight: 21
     region: content
     settings:
       match_operator: CONTAINS
@@ -271,11 +332,4 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
-  field_is_container: true
-  field_mobil_deposit_amount: true
-  field_mobil_deposit_date: true
-  field_mobil_deposit_received: true
-  field_parent_estimate: true
-  field_signing_deposit_date: true
-  field_signing_deposit_received: true
   title: true

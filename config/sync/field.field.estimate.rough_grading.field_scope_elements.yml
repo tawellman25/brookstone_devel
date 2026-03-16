@@ -1,0 +1,29 @@
+uuid: 74e7148b-f7c9-4df0-9373-1945fce04d93
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.rough_grading
+    - field.storage.estimate.field_scope_elements
+    - taxonomy.vocabulary.service_scope_elements
+id: estimate.rough_grading.field_scope_elements
+field_name: field_scope_elements
+entity_type: estimate
+bundle: rough_grading
+label: 'Scope Elements'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      service_scope_elements: service_scope_elements
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

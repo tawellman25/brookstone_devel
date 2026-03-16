@@ -1,0 +1,29 @@
+uuid: 5520ae6d-218a-4ab6-abdd-a2dd54191943
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.planting
+    - eck.eck_type.work_order.landscaping
+    - field.storage.estimate.field_work_order
+id: estimate.planting.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: planting
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

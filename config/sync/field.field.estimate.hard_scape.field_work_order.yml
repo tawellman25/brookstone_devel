@@ -1,0 +1,29 @@
+uuid: a6815584-012f-40b0-a8a9-3327bce789c4
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.hard_scape
+    - eck.eck_type.work_order.landscaping
+    - field.storage.estimate.field_work_order
+id: estimate.hard_scape.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: hard_scape
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

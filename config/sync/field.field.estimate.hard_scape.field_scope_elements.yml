@@ -1,0 +1,29 @@
+uuid: 58651377-43f5-46fc-862c-a5fa40943fb4
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.hard_scape
+    - field.storage.estimate.field_scope_elements
+    - taxonomy.vocabulary.service_scope_elements
+id: estimate.hard_scape.field_scope_elements
+field_name: field_scope_elements
+entity_type: estimate
+bundle: hard_scape
+label: 'Scope Elements'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      service_scope_elements: service_scope_elements
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

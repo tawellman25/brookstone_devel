@@ -350,6 +350,8 @@ class WoProjectPipelineService {
         // Promote the first non-container estimate to container.
         $container = reset($estimates);
         $container->set('field_is_container', TRUE);
+        $container->set('field_estimate_type', 364);
+        $container->set('uid', \Drupal::currentUser()->id());
         $container->save();
 
         $this->logger()->notice(
@@ -370,7 +372,9 @@ class WoProjectPipelineService {
         'title' => 'Landscaping — ER#' . $estimate_request->id(),
         'field_estimate_request' => $estimate_request->id(),
         'field_is_container' => TRUE,
+        'field_estimate_type' => 364,
         'field_stage' => 1412,
+        'uid' => \Drupal::currentUser()->id(),
       ];
 
       if ($assigned_to) {

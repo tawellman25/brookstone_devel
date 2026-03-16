@@ -1,0 +1,29 @@
+uuid: 5c381c38-9355-4802-8b8b-087225ca655c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.patios
+    - field.storage.estimate.field_scope_elements
+    - taxonomy.vocabulary.service_scope_elements
+id: estimate.patios.field_scope_elements
+field_name: field_scope_elements
+entity_type: estimate
+bundle: patios
+label: 'Scope Elements'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      service_scope_elements: service_scope_elements
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

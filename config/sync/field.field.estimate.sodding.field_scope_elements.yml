@@ -1,0 +1,29 @@
+uuid: b4641b9f-8c07-4f6e-91c5-262f40765648
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.sodding
+    - field.storage.estimate.field_scope_elements
+    - taxonomy.vocabulary.service_scope_elements
+id: estimate.sodding.field_scope_elements
+field_name: field_scope_elements
+entity_type: estimate
+bundle: sodding
+label: 'Scope Elements'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      service_scope_elements: service_scope_elements
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

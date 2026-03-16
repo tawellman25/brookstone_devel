@@ -1,0 +1,29 @@
+uuid: 32ec403e-9f39-4db9-ab92-7de7aa736d57
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.water_features
+    - eck.eck_type.work_order.landscaping
+    - field.storage.estimate.field_work_order
+id: estimate.water_features.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: water_features
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: 38f91b0c-b6b3-499d-affb-0ff1f0d90de9
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.patios
+    - eck.eck_type.work_order.landscaping
+    - field.storage.estimate.field_work_order
+id: estimate.patios.field_work_order
+field_name: field_work_order
+entity_type: estimate
+bundle: patios
+label: 'Work Order'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

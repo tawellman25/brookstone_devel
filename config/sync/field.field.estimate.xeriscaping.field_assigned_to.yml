@@ -1,0 +1,29 @@
+uuid: bf79b7dd-4fde-4c72-89d5-8009514bc0f2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.xeriscaping
+    - field.storage.estimate.field_assigned_to
+  content:
+    - 'user:user:d6e0b472-06b0-4757-a4c3-a6eb280501df'
+id: estimate.xeriscaping.field_assigned_to
+field_name: field_assigned_to
+entity_type: estimate
+bundle: xeriscaping
+label: 'Assigned To'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    target_uuid: d6e0b472-06b0-4757-a4c3-a6eb280501df
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

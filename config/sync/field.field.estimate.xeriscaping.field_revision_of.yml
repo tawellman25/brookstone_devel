@@ -1,0 +1,29 @@
+uuid: 036e61f7-4750-45e8-86f1-ec0c98037462
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - eck.eck_type.estimate.xeriscaping
+    - field.storage.estimate.field_revision_of
+id: estimate.xeriscaping.field_revision_of
+field_name: field_revision_of
+entity_type: estimate
+bundle: xeriscaping
+label: 'Revision of'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

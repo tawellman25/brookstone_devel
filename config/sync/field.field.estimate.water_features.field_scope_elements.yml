@@ -1,0 +1,29 @@
+uuid: 588bac76-c93e-472a-96a2-9aab4541338f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.water_features
+    - field.storage.estimate.field_scope_elements
+    - taxonomy.vocabulary.service_scope_elements
+id: estimate.water_features.field_scope_elements
+field_name: field_scope_elements
+entity_type: estimate
+bundle: water_features
+label: 'Scope Elements'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      service_scope_elements: service_scope_elements
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

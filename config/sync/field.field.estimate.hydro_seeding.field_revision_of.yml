@@ -1,0 +1,29 @@
+uuid: 8a98a5f7-3ad2-47c7-878c-aca4d5ff7554
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.hydro_seeding
+    - eck.eck_type.estimate.landscaping
+    - field.storage.estimate.field_revision_of
+id: estimate.hydro_seeding.field_revision_of
+field_name: field_revision_of
+entity_type: estimate
+bundle: hydro_seeding
+label: 'Revision of'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

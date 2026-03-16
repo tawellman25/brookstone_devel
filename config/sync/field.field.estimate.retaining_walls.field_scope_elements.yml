@@ -1,0 +1,29 @@
+uuid: a1831500-b0a1-4cc5-a153-11e65a6cb87c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.retaining_walls
+    - field.storage.estimate.field_scope_elements
+    - taxonomy.vocabulary.service_scope_elements
+id: estimate.retaining_walls.field_scope_elements
+field_name: field_scope_elements
+entity_type: estimate
+bundle: retaining_walls
+label: 'Scope Elements'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      service_scope_elements: service_scope_elements
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

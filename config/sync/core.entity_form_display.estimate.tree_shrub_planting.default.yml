@@ -1,0 +1,335 @@
+uuid: 718f4fc4-7c3c-478d-baff-bc70ed222fa9
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.tree_shrub_planting
+    - field.field.estimate.tree_shrub_planting.field_assigned_to
+    - field.field.estimate.tree_shrub_planting.field_contract_section
+    - field.field.estimate.tree_shrub_planting.field_estimate_request
+    - field.field.estimate.tree_shrub_planting.field_estimate_total
+    - field.field.estimate.tree_shrub_planting.field_estimate_type
+    - field.field.estimate.tree_shrub_planting.field_estimated_duration_days
+    - field.field.estimate.tree_shrub_planting.field_is_container
+    - field.field.estimate.tree_shrub_planting.field_is_current_revision
+    - field.field.estimate.tree_shrub_planting.field_mobil_deposit_amount
+    - field.field.estimate.tree_shrub_planting.field_mobil_deposit_date
+    - field.field.estimate.tree_shrub_planting.field_mobil_deposit_received
+    - field.field.estimate.tree_shrub_planting.field_parent_estimate
+    - field.field.estimate.tree_shrub_planting.field_requires_subs
+    - field.field.estimate.tree_shrub_planting.field_revision_number
+    - field.field.estimate.tree_shrub_planting.field_revision_of
+    - field.field.estimate.tree_shrub_planting.field_scope_elements
+    - field.field.estimate.tree_shrub_planting.field_scope_summary
+    - field.field.estimate.tree_shrub_planting.field_signing_deposit_date
+    - field.field.estimate.tree_shrub_planting.field_signing_deposit_received
+    - field.field.estimate.tree_shrub_planting.field_stage
+    - field.field.estimate.tree_shrub_planting.field_work_order
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - layout_discovery
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_new_client:
+      children: {  }
+      label: 'New Client'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+    group_office_admin:
+      children:
+        - field_estimate_total
+        - field_is_container
+        - field_parent_estimate
+        - field_contract_section
+        - field_estimate_request
+        - field_revision_of
+        - field_revision_number
+        - field_is_current_revision
+        - created
+        - uid
+        - path
+        - field_mobil_deposit_received
+        - field_mobil_deposit_amount
+        - field_mobil_deposit_date
+        - field_signing_deposit_received
+        - field_signing_deposit_date
+        - field_work_order
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_items:
+      children:
+        - field_estimated_duration_days
+        - field_scope_summary
+        - field_scope_elements
+        - field_requires_subs
+      label: Items
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: true
+id: estimate.tree_shrub_planting.default
+targetEntityType: estimate
+bundle: tree_shrub_planting
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 20
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_assigned_to:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_contract_section:
+    type: entity_reference_autocomplete
+    weight: 15
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate_request:
+    type: entity_reference_autocomplete
+    weight: 16
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate_total:
+    type: number
+    weight: 12
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimate_type:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimated_duration_days:
+    type: number
+    weight: 12
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_is_container:
+    type: boolean_checkbox
+    weight: 13
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_is_current_revision:
+    type: boolean_checkbox
+    weight: 19
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_mobil_deposit_amount:
+    type: number
+    weight: 24
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_mobil_deposit_date:
+    type: datetime_default
+    weight: 25
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_mobil_deposit_received:
+    type: boolean_checkbox
+    weight: 23
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_parent_estimate:
+    type: entity_reference_autocomplete
+    weight: 14
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_requires_subs:
+    type: boolean_checkbox
+    weight: 15
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_revision_number:
+    type: number
+    weight: 18
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_revision_of:
+    type: entity_reference_autocomplete
+    weight: 17
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_scope_elements:
+    type: entity_reference_autocomplete
+    weight: 14
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_scope_summary:
+    type: text_textarea
+    weight: 13
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_signing_deposit_date:
+    type: datetime_default
+    weight: 27
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_signing_deposit_received:
+    type: boolean_checkbox
+    weight: 26
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_stage:
+    type: options_select
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 28
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  group_new_client:
+    weight: 11
+    region: content
+    settings: {  }
+    third_party_settings:
+      conditional_fields:
+        28399cd0-fe4b-493d-8100-864f243c4d64:
+          entity_type: estimate
+          bundle: landscaping
+          dependee: field_new_client
+          settings:
+            state: visible
+            reset: false
+            condition: checked
+            grouping: AND
+            values_set: 1
+            value: ''
+            values: {  }
+            value_form:
+              value: false
+            effect: fade
+            effect_options:
+              fade:
+                speed: '400'
+              slide:
+                speed: '400'
+            selector: ''
+            inheritance:
+              propagate: '0'
+              apply_to_parent: '0'
+              recurse: '0'
+  path:
+    type: path
+    weight: 22
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 21
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true

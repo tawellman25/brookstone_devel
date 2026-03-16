@@ -1,0 +1,365 @@
+uuid: 5f8b1e56-daa3-4899-9f0a-c4ee572df278
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.rock_work
+    - field.field.estimate.rock_work.field_assigned_to
+    - field.field.estimate.rock_work.field_contract_section
+    - field.field.estimate.rock_work.field_estimate_request
+    - field.field.estimate.rock_work.field_estimate_total
+    - field.field.estimate.rock_work.field_estimate_type
+    - field.field.estimate.rock_work.field_estimated_duration_days
+    - field.field.estimate.rock_work.field_is_container
+    - field.field.estimate.rock_work.field_is_current_revision
+    - field.field.estimate.rock_work.field_mobil_deposit_amount
+    - field.field.estimate.rock_work.field_mobil_deposit_date
+    - field.field.estimate.rock_work.field_mobil_deposit_received
+    - field.field.estimate.rock_work.field_parent_estimate
+    - field.field.estimate.rock_work.field_requires_subs
+    - field.field.estimate.rock_work.field_revision_number
+    - field.field.estimate.rock_work.field_revision_of
+    - field.field.estimate.rock_work.field_scope_elements
+    - field.field.estimate.rock_work.field_scope_summary
+    - field.field.estimate.rock_work.field_signing_deposit_date
+    - field.field.estimate.rock_work.field_signing_deposit_received
+    - field.field.estimate.rock_work.field_stage
+    - field.field.estimate.rock_work.field_work_order
+  module:
+    - field_group
+    - text
+third_party_settings:
+  field_group:
+    group_client_information:
+      children: {  }
+      label: 'Client Information'
+      parent_name: ''
+      region: content
+      weight: 1
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_notes:
+      children:
+        - estimate_notes_entity_view_1
+        - group_photos
+        - group_files
+      label: Notes
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+    group_photos:
+      children:
+        - estimate_media_photos_entity_view_1
+      label: Photos
+      parent_name: group_notes
+      region: content
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_files:
+      children:
+        - estimate_files_entity_view_1
+      label: Files
+      parent_name: group_notes
+      region: content
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_client_requested:
+      children:
+        - field_scope_summary
+        - field_scope_elements
+        - field_requires_subs
+        - estimate_tasks_on_estimate_eva_1
+        - field_estimated_duration_days
+      label: 'Client Requested'
+      parent_name: ''
+      region: content
+      weight: 2
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_items:
+      children:
+        - estimate_items_materials_entity_view_1
+      label: Materials
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+    group_office_admin:
+      children:
+        - field_revision_of
+        - field_revision_number
+        - field_is_current_revision
+        - field_contract_section
+        - field_contract_signed
+        - field_deposit_received
+        - field_deposit_amount
+        - field_deposit_date
+        - field_linked_work_order
+      label: 'Office Admin'
+      parent_name: ''
+      region: content
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_labor_estimate:
+      children:
+        - estimate_items_labor_entity_view_1
+      label: 'Labor Estimate'
+      parent_name: ''
+      region: content
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+    group_equipment_estimate:
+      children:
+        - estimate_items_equipment_entity_view_1
+      label: 'Equipment Estimate'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+    group_contracted_services:
+      children:
+        - estimate_items_subcontractor_entity_view_1
+      label: 'Contracted Services'
+      parent_name: ''
+      region: content
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+id: estimate.rock_work.default
+targetEntityType: estimate
+bundle: rock_work
+mode: default
+content:
+  estimate_components_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  estimate_current_client_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  estimate_designs_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  estimate_files_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  estimate_items_equipment_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  estimate_items_labor_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  estimate_items_materials_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  estimate_items_subcontractor_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  estimate_media_photos_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  estimate_new_client_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  estimate_notes_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  estimate_tasks_on_estimate_eva_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_contract_section:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  field_estimate_total:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ','
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_estimated_duration_days:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_is_current_revision:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  field_requires_subs:
+    type: boolean
+    label: hidden
+    settings:
+      format: custom
+      format_custom_false: ''
+      format_custom_true: 'Project Requires Subs'
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_revision_number:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_revision_of:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_scope_elements:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_scope_summary:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_stage:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  created: true
+  field_assigned_to: true
+  field_estimate_request: true
+  field_estimate_type: true
+  field_is_container: true
+  field_mobil_deposit_amount: true
+  field_mobil_deposit_date: true
+  field_mobil_deposit_received: true
+  field_parent_estimate: true
+  field_signing_deposit_date: true
+  field_signing_deposit_received: true
+  field_work_order: true
+  title: true
+  uid: true

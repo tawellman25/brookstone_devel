@@ -1,0 +1,29 @@
+uuid: 96b4f27d-2806-41d9-b9a9-208f1d94c1ac
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.landscaping
+    - eck.eck_type.estimate.water_features
+    - field.storage.estimate.field_revision_of
+id: estimate.water_features.field_revision_of
+field_name: field_revision_of
+entity_type: estimate
+bundle: water_features
+label: 'Revision of'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      landscaping: landscaping
+    sort:
+      field: id
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

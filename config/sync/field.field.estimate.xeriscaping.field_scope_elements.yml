@@ -1,0 +1,29 @@
+uuid: f97ce398-d75e-47c3-b22e-4068c15f7ce7
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate.xeriscaping
+    - field.storage.estimate.field_scope_elements
+    - taxonomy.vocabulary.service_scope_elements
+id: estimate.xeriscaping.field_scope_elements
+field_name: field_scope_elements
+entity_type: estimate
+bundle: xeriscaping
+label: 'Scope Elements'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      service_scope_elements: service_scope_elements
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

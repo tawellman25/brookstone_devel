@@ -76,7 +76,6 @@ class AddComponentsForm extends FormBase {
       ->getQuery()
       ->accessCheck(FALSE)
       ->condition('field_parent_estimate', $estimate_id)
-      ->condition('type', 'landscaping')
       ->execute();
 
     $existing_tids = [];
@@ -84,9 +83,24 @@ class AddComponentsForm extends FormBase {
       $existing_estimates = \Drupal::entityTypeManager()
         ->getStorage('estimate')
         ->loadMultiple($existing_ids);
+
+      // Build a reverse map: bundle → TID from the component options.
+      $bundle_to_tid = [];
+      foreach ($options as $opt_tid => $opt_label) {
+        $opt_term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->load($opt_tid);
+        if ($opt_term && $opt_term->hasField('field_service_bundle') && !$opt_term->get('field_service_bundle')->isEmpty()) {
+          $bundle_to_tid[trim($opt_term->get('field_service_bundle')->value)] = (int) $opt_tid;
+        }
+      }
+
       foreach ($existing_estimates as $est) {
-        if (!$est->get('field_estimate_type')->isEmpty()) {
+        // Try field_estimate_type first (landscaping children).
+        if ($est->hasField('field_estimate_type') && !$est->get('field_estimate_type')->isEmpty()) {
           $existing_tids[] = (int) $est->get('field_estimate_type')->target_id;
+        }
+        // Fallback: match by bundle → service term mapping.
+        elseif (isset($bundle_to_tid[$est->bundle()])) {
+          $existing_tids[] = $bundle_to_tid[$est->bundle()];
         }
       }
     }
@@ -193,18 +207,19 @@ class AddComponentsForm extends FormBase {
       ->getQuery()
       ->accessCheck(FALSE)
       ->condition('field_parent_estimate', $estimate_id)
-      ->condition('type', 'landscaping')
       ->execute();
 
     $existing_tids = [];
+    $existing_bundles = [];
     if (!empty($existing_ids)) {
       $existing_estimates = \Drupal::entityTypeManager()
         ->getStorage('estimate')
         ->loadMultiple($existing_ids);
       foreach ($existing_estimates as $est) {
-        if (!$est->get('field_estimate_type')->isEmpty()) {
+        if ($est->hasField('field_estimate_type') && !$est->get('field_estimate_type')->isEmpty()) {
           $existing_tids[] = (int) $est->get('field_estimate_type')->target_id;
         }
+        $existing_bundles[] = $est->bundle();
       }
     }
 
@@ -228,20 +243,32 @@ class AddComponentsForm extends FormBase {
         $component_name = $term->get('field_service_name')->value;
       }
 
-      // Get estimate bundle from service term.
-      $bundle = 'landscaping';
-      if ($term->hasField('field_service_bundle')
-          && !$term->get('field_service_bundle')->isEmpty()) {
-        $bundle = trim((string) $term->get('field_service_bundle')->value);
-        $bundle_info = \Drupal::service('entity_type.bundle.info')
-          ->getBundleInfo('estimate');
-        if (!isset($bundle_info[$bundle])) {
-          \Drupal::logger('wo_project_pipeline')->warning(
-            'Component term @tid has unknown estimate bundle @bundle — falling back to landscaping.',
-            ['@tid' => $tid, '@bundle' => $bundle]
-          );
-          $bundle = 'landscaping';
-        }
+      // Every component term must have field_service_bundle set.
+      // No fallback — if missing, skip and log.
+      if (!$term->hasField('field_service_bundle')
+          || $term->get('field_service_bundle')->isEmpty()) {
+        \Drupal::logger('wo_project_pipeline')->warning(
+          'Component term @tid (@name) has no field_service_bundle — skipped.',
+          ['@tid' => $tid, '@name' => $component_name]
+        );
+        continue;
+      }
+
+      $bundle = trim((string) $term->get('field_service_bundle')->value);
+      $bundle_info = \Drupal::service('entity_type.bundle.info')
+        ->getBundleInfo('estimate');
+
+      if (!isset($bundle_info[$bundle])) {
+        \Drupal::logger('wo_project_pipeline')->warning(
+          'Component term @tid (@name) references non-existent bundle @bundle — skipped.',
+          ['@tid' => $tid, '@name' => $component_name, '@bundle' => $bundle]
+        );
+        continue;
+      }
+
+      // Skip if a child with this bundle already exists.
+      if (in_array($bundle, $existing_bundles, TRUE)) {
+        continue;
       }
 
       // Get assigned_to from term's field_default_estimator,
@@ -272,7 +299,6 @@ class AddComponentsForm extends FormBase {
       // Conditionally set fields based on bundle support.
       $conditional_fields = [
         'field_estimate_request' => $container->get('field_estimate_request')->target_id,
-        'field_estimate_type' => $tid,
         'field_stage' => 1415,
         'field_is_current_revision' => TRUE,
         'field_revision_number' => 1,

@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function bos_spray_route_ui_views_pre_render($view) {
+  if (in_array($view->id(), [
+    'teammate_weed_spraying_route',
+    'admin_weed_spray_route',
+    'admin_weed_spray_reconciliation',
+  ])) {
+    $view->element['#attached']['library'][] = 'bos_spray_route_ui/spray_route';
+  }
+}

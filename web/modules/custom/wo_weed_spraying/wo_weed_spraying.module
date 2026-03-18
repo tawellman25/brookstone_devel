@@ -350,6 +350,106 @@ function get_hours_for_weed_spraying($workOrderId) {
 }
 
 /**
+ * Implements hook_form_alter().
+ *
+ * Intercepts the wo_chemicals_used:weed_spraying add form to split
+ * multiple chemical selections into separate entity saves.
+ */
+function wo_weed_spraying_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  // Only intercept the weed_spraying chemicals form.
+  if ($form_id !== 'wo_chemicals_used_weed_spraying_form') {
+    return;
+  }
+
+  // Only on add (new entity), not edit.
+  $entity = $form_state->getFormObject()->getEntity();
+  if (!$entity->isNew()) {
+    return;
+  }
+
+  // Replace the default submit handler with our own.
+  $form['actions']['submit']['#submit'] = ['_wo_weed_spraying_chemicals_multi_submit'];
+}
+
+/**
+ * Custom submit handler: splits multi-chemical selections into separate entities.
+ */
+function _wo_weed_spraying_chemicals_multi_submit($form, FormStateInterface $form_state) {
+  // Get all selected chemical IDs — field_chemical is now multi-value.
+  $chemical_values = $form_state->getValue('field_chemical');
+
+  // Extract target IDs — filter out empty/unselected checkboxes (value = 0).
+  $selected_chemicals = [];
+  foreach ($chemical_values as $item) {
+    $tid = $item['target_id'] ?? 0;
+    if ($tid) {
+      $selected_chemicals[] = $tid;
+    }
+  }
+
+  if (empty($selected_chemicals)) {
+    \Drupal::messenger()->addError('Please select at least one chemical.');
+    return;
+  }
+
+  // Get all other field values from the form state.
+  $work_order = $form_state->getValue('field_work_order');
+  $gallons = $form_state->getValue('field_total_gallons_applied');
+  $amount_type = $form_state->getValue('field_chemical_amount_type');
+  $per_gallons = $form_state->getValue('field_per_how_many_gallons');
+  $total_added = $form_state->getValue('field_total_added_to_sprayer');
+  $spreader = $form_state->getValue('field_spreader_sticker_adjuvalen');
+  $chemical_cost = $form_state->getValue('field_chemical_cost');
+  $spreader_cost = $form_state->getValue('field_spreader_cost');
+  $subtotal = $form_state->getValue('field_subtotal');
+
+  $created = 0;
+  $storage = \Drupal::entityTypeManager()->getStorage('wo_chemicals_used');
+
+  foreach ($selected_chemicals as $chemical_id) {
+    $entity = $storage->create([
+      'type' => 'weed_spraying',
+      'field_chemical' => ['target_id' => $chemical_id],
+      'field_work_order' => $work_order,
+      'field_total_gallons_applied' => $gallons,
+      'field_chemical_amount_type' => $amount_type,
+      'field_per_how_many_gallons' => $per_gallons,
+      'field_total_added_to_sprayer' => $total_added,
+      'field_spreader_sticker_adjuvalen' => $spreader,
+      'field_chemical_cost' => $chemical_cost,
+      'field_spreader_cost' => $spreader_cost,
+      'field_subtotal' => $subtotal,
+      'uid' => \Drupal::currentUser()->id(),
+    ]);
+    $entity->save();
+    $created++;
+  }
+
+  // Success message.
+  \Drupal::messenger()->addStatus(
+    \Drupal::translation()->formatPlural(
+      $created,
+      '1 chemical record created.',
+      '@count chemical records created.'
+    )
+  );
+
+  // Redirect back to the work order.
+  $wo_id = $work_order[0]['target_id'] ?? NULL;
+  if ($wo_id) {
+    $wo = \Drupal::entityTypeManager()->getStorage('work_order')->load($wo_id);
+    if ($wo) {
+      $form_state->setRedirectUrl($wo->toUrl());
+      return;
+    }
+  }
+
+  // Fallback redirect to add form.
+  $form_state->setRedirect('entity.wo_chemicals_used.add_form',
+    ['wo_chemicals_used_type' => 'weed_spraying']);
+}
+
+/**
  * Implements hook_form_FORM_ID_alter() for wo_complete_info.
  */
 function wo_weed_spraying_form_wo_complete_info_form_alter(array &$form, FormStateInterface $form_state, $form_id) {

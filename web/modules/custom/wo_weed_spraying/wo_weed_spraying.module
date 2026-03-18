@@ -39,6 +39,12 @@ function wo_weed_spraying_entity_presave(EntityInterface $entity) {
     $gallonsUsed = get_largest_gallons_used_for_weed_spraying($workOrderId);
     $timeSpent = get_hours_for_weed_spraying($workOrderId);
 
+    // 0-gallon visit = inspection only. Bill $0, still allow write-back.
+    if ($gallonsUsed == 0) {
+      $entity->set('field_wo_total', 0);
+      return;
+    }
+
     if ($gallonsUsed > $minGallon) {
       $chemical_subtotal = ($gallonsUsed - $minGallon) * $additionalGallonRate;
     }

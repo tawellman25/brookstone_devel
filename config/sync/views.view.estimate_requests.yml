@@ -3,21 +3,28 @@ langcode: en
 status: true
 dependencies:
   config:
+    - eck.eck_type.estimate_request.standard
     - field.storage.estimate_request.field_assigned_to
     - field.storage.estimate_request.field_owner
     - field.storage.estimate_request.field_priority
     - field.storage.estimate_request.field_property
     - field.storage.estimate_request.field_service
     - field.storage.estimate_request.field_status
+    - taxonomy.vocabulary.estimate_request_status
     - user.role.administration
     - user.role.administrator
     - user.role.site_admin
     - user.role.site_assistant
     - user.role.supervisor
     - user.role.teammates
+  content:
+    - 'taxonomy_term:estimate_request_status:6846bab3-b288-4c75-abb7-af4f0371856d'
+    - 'taxonomy_term:estimate_request_status:aaf69ded-c56b-43e4-8004-e5df28a185b4'
+    - 'taxonomy_term:estimate_request_status:f78875e6-3a11-480b-84f2-d4de2d3bb582'
   module:
     - eck
     - options
+    - taxonomy
     - user
 id: estimate_requests
 label: 'Estimate Requests'
@@ -813,7 +820,13 @@ display:
         - 'languages:language_interface'
         - url.query_args
         - user.roles
-      tags: {  }
+      tags:
+        - 'config:field.storage.estimate_request.field_assigned_to'
+        - 'config:field.storage.estimate_request.field_owner'
+        - 'config:field.storage.estimate_request.field_priority'
+        - 'config:field.storage.estimate_request.field_property'
+        - 'config:field.storage.estimate_request.field_service'
+        - 'config:field.storage.estimate_request.field_status'
   page_1:
     id: page_1
     display_title: 'New Requests'
@@ -1341,9 +1354,9 @@ display:
           group_type: group
           admin_label: ''
           plugin_id: taxonomy_index_tid
-          operator: in
+          operator: or
           value:
-            1652: 1652
+            - 1652
           group: 1
           exposed: false
           expose:
@@ -1360,6 +1373,7 @@ display:
             multiple: false
             remember_roles:
               authenticated: authenticated
+            reduce: false
           is_grouped: false
           group_info:
             label: ''
@@ -1374,7 +1388,7 @@ display:
             group_items: {  }
           reduce_duplicates: false
           vid: estimate_request_status
-          type: select
+          type: textfield
           hierarchy: false
           limit: true
           error_message: true
@@ -1462,7 +1476,11 @@ display:
         - 'languages:language_interface'
         - url.query_args
         - user.roles
-      tags: {  }
+      tags:
+        - 'config:field.storage.estimate_request.field_owner'
+        - 'config:field.storage.estimate_request.field_priority'
+        - 'config:field.storage.estimate_request.field_property'
+        - 'config:field.storage.estimate_request.field_service'
   page_2:
     id: page_2
     display_title: 'My Estimates'
@@ -1952,7 +1970,7 @@ display:
           relationship: none
           group_type: group
           admin_label: ''
-          plugin_id: numeric
+          plugin_id: entity_target_id
           default_action: default
           exception:
             value: all
@@ -1968,6 +1986,7 @@ display:
           validate_options: {  }
           break_phrase: false
           not: false
+          target_entity_type_id: user
       filters:
         type:
           id: type
@@ -2014,10 +2033,10 @@ display:
           group_type: group
           admin_label: ''
           plugin_id: taxonomy_index_tid
-          operator: 'not in'
+          operator: or
           value:
-            1657: 1657
             1658: 1658
+            1657: 1657
           group: 1
           exposed: false
           expose:
@@ -2034,6 +2053,7 @@ display:
             multiple: false
             remember_roles:
               authenticated: authenticated
+            reduce: false
           is_grouped: false
           group_info:
             label: ''
@@ -2135,10 +2155,15 @@ display:
       contexts:
         - 'languages:language_content'
         - 'languages:language_interface'
+        - url
         - url.query_args
         - user
         - user.roles
-      tags: {  }
+      tags:
+        - 'config:field.storage.estimate_request.field_priority'
+        - 'config:field.storage.estimate_request.field_property'
+        - 'config:field.storage.estimate_request.field_service'
+        - 'config:field.storage.estimate_request.field_status'
   page_3:
     id: page_3
     display_title: 'All Requests'
@@ -2174,4 +2199,10 @@ display:
         - 'languages:language_interface'
         - url.query_args
         - user.roles
-      tags: {  }
+      tags:
+        - 'config:field.storage.estimate_request.field_assigned_to'
+        - 'config:field.storage.estimate_request.field_owner'
+        - 'config:field.storage.estimate_request.field_priority'
+        - 'config:field.storage.estimate_request.field_property'
+        - 'config:field.storage.estimate_request.field_service'
+        - 'config:field.storage.estimate_request.field_status'

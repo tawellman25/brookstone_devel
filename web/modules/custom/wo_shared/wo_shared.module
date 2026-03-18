@@ -1,0 +1,83 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Maps WO bundles to their property_spraying_info bundle equivalent.
+ *
+ * Only bundles that have a corresponding property_spraying_info type
+ * are included here.
+ */
+function _wo_shared_get_spraying_info_bundle_map(): array {
+  return [
+    'pre_emergent'           => 'pre_emergent',
+    'weed_spraying'          => 'weed_spraying',
+    'aspen_twig_gall'        => 'aspen_twig_gall',
+    'cooley_spruce_gall'     => 'cooley_spruce',
+    'deciduous_bore'         => 'deciduous_bore',
+    'dormant_oil'            => 'dormant_oil',
+    'grub_prevention'        => 'grub_prevention',
+    'pinion_pine_ips_beetle' => 'ips_beetle',
+    'trunk_bore'             => 'trunk_bore',
+    'deer_prevention'        => NULL,
+  ];
+}
+
+/**
+ * Implements hook_entity_insert().
+ *
+ * When a spray-related Work Order is created, ensure a matching
+ * property_spraying_info record exists for the property.
+ * Creates a bare record if one doesn't exist.
+ * Never overwrites an existing record.
+ */
+function wo_shared_entity_insert(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'work_order') {
+    return;
+  }
+
+  $bundle = $entity->bundle();
+  $map = _wo_shared_get_spraying_info_bundle_map();
+
+  if (!array_key_exists($bundle, $map)) {
+    return;
+  }
+
+  $spraying_info_bundle = $map[$bundle];
+  if ($spraying_info_bundle === NULL) {
+    return;
+  }
+
+  $property_id = $entity->get('field_property')->target_id ?? NULL;
+  if (!$property_id) {
+    return;
+  }
+
+  $existing = \Drupal::entityTypeManager()
+    ->getStorage('property_spraying_info')
+    ->loadByProperties([
+      'type'           => $spraying_info_bundle,
+      'field_property' => $property_id,
+    ]);
+
+  if (!empty($existing)) {
+    return;
+  }
+
+  $record = \Drupal::entityTypeManager()
+    ->getStorage('property_spraying_info')
+    ->create([
+      'type'           => $spraying_info_bundle,
+      'field_property' => $property_id,
+    ]);
+  $record->save();
+
+  \Drupal::logger('wo_shared')->notice(
+    'Auto-created property_spraying_info:@bundle for property @pid on WO @woid insert.',
+    [
+      '@bundle' => $spraying_info_bundle,
+      '@pid'    => $property_id,
+      '@woid'   => $entity->id(),
+    ]
+  );
+}

@@ -352,6 +352,10 @@ class WoProjectPipelineService {
         $container->set('field_is_container', TRUE);
         $container->set('field_estimate_type', 364);
         $container->set('uid', \Drupal::currentUser()->id());
+        if ($container->hasField('field_scope_summary')
+            && $container->get('field_scope_summary')->isEmpty()) {
+          $container->set('field_scope_summary', 'Client is requesting a Landscaping project. Please review and update this scope summary with specific project details.');
+        }
         $container->save();
 
         $this->logger()->notice(
@@ -384,6 +388,10 @@ class WoProjectPipelineService {
       $estimate = $this->entityTypeManager
         ->getStorage('estimate')
         ->create($estimate_values);
+      if ($estimate->hasField('field_scope_summary')
+          && $estimate->get('field_scope_summary')->isEmpty()) {
+        $estimate->set('field_scope_summary', 'Client is requesting a Landscaping project. Please review and update this scope summary with specific project details.');
+      }
       $estimate->save();
 
       // Write back to estimate_request field_estimates.

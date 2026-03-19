@@ -4,10 +4,8 @@ status: true
 dependencies:
   config:
     - field.storage.estimate.field_assigned_to
-    - field.storage.estimate.field_estimate_request
     - field.storage.estimate.field_estimate_total
     - field.storage.estimate.field_stage
-    - field.storage.estimate_request.field_property
     - taxonomy.vocabulary.estimate_stage
     - user.role.administration
     - user.role.administrator
@@ -820,7 +818,10 @@ display:
         - url
         - url.query_args
         - user.roles
-      tags: {  }
+      tags:
+        - 'config:field.storage.estimate.field_assigned_to'
+        - 'config:field.storage.estimate.field_estimate_total'
+        - 'config:field.storage.estimate.field_stage'
   page_1:
     id: page_1
     display_title: Page
@@ -834,7 +835,7 @@ display:
         type: tab
         title: Estimates
         description: ''
-        weight: 1
+        weight: 4
         expanded: false
         menu_name: main
         parent: ''
@@ -847,4 +848,7 @@ display:
         - url
         - url.query_args
         - user.roles
-      tags: {  }
+      tags:
+        - 'config:field.storage.estimate.field_assigned_to'
+        - 'config:field.storage.estimate.field_estimate_total'
+        - 'config:field.storage.estimate.field_stage'

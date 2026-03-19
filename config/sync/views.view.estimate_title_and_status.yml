@@ -434,8 +434,8 @@ display:
           exclude: true
           alter:
             alter_text: true
-            text: '{{ field_nickname }} at {{ title_1 }}'
-            make_link: true
+            text: "For: {{ field_nickname }}</br>\r\nAt:  {{ title_1 }}"
+            make_link: false
             path: '/properties/{{ id_1 }}'
             absolute: false
             external: false
@@ -474,7 +474,7 @@ display:
           click_sort_column: value
           type: string
           settings:
-            link_to_entity: false
+            link_to_entity: true
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -497,7 +497,7 @@ display:
           exclude: false
           alter:
             alter_text: true
-            text: "<h1>{{ title }}</h1>\r\n<div>Part of {{ title_2 }} for {{ title_1 }}</div>"
+            text: "<h1>{{ title }}</h1>\r\n<div>Part of: <b>{{ title_2 }}</b></br>\r\n{{ title_1 }}</div>"
             make_link: false
             path: ''
             absolute: false

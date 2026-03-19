@@ -106,11 +106,76 @@ display:
           group_type: group
           admin_label: ''
           plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: true
+            text: Testing
+            make_link: true
+            path: '/estimate/{{ id }}'
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: target_id
+          type: entity_reference_label
+          settings:
+            link: false
+          group_column: target_id
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        title:
+          id: title
+          table: estimate_field_data
+          field: title
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: estimate
+          entity_field: title
+          plugin_id: field
           label: Component
           exclude: false
           alter:
-            alter_text: false
-            text: ''
+            alter_text: true
+            text: '{{ title }}'
             make_link: true
             path: '/estimate/{{ id }}'
             absolute: false
@@ -147,11 +212,11 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          click_sort_column: target_id
-          type: entity_reference_label
+          click_sort_column: value
+          type: string
           settings:
-            link: false
-          group_column: target_id
+            link_to_entity: false
+          group_column: value
           group_columns: {  }
           group_rows: true
           delta_limit: 0
@@ -424,8 +489,8 @@ display:
           group_type: group
           admin_label: ''
           plugin_id: custom
-          label: Operations
-          exclude: false
+          label: ''
+          exclude: true
           alter:
             alter_text: true
             text: '<a href="/estimate/{{ id }}/edit">Edit</a>'
@@ -457,7 +522,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -491,25 +556,7 @@ display:
       cache:
         type: tag
         options: {  }
-      empty:
-        area:
-          id: area
-          table: views
-          field: area
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: text
-          empty: true
-          content:
-            value: |-
-              <p>No components have been added yet.</p>
-              <a href="/bos/estimate/{{ raw_arguments.field_parent_estimate_target_id }}/add-components"
-                 class="button button--primary use-ajax"
-                 data-dialog-type="modal"
-                 data-dialog-options='{"width":600}'>+ Add Components</a>
-            format: full_html
-          tokenize: true
+      empty: {  }
       sorts:
         field_estimate_type_target_id:
           id: field_estimate_type_target_id
@@ -664,13 +711,9 @@ display:
           group_type: group
           admin_label: ''
           plugin_id: text
-          empty: false
+          empty: true
           content:
-            value: |-
-              <a href="/bos/estimate/{{ raw_arguments.field_parent_estimate_target_id }}/add-components"
-                 class="button button--primary use-ajax"
-                 data-dialog-type="modal"
-                 data-dialog-options='{"width":600}'>+ Add Components</a>
+            value: "This is a Landscaping project estimate. Each service included in this project (Patios, Rough Grading, Sodding, etc.) needs to be added as a separate Component. Click + Add Components below to select which services are included in this project. Each component will get its own estimate for detailed scoping and pricing.</br>\r\n\r\n<a href=\"/bos/estimate/{{ raw_arguments.field_parent_estimate_target_id }}/add-components\"\r\n   class=\"button button--primary use-ajax\"\r\n   data-dialog-type=\"modal\"\r\n   data-dialog-options='{\"width\":600}'>+ Add Components</a>"
             format: full_html
           tokenize: true
       footer:
@@ -712,7 +755,7 @@ display:
       entity_type: estimate
       bundles:
         - landscaping
-      show_title: true
+      show_title: false
       argument_mode: id
       default_argument: ''
       eva_hide_empty: false

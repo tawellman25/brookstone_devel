@@ -94,6 +94,7 @@ third_party_settings:
         required_fields: false
     group_client_requested:
       children:
+        - field_stage
         - field_scope_summary
         - field_scope_elements
         - field_requires_subs
@@ -111,8 +112,7 @@ third_party_settings:
         label_as_html: false
         description: ''
     group_items:
-      children:
-        - estimate_items_materials_entity_view_1
+      children: {  }
       label: Materials
       parent_name: ''
       region: content
@@ -120,10 +120,10 @@ third_party_settings:
       format_type: details
       format_settings:
         classes: ''
-        show_empty_fields: true
+        show_empty_fields: false
         id: ''
         label_as_html: false
-        open: true
+        open: false
         description: ''
     group_office_admin:
       children:
@@ -131,11 +131,6 @@ third_party_settings:
         - field_revision_number
         - field_is_current_revision
         - field_contract_section
-        - field_contract_signed
-        - field_deposit_received
-        - field_deposit_amount
-        - field_deposit_date
-        - field_linked_work_order
       label: 'Office Admin'
       parent_name: ''
       region: content
@@ -150,8 +145,7 @@ third_party_settings:
         description: ''
         required_fields: false
     group_labor_estimate:
-      children:
-        - estimate_items_labor_entity_view_1
+      children: {  }
       label: 'Labor Estimate'
       parent_name: ''
       region: content
@@ -159,14 +153,13 @@ third_party_settings:
       format_type: details
       format_settings:
         classes: ''
-        show_empty_fields: true
+        show_empty_fields: false
         id: ''
         label_as_html: false
-        open: true
+        open: false
         description: ''
     group_equipment_estimate:
-      children:
-        - estimate_items_equipment_entity_view_1
+      children: {  }
       label: 'Equipment Estimate'
       parent_name: ''
       region: content
@@ -174,14 +167,13 @@ third_party_settings:
       format_type: details
       format_settings:
         classes: ''
-        show_empty_fields: true
+        show_empty_fields: false
         id: ''
         label_as_html: false
-        open: true
+        open: false
         description: ''
     group_contracted_services:
-      children:
-        - estimate_items_subcontractor_entity_view_1
+      children: {  }
       label: 'Contracted Services'
       parent_name: ''
       region: content
@@ -189,16 +181,21 @@ third_party_settings:
       format_type: details
       format_settings:
         classes: ''
-        show_empty_fields: true
+        show_empty_fields: false
         id: ''
         label_as_html: false
-        open: true
+        open: false
         description: ''
 id: estimate.landscaping.default
 targetEntityType: estimate
 bundle: landscaping
 mode: default
 content:
+  estimate_components_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
   estimate_current_client_info_entity_view_1:
     settings: {  }
     third_party_settings: {  }
@@ -213,26 +210,6 @@ content:
     settings: {  }
     third_party_settings: {  }
     weight: 11
-    region: content
-  estimate_items_equipment_entity_view_1:
-    settings: {  }
-    third_party_settings: {  }
-    weight: 10
-    region: content
-  estimate_items_labor_entity_view_1:
-    settings: {  }
-    third_party_settings: {  }
-    weight: 10
-    region: content
-  estimate_items_materials_entity_view_1:
-    settings: {  }
-    third_party_settings: {  }
-    weight: 10
-    region: content
-  estimate_items_subcontractor_entity_view_1:
-    settings: {  }
-    third_party_settings: {  }
-    weight: 10
     region: content
   estimate_media_photos_entity_view_1:
     settings: {  }
@@ -252,7 +229,7 @@ content:
   estimate_tasks_on_estimate_eva_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 12
+    weight: 4
     region: content
   field_contract_section:
     type: entity_reference_label
@@ -280,7 +257,7 @@ content:
       thousand_separator: ''
       prefix_suffix: true
     third_party_settings: {  }
-    weight: 13
+    weight: 5
     region: content
   field_is_current_revision:
     type: boolean
@@ -300,7 +277,7 @@ content:
       format_custom_false: ''
       format_custom_true: 'Project Requires Subs'
     third_party_settings: {  }
-    weight: 11
+    weight: 3
     region: content
   field_revision_number:
     type: number_integer
@@ -325,14 +302,14 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 10
+    weight: 2
     region: content
   field_scope_summary:
     type: text_default
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 9
+    weight: 1
     region: content
   field_stage:
     type: entity_reference_label

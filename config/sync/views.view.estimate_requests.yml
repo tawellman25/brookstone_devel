@@ -40,6 +40,7 @@ display:
     display_plugin: default
     position: 0
     display_options:
+      title: 'New Requests'
       fields:
         title:
           id: title
@@ -810,7 +811,20 @@ display:
           replica: false
           query_tags: {  }
       relationships: {  }
-      header: {  }
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: true
+          content:
+            value: '<a class="button--primary button js-form-submit form-submit" href="/admin/content/estimate_request/add/standard">+ New Estimate Request</a>'
+            format: basic_html
+          tokenize: false
       footer: {  }
       display_extenders: {  }
     cache_metadata:
@@ -1468,7 +1482,21 @@ display:
         sorts: false
         filters: false
       display_extenders: {  }
-      path: estimate-requests/new
+      path: admin/office/estimates
+      menu:
+        type: 'default tab'
+        title: 'New Requests'
+        description: ''
+        weight: 0
+        expanded: false
+        menu_name: admin
+        parent: 'menu_link_content:4b4baafc-6631-4b64-9157-b570acf68c2c'
+        context: '0'
+      tab_options:
+        type: none
+        title: Estimate
+        description: ''
+        weight: 0
     cache_metadata:
       max-age: -1
       contexts:
@@ -1487,7 +1515,7 @@ display:
     display_plugin: page
     position: 2
     display_options:
-      title: 'My Estimates'
+      title: 'My Requests'
       fields:
         title:
           id: title
@@ -2144,12 +2172,22 @@ display:
           caption: ''
           description: ''
       defaults:
+        title: false
         fields: false
         sorts: false
         arguments: false
         filters: false
       display_extenders: {  }
-      path: estimate-requests/mine
+      path: admin/office/estimates/mine
+      menu:
+        type: tab
+        title: 'My Requests'
+        description: ''
+        weight: 0
+        expanded: false
+        menu_name: admin
+        parent: ''
+        context: '0'
     cache_metadata:
       max-age: -1
       contexts:
@@ -2189,9 +2227,19 @@ display:
           exposed: false
           granularity: second
       defaults:
+        title: false
         sorts: false
       display_extenders: {  }
-      path: estimate-requests/all
+      path: admin/office/estimates/all
+      menu:
+        type: tab
+        title: 'All Requests'
+        description: ''
+        weight: 0
+        expanded: false
+        menu_name: admin
+        parent: 'views_view:views.estimate_requests.page_1'
+        context: '0'
     cache_metadata:
       max-age: -1
       contexts:

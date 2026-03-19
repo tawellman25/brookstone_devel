@@ -31,17 +31,19 @@ dependencies:
 third_party_settings:
   field_group:
     group_client_information:
-      children: {  }
+      children:
+        - estimate_contact_card
       label: 'Client Information'
       parent_name: ''
       region: content
       weight: 1
-      format_type: fieldset
+      format_type: details
       format_settings:
         classes: ''
         show_empty_fields: false
         id: ''
         label_as_html: false
+        open: true
         description: ''
     group_notes:
       children:
@@ -131,11 +133,6 @@ third_party_settings:
         - field_revision_number
         - field_is_current_revision
         - field_contract_section
-        - field_contract_signed
-        - field_deposit_received
-        - field_deposit_amount
-        - field_deposit_date
-        - field_linked_work_order
       label: 'Office Admin'
       parent_name: ''
       region: content
@@ -199,6 +196,11 @@ targetEntityType: estimate
 bundle: rock_work
 mode: default
 content:
+  estimate_contact_card:
+    settings: {  }
+    third_party_settings: {  }
+    weight: -10
+    region: content
   estimate_current_client_info_entity_view_1:
     settings: {  }
     third_party_settings: {  }
@@ -213,6 +215,26 @@ content:
     settings: {  }
     third_party_settings: {  }
     weight: 11
+    region: content
+  estimate_items_equipment_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  estimate_items_labor_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  estimate_items_materials_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  estimate_items_subcontractor_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
     region: content
   estimate_media_photos_entity_view_1:
     settings: {  }

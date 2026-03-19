@@ -14,7 +14,25 @@ dependencies:
     - field.field.estimate.sprinkler_winterizing.field_stage
     - field.field.estimate.sprinkler_winterizing.field_work_order
   module:
+    - field_group
     - user
+third_party_settings:
+  field_group:
+    group_client_information:
+      children:
+        - estimate_contact_card
+      label: 'Client Information'
+      parent_name: ''
+      region: content
+      weight: 1
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
 id: estimate.sprinkler_winterizing.default
 targetEntityType: estimate
 bundle: sprinkler_winterizing
@@ -39,12 +57,27 @@ content:
     third_party_settings: {  }
     weight: 0
     region: content
+  estimate_contact_card:
+    settings: {  }
+    third_party_settings: {  }
+    weight: -10
+    region: content
+  estimate_files_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
   estimate_media_photos_entity_view_1:
     settings: {  }
     third_party_settings: {  }
     weight: 10
     region: content
   estimate_notes_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  estimate_tasks_on_estimate_eva_1:
     settings: {  }
     third_party_settings: {  }
     weight: 10

@@ -134,6 +134,29 @@ function estimate_entity_presave(EntityInterface $entity): void {
       $entity->set('field_assigned_to', \Drupal::currentUser()->id());
     }
 
+    // Auto-set field_estimate_type from the bundle's matching services term.
+    // Skip landscaping containers — pipeline sets field_estimate_type = 364.
+    if ($entity->hasField('field_estimate_type')) {
+      $is_container = $entity->bundle() === 'landscaping'
+        && $entity->hasField('field_is_container')
+        && !empty($entity->get('field_is_container')->value);
+
+      if (!$is_container) {
+        $tids = \Drupal::entityTypeManager()
+          ->getStorage('taxonomy_term')
+          ->getQuery()
+          ->accessCheck(FALSE)
+          ->condition('vid', 'services')
+          ->condition('field_service_bundle', $entity->bundle())
+          ->range(0, 1)
+          ->execute();
+
+        if (!empty($tids)) {
+          $entity->set('field_estimate_type', reset($tids));
+        }
+      }
+    }
+
     /** @var \Drupal\estimate\Service\EstimateRevisionManager $rm */
     $rm = \Drupal::service('estimate.revision_manager');
     $rm->enforce($entity);

@@ -44,6 +44,14 @@ final class EstimateRevisionManager {
       return;
     }
 
+    // Prevent re-entry when unsetOtherCurrents() triggers presave on related estimates.
+    static $processing = [];
+    $key = $estimate->isNew() ? 'new_' . spl_object_id($estimate) : (string) $estimate->id();
+    if (isset($processing[$key])) {
+      return;
+    }
+    $processing[$key] = TRUE;
+
     // Required fields for revision governance.
     foreach (['field_estimate_request', 'field_revision_number', 'field_is_current_revision'] as $required) {
       if (!$estimate->hasField($required)) {
@@ -51,6 +59,7 @@ final class EstimateRevisionManager {
           '@field' => $required,
           '@bundle' => $estimate->bundle(),
         ]);
+        unset($processing[$key]);
         return;
       }
     }
@@ -58,6 +67,7 @@ final class EstimateRevisionManager {
     $estimate_request_id = $this->getTargetId($estimate, 'field_estimate_request');
     if ($estimate_request_id <= 0) {
       // EstimateRequest is required by your model; if missing we can't scope chain.
+      unset($processing[$key]);
       return;
     }
 
@@ -91,6 +101,8 @@ final class EstimateRevisionManager {
 
     // Flip all other estimates in the chain to non-current.
     $this->unsetOtherCurrents($chain, $estimate->isNew() ? 0 : (int) $estimate->id());
+
+    unset($processing[$key]);
   }
 
   /**

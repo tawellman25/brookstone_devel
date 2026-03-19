@@ -54,3 +54,61 @@ function wo_total_time_entity_presave(EntityInterface $entity) {
     }
   }
 }
+
+/**
+ * Implements hook_entity_update().
+ */
+function wo_total_time_entity_update(EntityInterface $entity) {
+  _wo_total_time_trigger_wo_recalc($entity);
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function wo_total_time_entity_insert(EntityInterface $entity) {
+  _wo_total_time_trigger_wo_recalc($entity);
+}
+
+/**
+ * Trigger WO billing recalculation when a time clock entry changes.
+ *
+ * Skips WOs in protected statuses (Invoiced, Paid, Canceled) to
+ * prevent accidental billing changes on finalized work orders.
+ */
+function _wo_total_time_trigger_wo_recalc(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'wo_time_clock') {
+    return;
+  }
+
+  $wo_id = $entity->get('field_work_order')->target_id ?? NULL;
+  if (!$wo_id) {
+    return;
+  }
+
+  // Static guard to prevent infinite loops.
+  static $processing = [];
+  if (isset($processing[$wo_id])) {
+    return;
+  }
+  $processing[$wo_id] = TRUE;
+
+  $wo = \Drupal::entityTypeManager()
+    ->getStorage('work_order')
+    ->load($wo_id);
+
+  if (!$wo) {
+    unset($processing[$wo_id]);
+    return;
+  }
+
+  // Do NOT recalculate if WO is already Invoiced, Paid, or Canceled.
+  $protected_tids = [1281, 1504, 1098];
+  $status_tid = (int) ($wo->get('field_status')->target_id ?? 0);
+  if (in_array($status_tid, $protected_tids, TRUE)) {
+    unset($processing[$wo_id]);
+    return;
+  }
+
+  $wo->save();
+  unset($processing[$wo_id]);
+}

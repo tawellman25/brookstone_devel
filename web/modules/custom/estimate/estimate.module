@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Url;
@@ -407,6 +408,300 @@ function estimate_entity_operation_alter(array &$operations, EntityInterface $en
   ];
 }
 
+
+/* ---------------------------------------------------------------------------
+ * Estimate Display — Contact / Owner Card
+ * --------------------------------------------------------------------------- */
+
+/**
+ * Implements hook_entity_extra_field_info().
+ */
+function estimate_entity_extra_field_info(): array {
+  $extra = [];
+  $bundles = array_keys(\Drupal::service('entity_type.bundle.info')->getBundleInfo('estimate'));
+
+  foreach ($bundles as $bundle) {
+    $extra['estimate'][$bundle]['display']['estimate_contact_card'] = [
+      'label' => t('Contact / Owner'),
+      'description' => t('Owner, contact, or requestor info from the parent estimate request.'),
+      'weight' => -10,
+      'visible' => TRUE,
+    ];
+  }
+
+  return $extra;
+}
+
+/**
+ * Implements hook_entity_view().
+ *
+ * Renders the Contact/Owner card on estimate entities by traversing
+ * the parent estimate_request. Priority: Owner → Contact → Requestor.
+ */
+function estimate_entity_view(
+  array &$build,
+  EntityInterface $entity,
+  EntityViewDisplayInterface $display,
+  string $view_mode
+): void {
+  if ($entity->getEntityTypeId() !== 'estimate') {
+    return;
+  }
+
+  if (!$display->getComponent('estimate_contact_card')) {
+    return;
+  }
+
+  // Load parent estimate_request.
+  if (!$entity->hasField('field_estimate_request') || $entity->get('field_estimate_request')->isEmpty()) {
+    $build['estimate_contact_card'] = ['#markup' => ''];
+    return;
+  }
+
+  try {
+    $request = $entity->get('field_estimate_request')->entity;
+    if (!$request) {
+      $build['estimate_contact_card'] = ['#markup' => ''];
+      return;
+    }
+
+    $etm = \Drupal::entityTypeManager();
+    $html = '';
+
+    // Priority 1: Owner.
+    if ($request->hasField('field_owner') && !$request->get('field_owner')->isEmpty()) {
+      $owner = $request->get('field_owner')->entity;
+      if ($owner) {
+        $html = _estimate_build_owner_card($owner, $request, $etm);
+      }
+    }
+
+    // Priority 2: Contact.
+    if (empty($html) && $request->hasField('field_contact') && !$request->get('field_contact')->isEmpty()) {
+      $contact = $request->get('field_contact')->entity;
+      if ($contact) {
+        $html = _estimate_build_contact_card($contact);
+      }
+    }
+
+    // Priority 3: Requestor info.
+    if (empty($html)) {
+      $html = _estimate_build_requestor_card($request);
+    }
+
+    $build['estimate_contact_card'] = [
+      '#markup' => $html ?: '<div class="er-card er-card--empty">No contact information available.</div>',
+      '#weight' => -10,
+    ];
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('estimate')->error('Estimate contact card error on estimate @id: @msg', [
+      '@id' => $entity->id(),
+      '@msg' => $e->getMessage(),
+    ]);
+    $build['estimate_contact_card'] = ['#markup' => ''];
+  }
+}
+
+/**
+ * Build owner card HTML (same pattern as estimate_request_cards).
+ */
+function _estimate_build_owner_card($owner, $request, $etm): string {
+  // Load customer_profile.
+  $profiles = $etm->getStorage('profile')
+    ->loadByProperties([
+      'uid' => $owner->id(),
+      'type' => 'customer_profile',
+      'status' => 1,
+    ]);
+  $profile = $profiles ? reset($profiles) : NULL;
+
+  // Name.
+  $name = '';
+  if ($profile) {
+    $first = $profile->hasField('field_first_name') ? (string) $profile->get('field_first_name')->value : '';
+    $last  = $profile->hasField('field_last_name')  ? (string) $profile->get('field_last_name')->value  : '';
+    $name  = trim($first . ' ' . $last);
+  }
+  if (empty($name)) {
+    $name = $owner->getDisplayName();
+  }
+
+  // Phone from phone_number.profile_phone_numbers via field_user.
+  $phone = '';
+  $phone_entities = $etm->getStorage('phone_number')
+    ->loadByProperties([
+      'type' => 'profile_phone_numbers',
+      'field_user' => $owner->id(),
+    ]);
+  foreach ($phone_entities as $pe) {
+    if ($pe->hasField('field_primary_phone') && (bool) $pe->get('field_primary_phone')->value) {
+      $phone = (string) $pe->get('field_phone_number')->value;
+      break;
+    }
+  }
+  if (empty($phone) && !empty($phone_entities)) {
+    $first_phone = reset($phone_entities);
+    $phone = (string) $first_phone->get('field_phone_number')->value;
+  }
+
+  // Mailing address from address.profile_mailing_addresses via field_user.
+  $addr_line = $city = $state = $zip = '';
+  $addresses = $etm->getStorage('address')
+    ->loadByProperties([
+      'type' => 'profile_mailing_addresses',
+      'field_user' => $owner->id(),
+    ]);
+  $addr_entity = NULL;
+  foreach ($addresses as $ae) {
+    if ($ae->hasField('field_primary_address') && (bool) $ae->get('field_primary_address')->value) {
+      $addr_entity = $ae;
+      break;
+    }
+  }
+  if (!$addr_entity && !empty($addresses)) {
+    $addr_entity = reset($addresses);
+  }
+  if ($addr_entity) {
+    $addr_line = (string) $addr_entity->get('field_address')->value;
+    $city      = (string) $addr_entity->get('field_city')->value;
+    $state     = (string) $addr_entity->get('field_state')->value;
+    $zip       = (string) $addr_entity->get('field_zipcode')->value;
+  }
+
+  // Fallback address from field_property on the request.
+  if (empty($addr_line) && $request->hasField('field_property') && !$request->get('field_property')->isEmpty()) {
+    $property = $request->get('field_property')->entity;
+    if ($property) {
+      $addr_line = (string) $property->get('field_street_address')->value;
+      if (!$property->get('field_zipcode_reference')->isEmpty()) {
+        $zip_ref = $property->get('field_zipcode_reference')->entity;
+        if ($zip_ref) {
+          $zip = (string) $zip_ref->get('field_zipcode')->value;
+          if ($zip_ref->hasField('field_city') && !$zip_ref->get('field_city')->isEmpty()) {
+            $city_entity = $zip_ref->get('field_city')->entity;
+            if ($city_entity && $city_entity->hasField('field_city_name')) {
+              $city = (string) $city_entity->get('field_city_name')->value;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Email.
+  $email = $owner->getEmail();
+
+  // Build HTML.
+  $html = '<div class="er-card er-card--owner">';
+  $html .= '<h3 class="er-card__role">Owner</h3>';
+  if ($name) {
+    $url = $owner->toUrl()->toString();
+    $html .= '<div class="er-card__name"><a href="' . htmlspecialchars($url) . '">' . htmlspecialchars($name) . '</a></div>';
+  }
+  if ($addr_line) {
+    $html .= '<div class="er-card__address">' . htmlspecialchars($addr_line);
+    if ($city || $state || $zip) {
+      $html .= '<br>' . htmlspecialchars(trim($city . ', ' . $state . ' ' . $zip));
+    }
+    $html .= '</div>';
+  }
+  if ($phone) {
+    $html .= '<div class="er-card__phone">Primary Phone: ' . htmlspecialchars($phone) . '</div>';
+  }
+  if ($email) {
+    $html .= '<div class="er-card__email">Email: ' . htmlspecialchars($email) . '</div>';
+  }
+  $html .= '</div>';
+
+  return $html;
+}
+
+/**
+ * Build contact card HTML (same pattern as estimate_request_cards).
+ */
+function _estimate_build_contact_card($contact): string {
+  $first = $contact->hasField('field_first_name') ? (string) $contact->get('field_first_name')->value : '';
+  $last  = $contact->hasField('field_last_name')  ? (string) $contact->get('field_last_name')->value  : '';
+  $name  = trim($first . ' ' . $last);
+
+  $email = $contact->hasField('field_email') ? (string) $contact->get('field_email')->value : '';
+
+  // Phone via forward reference: contacts.contact.field_phone_number → phone_number.contacts.
+  $phone = '';
+  if ($contact->hasField('field_phone_number') && !$contact->get('field_phone_number')->isEmpty()) {
+    $first_phone = $contact->get('field_phone_number')->entity;
+    if ($first_phone) {
+      $phone = (string) $first_phone->get('field_phone_number')->value;
+    }
+  }
+
+  // Address via forward reference: contacts.contact.field_address → address.contact_address.
+  $addr_line = $city = $state = $zip = '';
+  if ($contact->hasField('field_address') && !$contact->get('field_address')->isEmpty()) {
+    $addr_entity = $contact->get('field_address')->entity;
+    if ($addr_entity) {
+      $addr_line = (string) $addr_entity->get('field_address')->value;
+      $city      = (string) $addr_entity->get('field_city')->value;
+      $state     = (string) $addr_entity->get('field_state')->value;
+      $zip       = (string) $addr_entity->get('field_zipcode')->value;
+    }
+  }
+
+  $html = '<div class="er-card er-card--contact">';
+  $html .= '<h3 class="er-card__role">Contact</h3>';
+  if ($name) {
+    $html .= '<div class="er-card__name">' . htmlspecialchars($name) . '</div>';
+  }
+  if ($addr_line) {
+    $html .= '<div class="er-card__address">' . htmlspecialchars($addr_line);
+    if ($city || $state || $zip) {
+      $html .= '<br>' . htmlspecialchars(trim($city . ', ' . $state . ' ' . $zip));
+    }
+    $html .= '</div>';
+  }
+  if ($phone) {
+    $html .= '<div class="er-card__phone">Phone: ' . htmlspecialchars($phone) . '</div>';
+  }
+  if ($email) {
+    $html .= '<div class="er-card__email">Email: ' . htmlspecialchars($email) . '</div>';
+  }
+  $html .= '</div>';
+
+  return $html;
+}
+
+/**
+ * Build requestor info card from estimate_request fields.
+ */
+function _estimate_build_requestor_card($request): string {
+  $name    = $request->hasField('field_requestor_name')    ? trim((string) ($request->get('field_requestor_name')->value ?? ''))    : '';
+  $phone   = $request->hasField('field_requestor_phone')   ? trim((string) ($request->get('field_requestor_phone')->value ?? ''))   : '';
+  $email   = $request->hasField('field_requestor_email')   ? trim((string) ($request->get('field_requestor_email')->value ?? ''))   : '';
+  $address = $request->hasField('field_requestor_address') ? trim((string) ($request->get('field_requestor_address')->value ?? '')) : '';
+
+  if (empty($name) && empty($phone) && empty($email) && empty($address)) {
+    return '';
+  }
+
+  $html = '<div class="er-card er-card--requestor">';
+  $html .= '<h3 class="er-card__role">Requestor</h3>';
+  if ($name) {
+    $html .= '<div class="er-card__name">' . htmlspecialchars($name) . '</div>';
+  }
+  if ($address) {
+    $html .= '<div class="er-card__address">' . htmlspecialchars($address) . '</div>';
+  }
+  if ($phone) {
+    $html .= '<div class="er-card__phone">Phone: ' . htmlspecialchars($phone) . '</div>';
+  }
+  if ($email) {
+    $html .= '<div class="er-card__email">Email: ' . htmlspecialchars($email) . '</div>';
+  }
+  $html .= '</div>';
+
+  return $html;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Internal helpers (do not call outside this module)                         */

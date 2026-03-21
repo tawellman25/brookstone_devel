@@ -154,18 +154,23 @@ class AdminCalendarEventsController extends ControllerBase {
     $query->fields('s', ['id', 'title']);
 
     // ── Date range ───────────────────────────────────────────────────────
+    // field_date is smartdate — values stored as Unix timestamps (UTC).
+    // All-day detection: duration >= 1365 AND <= 1440 minutes.
+    // FullCalendar handles UTC→MT conversion via timeZone: 'America/Denver'.
     $query->join(
-      'scheduling__field_scheduled_date_and_time',
+      'scheduling__field_date',
       'sdt',
       's.id = sdt.entity_id AND sdt.deleted = 0'
     );
-    $query->fields('sdt', [
-      'field_scheduled_date_and_time_value',
-      'field_scheduled_date_and_time_end_value',
-      'field_scheduled_date_and_time_all_day',
-    ]);
-    $query->condition('sdt.field_scheduled_date_and_time_value', $end, '<');
-    $query->condition('sdt.field_scheduled_date_and_time_end_value', $start, '>=');
+    $query->addExpression("FROM_UNIXTIME(sdt.field_date_value, :fmt_start)", 'date_start', [':fmt_start' => '%Y-%m-%dT%H:%i:%s']);
+    $query->addExpression("FROM_UNIXTIME(sdt.field_date_end_value, :fmt_end)", 'date_end', [':fmt_end' => '%Y-%m-%dT%H:%i:%s']);
+    $query->addField('sdt', 'field_date_duration', 'date_duration');
+
+    // Convert FullCalendar ISO range params to Unix timestamps for comparison.
+    $start_ts = (new \DateTime($start, new \DateTimeZone('UTC')))->getTimestamp();
+    $end_ts   = (new \DateTime($end, new \DateTimeZone('UTC')))->getTimestamp();
+    $query->condition('sdt.field_date_value', $end_ts, '<');
+    $query->condition('sdt.field_date_end_value', $start_ts, '>=');
 
     // ── Work order reference ─────────────────────────────────────────────
     $query->join(
@@ -312,7 +317,7 @@ class AdminCalendarEventsController extends ControllerBase {
       $query->condition('sfirm.field_scheduled_firm_value', 1);
     }
 
-    $query->orderBy('sdt.field_scheduled_date_and_time_value', 'ASC');
+    $query->orderBy('sdt.field_date_value', 'ASC');
     $query->orderBy('sord.field_scheduled_oder_value', 'ASC');
 
     $results = $query->execute()->fetchAll();
@@ -391,22 +396,21 @@ class AdminCalendarEventsController extends ControllerBase {
 
       // For all-day events, omit end or set equal to start to prevent
       // FullCalendar's exclusive end date from spanning an extra day.
-      // Detect UTC all-day pattern: times stored as UTC where midnight MT
-      // = 06:00:00 UTC (MDT) or 07:00:00 UTC (MST).
-      // Do not modify stored values — normalize for FullCalendar output only.
-      $is_all_day = (bool) $row->field_scheduled_date_and_time_all_day;
-      if (!$is_all_day) {
-        $start_time = substr($row->field_scheduled_date_and_time_value, 11, 8);
-        $end_time   = substr($row->field_scheduled_date_and_time_end_value, 11, 8);
-        if (in_array($start_time, ['06:00:00', '07:00:00']) &&
-            in_array($end_time, ['05:59:59', '06:59:59'])) {
-          $is_all_day = TRUE;
-        }
+      // All-day detection: smartdate stores duration in minutes.
+      // Duration 1365-1440 = all-day patterns (24h, 23h59m, 23h45m, UTC offsets).
+      $duration = (int) ($row->date_duration ?? 0);
+      $is_all_day = ($duration >= 1365 && $duration <= 1440);
+
+      // For all-day events send date only (no time) — FullCalendar renders
+      // these as all-day blocks. For timed events send full ISO datetime.
+      if ($is_all_day) {
+        $fc_start = substr($row->date_start, 0, 10);
+        $fc_end   = substr($row->date_start, 0, 10);
       }
-      $fc_start = $row->field_scheduled_date_and_time_value;
-      $fc_end   = $is_all_day
-        ? $row->field_scheduled_date_and_time_value
-        : $row->field_scheduled_date_and_time_end_value;
+      else {
+        $fc_start = $row->date_start;
+        $fc_end   = $row->date_end;
+      }
 
       $events[] = [
         'id'     => $row->id,

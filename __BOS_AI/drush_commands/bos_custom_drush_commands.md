@@ -119,3 +119,51 @@ ddev drush bos:checkups:generate --force   # Force dispatch even if already run 
 | `--force` | Override the daily dispatch guard |
 
 The dispatcher enqueues items into the `contract_residential_checkup_generator` queue, which is processed by Drupal's queue worker system (cron or `drush queue:run`).
+# wo-shared:backfill-spraying-info
+
+**Alias:** `wo-bsi`
+**Module:** `wo_shared`
+**Source:** `web/modules/custom/wo_shared/src/Commands/WoSharedCommands.php`
+
+Backfills missing `property_spraying_info` records for all spray-related Work Orders.
+
+**Context:** Spray route views join `work_order` to `property_spraying_info` via a
+relationship filter. If a property has a spray WO but no `property_spraying_info`
+record for that bundle, the WO is excluded from the view. This command creates
+the missing bare records (type + field_property only).
+
+**Safety rules:**
+- Never overwrites existing records
+- Deduplicates: processes each property+bundle combination once
+- No status filter — checks ALL WOs regardless of status
+- Skips `deer_prevention` (no `property_spraying_info` bundle mapping)
+
+```bash
+drush wo-shared:backfill-spraying-info
+# or
+drush wo-bsi
+```
+
+No options. Reports created count per bundle and total.
+
+**Bundle mapping:**
+
+| WO Bundle | property_spraying_info bundle |
+|---|---|
+| pre_emergent | pre_emergent |
+| weed_spraying | weed_spraying |
+| aspen_twig_gall | aspen_twig_gall |
+| cooley_spruce_gall | cooley_spruce |
+| deciduous_bore | deciduous_bore |
+| dormant_oil | dormant_oil |
+| grub_prevention | grub_prevention |
+| pinion_pine_ips_beetle | ips_beetle |
+| trunk_bore | trunk_bore |
+| deer_prevention | (skipped) |
+
+**Run after:** Each deploy to live at start of season to catch any properties
+that were added between deploys.
+
+Expected counts (March 2026):
+- Local: 45 records created
+- Live: 37 records created

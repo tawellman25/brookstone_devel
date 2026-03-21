@@ -1,0 +1,177 @@
+/**
+ * BOS Scheduling Calendar styles.
+ */
+
+/* ── Page wrapper ────────────────────────────────────────────────── */
+.bos-calendar-wrap {
+  padding: 1rem 0;
+}
+
+/* ── Filter bar ──────────────────────────────────────────────────── */
+.bos-calendar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.bos-calendar-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bos-calendar-filter-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.bos-calendar-filter-checkbox {
+  flex-direction: row;
+  align-items: center;
+  padding-bottom: 0.2rem;
+}
+
+.bos-calendar-filter-checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+}
+
+.bos-calendar-filter {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 0.9rem;
+  min-width: 180px;
+}
+
+/* ── Legend ──────────────────────────────────────────────────────── */
+.bos-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  min-height: 1.5rem;
+}
+
+.bos-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: #333;
+}
+
+.bos-legend-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Calendar container ──────────────────────────────────────────── */
+#bos-scheduling-calendar {
+  background: #fff;
+}
+
+/* Tentative events already handled via JS opacity/border,
+   but add a subtle pattern as a secondary cue. */
+.fc-event[style*="opacity: 0.65"] {
+  font-style: italic;
+}
+
+/* Make event titles readable. */
+.fc-event-title {
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Week view time grid. */
+.fc-timegrid-event .fc-event-title {
+  font-size: 0.75rem;
+}
+
+/* ── Tooltip ─────────────────────────────────────────────────────── */
+.bos-calendar-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  max-width: 280px;
+}
+
+.bos-calendar-tooltip-inner {
+  background: #1a1a1a;
+  color: #f0f0f0;
+  border-radius: 5px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+
+.bos-calendar-tooltip-inner > div {
+  margin: 0;
+}
+
+.bos-calendar-tooltip-inner > div:empty {
+  display: none;
+}
+
+.bos-tooltip-property {
+  font-weight: 700;
+  font-size: 0.88rem;
+  margin-bottom: 0.2rem !important;
+}
+
+.bos-tooltip-service {
+  color: #aad4ff;
+}
+
+.bos-tooltip-department {
+  color: #ccc;
+  font-size: 0.75rem;
+}
+
+.bos-tooltip-teammate {
+  margin-top: 0.35rem !important;
+}
+
+.bos-tooltip-status {
+  font-size: 0.78rem;
+  color: #bbb;
+}
+
+.bos-tooltip-note {
+  margin-top: 0.25rem !important;
+  font-style: italic;
+  color: #ddd;
+  font-size: 0.78rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .bos-calendar-filters {
+    flex-direction: column;
+  }
+  .bos-calendar-filter {
+    min-width: 100%;
+  }
+}

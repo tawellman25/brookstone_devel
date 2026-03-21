@@ -1,0 +1,78 @@
+{#
+/**
+ * @file
+ * Template for the BOS scheduling calendar page.
+ *
+ * Variables:
+ *   departments: associative array of department ID => title.
+ *   teammates: associative array of user ID => display name.
+ *   statuses: associative array of status TID => label.
+ */
+#}
+<div class="bos-calendar-wrap">
+
+  {# ── Filter bar ─────────────────────────────────────────────────── #}
+  <div class="bos-calendar-filters">
+
+    <div class="bos-calendar-filter-group">
+      <label for="bos-filter-department">Department</label>
+      <select id="bos-filter-department" class="bos-calendar-filter">
+        {% for id, label in departments %}
+          <option value="{{ id }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="bos-calendar-filter-group">
+      <label for="bos-filter-teammate">Teammate</label>
+      <select id="bos-filter-teammate" class="bos-calendar-filter">
+        {% for id, label in teammates %}
+          <option value="{{ id }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="bos-calendar-filter-group">
+      <label for="bos-filter-status">Status</label>
+      <select id="bos-filter-status" class="bos-calendar-filter">
+        {% for tid, label in statuses %}
+          <option value="{{ tid }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="bos-calendar-filter-group bos-calendar-filter-checkbox">
+      <label>
+        <input type="checkbox" id="bos-filter-firm-only">
+        Firm only
+      </label>
+    </div>
+
+    <div class="bos-calendar-filter-group">
+      <button id="bos-calendar-apply" class="button button--primary">Apply</button>
+      <button id="bos-calendar-reset" class="button">Reset</button>
+    </div>
+
+  </div>
+
+  {# ── Department legend ───────────────────────────────────────────── #}
+  <div class="bos-calendar-legend" id="bos-calendar-legend"></div>
+
+  {# ── Calendar mount point ────────────────────────────────────────── #}
+  <div id="bos-scheduling-calendar"></div>
+
+</div>
+
+{# ── Event tooltip ───────────────────────────────────────────────── #}
+<div id="bos-calendar-tooltip" class="bos-calendar-tooltip" style="display:none;">
+  <div class="bos-calendar-tooltip-inner">
+    <div class="bos-tooltip-property"></div>
+    <div class="bos-tooltip-service"></div>
+    <div class="bos-tooltip-order"></div>
+    <div class="bos-tooltip-department"></div>
+    <div class="bos-tooltip-teammate"></div>
+    <div class="bos-tooltip-status"></div>
+    <div class="bos-tooltip-firm"></div>
+    <div class="bos-tooltip-note"></div>
+  </div>
+</div>

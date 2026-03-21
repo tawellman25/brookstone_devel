@@ -1,1 +1,0 @@
-console.log('Test: fix-all-day.js is running RIGHT NOW');

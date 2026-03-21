@@ -1,7 +1,21 @@
-fix_all_day:
+fullcalendar:
   js:
-    js/fix-all-day.js: {}
+    https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js:
+      type: external
+      minified: true
+  css:
+    theme:
+      https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css:
+        type: external
+        minified: true
+
+admin_calendar:
+  js:
+    js/admin_calendar.js: {}
+  css:
+    theme:
+      css/admin_calendar.css: {}
   dependencies:
+    - admin_calendar/fullcalendar
     - core/drupal
-    - core/jquery
-    - fullcalendar_view/fullcalendar
+    - core/drupalSettings

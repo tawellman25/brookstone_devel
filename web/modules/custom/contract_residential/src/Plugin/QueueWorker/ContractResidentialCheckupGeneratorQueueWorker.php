@@ -573,6 +573,7 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
   private function createSchedulingRecord(int $work_order_id, DrupalDateTime $due_date) : void {
     $sched_storage = $this->etm->getStorage('scheduling');
 
+    $date_str = $due_date->format('Y-m-d');
     $sched = $sched_storage->create([
       'type' => 'work_order',
       'title' => 'Scheduled',
@@ -583,6 +584,12 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
         'value' => $due_date->getTimestamp(),
         'end_value' => $due_date->getTimestamp(),
         'duration' => 1439,
+        'all_day' => TRUE,
+      ],
+      'field_scheduled_date_and_time' => [
+        'value' => $date_str,
+        'end_value' => $date_str,
+        'all_day' => TRUE,
       ],
       'field_scheduled' => 1,
       'field_scheduled_firm' => 0,

@@ -12,9 +12,14 @@
  */
 
 /**
- * Implements hook_install().
+ * Implements hook_modules_installed().
  */
-function business_calendar_install() {
+function business_calendar_modules_installed($modules) {
+  if (!in_array('business_calendar', $modules)) {
+    return;
+  }
+  // Give ECK time to register the entity type before creating the bundle.
+  \Drupal::entityTypeManager()->clearCachedDefinitions();
   $storage = \Drupal::entityTypeManager()->getStorage('eck_entity_bundle');
   $existing = $storage->load('business_calendar.event');
   if (!$existing) {

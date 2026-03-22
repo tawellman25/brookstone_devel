@@ -277,6 +277,14 @@
       buildBusinessLegend();
 
       // ── Filter controls ───────────────────────────────────────────
+      // Mobile filter toggle.
+      document.getElementById('bos-filters-toggle')?.addEventListener('click', function () {
+        const inner = document.getElementById('bos-filters-inner');
+        const icon  = document.getElementById('bos-filters-toggle-icon');
+        if (inner) inner.classList.toggle('open');
+        if (icon)  icon.textContent = inner?.classList.contains('open') ? '▲' : '▼';
+      });
+
       // Toggle completed overlay.
       document.getElementById('bos-filter-show-completed')?.addEventListener('change', function () {
         if (this.checked) {

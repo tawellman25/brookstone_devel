@@ -1,0 +1,18 @@
+business_calendar.events:
+  path: '/teammates/calendar/business-events'
+  defaults:
+    _controller: '\Drupal\business_calendar\Controller\BusinessCalendarEventsController::events'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant+teammates'
+  options:
+    _admin_route: FALSE
+
+business_calendar.payday_generate:
+  path: '/admin/business-calendar/generate-paydays'
+  defaults:
+    _controller: '\Drupal\business_calendar\Controller\BusinessCalendarPaydayController::generate'
+    _title: 'Generate Paydays'
+  requirements:
+    _role: 'administrator+administration+site_admin'
+  options:
+    _admin_route: TRUE

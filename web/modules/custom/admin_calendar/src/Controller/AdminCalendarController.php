@@ -23,16 +23,20 @@ class AdminCalendarController extends ControllerBase {
 
   public function page(): array {
     $build = [
-      '#theme' => 'admin_calendar_page',
-      '#departments' => $this->getDepartments(),
-      '#teammates'   => $this->getTeammates(),
-      '#statuses'    => $this->getStatusOptions(),
+      '#title' => 'Calendar',
+      'calendar' => [
+        '#theme' => 'admin_calendar_page',
+        '#departments' => $this->getDepartments(),
+        '#teammates'   => $this->getTeammates(),
+        '#statuses'    => $this->getStatusOptions(),
+      ],
       '#attached' => [
         'library' => ['admin_calendar/admin_calendar'],
         'drupalSettings' => [
           'adminCalendar' => [
-            'eventsUrl'   => '/admin/scheduling/calendar/events',
-            'defaultView' => 'dayGridMonth',
+            'eventsUrl'     => '/teammates/calendar/events',
+            'defaultView'   => 'dayGridMonth',
+            'canReschedule' => $this->canReschedule(),
           ],
         ],
       ],
@@ -74,6 +78,21 @@ class AdminCalendarController extends ControllerBase {
       }
     }
     return $teammates;
+  }
+
+  /**
+   * Returns TRUE if the current user can reschedule WOs via drag-drop.
+   * Teammates role cannot reschedule — supervisors and office can.
+   */
+  protected function canReschedule(): bool {
+    $account = \Drupal::currentUser();
+    $allowed_roles = ['administrator', 'administration', 'supervisor', 'site_admin', 'site_assistant'];
+    foreach ($allowed_roles as $role) {
+      if ($account->hasRole($role)) {
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 
   protected function getStatusOptions(): array {

@@ -1,0 +1,340 @@
+/**
+ * BOS Supervisor Dispatch Board styles.
+ */
+
+/* ── Tabs ──────────────────────────────────────────────────────── */
+.bos-dispatch-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #ddd;
+  margin-bottom: 0;
+}
+.bos-dispatch-tab {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #555;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+.bos-dispatch-tab:hover {
+  color: #1a5276;
+}
+.bos-dispatch-tab--active {
+  color: #1a5276;
+  border-bottom-color: #1a5276;
+}
+
+/* ── Page wrapper ──────────────────────────────────────────────── */
+.bos-dispatch-wrap {
+  padding: 1rem 0 3rem;
+}
+
+/* ── Toolbar ───────────────────────────────────────────────────── */
+.bos-dispatch-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.bos-dispatch-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bos-dispatch-nav-btn {
+  padding: 5px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.bos-dispatch-nav-btn:hover { background: #f0f0f0; }
+.bos-dispatch-date-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  min-width: 200px;
+  text-align: center;
+}
+.bos-dispatch-today-btn {
+  padding: 5px 10px;
+  border: 1px solid #1a5276;
+  border-radius: 4px;
+  background: #fff;
+  color: #1a5276;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.bos-dispatch-dept-filters {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.bos-dispatch-dept-btn {
+  padding: 4px 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  background: #fff;
+  color: #555;
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+.bos-dispatch-dept-btn:hover { background: #f0f0f0; }
+.bos-dispatch-dept-btn.active {
+  background: #1a5276;
+  color: #fff;
+  border-color: #1a5276;
+}
+.bos-dispatch-refresh {
+  margin-left: auto;
+}
+.bos-dispatch-refresh-label {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+/* ── Stats ─────────────────────────────────────────────────────── */
+.bos-dispatch-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+.bos-dispatch-stat {
+  background: #f5f5f5;
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+.bos-dispatch-stat-label {
+  font-size: 0.75rem;
+  color: #777;
+  margin-bottom: 4px;
+}
+.bos-dispatch-stat-val {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.bos-dispatch-stat--orange { color: #b36b00; }
+.bos-dispatch-stat--green  { color: #1a6e3a; }
+.bos-dispatch-stat--red    { color: #a02020; }
+
+/* ── Legend ────────────────────────────────────────────────────── */
+.bos-dispatch-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.bos-dispatch-leg-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: #555;
+}
+.bos-dispatch-leg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(0,0,0,0.15);
+}
+.bos-dispatch-leg--scheduled  { background: #dceef8; }
+.bos-dispatch-leg--assigned   { background: #d5f0e0; }
+.bos-dispatch-leg--inprogress { background: #fde8c8; }
+.bos-dispatch-leg--needsparts { background: #fde8d5; }
+.bos-dispatch-leg--needsaccess{ background: #fad8d8; }
+.bos-dispatch-leg--complete   { background: #e8e8e8; }
+
+/* ── Board ─────────────────────────────────────────────────────── */
+.bos-dispatch-board {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.bos-dispatch-board-header {
+  display: flex;
+  background: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+}
+.bos-dispatch-col-name {
+  min-width: 170px;
+  width: 170px;
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #555;
+  border-right: 1px solid #ddd;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.bos-dispatch-col-jobs {
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* ── Board rows ────────────────────────────────────────────────── */
+.bos-dispatch-row {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+}
+.bos-dispatch-row:last-child { border-bottom: none; }
+
+.bos-dispatch-name-cell {
+  min-width: 170px;
+  width: 170px;
+  padding: 10px 12px;
+  border-right: 1px solid #ddd;
+  flex-shrink: 0;
+  background: #fff;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+.bos-dispatch-name-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.bos-dispatch-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.3;
+}
+.bos-dispatch-dept {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* ── Jobs scroll ───────────────────────────────────────────────── */
+.bos-dispatch-jobs-scroll {
+  overflow-x: auto;
+  padding: 8px 10px;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  background: #fff;
+  flex: 1;
+  min-width: 0;
+}
+.bos-dispatch-jobs-scroll::-webkit-scrollbar { height: 3px; }
+.bos-dispatch-jobs-scroll::-webkit-scrollbar-track { background: #f0f0f0; }
+.bos-dispatch-jobs-scroll::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+
+/* ── Job cards ─────────────────────────────────────────────────── */
+.bos-dispatch-job {
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 0.75rem;
+  border: 1px solid #ddd;
+  min-width: 95px;
+  max-width: 95px;
+  flex-shrink: 0;
+  text-decoration: none;
+  display: block;
+  transition: box-shadow 0.1s;
+}
+.bos-dispatch-job:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+
+.bos-dispatch-job--scheduled  { background: #f0f7fd; border-color: #90b8d8; }
+.bos-dispatch-job--assigned   { background: #f0faf4; border-color: #80c8a0; }
+.bos-dispatch-job--inprogress { background: #fff8f0; border-color: #e8a050; }
+.bos-dispatch-job--needsparts { background: #fff4ee; border-color: #e09060; }
+.bos-dispatch-job--needsaccess{ background: #fdf0f0; border-color: #e09090; }
+.bos-dispatch-job--complete   { background: #f5f5f5; border-color: #ccc; opacity: 0.75; }
+.bos-dispatch-job--unassigned { background: #fff8f0; border-color: #e8a050; }
+
+.bos-dispatch-job-top {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 3px;
+}
+.bos-dispatch-job-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(0,0,0,0.08);
+  color: #333;
+  letter-spacing: 0.02em;
+}
+.bos-dispatch-job-order {
+  font-size: 0.68rem;
+  color: #888;
+}
+.bos-dispatch-job-tent {
+  font-size: 0.68rem;
+  color: #bbb;
+  margin-left: auto;
+}
+.bos-dispatch-job-prop {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 83px;
+}
+.bos-dispatch-job-status {
+  font-size: 0.68rem;
+  color: #888;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Unassigned ────────────────────────────────────────────────── */
+.bos-dispatch-unassigned {
+  margin-top: 1rem;
+  border: 2px solid #e8a050;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.bos-dispatch-unassigned-header {
+  padding: 8px 14px;
+  background: #fff8f0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #7a3f00;
+  border-bottom: 1px solid #f0c080;
+}
+.bos-dispatch-unassigned-jobs {
+  padding: 10px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: #fff;
+}
+
+/* ── Empty ─────────────────────────────────────────────────────── */
+.bos-dispatch-empty {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+  font-size: 1rem;
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .bos-dispatch-stats { grid-template-columns: repeat(2, 1fr); }
+  .bos-dispatch-col-name,
+  .bos-dispatch-name-cell { min-width: 130px; width: 130px; }
+}

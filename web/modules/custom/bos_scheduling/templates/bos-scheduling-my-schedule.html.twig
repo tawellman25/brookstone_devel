@@ -1,0 +1,118 @@
+{#
+/**
+ * @file
+ * Crew daily schedule page.
+ *
+ * Variables:
+ *   date: Y-m-d string of the current schedule date.
+ *   date_label: Human-readable date label.
+ *   prev_date: Y-m-d of previous day with WOs (or NULL).
+ *   next_date: Y-m-d of next day with WOs (or NULL).
+ *   items: array of schedule items.
+ *   empty: TRUE if no WOs scheduled for this day.
+ */
+#}
+<div class="my-schedule-wrap">
+
+  {# ── Date navigation ─────────────────────────────────────────── #}
+  <div class="my-schedule-nav">
+    {% if prev_date %}
+      <a href="/teammates/calendar/my-schedule?date={{ prev_date }}" class="my-schedule-nav-btn my-schedule-nav-prev">
+        ‹ Prev
+      </a>
+    {% else %}
+      <span class="my-schedule-nav-btn my-schedule-nav-disabled">‹ Prev</span>
+    {% endif %}
+
+    <h2 class="my-schedule-date-label">{{ date_label }}</h2>
+
+    {% if next_date %}
+      <a href="/teammates/calendar/my-schedule?date={{ next_date }}" class="my-schedule-nav-btn my-schedule-nav-next">
+        Next ›
+      </a>
+    {% else %}
+      <span class="my-schedule-nav-btn my-schedule-nav-disabled">Next ›</span>
+    {% endif %}
+  </div>
+
+  <a href="/teammates/calendar/my-schedule" class="my-schedule-today-link">← Today</a>
+
+  {# ── Empty state ─────────────────────────────────────────────── #}
+  {% if empty %}
+    <div class="my-schedule-empty">
+      <p>You don't have any Work Orders scheduled for this day. Please check with your supervisor to find out what we are working on.</p>
+      {% if next_date %}
+        <a href="/teammates/calendar/my-schedule?date={{ next_date }}" class="button">
+          Next scheduled day →
+        </a>
+      {% endif %}
+    </div>
+
+  {% else %}
+
+    {# ── WO cards ────────────────────────────────────────────────── #}
+    <div class="my-schedule-list">
+      {% for item in items %}
+        <a href="{{ item.wo_url }}" class="my-schedule-card my-schedule-status-{{ item.status_tid }}">
+
+          {# ── Card header ─── #}
+          <div class="my-schedule-card-header">
+            <span class="my-schedule-order">#{{ item.schedule_order }}</span>
+            <span class="my-schedule-service">{{ item.service_code }}</span>
+            <span class="my-schedule-status">{{ item.status_label }}</span>
+            {% if not item.is_firm %}
+              <span class="my-schedule-tentative">~ Tentative</span>
+            {% endif %}
+          </div>
+
+          {# ── Property ─── #}
+          <div class="my-schedule-property">
+            {% if item.call_ahead %}
+              <span class="my-schedule-call-ahead">⚠ CALL AHEAD</span>
+            {% endif %}
+            <strong class="my-schedule-nickname">{{ item.property_nickname }}</strong>
+            {% if item.full_address %}
+              <span class="my-schedule-address">{{ item.full_address }}</span>
+            {% endif %}
+          </div>
+
+          {# ── Gate code ─── #}
+          {% if item.gate_code %}
+            <div class="my-schedule-gate">
+              🔑 {{ item.gate_code }}
+            </div>
+          {% endif %}
+
+          {# ── Property WO note ─── #}
+          {% if item.wo_note %}
+            <div class="my-schedule-wonote">
+              📋 {{ item.wo_note }}
+            </div>
+          {% endif %}
+
+          {# ── Work to do ─── #}
+          {% if item.work_todo %}
+            <div class="my-schedule-worktodo">
+              {{ item.work_todo|striptags|nl2br }}
+            </div>
+          {% endif %}
+
+          {# ── Scheduling note ─── #}
+          {% if item.scheduling_note %}
+            <div class="my-schedule-schednote">
+              💬 {{ item.scheduling_note }}
+            </div>
+          {% endif %}
+
+        </a>
+      {% endfor %}
+    </div>
+
+  {% endif %}
+
+  {# ── Calendar link ───────────────────────────────────────────── #}
+  <div class="my-schedule-footer">
+    <a href="/teammates/calendar" class="my-schedule-calendar-link">← Back to Calendar</a>
+  </div>
+
+</div>

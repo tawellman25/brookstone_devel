@@ -1,0 +1,19 @@
+bos_scheduling.my_schedule:
+  path: '/teammates/calendar/my-schedule'
+  defaults:
+    _controller: '\Drupal\bos_scheduling\Controller\MyScheduleController::page'
+    _title: 'My Schedule'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant+teammates'
+  options:
+    _admin_route: TRUE
+
+bos_scheduling.dispatch:
+  path: '/teammates/calendar/dispatch'
+  defaults:
+    _controller: '\Drupal\bos_scheduling\Controller\DispatchController::page'
+    _title: 'Dispatch Board'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+  options:
+    _admin_route: TRUE

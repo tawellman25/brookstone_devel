@@ -18,6 +18,9 @@
   background: #f5f5f5;
   border: 1px solid #ddd;
   border-radius: 4px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .bos-calendar-filter-group {
@@ -59,6 +62,12 @@
   min-width: 180px;
 }
 
+.bos-calendar-filter-buttons {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* ── Legend ──────────────────────────────────────────────────────── */
 .bos-calendar-legend {
   display: flex;
@@ -89,6 +98,12 @@
   background: #fff;
 }
 
+/* Make month view day cells taller to show more events before
+   the "+N more" overflow link appears. */
+.fc-daygrid-day-frame {
+  min-height: 200px !important;
+}
+
 /* Tentative events already handled via JS opacity/border,
    but add a subtle pattern as a secondary cue. */
 .fc-event[style*="opacity: 0.65"] {
@@ -107,6 +122,17 @@
 /* Week view time grid. */
 .fc-timegrid-event .fc-event-title {
   font-size: 0.75rem;
+}
+
+/* Prevent short-duration events from being clipped in week view.
+   Ensures event tile is always tall enough to show title. */
+.fc-timegrid-event-harness {
+  min-height: 2.5rem !important;
+}
+
+.fc-timegrid-event {
+  min-height: 2.5rem !important;
+  overflow: visible !important;
 }
 
 /* ── Tooltip ─────────────────────────────────────────────────────── */
@@ -174,4 +200,12 @@
   .bos-calendar-filter {
     min-width: 100%;
   }
+}
+
+/* ── Business calendar background events ────────────────────────── */
+/* Remove default FullCalendar border/outline on background events. */
+.fc-bg-event {
+  border: none !important;
+  outline: none !important;
+  opacity: 0.4 !important;
 }

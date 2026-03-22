@@ -1,0 +1,43 @@
+<?php
+
+/**
+ * @file
+ * BOS Scheduling module.
+ *
+ * Provides teammate and supervisor scheduling views:
+ * - /teammates/calendar/my-schedule — crew daily schedule
+ * - /teammates/calendar/dispatch    — supervisor dispatch board
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function bos_scheduling_theme(): array {
+  return [
+    'bos_scheduling_my_schedule' => [
+      'variables' => [
+        'date'       => NULL,
+        'date_label' => NULL,
+        'prev_date'  => NULL,
+        'next_date'  => NULL,
+        'items'      => [],
+        'empty'      => FALSE,
+      ],
+      'template' => 'bos-scheduling-my-schedule',
+    ],
+    'bos_scheduling_dispatch' => [
+      'variables' => [
+        'date'        => NULL,
+        'date_label'  => NULL,
+        'prev_date'   => NULL,
+        'next_date'   => NULL,
+        'dept_filter' => '',
+        'departments' => [],
+        'teammates'   => [],
+        'unassigned'  => [],
+        'stats'       => [],
+      ],
+      'template' => 'bos-scheduling-dispatch',
+    ],
+  ];
+}

@@ -1,0 +1,135 @@
+{#
+/**
+ * @file
+ * Supervisor dispatch board.
+ *
+ * Variables:
+ *   date: Y-m-d string.
+ *   date_label: Human-readable date.
+ *   prev_date / next_date: adjacent dates.
+ *   dept_filter: current department filter ID.
+ *   departments: array of dept ID => title.
+ *   teammates: array of teammate rows with jobs.
+ *   unassigned: array of unassigned job cards.
+ *   stats: array with total, inprogress, complete, unassigned counts.
+ */
+#}
+
+{# ── Page tabs ───────────────────────────────────────────────── #}
+<div class="bos-dispatch-tabs">
+  <a href="/teammates/calendar/dispatch?date={{ date }}" class="bos-dispatch-tab bos-dispatch-tab--active">Dispatch</a>
+  <a href="/teammates/calendar" class="bos-dispatch-tab">Calendar</a>
+  <a href="/teammates/calendar/my-schedule?date={{ date }}" class="bos-dispatch-tab">My Schedule</a>
+</div>
+
+<div class="bos-dispatch-wrap">
+
+  {# ── Toolbar ─────────────────────────────────────────────────── #}
+  <div class="bos-dispatch-toolbar">
+    <div class="bos-dispatch-date-nav">
+      <a href="/teammates/calendar/dispatch?date={{ prev_date }}{% if dept_filter %}&dept={{ dept_filter }}{% endif %}" class="bos-dispatch-nav-btn">‹</a>
+      <span class="bos-dispatch-date-label">{{ date_label }}</span>
+      <a href="/teammates/calendar/dispatch?date={{ next_date }}{% if dept_filter %}&dept={{ dept_filter }}{% endif %}" class="bos-dispatch-nav-btn">›</a>
+      <a href="/teammates/calendar/dispatch" class="bos-dispatch-today-btn">Today</a>
+    </div>
+    <div class="bos-dispatch-dept-filters">
+      <a href="/teammates/calendar/dispatch?date={{ date }}" class="bos-dispatch-dept-btn{% if not dept_filter %} active{% endif %}">All</a>
+      {% for id, title in departments %}
+        <a href="/teammates/calendar/dispatch?date={{ date }}&dept={{ id }}" class="bos-dispatch-dept-btn{% if dept_filter == id ~ '' %} active{% endif %}">{{ title|replace({' Department': ''}) }}</a>
+      {% endfor %}
+    </div>
+    <div class="bos-dispatch-refresh" id="bos-dispatch-refresh-info">
+      <span class="bos-dispatch-refresh-label">Auto-refresh in <span id="bos-dispatch-countdown">5:00</span></span>
+    </div>
+  </div>
+
+  {# ── Stats ───────────────────────────────────────────────────── #}
+  <div class="bos-dispatch-stats">
+    <div class="bos-dispatch-stat">
+      <div class="bos-dispatch-stat-label">Total WOs</div>
+      <div class="bos-dispatch-stat-val">{{ stats.total }}</div>
+    </div>
+    <div class="bos-dispatch-stat">
+      <div class="bos-dispatch-stat-label">In Progress</div>
+      <div class="bos-dispatch-stat-val bos-dispatch-stat--orange">{{ stats.inprogress }}</div>
+    </div>
+    <div class="bos-dispatch-stat">
+      <div class="bos-dispatch-stat-label">Completed</div>
+      <div class="bos-dispatch-stat-val bos-dispatch-stat--green">{{ stats.complete }}</div>
+    </div>
+    <div class="bos-dispatch-stat">
+      <div class="bos-dispatch-stat-label">Unassigned</div>
+      <div class="bos-dispatch-stat-val{% if stats.unassigned > 0 %} bos-dispatch-stat--red{% endif %}">{{ stats.unassigned }}</div>
+    </div>
+  </div>
+
+  {# ── Legend ──────────────────────────────────────────────────── #}
+  <div class="bos-dispatch-legend">
+    <span class="bos-dispatch-leg-item"><span class="bos-dispatch-leg-dot bos-dispatch-leg--scheduled"></span>Scheduled</span>
+    <span class="bos-dispatch-leg-item"><span class="bos-dispatch-leg-dot bos-dispatch-leg--assigned"></span>Assigned</span>
+    <span class="bos-dispatch-leg-item"><span class="bos-dispatch-leg-dot bos-dispatch-leg--inprogress"></span>In Progress</span>
+    <span class="bos-dispatch-leg-item"><span class="bos-dispatch-leg-dot bos-dispatch-leg--needsparts"></span>Needs Parts</span>
+    <span class="bos-dispatch-leg-item"><span class="bos-dispatch-leg-dot bos-dispatch-leg--needsaccess"></span>Needs Access</span>
+    <span class="bos-dispatch-leg-item"><span class="bos-dispatch-leg-dot bos-dispatch-leg--complete"></span>Complete</span>
+  </div>
+
+  {# ── Board ───────────────────────────────────────────────────── #}
+  {% if teammates is empty and unassigned is empty %}
+    <div class="bos-dispatch-empty">No Work Orders scheduled for this day.</div>
+  {% else %}
+    <div class="bos-dispatch-board">
+      <div class="bos-dispatch-board-header">
+        <div class="bos-dispatch-col-name">Teammate</div>
+        <div class="bos-dispatch-col-jobs">Work orders — scroll right to see all →</div>
+      </div>
+
+      {% for teammate in teammates %}
+        <div class="bos-dispatch-row">
+          <div class="bos-dispatch-name-cell">
+            <span class="bos-dispatch-name-dot" style="background:{{ teammate.dept_color }}"></span>
+            <div>
+              <div class="bos-dispatch-name">{{ teammate.name }}</div>
+              <div class="bos-dispatch-dept">{{ teammate.jobs|length }} WOs · {{ teammate.department|replace({' Department': ''}) }}</div>
+            </div>
+          </div>
+          <div class="bos-dispatch-jobs-scroll">
+            {% for job in teammate.jobs %}
+              <a href="{{ job.wo_url }}" class="bos-dispatch-job bos-dispatch-job--{{ job.status_class }}" title="{{ job.property_nickname }} — {{ job.service_name }} ({{ job.status_label }})">
+                <div class="bos-dispatch-job-top">
+                  <span class="bos-dispatch-job-badge">{{ job.service_code }}</span>
+                  <span class="bos-dispatch-job-order">#{{ job.schedule_order }}</span>
+                  {% if not job.is_firm %}<span class="bos-dispatch-job-tent">~</span>{% endif %}
+                </div>
+                <div class="bos-dispatch-job-prop">{{ job.property_nickname }}</div>
+                <div class="bos-dispatch-job-status">{{ job.status_label }}</div>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+
+    </div>
+
+    {# ── Unassigned ──────────────────────────────────────────────── #}
+    {% if unassigned is not empty %}
+      <div class="bos-dispatch-unassigned">
+        <div class="bos-dispatch-unassigned-header">
+          ⚠ Unassigned WOs ({{ unassigned|length }}) — needs scheduling
+        </div>
+        <div class="bos-dispatch-unassigned-jobs">
+          {% for job in unassigned %}
+            <a href="{{ job.wo_url }}" class="bos-dispatch-job bos-dispatch-job--unassigned" title="{{ job.property_nickname }} — {{ job.service_name }}">
+              <div class="bos-dispatch-job-top">
+                <span class="bos-dispatch-job-badge">{{ job.service_code }}</span>
+              </div>
+              <div class="bos-dispatch-job-prop">{{ job.property_nickname }}</div>
+              <div class="bos-dispatch-job-status">Unassigned</div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+  {% endif %}
+
+</div>

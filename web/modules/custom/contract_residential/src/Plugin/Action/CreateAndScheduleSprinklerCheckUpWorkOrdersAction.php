@@ -216,6 +216,8 @@ class CreateAndScheduleSprinklerCheckUpWorkOrdersAction extends ViewsBulkOperati
       'field_scheduled' => TRUE,
       'field_scheduled_date_and_time' => [
         'value' => $scheduleTimestampFormated,
+        'end_value' => $scheduleTimestampFormated,
+        'all_day' => TRUE,
       ],
       'field_scheduling_note' => 'Automatically Scheduled by System',
       'field_scheduled_oder' => 10, // or use $work_orders_created if you want to keep it dynamic

@@ -1,24 +1,33 @@
 admin_calendar.calendar:
-  path: '/admin/scheduling/calendar'
+  path: '/teammates/calendar'
   defaults:
     _controller: '\Drupal\admin_calendar\Controller\AdminCalendarController::page'
-    _title: 'Scheduling Calendar'
+    _title: 'Calendar'
   requirements:
-    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant+teammates'
   options:
     _admin_route: TRUE
 
 admin_calendar.events:
-  path: '/admin/scheduling/calendar/events'
+  path: '/teammates/calendar/events'
   defaults:
     _controller: '\Drupal\admin_calendar\Controller\AdminCalendarEventsController::events'
   requirements:
-    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant+teammates'
   options:
-    _admin_route: TRUE
+    _admin_route: FALSE
+
+admin_calendar.completed:
+  path: '/teammates/calendar/completed'
+  defaults:
+    _controller: '\Drupal\admin_calendar\Controller\AdminCalendarCompletedController::completed'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant+teammates'
+  options:
+    _admin_route: FALSE
 
 admin_calendar.reschedule:
-  path: '/admin/scheduling/calendar/event/{scheduling_id}/reschedule'
+  path: '/teammates/calendar/event/{scheduling_id}/reschedule'
   defaults:
     _controller: '\Drupal\admin_calendar\Controller\AdminCalendarRescheduleController::reschedule'
   requirements:
@@ -26,4 +35,4 @@ admin_calendar.reschedule:
     scheduling_id: '\d+'
   methods: [POST]
   options:
-    _admin_route: TRUE
+    _admin_route: FALSE

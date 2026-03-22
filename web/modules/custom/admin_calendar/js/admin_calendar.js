@@ -35,7 +35,9 @@
         tooltip.querySelector('.bos-tooltip-service').textContent   = p.serviceName || '';
         tooltip.querySelector('.bos-tooltip-order').textContent     = p.orderCode ? 'Order: ' + p.orderCode : '';
         tooltip.querySelector('.bos-tooltip-department').textContent = p.departmentName || '';
-        tooltip.querySelector('.bos-tooltip-teammate').textContent  = p.teammateName ? 'Assigned: ' + p.teammateName : '';
+        tooltip.querySelector('.bos-tooltip-teammate').textContent  = p.completedLayer
+          ? (p.crewNames ? 'Crew: ' + p.crewNames : '')
+          : (p.teammateName ? 'Assigned: ' + p.teammateName : '');
         tooltip.querySelector('.bos-tooltip-status').textContent    = p.statusLabel || '';
         tooltip.querySelector('.bos-tooltip-firm').textContent      = p.isFirm ? '✓ Firm' : '~ Tentative';
         tooltip.querySelector('.bos-tooltip-note').textContent      = p.note || '';
@@ -67,6 +69,24 @@
 
       // ── Legend ───────────────────────────────────────────────────
       const legendSeen = {};
+
+      // Build static business event legend on init.
+      function buildBusinessLegend() {
+        const legendEl = document.getElementById('bos-calendar-legend');
+        if (!legendEl) return;
+        const types = [
+          { color: '#ffd5d5', label: 'Holiday' },
+          { color: '#d5e8ff', label: 'Closure' },
+          { color: '#d5ffd5', label: 'Payday' },
+          { color: '#fff3d5', label: 'Company Event' },
+        ];
+        types.forEach(function(t) {
+          const item = document.createElement('span');
+          item.className = 'bos-legend-item bos-legend-business';
+          item.innerHTML = '<span class="bos-legend-swatch" style="background:' + t.color + ';border:1px solid #ccc"></span>' + t.label;
+          legendEl.appendChild(item);
+        });
+      }
 
       function updateLegend(color, label) {
         if (legendSeen[color]) return;
@@ -111,6 +131,37 @@
         return eventsUrl + '?' + params.toString();
       }
 
+      // ── Completed WOs event source ────────────────────────────────
+      function buildCompletedUrl(fetchInfo) {
+        const params = new URLSearchParams({
+          start: fetchInfo.startStr,
+          end:   fetchInfo.endStr,
+        });
+        const dept     = document.getElementById('bos-filter-department')?.value || '';
+        const teammate = document.getElementById('bos-filter-teammate')?.value || '';
+        if (dept)     params.set('department', dept);
+        if (teammate) params.set('teammate', teammate);
+        return '/teammates/calendar/completed?' + params.toString();
+      }
+
+      const completedSource = {
+        events: function (fetchInfo, successCallback, failureCallback) {
+          fetch(buildCompletedUrl(fetchInfo))
+            .then(function (r) {
+              if (!r.ok) throw new Error('Completed events fetch failed');
+              return r.json();
+            })
+            .then(function (data) {
+              successCallback(data);
+            })
+            .catch(function (err) {
+              console.error('BOS Calendar completed:', err);
+              failureCallback(err);
+            });
+        },
+        id: 'completed',
+      };
+
       // ── Drag-drop save ────────────────────────────────────────────
       function saveEventDrop(eventId, newStart, allDay) {
         const saveUrl = eventsUrl.replace('/events', '/event/' + eventId + '/reschedule');
@@ -136,6 +187,19 @@
           });
       }
 
+      // ── Business calendar background events ───────────────────────
+      const businessEventsSource = {
+        url: '/teammates/calendar/business-events',
+        method: 'GET',
+        extraParams: function() {
+          return {};
+        },
+        failure: function() {
+          console.error('BOS Calendar: failed to load business events');
+        },
+        id: 'business_events',
+      };
+
       // ── FullCalendar init ─────────────────────────────────────────
       const calendar = new FullCalendar.Calendar(el, {
         initialView: 'dayGridMonth',
@@ -147,11 +211,12 @@
         height:        'auto',
         navLinks:      true,
         eventDisplay:  'block',
-        dayMaxEvents:  6,
-        firstDay:      1,
+        dayMaxEvents:  true,
+        firstDay:      0,
         timeZone:      'America/Denver',
-        editable:      true,
+        editable:      (settings.adminCalendar && settings.adminCalendar.canReschedule) ? true : false,
         droppable:     false,
+        eventSources: [businessEventsSource],
 
         events: function (fetchInfo, successCallback, failureCallback) {
           fetch(buildEventsUrl(fetchInfo))
@@ -209,11 +274,25 @@
       });
 
       calendar.render();
+      buildBusinessLegend();
 
       // ── Filter controls ───────────────────────────────────────────
+      // Toggle completed overlay.
+      document.getElementById('bos-filter-show-completed')?.addEventListener('change', function () {
+        if (this.checked) {
+          calendar.addEventSource(completedSource);
+        } else {
+          calendar.getEventSourceById('completed')?.remove();
+        }
+      });
+
       document.getElementById('bos-calendar-apply')?.addEventListener('click', function () {
         clearLegend();
         calendar.refetchEvents();
+        // Refetch completed source if active.
+        if (document.getElementById('bos-filter-show-completed')?.checked) {
+          calendar.getEventSourceById('completed')?.refetch();
+        }
       });
 
       document.getElementById('bos-calendar-reset')?.addEventListener('click', function () {
@@ -221,6 +300,8 @@
         document.getElementById('bos-filter-teammate').value   = '';
         document.getElementById('bos-filter-status').value     = '';
         document.getElementById('bos-filter-firm-only').checked = false;
+        document.getElementById('bos-filter-show-completed').checked = false;
+        calendar.getEventSourceById('completed')?.remove();
         clearLegend();
         calendar.refetchEvents();
       });

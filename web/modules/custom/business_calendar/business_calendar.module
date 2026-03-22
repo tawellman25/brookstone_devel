@@ -10,3 +10,19 @@
  * Integrates with admin_calendar to render background events on the
  * scheduling calendar and crew daily schedule view.
  */
+
+/**
+ * Implements hook_install().
+ */
+function business_calendar_install() {
+  $storage = \Drupal::entityTypeManager()->getStorage('eck_entity_bundle');
+  $existing = $storage->load('business_calendar.event');
+  if (!$existing) {
+    $bundle = $storage->create([
+      'type' => 'business_calendar',
+      'name' => 'event',
+      'description' => 'A business calendar event — holiday, closure, payday, or company event.',
+    ]);
+    $bundle->save();
+  }
+}

@@ -70,10 +70,9 @@ function wo_aerating_entity_presave(EntityInterface $entity) {
  * Implements hook_entity_insert() for work_order entities.
  */
 function wo_aerating_entity_insert(EntityInterface $entity) {
-    // Check if it's the right entity type and bundle.
     if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'aerating') {
-      // Perform actions specific to when a new work order of the 'fertilizing' bundle is created.
       _wo_aerating_handle_work_order($entity, 'insert');
+      _wo_aerating_sync_aeration_flag($entity);
     }
   }
   
@@ -81,10 +80,9 @@ function wo_aerating_entity_insert(EntityInterface $entity) {
  * Implements hook_entity_update() for work_order entities.
  */
 function wo_aerating_entity_update(EntityInterface $entity) {
-    // Check if it's the right entity type and bundle.
     if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'aerating') {
-        // Perform actions specific to when a work order of the 'fertilizing' bundle is updated.
         _wo_aerating_handle_work_order($entity, 'update');
+        _wo_aerating_sync_aeration_flag($entity);
     }
 }
 
@@ -269,4 +267,18 @@ function get_trucks_for_aerating($workOrderId) {
     $totalTrucks = $trucksSelected;
 
     return $totalTrucks;
+}
+
+/**
+ * Updates aeration flag on all linked sprinkler_start_up WOs when an
+ * aerating WO is created, updated, or its status changes.
+ */
+function _wo_aerating_sync_aeration_flag(\Drupal\Core\Entity\EntityInterface $entity): void {
+  if (!\Drupal::hasService('bos_scheduling.aeration_flag')) return;
+  $service     = \Drupal::service('bos_scheduling.aeration_flag');
+  $property_id = $service->getPropertyId((int) $entity->id());
+  if (!$property_id) return;
+  $status_tid = $service->getStatusTid((int) $entity->id());
+  $is_active  = in_array($status_tid, \Drupal\bos_scheduling\Service\AerationFlagService::ACTIVE_STATUSES);
+  $service->updateStartUpsForProperty($property_id, $is_active);
 }

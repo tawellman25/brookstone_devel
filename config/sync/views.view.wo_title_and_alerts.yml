@@ -7,6 +7,7 @@ dependencies:
     - field.storage.properties.field_cod_customer
     - field.storage.properties.field_must_use_client_app
     - field.storage.properties.field_nickname
+    - field.storage.work_order.field_aeration_flag_heads
     - field.storage.work_order.field_new_customer_name
     - field.storage.work_order.field_service
     - field.storage.work_order.field_status
@@ -339,6 +340,71 @@ display:
           type: string
           settings:
             link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_aeration_flag_heads:
+          id: field_aeration_flag_heads
+          table: work_order__field_aeration_flag_heads
+          field: field_aeration_flag_heads
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: boolean
+          settings:
+            format: custom
+            format_custom_false: ''
+            format_custom_true: ' - AER FLAG HEADS'
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -684,7 +750,7 @@ display:
           exclude: false
           alter:
             alter_text: true
-            text: "<h2>WO#{{ id }}{{ field_call_ahead }} - {{ field_status }}</br>\r\n{{ field_service }} for </br>\r\n{{ field_nickname }}{{ field_must_use_client_app }}</br>\r\n{{ title_1 }}</h2>"
+            text: "<h2>WO#{{ id }}{{ field_call_ahead }} - {{ field_status }}{{ field_aeration_flag_heads }}</br>\r\n{{ field_service }} for </br>\r\n{{ field_nickname }}{{ field_must_use_client_app }}</br>\r\n{{ title_1 }}</h2>"
             make_link: false
             path: ''
             absolute: false
@@ -819,6 +885,7 @@ display:
         - 'config:field.storage.properties.field_cod_customer'
         - 'config:field.storage.properties.field_must_use_client_app'
         - 'config:field.storage.properties.field_nickname'
+        - 'config:field.storage.work_order.field_aeration_flag_heads'
         - 'config:field.storage.work_order.field_new_customer_name'
         - 'config:field.storage.work_order.field_service'
         - 'config:field.storage.work_order.field_status'
@@ -840,6 +907,7 @@ display:
         - 'config:field.storage.properties.field_cod_customer'
         - 'config:field.storage.properties.field_must_use_client_app'
         - 'config:field.storage.properties.field_nickname'
+        - 'config:field.storage.work_order.field_aeration_flag_heads'
         - 'config:field.storage.work_order.field_new_customer_name'
         - 'config:field.storage.work_order.field_service'
         - 'config:field.storage.work_order.field_status'

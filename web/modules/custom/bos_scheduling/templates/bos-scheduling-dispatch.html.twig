@@ -94,7 +94,7 @@
           </div>
           <div class="bos-dispatch-jobs-scroll">
             {% for job in teammate.jobs %}
-              <a href="{{ job.wo_url }}" class="bos-dispatch-job bos-dispatch-job--{{ job.status_class }}" title="{{ job.property_nickname }} — {{ job.service_name }} ({{ job.status_label }})">
+              <a href="{{ job.wo_url }}" class="bos-dispatch-job bos-dispatch-job--{{ job.status_class }}{% if job.aeration_flag %} bos-dispatch-job--aeration{% endif %}" title="{{ job.property_nickname }} — {{ job.service_name }} ({{ job.status_label }}){% if job.aeration_flag %} — AER FLAG HEADS{% endif %}">
                 <div class="bos-dispatch-job-top">
                   <span class="bos-dispatch-job-badge">{{ job.service_code }}</span>
                   <span class="bos-dispatch-job-order">#{{ job.schedule_order }}</span>

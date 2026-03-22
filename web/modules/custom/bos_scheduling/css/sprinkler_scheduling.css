@@ -1,0 +1,382 @@
+/**
+ * BOS Sprinkler Bulk Scheduling Tool styles.
+ */
+
+/* ── Wrap ──────────────────────────────────────────────────────── */
+.bos-sched-wrap {
+  padding: 0.5rem 0 3rem;
+}
+
+/* ── Filter bar ────────────────────────────────────────────────── */
+.bos-sched-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  padding: 10px 14px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+.bos-sched-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.bos-sched-filter-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.bos-sched-select {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+}
+.bos-sched-input {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+}
+.bos-sched-input--full { width: 100%; }
+.bos-sched-select--full { width: 100%; }
+.bos-sched-filter-buttons { flex-direction: row; align-items: flex-end; }
+
+/* ── Buttons ───────────────────────────────────────────────────── */
+.bos-sched-btn {
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.bos-sched-btn:hover { background: #f0f0f0; }
+.bos-sched-btn--primary {
+  background: #1a5276;
+  color: #fff;
+  border-color: #1a5276;
+}
+.bos-sched-btn--primary:hover { background: #154360; }
+.bos-sched-btn--primary:disabled {
+  background: #aaa;
+  border-color: #aaa;
+  cursor: not-allowed;
+}
+.bos-sched-btn--full { width: 100%; justify-content: center; }
+
+/* ── Stats ─────────────────────────────────────────────────────── */
+.bos-sched-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+.bos-sched-stat {
+  background: #f5f5f5;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.bos-sched-stat-label {
+  font-size: 10px;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+.bos-sched-stat-val {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.bos-sched-stat--amber { color: #854F0B; }
+.bos-sched-stat--green { color: #3B6D11; }
+.bos-sched-stat--blue  { color: #185FA5; }
+
+/* ── Layout ────────────────────────────────────────────────────── */
+.bos-sched-layout {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+/* ── Select bar ────────────────────────────────────────────────── */
+.bos-sched-select-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 6px 10px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  font-size: 13px;
+}
+.bos-sched-select-count {
+  font-size: 12px;
+  color: #555;
+  margin-left: auto;
+}
+
+/* ── Table ─────────────────────────────────────────────────────── */
+.bos-sched-table-wrap {
+  border: 1px solid #ddd;
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+  overflow-x: auto;
+}
+.bos-sched-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.bos-sched-table thead {
+  background: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+}
+.bos-sched-table th {
+  padding: 7px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #555;
+  text-align: left;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.bos-sched-table td {
+  padding: 6px 8px;
+  border-bottom: 0.5px solid #eee;
+  vertical-align: middle;
+}
+.bos-sched-row:last-child td { border-bottom: none; }
+.bos-sched-row:hover td { background: #f9f9f9; }
+.bos-sched-row.selected td { background: #e8f4e8; }
+.bos-sched-row.just-scheduled td { background: #d5f0e0; opacity: 0.7; }
+
+.bos-sched-zip-header td {
+  background: #ebebeb;
+  font-size: 10px;
+  font-weight: 600;
+  color: #555;
+  padding: 4px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Column widths ─────────────────────────────────────────────── */
+.bos-sched-col-cb    { width: 28px; }
+.bos-sched-col-type  { width: 48px; }
+.bos-sched-col-prop  { width: auto; min-width: 130px; }
+.bos-sched-col-addr  { width: 150px; }
+.bos-sched-col-zones { width: 44px; text-align: center; }
+.bos-sched-col-sys   { width: 90px; }
+.bos-sched-col-notes { width: 220px; max-width: 220px; }
+.bos-sched-col-wo    { width: 50px; text-align: center; }
+
+/* ── Badges ────────────────────────────────────────────────────── */
+.bos-sched-badge {
+  display: inline-block;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.bos-sched-badge--sprinkler_start_up    { background: #dceef8; color: #0c447c; }
+.bos-sched-badge--sprinkler_winterizing { background: #E1F5EE; color: #085041; }
+.bos-sched-badge--sprinkler_check_up   { background: #EEEDFE; color: #3C3489; }
+.bos-sched-badge--sprinkler_repair     { background: #FAEEDA; color: #633806; }
+.bos-sched-badge--backflow_testing     { background: #FBEAF0; color: #72243E; }
+.bos-sched-badge--sprinkler_design     { background: #EAF3DE; color: #27500A; }
+.bos-sched-badge--sprinkler_installation { background: #F1EFE8; color: #444441; }
+
+.bos-sched-call-ahead {
+  display: inline-block;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.bos-sched-aeration {
+  display: inline-block;
+  background: #27500A;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.bos-sched-gate {
+  display: block;
+  font-size: 11px;
+  color: #7a5500;
+  background: #fff9e6;
+  border: 1px solid #f0c040;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 210px;
+}
+.bos-sched-todo {
+  display: block;
+  font-size: 11px;
+  color: #555;
+  max-width: 210px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  line-height: 1.3;
+}
+.bos-sched-wo-link {
+  font-size: 11px;
+  color: #1a5276;
+  text-decoration: none;
+}
+.bos-sched-wo-link:hover { text-decoration: underline; }
+
+.bos-sched-prop-link {
+  color: #1a1a1a;
+  text-decoration: none;
+  font-weight: 500;
+}
+.bos-sched-prop-link:hover {
+  color: #1a5276;
+  text-decoration: underline;
+}
+
+/* ── Assign panel ──────────────────────────────────────────────── */
+.bos-sched-panel {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 14px;
+  position: sticky;
+  top: 1rem;
+}
+.bos-sched-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+.bos-sched-panel-count {
+  font-size: 28px;
+  font-weight: 600;
+  color: #185FA5;
+}
+.bos-sched-panel-count-label {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 14px;
+}
+.bos-sched-panel-field {
+  margin-bottom: 10px;
+}
+.bos-sched-panel-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+.bos-sched-panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+/* ── Message ───────────────────────────────────────────────────── */
+.bos-sched-message {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.bos-sched-message--success {
+  background: #d5f0e0;
+  color: #27500A;
+  border: 1px solid #80c8a0;
+}
+.bos-sched-message--error {
+  background: #fad8d8;
+  color: #791F1F;
+  border: 1px solid #e09090;
+}
+
+/* ── Progress ──────────────────────────────────────────────────── */
+.bos-sched-progress {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+.bos-sched-progress-label {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 5px;
+}
+.bos-sched-progress-bar {
+  height: 5px;
+  background: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.bos-sched-progress-fill {
+  height: 100%;
+  background: #1a5276;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* ── Empty ─────────────────────────────────────────────────────── */
+.bos-sched-empty {
+  padding: 3rem;
+  text-align: center;
+  color: #888;
+  font-size: 1rem;
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .bos-sched-layout { grid-template-columns: 1fr; }
+  .bos-sched-stats  { grid-template-columns: repeat(3, 1fr); }
+  .bos-sched-panel  { position: static; }
+}
+@media (max-width: 600px) {
+  .bos-sched-stats  { grid-template-columns: repeat(2, 1fr); }
+}

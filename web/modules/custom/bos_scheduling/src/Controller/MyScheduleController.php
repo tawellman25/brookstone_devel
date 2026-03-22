@@ -198,6 +198,14 @@ class MyScheduleController extends ControllerBase {
     );
     $query->addField('wtd', 'field_work_todo_description_value', 'work_todo');
 
+    // Aeration flag heads.
+    $query->leftJoin(
+      'work_order__field_aeration_flag_heads',
+      'afh',
+      'afh.entity_id = swo.field_work_order_target_id AND afh.deleted = 0'
+    );
+    $query->addField('afh', 'field_aeration_flag_heads_value', 'aeration_flag');
+
     // Service + SOP code.
     $query->leftJoin(
       'work_order__field_service',
@@ -262,6 +270,7 @@ class MyScheduleController extends ControllerBase {
         'call_ahead'      => (bool) ($row->call_ahead ?? FALSE),
         'wo_note'         => $row->wo_note ?? '',
         'work_todo'       => html_entity_decode(strip_tags($row->work_todo ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+        'aeration_flag'   => (bool) ($row->aeration_flag ?? FALSE),
         'service_name'    => $row->service_name ?? '',
         'service_code'    => strtoupper($row->service_code ?? '') ?: ($row->service_name ?? ''),
       ];

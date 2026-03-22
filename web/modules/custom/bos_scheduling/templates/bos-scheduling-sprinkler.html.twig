@@ -1,0 +1,205 @@
+{#
+/**
+ * @file
+ * Sprinkler WO bulk scheduling tool.
+ *
+ * Variables:
+ *   filter_type, filter_zip, filter_status, filter_street: current filters.
+ *   bundles: array of bundle => label.
+ *   zips: array of zip_id => title.
+ *   teammates: array of uid => name.
+ *   grouped: WO rows grouped by zipcode.
+ *   stats: total, scheduled, unscheduled counts.
+ */
+#}
+
+<div class="bos-sched-wrap">
+
+  {# ── Filter bar ──────────────────────────────────────────────── #}
+  <form class="bos-sched-filters" method="get" action="">
+    <div class="bos-sched-filter-group">
+      <label class="bos-sched-filter-label">Type</label>
+      <select name="type" class="bos-sched-select">
+        <option value="">— All types —</option>
+        {% for bundle, label in bundles %}
+          <option value="{{ bundle }}"{% if filter_type == bundle %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="bos-sched-filter-group">
+      <label class="bos-sched-filter-label">Zipcode</label>
+      <select name="zip" class="bos-sched-select">
+        <option value="">— All zips —</option>
+        {% for zip_id, zip_title in zips %}
+          <option value="{{ zip_id }}"{% if filter_zip == zip_id ~ '' %} selected{% endif %}>{{ zip_title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="bos-sched-filter-group">
+      <label class="bos-sched-filter-label">Status</label>
+      <select name="status" class="bos-sched-select">
+        <option value="unscheduled"{% if filter_status == 'unscheduled' %} selected{% endif %}>Unscheduled only</option>
+        <option value="all"{% if filter_status == 'all' %} selected{% endif %}>All active</option>
+      </select>
+    </div>
+    <div class="bos-sched-filter-group">
+      <label class="bos-sched-filter-label">Street</label>
+      <input type="text" name="street" value="{{ filter_street }}" placeholder="Search street..." class="bos-sched-input">
+    </div>
+    <div class="bos-sched-filter-group bos-sched-filter-buttons">
+      <label class="bos-sched-filter-label">&nbsp;</label>
+      <div style="display:flex;gap:6px">
+        <button type="submit" class="bos-sched-btn bos-sched-btn--primary">Apply</button>
+        <a href="?" class="bos-sched-btn">Reset</a>
+      </div>
+    </div>
+  </form>
+
+  {# ── Stats bar ───────────────────────────────────────────────── #}
+  <div class="bos-sched-stats">
+    <div class="bos-sched-stat">
+      <div class="bos-sched-stat-label">Total</div>
+      <div class="bos-sched-stat-val">{{ stats.total }}</div>
+    </div>
+    <div class="bos-sched-stat">
+      <div class="bos-sched-stat-label">Unscheduled</div>
+      <div class="bos-sched-stat-val bos-sched-stat--amber">{{ stats.unscheduled }}</div>
+    </div>
+    <div class="bos-sched-stat">
+      <div class="bos-sched-stat-label">Scheduled</div>
+      <div class="bos-sched-stat-val bos-sched-stat--green">{{ stats.scheduled }}</div>
+    </div>
+    <div class="bos-sched-stat">
+      <div class="bos-sched-stat-label">Selected</div>
+      <div class="bos-sched-stat-val bos-sched-stat--blue" id="bos-sched-sel-count">0</div>
+    </div>
+    <div class="bos-sched-stat">
+      <div class="bos-sched-stat-label">Progress</div>
+      <div class="bos-sched-stat-val">
+        {% if stats.total > 0 %}
+          {{ ((stats.scheduled / stats.total) * 100)|round }}%
+        {% else %}
+          0%
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Main layout ─────────────────────────────────────────────── #}
+  <div class="bos-sched-layout">
+
+    {# ── WO table ────────────────────────────────────────────────── #}
+    <div class="bos-sched-table-wrap">
+
+      <div class="bos-sched-select-bar">
+        <label><input type="checkbox" id="bos-sched-select-all"> Select all visible</label>
+        <span class="bos-sched-select-count" id="bos-sched-select-label"></span>
+      </div>
+
+      {% if grouped is empty %}
+        <div class="bos-sched-empty">No Work Orders found matching current filters.</div>
+      {% else %}
+        <table class="bos-sched-table">
+          <thead>
+            <tr>
+              <th class="bos-sched-col-cb"></th>
+              <th class="bos-sched-col-type">Type</th>
+              <th class="bos-sched-col-prop">Property</th>
+              <th class="bos-sched-col-addr">Address</th>
+              <th class="bos-sched-col-zones">Zones</th>
+              <th class="bos-sched-col-sys">System</th>
+              <th class="bos-sched-col-notes">Notes</th>
+              <th class="bos-sched-col-wo">WO</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for zipcode, rows in grouped %}
+              <tr class="bos-sched-zip-header">
+                <td colspan="8">{{ zipcode }} — {{ rows|length }} WO{{ rows|length != 1 ? 's' : '' }}</td>
+              </tr>
+              {% for row in rows %}
+                <tr class="bos-sched-row" data-wo-id="{{ row.wo_id }}">
+                  <td class="bos-sched-col-cb">
+                    <input type="checkbox" class="bos-sched-cb" value="{{ row.wo_id }}">
+                  </td>
+                  <td class="bos-sched-col-type">
+                    <span class="bos-sched-badge bos-sched-badge--{{ row.type }}">{{ row.type_code }}</span>
+                  </td>
+                  <td class="bos-sched-col-prop">
+                    {% if row.call_ahead %}
+                      <span class="bos-sched-call-ahead">CALL AHEAD</span>
+                    {% endif %}
+                    {% if row.has_aeration %}
+                      <span class="bos-sched-aeration">AER - Flag Heads</span>
+                    {% endif %}
+                    <a href="{{ row.wo_url }}" target="_blank" class="bos-sched-prop-link">{{ row.property_nickname }}</a>
+                  </td>
+                  <td class="bos-sched-col-addr">{{ row.street_address }}</td>
+                  <td class="bos-sched-col-zones">{{ row.total_zones ?: '—' }}</td>
+                  <td class="bos-sched-col-sys">{{ row.system_type }}</td>
+                  <td class="bos-sched-col-notes">
+                    {% if row.gate_code %}
+                      <span class="bos-sched-gate">{{ row.gate_code }}</span>
+                    {% endif %}
+                    {% if row.work_todo %}
+                      <span class="bos-sched-todo">{{ row.work_todo|slice(0,60) }}{% if row.work_todo|length > 60 %}…{% endif %}</span>
+                    {% endif %}
+                  </td>
+                  <td class="bos-sched-col-wo">#{{ row.wo_id }}</td>
+                </tr>
+              {% endfor %}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+
+    {# ── Assign panel ────────────────────────────────────────────── #}
+    <div class="bos-sched-panel">
+      <div class="bos-sched-panel-title">Bulk assign selected</div>
+
+      <div class="bos-sched-panel-count" id="bos-sched-panel-count">0</div>
+      <div class="bos-sched-panel-count-label">WOs selected</div>
+
+      <div class="bos-sched-panel-field">
+        <label class="bos-sched-panel-label">Date</label>
+        <input type="date" id="bos-sched-date" class="bos-sched-input bos-sched-input--full">
+      </div>
+      <div class="bos-sched-panel-field">
+        <label class="bos-sched-panel-label">Technician</label>
+        <select id="bos-sched-tech" class="bos-sched-select bos-sched-select--full">
+          <option value="">— Select tech —</option>
+          {% for uid, name in teammates %}
+            <option value="{{ uid }}">{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="bos-sched-panel-field">
+        <label class="bos-sched-panel-label">Start at route order #</label>
+        <input type="number" id="bos-sched-order" value="1" min="1" class="bos-sched-input bos-sched-input--full">
+      </div>
+
+      <div class="bos-sched-panel-actions">
+        <button id="bos-sched-save" class="bos-sched-btn bos-sched-btn--primary bos-sched-btn--full" disabled>
+          Schedule selected WOs
+        </button>
+        <button id="bos-sched-clear" class="bos-sched-btn bos-sched-btn--full">
+          Clear selection
+        </button>
+      </div>
+
+      <div id="bos-sched-message" class="bos-sched-message" style="display:none"></div>
+
+      <div class="bos-sched-progress">
+        <div class="bos-sched-progress-label">
+          {{ stats.scheduled }} of {{ stats.total }} scheduled overall
+        </div>
+        <div class="bos-sched-progress-bar">
+          <div class="bos-sched-progress-fill" style="width:{% if stats.total > 0 %}{{ ((stats.scheduled / stats.total) * 100)|round }}{% else %}0{% endif %}%"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

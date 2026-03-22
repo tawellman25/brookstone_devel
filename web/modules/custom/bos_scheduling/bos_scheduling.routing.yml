@@ -17,3 +17,25 @@ bos_scheduling.dispatch:
     _role: 'administrator+administration+supervisor+site_admin+site_assistant'
   options:
     _admin_route: TRUE
+
+bos_scheduling.sprinkler_scheduling:
+  path: '/admin/office/work-orders/scheduling/sprinkler'
+  defaults:
+    _controller: '\Drupal\bos_scheduling\Controller\SprinklerSchedulingController::page'
+    _title: 'Sprinkler Scheduling'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+  options:
+    _admin_route: TRUE
+
+bos_scheduling.sprinkler_scheduling_save:
+  path: '/admin/office/work-orders/scheduling/sprinkler/save'
+  defaults:
+    _controller: '\Drupal\bos_scheduling\Controller\SprinklerSchedulingController::save'
+    _title: 'Save Scheduling'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+    _csrf_token: 'FALSE'
+  methods: [POST]
+  options:
+    _admin_route: TRUE

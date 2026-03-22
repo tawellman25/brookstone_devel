@@ -381,3 +381,35 @@ function get_men_for_sprinkler_start_up($workOrderId) {
     
     return $totalMen;
 }
+
+/**
+ * Implements hook_entity_insert() for sprinkler_start_up work orders.
+ * Sets the aeration flag when a new Start Up WO is created.
+ */
+function wo_sprinkler_start_up_entity_insert(\Drupal\Core\Entity\EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'work_order' || $entity->bundle() !== 'sprinkler_start_up') {
+    return;
+  }
+  if (!\Drupal::hasService('bos_scheduling.aeration_flag')) return;
+  $service     = \Drupal::service('bos_scheduling.aeration_flag');
+  $property_id = $service->getPropertyId((int) $entity->id());
+  if ($property_id) {
+    $service->updateStartUpFlag((int) $entity->id(), $property_id);
+  }
+}
+
+/**
+ * Implements hook_entity_update() for sprinkler_start_up work orders.
+ * Refreshes the aeration flag when a Start Up WO is updated.
+ */
+function wo_sprinkler_start_up_entity_update(\Drupal\Core\Entity\EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'work_order' || $entity->bundle() !== 'sprinkler_start_up') {
+    return;
+  }
+  if (!\Drupal::hasService('bos_scheduling.aeration_flag')) return;
+  $service     = \Drupal::service('bos_scheduling.aeration_flag');
+  $property_id = $service->getPropertyId((int) $entity->id());
+  if ($property_id) {
+    $service->updateStartUpFlag((int) $entity->id(), $property_id);
+  }
+}

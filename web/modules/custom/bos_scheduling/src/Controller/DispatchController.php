@@ -140,6 +140,14 @@ class DispatchController extends ControllerBase {
     $query->leftJoin('properties__field_nickname', 'nick', 'nick.entity_id = wop.field_property_target_id AND nick.deleted = 0');
     $query->addField('nick', 'field_nickname_value', 'property_nickname');
 
+    // Aeration flag heads.
+    $query->leftJoin(
+      'work_order__field_aeration_flag_heads',
+      'afh',
+      'afh.entity_id = swo.field_work_order_target_id AND afh.deleted = 0'
+    );
+    $query->addField('afh', 'field_aeration_flag_heads_value', 'aeration_flag');
+
     $query->leftJoin('work_order__field_service', 'wosvc', 'wosvc.entity_id = swo.field_work_order_target_id AND wosvc.deleted = 0');
     $query->leftJoin('taxonomy_term_field_data', 'svc', 'svc.tid = wosvc.field_service_target_id');
     $query->addField('svc', 'name', 'service_name');
@@ -198,6 +206,7 @@ class DispatchController extends ControllerBase {
         'service_code'     => strtoupper(trim($row->service_code ?? '')) ?: (trim($row->service_name ?? '') ?: '?'),
         'service_name'     => trim($row->service_name ?? ''),
         'department_color' => trim($row->department_color ?? '') ?: '#888888',
+        'aeration_flag'    => (bool) ($row->aeration_flag ?? FALSE),
       ];
 
       if (empty($row->assigned_uid)) {

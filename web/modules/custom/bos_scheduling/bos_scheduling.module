@@ -5,8 +5,9 @@
  * BOS Scheduling module.
  *
  * Provides teammate and supervisor scheduling views:
- * - /teammates/calendar/my-schedule — crew daily schedule
- * - /teammates/calendar/dispatch    — supervisor dispatch board
+ * - /teammates/calendar/my-schedule    — crew daily schedule
+ * - /teammates/calendar/dispatch       — supervisor dispatch board
+ * - /admin/office/work-orders/sprinkler/scheduling — sprinkler bulk scheduler
  */
 
 /**
@@ -38,6 +39,20 @@ function bos_scheduling_theme(): array {
         'stats'       => [],
       ],
       'template' => 'bos-scheduling-dispatch',
+    ],
+    'bos_scheduling_sprinkler' => [
+      'variables' => [
+        'filter_type'   => '',
+        'filter_zip'    => '',
+        'filter_status' => 'unscheduled',
+        'filter_street' => '',
+        'bundles'       => [],
+        'zips'          => [],
+        'teammates'     => [],
+        'grouped'       => [],
+        'stats'         => [],
+      ],
+      'template' => 'bos-scheduling-sprinkler',
     ],
   ];
 }

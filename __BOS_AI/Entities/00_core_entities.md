@@ -124,6 +124,17 @@ These are important, but BOS can still operate if they are refactored or replace
 - `business_setting.md` (config_pages — central rate table for all billing calculations)
 - `taxonomy_vocabularies.md` (43 vocabularies — services, statuses, classifications)
 
+### Scheduling & Calendar
+- `scheduling.md` (scheduling entity — planned assignment and timing of WOs)
+- `business_calendar.md` (company calendar events — holidays, paydays, closures)
+
+### business_calendar (ECK)
+- Bundle: event
+- Module: business_calendar
+- Purpose: Company calendar events (holidays, paydays, closures,
+  company events) displayed as background shading on the scheduling
+  calendar. Display only.
+
 ### Governance
 - `sop_content_knowledge_entities.md`
 

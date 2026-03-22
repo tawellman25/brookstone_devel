@@ -409,7 +409,9 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 | Module | Purpose |
 |---|---|
 | `eck_bundle_clone` | Drush commands for cloning ECK bundles (definition + fields + base field overrides) |
-| `admin_calendar` | Custom adjustments for the admin WO scheduling calendar |
+| `admin_calendar` | Custom FullCalendar 6 scheduling calendar at /teammates/calendar. Tabs: Dispatch, Calendar, My Schedule. Completed WO overlay, business calendar background events, drag-drop rescheduling for supervisors. |
+| `business_calendar` | ECK entity for company calendar events (holidays, paydays, closures). Background shading on scheduling calendar. Payday auto-generator anchored to 2026-03-16 every 14 days. |
+| `bos_scheduling` | Crew daily schedule (/teammates/calendar/my-schedule), supervisor dispatch board (/teammates/calendar/dispatch), sprinkler bulk scheduling (/admin/office/work-orders/scheduling/sprinkler). Aeration flag heads service. |
 | `site_landing_page` | Custom functionality for `site_landing_page` ECK entity; admin theme for `office_administration` bundle |
 | `crew_types` | Cross-references Crews and Departments ECK entities |
 | `system_readiness` | System health/readiness checks |
@@ -494,6 +496,15 @@ From `__BOS_AI/Entities/03_bos_ui_flow_map.md`:
 | Admin | Services taxonomy | Maintain WO service flags and bundle mappings |
 
 Contract Section editing opens in a **modal dialog** from the Contract page. Two patterns: Admin Table (preferred, page-refresh on save) and legacy EVA/multi-block (AJAX block refresh).
+
+## Aeration Flag Heads (field_aeration_flag_heads)
+- Field on: work_order.sprinkler_start_up
+- Type: boolean
+- Service: bos_scheduling.aeration_flag (AerationFlagService)
+- Auto-set TRUE when property has active aerating WO
+- Hooks in: wo_sprinkler_start_up (insert/update) and wo_aerating (insert/update)
+- Shown in: WO title block, sprinkler scheduling tool, My Schedule, Dispatch board
+- Backfill command: drush php-eval with AerationFlagService->updateStartUpFlag() loop
 
 ## Change Log
 

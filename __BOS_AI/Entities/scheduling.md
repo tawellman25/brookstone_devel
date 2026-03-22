@@ -198,3 +198,102 @@ Scheduling is a **planning layer** in BOS.
 
 These responsibilities must remain separate.
 
+---
+
+## Admin Calendar (admin_calendar module)
+
+Path: /teammates/calendar
+Access: administrator, administration, supervisor, site_admin, site_assistant, teammates
+Theme: olivero_sewards (front-end theme)
+
+FullCalendar 6 JS calendar (CDN, no contrib dependency).
+Authoritative date field: field_date (smartdate, Unix timestamps).
+Legacy field: field_scheduled_date_and_time (daterange) kept in sync.
+
+Features:
+- Department color coding via department.field_color
+- SOP code abbreviations (field_sop_code on services taxonomy)
+- Teammate initials + order code format: [ToW-01]
+- Status filter (active statuses default, expandable to historical)
+- Completed WOs overlay via wo_complete_info.field_date_completed
+- Drag-and-drop rescheduling (supervisor/office roles only)
+- Business calendar background events (holidays, paydays, closures)
+- Sticky filter bar with mobile collapse toggle
+- Tabs: Dispatch | Calendar | My Schedule (Drupal local tasks)
+
+Timezone: America/Denver
+UTC conversion: CONVERT_TZ(FROM_UNIXTIME(ts), @@session.time_zone, '+00:00')
+All-day detection: smartdate duration >= 1365 && <= 1440 minutes
+
+Active status TIDs shown on calendar:
+1089 Open, 1099 Needs Confirmed, 1095 Waiting, 1503 Accepted,
+1091 Scheduled, 1090 Assigned, 1092 In Progress, 1093 Needs Parts,
+1094 Parts Ordered, 1096 Needs Access
+
+Excluded from calendar (office/billing only):
+1097 Complete, 1283 Warrantied, 1281 Invoiced, 1504 Paid, 1098 Canceled
+
+Endpoints:
+- GET /teammates/calendar — calendar page
+- GET /teammates/calendar/events — JSON scheduled events
+- GET /teammates/calendar/completed — JSON completed WO overlay
+- GET /teammates/calendar/business-events — JSON business calendar events
+- POST /teammates/calendar/event/{id}/reschedule — drag-drop save
+
+---
+
+## BOS Scheduling (bos_scheduling module)
+
+### Crew Daily Schedule
+Path: /teammates/calendar/my-schedule
+Access: all roles including teammates
+Query param: date (Y-m-d, defaults to today)
+Navigation: skips empty days (prev/next day with WOs)
+
+Shows per-day WOs assigned to current user:
+- Property nickname, full address, gate code
+- CALL AHEAD flag (red badge)
+- AER - Flag Heads flag (green badge) from field_aeration_flag_heads
+- Work todo description (html_entity_decode + strip_tags)
+- Scheduling note, route order, status, service code
+- Link to full WO page
+
+### Supervisor Dispatch Board
+Path: /teammates/calendar/dispatch
+Access: administrator, administration, supervisor, site_admin, site_assistant
+Auto-refreshes every 5 minutes with countdown timer.
+
+Shows all WOs for a given day grouped by teammate:
+- Rows by teammate with department color dot
+- Job cards in route order, horizontal scroll per row
+- Color coded by WO status
+- Stats bar: total, in progress, complete, unassigned
+- Department filter buttons
+- Unassigned WOs section at bottom
+- AER - Flag Heads shown in tooltip and green left border accent
+
+### Sprinkler Bulk Scheduling
+Path: /admin/office/work-orders/scheduling/sprinkler
+Save endpoint: POST /admin/office/work-orders/scheduling/sprinkler/save
+Access: administrator, administration, supervisor, site_admin, site_assistant
+
+Bulk scheduling tool for all sprinkler WO types:
+sprinkler_start_up, sprinkler_winterizing, sprinkler_check_up,
+sprinkler_repair, backflow_testing, sprinkler_design, sprinkler_installation
+
+Features:
+- Filter by type, city/zip, status, street
+- Grouped by city — zip, sorted by street then aeration flag first
+- AER - Flag Heads badge on flagged properties
+- Property name links to WO page (opens _blank)
+- Bulk assign: date + technician + start route order #
+- Creates scheduling entity for each selected WO
+- Sets field_scheduled = TRUE on WO after scheduling
+- Skips WOs that already have a scheduling record (idempotent)
+- Progress bar showing overall season completion
+
+Future paths planned under /admin/office/work-orders/scheduling/:
+- /spraying — pre-emergent, weed spray bulk scheduling
+- /clean-ups — spring/fall cleanup, pruning bulk scheduling
+- /landscaping — design-build WO bulk scheduling
+

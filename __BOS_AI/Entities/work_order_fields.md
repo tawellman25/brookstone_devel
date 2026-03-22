@@ -1056,6 +1056,13 @@ field_work_order_notes | comment | Notes
 field_work_todo_description | text_long | Start up Description
 field_zone_charge | decimal | Zone Charge
 field_zone_total | integer | Zone Total
+field_aeration_flag_heads | boolean | Aeration - Flag Heads
+
+Note: Auto-set by bos_scheduling.aeration_flag service. TRUE when
+property has an active aerating WO. Set on sprinkler_start_up
+insert/update via wo_sprinkler_start_up hooks. Cleared/set on
+aerating WO insert/update/status change via wo_aerating hooks.
+Backfilled on 268 existing WOs on deploy.
 
 === sprinkler_winterizing | Sprinkler Winterizing ===
 id | integer | ID

@@ -312,7 +312,10 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
     return ($date >= $season_start && $date <= $season_end);
   }
 
-  private function nextWeekdayOnOrAfter(DrupalDateTime $start, int $weekday_iso) : DrupalDateTime {
+  private function nextWeekdayOnOrAfter(?DrupalDateTime $start, int $weekday_iso) : DrupalDateTime {
+    if (!$start instanceof DrupalDateTime) {
+      $start = new DrupalDateTime('now', new \DateTimeZone('America/Denver'));
+    }
     $d = clone $start;
     $d->setTime(0, 0, 0);
     $current = (int) $d->format('N');
@@ -353,8 +356,10 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
         $anchor = $this->nextWeekdayOnOrAfter($today, $route_day_iso);
       }
       else {
-        while ($anchor < $today) {
+        $safety = 0;
+        while ($anchor < $today && $safety < 100) {
           $anchor->modify('+' . $interval . ' days');
+          $safety++;
         }
         $anchor = $this->nextWeekdayOnOrAfter($anchor, $route_day_iso);
       }
@@ -452,12 +457,18 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
         continue;
       }
 
-      $ymd = (string) ($sched->get('field_date')->value ?? '');
-      if ($ymd === '') {
+      $date_value = $sched->get('field_date')->value ?? '';
+      if ($date_value === '' || $date_value === NULL) {
         continue;
       }
 
-      $dt = new DrupalDateTime(substr($ymd, 0, 10), $tz);
+      // field_date is smartdate — value is a Unix timestamp.
+      if (is_numeric($date_value)) {
+        $dt = DrupalDateTime::createFromTimestamp((int) $date_value, $tz);
+      }
+      else {
+        $dt = new DrupalDateTime(substr((string) $date_value, 0, 10), $tz);
+      }
       if (!$latest || $dt > $latest) {
         $latest = $dt;
       }

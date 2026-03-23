@@ -240,6 +240,30 @@ class SprinklerSchedulingController extends ControllerBase {
     );
     $query->addField('afh', 'field_aeration_flag_heads_value', 'has_aeration');
 
+    // Scheduled date — from scheduling entity via field_work_order.
+    $query->leftJoin(
+      'scheduling__field_work_order',
+      'schwo',
+      'schwo.field_work_order_target_id = w.id AND schwo.deleted = 0'
+    );
+    $query->leftJoin(
+      'scheduling__field_date',
+      'schfd',
+      'schfd.entity_id = schwo.entity_id AND schfd.deleted = 0'
+    );
+    $query->addField('schfd', 'field_date_value', 'scheduled_ts');
+    $query->leftJoin(
+      'scheduling__field_assigned_to',
+      'schsat',
+      'schsat.entity_id = schwo.entity_id AND schsat.deleted = 0'
+    );
+    $query->leftJoin(
+      'users_field_data',
+      'schu',
+      'schu.uid = schsat.field_assigned_to_target_id'
+    );
+    $query->addField('schu', 'uid', 'scheduled_uid');
+
     // Total zones via sprinkler info chain.
     $query->leftJoin('property_sprinkler_info__field_property', 'psip', 'psip.field_property_target_id = wop.field_property_target_id AND psip.deleted = 0');
     $query->leftJoin('property_sprinkler_info__field_systems', 'psis', 'psis.entity_id = psip.entity_id AND psis.deleted = 0');
@@ -287,6 +311,8 @@ class SprinklerSchedulingController extends ControllerBase {
     $query->groupBy('gate.field_gate_code_value');
     $query->groupBy('call.field_call_ahead_value');
     $query->groupBy('afh.field_aeration_flag_heads_value');
+    $query->groupBy('schfd.field_date_value');
+    $query->groupBy('schu.uid');
 
     $query->orderBy('citydata.title', 'ASC');
     $query->orderBy('z.title', 'ASC');
@@ -324,6 +350,8 @@ class SprinklerSchedulingController extends ControllerBase {
         'status_tid'      => (int) ($row->status_tid ?? 0),
         'has_aeration'    => (bool) ($row->has_aeration ?? FALSE),
         'city_name'       => trim($row->city_name ?? '') ?: '',
+        'scheduled_date'  => $row->scheduled_ts ? (new \DateTime('@' . $row->scheduled_ts))->setTimezone(new \DateTimeZone('America/Denver'))->format('M j, Y') : '',
+        'scheduled_uid'   => (int) ($row->scheduled_uid ?? 0),
       ];
     }
 

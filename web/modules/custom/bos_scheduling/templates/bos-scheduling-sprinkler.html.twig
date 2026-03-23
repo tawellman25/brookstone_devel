@@ -108,6 +108,7 @@
               <th class="bos-sched-col-addr">Address</th>
               <th class="bos-sched-col-zones">Zones</th>
               <th class="bos-sched-col-sys">System</th>
+              <th class="bos-sched-col-sched">Scheduled</th>
               <th class="bos-sched-col-notes">Notes</th>
               <th class="bos-sched-col-wo">WO</th>
             </tr>
@@ -118,7 +119,7 @@
                 <td colspan="8">{{ zipcode }} — {{ rows|length }} WO{{ rows|length != 1 ? 's' : '' }}</td>
               </tr>
               {% for row in rows %}
-                <tr class="bos-sched-row" data-wo-id="{{ row.wo_id }}">
+                <tr class="bos-sched-row{% if row.scheduled_date %} bos-sched-row--scheduled{% endif %}" data-wo-id="{{ row.wo_id }}">
                   <td class="bos-sched-col-cb">
                     <input type="checkbox" class="bos-sched-cb" value="{{ row.wo_id }}">
                   </td>
@@ -137,6 +138,13 @@
                   <td class="bos-sched-col-addr">{{ row.street_address }}</td>
                   <td class="bos-sched-col-zones">{{ row.total_zones ?: '—' }}</td>
                   <td class="bos-sched-col-sys">{{ row.system_type }}</td>
+                  <td class="bos-sched-col-sched">
+                    {% if row.scheduled_date %}
+                      <span class="bos-sched-scheduled-date">{{ row.scheduled_date }}</span>
+                    {% else %}
+                      <span class="bos-sched-unscheduled">—</span>
+                    {% endif %}
+                  </td>
                   <td class="bos-sched-col-notes">
                     {% if row.gate_code %}
                       <span class="bos-sched-gate">{{ row.gate_code }}</span>

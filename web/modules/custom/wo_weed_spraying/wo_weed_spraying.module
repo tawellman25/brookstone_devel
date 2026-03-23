@@ -10,7 +10,31 @@ use Drupal\Core\Form\FormStateInterface;
  * Implements hook_entity_presave().
  */
 function wo_weed_spraying_entity_presave(EntityInterface $entity) {
-  if ($entity->getEntityTypeId() !== 'work_order' || $entity->bundle() !== 'weed_spraying' || ($entity->get('field_status')->target_id ?? 0) != 1097) {
+  if ($entity->getEntityTypeId() !== 'work_order' || $entity->bundle() !== 'weed_spraying') {
+    return;
+  }
+
+  // Guard: block duplicate open weed spray WOs for the same property.
+  if ($entity->isNew() && !$entity->get('field_property')->isEmpty()) {
+    $property_id = (int) $entity->get('field_property')->target_id;
+    $done_statuses = [1097, 1098, 1281, 1283];
+    $existing = \Drupal::entityQuery('work_order')
+      ->accessCheck(FALSE)
+      ->condition('type', 'weed_spraying')
+      ->condition('field_property', $property_id)
+      ->condition('field_status', $done_statuses, 'NOT IN')
+      ->range(0, 1)
+      ->execute();
+    if (!empty($existing)) {
+      $existing_id = reset($existing);
+      $msg = "A weed spray work order (#$existing_id) is already open for this property. Redirecting you to it.";
+      \Drupal::messenger()->addWarning($msg);
+      throw new \Drupal\Core\Entity\EntityStorageException($msg);
+    }
+  }
+
+  // Billing calculation only runs on Complete (1097).
+  if (($entity->get('field_status')->target_id ?? 0) != 1097) {
     return;
   }
 
@@ -470,6 +494,55 @@ function wo_weed_spraying_wo_complete_info_submit($form, FormStateInterface $for
         'operation' => 'update',
         'attempts' => 0,
       ]);
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for work_order_weed_spraying_form.
+ *
+ * For crew roles: checks if an open weed spray WO already exists for
+ * the property and redirects to it instead of showing the add form.
+ */
+function wo_weed_spraying_form_work_order_weed_spraying_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
+  // Allow admin/office/supervisor roles through.
+  $bypass_roles = ['administrator', 'site_admin', 'administration', 'supervisor'];
+  $current_roles = \Drupal::currentUser()->getRoles();
+  foreach ($bypass_roles as $role) {
+    if (in_array($role, $current_roles)) {
+      return;
+    }
+  }
+
+  // Get property ID from query string or form state.
+  $property_id = \Drupal::request()->query->get('field_property');
+  if (!$property_id) {
+    return;
+  }
+
+  // Check for existing open WO for this property.
+  $done_statuses = [1097, 1098, 1281, 1283];
+  $existing_ids = \Drupal::entityQuery('work_order')
+    ->accessCheck(FALSE)
+    ->condition('type', 'weed_spraying')
+    ->condition('field_property', (int) $property_id)
+    ->condition('field_status', $done_statuses, 'NOT IN')
+    ->sort('created', 'DESC')
+    ->range(0, 1)
+    ->execute();
+
+  if (!empty($existing_ids)) {
+    $wo_id = reset($existing_ids);
+    $wo = \Drupal::entityTypeManager()->getStorage('work_order')->load($wo_id);
+    if ($wo) {
+      \Drupal::messenger()->addWarning(
+        t('A weed spray work order (#@id) is already open for this property. Redirecting you to it.', ['@id' => $wo_id])
+      );
+      $response = new \Symfony\Component\HttpFoundation\RedirectResponse(
+        $wo->toUrl('canonical')->toString()
+      );
+      $response->send();
+      exit;
     }
   }
 }

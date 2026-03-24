@@ -5,6 +5,8 @@ dependencies:
   config:
     - field.storage.contracts.field_contract_year
     - field.storage.properties.field_nickname
+    - field.storage.wo_complete_info.field_date_completed
+    - field.storage.wo_complete_info.field_work_order_completed
     - field.storage.work_order.field_contract
     - field.storage.work_order.field_estimated_price
     - field.storage.work_order.field_invoiced
@@ -201,6 +203,146 @@ display:
               preconfiguration:
                 add_confirmation: false
                 message_override: ''
+        field_work_order_completed:
+          id: field_work_order_completed
+          table: wo_complete_info__field_work_order_completed
+          field: field_work_order_completed
+          relationship: reverse__wo_complete_info__field_work_order
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: boolean
+          settings:
+            format: custom
+            format_custom_false: ''
+            format_custom_true: 'Completed -'
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_date_completed:
+          id: field_date_completed
+          table: wo_complete_info__field_date_completed
+          field: field_date_completed
+          relationship: reverse__wo_complete_info__field_work_order
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: ''
+          exclude: true
+          alter:
+            alter_text: true
+            text: ' {{ field_date_completed }}</br>'
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: timestamp
+          settings:
+            date_format: date_only
+            custom_date_format: ''
+            timezone: ''
+            tooltip:
+              date_format: long
+              custom_date_format: ''
+            time_diff:
+              enabled: false
+              future_format: '@interval hence'
+              past_format: '@interval ago'
+              granularity: 2
+              refresh: 60
+              description: ''
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
         created:
           id: created
           table: work_order_field_data
@@ -214,8 +356,8 @@ display:
           label: Entered
           exclude: false
           alter:
-            alter_text: false
-            text: ''
+            alter_text: true
+            text: '{{ field_work_order_completed }}{{ field_date_completed }}{{ created }}'
             make_link: false
             path: ''
             absolute: false
@@ -1332,12 +1474,12 @@ display:
           plugin_id: date
           operator: between
           value:
-            min: '2025-01-01'
-            max: '2025-12-31'
+            min: '[current-date:custom:Y]-01-01'
+            max: '[current-date:custom:Y]-12-31'
             value: ''
             type: date
           group: 1
-          exposed: true
+          exposed: false
           expose:
             operator_id: created_op
             label: 'Entered Date'
@@ -1351,12 +1493,12 @@ display:
             remember: true
             multiple: false
             remember_roles:
+              authenticated: '0'
               administrator: administrator
               site_admin: site_admin
               administration: administration
               supervisor: supervisor
               anonymous: '0'
-              authenticated: '0'
               teammates: '0'
               client: '0'
               user: '0'
@@ -1376,7 +1518,7 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
-          use_tokens: 0
+          use_tokens: 1
         field_service_target_id:
           id: field_service_target_id
           table: work_order__field_service
@@ -1891,6 +2033,16 @@ display:
           admin_label: Contracts
           plugin_id: standard
           required: false
+        reverse__wo_complete_info__field_work_order:
+          id: reverse__wo_complete_info__field_work_order
+          table: work_order_field_data
+          field: reverse__wo_complete_info__field_work_order
+          relationship: none
+          group_type: group
+          admin_label: Complete
+          entity_type: work_order
+          plugin_id: entity_reverse
+          required: false
       header:
         area:
           id: area
@@ -1918,6 +2070,8 @@ display:
       tags:
         - 'config:field.storage.contracts.field_contract_year'
         - 'config:field.storage.properties.field_nickname'
+        - 'config:field.storage.wo_complete_info.field_date_completed'
+        - 'config:field.storage.wo_complete_info.field_work_order_completed'
         - 'config:field.storage.work_order.field_contract'
         - 'config:field.storage.work_order.field_estimated_price'
         - 'config:field.storage.work_order.field_invoiced'
@@ -3127,6 +3281,8 @@ display:
       tags:
         - 'config:field.storage.contracts.field_contract_year'
         - 'config:field.storage.properties.field_nickname'
+        - 'config:field.storage.wo_complete_info.field_date_completed'
+        - 'config:field.storage.wo_complete_info.field_work_order_completed'
         - 'config:field.storage.work_order.field_contract'
         - 'config:field.storage.work_order.field_estimated_price'
         - 'config:field.storage.work_order.field_invoiced'

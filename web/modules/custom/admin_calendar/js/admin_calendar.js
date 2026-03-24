@@ -239,8 +239,16 @@
         },
 
         eventClick: function (info) {
-          info.jsEvent.preventDefault();
-          if (info.event.url) window.location.href = info.event.url;
+          if (info.event.url) {
+            info.jsEvent.preventDefault();
+            var a = document.createElement('a');
+            a.href = info.event.url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
         },
 
         eventMouseEnter: function (info) { showTooltip(info.event, info.jsEvent); },

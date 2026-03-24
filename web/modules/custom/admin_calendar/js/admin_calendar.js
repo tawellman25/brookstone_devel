@@ -213,7 +213,7 @@
         eventDisplay:  'block',
         dayMaxEvents:  true,
         firstDay:      0,
-        timeZone:      'America/Denver',
+        timeZone:      (settings.adminCalendar && settings.adminCalendar.timeZone) ? settings.adminCalendar.timeZone : 'local',
         editable:      (settings.adminCalendar && settings.adminCalendar.canReschedule) ? true : false,
         droppable:     false,
         eventSources: [businessEventsSource],

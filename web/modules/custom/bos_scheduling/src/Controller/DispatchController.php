@@ -63,7 +63,7 @@ class DispatchController extends ControllerBase {
   }
 
   public function page(Request $request): array {
-    $site_tz = new \DateTimeZone('America/Denver');
+    $site_tz = new \DateTimeZone(date_default_timezone_get());
 
     $date_param = $request->query->get('date');
     if ($date_param && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_param)) {

@@ -43,10 +43,10 @@ class AdminCalendarCompletedController extends ControllerBase {
       return new JsonResponse([]);
     }
 
-    // Use site timezone (America/Denver) for timestamp conversion.
+    // Use Drupal's configured site timezone for timestamp conversion.
     // field_date_completed_value is stored using the server's local timezone
     // via Drupal's time system, not UTC-normalized. Must match for range queries.
-    $site_tz  = new \DateTimeZone('America/Denver');
+    $site_tz  = new \DateTimeZone(date_default_timezone_get());
     $start_ts = (new \DateTime($start, $site_tz))->getTimestamp();
     $end_ts   = (new \DateTime($end, $site_tz))->getTimestamp();
 
@@ -60,7 +60,7 @@ class AdminCalendarCompletedController extends ControllerBase {
       'dc.entity_id = wci.id AND dc.deleted = 0'
     );
     $query->addExpression(
-      "DATE_FORMAT(CONVERT_TZ(FROM_UNIXTIME(dc.field_date_completed_value), @@session.time_zone, '+00:00'), :fmt)",
+      "DATE_FORMAT(FROM_UNIXTIME(dc.field_date_completed_value), :fmt)",
       'completed_utc',
       [':fmt' => '%Y-%m-%dT%H:%i:%s']
     );

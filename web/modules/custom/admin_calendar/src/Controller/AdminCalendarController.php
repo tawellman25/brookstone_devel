@@ -37,6 +37,7 @@ class AdminCalendarController extends ControllerBase {
             'eventsUrl'     => '/teammates/calendar/events',
             'defaultView'   => 'dayGridMonth',
             'canReschedule' => $this->canReschedule(),
+            'timeZone'      => date_default_timezone_get(),
           ],
         ],
       ],

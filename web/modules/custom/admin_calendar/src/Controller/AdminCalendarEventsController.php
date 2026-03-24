@@ -162,15 +162,16 @@ class AdminCalendarEventsController extends ControllerBase {
       'sdt',
       's.id = sdt.entity_id AND sdt.deleted = 0'
     );
-    // Convert UTC timestamps to ISO strings in UTC timezone.
-    // MariaDB SYSTEM timezone may be local time — force UTC output so
-    // FullCalendar's timeZone: 'America/Denver' converts correctly once.
-    $query->addExpression("DATE_FORMAT(CONVERT_TZ(FROM_UNIXTIME(sdt.field_date_value), @@session.time_zone, '+00:00'), :fmt_start)", 'date_start', [':fmt_start' => '%Y-%m-%dT%H:%i:%s']);
-    $query->addExpression("DATE_FORMAT(CONVERT_TZ(FROM_UNIXTIME(sdt.field_date_end_value), @@session.time_zone, '+00:00'), :fmt_end)", 'date_end', [':fmt_end' => '%Y-%m-%dT%H:%i:%s']);
+    // Smartdate stores timestamps that FROM_UNIXTIME converts using
+    // MariaDB's session timezone (America/Denver in DDEV and on live).
+    // No CONVERT_TZ needed — output is already in site-local time.
+    // FullCalendar timeZone is set to match, so times render correctly.
+    $query->addExpression("DATE_FORMAT(FROM_UNIXTIME(sdt.field_date_value), :fmt_start)", 'date_start', [':fmt_start' => '%Y-%m-%dT%H:%i:%s']);
+    $query->addExpression("DATE_FORMAT(FROM_UNIXTIME(sdt.field_date_end_value), :fmt_end)", 'date_end', [':fmt_end' => '%Y-%m-%dT%H:%i:%s']);
     $query->addField('sdt', 'field_date_duration', 'date_duration');
 
     // Convert FullCalendar ISO range params to Unix timestamps for comparison.
-    $site_tz  = new \DateTimeZone('America/Denver');
+    $site_tz  = new \DateTimeZone(date_default_timezone_get());
     $start_ts = (new \DateTime($start, $site_tz))->getTimestamp();
     $end_ts   = (new \DateTime($end, $site_tz))->getTimestamp();
     $query->condition('sdt.field_date_value', $end_ts, '<');

@@ -37,7 +37,7 @@ class MyScheduleController extends ControllerBase {
    * Renders the daily schedule page.
    */
   public function page(Request $request): array {
-    $site_tz = new \DateTimeZone('America/Denver');
+    $site_tz = new \DateTimeZone(date_default_timezone_get());
     $uid     = (int) \Drupal::currentUser()->id();
 
     // Get requested date or default to today.

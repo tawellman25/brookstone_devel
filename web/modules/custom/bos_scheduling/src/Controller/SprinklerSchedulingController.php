@@ -118,7 +118,7 @@ class SprinklerSchedulingController extends ControllerBase {
     }
 
     // Parse date.
-    $site_tz = new \DateTimeZone('America/Denver');
+    $site_tz = new \DateTimeZone(date_default_timezone_get());
     try {
       $dt = new \DateTime($date_str, $site_tz);
       $dt->setTime(0, 0, 0);
@@ -350,7 +350,7 @@ class SprinklerSchedulingController extends ControllerBase {
         'status_tid'      => (int) ($row->status_tid ?? 0),
         'has_aeration'    => (bool) ($row->has_aeration ?? FALSE),
         'city_name'       => trim($row->city_name ?? '') ?: '',
-        'scheduled_date'  => $row->scheduled_ts ? (new \DateTime('@' . $row->scheduled_ts))->setTimezone(new \DateTimeZone('America/Denver'))->format('M j, Y') : '',
+        'scheduled_date'  => $row->scheduled_ts ? (new \DateTime('@' . $row->scheduled_ts))->setTimezone(new \DateTimeZone(date_default_timezone_get()))->format('M j, Y') : '',
         'scheduled_uid'   => (int) ($row->scheduled_uid ?? 0),
       ];
     }

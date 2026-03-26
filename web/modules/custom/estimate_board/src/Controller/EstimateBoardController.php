@@ -97,6 +97,10 @@ class EstimateBoardController extends ControllerBase {
     $query->leftJoin('users_field_data', 'au', 'au.uid = era.field_assigned_to_target_id');
     $query->addField('au', 'name', 'assigned_name');
 
+    // Status label.
+    $query->leftJoin('taxonomy_term_field_data', 'stterm', 'stterm.tid = ers.field_status_target_id');
+    $query->addField('stterm', 'name', 'status_label');
+
     // Property address.
     $query->leftJoin('estimate_request__field_property', 'erp', 'erp.entity_id = er.id AND erp.deleted = 0');
     $query->leftJoin('properties__field_nickname', 'pnick', 'pnick.entity_id = erp.field_property_target_id AND pnick.deleted = 0');
@@ -127,6 +131,7 @@ class EstimateBoardController extends ControllerBase {
       $followups[] = [
         'id' => (int) $row->id,
         'client' => $client,
+        'status' => trim($row->status_label ?? '') ?: '—',
         'property' => trim($row->property_name ?? '') ?: '',
         'services' => $services,
         'assigned' => trim($row->assigned_name ?? '') ?: 'Unassigned',

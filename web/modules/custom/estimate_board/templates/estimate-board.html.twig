@@ -13,6 +13,7 @@
       <thead>
         <tr>
           <th>Client</th>
+          <th>Status</th>
           <th>Property</th>
           <th>Services</th>
           <th>Coordinator</th>
@@ -24,6 +25,7 @@
         {% for item in followups %}
           <tr class="overdue-{{ item.severity }}">
             <td><a href="{{ item.url }}" target="_blank">{{ item.client }}</a></td>
+            <td>{{ item.status }}</td>
             <td>{{ item.property }}</td>
             <td>{{ item.services }}</td>
             <td>{{ item.assigned }}</td>

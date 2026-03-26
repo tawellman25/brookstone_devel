@@ -58,6 +58,23 @@ third_party_settings:
         open: true
         description: ''
         required_fields: false
+    group_client_requested:
+      children:
+        - field_client_requested
+        - field_service
+      label: 'Client Requested'
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
 id: estimate_request.standard.default
 targetEntityType: estimate_request
 bundle: standard
@@ -76,7 +93,7 @@ content:
   estimate_request_estimates_eva_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 5
+    weight: 6
     region: content
   field_assigned_to:
     type: entity_reference_label
@@ -88,10 +105,10 @@ content:
     region: content
   field_client_requested:
     type: text_default
-    label: above
+    label: hidden
     settings: {  }
     third_party_settings: {  }
-    weight: 4
+    weight: 5
     region: content
   field_contract:
     type: entity_reference_label
@@ -99,7 +116,7 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 6
+    weight: 7
     region: content
   field_priority:
     type: list_default
@@ -107,6 +124,14 @@ content:
     settings: {  }
     third_party_settings: {  }
     weight: 0
+    region: content
+  field_service:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: false
+    third_party_settings: {  }
+    weight: 6
     region: content
   owner_card:
     settings: {  }
@@ -125,7 +150,6 @@ hidden:
   field_requestor_email: true
   field_requestor_name: true
   field_requestor_phone: true
-  field_service: true
   field_status: true
   title: true
   uid: true

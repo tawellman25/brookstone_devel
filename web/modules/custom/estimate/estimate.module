@@ -366,6 +366,7 @@ function estimate_entity_update(EntityInterface $entity): void {
  */
 function estimate_entity_delete(EntityInterface $entity): void {
   estimate__maybe_recalculate_total($entity);
+  _estimate_log_note_deleted($entity);
 }
 
 /**
@@ -829,6 +830,47 @@ function _estimate_log_note_added(EntityInterface $entity): void {
   }
   catch (\Throwable $e) {
     \Drupal::logger('estimate')->error('Failed to log note addition on estimate_notes @id: @msg', [
+      '@id' => $entity->id(),
+      '@msg' => $e->getMessage(),
+    ]);
+  }
+}
+
+/**
+ * Log note deletions (called from hook_entity_delete).
+ */
+function _estimate_log_note_deleted(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_notes') {
+    return;
+  }
+
+  $bundle = $entity->bundle();
+  $user_name = \Drupal::currentUser()->getDisplayName();
+
+  try {
+    if ($bundle === 'note' && $entity->hasField('field_estimate') && !$entity->get('field_estimate')->isEmpty()) {
+      \Drupal::entityTypeManager()->getStorage('estimate_action_log')->create([
+        'type' => 'log',
+        'uid' => \Drupal::currentUser()->id(),
+        'field_estimate' => (int) $entity->get('field_estimate')->target_id,
+        'field_action' => 'note_deleted',
+        'field_context' => 'Note deleted by ' . $user_name,
+        'field_admin_override' => FALSE,
+      ])->save();
+    }
+    elseif ($bundle === 'request' && $entity->hasField('field_estimate_request') && !$entity->get('field_estimate_request')->isEmpty()) {
+      \Drupal::entityTypeManager()->getStorage('estimate_action_log')->create([
+        'type' => 'request_log',
+        'uid' => \Drupal::currentUser()->id(),
+        'field_request' => (int) $entity->get('field_estimate_request')->target_id,
+        'field_action' => 'note_deleted',
+        'field_context' => 'Note deleted by ' . $user_name,
+        'field_admin_override' => FALSE,
+      ])->save();
+    }
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('estimate')->error('Failed to log note deletion on estimate_notes @id: @msg', [
       '@id' => $entity->id(),
       '@msg' => $e->getMessage(),
     ]);

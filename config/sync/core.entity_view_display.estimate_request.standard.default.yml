@@ -32,7 +32,23 @@ third_party_settings:
       label: 'Contact Info'
       parent_name: ''
       region: content
-      weight: 4
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+    group_notes:
+      children:
+        - estimate_notes_eva_request
+      label: Notes
+      parent_name: ''
+      region: content
+      weight: 3
       format_type: details
       format_settings:
         classes: ''
@@ -52,10 +68,15 @@ content:
     third_party_settings: {  }
     weight: 11
     region: content
-  estimate_request_estimates_eva_1:
+  estimate_notes_eva_request:
     settings: {  }
     third_party_settings: {  }
     weight: 6
+    region: content
+  estimate_request_estimates_eva_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
     region: content
   field_assigned_to:
     type: entity_reference_label
@@ -63,35 +84,27 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 2
+    weight: 1
     region: content
   field_client_requested:
     type: text_default
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 5
+    weight: 4
     region: content
   field_contract:
     type: entity_reference_label
-    label: hidden
+    label: inline
     settings:
       link: true
     third_party_settings: {  }
-    weight: 1
+    weight: 6
     region: content
   field_priority:
     type: list_default
     label: inline
     settings: {  }
-    third_party_settings: {  }
-    weight: 3
-    region: content
-  field_property:
-    type: entity_reference_label
-    label: hidden
-    settings:
-      link: true
     third_party_settings: {  }
     weight: 0
     region: content
@@ -107,6 +120,7 @@ hidden:
   field_contract_section: true
   field_estimates: true
   field_owner: true
+  field_property: true
   field_requestor_address: true
   field_requestor_email: true
   field_requestor_name: true

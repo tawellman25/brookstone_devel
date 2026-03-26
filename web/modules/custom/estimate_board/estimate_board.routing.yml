@@ -7,3 +7,14 @@ estimate_board.board:
     _role: 'administrator+site_admin+administration+supervisor+site_assistant'
   options:
     _admin_route: TRUE
+
+estimate_board.status_update:
+  path: '/admin/office/estimates/status-update'
+  defaults:
+    _controller: '\Drupal\estimate_board\Controller\EstimateBoardController::statusUpdate'
+    _title: 'Update Status'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  methods: [POST]
+  options:
+    _admin_route: TRUE

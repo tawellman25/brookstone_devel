@@ -19,6 +19,7 @@
           <th>Coordinator</th>
           <th>Days</th>
           <th>Last Action</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -31,6 +32,22 @@
             <td>{{ item.assigned }}</td>
             <td><strong>{{ item.days }}d</strong></td>
             <td>{{ item.last_action ?: '—' }}</td>
+            <td>
+              <form method="post" action="/admin/office/estimates/status-update" class="estimate-board-status-form">
+                <input type="hidden" name="request_id" value="{{ item.id }}">
+                <input type="hidden" name="token" value="{{ csrf_token }}">
+                <select name="new_status" class="estimate-board-status-select">
+                  <option value="">— Change —</option>
+                  <option value="1652">New</option>
+                  <option value="1653">Needs Info</option>
+                  <option value="1654">Ready to Estimate</option>
+                  <option value="1655">Estimating</option>
+                  <option value="1656">Waiting on Client</option>
+                  <option value="1657">Declined / Canceled</option>
+                </select>
+                <button type="submit" class="button button--small">Go</button>
+              </form>
+            </td>
           </tr>
         {% endfor %}
       </tbody>

@@ -8,6 +8,8 @@ use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Estimate Board dashboard controller.
@@ -61,6 +63,7 @@ class EstimateBoardController extends ControllerBase {
       '#pipeline' => $this->getPipeline(),
       '#workload' => $this->getWorkload(),
       '#activity' => $this->getRecentActivity(),
+      '#csrf_token' => \Drupal::csrfToken()->get('estimate_board_status_update'),
       '#attached' => [
         'library' => ['estimate_board/estimate_board'],
       ],
@@ -358,6 +361,45 @@ class EstimateBoardController extends ControllerBase {
     $query->orderBy('svc.name');
     $names = $query->execute()->fetchCol();
     return implode(', ', $names);
+  }
+
+  /**
+   * Handles quick status update from the Needs Follow-Up table.
+   */
+  public function statusUpdate(Request $request): RedirectResponse {
+    $token = $request->request->get('token');
+    if (!\Drupal::csrfToken()->validate($token, 'estimate_board_status_update')) {
+      \Drupal::messenger()->addError('Invalid form token. Please try again.');
+      return new RedirectResponse('/admin/office/estimates');
+    }
+
+    $request_id = (int) $request->request->get('request_id');
+    $new_status = (int) $request->request->get('new_status');
+
+    $allowed_statuses = [1652, 1653, 1654, 1655, 1656, 1657];
+    if (!$request_id || !in_array($new_status, $allowed_statuses, TRUE)) {
+      \Drupal::messenger()->addError('Invalid status selection.');
+      return new RedirectResponse('/admin/office/estimates');
+    }
+
+    $estimate_request = \Drupal::entityTypeManager()
+      ->getStorage('estimate_request')->load($request_id);
+    if (!$estimate_request) {
+      \Drupal::messenger()->addError('Estimate request not found.');
+      return new RedirectResponse('/admin/office/estimates');
+    }
+
+    $estimate_request->set('field_status', $new_status);
+    $estimate_request->save();
+
+    $term = \Drupal::entityTypeManager()
+      ->getStorage('taxonomy_term')->load($new_status);
+    $label = $term ? $term->label() : (string) $new_status;
+    \Drupal::messenger()->addStatus(
+      t('Status updated to @status.', ['@status' => $label])
+    );
+
+    return new RedirectResponse('/admin/office/estimates');
   }
 
 }

@@ -1,0 +1,85 @@
+<?php
+
+/**
+ * @file
+ * Estimate Board — pipeline dashboard with follow-up tracking.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function estimate_board_theme(): array {
+  return [
+    'estimate_board' => [
+      'variables' => [
+        'followups' => [],
+        'pipeline' => [],
+        'workload' => [],
+        'activity' => [],
+      ],
+      'template' => 'estimate-board',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Sends a daily follow-up digest email for estimate requests
+ * that have had no activity for 5+ days.
+ */
+function estimate_board_cron(): void {
+  $state = \Drupal::state();
+  $last_sent = (int) $state->get('estimate_board.last_email_sent', 0);
+  $today = strtotime('today');
+
+  if ($last_sent >= $today) {
+    return;
+  }
+
+  try {
+    $controller = \Drupal\estimate_board\Controller\EstimateBoardController::create(\Drupal::getContainer());
+    $followups = $controller->getFollowUps();
+
+    if (empty($followups)) {
+      $state->set('estimate_board.last_email_sent', $today);
+      return;
+    }
+
+    $count = count($followups);
+    $site_name = \Drupal::config('system.site')->get('name') ?: 'BOS';
+    $subject = "Estimate Follow-Up Required — $count requests need attention";
+
+    $body = "The following estimate requests have had no activity for 5+ days:\n\n";
+    foreach ($followups as $item) {
+      $body .= "• " . $item['client'] . " — " . $item['services'] . "\n";
+      $body .= "  Days since activity: " . $item['days'] . "\n";
+      $body .= "  Last action: " . ($item['last_action'] ?: 'None recorded') . "\n";
+      $body .= "  Link: " . $item['url'] . "\n\n";
+    }
+
+    $mailManager = \Drupal::service('plugin.manager.mail');
+    $mailManager->mail('estimate_board', 'followup_digest', 'office@brookstoneoutdoors.com', 'en', [
+      'subject' => $subject,
+      'body' => $body,
+    ]);
+
+    $state->set('estimate_board.last_email_sent', $today);
+    \Drupal::logger('estimate_board')->notice('Follow-up digest sent: @count requests.', ['@count' => $count]);
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('estimate_board')->error('Cron email failed: @msg', ['@msg' => $e->getMessage()]);
+  }
+}
+
+/**
+ * Implements hook_mail().
+ */
+function estimate_board_mail($key, &$message, $params): void {
+  if ($key === 'followup_digest') {
+    $message['subject'] = $params['subject'];
+    $message['body'][] = $params['body'];
+  }
+}

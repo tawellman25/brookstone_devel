@@ -1,0 +1,121 @@
+{# Estimate Board dashboard #}
+
+{# ── Section 1: Needs Follow-Up ──────────────────────────────────── #}
+<div class="estimate-board-section estimate-board-needs-followup">
+  <h2 class="estimate-board-section__title">
+    Needs Follow-Up
+    {% if followups|length > 0 %}
+      <span class="estimate-board-badge estimate-board-badge--critical">{{ followups|length }}</span>
+    {% endif %}
+  </h2>
+  {% if followups|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Property</th>
+          <th>Services</th>
+          <th>Estimator</th>
+          <th>Days</th>
+          <th>Last Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in followups %}
+          <tr class="overdue-{{ item.severity }}">
+            <td><a href="{{ item.url }}">{{ item.client }}</a></td>
+            <td>{{ item.property }}</td>
+            <td>{{ item.services }}</td>
+            <td>{{ item.assigned }}</td>
+            <td><strong>{{ item.days }}d</strong></td>
+            <td>{{ item.last_action ?: '—' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="estimate-board-empty">All estimates are up to date — no follow-ups needed.</p>
+  {% endif %}
+</div>
+
+{# ── Section 2: Active Pipeline ──────────────────────────────────── #}
+<div class="estimate-board-section estimate-board-pipeline">
+  <h2 class="estimate-board-section__title">Active Pipeline</h2>
+  {% for group in pipeline %}
+    <details class="estimate-board-pipeline-group"{% if group.count > 0 and loop.first %} open{% endif %}>
+      <summary>
+        {{ group.label }}
+        <span class="estimate-board-badge">{{ group.count }}</span>
+      </summary>
+      {% if group.items|length > 0 %}
+        <ul class="pipeline-list">
+          {% for item in group.items %}
+            <li><a href="{{ item.url }}">{{ item.client }}</a> — {{ item.title }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="estimate-board-empty">No requests in this status.</p>
+      {% endif %}
+    </details>
+  {% endfor %}
+</div>
+
+{# ── Section 3: Estimator Workload ───────────────────────────────── #}
+<div class="estimate-board-section estimate-board-workload">
+  <h2 class="estimate-board-section__title">Estimator Workload</h2>
+  {% if workload|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Estimator</th>
+          <th>Active Requests</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in workload %}
+          <tr{% if row.is_current %} class="workload-current"{% endif %}>
+            <td>{{ row.name }}</td>
+            <td>{{ row.count }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="estimate-board-empty">No active estimate assignments.</p>
+  {% endif %}
+</div>
+
+{# ── Section 4: Recent Activity ──────────────────────────────────── #}
+<div class="estimate-board-section estimate-board-activity">
+  <h2 class="estimate-board-section__title">Recent Activity (48h)</h2>
+  {% if activity|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Who</th>
+          <th>Action</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in activity %}
+          <tr>
+            <td>{{ item.date }}</td>
+            <td>{{ item.user }}</td>
+            <td>{{ item.action }}</td>
+            <td>
+              {% if item.url %}
+                <a href="{{ item.url }}">{{ item.context }}</a>
+              {% else %}
+                {{ item.context }}
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="estimate-board-empty">No activity in the last 48 hours.</p>
+  {% endif %}
+</div>

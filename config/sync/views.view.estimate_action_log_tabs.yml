@@ -1,0 +1,482 @@
+uuid: 3959dbc7-86e6-415d-a835-8ef20667ebb3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.estimate_action_log.log
+    - eck.eck_type.estimate_action_log.request_log
+    - field.storage.estimate_action_log.field_action
+    - field.storage.estimate_action_log.field_admin_override
+    - field.storage.estimate_action_log.field_context
+    - field.storage.estimate_action_log.field_from_stage
+    - field.storage.estimate_action_log.field_from_status
+    - field.storage.estimate_action_log.field_to_stage
+    - field.storage.estimate_action_log.field_to_status
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+    - user.role.teammates
+  module:
+    - eck
+    - user
+id: estimate_action_log_tabs
+label: 'Estimate Action Log Tabs'
+module: views
+description: 'Action log tabs on estimate and estimate_request entities.'
+tag: ''
+base_table: estimate_action_log_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      fields:
+        created:
+          id: created
+          table: estimate_action_log_field_data
+          field: created
+          entity_type: estimate_action_log
+          entity_field: created
+          plugin_id: field
+          label: Date
+          type: timestamp
+          settings:
+            date_format: short
+            custom_date_format: ''
+            timezone: ''
+            tooltip:
+              date_format: long
+              custom_date_format: ''
+            time_diff:
+              enabled: false
+              future_format: '@interval hence'
+              past_format: '@interval ago'
+              granularity: 2
+              refresh: 60
+              description: ''
+        uid:
+          id: uid
+          table: estimate_action_log_field_data
+          field: uid
+          entity_type: estimate_action_log
+          entity_field: uid
+          plugin_id: field
+          label: By
+          type: entity_reference_label
+          settings:
+            link: true
+        field_action:
+          id: field_action
+          table: estimate_action_log__field_action
+          field: field_action
+          plugin_id: field
+          label: Action
+          type: string
+          settings:
+            link_to_entity: false
+        field_context:
+          id: field_context
+          table: estimate_action_log__field_context
+          field: field_context
+          plugin_id: field
+          label: Notes
+          type: basic_string
+          settings: {  }
+        field_admin_override:
+          id: field_admin_override
+          table: estimate_action_log__field_admin_override
+          field: field_admin_override
+          plugin_id: field
+          label: 'Admin Override'
+          type: boolean
+          settings:
+            format: yes-no
+            format_custom_false: ''
+            format_custom_true: ''
+      pager:
+        type: full
+        options:
+          pagination_heading_level: h4
+          items_per_page: 50
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+            teammates: teammates
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: 'No activity logged yet.'
+            format: plain_text
+      sorts:
+        created:
+          id: created
+          table: estimate_action_log_field_data
+          field: created
+          entity_type: estimate_action_log
+          entity_field: created
+          plugin_id: date
+          order: DESC
+      style:
+        type: table
+        options:
+          columns:
+            created: created
+            uid: uid
+            field_action: field_action
+            field_context: field_context
+            field_admin_override: field_admin_override
+          default: created
+          info:
+            created:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            uid:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_action:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_context:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_admin_override:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+      row:
+        type: fields
+      query:
+        type: views_query
+        options:
+          disable_sql_rewrite: false
+          distinct: false
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.estimate_action_log.field_action'
+        - 'config:field.storage.estimate_action_log.field_admin_override'
+        - 'config:field.storage.estimate_action_log.field_context'
+  estimate_log:
+    id: estimate_log
+    display_title: 'Estimate Action Log'
+    display_plugin: page
+    position: 1
+    display_options:
+      fields:
+        created:
+          id: created
+          table: estimate_action_log_field_data
+          field: created
+          entity_type: estimate_action_log
+          entity_field: created
+          plugin_id: field
+          label: Date
+          type: timestamp
+          settings:
+            date_format: short
+            custom_date_format: ''
+            timezone: ''
+            tooltip:
+              date_format: long
+              custom_date_format: ''
+            time_diff:
+              enabled: false
+              future_format: '@interval hence'
+              past_format: '@interval ago'
+              granularity: 2
+              refresh: 60
+              description: ''
+        uid:
+          id: uid
+          table: estimate_action_log_field_data
+          field: uid
+          entity_type: estimate_action_log
+          entity_field: uid
+          plugin_id: field
+          label: By
+          type: entity_reference_label
+          settings:
+            link: true
+        field_action:
+          id: field_action
+          table: estimate_action_log__field_action
+          field: field_action
+          plugin_id: field
+          label: Action
+          type: string
+          settings:
+            link_to_entity: false
+        field_from_stage:
+          id: field_from_stage
+          table: estimate_action_log__field_from_stage
+          field: field_from_stage
+          plugin_id: field
+          label: From
+          type: entity_reference_label
+          settings:
+            link: false
+        field_to_stage:
+          id: field_to_stage
+          table: estimate_action_log__field_to_stage
+          field: field_to_stage
+          plugin_id: field
+          label: To
+          type: entity_reference_label
+          settings:
+            link: false
+        field_context:
+          id: field_context
+          table: estimate_action_log__field_context
+          field: field_context
+          plugin_id: field
+          label: Notes
+          type: basic_string
+          settings: {  }
+        field_admin_override:
+          id: field_admin_override
+          table: estimate_action_log__field_admin_override
+          field: field_admin_override
+          plugin_id: field
+          label: 'Admin Override'
+          type: boolean
+          settings:
+            format: yes-no
+            format_custom_false: ''
+            format_custom_true: ''
+      arguments:
+        field_estimate_target_id:
+          id: field_estimate_target_id
+          table: estimate_action_log__field_estimate
+          field: field_estimate_target_id
+          plugin_id: entity_target_id
+          default_action: 'not found'
+          exception:
+            value: all
+            title_enable: false
+            title: All
+          title_enable: false
+          default_argument_type: fixed
+          specify_validation: false
+          validate:
+            type: none
+            fail: 'not found'
+          break_phrase: false
+          not: false
+      filters:
+        type:
+          id: type
+          table: estimate_action_log_field_data
+          field: type
+          entity_type: estimate_action_log
+          entity_field: type
+          plugin_id: bundle
+          operator: in
+          value:
+            log: log
+          group: 1
+          exposed: false
+      defaults:
+        fields: false
+        arguments: false
+        filters: false
+      display_extenders: {  }
+      path: estimate/%/action-log
+      menu:
+        type: tab
+        title: 'Action Log'
+        weight: 10
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.estimate_action_log.field_action'
+        - 'config:field.storage.estimate_action_log.field_admin_override'
+        - 'config:field.storage.estimate_action_log.field_context'
+        - 'config:field.storage.estimate_action_log.field_from_stage'
+        - 'config:field.storage.estimate_action_log.field_to_stage'
+  request_log:
+    id: request_log
+    display_title: 'Request Action Log'
+    display_plugin: page
+    position: 2
+    display_options:
+      fields:
+        created:
+          id: created
+          table: estimate_action_log_field_data
+          field: created
+          entity_type: estimate_action_log
+          entity_field: created
+          plugin_id: field
+          label: Date
+          type: timestamp
+          settings:
+            date_format: short
+            custom_date_format: ''
+            timezone: ''
+            tooltip:
+              date_format: long
+              custom_date_format: ''
+            time_diff:
+              enabled: false
+              future_format: '@interval hence'
+              past_format: '@interval ago'
+              granularity: 2
+              refresh: 60
+              description: ''
+        uid:
+          id: uid
+          table: estimate_action_log_field_data
+          field: uid
+          entity_type: estimate_action_log
+          entity_field: uid
+          plugin_id: field
+          label: By
+          type: entity_reference_label
+          settings:
+            link: true
+        field_action:
+          id: field_action
+          table: estimate_action_log__field_action
+          field: field_action
+          plugin_id: field
+          label: Action
+          type: string
+          settings:
+            link_to_entity: false
+        field_from_status:
+          id: field_from_status
+          table: estimate_action_log__field_from_status
+          field: field_from_status
+          plugin_id: field
+          label: From
+          type: entity_reference_label
+          settings:
+            link: false
+        field_to_status:
+          id: field_to_status
+          table: estimate_action_log__field_to_status
+          field: field_to_status
+          plugin_id: field
+          label: To
+          type: entity_reference_label
+          settings:
+            link: false
+        field_context:
+          id: field_context
+          table: estimate_action_log__field_context
+          field: field_context
+          plugin_id: field
+          label: Notes
+          type: basic_string
+          settings: {  }
+        field_admin_override:
+          id: field_admin_override
+          table: estimate_action_log__field_admin_override
+          field: field_admin_override
+          plugin_id: field
+          label: 'Admin Override'
+          type: boolean
+          settings:
+            format: yes-no
+            format_custom_false: ''
+            format_custom_true: ''
+      arguments:
+        field_request_target_id:
+          id: field_request_target_id
+          table: estimate_action_log__field_request
+          field: field_request_target_id
+          plugin_id: entity_target_id
+          default_action: 'not found'
+          exception:
+            value: all
+            title_enable: false
+            title: All
+          title_enable: false
+          default_argument_type: fixed
+          specify_validation: false
+          validate:
+            type: none
+            fail: 'not found'
+          break_phrase: false
+          not: false
+      filters:
+        type:
+          id: type
+          table: estimate_action_log_field_data
+          field: type
+          entity_type: estimate_action_log
+          entity_field: type
+          plugin_id: bundle
+          operator: in
+          value:
+            request_log: request_log
+          group: 1
+          exposed: false
+      defaults:
+        fields: false
+        arguments: false
+        filters: false
+      display_extenders: {  }
+      path: estimate_request/%/action-log
+      menu:
+        type: tab
+        title: 'Action Log'
+        weight: 10
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.estimate_action_log.field_action'
+        - 'config:field.storage.estimate_action_log.field_admin_override'
+        - 'config:field.storage.estimate_action_log.field_context'
+        - 'config:field.storage.estimate_action_log.field_from_status'
+        - 'config:field.storage.estimate_action_log.field_to_status'

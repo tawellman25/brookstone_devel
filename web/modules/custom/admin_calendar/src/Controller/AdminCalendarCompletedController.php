@@ -242,6 +242,12 @@ class AdminCalendarCompletedController extends ControllerBase {
       $signoff_first = trim($row->signoff_first ?? '');
       $signoff_last  = trim($row->signoff_last ?? '');
       $signoff_name  = trim($signoff_first . ' ' . $signoff_last) ?: 'Unknown';
+      // Initials: First char upper, second char lower, last initial upper (e.g. RuA).
+      $signoff_initials = $signoff_first && $signoff_last
+        ? mb_strtoupper(mb_substr($signoff_first, 0, 1))
+          . mb_strtolower(mb_substr($signoff_first, 1, 1))
+          . mb_strtoupper(mb_substr($signoff_last, 0, 1))
+        : '??';
       // Sort key: last name, first name.
       $signoff_sort  = strtolower(trim($signoff_last . ' ' . $signoff_first));
 
@@ -257,7 +263,7 @@ class AdminCalendarCompletedController extends ControllerBase {
 
       $events[] = [
         'id'     => 'completed_' . $row->id,
-        'title'  => '✓ ' . $property_short . ' — ' . $service_code,
+        'title'  => '✓ [' . $signoff_initials . '] — ' . $property_short . ' — ' . $service_code,
         'start'  => $date_only,
         'end'    => $date_only,
         'allDay' => TRUE,

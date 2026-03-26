@@ -36,7 +36,7 @@
         tooltip.querySelector('.bos-tooltip-order').textContent     = p.orderCode ? 'Order: ' + p.orderCode : '';
         tooltip.querySelector('.bos-tooltip-department').textContent = p.departmentName || '';
         tooltip.querySelector('.bos-tooltip-teammate').textContent  = p.completedLayer
-          ? ('Signed off: ' + (p.signedOffBy || 'Unknown') + (p.crewNames ? ' · Crew: ' + p.crewNames : ''))
+          ? (p.crewNames ? 'Crew: ' + p.crewNames : '')
           : (p.teammateName ? 'Assigned: ' + p.teammateName : '');
         tooltip.querySelector('.bos-tooltip-status').textContent    = p.statusLabel || '';
         tooltip.querySelector('.bos-tooltip-firm').textContent      = p.isFirm ? '✓ Firm' : '~ Tentative';

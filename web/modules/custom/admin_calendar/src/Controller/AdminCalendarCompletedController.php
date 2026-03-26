@@ -51,7 +51,7 @@ class AdminCalendarCompletedController extends ControllerBase {
     $end_ts   = (new \DateTime($end, $site_tz))->getTimestamp();
 
     $query = $this->database->select('wo_complete_info_field_data', 'wci');
-    $query->fields('wci', ['id', 'created']);
+    $query->fields('wci', ['id', 'created', 'uid']);
 
     // Completion date — Unix timestamp, convert to UTC ISO for FullCalendar.
     $query->join(
@@ -167,6 +167,26 @@ class AdminCalendarCompletedController extends ControllerBase {
     $query->addField('cpfn', 'field_first_name_value', 'crew_first');
     $query->addField('cpln', 'field_last_name_value', 'crew_last');
 
+    // Sign-off user (uid on wo_complete_info) — the person who submitted the sign-off form.
+    $query->leftJoin(
+      'profile',
+      'sop',
+      'sop.uid = wci.uid AND sop.type = :sopt AND sop.status = 1',
+      [':sopt' => 'teammate_profile']
+    );
+    $query->leftJoin(
+      'profile__field_first_name',
+      'sofn',
+      'sofn.entity_id = sop.profile_id AND sofn.deleted = 0'
+    );
+    $query->leftJoin(
+      'profile__field_last_name',
+      'soln',
+      'soln.entity_id = sop.profile_id AND soln.deleted = 0'
+    );
+    $query->addField('sofn', 'field_first_name_value', 'signoff_first');
+    $query->addField('soln', 'field_last_name_value', 'signoff_last');
+
     // Optional filters.
     if (!empty($department_filter)) {
       $query->condition('dept.id', $department_filter);
@@ -218,6 +238,13 @@ class AdminCalendarCompletedController extends ControllerBase {
       $crew_names = array_unique($row->crew_names ?? []);
       $crew_str   = implode(', ', $crew_names);
 
+      // Sign-off teammate name (uid on wo_complete_info).
+      $signoff_first = trim($row->signoff_first ?? '');
+      $signoff_last  = trim($row->signoff_last ?? '');
+      $signoff_name  = trim($signoff_first . ' ' . $signoff_last) ?: 'Unknown';
+      // Sort key: last name, first name.
+      $signoff_sort  = strtolower(trim($signoff_last . ' ' . $signoff_first));
+
       // Completed events are all-day on the completion date.
       $date_only = substr($row->completed_utc, 0, 10);
 
@@ -236,6 +263,7 @@ class AdminCalendarCompletedController extends ControllerBase {
         'allDay' => TRUE,
         'color'  => $color,
         'url'    => $wo_url,
+        '_sort'  => $signoff_sort,
         'extendedProps' => [
           'woEntityId'     => (int) $row->field_work_order_target_id,
           'propertyNickname' => $property,
@@ -243,11 +271,24 @@ class AdminCalendarCompletedController extends ControllerBase {
           'serviceCode'    => $service_code,
           'departmentName' => trim($row->department_title ?? '') ?: 'Unassigned',
           'crewNames'      => $crew_str,
+          'signedOffBy'    => $signoff_name,
           'backdated'      => $backdated,
           'completedLayer' => TRUE,
-          'description'    => 'Crew: ' . ($crew_str ?: 'Unknown') . ($backdated ? ' · Backdated' : ''),
+          'description'    => 'Signed off: ' . $signoff_name . ' · Crew: ' . ($crew_str ?: 'Unknown') . ($backdated ? ' · Backdated' : ''),
         ],
       ];
+    }
+
+    // Sort by sign-off teammate name (alphabetical), then by date.
+    usort($events, function ($a, $b) {
+      $cmp = strcmp($a['_sort'] ?? '', $b['_sort'] ?? '');
+      if ($cmp !== 0) return $cmp;
+      return strcmp($a['start'], $b['start']);
+    });
+
+    // Remove internal sort key before sending JSON.
+    foreach ($events as &$event) {
+      unset($event['_sort']);
     }
 
     return new JsonResponse($events);

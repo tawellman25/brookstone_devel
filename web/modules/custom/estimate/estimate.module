@@ -349,6 +349,7 @@ function _estimate_request_missing_ready_requirements(EntityInterface $req): arr
  */
 function estimate_entity_insert(EntityInterface $entity): void {
   estimate__maybe_recalculate_total($entity);
+  _estimate_log_note_added($entity);
 }
 
 /**
@@ -356,6 +357,8 @@ function estimate_entity_insert(EntityInterface $entity): void {
  */
 function estimate_entity_update(EntityInterface $entity): void {
   estimate__maybe_recalculate_total($entity);
+  _estimate_log_stage_change($entity);
+  _estimate_log_request_status_change($entity);
 }
 
 /**
@@ -701,6 +704,151 @@ function _estimate_build_requestor_card($request): string {
   $html .= '</div>';
 
   return $html;
+}
+
+/* ---------------------------------------------------------------------------
+ * Estimate Action Log — Lifecycle Event Recording
+ * --------------------------------------------------------------------------- */
+
+/**
+ * Log estimate stage changes (called from hook_entity_update).
+ */
+function _estimate_log_stage_change(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate') {
+    return;
+  }
+  if (!$entity->hasField('field_stage') || !isset($entity->original)) {
+    return;
+  }
+
+  $old_tid = (int) ($entity->original->get('field_stage')->target_id ?? 0);
+  $new_tid = (int) ($entity->get('field_stage')->target_id ?? 0);
+
+  if ($old_tid === $new_tid || $new_tid === 0) {
+    return;
+  }
+
+  try {
+    $from_label = _estimate_load_term_label($old_tid);
+    $to_label = _estimate_load_term_label($new_tid);
+    $context = 'Stage changed from ' . ($from_label ?: '(none)') . ' to ' . $to_label;
+
+    \Drupal::entityTypeManager()->getStorage('estimate_action_log')->create([
+      'type' => 'log',
+      'uid' => \Drupal::currentUser()->id(),
+      'field_estimate' => $entity->id(),
+      'field_from_stage' => $old_tid ?: NULL,
+      'field_to_stage' => $new_tid,
+      'field_action' => 'stage_change',
+      'field_context' => $context,
+      'field_admin_override' => FALSE,
+    ])->save();
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('estimate')->error('Failed to log estimate stage change on @id: @msg', [
+      '@id' => $entity->id(),
+      '@msg' => $e->getMessage(),
+    ]);
+  }
+}
+
+/**
+ * Log estimate_request status changes (called from hook_entity_update).
+ */
+function _estimate_log_request_status_change(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_request') {
+    return;
+  }
+  if (!$entity->hasField('field_status') || !isset($entity->original)) {
+    return;
+  }
+
+  $old_tid = (int) ($entity->original->get('field_status')->target_id ?? 0);
+  $new_tid = (int) ($entity->get('field_status')->target_id ?? 0);
+
+  if ($old_tid === $new_tid || $new_tid === 0) {
+    return;
+  }
+
+  try {
+    $from_label = _estimate_load_term_label($old_tid);
+    $to_label = _estimate_load_term_label($new_tid);
+    $context = 'Status changed from ' . ($from_label ?: '(none)') . ' to ' . $to_label;
+
+    \Drupal::entityTypeManager()->getStorage('estimate_action_log')->create([
+      'type' => 'request_log',
+      'uid' => \Drupal::currentUser()->id(),
+      'field_request' => $entity->id(),
+      'field_from_status' => $old_tid ?: NULL,
+      'field_to_status' => $new_tid,
+      'field_action' => 'status_change',
+      'field_context' => $context,
+      'field_admin_override' => FALSE,
+    ])->save();
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('estimate')->error('Failed to log estimate_request status change on @id: @msg', [
+      '@id' => $entity->id(),
+      '@msg' => $e->getMessage(),
+    ]);
+  }
+}
+
+/**
+ * Log note additions (called from hook_entity_insert).
+ */
+function _estimate_log_note_added(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_notes') {
+    return;
+  }
+
+  $bundle = $entity->bundle();
+  $user_name = \Drupal::currentUser()->getDisplayName();
+
+  try {
+    if ($bundle === 'note' && $entity->hasField('field_estimate') && !$entity->get('field_estimate')->isEmpty()) {
+      \Drupal::entityTypeManager()->getStorage('estimate_action_log')->create([
+        'type' => 'log',
+        'uid' => \Drupal::currentUser()->id(),
+        'field_estimate' => (int) $entity->get('field_estimate')->target_id,
+        'field_action' => 'note_added',
+        'field_context' => 'Note added by ' . $user_name,
+        'field_admin_override' => FALSE,
+      ])->save();
+    }
+    elseif ($bundle === 'request' && $entity->hasField('field_estimate_request') && !$entity->get('field_estimate_request')->isEmpty()) {
+      \Drupal::entityTypeManager()->getStorage('estimate_action_log')->create([
+        'type' => 'request_log',
+        'uid' => \Drupal::currentUser()->id(),
+        'field_request' => (int) $entity->get('field_estimate_request')->target_id,
+        'field_action' => 'note_added',
+        'field_context' => 'Note added by ' . $user_name,
+        'field_admin_override' => FALSE,
+      ])->save();
+    }
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('estimate')->error('Failed to log note addition on estimate_notes @id: @msg', [
+      '@id' => $entity->id(),
+      '@msg' => $e->getMessage(),
+    ]);
+  }
+}
+
+/**
+ * Load a taxonomy term label by TID.
+ */
+function _estimate_load_term_label(int $tid): string {
+  if ($tid <= 0) {
+    return '';
+  }
+  try {
+    $term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->load($tid);
+    return $term ? (string) $term->label() : '';
+  }
+  catch (\Throwable $e) {
+    return '';
+  }
 }
 
 /* -------------------------------------------------------------------------- */

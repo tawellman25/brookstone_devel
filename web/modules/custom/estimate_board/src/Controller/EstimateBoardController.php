@@ -195,20 +195,33 @@ class EstimateBoardController extends ControllerBase {
   }
 
   /**
+   * Closed estimate stage TIDs (Accepted, Declined).
+   */
+  const CLOSED_STAGES = [1418, 1419];
+
+  /**
    * Returns estimator workload summary.
+   *
+   * Counts estimate entities (not requests) grouped by estimate.field_assigned_to.
+   * Only counts active revision, excludes Accepted and Declined stages.
    */
   protected function getWorkload(): array {
-    $query = $this->database->select('estimate_request_field_data', 'er');
-    $query->addExpression('COUNT(er.id)', 'request_count');
-    $query->join('estimate_request__field_status', 'ers', 'ers.entity_id = er.id AND ers.deleted = 0');
-    $query->condition('ers.field_status_target_id', self::CLOSED_STATUSES, 'NOT IN');
-    $query->leftJoin('estimate_request__field_assigned_to', 'era', 'era.entity_id = er.id AND era.deleted = 0');
-    $query->leftJoin('users_field_data', 'au', 'au.uid = era.field_assigned_to_target_id');
+    $query = $this->database->select('estimate_field_data', 'e');
+    $query->addExpression('COUNT(e.id)', 'estimate_count');
+    // Only current revisions.
+    $query->join('estimate__field_is_current_revision', 'icr', 'icr.entity_id = e.id AND icr.deleted = 0');
+    $query->condition('icr.field_is_current_revision_value', 1);
+    // Exclude closed stages.
+    $query->join('estimate__field_stage', 'es', 'es.entity_id = e.id AND es.deleted = 0');
+    $query->condition('es.field_stage_target_id', self::CLOSED_STAGES, 'NOT IN');
+    // Estimator assignment.
+    $query->leftJoin('estimate__field_assigned_to', 'ea', 'ea.entity_id = e.id AND ea.deleted = 0');
+    $query->leftJoin('users_field_data', 'au', 'au.uid = ea.field_assigned_to_target_id');
     $query->addField('au', 'uid', 'estimator_uid');
     $query->addField('au', 'name', 'estimator_name');
     $query->groupBy('au.uid');
     $query->groupBy('au.name');
-    $query->orderBy('request_count', 'DESC');
+    $query->orderBy('estimate_count', 'DESC');
 
     $current_uid = (int) \Drupal::currentUser()->id();
     $workload = [];
@@ -217,7 +230,7 @@ class EstimateBoardController extends ControllerBase {
       $workload[] = [
         'uid' => $uid,
         'name' => trim($row->estimator_name ?? '') ?: 'Unassigned',
-        'count' => (int) $row->request_count,
+        'count' => (int) $row->estimate_count,
         'is_current' => ($uid === $current_uid),
       ];
     }

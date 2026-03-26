@@ -1,0 +1,278 @@
+uuid: 90a2f608-0a1d-4951-a38a-2ebc2cbb4049
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.estimate.field_assigned_to
+    - field.storage.estimate.field_stage
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+  module:
+    - eck
+    - user
+id: estimate_all_estimates
+label: 'Estimate Board - Estimates'
+module: views
+description: 'Estimate entity listings for the Estimate Board.'
+tag: ''
+base_table: estimate_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      fields:
+        title:
+          id: title
+          table: estimate_field_data
+          field: title
+          entity_type: estimate
+          entity_field: title
+          plugin_id: field
+          label: Estimate
+          type: string
+          settings:
+            link_to_entity: true
+        type:
+          id: type
+          table: estimate_field_data
+          field: type
+          entity_type: estimate
+          entity_field: type
+          plugin_id: field
+          label: Type
+          type: string
+          settings:
+            link_to_entity: false
+        field_stage:
+          id: field_stage
+          table: estimate__field_stage
+          field: field_stage
+          plugin_id: field
+          label: Stage
+          type: entity_reference_label
+          settings:
+            link: false
+        field_assigned_to:
+          id: field_assigned_to
+          table: estimate__field_assigned_to
+          field: field_assigned_to
+          plugin_id: field
+          label: Estimator
+          type: entity_reference_label
+          settings:
+            link: false
+        created:
+          id: created
+          table: estimate_field_data
+          field: created
+          entity_type: estimate
+          entity_field: created
+          plugin_id: field
+          label: Created
+          type: timestamp
+          settings:
+            date_format: short
+            custom_date_format: ''
+            timezone: ''
+            tooltip:
+              date_format: long
+              custom_date_format: ''
+            time_diff:
+              enabled: false
+              future_format: '@interval hence'
+              past_format: '@interval ago'
+              granularity: 2
+              refresh: 60
+              description: ''
+      pager:
+        type: full
+        options:
+          pagination_heading_level: h4
+          items_per_page: 50
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: 'No active estimates found.'
+            format: plain_text
+      sorts:
+        created:
+          id: created
+          table: estimate_field_data
+          field: created
+          entity_type: estimate
+          entity_field: created
+          plugin_id: date
+          order: DESC
+      filters:
+        field_is_current_revision_value:
+          id: field_is_current_revision_value
+          table: estimate__field_is_current_revision
+          field: field_is_current_revision_value
+          plugin_id: boolean
+          value: '1'
+          group: 1
+          exposed: false
+      style:
+        type: table
+        options:
+          columns:
+            title: title
+            type: type
+            field_stage: field_stage
+            field_assigned_to: field_assigned_to
+            created: created
+          default: created
+          info:
+            title:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            type:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_stage:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_assigned_to:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            created:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+      row:
+        type: fields
+      query:
+        type: views_query
+        options:
+          disable_sql_rewrite: false
+          distinct: false
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.estimate.field_assigned_to'
+        - 'config:field.storage.estimate.field_stage'
+  all_estimates:
+    id: all_estimates
+    display_title: 'All Estimates'
+    display_plugin: page
+    position: 2
+    display_options:
+      display_extenders: {  }
+      path: admin/office/estimates/all-estimates
+      menu:
+        type: tab
+        title: 'All Estimates'
+        description: ''
+        weight: 4
+        expanded: false
+        menu_name: main
+        parent: ''
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.estimate.field_assigned_to'
+        - 'config:field.storage.estimate.field_stage'
+  my_estimates:
+    id: my_estimates
+    display_title: 'My Estimates'
+    display_plugin: page
+    position: 1
+    display_options:
+      arguments:
+        field_assigned_to_target_id:
+          id: field_assigned_to_target_id
+          table: estimate__field_assigned_to
+          field: field_assigned_to_target_id
+          plugin_id: entity_target_id
+          default_action: default
+          exception:
+            value: all
+          default_argument_type: current_user
+      filters:
+        field_is_current_revision_value:
+          id: field_is_current_revision_value
+          table: estimate__field_is_current_revision
+          field: field_is_current_revision_value
+          plugin_id: boolean
+          value: '1'
+          group: 1
+          exposed: false
+      defaults:
+        arguments: false
+        filters: false
+      display_extenders: {  }
+      path: admin/office/estimates/my-estimates
+      menu:
+        type: tab
+        title: 'My Estimates'
+        description: ''
+        weight: 3
+        expanded: false
+        menu_name: main
+        parent: ''
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user
+        - user.roles
+      tags:
+        - 'config:field.storage.estimate.field_assigned_to'
+        - 'config:field.storage.estimate.field_stage'

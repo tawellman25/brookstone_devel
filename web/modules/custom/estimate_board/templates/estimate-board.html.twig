@@ -23,7 +23,7 @@
       <tbody>
         {% for item in followups %}
           <tr class="overdue-{{ item.severity }}">
-            <td><a href="{{ item.url }}">{{ item.client }}</a></td>
+            <td><a href="{{ item.url }}" target="_blank">{{ item.client }}</a></td>
             <td>{{ item.property }}</td>
             <td>{{ item.services }}</td>
             <td>{{ item.assigned }}</td>
@@ -50,7 +50,7 @@
       {% if group.items|length > 0 %}
         <ul class="pipeline-list">
           {% for item in group.items %}
-            <li><a href="{{ item.url }}">{{ item.client }}</a> — {{ item.title }}</li>
+            <li><a href="{{ item.url }}" target="_blank">{{ item.client }}</a> — {{ item.title }}</li>
           {% endfor %}
         </ul>
       {% else %}
@@ -106,7 +106,7 @@
             <td>{{ item.action }}</td>
             <td>
               {% if item.url %}
-                <a href="{{ item.url }}">{{ item.context }}</a>
+                <a href="{{ item.url }}" target="_blank">{{ item.context }}</a>
               {% else %}
                 {{ item.context }}
               {% endif %}

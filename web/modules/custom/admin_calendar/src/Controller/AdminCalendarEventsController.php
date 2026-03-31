@@ -169,6 +169,7 @@ class AdminCalendarEventsController extends ControllerBase {
     $query->addExpression("DATE_FORMAT(FROM_UNIXTIME(sdt.field_date_value), :fmt_start)", 'date_start', [':fmt_start' => '%Y-%m-%dT%H:%i:%s']);
     $query->addExpression("DATE_FORMAT(FROM_UNIXTIME(sdt.field_date_end_value), :fmt_end)", 'date_end', [':fmt_end' => '%Y-%m-%dT%H:%i:%s']);
     $query->addField('sdt', 'field_date_duration', 'date_duration');
+    $query->addField('sdt', 'field_date_value', 'date_ts');
 
     // Convert FullCalendar ISO range params to Unix timestamps for comparison.
     $site_tz  = new \DateTimeZone(date_default_timezone_get());
@@ -409,8 +410,13 @@ class AdminCalendarEventsController extends ControllerBase {
       // For all-day events send date only (no time) — FullCalendar renders
       // these as all-day blocks. For timed events send full ISO datetime.
       if ($is_all_day) {
-        $fc_start = substr($row->date_start, 0, 10);
-        $fc_end   = substr($row->date_start, 0, 10);
+        // Use PHP to convert timestamp to date in site timezone.
+        // Avoids FROM_UNIXTIME server-timezone dependency.
+        $site_tz  = new \DateTimeZone(date_default_timezone_get());
+        $fc_start = (new \DateTime('@' . $row->date_ts, $site_tz))
+          ->setTimezone($site_tz)
+          ->format('Y-m-d');
+        $fc_end   = $fc_start;
       }
       else {
         $fc_start = $row->date_start;

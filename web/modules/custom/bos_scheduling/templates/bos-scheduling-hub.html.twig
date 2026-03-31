@@ -1,0 +1,47 @@
+<div class="bos-hub-wrap">
+  <p class="bos-hub-intro">Bulk schedule Work Orders by service type. Select a tool below to assign dates and technicians.</p>
+  <div class="bos-hub-stats">
+    <div class="bos-hub-stat"><div class="bos-hub-stat-label">Total unscheduled</div><div class="bos-hub-stat-val bos-hub-stat--amber">{{ stats.total_unscheduled }}</div></div>
+    <div class="bos-hub-stat"><div class="bos-hub-stat-label">Scheduled this week</div><div class="bos-hub-stat-val bos-hub-stat--blue">{{ stats.scheduled_week }}</div></div>
+    <div class="bos-hub-stat"><div class="bos-hub-stat-label">Tools available</div><div class="bos-hub-stat-val">{{ stats.active_tools }}</div></div>
+    <div class="bos-hub-stat"><div class="bos-hub-stat-label">Tools coming soon</div><div class="bos-hub-stat-val">{{ stats.planned_tools }}</div></div>
+  </div>
+  {% if active_tools is not empty %}
+    <div class="bos-hub-section-label">Available tools</div>
+    <div class="bos-hub-cards">
+      {% for key, tool in active_tools %}
+        <a href="{{ tool.path }}" class="bos-hub-card bos-hub-card--active">
+          <div class="bos-hub-card-header">
+            <span class="bos-hub-card-title">{{ tool.label }}</span>
+            <span class="bos-hub-badge bos-hub-badge--active">Live</span>
+          </div>
+          <div class="bos-hub-count">{{ tool.unscheduled }}</div>
+          <div class="bos-hub-count-label">unscheduled WOs</div>
+          <div class="bos-hub-types">{{ tool.type_labels }}</div>
+          <div class="bos-hub-progress">
+            <div class="bos-hub-progress-labels"><span>Season progress</span><span>{{ tool.scheduled }} of {{ tool.total }}</span></div>
+            <div class="bos-hub-progress-bar"><div class="bos-hub-progress-fill" style="width:{{ tool.progress_pct }}%"></div></div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% if planned_tools is not empty %}
+    <div class="bos-hub-section-label">Coming soon</div>
+    <div class="bos-hub-cards">
+      {% for key, tool in planned_tools %}
+        <div class="bos-hub-card bos-hub-card--planned">
+          <div class="bos-hub-card-header">
+            <span class="bos-hub-card-title">{{ tool.label }}</span>
+            <span class="bos-hub-badge bos-hub-badge--planned">Planned</span>
+          </div>
+          {% if tool.unscheduled > 0 %}
+            <div class="bos-hub-count bos-hub-count--muted">{{ tool.unscheduled }}</div>
+            <div class="bos-hub-count-label">unscheduled WOs</div>
+          {% endif %}
+          <div class="bos-hub-types">{{ tool.type_labels }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

@@ -39,3 +39,13 @@ bos_scheduling.sprinkler_scheduling_save:
   methods: [POST]
   options:
     _admin_route: TRUE
+
+bos_scheduling.scheduling_hub:
+  path: '/admin/office/work-orders/scheduling'
+  defaults:
+    _controller: '\Drupal\bos_scheduling\Controller\SchedulingHubController::page'
+    _title: 'Scheduling Hub'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+  options:
+    _admin_route: TRUE

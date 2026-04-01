@@ -54,10 +54,12 @@ Storage: ECK
 - Notes attached to an estimate. Append-only in practice.
 
 ## Bundles
-`note` (single bundle)
+- `note` — notes attached to an estimate
+- `request` — notes attached to an estimate request
 
 ## Required Relationships
-- `field_estimate` → `estimate`
+- `note` bundle: `field_estimate` → `estimate`
+- `request` bundle: `field_estimate_request` → `estimate_request`
 
 ## Key Fields
 - `field_note` — long text note body
@@ -111,3 +113,23 @@ Storage: ECK
 
 ## Deletion / Archival
 - Do not delete. Permanent audit trail.
+
+## Logging Implementation (estimate.module)
+
+Logging is wired via hooks in `estimate.module`:
+
+- `hook_entity_update` on `estimate`: logs stage changes to `estimate_action_log:log`
+- `hook_entity_update` on `estimate_request`: logs status changes to `estimate_action_log:request_log`
+- `hook_entity_insert` on `estimate_notes`: logs note creation (both `note` and `request` bundles)
+- `hook_entity_delete` on `estimate_notes`: logs note deletion
+
+All log creation is wrapped in try/catch — log failures never break the parent save.
+
+## Views
+
+- `views.view.estimate_action_log_tabs` — two page displays:
+  - `/estimate/{id}/action-log` — local task tab on estimate entities (bundle filter: log)
+  - `/estimate_request/{id}/action-log` — local task tab on estimate_request entities (bundle filter: request_log)
+  - Table format: Date, By, Action, From, To, Notes, Admin Override
+
+Updated: April 2026

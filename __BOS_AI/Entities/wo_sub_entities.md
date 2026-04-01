@@ -173,7 +173,7 @@ Storage: ECK
 - `field_where_was_it_dumped` → `taxonomy_term`
 
 ## Key Fields
-- `field_load_s_amount` — load size (list)
+- `field_load_s_amount` — load size (list): bucket_or_less, few_buckets, quarter_load, half_load, full_load, hopper_full, hopper_half
 - `field_dumping_how_many_full_load` — count of full loads
 - `field_dump_fee` — receipt amount
 - `field_dump_rate` — rate used for calculation

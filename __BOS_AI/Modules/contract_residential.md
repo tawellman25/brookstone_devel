@@ -120,8 +120,24 @@ Administrator role may bypass guardrails.
 
 ---
 
+## Bugs Fixed (April 2026)
+
+- **CheckupGeneratorQueueWorker null clone**: `mostRecentScheduledDate()` returned
+  a broken DrupalDateTime when field_date (smartdate) returned a Unix timestamp
+  instead of a date string. Fix: use `DrupalDateTime::createFromTimestamp()` for
+  numeric values. Added safety counter on while loop to prevent infinite loops.
+
+- **CreateTrunkBoreWorkOrderAction wrong field**: Referenced `field_trunk_bore_spray`
+  (does not exist) instead of `field_trunk_bore_prevention`. Fixed.
+
+- **CreatePinyonPineIpsBeetleWorkOrderAction cross-year guard**: All 3 season
+  variants (Spring/Summer/Fall) had a property-level duplicate check that blocked
+  WO creation for properties with WOs from prior year contracts. Removed the
+  cross-year guard; the contract-section-level `field_work_order.isEmpty()` check
+  is sufficient.
+
 ## Status
 
-Updated: March 2026
-Added: Weed spray automation hook, field_active_contract_year,
-SprayRouteRemoveAction, bug fix notes on Off actions.
+Updated: April 2026
+Added: Checkup generator null clone fix, trunk bore field fix,
+ips beetle cross-year guard removal.

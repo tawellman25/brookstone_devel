@@ -72,7 +72,7 @@ These IDs are referenced directly in `wo_*` module hook guards. If the status ta
 
 | Module | Bundle | Notes |
 |---|---|---|
-| `wo_aerating` | `aerating` | Reads `property_landscape_details.field_turf_sq_footage`; uses `sq_ft_break_points` pricing |
+| `wo_aerating` | `aerating` | Reads `property_landscape_details.field_turf_sq_footage`; uses `sq_ft_break_points` pricing. Also calls `_wo_aerating_sync_aeration_flag()` on insert/update to update `field_aeration_flag_heads` on linked sprinkler_start_up WOs via `bos_scheduling.aeration_flag` service. |
 | `wo_aspen_twig_gall` | `aspen_twig_gall` | Reads/writes `property_spraying_info:aspen_twig_gall` |
 | `wo_christmas_decorations` | `christmas_decorations` | Reads/writes `property_christmas_decor` |
 | `wo_cooley_spruce_gall` | `cooley_spruce_gall` | Reads/writes `property_spraying_info:cooley_spruce` |
@@ -97,12 +97,12 @@ These IDs are referenced directly in `wo_*` module hook guards. If the status ta
 | `wo_sprinkler_design` | `sprinkler_design` | Writes to `property_sprinkler_design` |
 | `wo_sprinkler_installation` | `sprinkler_installation` | Writes to `property_sprinkler_system` |
 | `wo_sprinkler_repair` | `sprinkler_repair` | |
-| `wo_sprinkler_start_up` | `sprinkler_start_up` | Reads/writes `property_sprinkler_system`, `property_system_controller` |
+| `wo_sprinkler_start_up` | `sprinkler_start_up` | Reads/writes `property_sprinkler_system`, `property_system_controller`. Also calls `bos_scheduling.aeration_flag` service on insert/update to set `field_aeration_flag_heads` based on active aerating WOs for the property. |
 | `wo_sprinkler_winterizing` | `sprinkler_winterizing` | Reads/writes `property_sprinkler_system`, `property_system_controller` |
 | `wo_summer_pruning` | `summer_pruning` | |
 | `wo_trunk_bore` | `trunk_bore` | Reads/writes `property_spraying_info:trunk_bore` |
 | `wo_weed_pulling` | `weed_pulling` | |
-| `wo_weed_spraying` | `weed_spraying` | Reads/writes `property_spraying_info:weed_spraying` |
+| `wo_weed_spraying` | `weed_spraying` | Reads/writes `property_spraying_info:weed_spraying`. Presave guard blocks duplicate open WOs per property. Form alter redirects crew roles to existing open WO if one exists. |
 | `wo_winter_pruning` | `winter_pruning` | |
 | `wo_backflow_testing` | `backflow_testing` | Labor: `field_sprinkler_technician_rate`; TODO: write last test date to `property_sprinkler_system:system` once field exists |
 | `wo_landscape_lighting` | `landscape_lighting` | Labor: `field_maintenance_crew_labor`; no property detail write-back |

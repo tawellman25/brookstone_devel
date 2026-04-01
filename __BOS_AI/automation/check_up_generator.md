@@ -171,3 +171,20 @@ Any changes to:
 - contract gating
 
 **must be reviewed as BOS automation changes** and documented here.
+
+---
+
+## Bug Fixes
+
+### April 2026 — Null clone crash in mostRecentScheduledDate()
+**Symptom:** `__clone method called on non-object` in `DateTimePlus->__clone()`.
+**Root cause:** `field_date` is smartdate — `->value` returns a Unix timestamp (integer),
+not a date string. Code was calling `new DrupalDateTime(substr(timestamp, 0, 10))` which
+created a broken DateTime object that crashed on `clone`.
+**Fix:** Use `DrupalDateTime::createFromTimestamp()` for numeric values. Added nullable
+type hint on `nextWeekdayOnOrAfter()` and safety counter on while loop.
+
+### April 2026 — field_date all_day flag
+Scheduling entities created by the checkup generator now set `all_day: TRUE` on
+`field_date` (smartdate) in addition to duration 1439. Also sets
+`field_scheduled_date_and_time` alongside `field_date` for legacy field compat.

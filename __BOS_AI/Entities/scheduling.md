@@ -292,8 +292,29 @@ Features:
 - Skips WOs that already have a scheduling record (idempotent)
 - Progress bar showing overall season completion
 
-Future paths planned under /admin/office/work-orders/scheduling/:
-- /spraying — pre-emergent, weed spray bulk scheduling
-- /clean-ups — spring/fall cleanup, pruning bulk scheduling
-- /landscaping — design-build WO bulk scheduling
+### Scheduling Hub
+Path: /admin/office/work-orders/scheduling
+Access: administrator, administration, supervisor, site_admin, site_assistant
+Menu: Under Office → Work Orders → Scheduling
+
+Landing page for all bulk scheduling tools. Shows:
+- Stats: total unscheduled, scheduled this week, tools available/planned
+- Active tool cards with unscheduled WO counts and season progress bars
+- Planned tool cards (coming soon, grayed out)
+
+Active tools:
+- Sprinkler Systems → /admin/office/work-orders/scheduling/sprinkler
+
+Planned tools (not yet built):
+- Spraying → /admin/office/work-orders/scheduling/spraying
+- Clean-ups → /admin/office/work-orders/scheduling/clean-ups
+- Landscaping → /admin/office/work-orders/scheduling/landscaping
+
+### Timezone Handling
+All scheduling controllers use `date_default_timezone_get()` instead of
+hardcoded 'America/Denver'. This reads Drupal's system.date config.
+All-day event dates are converted in PHP from Unix timestamps using the
+site timezone, bypassing FROM_UNIXTIME server-timezone dependency.
+
+Updated: April 2026
 

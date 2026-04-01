@@ -42,7 +42,7 @@ class CreateTrunkBoreWorkOrderAction extends ViewsBulkOperationsActionBase {
       }
 
       // Load the referenced Trunk Bored entity.
-      $trunk_bore_spray_id = $contract->get('field_trunk_bore_spray')->target_id;
+      $trunk_bore_spray_id = $contract->get('field_trunk_bore_prevention')->target_id;
       $trunk_bore_spray_section = $entity_type_manager->getStorage('contract_sections')->load($trunk_bore_spray_id);
       if (!$trunk_bore_spray_section) {
         $messenger->addError('Referenced Trunk Bore entity not found.');

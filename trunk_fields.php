@@ -1,0 +1,1 @@
+<?php $c = \Drupal::entityTypeManager()->getStorage('contracts')->load(1); $f = array_keys($c->getFields()); $t = array_values(array_filter($f, function($x) { return strpos($x, 'trunk') !== false; })); print_r($t);

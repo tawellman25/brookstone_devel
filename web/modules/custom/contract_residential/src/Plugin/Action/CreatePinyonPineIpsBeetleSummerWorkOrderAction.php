@@ -63,20 +63,6 @@ class CreatePinyonPineIpsBeetleSummerWorkOrderAction extends ViewsBulkOperations
         return;
       }
 
-      // Check for existing work order for this property and Summer season.
-      $existing_work_orders = $entity_type_manager->getStorage('work_order')->getQuery()
-        ->condition('type', 'pinion_pine_ips_beetle')
-        ->condition('field_property', $property_id)
-        ->condition('field_ips_beetle_season_ref', 1101) // Summer
-        ->accessCheck(FALSE)
-        ->count()
-        ->execute();
-
-      if ($existing_work_orders > 0) {
-        $messenger->addError($this->t('A Summer Pinyon Pine Ips Beetle Work Order already exists for this property in Contract #@id.', ['@id' => $contract_id]));
-        return;
-      }
-
       // Get the value of the 'field_estimate' field and extract the estimated price.
       $estimate_text = $pinyon_pine_ips_beetle_spray_section->get('field_estimate')->value;
       if ($estimate_text !== null) {

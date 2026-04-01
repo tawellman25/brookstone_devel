@@ -102,52 +102,58 @@
           saveBtn.disabled = true;
           saveBtn.textContent = 'Saving...';
 
-          fetch(saveUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: JSON.stringify({
-              wo_ids:       woIds,
-              date:         date,
-              teammate_uid: tech,
-              start_order:  startOrder,
-            }),
-          })
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (data.success) {
-              showMessage(data.message, 'success');
-              // Mark rows as scheduled.
-              checked.forEach(function(cb) {
-                cb.checked = false;
-                const row = cb.closest('.bos-sched-row');
-                if (row) {
-                  row.classList.remove('selected');
-                  row.classList.add('just-scheduled');
-                  cb.disabled = true;
-                }
+          // Fetch CSRF token first, then POST.
+          fetch('/session/token')
+            .then(function(r) { return r.text(); })
+            .then(function(token) {
+              return fetch(saveUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'X-CSRF-Token': token.trim(),
+                },
+                body: JSON.stringify({
+                  wo_ids:       woIds,
+                  date:         date,
+                  teammate_uid: tech,
+                  start_order:  startOrder,
+                }),
               });
-              if (selectAll) selectAll.checked = false;
-              updateCounts();
-              // Update start order for next batch.
-              if (orderInput) {
-                orderInput.value = startOrder + woIds.length;
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              if (data.success) {
+                showMessage(data.message, 'success');
+                // Mark rows as scheduled.
+                checked.forEach(function(cb) {
+                  cb.checked = false;
+                  const row = cb.closest('.bos-sched-row');
+                  if (row) {
+                    row.classList.remove('selected');
+                    row.classList.add('just-scheduled');
+                    cb.disabled = true;
+                  }
+                });
+                if (selectAll) selectAll.checked = false;
+                updateCounts();
+                // Update start order for next batch.
+                if (orderInput) {
+                  orderInput.value = startOrder + woIds.length;
+                }
               }
-            }
-            else {
-              showMessage(data.message || 'An error occurred.', 'error');
-            }
-          })
-          .catch(function(err) {
-            showMessage('Network error — please try again.', 'error');
-            console.error(err);
-          })
-          .finally(function() {
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Schedule selected WOs';
-          });
+              else {
+                showMessage(data.message || 'An error occurred.', 'error');
+              }
+            })
+            .catch(function(err) {
+              showMessage('Network error — please try again.', 'error');
+              console.error(err);
+            })
+            .finally(function() {
+              saveBtn.disabled = false;
+              saveBtn.textContent = 'Schedule selected WOs';
+            });
         });
       }
 

@@ -124,23 +124,9 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
               if (data.success) {
+                // Reload page after short delay so user sees the success message.
                 showMessage(data.message, 'success');
-                // Mark rows as scheduled.
-                checked.forEach(function(cb) {
-                  cb.checked = false;
-                  const row = cb.closest('.bos-sched-row');
-                  if (row) {
-                    row.classList.remove('selected');
-                    row.classList.add('just-scheduled');
-                    cb.disabled = true;
-                  }
-                });
-                if (selectAll) selectAll.checked = false;
-                updateCounts();
-                // Update start order for next batch.
-                if (orderInput) {
-                  orderInput.value = startOrder + woIds.length;
-                }
+                setTimeout(function() { window.location.reload(); }, 1500);
               }
               else {
                 showMessage(data.message || 'An error occurred.', 'error');

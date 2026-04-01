@@ -259,16 +259,16 @@ Generate it with: `zip -r /tmp/BOS_AI_docs.zip __BOS_AI/`
 |---|---|
 | `admin_calendar` | FullCalendar 6 at /teammates/calendar |
 | `business_calendar` | Company holidays/paydays ECK entity |
-| `bos_scheduling` | Dispatch board + crew daily schedule |
+| `bos_scheduling` | Dispatch board, crew daily schedule, sprinkler bulk scheduling, scheduling hub, aeration flag service |
 | `bos_spray_route_ui` | WeedSprayDaysField Views plugin |
 | `contract_residential` | Residential contract pipeline + WO generation |
-| `estimate` | Estimate entity hooks, action logging, contact cards |
+| `estimate` | Estimate entity hooks, action logging (stage/status/note changes), contact cards |
 | `estimate_board` | Estimate pipeline dashboard at /admin/office/estimates |
 | `wo_project_pipeline` | Landscaping/sprinkler WO auto-creation from estimates |
 | `wo_shared` | Auto-creates property_spraying_info on WO insert |
 | `wo_sign_off` | Crew sign-off, billing triggers, truck/trip fees |
 | `wo_total_time` | Time clock computation + WO billing recalc trigger |
-| `wo_weed_spraying` | Weed spray billing, 0-gallon guard, multi-chemical form |
+| `wo_weed_spraying` | Weed spray billing, 0-gallon guard, multi-chemical form, duplicate WO guard + crew redirect |
 
 ---
 
@@ -281,5 +281,5 @@ Generate it with: `zip -r /tmp/BOS_AI_docs.zip __BOS_AI/`
 
 ---
 
-*Last updated: March 2026*
+*Last updated: April 2026*
 *Generate fresh __BOS_AI zip before each new session*

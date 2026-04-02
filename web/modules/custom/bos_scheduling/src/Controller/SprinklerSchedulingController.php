@@ -272,6 +272,26 @@ class SprinklerSchedulingController extends ControllerBase {
       'schu.uid = schsat.field_assigned_to_target_id'
     );
     $query->addField('schu', 'uid', 'scheduled_uid');
+    $query->leftJoin(
+      'profile',
+      'schtp',
+      'schtp.uid = schu.uid AND schtp.type = :schpt AND schtp.status = 1',
+      [':schpt' => 'teammate_profile']
+    );
+    $query->leftJoin(
+      'profile__field_first_name',
+      'schfn',
+      'schfn.entity_id = schtp.profile_id AND schfn.deleted = 0'
+    );
+    $query->leftJoin(
+      'profile__field_last_name',
+      'schln',
+      'schln.entity_id = schtp.profile_id AND schln.deleted = 0'
+    );
+    $query->addExpression(
+      "TRIM(CONCAT(COALESCE(schfn.field_first_name_value,''),' ',COALESCE(schln.field_last_name_value,'')))",
+      'scheduled_name'
+    );
 
     // Total zones via sprinkler info chain.
     $query->leftJoin('property_sprinkler_info__field_property', 'psip', 'psip.field_property_target_id = wop.field_property_target_id AND psip.deleted = 0');
@@ -323,8 +343,14 @@ class SprinklerSchedulingController extends ControllerBase {
     $query->groupBy('wfd.created');
     $query->groupBy('schfd.field_date_value');
     $query->groupBy('schu.uid');
+    $query->groupBy('schfn.field_first_name_value');
+    $query->groupBy('schln.field_last_name_value');
 
     if ($sort === 'fifo') {
+      $query->addExpression('CASE WHEN schwo.entity_id IS NULL THEN 0 ELSE 1 END', 'is_scheduled_sort');
+      $query->groupBy('schwo.entity_id');
+      $query->orderBy('is_scheduled_sort', 'ASC');
+      $query->orderBy('schfd.field_date_value', 'ASC');
       $query->orderBy('wfd.created', 'ASC');
       $query->orderBy('nick.field_nickname_value', 'ASC');
     }
@@ -368,6 +394,7 @@ class SprinklerSchedulingController extends ControllerBase {
         'city_name'       => trim($row->city_name ?? '') ?: '',
         'scheduled_date'  => $row->scheduled_ts ? (new \DateTime('@' . $row->scheduled_ts))->setTimezone(new \DateTimeZone(date_default_timezone_get()))->format('M j, Y') : '',
         'scheduled_uid'   => (int) ($row->scheduled_uid ?? 0),
+        'scheduled_name'  => trim($row->scheduled_name ?? '') ?: '',
       ];
     }
 

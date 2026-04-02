@@ -143,24 +143,23 @@ function get_total_sprinkler_repair_material_list_price($workOrderId) {
  */
 function get_sprinkler_repair_total_rental_fees($workOrderId) {
     $database = \Drupal::database();
-    
-    // Query the dedicated field storage table for 'field_receipt_total_cost'.
-    $query = $database->select('wo_rental_equipment__field_receipt_total_cost', 'rental_fees');
-    
-    // Join the entity base table to access the Work Order reference.
-    // This assumes 'field_rented_for' is the correct entity reference field name.
-    $query->join('wo_rental_equipment__field_rented_for', 'work_order', 'rental_fees.entity_id = work_order.entity_id');
-    
-    // Filter by the Work Order ID.
-    $query->condition('work_order.field_rented_for_target_id', $workOrderId);
-    
-    // Sum the rental fee values.
-    $query->addExpression('SUM(rental_fees.field_receipt_total_cost_value)', 'total_rental_fee');
-    
-    // Execute the query and fetch the result.
+
+    $query = $database->select('wo_rental_equipment__field_rented_for', 'wrf');
+    $query->condition('wrf.field_rented_for_target_id', $workOrderId);
+    $query->condition('wrf.deleted', 0);
+
+    $query->leftJoin('wo_rental_equipment__field_hourly_rate', 'hr', 'hr.entity_id = wrf.entity_id AND hr.deleted = 0');
+    $query->leftJoin('wo_rental_equipment__field_hours', 'h', 'h.entity_id = wrf.entity_id AND h.deleted = 0');
+    $query->leftJoin('wo_rental_equipment__field_receipt_total_cost', 'rtc', 'rtc.entity_id = wrf.entity_id AND rtc.deleted = 0');
+
+    $query->addExpression(
+        'SUM(COALESCE(rtc.field_receipt_total_cost_value, hr.field_hourly_rate_value * h.field_hours_value, 0))',
+        'total_rental_fee'
+    );
+
     $result = $query->execute()->fetchField();
-    
-    return $result ? $result : 0;
+
+    return $result ? (float) $result : 0.0;
 }
 
 /**

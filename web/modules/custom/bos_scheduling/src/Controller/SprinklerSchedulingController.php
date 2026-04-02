@@ -61,22 +61,28 @@ class SprinklerSchedulingController extends ControllerBase {
     $filter_zip  = $request->query->get('zip', '');
     $filter_status = $request->query->get('status', 'unscheduled');
     $filter_street = $request->query->get('street', '');
+    $filter_sort   = $request->query->get('sort', 'fifo');
 
     if (!empty($filter_type) && isset(self::BUNDLES[$filter_type])) {
       $bundles = [$filter_type];
     }
 
-    $rows      = $this->getWOs($bundles, $filter_zip, $filter_status, $filter_street);
+    $rows      = $this->getWOs($bundles, $filter_zip, $filter_status, $filter_street, $filter_sort);
     $zips      = $this->getZips();
     $teammates = $this->getTeammates();
     $stats     = $this->getStats($bundles, $filter_zip);
 
-    // Group rows by zipcode.
+    // Group rows by zipcode (or flat for FIFO).
     $grouped = [];
     foreach ($rows as $row) {
-      $city = $row['city_name'] ?: '';
-      $zip  = $row['zipcode'] ?: 'Unknown';
-      $key  = $city ? $city . ' — ' . $zip : $zip;
+      if ($filter_sort === 'fifo') {
+        $key = 'All WOs — oldest first';
+      }
+      else {
+        $city = $row['city_name'] ?: '';
+        $zip  = $row['zipcode'] ?: 'Unknown';
+        $key  = $city ? $city . ' — ' . $zip : $zip;
+      }
       $grouped[$key][] = $row;
     }
 
@@ -86,6 +92,7 @@ class SprinklerSchedulingController extends ControllerBase {
       '#filter_zip'    => $filter_zip,
       '#filter_status' => $filter_status,
       '#filter_street' => $filter_street,
+      '#filter_sort'   => $filter_sort,
       '#bundles'       => self::BUNDLES,
       '#zips'          => $zips,
       '#teammates'     => $teammates,
@@ -187,9 +194,11 @@ class SprinklerSchedulingController extends ControllerBase {
   /**
    * Loads WOs matching current filters.
    */
-  protected function getWOs(array $bundles, string $zip, string $status, string $street): array {
+  protected function getWOs(array $bundles, string $zip, string $status, string $street, string $sort = 'city'): array {
     $query = $this->database->select('work_order', 'w');
     $query->fields('w', ['id', 'type']);
+    $query->join('work_order_field_data', 'wfd', 'wfd.id = w.id');
+    $query->addField('wfd', 'created', 'wo_created');
 
     // Status filter.
     $query->join('work_order__field_status', 'wos', 'wos.entity_id = w.id AND wos.deleted = 0');
@@ -311,14 +320,21 @@ class SprinklerSchedulingController extends ControllerBase {
     $query->groupBy('gate.field_gate_code_value');
     $query->groupBy('call.field_call_ahead_value');
     $query->groupBy('afh.field_aeration_flag_heads_value');
+    $query->groupBy('wfd.created');
     $query->groupBy('schfd.field_date_value');
     $query->groupBy('schu.uid');
 
-    $query->orderBy('citydata.title', 'ASC');
-    $query->orderBy('z.title', 'ASC');
-    $query->orderBy('has_aeration', 'DESC');
-    $query->orderBy('addr.field_street_address_value', 'ASC');
-    $query->orderBy('nick.field_nickname_value', 'ASC');
+    if ($sort === 'fifo') {
+      $query->orderBy('wfd.created', 'ASC');
+      $query->orderBy('nick.field_nickname_value', 'ASC');
+    }
+    else {
+      $query->orderBy('citydata.title', 'ASC');
+      $query->orderBy('z.title', 'ASC');
+      $query->orderBy('has_aeration', 'DESC');
+      $query->orderBy('addr.field_street_address_value', 'ASC');
+      $query->orderBy('nick.field_nickname_value', 'ASC');
+    }
 
     $results = $query->execute()->fetchAll();
 

@@ -46,6 +46,13 @@
       <label class="bos-sched-filter-label">Street</label>
       <input type="text" name="street" value="{{ filter_street }}" placeholder="Search street..." class="bos-sched-input">
     </div>
+    <div class="bos-sched-filter-group">
+      <label class="bos-sched-filter-label">Sort by</label>
+      <select name="sort" class="bos-sched-select">
+        <option value="fifo"{% if filter_sort == 'fifo' or filter_sort == '' %} selected{% endif %}>Date entered (FIFO)</option>
+        <option value="city"{% if filter_sort == 'city' %} selected{% endif %}>City / Street</option>
+      </select>
+    </div>
     <div class="bos-sched-filter-group bos-sched-filter-buttons">
       <label class="bos-sched-filter-label">&nbsp;</label>
       <div style="display:flex;gap:6px">

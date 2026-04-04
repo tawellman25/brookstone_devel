@@ -60,7 +60,6 @@ Included fields:
 - `field_sop_steps` — Steps & Procedures
 - `field_sop__kpis` — Key Performance Indicators
 - `field_related_sops` — Related SOPs
-- `field_sop_notes` — Notes / Exceptions
 
 These fields are governed by GOV-SOP-001 and must follow all authoring rules,
 structure, and formatting requirements.
@@ -209,14 +208,7 @@ Content rule:
 - List parent, child, and governance SOP relationships only
 - No descriptions
 
-### 18. `field_sop_notes` — Notes / Exceptions (text_long)
-Content rule:
-- Approved edge cases only
-- Documented exceptions only
-- No instructions
-- No general commentary
-
-### 19. Training bundle additional
+### 18. Training bundle additional
 - `field_required_positions` → `positions`
 - Applies only to `training` bundle SOPs
 - Defines which positions the training SOP applies to

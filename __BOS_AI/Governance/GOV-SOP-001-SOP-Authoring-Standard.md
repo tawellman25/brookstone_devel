@@ -189,13 +189,13 @@ Rules:
   - governance SOPs
 - No descriptions allowed
 
-### Notes / Exceptions
-This field has been removed from the required SOP output order.
+### Operational Notes and History
+Notes, exceptions, review history, and audit commentary are NOT part
+of authored SOP content.
 
-Operational notes, exception requests, review history, and audit
-commentary must be logged in the `sop_log` entity — not stored in
-the SOP body. The SOP is the controlled document; the log is the
-history around it.
+These must be logged in the `sop_log` entity — not stored in the SOP
+body. The SOP is the controlled document; the log is the history
+around it.
 
 See `__BOS_AI/Entities/sop_log.md` for the log entity specification.
 

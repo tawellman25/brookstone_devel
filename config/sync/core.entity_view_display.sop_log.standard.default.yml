@@ -1,0 +1,124 @@
+uuid: 9d634640-46c0-4de6-8576-5b99adda597e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop_log.standard
+    - field.field.sop_log.standard.field_log_entry
+    - field.field.sop_log.standard.field_log_status
+    - field.field.sop_log.standard.field_log_type
+    - field.field.sop_log.standard.field_requires_follow_up
+    - field.field.sop_log.standard.field_resolved_at
+    - field.field.sop_log.standard.field_resolved_by
+    - field.field.sop_log.standard.field_sop
+  module:
+    - datetime
+    - editablefields
+    - options
+    - text
+    - user
+id: sop_log.standard.default
+targetEntityType: sop_log
+bundle: standard
+mode: default
+content:
+  changed:
+    type: editablefields_formatter
+    label: above
+    settings:
+      form_mode: default
+      behaviour: inline
+      bypass_access: false
+      fallback_access: false
+      display_mode_access: ''
+      fallback_edit: false
+      display_mode_edit: ''
+      fields_ajax_trigger: ''
+      fields_ajax_trigger_event: change
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  created:
+    type: timestamp
+    label: hidden
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_log_entry:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_log_status:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_log_type:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_requires_follow_up:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_resolved_at:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_resolved_by:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_sop:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 7
+    region: content
+hidden:
+  title: true

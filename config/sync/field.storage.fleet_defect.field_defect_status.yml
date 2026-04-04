@@ -1,0 +1,39 @@
+uuid: 2037b1c1-285f-460b-b0cf-7879c007c05d
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+    - options
+id: fleet_defect.field_defect_status
+field_name: field_defect_status
+entity_type: fleet_defect
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: open
+      label: Open
+    -
+      value: scheduled
+      label: Scheduled
+    -
+      value: in_repair
+      label: 'In Repair'
+    -
+      value: resolved
+      label: Resolved
+    -
+      value: deferred
+      label: Deferred
+    -
+      value: retired_with_vehicle
+      label: 'Retired With Vehicle'
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

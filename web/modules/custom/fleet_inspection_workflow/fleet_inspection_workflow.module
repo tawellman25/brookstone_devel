@@ -25,7 +25,7 @@ function _fleet_inspection_defect_rules(): array {
     ['field_safe_to_operate', ['limited_use'], 'repair_soon', 'other'],
 
     // Warning lights
-    ['field_warning_light_status', ['present'], 'repair_soon', 'engine'],
+    ['field_warning_light_status', ['present'], 'repair_soon', 'lights_electrical'],
 
     // Fluids
     ['field_visible_leak_status', ['major'], 'urgent', 'leak'],
@@ -35,7 +35,7 @@ function _fleet_inspection_defect_rules(): array {
     ['field_tires_status', ['damaged'], 'urgent', 'tire_wheel'],
     ['field_tread_status', ['unsafe'], 'urgent', 'tire_wheel'],
     ['field_windshield_status', ['severe'], 'urgent', 'glass_visibility'],
-    ['field_seatbelt_status', ['issue'], 'repair_soon', 'body'],
+    ['field_seatbelt_status', ['issue'], 'repair_soon', 'other'],
 
     // Lights
     ['field_headlights_status', ['major_issue'], 'urgent', 'lights_electrical'],
@@ -101,8 +101,14 @@ function fleet_inspection_workflow_entity_update(EntityInterface $entity): void 
         if ($vehicle_id) {
           $vehicle = \Drupal::entityTypeManager()->getStorage('equipment')->load($vehicle_id);
           if ($vehicle) {
-            $vehicle->set('field_status', 1302); // Needing Repairs
-            $vehicle->save();
+            // Resolve "Needing Repairs" TID by name instead of hardcoding.
+            $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
+              ->loadByProperties(['vid' => 'equipment_status', 'name' => 'Needing Repairs']);
+            $needing_repairs_term = reset($terms);
+            if ($needing_repairs_term) {
+              $vehicle->set('field_status', $needing_repairs_term->id());
+              $vehicle->save();
+            }
           }
         }
       }
@@ -138,19 +144,12 @@ function fleet_inspection_workflow_entity_insert(EntityInterface $entity): void 
       return;
     }
 
-    // Only close if the defect is still open/scheduled/in_repair.
-    $closeable = ['open', 'scheduled', 'in_repair'];
+    // Transition defect to in_repair — do NOT auto-close to resolved.
+    // Resolution requires explicit confirmation (separate step).
+    $transitional = ['open', 'scheduled'];
     $current_status = $defect->get('field_defect_status')->value ?? '';
-    if (!in_array($current_status, $closeable, TRUE)) {
-      return;
-    }
-
-    $defect->set('field_defect_status', 'resolved');
-
-    // Set resolved date from the maintenance event date.
-    $event_date = $entity->get('field_event_date')->value ?? NULL;
-    if ($event_date) {
-      $defect->set('field_resolved_on', $event_date);
+    if (in_array($current_status, $transitional, TRUE)) {
+      $defect->set('field_defect_status', 'in_repair');
     }
 
     // Copy total cost to actual repair cost on defect.

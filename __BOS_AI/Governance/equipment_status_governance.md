@@ -1,4 +1,4 @@
-# BOS Governance — Equipment Status Lifecycle
+# BOS Governance — Equipment Status Lifecycle (LOCKED)
 
 Vocabulary: `equipment_status`
 Used by: `equipment.field_status` (all 8 equipment bundles)
@@ -8,154 +8,279 @@ Used by: `equipment.field_status` (all 8 equipment bundles)
 ## Purpose
 
 Defines the lifecycle states for all BOS equipment entities. Equipment status
-drives operational visibility, maintenance scheduling, and asset management
-decisions. Status must accurately reflect the current physical and operational
-state of the equipment at all times.
+drives operational visibility, maintenance scheduling, dispatch eligibility,
+and asset management decisions. Status must accurately reflect the current
+physical and operational state of the equipment at all times.
+
+---
+
+## Work Order Eligibility (Enforced)
+
+Only the following statuses are allowed for Work Order usage:
+
+* Active
+* Deployed
+
+All other statuses must be blocked from Work Order assignment.
+
+The following statuses are NOT valid for Work Orders:
+
+* Idle
+* In Storage
+* On Loan/Loaned Out
+* Being Serviced
+* Needing Repairs
+* Unrepairable
+* Salvaged for Parts
+* Lost/Stolen
+* Sold
 
 ---
 
 ## Status Definitions
 
 ### Active (TID 1301)
-Equipment is integrated into daily operations.
-- In use and fully operational
-- Available and ready for deployment at any time
-- On-site and accounted for
-- No immediate maintenance or issues pending
 
-Use this for: equipment currently in the field or at the shop, ready to work.
+Equipment is part of the active fleet and operational.
 
-### Deployed (TID 1309)
-Equipment is in active use at a specific location, often away from the main facility.
-- Installed or actively used at a client site, project location, or remote facility
-- Assigned to a particular task, project, or individual
-- May require location tracking
-- Still operational and contributing to work
+* Default operational state
+* Equipment is integrated into daily operations
+* May or may not be immediately assigned
+* No known blocking issues
 
-Use this for: equipment sent to a job site or assigned long-term to a crew/project.
-
-### Idle (TID 1311)
-Equipment is not currently in use but remains in working condition.
-- Operational and ready for short-notice deployment
-- Not contributing to current workflow
-- May be idle due to seasonal demand, waiting for a project, or serving as backup
-
-Use this for: seasonal equipment between seasons, backup units, underutilized assets.
-
-### In Storage (TID 1308)
-Equipment is stored and not in active use.
-- Maintained in a condition where it could be used again
-- Stored in a designated area (on-site or off-site)
-- Tracked in inventory as an asset
-- Held for future use, seasonal demand, or emergency replacement
-
-Use this for: winterized equipment, reserve inventory, equipment between assignments.
-
-### On Loan/Loaned Out (TID 1307)
-Equipment has been temporarily provided to another party.
-- Temporarily provided to an individual, department, or external entity
-- Ownership remains with Brookstone
-- Return is expected in the same condition (minus normal wear)
-- Must be tracked for location, user, and expected return date
-
-Use this for: equipment lent to another crew, department, or external party.
-
-### Being Serviced (TID 1303)
-Equipment is undergoing maintenance, repair, or service work.
-- Currently with technicians or service personnel
-- Not available for regular use during service
-- May be scheduled maintenance or unplanned repair
-- Service activities must be documented
-
-Use this for: equipment at the shop for maintenance, at a dealer for repair,
-or undergoing scheduled service.
-
-### Needing Repairs (TID 1302)
-Equipment requires maintenance or repair before it can return to service.
-- Not functioning as intended due to mechanical or technical issues
-- May be awaiting parts or a technician
-- Currently inoperable for its designed function
-
-Use this for: broken equipment that has been identified but not yet taken in
-for service. Transitions to "Being Serviced" when work begins.
-
-### Unrepairable (TID 1304)
-Equipment cannot be economically or technically repaired.
-- Repair is not feasible or cost exceeds replacement value
-- Required parts may be unavailable
-- May pose safety risks if repair is attempted
-
-Use this for: end-of-life equipment. Leads to salvage, disposal, or sale.
-
-### Salvaged for Parts (TID 1305)
-Equipment has been dismantled and usable components harvested.
-- More valuable as parts than as a whole unit
-- Parts removed for reuse, resale, or recycling
-- Remaining frame/shell may be disposed of
-
-Use this for: decommissioned equipment being stripped for useful components.
-
-### Lost/Stolen (TID 1310)
-Equipment is no longer in Brookstone's possession.
-- Missing due to loss or theft
-- Must be reported to authorities and insurance
-- Triggers security review
-- May be temporary if recovery is possible
-
-Use this for: equipment that cannot be located or has been confirmed stolen.
-
-### Sold (TID 1306)
-Equipment has been sold and ownership transferred.
-- Legally sold to a new owner
-- Removed from company asset inventory
-- Financial records updated (depreciation ceased, revenue recognized)
-- No longer available for operational use
-
-Use this for: equipment that has been sold. Final lifecycle state.
+Use this for: equipment in serviceable condition and part of the working fleet.
 
 ---
 
-## Lifecycle Transitions
+### Deployed (TID 1309)
+
+Equipment is actively in use at a specific location.
+
+* Assigned to a job site, project, or crew
+* May be off-site or remotely located
+* Operational and contributing to work
+
+Use this for: equipment currently in use on a job or assigned long-term.
+
+---
+
+### Idle (TID 1311)
+
+Equipment is not currently in use but staged for availability.
+
+* Fully operational
+* Explicitly staged as available for immediate dispatch
+* Preferred status for assignment preparation
+
+Use this for: backup units, seasonal readiness, or staged equipment.
+
+---
+
+### In Storage (TID 1308)
+
+Equipment is stored and not actively staged for use.
+
+* Stored in designated location
+* Maintained but not ready for immediate deployment
+* May require prep before use
+
+Rules:
+
+* Equipment must be transitioned to "Idle" before use
+* Must not be directly assigned to Work Orders
+
+Use this for: winterized equipment, reserve inventory, long-term storage.
+
+---
+
+### On Loan/Loaned Out (TID 1307)
+
+Equipment is temporarily assigned outside normal control.
+
+* Assigned to another crew, department, or external party
+* Ownership remains with Brookstone
+* Must track location, user, and return expectation
+
+Rules:
+
+* Not eligible for Work Orders
+
+Use this for: temporary reassignment or external usage.
+
+---
+
+### Needing Repairs (TID 1302)
+
+Equipment requires repair before returning to service.
+
+* Not functioning as intended
+* Awaiting diagnosis, parts, or scheduling
+* Not safe or reliable for operation
+
+Rules:
+
+* Must not be used
+* Must transition to "Being Serviced" or "Unrepairable"
+
+Use this for: identified issues not yet in active repair.
+
+---
+
+### Being Serviced (TID 1303)
+
+Equipment is actively undergoing maintenance or repair.
+
+* In shop or with technician
+* Not available for use
+
+Rules:
+
+* Must not be used
+* Must transition to "Active" or "Idle" upon completion
+
+Use this for: equipment currently being repaired or maintained.
+
+---
+
+### Unrepairable (TID 1304)
+
+Equipment cannot be economically or safely repaired.
+
+* Repair not feasible or exceeds replacement value
+* May present safety risk
+
+Rules:
+
+* Must transition to "Salvaged for Parts" or "Sold"
+* Must not return to operational states
+
+Use this for: end-of-life equipment pending disposition.
+
+---
+
+### Salvaged for Parts (TID 1305)
+
+Equipment has been decommissioned and stripped for usable parts.
+
+* No longer exists as a functional unit
+
+Rules:
+
+* Terminal state
+* Irreversible
+
+Use this for: equipment dismantled for component reuse.
+
+---
+
+### Lost/Stolen (TID 1310)
+
+Equipment is no longer in possession.
+
+* Missing or confirmed stolen
+* Requires incident reporting
+
+Rules:
+
+* Not eligible for Work Orders
+* May transition back to "Active" if recovered
+
+Use this for: missing or stolen equipment.
+
+---
+
+### Sold (TID 1306)
+
+Equipment has been sold and ownership transferred.
+
+* Removed from asset inventory
+
+Rules:
+
+* Terminal state
+* Irreversible
+
+Use this for: equipment sold to external party.
+
+---
+
+## Lifecycle Transitions (Enforced)
 
 ```
-Active ←→ Deployed ←→ Idle ←→ In Storage
-  ↓           ↓         ↓         ↓
-  └─→ On Loan/Loaned Out ←──────┘
-  ↓
-  └─→ Needing Repairs → Being Serviced → Active (repaired)
-                                       → Unrepairable → Salvaged for Parts
-                                                      → Sold
-  └─→ Lost/Stolen → (recovered) → Active
-                   → (unrecovered) → write-off
+Active → Deployed → Active
+Active → Idle
+Idle → Deployed
+
+Idle → Needing Repairs → Being Serviced → Active
+Being Serviced → Idle
+
+Any → Lost/Stolen
+Lost/Stolen → Active (if recovered)
+
+Any → Unrepairable → Salvaged for Parts
+Any → Sold
 ```
 
-### Common transitions
-- **Active → Needing Repairs → Being Serviced → Active**: standard repair cycle
-- **Active → Deployed → Active**: job site assignment and return
-- **Active → Idle → In Storage**: seasonal equipment storage
-- **Needing Repairs → Unrepairable → Salvaged for Parts**: end-of-life path
-- **Any → Sold**: equipment sale (terminal state)
-- **Any → Lost/Stolen**: unplanned loss (hopefully temporary)
+---
+
+## Status Categories (Operational)
+
+Dispatchable:
+
+* Active
+* Deployed
+
+Available (Preferred):
+
+* Idle
+
+Non-dispatchable:
+
+* In Storage
+* On Loan/Loaned Out
+
+Maintenance:
+
+* Needing Repairs
+* Being Serviced
+
+Terminal:
+
+* Sold
+* Salvaged for Parts
+
+Exception:
+
+* Lost/Stolen
 
 ---
 
 ## Rules
 
-- Equipment status must reflect current physical reality, not planned state
-- Status changes must be timely — do not leave equipment in stale states
-- "Needing Repairs" must transition to "Being Serviced" or "Unrepairable" — it is not a parking state
-- "Lost/Stolen" requires incident reporting before status is set
-- "Sold" is a terminal state — equipment must not transition back from Sold
-- "Salvaged for Parts" is a terminal state — the whole unit no longer exists
+* Equipment status must reflect current physical reality, not planned state
+* Status changes must be timely — stale statuses are not allowed
+* "Needing Repairs" must not be used as a parking state
+* "Lost/Stolen" requires incident documentation
+* "Sold" and "Salvaged for Parts" are terminal and irreversible
+* Equipment must follow defined transition paths; invalid transitions are not allowed
 
 ---
 
 ## Related Entities
 
-- `equipment_status_update` (bundle: `update`) — tracks status change events
-- `equipment_check_in_out` (bundle: `check_in`) — tracks physical custody changes
-- `equipment_status_updates` module — propagates status update entity changes to equipment entity
+* `equipment_status_update` (bundle: `update`) — tracks status change events
+* `equipment_check_in_out` (bundle: `check_in`) — tracks physical custody changes
+* `equipment_status_updates` module — propagates status updates to equipment entity
+
+---
+
+## Status
+
+* Governance: LOCKED
+* Enforcement: REQUIRED
+* Scope: All equipment bundles
 
 ---
 
 Created: April 2026
+Updated: Locked governance version

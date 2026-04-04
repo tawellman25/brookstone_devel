@@ -238,8 +238,8 @@ Intake container. One request → many estimates. Fields: `field_owner`, `field_
 #### `equipment` — 8 bundles
 `attachements` *(permanent typo — do not rename)*, `heavy_equipment`, `power_tools`, `small_engine`, `snow_plows`, `sprayers`, `trailers`, `vehicles`
 
-#### `material` — 18 bundles
-`annuals`, `brass`, `copper`, `decorative_rock`, `electric`, `galv`, `irrigation`, `landscape`, `misc`, `pavers`, `plants`, `poly`, `pumps`, `pvc`, `shrubs`, `sod`, `trees`, `xmas`
+#### `material` — 19 bundles
+`annuals`, `brass`, `copper`, `decorative_rock`, `electric`, `galv`, `irrigation`, `landscape`, `misc`, `pavers`, `plants`, `poly`, `pumps`, `pvc`, `shrubs`, `sod`, `supplies`, `trees`, `xmas`
 
 Source of truth for current pricing. WO usage snapshots unit cost into `wo_material_list_item` at time of use.
 

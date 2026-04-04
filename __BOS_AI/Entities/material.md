@@ -42,8 +42,9 @@ pumps | Pumps
 pvc | PVC  
 shrubs | Shrubs  
 sod | Sod  
-trees | Trees  
-xmas | Christmas Lights  
+supplies | Supplies
+trees | Trees
+xmas | Christmas Lights
 
 ---
 
@@ -249,5 +250,8 @@ Hard delete:
 - Some bundles use field_cost_integer as a decimal (label “Cost Integer”).
   - Naming is confusing; keep as-is unless you decide to refactor.
 - Some bundles have both field_supplier and field_suppliers.
-  - Prefer one consistent approach long-term (multi-supplier is typically better).
+  - field_supplier (singular) is LEGACY — entity_reference → User. From old system where
+    suppliers were expected to update their own prices. Never implemented. Marked for removal.
+  - field_suppliers (plural) is CURRENT — entity_reference → supplier entity. Use this one.
+  - Already removed from supplies bundle (April 2026). Remaining bundles need cleanup.
 - Some plant bundles (trees/sod) are minimal and may need cost/price fields if used for job costing.

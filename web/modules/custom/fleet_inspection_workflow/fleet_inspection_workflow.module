@@ -58,6 +58,7 @@ function _fleet_inspection_defect_rules(): array {
  * Handles:
  * - fleet_inspection: approval triggers defect creation + vehicle sync
  * - fleet_defect: out_of_service triggers vehicle status change
+ * - fleet_maintenance_event: verified complete → resolve linked defect
  */
 function fleet_inspection_workflow_entity_update(EntityInterface $entity): void {
   // ── Inspection approval workflow ──────────────────────────────────
@@ -115,6 +116,40 @@ function fleet_inspection_workflow_entity_update(EntityInterface $entity): void 
       catch (\Exception $e) {
         \Drupal::logger('fleet_inspection_workflow')->error(
           'Error syncing vehicle status from defect @id: @message',
+          ['@id' => $entity->id(), '@message' => $e->getMessage()]
+        );
+      }
+    }
+  }
+
+  // ── Maintenance verified complete → resolve linked defect ─────────
+  if ($entity->getEntityTypeId() === 'fleet_maintenance_event') {
+    if (!isset($entity->original)) {
+      return;
+    }
+
+    $old_verified = $entity->original->get('field_verified_complete')->value ?? 0;
+    $new_verified = $entity->get('field_verified_complete')->value ?? 0;
+
+    // When verified flips to TRUE, resolve the linked defect.
+    if ($new_verified && !$old_verified) {
+      try {
+        $defect_id = $entity->get('field_related_defect')->target_id ?? NULL;
+        if ($defect_id) {
+          $defect = \Drupal::entityTypeManager()->getStorage('fleet_defect')->load($defect_id);
+          if ($defect && in_array($defect->get('field_defect_status')->value, ['open', 'scheduled', 'in_repair'], TRUE)) {
+            $defect->set('field_defect_status', 'resolved');
+            $event_date = $entity->get('field_event_date')->value ?? NULL;
+            if ($event_date) {
+              $defect->set('field_resolved_on', $event_date);
+            }
+            $defect->save();
+          }
+        }
+      }
+      catch (\Exception $e) {
+        \Drupal::logger('fleet_inspection_workflow')->error(
+          'Error resolving defect from verified maintenance @id: @message',
           ['@id' => $entity->id(), '@message' => $e->getMessage()]
         );
       }
@@ -217,6 +252,20 @@ function _fleet_inspection_on_approval(EntityInterface $inspection): void {
   }
   if (in_array('abs', $issue_codes, TRUE)) {
     _fleet_inspection_create_or_merge_defect($vehicle_id, $inspection, 'abs', 'repair_soon');
+  }
+
+  // Auto-set critical issue flag when safe_to_operate = no.
+  $safe = $inspection->get('field_safe_to_operate')->value ?? 'yes';
+  if ($safe === 'no' && $inspection->hasField('field_critical_issue_flag')) {
+    $inspection->set('field_critical_issue_flag', TRUE);
+    // Use static guard to prevent recursion since we're in an update hook.
+    static $saving_critical_flag = [];
+    $key = (string) $inspection->id();
+    if (!isset($saving_critical_flag[$key])) {
+      $saving_critical_flag[$key] = TRUE;
+      $inspection->save();
+      unset($saving_critical_flag[$key]);
+    }
   }
 }
 

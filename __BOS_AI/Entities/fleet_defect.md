@@ -16,7 +16,7 @@ resolved until a maintenance event closes it.
 
 ---
 
-## Fields (14)
+## Fields (15)
 
 | Field | Type | Label | Required |
 |---|---|---|---|
@@ -34,6 +34,7 @@ resolved until a maintenance event closes it.
 | `field_actual_repair_cost` | decimal | Actual Repair Cost | No |
 | `field_resolution_notes` | text_long | Resolution Notes | No |
 | `field_resolved_on` | datetime (date only) | Resolved On | No |
+| `field_assigned_to` | entity_reference → user | Assigned To | No |
 
 ### field_defect_category values
 engine, transmission, brakes, steering_front_end, tire_wheel,

@@ -16,7 +16,7 @@ repair-vs-replace decisions.
 
 ---
 
-## Fields (13)
+## Fields (15)
 
 | Field | Type | Label | Required |
 |---|---|---|---|
@@ -33,6 +33,8 @@ repair-vs-replace decisions.
 | `field_work_performed` | text_long | Work Performed | Yes |
 | `field_next_service_due_mileage` | integer | Next Service Due Mileage | No |
 | `field_next_service_due_date` | datetime (date only) | Next Service Due Date | No |
+| `field_verified_complete` | boolean | Verified Complete | No (default: 0) |
+| `field_verified_by` | entity_reference → user | Verified By | No |
 
 ### field_event_type values
 preventive_maintenance, repair, major_repair, inspection_service,
@@ -52,7 +54,9 @@ Columns: Date, Type, Vendor, Cost, Mileage
 
 ## Relationship to Defects
 - `field_related_defect` links the maintenance event to the defect it resolves
-- A defect must only be closed when a maintenance event references it
+- On insert: linked defect transitions to `in_repair` (not resolved)
+- On `field_verified_complete` = TRUE: linked defect transitions to `resolved`
+- This is the ONLY path to resolve a defect — verified maintenance completion
 - Cost data from maintenance events feeds the Repair vs Replace Board
 
 ## Invariants

@@ -68,6 +68,16 @@ New defect created only when no matching open defect exists.
 Resolution requires explicit confirmation — maintenance event creation
 does not auto-close defects. Only transitions from open/scheduled to in_repair.
 
+## Hook: hook_entity_update — fleet_maintenance_event
+
+**Trigger:** `field_verified_complete` flips from FALSE to TRUE.
+
+**Actions:**
+1. Sets linked defect `field_defect_status` to `resolved`
+2. Sets defect `field_resolved_on` from maintenance event date
+
+This is the only path to resolve a defect — verified maintenance completion.
+
 ---
 
 ## Hook: hook_entity_update — fleet_defect

@@ -19,7 +19,7 @@ operational system of record.
 
 ---
 
-## Fields (52)
+## Fields (53)
 
 ### Identity / Linkage
 | Field | Type | Label | Required |
@@ -47,6 +47,7 @@ operational system of record.
 | `field_safe_to_operate` | list_string | Safe to Operate | Yes |
 | `field_warning_light_status` | list_string | Warning Lights | Yes |
 | `field_followup_required` | boolean | Follow-Up Required | No (default: 0) |
+| `field_critical_issue_flag` | boolean | Critical Issue Flag | No (default: 0) |
 
 `field_safe_to_operate` values: yes, limited_use, no
 `field_warning_light_status` values: none, present

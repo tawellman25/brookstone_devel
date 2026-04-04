@@ -31,9 +31,11 @@ Example: `GOV-SOP-001 - Review Note - 04/04/2026 - 8:15 AM`
 | `field_sop` | entity_reference → sop | SOP | Required. Links to the SOP this log belongs to. |
 | `field_log_type` | list_string | Log Type | Required. See allowed values below. |
 | `field_log_entry` | text_long | Log Entry | Required. One event per entry — not a running thread. |
-| `field_created_by` | entity_reference → user | Created By | Required. Explicit actor attribution. |
-| `field_logged_at` | datetime | Logged At | Required. Explicit timestamp — do not rely on entity created time. |
 | `field_log_status` | list_string | Status | Required. Default: `open`. See allowed values below. |
+
+Actor and timestamp use ECK base fields:
+- `uid` (base) — who created the log entry (Authored by)
+- `created` (base) — when the log entry was created (Authored on)
 
 ### Strongly Recommended
 
@@ -111,6 +113,6 @@ The SOP is the controlled document. The log is the history around it.
 - Append-only. Do not delete log entries.
 - One event per entry — not a running thread.
 - Log content must not bleed into the SOP document.
-- `field_logged_at` is the authoritative event timestamp, not entity `created`.
+- ECK base `uid` and `created` fields are authoritative for actor and timestamp.
 
 Created: April 2026

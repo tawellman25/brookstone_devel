@@ -296,6 +296,11 @@ Link entity between `material` and `supplier`. Enforced by `material_supplier` m
 - `equipment_check_in_out` — bundle: `check_in`
 - `equipment_status_update` — bundle: `update`
 
+#### Fleet management entities
+- `fleet_inspection` — bundle: `standard` (52 fields — weekly truck/trailer inspection records)
+- `fleet_defect` — bundle: `standard` (14 fields — actionable defect tracking)
+- `fleet_maintenance_event` — bundle: `standard` (13 fields — service/repair records)
+
 #### Time/scheduling entities
 - `scheduling` — bundle: `work_order`
 - `time_clock_entry` — bundle: `entry`
@@ -381,6 +386,7 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 | `material_supplier` | `material_suppliers:supplier` integrity: no duplicates, preferred supplier, pack qty, SKU normalization |
 | `equipment_actions` | VBO actions for equipment entities |
 | `equipment_status_updates` | Propagates equipment status update entity changes to Equipment entity |
+| `fleet_inspection_workflow` | Fleet automation: defect auto-creation on inspection approval (18 rules), maintenance event defect closure, vehicle status sync on out-of-service |
 
 ### Property modules
 | Module | Purpose |

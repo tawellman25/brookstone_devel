@@ -52,9 +52,13 @@ All SOPs must be authored and delivered in the following exact order:
 8. Steps & Procedures
 9. Key Performance Indicators
 10. Related SOPs
-11. Notes / Exceptions
 
 Deviation from this order is not allowed.
+
+Note: "Notes / Exceptions" was removed from the required output order.
+Operational notes, review history, clarifications, exception requests,
+and audit commentary must be tracked in the `sop_log` entity, not in
+the SOP body. See `__BOS_AI/Entities/sop_log.md`.
 
 ---
 
@@ -72,7 +76,7 @@ authored SOP output. These include:
 
 Those fields are defined and governed in:
 
-`__BOS_AI/System/sop.md`
+`__BOS_AI/Entities/sop.md`
 
 They must not be included in SOP authoring output unless explicitly required by
 workflow.
@@ -185,11 +189,15 @@ Rules:
   - governance SOPs
 - No descriptions allowed
 
-### Notes / Exceptions (`field_sop_notes`)
-- Only approved edge cases
-- Only documented exceptions
-- No instructions
-- No general commentary
+### Notes / Exceptions
+This field has been removed from the required SOP output order.
+
+Operational notes, exception requests, review history, and audit
+commentary must be logged in the `sop_log` entity — not stored in
+the SOP body. The SOP is the controlled document; the log is the
+history around it.
+
+See `__BOS_AI/Entities/sop_log.md` for the log entity specification.
 
 ### Tools & Resources (`field_sop_tools_and_resources`)
 - Optional field
@@ -271,6 +279,6 @@ Any SOP that does not meet these requirements is INVALID.
 
 This SOP operates within the BOS SOP entity defined in:
 
-`__BOS_AI/Entities/System/sop.md`
+`__BOS_AI/Entities/sop.md`
 
 ---

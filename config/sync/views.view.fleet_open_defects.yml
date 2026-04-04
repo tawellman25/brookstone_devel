@@ -151,6 +151,13 @@ display:
             value: 'No open defects.'
             format: plain_text
       sorts:
+        field_vehicle_number:
+          id: field_vehicle_number
+          table: equipment__field_vehicle_number
+          field: field_vehicle_number
+          relationship: field_vehicle
+          plugin_id: standard
+          order: ASC
         field_defect_severity:
           id: field_defect_severity
           table: fleet_defect__field_defect_severity
@@ -252,6 +259,14 @@ display:
       query:
         type: views_query
         options: {  }
+      relationships:
+        field_vehicle:
+          id: field_vehicle
+          table: fleet_defect__field_vehicle
+          field: field_vehicle
+          admin_label: Vehicle
+          plugin_id: standard
+          required: false
       display_extenders: {  }
     cache_metadata:
       max-age: -1

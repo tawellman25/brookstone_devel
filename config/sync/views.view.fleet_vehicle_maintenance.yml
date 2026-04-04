@@ -1,0 +1,246 @@
+uuid: 27942929-f303-4b48-ba66-72f4b665473d
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.fleet_maintenance_event.field_cost_total
+    - field.storage.fleet_maintenance_event.field_event_date
+    - field.storage.fleet_maintenance_event.field_event_type
+    - field.storage.fleet_maintenance_event.field_mileage_at_service
+    - field.storage.fleet_maintenance_event.field_vendor_or_mechanic
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+  module:
+    - datetime
+    - eck
+    - eva
+    - options
+    - user
+id: fleet_vehicle_maintenance
+label: 'Vehicle Maintenance History'
+module: views
+description: 'EVA: maintenance events for a vehicle on the equipment entity page.'
+tag: ''
+base_table: fleet_maintenance_event_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'Maintenance History'
+      fields:
+        field_event_date:
+          id: field_event_date
+          table: fleet_maintenance_event__field_event_date
+          field: field_event_date
+          plugin_id: field
+          label: Date
+          type: datetime_default
+          settings:
+            timezone_override: ''
+            date_format: short
+        field_event_type:
+          id: field_event_type
+          table: fleet_maintenance_event__field_event_type
+          field: field_event_type
+          plugin_id: field
+          label: Type
+          type: list_default
+          settings: {  }
+        field_vendor_or_mechanic:
+          id: field_vendor_or_mechanic
+          table: fleet_maintenance_event__field_vendor_or_mechanic
+          field: field_vendor_or_mechanic
+          plugin_id: field
+          label: Vendor
+          type: string
+          settings:
+            link_to_entity: false
+        field_cost_total:
+          id: field_cost_total
+          table: fleet_maintenance_event__field_cost_total
+          field: field_cost_total
+          plugin_id: field
+          label: Cost
+          type: number_decimal
+          settings:
+            thousand_separator: ','
+            decimal_separator: .
+            scale: 2
+            prefix_suffix: true
+        field_mileage_at_service:
+          id: field_mileage_at_service
+          table: fleet_maintenance_event__field_mileage_at_service
+          field: field_mileage_at_service
+          plugin_id: field
+          label: Mileage
+          type: number_integer
+          settings:
+            thousand_separator: ','
+            prefix_suffix: false
+        title:
+          id: title
+          table: fleet_maintenance_event_field_data
+          field: title
+          entity_type: fleet_maintenance_event
+          entity_field: title
+          plugin_id: field
+          label: View
+          type: string
+          settings:
+            link_to_entity: true
+      pager:
+        type: full
+        options:
+          pagination_heading_level: h4
+          items_per_page: 25
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: 'No maintenance events recorded for this vehicle.'
+            format: plain_text
+      sorts:
+        field_event_date:
+          id: field_event_date
+          table: fleet_maintenance_event__field_event_date
+          field: field_event_date
+          plugin_id: datetime
+          order: DESC
+      style:
+        type: table
+        options:
+          columns:
+            field_event_date: field_event_date
+            field_event_type: field_event_type
+            field_vendor_or_mechanic: field_vendor_or_mechanic
+            field_cost_total: field_cost_total
+            field_mileage_at_service: field_mileage_at_service
+            title: title
+          default: '-1'
+          info:
+            field_event_date:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_event_type:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_vendor_or_mechanic:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+            field_cost_total:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_mileage_at_service:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+            title:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+      row:
+        type: fields
+      query:
+        type: views_query
+        options: {  }
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.fleet_maintenance_event.field_cost_total'
+        - 'config:field.storage.fleet_maintenance_event.field_event_date'
+        - 'config:field.storage.fleet_maintenance_event.field_event_type'
+        - 'config:field.storage.fleet_maintenance_event.field_mileage_at_service'
+        - 'config:field.storage.fleet_maintenance_event.field_vendor_or_mechanic'
+  entity_view_1:
+    id: entity_view_1
+    display_title: 'Maintenance EVA'
+    display_plugin: entity_view
+    position: 1
+    display_options:
+      title: 'Maintenance History'
+      arguments:
+        field_vehicle_target_id:
+          id: field_vehicle_target_id
+          table: fleet_maintenance_event__field_vehicle
+          field: field_vehicle_target_id
+          plugin_id: entity_target_id
+          default_action: 'not found'
+          exception:
+            value: all
+            title_enable: false
+            title: All
+          title_enable: false
+          default_argument_type: fixed
+          specify_validation: false
+          validate:
+            type: none
+            fail: 'not found'
+          break_phrase: false
+          not: false
+      defaults:
+        arguments: false
+      display_extenders: {  }
+      entity_type: equipment
+      bundles:
+        vehicles: vehicles
+      show_title: true
+      argument_mode: id
+      default_argument: id
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.fleet_maintenance_event.field_cost_total'
+        - 'config:field.storage.fleet_maintenance_event.field_event_date'
+        - 'config:field.storage.fleet_maintenance_event.field_event_type'
+        - 'config:field.storage.fleet_maintenance_event.field_mileage_at_service'
+        - 'config:field.storage.fleet_maintenance_event.field_vendor_or_mechanic'

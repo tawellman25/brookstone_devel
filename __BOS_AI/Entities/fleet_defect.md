@@ -39,7 +39,7 @@ resolved until a maintenance event closes it.
 ### field_defect_category values
 engine, transmission, brakes, steering_front_end, tire_wheel,
 lights_electrical, glass_visibility, body, suspension, cooling,
-leak, abs, paperwork, trailer, other
+leak, abs, paperwork, trailer, safety, other
 
 ### field_defect_severity values
 monitor, repair_soon, urgent, out_of_service

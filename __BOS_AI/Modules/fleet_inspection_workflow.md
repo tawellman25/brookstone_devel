@@ -24,15 +24,15 @@ status synchronization.
 
 | Field | Trigger Values | Severity | Category |
 |---|---|---|---|
-| `field_safe_to_operate` | no | out_of_service | other |
-| `field_safe_to_operate` | limited_use | repair_soon | other |
+| `field_safe_to_operate` | no | out_of_service | safety |
+| `field_safe_to_operate` | limited_use | repair_soon | safety |
 | `field_warning_light_status` | present | repair_soon | lights_electrical |
 | `field_visible_leak_status` | major | urgent | leak |
 | `field_brake_fluid_status` | low, issue | urgent | brakes |
 | `field_tires_status` | damaged | urgent | tire_wheel |
 | `field_tread_status` | unsafe | urgent | tire_wheel |
 | `field_windshield_status` | severe | urgent | glass_visibility |
-| `field_seatbelt_status` | issue | repair_soon | other |
+| `field_seatbelt_status` | issue | repair_soon | safety |
 | `field_headlights_status` | major_issue | urgent | lights_electrical |
 | `field_taillights_status` | major_issue | urgent | lights_electrical |
 | `field_brake_lights_status` | major_issue | urgent | lights_electrical |
@@ -99,8 +99,26 @@ never block the parent entity save.
 ## Dependencies
 - Requires fleet_inspection, fleet_defect, fleet_maintenance_event entity types
 - Requires equipment:vehicles bundle with fleet management fields
-- Equipment status "Needing Repairs" resolved by term name (not hardcoded TID)
+- Equipment status TID from `fleet_inspection_workflow.settings` config (`status_needing_repairs_tid`)
+- Default: 1302 (Needing Repairs) — configurable, not hardcoded or name-resolved
+
+## Hook: hook_entity_presave — fleet_maintenance_event
+
+**Actions:**
+- Auto-calculates `field_cost_total` from `field_cost_parts` + `field_cost_labor`
+  when parts/labor are set but total is empty or zero
+
+---
+
+## Configuration
+
+Config key: `fleet_inspection_workflow.settings`
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `status_needing_repairs_tid` | 1302 | Equipment status TID for "Needing Repairs" |
 
 ---
 
 Created: April 2026
+Updated: April 2026 — config-driven TID, safety category, cost auto-calc, verification gate

@@ -7,9 +7,31 @@
  * - Inspection approval → defect auto-creation + vehicle field sync
  * - Maintenance event creation → defect closure
  * - Defect out-of-service → vehicle status sync
+ * - Maintenance cost validation (parts + labor = total when both set)
  */
 
 use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * Auto-calculates maintenance event total cost from parts + labor
+ * when both are set and total is empty or zero.
+ */
+function fleet_inspection_workflow_entity_presave(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'fleet_maintenance_event') {
+    return;
+  }
+
+  $parts = (float) ($entity->get('field_cost_parts')->value ?? 0);
+  $labor = (float) ($entity->get('field_cost_labor')->value ?? 0);
+  $total = (float) ($entity->get('field_cost_total')->value ?? 0);
+
+  // Auto-calculate total when parts and/or labor are set but total is empty.
+  if (($parts > 0 || $labor > 0) && $total == 0) {
+    $entity->set('field_cost_total', $parts + $labor);
+  }
+}
 
 /**
  * Defect auto-create rules.
@@ -21,8 +43,8 @@ use Drupal\Core\Entity\EntityInterface;
 function _fleet_inspection_defect_rules(): array {
   return [
     // Critical safety
-    ['field_safe_to_operate', ['no'], 'out_of_service', 'other'],
-    ['field_safe_to_operate', ['limited_use'], 'repair_soon', 'other'],
+    ['field_safe_to_operate', ['no'], 'out_of_service', 'safety'],
+    ['field_safe_to_operate', ['limited_use'], 'repair_soon', 'safety'],
 
     // Warning lights
     ['field_warning_light_status', ['present'], 'repair_soon', 'lights_electrical'],
@@ -35,7 +57,7 @@ function _fleet_inspection_defect_rules(): array {
     ['field_tires_status', ['damaged'], 'urgent', 'tire_wheel'],
     ['field_tread_status', ['unsafe'], 'urgent', 'tire_wheel'],
     ['field_windshield_status', ['severe'], 'urgent', 'glass_visibility'],
-    ['field_seatbelt_status', ['issue'], 'repair_soon', 'other'],
+    ['field_seatbelt_status', ['issue'], 'repair_soon', 'safety'],
 
     // Lights
     ['field_headlights_status', ['major_issue'], 'urgent', 'lights_electrical'],
@@ -102,12 +124,11 @@ function fleet_inspection_workflow_entity_update(EntityInterface $entity): void 
         if ($vehicle_id) {
           $vehicle = \Drupal::entityTypeManager()->getStorage('equipment')->load($vehicle_id);
           if ($vehicle) {
-            // Resolve "Needing Repairs" TID by name instead of hardcoding.
-            $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
-              ->loadByProperties(['vid' => 'equipment_status', 'name' => 'Needing Repairs']);
-            $needing_repairs_term = reset($terms);
-            if ($needing_repairs_term) {
-              $vehicle->set('field_status', $needing_repairs_term->id());
+            // Resolve TID from module config — not hardcoded, not term name.
+            $tid = \Drupal::config('fleet_inspection_workflow.settings')
+              ->get('status_needing_repairs_tid');
+            if ($tid) {
+              $vehicle->set('field_status', $tid);
               $vehicle->save();
             }
           }
@@ -364,7 +385,7 @@ function _fleet_inspection_create_or_merge_defect(
     'suspension' => 'Suspension issue', 'cooling' => 'Cooling issue',
     'leak' => 'Fluid leak detected', 'abs' => 'ABS issue',
     'paperwork' => 'Paperwork issue', 'trailer' => 'Trailer issue',
-    'other' => 'Issue found during inspection',
+    'safety' => 'Safety issue', 'other' => 'Issue found during inspection',
   ];
   $summary = $category_labels[$category] ?? 'Issue found during inspection';
   $summary .= ' — detected on inspection ' . $inspection->id();

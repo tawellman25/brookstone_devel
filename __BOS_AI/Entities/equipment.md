@@ -262,9 +262,33 @@ Key fields:
 - field_vehicle_number (Truck Number)
 - field_vin
 
+#### Fleet Management Fields (added April 2026)
+- field_current_mileage (integer) — Current Mileage
+- field_condition_score (integer) — Condition Score (1-10)
+- field_engine_health (list_string) — good, monitor, at_risk, failing
+- field_transmission_health (list_string) — good, monitor, at_risk, failing
+- field_breakdown_risk_score (integer) — Breakdown Risk Score (1-10)
+- field_fleet_decision_status (list_string) — keep, monitor, repair, replace, liquidate
+- field_utilization_class (list_string) — core, secondary, backup
+- field_estimated_resale_value (decimal) — Estimated Resale Value
+- field_last_major_failure_date (datetime) — Last Major Failure Date
+- field_open_defect_count (integer) — Open Defect Count
+
+These fields are management-owned. Crews must not update them directly.
+
 Invariants:
 - field_vehicle_number must be unique and stable.
 - If field_inspection_required is TRUE, field_last_inspection_date must be maintained.
+
+#### Related Fleet Entities
+- `fleet_inspection` — weekly inspection records (via field_vehicle)
+- `fleet_defect` — actionable defect tracking (via field_vehicle)
+- `fleet_maintenance_event` — service/repair records (via field_vehicle)
+
+EVA views show inspection history, defect history, and maintenance
+history on the vehicle entity page.
+
+See: `fleet_inspection.md`, `fleet_defect.md`, `fleet_maintenance_event.md`
 
 ---
 

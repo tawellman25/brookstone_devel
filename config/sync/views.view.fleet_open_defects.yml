@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.storage.equipment.field_vehicle_number
     - field.storage.fleet_defect.field_defect_category
     - field.storage.fleet_defect.field_defect_date_reported
     - field.storage.fleet_defect.field_defect_severity
@@ -38,6 +39,17 @@ display:
     display_options:
       title: 'Open Defects'
       fields:
+        field_vehicle_number:
+          id: field_vehicle_number
+          table: equipment__field_vehicle_number
+          field: field_vehicle_number
+          relationship: field_vehicle
+          plugin_id: field
+          label: 'Truck #'
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: false
         field_vehicle:
           id: field_vehicle
           table: fleet_defect__field_vehicle
@@ -197,7 +209,8 @@ display:
             field_estimated_repair_cost: field_estimated_repair_cost
             field_out_of_service_required: field_out_of_service_required
             field_defect_status: field_defect_status
-          default: '-1'
+            field_vehicle_number: field_vehicle_number
+          default: field_vehicle_number
           info:
             field_vehicle:
               sortable: true
@@ -254,6 +267,14 @@ display:
               separator: ''
               empty_column: false
               responsive: ''
+            field_vehicle_number:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          order: asc
       row:
         type: fields
       query:
@@ -276,6 +297,7 @@ display:
         - url.query_args
         - user.roles
       tags:
+        - 'config:field.storage.equipment.field_vehicle_number'
         - 'config:field.storage.fleet_defect.field_defect_category'
         - 'config:field.storage.fleet_defect.field_defect_date_reported'
         - 'config:field.storage.fleet_defect.field_defect_severity'
@@ -310,6 +332,7 @@ display:
         - url.query_args
         - user.roles
       tags:
+        - 'config:field.storage.equipment.field_vehicle_number'
         - 'config:field.storage.fleet_defect.field_defect_category'
         - 'config:field.storage.fleet_defect.field_defect_date_reported'
         - 'config:field.storage.fleet_defect.field_defect_severity'

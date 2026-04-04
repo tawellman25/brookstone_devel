@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.storage.equipment.field_vehicle_number
     - field.storage.fleet_inspection.field_inspection_date
     - field.storage.fleet_inspection.field_inspector_name
     - field.storage.fleet_inspection.field_notes_short
@@ -36,6 +37,17 @@ display:
     display_options:
       title: 'Inspection Review Queue'
       fields:
+        field_vehicle_number:
+          id: field_vehicle_number
+          table: equipment__field_vehicle_number
+          field: field_vehicle_number
+          relationship: field_vehicle
+          plugin_id: field
+          label: 'Truck #'
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: false
         field_inspection_date:
           id: field_inspection_date
           table: fleet_inspection__field_inspection_date
@@ -171,7 +183,8 @@ display:
             field_warning_light_status: field_warning_light_status
             field_notes_short: field_notes_short
             title: title
-          default: '-1'
+            field_vehicle_number: field_vehicle_number
+          default: field_vehicle_number
           info:
             field_inspection_date:
               sortable: true
@@ -222,6 +235,14 @@ display:
               separator: ''
               empty_column: false
               responsive: ''
+            field_vehicle_number:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          order: asc
       row:
         type: fields
       query:
@@ -244,6 +265,7 @@ display:
         - url.query_args
         - user.roles
       tags:
+        - 'config:field.storage.equipment.field_vehicle_number'
         - 'config:field.storage.fleet_inspection.field_inspection_date'
         - 'config:field.storage.fleet_inspection.field_inspector_name'
         - 'config:field.storage.fleet_inspection.field_notes_short'
@@ -276,6 +298,7 @@ display:
         - url.query_args
         - user.roles
       tags:
+        - 'config:field.storage.equipment.field_vehicle_number'
         - 'config:field.storage.fleet_inspection.field_inspection_date'
         - 'config:field.storage.fleet_inspection.field_inspector_name'
         - 'config:field.storage.fleet_inspection.field_notes_short'

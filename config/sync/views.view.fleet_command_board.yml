@@ -11,6 +11,7 @@ dependencies:
     - field.storage.equipment.field_last_inspection_date
     - field.storage.equipment.field_open_defect_count
     - field.storage.equipment.field_status
+    - field.storage.equipment.field_vehicle_number
     - system.menu.admin
     - user.role.administration
     - user.role.administrator
@@ -37,6 +38,16 @@ display:
     display_options:
       title: 'Fleet Command Board'
       fields:
+        field_vehicle_number:
+          id: field_vehicle_number
+          table: equipment__field_vehicle_number
+          field: field_vehicle_number
+          plugin_id: field
+          label: 'Truck #'
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: false
         title:
           id: title
           table: equipment_field_data
@@ -179,7 +190,8 @@ display:
             field_open_defect_count: field_open_defect_count
             field_last_inspection_date: field_last_inspection_date
             field_fleet_decision_status: field_fleet_decision_status
-          default: '-1'
+            field_vehicle_number: field_vehicle_number
+          default: field_vehicle_number
           info:
             title:
               sortable: true
@@ -232,6 +244,14 @@ display:
               separator: ''
               empty_column: false
               responsive: ''
+            field_vehicle_number:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          order: asc
       row:
         type: fields
       query:
@@ -253,6 +273,7 @@ display:
         - 'config:field.storage.equipment.field_last_inspection_date'
         - 'config:field.storage.equipment.field_open_defect_count'
         - 'config:field.storage.equipment.field_status'
+        - 'config:field.storage.equipment.field_vehicle_number'
   page_1:
     id: page_1
     display_title: 'Fleet Command Board'
@@ -285,3 +306,4 @@ display:
         - 'config:field.storage.equipment.field_last_inspection_date'
         - 'config:field.storage.equipment.field_open_defect_count'
         - 'config:field.storage.equipment.field_status'
+        - 'config:field.storage.equipment.field_vehicle_number'

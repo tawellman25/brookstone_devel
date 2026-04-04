@@ -26,13 +26,13 @@ status synchronization.
 |---|---|---|---|
 | `field_safe_to_operate` | no | out_of_service | other |
 | `field_safe_to_operate` | limited_use | repair_soon | other |
-| `field_warning_light_status` | present | repair_soon | engine |
+| `field_warning_light_status` | present | repair_soon | lights_electrical |
 | `field_visible_leak_status` | major | urgent | leak |
 | `field_brake_fluid_status` | low, issue | urgent | brakes |
 | `field_tires_status` | damaged | urgent | tire_wheel |
 | `field_tread_status` | unsafe | urgent | tire_wheel |
 | `field_windshield_status` | severe | urgent | glass_visibility |
-| `field_seatbelt_status` | issue | repair_soon | body |
+| `field_seatbelt_status` | issue | repair_soon | other |
 | `field_headlights_status` | major_issue | urgent | lights_electrical |
 | `field_taillights_status` | major_issue | urgent | lights_electrical |
 | `field_brake_lights_status` | major_issue | urgent | lights_electrical |
@@ -62,11 +62,11 @@ New defect created only when no matching open defect exists.
 **Trigger:** New maintenance event created with `field_related_defect` populated.
 
 **Actions:**
-1. Sets linked defect `field_defect_status` to `resolved`
-2. Sets defect `field_resolved_on` from maintenance event date
-3. Copies `field_cost_total` to defect `field_actual_repair_cost`
+1. Sets linked defect `field_defect_status` to `in_repair` (not resolved)
+2. Copies `field_cost_total` to defect `field_actual_repair_cost`
 
-Only fires on defects with status: open, scheduled, in_repair.
+Resolution requires explicit confirmation — maintenance event creation
+does not auto-close defects. Only transitions from open/scheduled to in_repair.
 
 ---
 
@@ -89,7 +89,7 @@ never block the parent entity save.
 ## Dependencies
 - Requires fleet_inspection, fleet_defect, fleet_maintenance_event entity types
 - Requires equipment:vehicles bundle with fleet management fields
-- Equipment status TID 1302 = Needing Repairs (from equipment_status taxonomy)
+- Equipment status "Needing Repairs" resolved by term name (not hardcoded TID)
 
 ---
 

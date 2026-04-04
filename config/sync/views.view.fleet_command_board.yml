@@ -42,12 +42,66 @@ display:
           id: field_vehicle_number
           table: equipment__field_vehicle_number
           field: field_vehicle_number
+          relationship: none
+          group_type: group
+          admin_label: ''
           plugin_id: field
-          label: 'Truck #'
+          label: '#'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
           type: number_integer
           settings:
             thousand_separator: ''
             prefix_suffix: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
         title:
           id: title
           table: equipment_field_data
@@ -147,24 +201,45 @@ display:
             value: 'No vehicles found.'
             format: plain_text
       sorts:
-        field_vehicle_number:
-          id: field_vehicle_number
+        field_vehicle_number_value:
+          id: field_vehicle_number_value
           table: equipment__field_vehicle_number
           field: field_vehicle_number_value
+          relationship: none
+          group_type: group
+          admin_label: ''
           plugin_id: standard
           order: ASC
-        field_fleet_decision_status:
-          id: field_fleet_decision_status
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
+        field_fleet_decision_status_value:
+          id: field_fleet_decision_status_value
           table: equipment__field_fleet_decision_status
           field: field_fleet_decision_status_value
+          relationship: none
+          group_type: group
+          admin_label: ''
           plugin_id: standard
           order: ASC
-        field_breakdown_risk_score:
-          id: field_breakdown_risk_score
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
+        field_breakdown_risk_score_value:
+          id: field_breakdown_risk_score_value
           table: equipment__field_breakdown_risk_score
           field: field_breakdown_risk_score_value
+          relationship: none
+          group_type: group
+          admin_label: ''
           plugin_id: standard
-          order: DESC
+          order: ASC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
       filters:
         type:
           id: type

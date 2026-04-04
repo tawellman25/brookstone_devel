@@ -1,0 +1,279 @@
+uuid: ce6cb3d9-8870-4169-9aa3-191fe8dbe6d5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sop_log.standard
+    - field.storage.sop_log.field_log_entry
+    - field.storage.sop_log.field_log_status
+    - field.storage.sop_log.field_log_type
+    - field.storage.sop_log.field_requires_follow_up
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+  module:
+    - eck
+    - eva
+    - options
+    - text
+    - user
+id: sop_log_entries
+label: 'SOP Log Entries'
+module: views
+description: 'EVA display showing sop_log entries on SOP entity pages.'
+tag: ''
+base_table: sop_log_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'SOP Log'
+      fields:
+        created:
+          id: created
+          table: sop_log_field_data
+          field: created
+          entity_type: sop_log
+          entity_field: created
+          plugin_id: field
+          label: Date
+          type: timestamp
+          settings:
+            date_format: short
+            custom_date_format: ''
+            timezone: ''
+            tooltip:
+              date_format: long
+              custom_date_format: ''
+            time_diff:
+              enabled: false
+              future_format: '@interval hence'
+              past_format: '@interval ago'
+              granularity: 2
+              refresh: 60
+              description: ''
+        uid:
+          id: uid
+          table: sop_log_field_data
+          field: uid
+          entity_type: sop_log
+          entity_field: uid
+          plugin_id: field
+          label: By
+          type: entity_reference_label
+          settings:
+            link: true
+        field_log_type:
+          id: field_log_type
+          table: sop_log__field_log_type
+          field: field_log_type
+          plugin_id: field
+          label: Type
+          type: list_default
+          settings: {  }
+        field_log_entry:
+          id: field_log_entry
+          table: sop_log__field_log_entry
+          field: field_log_entry
+          plugin_id: field
+          label: Entry
+          type: text_default
+          settings: {  }
+        field_log_status:
+          id: field_log_status
+          table: sop_log__field_log_status
+          field: field_log_status
+          plugin_id: field
+          label: Status
+          type: list_default
+          settings: {  }
+        field_requires_follow_up:
+          id: field_requires_follow_up
+          table: sop_log__field_requires_follow_up
+          field: field_requires_follow_up
+          plugin_id: field
+          label: Follow-Up
+          type: boolean
+          settings:
+            format: yes-no
+            format_custom_false: ''
+            format_custom_true: ''
+      pager:
+        type: full
+        options:
+          pagination_heading_level: h4
+          items_per_page: 25
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: 'No log entries for this SOP.'
+            format: plain_text
+      sorts:
+        created:
+          id: created
+          table: sop_log_field_data
+          field: created
+          entity_type: sop_log
+          entity_field: created
+          plugin_id: date
+          order: DESC
+      filters:
+        type:
+          id: type
+          table: sop_log_field_data
+          field: type
+          entity_type: sop_log
+          entity_field: type
+          plugin_id: bundle
+          operator: in
+          value:
+            standard: standard
+          group: 1
+          exposed: false
+      style:
+        type: table
+        options:
+          columns:
+            created: created
+            uid: uid
+            field_log_type: field_log_type
+            field_log_entry: field_log_entry
+            field_log_status: field_log_status
+            field_requires_follow_up: field_requires_follow_up
+          default: created
+          info:
+            created:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            uid:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_log_type:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_log_entry:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_log_status:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_requires_follow_up:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+      row:
+        type: fields
+      query:
+        type: views_query
+        options:
+          disable_sql_rewrite: false
+          distinct: false
+      footer:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: false
+          content:
+            value: '<a href="/sop_log/add/standard" class="button button--primary">+ Add Log Entry</a>'
+            format: full_html
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.sop_log.field_log_entry'
+        - 'config:field.storage.sop_log.field_log_status'
+        - 'config:field.storage.sop_log.field_log_type'
+        - 'config:field.storage.sop_log.field_requires_follow_up'
+  entity_view_1:
+    id: entity_view_1
+    display_title: 'SOP Log EVA'
+    display_plugin: entity_view
+    position: 1
+    display_options:
+      title: 'SOP Log'
+      arguments:
+        field_sop_target_id:
+          id: field_sop_target_id
+          table: sop_log__field_sop
+          field: field_sop_target_id
+          plugin_id: entity_target_id
+          default_action: 'not found'
+          exception:
+            value: all
+            title_enable: false
+            title: All
+          title_enable: false
+          default_argument_type: fixed
+          specify_validation: false
+          validate:
+            type: none
+            fail: 'not found'
+          break_phrase: false
+          not: false
+      defaults:
+        arguments: false
+      display_extenders: {  }
+      entity_type: sop
+      bundles: {  }
+      show_title: true
+      argument_mode: id
+      default_argument: id
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.sop_log.field_log_entry'
+        - 'config:field.storage.sop_log.field_log_status'
+        - 'config:field.storage.sop_log.field_log_type'
+        - 'config:field.storage.sop_log.field_requires_follow_up'

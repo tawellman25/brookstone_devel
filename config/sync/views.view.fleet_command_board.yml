@@ -11,6 +11,7 @@ dependencies:
     - field.storage.equipment.field_last_inspection_date
     - field.storage.equipment.field_open_defect_count
     - field.storage.equipment.field_status
+    - system.menu.admin
     - user.role.administration
     - user.role.administrator
     - user.role.site_admin
@@ -255,7 +256,14 @@ display:
       display_extenders: {  }
       path: admin/operations/fleet
       menu:
-        type: none
+        type: normal
+        title: Fleet
+        description: 'Fleet inspection, defect tracking, and vehicle management.'
+        weight: 10
+        expanded: true
+        menu_name: admin
+        parent: 'menu_link_content:6663ea83-4467-4783-bda0-20deaba2216b'
+        context: '0'
     cache_metadata:
       max-age: -1
       contexts:

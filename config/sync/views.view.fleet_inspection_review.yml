@@ -10,6 +10,7 @@ dependencies:
     - field.storage.fleet_inspection.field_source_type
     - field.storage.fleet_inspection.field_vehicle
     - field.storage.fleet_inspection.field_warning_light_status
+    - system.menu.admin
     - user.role.administration
     - user.role.administrator
     - user.role.site_admin
@@ -244,7 +245,14 @@ display:
       display_extenders: {  }
       path: admin/operations/fleet/inspection-review
       menu:
-        type: none
+        type: normal
+        title: 'Inspection Review'
+        description: 'Review pending fleet inspections.'
+        weight: 1
+        expanded: false
+        menu_name: admin
+        parent: 'views_view:views.fleet_command_board.page_1'
+        context: '0'
     cache_metadata:
       max-age: -1
       contexts:

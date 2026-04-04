@@ -12,6 +12,7 @@ dependencies:
     - field.storage.fleet_defect.field_out_of_service_required
     - field.storage.fleet_defect.field_repeat_issue
     - field.storage.fleet_defect.field_vehicle
+    - system.menu.admin
     - user.role.administration
     - user.role.administrator
     - user.role.site_admin
@@ -278,7 +279,14 @@ display:
       display_extenders: {  }
       path: admin/operations/fleet/open-defects
       menu:
-        type: none
+        type: normal
+        title: 'Open Defects'
+        description: 'Active fleet defects requiring attention.'
+        weight: 2
+        expanded: false
+        menu_name: admin
+        parent: 'views_view:views.fleet_command_board.page_1'
+        context: '0'
     cache_metadata:
       max-age: -1
       contexts:

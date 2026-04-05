@@ -39,7 +39,66 @@ small_engine | Small Engine
 snow_plows | Snow Plows  
 sprayers | Sprayers  
 trailers | Trailers  
-vehicles | Vehicles  
+vehicles | Vehicles
+
+---
+
+## Equipment Types Taxonomy
+
+Vocabulary: `equipment_types`
+Field on equipment: `field_equipment_type`
+
+Classifies individual equipment items by type. Each term maps to an
+equipment bundle via `field_equipment_bundle` (list_string) — same
+pattern as `services.field_service_bundle` → work_order bundles.
+
+### Fields on equipment_types
+- `field_equipment_bundle` — list_string: which equipment bundle this type belongs to
+- `field_small_engine_type` — boolean (legacy, present on some terms)
+
+### Current Terms
+
+| TID | Type | Bundle |
+|---|---|---|
+| 48 | Aerator | small_engine |
+| 50 | Back-pack Leaf Blower | — |
+| 61 | Back-Pack Sprayer | — |
+| 74 | Cargo Trailer | — |
+| 52 | Chain Saw | — |
+| 45 | Deck Mower | — |
+| 75 | Dethatcher | — |
+| 64 | Diesel Air Compressor | — |
+| 57 | Dump Trailer | — |
+| 58 | Flatbed Trailer | — |
+| 51 | Gas Hedge Trimmer | — |
+| 73 | Hand Held Blower | — |
+| 65 | Lawn Vacuums | — |
+| 56 | Mini Excavator | — |
+| 1772 | Mini Skid Steer | heavy_equipment |
+| 67 | Misc. Tool | — |
+| 59 | Mowing Crew Trailer | — |
+| 60 | Pull-Behind Sprayer | — |
+| 41 | Push Mower | — |
+| 44 | Reel Mower | — |
+| 62 | Reel Sprayer | — |
+| 63 | Ride Behind Spreader | — |
+| 43 | Riding Mower | — |
+| 66 | Rototiller | — |
+| 55 | Skid-Steer | — |
+| 70 | Snow Blower | — |
+| 68 | Snow Plow | — |
+| 49 | String Trimmer | — |
+| 69 | Tractor | — |
+| 71 | Tractor Attachment | — |
+| 46 | Tractor Attachment Mower | — |
+| 72 | Truck | — |
+| 47 | Walk-Behind Edger | — |
+| 54 | Walk-Behind Pipe Puller | — |
+| 53 | Walk-Behind Trencher | — |
+| 42 | Zero-Turn Mower | — |
+
+Most terms still need `field_equipment_bundle` populated. This should
+be done as part of operational data cleanup.
 
 ---
 

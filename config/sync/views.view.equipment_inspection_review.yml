@@ -1,0 +1,251 @@
+uuid: e0c205a7-47a2-4067-b4e6-8316c6f3dde3
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.equipment_inspection.field_equipment
+    - field.storage.equipment_inspection.field_inspection_date
+    - field.storage.equipment_inspection.field_inspector_name
+    - field.storage.equipment_inspection.field_notes_short
+    - field.storage.equipment_inspection.field_safe_to_operate
+    - system.menu.admin
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+  module:
+    - datetime
+    - eck
+    - options
+    - user
+id: equipment_inspection_review
+label: 'Equipment Inspection Review Queue'
+module: views
+description: 'Pending equipment inspections awaiting review.'
+tag: ''
+base_table: equipment_inspection_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'Inspection Review Queue'
+      fields:
+        field_equipment:
+          id: field_equipment
+          table: equipment_inspection__field_equipment
+          field: field_equipment
+          plugin_id: field
+          label: Equipment
+          type: entity_reference_label
+          settings:
+            link: true
+        type:
+          id: type
+          table: equipment_inspection_field_data
+          field: type
+          entity_type: equipment_inspection
+          entity_field: type
+          plugin_id: field
+          label: Type
+          type: entity_reference_label
+          settings:
+            link: false
+        field_inspection_date:
+          id: field_inspection_date
+          table: equipment_inspection__field_inspection_date
+          field: field_inspection_date
+          plugin_id: field
+          label: Date
+          type: datetime_default
+          settings:
+            timezone_override: ''
+            date_format: short
+        field_inspector_name:
+          id: field_inspector_name
+          table: equipment_inspection__field_inspector_name
+          field: field_inspector_name
+          plugin_id: field
+          label: Inspector
+          type: string
+          settings:
+            link_to_entity: false
+        field_safe_to_operate:
+          id: field_safe_to_operate
+          table: equipment_inspection__field_safe_to_operate
+          field: field_safe_to_operate
+          plugin_id: field
+          label: 'Safe?'
+          type: list_default
+          settings: {  }
+        field_notes_short:
+          id: field_notes_short
+          table: equipment_inspection__field_notes_short
+          field: field_notes_short
+          plugin_id: field
+          label: Note
+          type: string
+          settings:
+            link_to_entity: false
+        title:
+          id: title
+          table: equipment_inspection_field_data
+          field: title
+          entity_type: equipment_inspection
+          entity_field: title
+          plugin_id: field
+          label: View
+          type: string
+          settings:
+            link_to_entity: true
+      pager:
+        type: full
+        options:
+          pagination_heading_level: h4
+          items_per_page: 50
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: 'No inspections pending review.'
+            format: plain_text
+      sorts:
+        field_inspection_date:
+          id: field_inspection_date
+          table: equipment_inspection__field_inspection_date
+          field: field_inspection_date
+          plugin_id: datetime
+          order: DESC
+      filters:
+        field_review_status:
+          id: field_review_status
+          table: equipment_inspection__field_review_status
+          field: field_review_status_value
+          plugin_id: list_field
+          operator: or
+          value:
+            pending: pending
+          group: 1
+          exposed: false
+      style:
+        type: table
+        options:
+          columns:
+            field_equipment: field_equipment
+            type: type
+            field_inspection_date: field_inspection_date
+            field_inspector_name: field_inspector_name
+            field_safe_to_operate: field_safe_to_operate
+            field_notes_short: field_notes_short
+            title: title
+          default: field_inspection_date
+          info:
+            field_equipment:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            type:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_inspection_date:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_inspector_name:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_safe_to_operate:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_notes_short:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+            title:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          order: desc
+      row:
+        type: fields
+      query:
+        type: views_query
+        options: {  }
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.equipment_inspection.field_equipment'
+        - 'config:field.storage.equipment_inspection.field_inspection_date'
+        - 'config:field.storage.equipment_inspection.field_inspector_name'
+        - 'config:field.storage.equipment_inspection.field_notes_short'
+        - 'config:field.storage.equipment_inspection.field_safe_to_operate'
+  page_1:
+    id: page_1
+    display_title: 'Inspection Review'
+    display_plugin: page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/operations/fleet/inspection-review
+      menu:
+        type: normal
+        title: 'Inspection Review'
+        weight: 1
+        menu_name: admin
+        parent: 'views_view:views.equipment_command_board.page_1'
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.equipment_inspection.field_equipment'
+        - 'config:field.storage.equipment_inspection.field_inspection_date'
+        - 'config:field.storage.equipment_inspection.field_inspector_name'
+        - 'config:field.storage.equipment_inspection.field_notes_short'
+        - 'config:field.storage.equipment_inspection.field_safe_to_operate'

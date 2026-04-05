@@ -296,10 +296,10 @@ Link entity between `material` and `supplier`. Enforced by `material_supplier` m
 - `equipment_check_in_out` — bundle: `check_in`
 - `equipment_status_update` — bundle: `update`
 
-#### Fleet management entities
-- `fleet_inspection` — bundle: `standard` (52 fields — weekly truck/trailer inspection records)
-- `fleet_defect` — bundle: `standard` (14 fields — actionable defect tracking)
-- `fleet_maintenance_event` — bundle: `standard` (13 fields — service/repair records)
+#### Equipment inspection/defect/maintenance entities
+- `equipment_inspection` — 6 bundles: `vehicles`, `trailers`, `heavy_equipment`, `mowers`, `sprayers`, `standard` (bundle-specific checklists)
+- `equipment_defect` — bundle: `standard` (15 fields — actionable defect tracking, targets all equipment)
+- `equipment_maintenance_event` — bundle: `standard` (15 fields — service/repair records, targets all equipment)
 
 #### Time/scheduling entities
 - `scheduling` — bundle: `work_order`

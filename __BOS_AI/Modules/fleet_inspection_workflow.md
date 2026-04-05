@@ -1,6 +1,6 @@
-# BOS Module — fleet_inspection_workflow
+# BOS Module — equipment_inspection_workflow
 
-Module: fleet_inspection_workflow
+Module: equipment_inspection_workflow
 Package: Custom
 
 ## Purpose
@@ -10,7 +10,7 @@ status synchronization.
 
 ---
 
-## Hook: hook_entity_update — fleet_inspection
+## Hook: hook_entity_update — equipment_inspection
 
 **Trigger:** `field_review_status` transitions to `approved` (not already approved).
 
@@ -57,7 +57,7 @@ New defect created only when no matching open defect exists.
 
 ---
 
-## Hook: hook_entity_insert — fleet_maintenance_event
+## Hook: hook_entity_insert — equipment_maintenance_event
 
 **Trigger:** New maintenance event created with `field_related_defect` populated.
 
@@ -68,7 +68,7 @@ New defect created only when no matching open defect exists.
 Resolution requires explicit confirmation — maintenance event creation
 does not auto-close defects. Only transitions from open/scheduled to in_repair.
 
-## Hook: hook_entity_update — fleet_maintenance_event
+## Hook: hook_entity_update — equipment_maintenance_event
 
 **Trigger:** `field_verified_complete` flips from FALSE to TRUE.
 
@@ -80,7 +80,7 @@ This is the only path to resolve a defect — verified maintenance completion.
 
 ---
 
-## Hook: hook_entity_update — fleet_defect
+## Hook: hook_entity_update — equipment_defect
 
 **Trigger:** `field_out_of_service_required` flips from FALSE to TRUE.
 
@@ -91,18 +91,18 @@ This is the only path to resolve a defect — verified maintenance completion.
 
 ## Error Handling
 All automation is wrapped in try/catch. Failures are logged to
-`fleet_inspection_workflow` logger channel. Automation failures
+`equipment_inspection_workflow` logger channel. Automation failures
 never block the parent entity save.
 
 ---
 
 ## Dependencies
-- Requires fleet_inspection, fleet_defect, fleet_maintenance_event entity types
+- Requires equipment_inspection, equipment_defect, equipment_maintenance_event entity types
 - Requires equipment:vehicles bundle with fleet management fields
-- Equipment status TID from `fleet_inspection_workflow.settings` config (`status_needing_repairs_tid`)
+- Equipment status TID from `equipment_inspection_workflow.settings` config (`status_needing_repairs_tid`)
 - Default: 1302 (Needing Repairs) — configurable, not hardcoded or name-resolved
 
-## Hook: hook_entity_presave — fleet_maintenance_event
+## Hook: hook_entity_presave — equipment_maintenance_event
 
 **Actions:**
 - Auto-calculates `field_cost_total` from `field_cost_parts` + `field_cost_labor`
@@ -112,7 +112,7 @@ never block the parent entity save.
 
 ## Configuration
 
-Config key: `fleet_inspection_workflow.settings`
+Config key: `equipment_inspection_workflow.settings`
 
 | Setting | Default | Purpose |
 |---|---|---|

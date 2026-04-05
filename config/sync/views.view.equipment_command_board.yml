@@ -1,0 +1,322 @@
+uuid: 8c9ab93e-05c2-4d86-92e1-953eb357882a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.equipment.field_breakdown_risk_score
+    - field.storage.equipment.field_condition_score
+    - field.storage.equipment.field_current_mileage
+    - field.storage.equipment.field_fleet_decision_status
+    - field.storage.equipment.field_last_inspection_date
+    - field.storage.equipment.field_open_defect_count
+    - field.storage.equipment.field_status
+    - field.storage.equipment.field_vehicle_number
+    - system.menu.admin
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+  module:
+    - datetime
+    - eck
+    - options
+    - user
+id: equipment_command_board
+label: 'Equipment Command Board'
+module: views
+description: 'Equipment overview with condition scores, defect counts, and decision status.'
+tag: ''
+base_table: equipment_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'Equipment Command Board'
+      fields:
+        field_vehicle_number:
+          id: field_vehicle_number
+          table: equipment__field_vehicle_number
+          field: field_vehicle_number
+          plugin_id: field
+          label: '#'
+          type: number_integer
+          settings: {  }
+        title:
+          id: title
+          table: equipment_field_data
+          field: title
+          entity_type: equipment
+          entity_field: title
+          plugin_id: field
+          label: Equipment
+          type: string
+          settings:
+            link_to_entity: true
+        type:
+          id: type
+          table: equipment_field_data
+          field: type
+          entity_type: equipment
+          entity_field: type
+          plugin_id: field
+          label: Type
+          type: entity_reference_label
+          settings:
+            link: false
+        field_status:
+          id: field_status
+          table: equipment__field_status
+          field: field_status
+          plugin_id: field
+          label: Status
+          type: entity_reference_label
+          settings:
+            link: false
+        field_current_mileage:
+          id: field_current_mileage
+          table: equipment__field_current_mileage
+          field: field_current_mileage
+          plugin_id: field
+          label: Miles/Hrs
+          type: number_integer
+          settings:
+            thousand_separator: ','
+            prefix_suffix: false
+        field_condition_score:
+          id: field_condition_score
+          table: equipment__field_condition_score
+          field: field_condition_score
+          plugin_id: field
+          label: Cond
+          type: number_integer
+          settings: {  }
+        field_breakdown_risk_score:
+          id: field_breakdown_risk_score
+          table: equipment__field_breakdown_risk_score
+          field: field_breakdown_risk_score
+          plugin_id: field
+          label: Risk
+          type: number_integer
+          settings: {  }
+        field_open_defect_count:
+          id: field_open_defect_count
+          table: equipment__field_open_defect_count
+          field: field_open_defect_count
+          plugin_id: field
+          label: Defects
+          type: number_integer
+          settings: {  }
+        field_last_inspection_date:
+          id: field_last_inspection_date
+          table: equipment__field_last_inspection_date
+          field: field_last_inspection_date
+          plugin_id: field
+          label: 'Last Inspected'
+          type: datetime_default
+          settings:
+            timezone_override: ''
+            date_format: short
+        field_fleet_decision_status:
+          id: field_fleet_decision_status
+          table: equipment__field_fleet_decision_status
+          field: field_fleet_decision_status
+          plugin_id: field
+          label: Decision
+          type: list_default
+          settings: {  }
+      pager:
+        type: full
+        options:
+          pagination_heading_level: h4
+          items_per_page: 100
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: 'No equipment found.'
+            format: plain_text
+      sorts:
+        field_vehicle_number:
+          id: field_vehicle_number
+          table: equipment__field_vehicle_number
+          field: field_vehicle_number_value
+          plugin_id: standard
+          order: ASC
+        title:
+          id: title
+          table: equipment_field_data
+          field: title
+          entity_type: equipment
+          entity_field: title
+          plugin_id: standard
+          order: ASC
+      filters:
+        type:
+          id: type
+          table: equipment_field_data
+          field: type
+          entity_type: equipment
+          entity_field: type
+          plugin_id: bundle
+          value: {  }
+          exposed: true
+          expose:
+            operator_id: type_op
+            label: Type
+            identifier: type
+            remember: false
+            multiple: true
+      style:
+        type: table
+        options:
+          columns:
+            field_vehicle_number: field_vehicle_number
+            title: title
+            type: type
+            field_status: field_status
+            field_current_mileage: field_current_mileage
+            field_condition_score: field_condition_score
+            field_breakdown_risk_score: field_breakdown_risk_score
+            field_open_defect_count: field_open_defect_count
+            field_last_inspection_date: field_last_inspection_date
+            field_fleet_decision_status: field_fleet_decision_status
+          default: field_vehicle_number
+          info:
+            field_vehicle_number:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            title:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            type:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_status:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_current_mileage:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+            field_condition_score:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_breakdown_risk_score:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_open_defect_count:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_last_inspection_date:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+            field_fleet_decision_status:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          order: asc
+      row:
+        type: fields
+      query:
+        type: views_query
+        options: {  }
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.equipment.field_breakdown_risk_score'
+        - 'config:field.storage.equipment.field_condition_score'
+        - 'config:field.storage.equipment.field_current_mileage'
+        - 'config:field.storage.equipment.field_fleet_decision_status'
+        - 'config:field.storage.equipment.field_last_inspection_date'
+        - 'config:field.storage.equipment.field_open_defect_count'
+        - 'config:field.storage.equipment.field_status'
+        - 'config:field.storage.equipment.field_vehicle_number'
+  page_1:
+    id: page_1
+    display_title: 'Equipment Command Board'
+    display_plugin: page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/operations/fleet
+      menu:
+        type: normal
+        title: Fleet
+        description: 'Equipment inspection, defect tracking, and management.'
+        weight: 10
+        expanded: true
+        menu_name: admin
+        parent: 'menu_link_content:6663ea83-4467-4783-bda0-20deaba2216b'
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.equipment.field_breakdown_risk_score'
+        - 'config:field.storage.equipment.field_condition_score'
+        - 'config:field.storage.equipment.field_current_mileage'
+        - 'config:field.storage.equipment.field_fleet_decision_status'
+        - 'config:field.storage.equipment.field_last_inspection_date'
+        - 'config:field.storage.equipment.field_open_defect_count'
+        - 'config:field.storage.equipment.field_status'
+        - 'config:field.storage.equipment.field_vehicle_number'

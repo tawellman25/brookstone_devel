@@ -1,0 +1,276 @@
+uuid: 2e81c9e8-0fa2-4028-abd1-b6467de6fc6b
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.equipment_defect.field_assigned_to
+    - field.storage.equipment_defect.field_defect_category
+    - field.storage.equipment_defect.field_defect_date_reported
+    - field.storage.equipment_defect.field_defect_severity
+    - field.storage.equipment_defect.field_defect_status
+    - field.storage.equipment_defect.field_defect_summary
+    - field.storage.equipment_defect.field_equipment
+    - system.menu.admin
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+  module:
+    - datetime
+    - eck
+    - options
+    - user
+id: equipment_open_defects
+label: 'Equipment Open Defects'
+module: views
+description: 'Active equipment defects requiring attention.'
+tag: ''
+base_table: equipment_defect_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'Open Defects'
+      fields:
+        field_equipment:
+          id: field_equipment
+          table: equipment_defect__field_equipment
+          field: field_equipment
+          plugin_id: field
+          label: Equipment
+          type: entity_reference_label
+          settings:
+            link: true
+        field_defect_category:
+          id: field_defect_category
+          table: equipment_defect__field_defect_category
+          field: field_defect_category
+          plugin_id: field
+          label: Category
+          type: list_default
+          settings: {  }
+        field_defect_severity:
+          id: field_defect_severity
+          table: equipment_defect__field_defect_severity
+          field: field_defect_severity
+          plugin_id: field
+          label: Severity
+          type: list_default
+          settings: {  }
+        field_defect_date_reported:
+          id: field_defect_date_reported
+          table: equipment_defect__field_defect_date_reported
+          field: field_defect_date_reported
+          plugin_id: field
+          label: Reported
+          type: datetime_default
+          settings:
+            timezone_override: ''
+            date_format: short
+        field_defect_summary:
+          id: field_defect_summary
+          table: equipment_defect__field_defect_summary
+          field: field_defect_summary
+          plugin_id: field
+          label: Summary
+          type: string
+          settings:
+            link_to_entity: false
+        field_assigned_to:
+          id: field_assigned_to
+          table: equipment_defect__field_assigned_to
+          field: field_assigned_to
+          plugin_id: field
+          label: Assigned
+          type: entity_reference_label
+          settings:
+            link: false
+        field_defect_status:
+          id: field_defect_status
+          table: equipment_defect__field_defect_status
+          field: field_defect_status
+          plugin_id: field
+          label: Status
+          type: list_default
+          settings: {  }
+        title:
+          id: title
+          table: equipment_defect_field_data
+          field: title
+          entity_type: equipment_defect
+          entity_field: title
+          plugin_id: field
+          label: View
+          type: string
+          settings:
+            link_to_entity: true
+      pager:
+        type: full
+        options:
+          pagination_heading_level: h4
+          items_per_page: 50
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: 'No open defects.'
+            format: plain_text
+      sorts:
+        field_defect_severity:
+          id: field_defect_severity
+          table: equipment_defect__field_defect_severity
+          field: field_defect_severity_value
+          plugin_id: standard
+          order: DESC
+        field_defect_date_reported:
+          id: field_defect_date_reported
+          table: equipment_defect__field_defect_date_reported
+          field: field_defect_date_reported
+          plugin_id: datetime
+          order: ASC
+      filters:
+        field_defect_status:
+          id: field_defect_status
+          table: equipment_defect__field_defect_status
+          field: field_defect_status_value
+          plugin_id: list_field
+          operator: or
+          value:
+            open: open
+            scheduled: scheduled
+            in_repair: in_repair
+            deferred: deferred
+          group: 1
+          exposed: false
+      style:
+        type: table
+        options:
+          columns:
+            field_equipment: field_equipment
+            field_defect_category: field_defect_category
+            field_defect_severity: field_defect_severity
+            field_defect_date_reported: field_defect_date_reported
+            field_defect_summary: field_defect_summary
+            field_assigned_to: field_assigned_to
+            field_defect_status: field_defect_status
+            title: title
+          default: '-1'
+          info:
+            field_equipment:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_defect_category:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_defect_severity:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_defect_date_reported:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_defect_summary:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_assigned_to:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+            field_defect_status:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            title:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+      row:
+        type: fields
+      query:
+        type: views_query
+        options: {  }
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.equipment_defect.field_assigned_to'
+        - 'config:field.storage.equipment_defect.field_defect_category'
+        - 'config:field.storage.equipment_defect.field_defect_date_reported'
+        - 'config:field.storage.equipment_defect.field_defect_severity'
+        - 'config:field.storage.equipment_defect.field_defect_status'
+        - 'config:field.storage.equipment_defect.field_defect_summary'
+        - 'config:field.storage.equipment_defect.field_equipment'
+  page_1:
+    id: page_1
+    display_title: 'Open Defects'
+    display_plugin: page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/operations/fleet/open-defects
+      menu:
+        type: normal
+        title: 'Open Defects'
+        weight: 2
+        menu_name: admin
+        parent: 'views_view:views.equipment_command_board.page_1'
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.equipment_defect.field_assigned_to'
+        - 'config:field.storage.equipment_defect.field_defect_category'
+        - 'config:field.storage.equipment_defect.field_defect_date_reported'
+        - 'config:field.storage.equipment_defect.field_defect_severity'
+        - 'config:field.storage.equipment_defect.field_defect_status'
+        - 'config:field.storage.equipment_defect.field_defect_summary'
+        - 'config:field.storage.equipment_defect.field_equipment'

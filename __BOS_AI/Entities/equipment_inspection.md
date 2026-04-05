@@ -37,7 +37,7 @@ or queue defect records via the fleet_inspection_workflow module.
 | `field_reviewed_on` | datetime | Reviewed On | No |
 
 ## Views
-- Inspection Review Queue: `/admin/operations/fleet/inspection-review`
+- Inspection Review Queue: `/admin/operations/equipment/inspection-review`
 - Equipment Inspections EVA: on all equipment entity pages
 
 ## Invariants

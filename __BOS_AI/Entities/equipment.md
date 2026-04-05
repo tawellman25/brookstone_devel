@@ -281,14 +281,14 @@ Invariants:
 - If field_inspection_required is TRUE, field_last_inspection_date must be maintained.
 
 #### Related Fleet Entities
-- `fleet_inspection` — weekly inspection records (via field_vehicle)
-- `fleet_defect` — actionable defect tracking (via field_vehicle)
-- `fleet_maintenance_event` — service/repair records (via field_vehicle)
+- `equipment_inspection` — inspection records (via field_equipment)
+- `equipment_defect` — actionable defect tracking (via field_equipment)
+- `equipment_maintenance_event` — service/repair records (via field_equipment)
 
 EVA views show inspection history, defect history, and maintenance
-history on the vehicle entity page.
+history on all equipment entity pages.
 
-See: `fleet_inspection.md`, `fleet_defect.md`, `fleet_maintenance_event.md`
+See: `equipment_inspection.md`, `equipment_defect.md`, `equipment_maintenance_event.md`
 
 ---
 

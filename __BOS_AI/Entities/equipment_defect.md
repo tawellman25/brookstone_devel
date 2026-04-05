@@ -43,7 +43,7 @@ monitor, repair_soon, urgent, out_of_service
 open, scheduled, in_repair, resolved, deferred, retired_with_equipment
 
 ## Views
-- Open Defects Board: `/admin/operations/fleet/open-defects`
+- Open Defects Board: `/admin/operations/equipment/open-defects`
 - Equipment Defects EVA: on all equipment entity pages
 
 ## Invariants

@@ -276,6 +276,13 @@ Key fields:
 
 These fields are management-owned. Crews must not update them directly.
 
+**Phase 1 scope:** These executive scoring and decision fields exist on
+`vehicles` bundle only. They are vehicle-centric by design (engine/transmission
+health, mileage, resale value). Equivalent fields for other equipment types
+(e.g. `field_service_hours` for mowers, `field_equipment_decision_status`
+for all bundles) are planned for Phase 2 when operational data validates
+the model.
+
 Invariants:
 - field_vehicle_number must be unique and stable.
 - If field_inspection_required is TRUE, field_last_inspection_date must be maintained.

@@ -99,7 +99,7 @@ never block the parent entity save.
 ## Dependencies
 - Requires equipment_inspection, equipment_defect, equipment_maintenance_event entity types
 - Requires equipment:vehicles bundle with fleet management fields
-- Equipment status TID from `equipment_inspection_workflow.settings` config (`status_needing_repairs_tid`)
+- Equipment status TID from `fleet_inspection_workflow.settings` config (`status_needing_repairs_tid`)
 - Default: 1302 (Needing Repairs) — configurable, not hardcoded or name-resolved
 
 ## Hook: hook_entity_presave — equipment_maintenance_event
@@ -120,5 +120,36 @@ Config key: `equipment_inspection_workflow.settings`
 
 ---
 
+## Bundle-Specific Defect Trigger Coverage
+
+### Phase 1 — Implemented
+- **vehicles**: Full coverage (18 rules — fluids, mechanical, lights, safety, ABS)
+- **trailers**: Covered via trailer-specific rules (hitch, lights, tires, suspension)
+
+### Phase 2 — Planned (not yet implemented)
+- **heavy_equipment**: Needs rules for hydraulic_fluid_status, tracks_tires_status,
+  bucket_attachment_status, hydraulic_hoses_status, backup_alarm_status
+- **mowers**: Needs rules for blades_status (damaged), belts_status (damaged),
+  deck_status (damaged), fuel_system_status (issue)
+- **sprayers**: Needs rules for pump_status (issue), nozzles_status (clogged),
+  pressure_status (high/low), calibration_status (overdue), visible leaks
+- **standard**: Needs rules for operational_status (non_op), visual_condition (damaged)
+
+Bundle-specific rules will follow the same pattern: field + trigger values → severity + category.
+They will be added to `_equipment_inspection_defect_rules()` with bundle guards.
+
+---
+
+## Module Naming Note
+
+This module is named `fleet_inspection_workflow` (legacy name from when
+the system was vehicle-only). It now handles ALL equipment types. The
+module name was not changed because renaming Drupal modules is disruptive
+(requires uninstall/reinstall cycle). The entity types it operates on
+are correctly named `equipment_*`.
+
+---
+
 Created: April 2026
-Updated: April 2026 — config-driven TID, safety category, cost auto-calc, verification gate
+Updated: April 2026 — generalized to all equipment, config-driven TID,
+safety category, cost auto-calc, verification gate, bundle coverage plan

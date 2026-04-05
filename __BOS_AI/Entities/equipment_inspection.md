@@ -5,8 +5,9 @@ Storage: ECK
 
 ## Purpose
 One record per equipment inspection event. Inspections are source
-observations, not repair records. Failed safety checks must create
-or queue defect records via the fleet_inspection_workflow module.
+observations, not repair records. Failed safety checks must create or queue defect records via the
+`fleet_inspection_workflow` module (module name is legacy — handles
+all equipment types, not just fleet).
 
 ## Bundles (6)
 
@@ -19,7 +20,7 @@ or queue defect records via the fleet_inspection_workflow module.
 | `sprayers` | Sprayers | Spray rigs | Tank, pump, nozzles, hoses, pressure, calibration (10 fields) |
 | `standard` | Standard | Power tools, hand tools, misc | Visual condition, operational status, safety (4 fields) |
 
-## Common Fields (all bundles — 11 fields)
+## Common Fields (all bundles — 12 fields)
 
 | Field | Type | Label | Required |
 |---|---|---|---|
@@ -45,5 +46,7 @@ or queue defect records via the fleet_inspection_workflow module.
 - Inspections are observations, not repair records
 - field_review_status must be approved before defect rules fire
 - field_equipment targets ALL equipment bundles
+- Inspection bundle must match equipment type — do not use standard as a shortcut
+  for vehicles, mowers, sprayers, or heavy equipment
 
 Created: April 2026

@@ -16,12 +16,18 @@ physical and operational state of the equipment at all times.
 
 ## Work Order Eligibility (Enforced)
 
-Only the following statuses are allowed for Work Order usage:
+Only the following statuses are allowed for Work Order **assignment**
+(dispatching equipment to perform work):
 
 * Active
 * Deployed
 
 All other statuses must be blocked from Work Order assignment.
+
+**Clarification:** This rule governs active operational assignment — dispatching
+a truck, mower, or sprayer to a job. Equipment in other statuses may still
+appear in historical Work Order records, cost/usage logs, or maintenance
+references. The restriction applies to new assignment only.
 
 The following statuses are NOT valid for Work Orders:
 

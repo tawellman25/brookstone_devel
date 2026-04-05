@@ -19,7 +19,7 @@ use Drupal\Core\Entity\EntityInterface;
  * when both are set and total is empty or zero.
  */
 function fleet_inspection_workflow_entity_presave(EntityInterface $entity): void {
-  if ($entity->getEntityTypeId() !== 'fleet_maintenance_event') {
+  if ($entity->getEntityTypeId() !== 'equipment_maintenance_event') {
     return;
   }
 
@@ -40,7 +40,7 @@ function fleet_inspection_workflow_entity_presave(EntityInterface $entity): void
  * When an approved inspection has a field matching a trigger value,
  * a defect is created (or an existing open defect is flagged as repeat).
  */
-function _fleet_inspection_defect_rules(): array {
+function _equipment_inspection_defect_rules(): array {
   return [
     // Critical safety
     ['field_safe_to_operate', ['no'], 'out_of_service', 'safety'],
@@ -78,13 +78,13 @@ function _fleet_inspection_defect_rules(): array {
  * Implements hook_entity_update().
  *
  * Handles:
- * - fleet_inspection: approval triggers defect creation + vehicle sync
- * - fleet_defect: out_of_service triggers vehicle status change
- * - fleet_maintenance_event: verified complete → resolve linked defect
+ * - equipment_inspection: approval triggers defect creation + vehicle sync
+ * - equipment_defect: out_of_service triggers vehicle status change
+ * - equipment_maintenance_event: verified complete → resolve linked defect
  */
 function fleet_inspection_workflow_entity_update(EntityInterface $entity): void {
   // ── Inspection approval workflow ──────────────────────────────────
-  if ($entity->getEntityTypeId() === 'fleet_inspection') {
+  if ($entity->getEntityTypeId() === 'equipment_inspection') {
     if (!isset($entity->original)) {
       return;
     }
@@ -98,10 +98,10 @@ function fleet_inspection_workflow_entity_update(EntityInterface $entity): void 
     }
 
     try {
-      _fleet_inspection_on_approval($entity);
+      _equipment_inspection_on_approval($entity);
     }
     catch (\Exception $e) {
-      \Drupal::logger('fleet_inspection_workflow')->error(
+      \Drupal::logger('equipment_inspection_workflow')->error(
         'Error processing inspection approval for @id: @message',
         ['@id' => $entity->id(), '@message' => $e->getMessage()]
       );
@@ -109,7 +109,7 @@ function fleet_inspection_workflow_entity_update(EntityInterface $entity): void 
   }
 
   // ── Defect out-of-service → vehicle status sync ───────────────────
-  if ($entity->getEntityTypeId() === 'fleet_defect') {
+  if ($entity->getEntityTypeId() === 'equipment_defect') {
     if (!isset($entity->original)) {
       return;
     }
@@ -120,22 +120,22 @@ function fleet_inspection_workflow_entity_update(EntityInterface $entity): void 
     // When out_of_service_required flips to TRUE, set vehicle to Needing Repairs.
     if ($new_oos && !$old_oos) {
       try {
-        $vehicle_id = $entity->get('field_vehicle')->target_id;
-        if ($vehicle_id) {
-          $vehicle = \Drupal::entityTypeManager()->getStorage('equipment')->load($vehicle_id);
-          if ($vehicle) {
+        $equipment_id = $entity->get('field_equipment')->target_id;
+        if ($equipment_id) {
+          $equipment = \Drupal::entityTypeManager()->getStorage('equipment')->load($equipment_id);
+          if ($equipment) {
             // Resolve TID from module config — not hardcoded, not term name.
-            $tid = \Drupal::config('fleet_inspection_workflow.settings')
+            $tid = \Drupal::config('equipment_inspection_workflow.settings')
               ->get('status_needing_repairs_tid');
             if ($tid) {
-              $vehicle->set('field_status', $tid);
-              $vehicle->save();
+              $equipment->set('field_status', $tid);
+              $equipment->save();
             }
           }
         }
       }
       catch (\Exception $e) {
-        \Drupal::logger('fleet_inspection_workflow')->error(
+        \Drupal::logger('equipment_inspection_workflow')->error(
           'Error syncing vehicle status from defect @id: @message',
           ['@id' => $entity->id(), '@message' => $e->getMessage()]
         );
@@ -144,7 +144,7 @@ function fleet_inspection_workflow_entity_update(EntityInterface $entity): void 
   }
 
   // ── Maintenance verified complete → resolve linked defect ─────────
-  if ($entity->getEntityTypeId() === 'fleet_maintenance_event') {
+  if ($entity->getEntityTypeId() === 'equipment_maintenance_event') {
     if (!isset($entity->original)) {
       return;
     }
@@ -157,7 +157,7 @@ function fleet_inspection_workflow_entity_update(EntityInterface $entity): void 
       try {
         $defect_id = $entity->get('field_related_defect')->target_id ?? NULL;
         if ($defect_id) {
-          $defect = \Drupal::entityTypeManager()->getStorage('fleet_defect')->load($defect_id);
+          $defect = \Drupal::entityTypeManager()->getStorage('equipment_defect')->load($defect_id);
           if ($defect && in_array($defect->get('field_defect_status')->value, ['open', 'scheduled', 'in_repair'], TRUE)) {
             $defect->set('field_defect_status', 'resolved');
             $event_date = $entity->get('field_event_date')->value ?? NULL;
@@ -169,7 +169,7 @@ function fleet_inspection_workflow_entity_update(EntityInterface $entity): void 
         }
       }
       catch (\Exception $e) {
-        \Drupal::logger('fleet_inspection_workflow')->error(
+        \Drupal::logger('equipment_inspection_workflow')->error(
           'Error resolving defect from verified maintenance @id: @message',
           ['@id' => $entity->id(), '@message' => $e->getMessage()]
         );
@@ -182,10 +182,10 @@ function fleet_inspection_workflow_entity_update(EntityInterface $entity): void 
  * Implements hook_entity_insert().
  *
  * Handles:
- * - fleet_maintenance_event: auto-close linked defect
+ * - equipment_maintenance_event: auto-close linked defect
  */
 function fleet_inspection_workflow_entity_insert(EntityInterface $entity): void {
-  if ($entity->getEntityTypeId() !== 'fleet_maintenance_event') {
+  if ($entity->getEntityTypeId() !== 'equipment_maintenance_event') {
     return;
   }
 
@@ -195,7 +195,7 @@ function fleet_inspection_workflow_entity_insert(EntityInterface $entity): void 
   }
 
   try {
-    $defect = \Drupal::entityTypeManager()->getStorage('fleet_defect')->load($defect_id);
+    $defect = \Drupal::entityTypeManager()->getStorage('equipment_defect')->load($defect_id);
     if (!$defect) {
       return;
     }
@@ -217,7 +217,7 @@ function fleet_inspection_workflow_entity_insert(EntityInterface $entity): void 
     $defect->save();
   }
   catch (\Exception $e) {
-    \Drupal::logger('fleet_inspection_workflow')->error(
+    \Drupal::logger('equipment_inspection_workflow')->error(
       'Error closing defect @defect from maintenance event @event: @message',
       [
         '@defect' => $defect_id,
@@ -234,37 +234,37 @@ function fleet_inspection_workflow_entity_insert(EntityInterface $entity): void 
  * - Updates vehicle fields (last inspection date, mileage)
  * - Evaluates defect auto-create rules
  */
-function _fleet_inspection_on_approval(EntityInterface $inspection): void {
-  $vehicle_id = $inspection->get('field_vehicle')->target_id ?? NULL;
-  if (!$vehicle_id) {
+function _equipment_inspection_on_approval(EntityInterface $inspection): void {
+  $equipment_id = $inspection->get('field_equipment')->target_id ?? NULL;
+  if (!$equipment_id) {
     return;
   }
 
-  $vehicle = \Drupal::entityTypeManager()->getStorage('equipment')->load($vehicle_id);
-  if (!$vehicle) {
+  $equipment = \Drupal::entityTypeManager()->getStorage('equipment')->load($equipment_id);
+  if (!$equipment) {
     return;
   }
 
   // Update vehicle last inspection date.
   $inspection_date = $inspection->get('field_inspection_date')->value ?? NULL;
   if ($inspection_date) {
-    $vehicle->set('field_last_inspection_date', $inspection_date);
+    $equipment->set('field_last_inspection_date', $inspection_date);
   }
 
   // Update vehicle mileage from odometer.
   $odometer = $inspection->get('field_odometer')->value ?? NULL;
   if ($odometer && $odometer > 0) {
-    $current_mileage = $vehicle->get('field_current_mileage')->value ?? 0;
+    $current_mileage = $equipment->get('field_current_mileage')->value ?? 0;
     // Only update if odometer reading is higher (prevent rollback).
     if ($odometer > $current_mileage) {
-      $vehicle->set('field_current_mileage', $odometer);
+      $equipment->set('field_current_mileage', $odometer);
     }
   }
 
-  $vehicle->save();
+  $equipment->save();
 
   // Evaluate defect auto-create rules.
-  _fleet_inspection_evaluate_defect_rules($inspection, $vehicle_id);
+  _equipment_inspection_evaluate_defect_rules($inspection, $equipment_id);
 
   // Check ABS issue code.
   $issue_codes = [];
@@ -272,7 +272,7 @@ function _fleet_inspection_on_approval(EntityInterface $inspection): void {
     $issue_codes[] = $item->value;
   }
   if (in_array('abs', $issue_codes, TRUE)) {
-    _fleet_inspection_create_or_merge_defect($vehicle_id, $inspection, 'abs', 'repair_soon');
+    _equipment_inspection_create_or_merge_defect($equipment_id, $inspection, 'abs', 'repair_soon');
   }
 
   // Auto-set critical issue flag when safe_to_operate = no.
@@ -293,8 +293,8 @@ function _fleet_inspection_on_approval(EntityInterface $inspection): void {
 /**
  * Evaluates all defect rules against an approved inspection.
  */
-function _fleet_inspection_evaluate_defect_rules(EntityInterface $inspection, int $vehicle_id): void {
-  $rules = _fleet_inspection_defect_rules();
+function _equipment_inspection_evaluate_defect_rules(EntityInterface $inspection, int $equipment_id): void {
+  $rules = _equipment_inspection_defect_rules();
 
   // Only evaluate trailer rules if trailer was used.
   $trailer_used = (bool) ($inspection->get('field_trailer_used')->value ?? 0);
@@ -314,8 +314,8 @@ function _fleet_inspection_evaluate_defect_rules(EntityInterface $inspection, in
 
     $value = $inspection->get($field_name)->value ?? '';
     if (in_array($value, $trigger_values, TRUE)) {
-      _fleet_inspection_create_or_merge_defect(
-        $vehicle_id,
+      _equipment_inspection_create_or_merge_defect(
+        $equipment_id,
         $inspection,
         $category,
         $severity
@@ -330,8 +330,8 @@ function _fleet_inspection_evaluate_defect_rules(EntityInterface $inspection, in
  * Merge rule: same vehicle + same category + open status within last 30 days
  * = set repeat_issue flag instead of creating duplicate.
  */
-function _fleet_inspection_create_or_merge_defect(
-  int $vehicle_id,
+function _equipment_inspection_create_or_merge_defect(
+  int $equipment_id,
   EntityInterface $inspection,
   string $category,
   string $severity
@@ -342,14 +342,14 @@ function _fleet_inspection_create_or_merge_defect(
   $thirty_days_ago = (new \DateTime('-30 days', new \DateTimeZone(date_default_timezone_get())))
     ->format('Y-m-d');
 
-  $query = $database->select('fleet_defect__field_vehicle', 'fv');
-  $query->condition('fv.field_vehicle_target_id', $vehicle_id);
+  $query = $database->select('equipment_defect__field_equipment', 'fv');
+  $query->condition('fv.field_equipment_target_id', $equipment_id);
   $query->condition('fv.deleted', 0);
-  $query->join('fleet_defect__field_defect_category', 'fc', 'fc.entity_id = fv.entity_id AND fc.deleted = 0');
+  $query->join('equipment_defect__field_defect_category', 'fc', 'fc.entity_id = fv.entity_id AND fc.deleted = 0');
   $query->condition('fc.field_defect_category_value', $category);
-  $query->join('fleet_defect__field_defect_status', 'fs', 'fs.entity_id = fv.entity_id AND fs.deleted = 0');
+  $query->join('equipment_defect__field_defect_status', 'fs', 'fs.entity_id = fv.entity_id AND fs.deleted = 0');
   $query->condition('fs.field_defect_status_value', ['open', 'scheduled', 'in_repair', 'deferred'], 'IN');
-  $query->join('fleet_defect__field_defect_date_reported', 'fd', 'fd.entity_id = fv.entity_id AND fd.deleted = 0');
+  $query->join('equipment_defect__field_defect_date_reported', 'fd', 'fd.entity_id = fv.entity_id AND fd.deleted = 0');
   $query->condition('fd.field_defect_date_reported_value', $thirty_days_ago, '>=');
   $query->fields('fv', ['entity_id']);
   $query->range(0, 1);
@@ -358,7 +358,7 @@ function _fleet_inspection_create_or_merge_defect(
 
   if ($existing_id) {
     // Merge: flag as repeat issue.
-    $defect = \Drupal::entityTypeManager()->getStorage('fleet_defect')->load($existing_id);
+    $defect = \Drupal::entityTypeManager()->getStorage('equipment_defect')->load($existing_id);
     if ($defect) {
       $defect->set('field_repeat_issue', TRUE);
       // Escalate severity if new finding is more severe.
@@ -390,11 +390,9 @@ function _fleet_inspection_create_or_merge_defect(
   $summary = $category_labels[$category] ?? 'Issue found during inspection';
   $summary .= ' — detected on inspection ' . $inspection->id();
 
-  $trailer_id = $inspection->get('field_trailer')->target_id ?? NULL;
-
   $defect_data = [
     'type' => 'standard',
-    'field_vehicle' => $vehicle_id,
+    'field_equipment' => $equipment_id,
     'field_source_inspection' => $inspection->id(),
     'field_defect_date_reported' => $inspection_date,
     'field_defect_category' => $category,
@@ -406,10 +404,11 @@ function _fleet_inspection_create_or_merge_defect(
     'uid' => \Drupal::currentUser()->id(),
   ];
 
-  if ($trailer_id && strpos($category, 'trailer') !== FALSE) {
+  // Legacy trailer reference removed — trailers have their own inspection bundle.
+  if (FALSE) {
     $defect_data['field_trailer'] = $trailer_id;
   }
 
-  $defect = \Drupal::entityTypeManager()->getStorage('fleet_defect')->create($defect_data);
+  $defect = \Drupal::entityTypeManager()->getStorage('equipment_defect')->create($defect_data);
   $defect->save();
 }

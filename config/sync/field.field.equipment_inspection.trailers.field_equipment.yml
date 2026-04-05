@@ -1,0 +1,38 @@
+uuid: 488a0e44-6df8-44ab-a63f-fb2c77c9e8ae
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.attachements
+    - eck.eck_type.equipment.heavy_equipment
+    - eck.eck_type.equipment.power_tools
+    - eck.eck_type.equipment.small_engine
+    - eck.eck_type.equipment.snow_plows
+    - eck.eck_type.equipment.sprayers
+    - eck.eck_type.equipment.trailers
+    - eck.eck_type.equipment.vehicles
+    - eck.eck_type.equipment_inspection.trailers
+    - field.storage.equipment_inspection.field_equipment
+id: equipment_inspection.trailers.field_equipment
+field_name: field_equipment
+entity_type: equipment_inspection
+bundle: trailers
+label: Equipment
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:equipment'
+  handler_settings:
+    target_bundles:
+      attachements: attachements
+      heavy_equipment: heavy_equipment
+      power_tools: power_tools
+      small_engine: small_engine
+      snow_plows: snow_plows
+      sprayers: sprayers
+      trailers: trailers
+      vehicles: vehicles
+field_type: entity_reference

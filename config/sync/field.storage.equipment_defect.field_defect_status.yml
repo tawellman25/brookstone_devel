@@ -1,0 +1,39 @@
+uuid: 2b02fd05-5167-4c5c-9c57-d5bab99afdca
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+    - options
+id: equipment_defect.field_defect_status
+field_name: field_defect_status
+entity_type: equipment_defect
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: open
+      label: Open
+    -
+      value: scheduled
+      label: Scheduled
+    -
+      value: in_repair
+      label: 'In Repair'
+    -
+      value: resolved
+      label: Resolved
+    -
+      value: deferred
+      label: Deferred
+    -
+      value: retired_with_equipment
+      label: 'Retired With Equipment'
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

@@ -4,8 +4,8 @@
 
 ### Equipment Command Board
 - View ID: `equipment_command_board`
-- Path: `/admin/operations/fleet`
-- Menu: Operations > Fleet
+- Path: `/admin/operations/equipment`
+- Menu: Operations > Equipment
 - Base table: equipment_field_data (all bundles, exposed Type filter)
 - Columns: #, Equipment, Type, Status, Miles/Hrs, Cond, Risk, Defects, Last Inspected, Decision
 - Default sort: equipment number ASC
@@ -13,8 +13,8 @@
 
 ### Inspection Review Queue
 - View ID: `equipment_inspection_review`
-- Path: `/admin/operations/fleet/inspection-review`
-- Menu: Operations > Fleet > Inspection Review
+- Path: `/admin/operations/equipment/inspection-review`
+- Menu: Operations > Equipment > Inspection Review
 - Base table: equipment_inspection_field_data
 - Filter: field_review_status = pending
 - Columns: Equipment, Type, Date, Inspector, Safe?, Note, View
@@ -23,8 +23,8 @@
 
 ### Open Defects Board
 - View ID: `equipment_open_defects`
-- Path: `/admin/operations/fleet/open-defects`
-- Menu: Operations > Fleet > Open Defects
+- Path: `/admin/operations/equipment/open-defects`
+- Menu: Operations > Equipment > Open Defects
 - Base table: equipment_defect_field_data
 - Filter: status IN (open, scheduled, in_repair, deferred)
 - Columns: Equipment, Category, Severity, Reported, Summary, Assigned, Status, View
@@ -33,8 +33,8 @@
 
 ### Repair vs Replace Board
 - View ID: `equipment_repair_replace`
-- Path: `/admin/operations/fleet/repair-replace`
-- Menu: Operations > Fleet > Repair vs Replace
+- Path: `/admin/operations/equipment/repair-replace`
+- Menu: Operations > Equipment > Repair vs Replace
 - Base table: equipment_field_data (exposed Type filter)
 - Columns: Equipment, Type, Miles/Hrs, Open Defects, Resale, Cond, Engine, Trans, Decision
 - Default sort: condition score ASC

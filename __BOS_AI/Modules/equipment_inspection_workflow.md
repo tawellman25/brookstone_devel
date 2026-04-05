@@ -140,14 +140,6 @@ They will be added to `_equipment_inspection_defect_rules()` with bundle guards.
 
 ---
 
-## Module Naming Note
-
-This module is named `fleet_inspection_workflow` (legacy name from when
-the system was vehicle-only). It now handles ALL equipment types. The
-module name was not changed because renaming Drupal modules is disruptive
-(requires uninstall/reinstall cycle). The entity types it operates on
-are correctly named `equipment_*`.
-
 ---
 
 Created: April 2026

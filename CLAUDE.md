@@ -386,7 +386,7 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 | `material_supplier` | `material_suppliers:supplier` integrity: no duplicates, preferred supplier, pack qty, SKU normalization |
 | `equipment_actions` | VBO actions for equipment entities |
 | `equipment_status_updates` | Propagates equipment status update entity changes to Equipment entity |
-| `fleet_inspection_workflow` | Fleet automation: defect auto-creation on inspection approval (18 rules), maintenance event defect closure, vehicle status sync on out-of-service |
+| `equipment_inspection_workflow` | Equipment automation: defect auto-creation on inspection approval (18 rules), maintenance event defect closure, equipment status sync on out-of-service |
 
 ### Property modules
 | Module | Purpose |

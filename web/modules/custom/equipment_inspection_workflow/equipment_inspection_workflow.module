@@ -2,11 +2,11 @@
 
 /**
  * @file
- * Fleet Inspection Workflow — automation for inspections, defects, maintenance.
+ * Equipment Inspection Workflow — automation for inspections, defects, maintenance.
  *
- * - Inspection approval → defect auto-creation + vehicle field sync
- * - Maintenance event creation → defect closure
- * - Defect out-of-service → vehicle status sync
+ * - Inspection approval → defect auto-creation + equipment field sync
+ * - Maintenance event creation → defect status transition
+ * - Defect out-of-service → equipment status sync
  * - Maintenance cost validation (parts + labor = total when both set)
  */
 
@@ -18,7 +18,7 @@ use Drupal\Core\Entity\EntityInterface;
  * Auto-calculates maintenance event total cost from parts + labor
  * when both are set and total is empty or zero.
  */
-function fleet_inspection_workflow_entity_presave(EntityInterface $entity): void {
+function equipment_inspection_workflow_entity_presave(EntityInterface $entity): void {
   if ($entity->getEntityTypeId() !== 'equipment_maintenance_event') {
     return;
   }
@@ -82,7 +82,7 @@ function _equipment_inspection_defect_rules(): array {
  * - equipment_defect: out_of_service triggers vehicle status change
  * - equipment_maintenance_event: verified complete → resolve linked defect
  */
-function fleet_inspection_workflow_entity_update(EntityInterface $entity): void {
+function equipment_inspection_workflow_entity_update(EntityInterface $entity): void {
   // ── Inspection approval workflow ──────────────────────────────────
   if ($entity->getEntityTypeId() === 'equipment_inspection') {
     if (!isset($entity->original)) {
@@ -184,7 +184,7 @@ function fleet_inspection_workflow_entity_update(EntityInterface $entity): void 
  * Handles:
  * - equipment_maintenance_event: auto-close linked defect
  */
-function fleet_inspection_workflow_entity_insert(EntityInterface $entity): void {
+function equipment_inspection_workflow_entity_insert(EntityInterface $entity): void {
   if ($entity->getEntityTypeId() !== 'equipment_maintenance_event') {
     return;
   }

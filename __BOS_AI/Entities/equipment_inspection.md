@@ -6,8 +6,7 @@ Storage: ECK
 ## Purpose
 One record per equipment inspection event. Inspections are source
 observations, not repair records. Failed safety checks must create or queue defect records via the
-`fleet_inspection_workflow` module (module name is legacy — handles
-all equipment types, not just fleet).
+`equipment_inspection_workflow` module.
 
 ## Bundles (6)
 

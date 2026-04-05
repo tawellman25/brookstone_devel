@@ -45,8 +45,7 @@ This is the ONLY path to resolve a defect.
 ## Cost Auto-Calculation
 Presave: `field_cost_total` auto-calculated from `field_cost_parts` +
 `field_cost_labor` when parts and/or labor are set but total is empty
-or zero. Handled by `fleet_inspection_workflow` module (module name is
-legacy — handles all equipment types).
+or zero. Handled by `equipment_inspection_workflow` module.
 
 ## Views
 - Equipment Maintenance EVA: on all equipment entity pages

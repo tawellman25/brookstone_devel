@@ -1,0 +1,29 @@
+uuid: 36c87612-175c-4d9c-ac7d-8234d3768fc9
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_start_up
+    - eck.eck_type.estimate.sprinkler_start_up
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.irrigation_start_up.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: irrigation_start_up
+label: 'Irrigation Start-Up Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      sprinkler_start_up: sprinkler_start_up
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: sprinkler_start_up
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: 77b0c7ac-d30f-4dbc-8eb1-cfd400b6469e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.fertilizing_of_shrubs_and_trees
+    - eck.eck_type.estimate.fertilizing_trees_and_shrubs
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.fertilizing_of_shrubs_and_trees.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: fertilizing_of_shrubs_and_trees
+label: 'Fertilizing Trees & Shrubs Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      fertilizing_trees_and_shrubs: fertilizing_trees_and_shrubs
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: fertilizing_trees_and_shrubs
+field_type: entity_reference

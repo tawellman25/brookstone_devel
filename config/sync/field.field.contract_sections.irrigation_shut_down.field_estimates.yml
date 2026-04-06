@@ -1,0 +1,29 @@
+uuid: cc134b94-5b16-40dc-8a0c-121e1eb1a195
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.irrigation_shut_down
+    - eck.eck_type.estimate.sprinkler_winterizing
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.irrigation_shut_down.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: irrigation_shut_down
+label: 'Irrigation Shut Down Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      sprinkler_winterizing: sprinkler_winterizing
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: sprinkler_winterizing
+field_type: entity_reference

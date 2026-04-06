@@ -1,0 +1,29 @@
+uuid: 46ec4389-a953-4773-acf3-af4ed39ee295
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.spring_cleanup
+    - eck.eck_type.estimate.spring_cleanup
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.spring_cleanup.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: spring_cleanup
+label: 'Spring Cleanup Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      spring_cleanup: spring_cleanup
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: spring_cleanup
+field_type: entity_reference

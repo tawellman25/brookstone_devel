@@ -173,10 +173,35 @@ function estimate_intake_entity_insert(EntityInterface $entity): void {
 }
 
 /**
- * Creates an estimate entity for a new estimate request.
+ * Implements hook_entity_update().
+ *
+ * Creates estimates for any new services added to an existing request.
+ * The duplicate check in _estimate_intake_create_estimate ensures we only
+ * create estimates for services that don't already have one.
+ */
+function estimate_intake_entity_update(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate_request' || $entity->bundle() !== 'standard') {
+    return;
+  }
+
+  try {
+    _estimate_intake_create_estimate($entity);
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('estimate_intake')
+      ->error('Estimate auto-creation failed on update for request #@rid: @msg', [
+        '@rid' => $entity->id(),
+        '@msg' => $e->getMessage(),
+      ]);
+  }
+}
+
+/**
+ * Creates estimate entities for an estimate request's services.
  *
  * Reads the service term's field_service_bundle to determine the estimate
- * bundle. Skips silently if field_estimate_service is not enabled.
+ * bundle. Skips if field_estimate_service is not enabled or if an estimate
+ * already exists for this bundle on the request (safe for insert and update).
  */
 function _estimate_intake_create_estimate(EntityInterface $request): void {
   // 1. Load field_service taxonomy terms — loop over ALL values.
@@ -242,6 +267,18 @@ function _estimate_intake_create_estimate(EntityInterface $request): void {
       continue;
     }
 
+    // 4a. Skip if an estimate already exists for this bundle on this request.
+    $existing = \Drupal::entityTypeManager()->getStorage('estimate')
+      ->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('type', $bundle)
+      ->condition('field_estimate_request.target_id', (int) $request->id())
+      ->range(0, 1)
+      ->execute();
+    if (!empty($existing)) {
+      continue;
+    }
+
     // 5. Build estimate entity values.
     $values = [
       'type' => $bundle,
@@ -274,7 +311,10 @@ function _estimate_intake_create_estimate(EntityInterface $request): void {
       $request->save();
     }
 
-    // 8a. Auto-create estimate_task if bundle supports it.
+    // 8b. Link estimate ↔ contract section (bidirectional).
+    _estimate_intake_link_contract_section($request, $estimate, $service_tid);
+
+    // 8c. Auto-create estimate_task if bundle supports it.
     _estimate_intake_create_estimate_task($estimate, $bundle);
 
     // 9. Log success.
@@ -367,6 +407,89 @@ function _estimate_intake_create_estimate_task($estimate, string $bundle): void 
       ->error('estimate_task creation failed for estimate #@eid (@bundle): @msg', [
         '@eid' => $estimate->id(),
         '@bundle' => $bundle,
+        '@msg' => $e->getMessage(),
+      ]);
+  }
+}
+
+/**
+ * Links an estimate to its matching contract section (bidirectional).
+ *
+ * Finds the contract_section on the request's contract whose field_service
+ * matches the estimate's service term. Sets:
+ * - estimate.field_contract_section → the matching section
+ * - contract_section.field_estimates[] += the estimate
+ *
+ * Failure never blocks estimate creation.
+ */
+function _estimate_intake_link_contract_section($request, $estimate, int $service_tid): void {
+  try {
+    // Request must have a contract.
+    if (!$request->hasField('field_contract') || $request->get('field_contract')->isEmpty()) {
+      return;
+    }
+    $contract_id = (int) $request->get('field_contract')->target_id;
+    if ($contract_id <= 0) {
+      return;
+    }
+
+    // Find contract_sections on this contract matching the service term.
+    $section_storage = \Drupal::entityTypeManager()->getStorage('contract_sections');
+    $section_ids = $section_storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_contract.target_id', $contract_id)
+      ->condition('field_service.target_id', $service_tid)
+      ->range(0, 1)
+      ->execute();
+
+    if (empty($section_ids)) {
+      return;
+    }
+
+    $section_id = (int) array_values($section_ids)[0];
+    $section = $section_storage->load($section_id);
+    if ($section === NULL) {
+      return;
+    }
+
+    $estimate_id = (int) $estimate->id();
+    $changed = FALSE;
+
+    // Set field_contract_section on the estimate.
+    if ($estimate->hasField('field_contract_section')) {
+      $current_cs = (int) ($estimate->get('field_contract_section')->target_id ?? 0);
+      if ($current_cs !== $section_id) {
+        $estimate->set('field_contract_section', ['target_id' => $section_id]);
+        $estimate->save();
+        $changed = TRUE;
+      }
+    }
+
+    // Add the estimate to the section's field_estimates.
+    if ($section->hasField('field_estimates')) {
+      $existing = $section->get('field_estimates')->getValue();
+      $existing_ids = array_map(fn($item) => (int) ($item['target_id'] ?? 0), $existing);
+
+      if (!in_array($estimate_id, $existing_ids, TRUE)) {
+        $existing[] = ['target_id' => $estimate_id];
+        $section->set('field_estimates', $existing);
+        $section->save();
+        $changed = TRUE;
+      }
+    }
+
+    if ($changed) {
+      \Drupal::logger('estimate_intake')
+        ->info('Linked estimate #@eid to contract_section #@sid.', [
+          '@eid' => $estimate_id,
+          '@sid' => $section_id,
+        ]);
+    }
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('estimate_intake')
+      ->error('Failed linking estimate #@eid to contract section: @msg', [
+        '@eid' => $estimate->id(),
         '@msg' => $e->getMessage(),
       ]);
   }

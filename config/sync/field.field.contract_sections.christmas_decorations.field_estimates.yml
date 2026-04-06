@@ -1,0 +1,29 @@
+uuid: 24908ddb-83a3-44a3-9033-62a0b154e2dc
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.christmas_decorations
+    - eck.eck_type.estimate.christmas_decorations
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.christmas_decorations.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: christmas_decorations
+label: 'Christmas Decorations Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      christmas_decorations: christmas_decorations
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: christmas_decorations
+field_type: entity_reference

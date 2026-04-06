@@ -53,7 +53,11 @@ final class EstimateRequestWarningBuilder {
 
     // Helpful warnings (non-blocking).
     if ($req->hasField('field_property') && $req->get('field_property')->isEmpty()) {
-      $this->messenger->addWarning('Property is not linked yet. This can be completed after intake, but should be confirmed before estimating and before converting an accepted Estimate into a Work Order.');
+      $address_hint = '';
+      if ($req->hasField('field_requestor_address') && !$req->get('field_requestor_address')->isEmpty()) {
+        $address_hint = ' Requestor address: ' . trim((string) $req->get('field_requestor_address')->value) . '.';
+      }
+      $this->messenger->addWarning('Property is not linked yet. This can be completed after intake, but should be confirmed before estimating and before converting an accepted Estimate into a Work Order.' . $address_hint);
     }
 
     if ($req->hasField('field_owner') && $req->get('field_owner')->isEmpty()) {

@@ -1,0 +1,29 @@
+uuid: 201a298a-55cc-4ccf-80e1-089773c617fe
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.trunk_bore_prevention
+    - eck.eck_type.estimate.trunk_bore
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.trunk_bore_prevention.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: trunk_bore_prevention
+label: 'Trunk Bore Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      trunk_bore: trunk_bore
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: trunk_bore
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: 31a261b9-161c-471c-9c53-3993ec7019b3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.weed_spraying_landscape_beds
+    - eck.eck_type.estimate.weed_spraying
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.weed_spraying_landscape_beds.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: weed_spraying_landscape_beds
+label: 'Weed Spraying Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      weed_spraying: weed_spraying
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: weed_spraying
+field_type: entity_reference

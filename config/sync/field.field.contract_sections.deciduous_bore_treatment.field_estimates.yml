@@ -1,0 +1,29 @@
+uuid: 3473cb86-900c-4449-bc41-46deef4c2c3c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.deciduous_bore_treatment
+    - eck.eck_type.estimate.deciduous_bore
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.deciduous_bore_treatment.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: deciduous_bore_treatment
+label: 'Deciduous Bore Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      deciduous_bore: deciduous_bore
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: deciduous_bore
+field_type: entity_reference

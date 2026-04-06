@@ -1,0 +1,29 @@
+uuid: c0c4de5d-ba9a-43de-b590-7b82ebac33b7
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.cooley_spruce_gall_treatment
+    - eck.eck_type.estimate.cooley_spruce_gall
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.cooley_spruce_gall_treatment.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: cooley_spruce_gall_treatment
+label: 'Cooley Spruce Gall Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      cooley_spruce_gall: cooley_spruce_gall
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: cooley_spruce_gall
+field_type: entity_reference

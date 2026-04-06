@@ -1,0 +1,29 @@
+uuid: 3f377f29-67e1-45ee-9eb3-d3e042d735fb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.summer_hedge_shrub_pruning
+    - eck.eck_type.estimate.summer_pruning
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.summer_hedge_shrub_pruning.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: summer_hedge_shrub_pruning
+label: 'Summer Pruning Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      summer_pruning: summer_pruning
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: summer_pruning
+field_type: entity_reference

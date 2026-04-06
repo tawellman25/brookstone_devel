@@ -14,6 +14,7 @@ dependencies:
     - field.field.profile.teammate_profile.field_hat_preference
     - field.field.profile.teammate_profile.field_job_title
     - field.field.profile.teammate_profile.field_last_name
+    - field.field.profile.teammate_profile.field_position
     - field.field.profile.teammate_profile.field_list_position
     - field.field.profile.teammate_profile.field_middle_name
     - field.field.profile.teammate_profile.field_portal_allowed
@@ -27,6 +28,7 @@ dependencies:
     - profile.type.teammate_profile
   module:
     - datetime
+    - eck
     - field_layout
     - layout_builder
     - layout_discovery
@@ -402,6 +404,14 @@ content:
       format_custom_true: ''
     third_party_settings: {  }
     weight: 16
+    region: content
+  field_position:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
     region: content
   field_public_viewable:
     type: boolean

@@ -1,0 +1,29 @@
+uuid: 49d90ac2-c87f-42e7-aea4-ef8581ff4817
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.aerating_of_lawn
+    - eck.eck_type.estimate.aerating
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.aerating_of_lawn.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: aerating_of_lawn
+label: 'Aerating Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      aerating: aerating
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: aerating
+field_type: entity_reference

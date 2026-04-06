@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Url;
 
 /**
  * Implements hook_entity_extra_field_info().
@@ -23,6 +24,12 @@ function estimate_request_cards_entity_extra_field_info(): array {
             'label' => t('Contact Card'),
             'description' => t('Contact name, address, phone, and email.'),
             'weight' => 11,
+            'visible' => TRUE,
+          ],
+          'property_actions' => [
+            'label' => t('Property Actions'),
+            'description' => t('Create Property button when property is not linked.'),
+            'weight' => 12,
             'visible' => TRUE,
           ],
         ],
@@ -144,10 +151,17 @@ function estimate_request_cards_entity_view(
             $owner_html .= '<div class="er-card__name">' . htmlspecialchars($name) . '</div>';
           }
           if ($addr_line) {
+            $full_addr = $addr_line;
+            $csz = trim($city . ', ' . $state . ' ' . $zip);
+            if ($csz && $csz !== ',') {
+              $full_addr .= ', ' . $csz;
+            }
+            $maps_url = 'https://www.google.com/maps/search/' . rawurlencode($full_addr);
             $owner_html .= '<div class="er-card__address">' . htmlspecialchars($addr_line);
             if ($city || $state || $zip) {
               $owner_html .= '<br>' . htmlspecialchars(trim($city . ', ' . $state . ' ' . $zip));
             }
+            $owner_html .= ' <a href="' . htmlspecialchars($maps_url) . '" target="_blank" title="View on Google Maps"><i class="fa fa-map-marker-alt"></i></a>';
             $owner_html .= '</div>';
           }
           if ($phone) {
@@ -172,21 +186,25 @@ function estimate_request_cards_entity_view(
   if ($display->getComponent('contact_card')) {
     try {
       $contact_html = '';
+      $name = '';
+      $email = '';
+      $phone = '';
+      $addr_line = '';
+      $city = '';
+      $state = '';
+      $zip = '';
 
+      // Try the linked contact entity first.
       if (!$entity->get('field_contact')->isEmpty()) {
         $contact = $entity->get('field_contact')->entity;
 
         if ($contact) {
-          // Name.
           $first = $contact->hasField('field_first_name') ? (string) $contact->get('field_first_name')->value : '';
           $last  = $contact->hasField('field_last_name')  ? (string) $contact->get('field_last_name')->value  : '';
           $name  = trim($first . ' ' . $last);
 
-          // Email.
           $email = $contact->hasField('field_email') ? (string) $contact->get('field_email')->value : '';
 
-          // Phone via forward reference: contacts.contact.field_phone_number → phone_number.contacts.
-          $phone = '';
           if ($contact->hasField('field_phone_number') && !$contact->get('field_phone_number')->isEmpty()) {
             $first_phone = $contact->get('field_phone_number')->entity;
             if ($first_phone) {
@@ -194,8 +212,6 @@ function estimate_request_cards_entity_view(
             }
           }
 
-          // Address via forward reference: contacts.contact.field_address → address.contact_address.
-          $addr_line = $city = $state = $zip = '';
           if ($contact->hasField('field_address') && !$contact->get('field_address')->isEmpty()) {
             $addr_entity = $contact->get('field_address')->entity;
             if ($addr_entity) {
@@ -205,28 +221,74 @@ function estimate_request_cards_entity_view(
               $zip       = (string) $addr_entity->get('field_zipcode')->value;
             }
           }
+        }
+      }
 
-          // Build HTML.
-          $contact_html .= '<div class="er-card er-card--contact">';
-          $contact_html .= '<h3 class="er-card__role">Contact</h3>';
-          if ($name) {
-            $contact_html .= '<div class="er-card__name">' . htmlspecialchars($name) . '</div>';
+      // Fallback to requestor fields for any blanks.
+      if (empty($name) && $entity->hasField('field_requestor_name') && !$entity->get('field_requestor_name')->isEmpty()) {
+        $name = trim((string) $entity->get('field_requestor_name')->value);
+      }
+      if (empty($phone) && $entity->hasField('field_requestor_phone') && !$entity->get('field_requestor_phone')->isEmpty()) {
+        $phone = trim((string) $entity->get('field_requestor_phone')->value);
+      }
+      if (empty($email) && $entity->hasField('field_requestor_email') && !$entity->get('field_requestor_email')->isEmpty()) {
+        $email = trim((string) $entity->get('field_requestor_email')->value);
+      }
+
+      // Requestor address — used as fallback for contact address AND as
+      // the property address when field_property is empty.
+      $requestor_address = '';
+      if ($entity->hasField('field_requestor_address') && !$entity->get('field_requestor_address')->isEmpty()) {
+        $requestor_address = trim((string) $entity->get('field_requestor_address')->value);
+      }
+
+      // Build HTML.
+      $has_anything = $name || $addr_line || $requestor_address || $phone || $email;
+
+      if ($has_anything) {
+        $contact_html .= '<div class="er-card er-card--contact">';
+        $contact_html .= '<h3 class="er-card__role">Contact</h3>';
+
+        if ($name) {
+          $contact_html .= '<div class="er-card__name">' . htmlspecialchars($name) . '</div>';
+        }
+
+        // Contact entity address.
+        if ($addr_line) {
+          $full_addr = $addr_line;
+          $csz = trim($city . ', ' . $state . ' ' . $zip);
+          if ($csz && $csz !== ',') {
+            $full_addr .= ', ' . $csz;
           }
-          if ($addr_line) {
-            $contact_html .= '<div class="er-card__address">' . htmlspecialchars($addr_line);
-            if ($city || $state || $zip) {
-              $contact_html .= '<br>' . htmlspecialchars(trim($city . ', ' . $state . ' ' . $zip));
-            }
-            $contact_html .= '</div>';
+          $maps_url = 'https://www.google.com/maps/search/' . rawurlencode($full_addr);
+          $contact_html .= '<div class="er-card__address">';
+          $contact_html .= htmlspecialchars($addr_line);
+          if ($city || $state || $zip) {
+            $contact_html .= '<br>' . htmlspecialchars(trim($city . ', ' . $state . ' ' . $zip));
           }
-          if ($phone) {
-            $contact_html .= '<div class="er-card__phone">Phone: ' . htmlspecialchars($phone) . '</div>';
-          }
-          if ($email) {
-            $contact_html .= '<div class="er-card__email">Email: ' . htmlspecialchars($email) . '</div>';
-          }
+          $contact_html .= ' <a href="' . htmlspecialchars($maps_url) . '" target="_blank" title="View on Google Maps"><i class="fa fa-map-marker-alt"></i></a>';
           $contact_html .= '</div>';
         }
+
+        // Requestor-supplied address (shown when property is not linked,
+        // or as supplemental when contact has no address).
+        if ($requestor_address && $requestor_address !== $addr_line) {
+          $maps_url = 'https://www.google.com/maps/search/' . rawurlencode($requestor_address);
+          $label = $entity->get('field_property')->isEmpty() ? 'Property Address (not yet in system)' : 'Requestor Address';
+          $contact_html .= '<div class="er-card__requestor-address">';
+          $contact_html .= '<strong>' . $label . ':</strong> ';
+          $contact_html .= htmlspecialchars($requestor_address);
+          $contact_html .= ' <a href="' . htmlspecialchars($maps_url) . '" target="_blank" title="View on Google Maps"><i class="fa fa-map-marker-alt"></i></a>';
+          $contact_html .= '</div>';
+        }
+
+        if ($phone) {
+          $contact_html .= '<div class="er-card__phone">Phone: ' . htmlspecialchars($phone) . '</div>';
+        }
+        if ($email) {
+          $contact_html .= '<div class="er-card__email">Email: ' . htmlspecialchars($email) . '</div>';
+        }
+        $contact_html .= '</div>';
       }
 
       $build['contact_card'] = [
@@ -238,5 +300,35 @@ function estimate_request_cards_entity_view(
       \Drupal::logger('estimate_request_cards')->error('Contact card error: @msg', ['@msg' => $e->getMessage()]);
       $build['contact_card'] = ['#markup' => ''];
     }
+  }
+
+  // --- PROPERTY ACTIONS ---
+  if ($display->getComponent('property_actions')) {
+    $property_actions_html = '';
+
+    // Show "Create Property" button when property is not linked.
+    $property_linked = $entity->hasField('field_property') && !$entity->get('field_property')->isEmpty();
+
+    if (!$property_linked) {
+      $create_url = Url::fromRoute('estimate.estimate_request_create_property', [
+        'estimate_request' => $entity->id(),
+      ]);
+
+      if ($create_url->access()) {
+        $has_address = $entity->hasField('field_requestor_address') && !$entity->get('field_requestor_address')->isEmpty();
+        $button_label = $has_address ? 'Create Property from Address' : 'Create Property';
+
+        $property_actions_html .= '<div class="er-property-actions">';
+        $property_actions_html .= '<a href="' . $create_url->toString() . '" class="button button--primary">';
+        $property_actions_html .= '<i class="fa fa-home"></i> ' . $button_label;
+        $property_actions_html .= '</a>';
+        $property_actions_html .= '</div>';
+      }
+    }
+
+    $build['property_actions'] = [
+      '#markup' => $property_actions_html,
+      '#weight' => 12,
+    ];
   }
 }

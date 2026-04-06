@@ -1,0 +1,29 @@
+uuid: ea8154a6-0a6f-4593-9aca-c0612a51a898
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.dormant_oil_spray
+    - eck.eck_type.estimate.dormant_oil
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.dormant_oil_spray.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: dormant_oil_spray
+label: 'Dormant Oil Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      dormant_oil: dormant_oil
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: dormant_oil
+field_type: entity_reference

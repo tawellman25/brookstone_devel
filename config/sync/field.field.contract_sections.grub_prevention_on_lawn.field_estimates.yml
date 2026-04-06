@@ -1,0 +1,29 @@
+uuid: 68772837-bbe2-4dda-ae03-1cdd6c27ebb5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.grub_prevention_on_lawn
+    - eck.eck_type.estimate.grub_prevention
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.grub_prevention_on_lawn.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: grub_prevention_on_lawn
+label: 'Grub Prevention Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      grub_prevention: grub_prevention
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: grub_prevention
+field_type: entity_reference

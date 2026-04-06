@@ -29,3 +29,15 @@ estimate.estimate_request_create_contact_confirm:
     parameters:
       estimate_request:
         type: entity:estimate_request
+
+estimate.estimate_request_create_property:
+  path: '/estimate-request/{estimate_request}/create-property'
+  defaults:
+    _controller: '\Drupal\estimate\Controller\EstimateRequestCreatePropertyController::redirectToPropertyForm'
+    _title: 'Create Property from Address'
+  requirements:
+    _permission: 'create properties entities'
+  options:
+    parameters:
+      estimate_request:
+        type: entity:estimate_request

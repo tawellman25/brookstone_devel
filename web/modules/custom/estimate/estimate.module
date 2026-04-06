@@ -897,6 +897,159 @@ function _estimate_load_term_label(int $tid): string {
 /* Internal helpers (do not call outside this module)                         */
 /* -------------------------------------------------------------------------- */
 
+/* ---------------------------------------------------------------------------
+ * Property creation from Estimate Request
+ * --------------------------------------------------------------------------- */
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Pre-fills the property add form when redirected from an Estimate Request's
+ * "Create Property from Address" button. Query parameters:
+ * - from_estimate_request: the request ID (stored in hidden field for post-save linking)
+ * - street: parsed street address
+ * - zip: parsed zip code (used to look up zipcodes entity)
+ * - owner_uid: property owner user ID
+ */
+function estimate_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, string $form_id): void {
+  // Property form ID is "properties_property_form" (ECK pattern).
+  if ($form_id !== 'properties_property_form') {
+    return;
+  }
+
+  $request = \Drupal::request();
+  $er_id = (int) $request->query->get('from_estimate_request', 0);
+  if ($er_id <= 0) {
+    return;
+  }
+
+  $etm = \Drupal::entityTypeManager();
+
+  // --- Street address ---
+  $street = $request->query->get('street', '');
+  if ($street !== '' && isset($form['field_street_address']['widget'][0]['value'])) {
+    $form['field_street_address']['widget'][0]['value']['#default_value'] = $street;
+  }
+
+  // --- Zipcode reference (select widget — set #default_value on widget root) ---
+  $zip = $request->query->get('zip', '');
+  $zipcode_entity = NULL;
+  if ($zip !== '' && isset($form['field_zipcode_reference'])) {
+    $zip_ids = $etm->getStorage('zipcodes')
+      ->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_zipcode', $zip)
+      ->range(0, 1)
+      ->execute();
+    if (!empty($zip_ids)) {
+      $zip_id = (int) array_values($zip_ids)[0];
+      $zipcode_entity = $etm->getStorage('zipcodes')->load($zip_id);
+      $form['field_zipcode_reference']['widget']['#default_value'] = [$zip_id];
+    }
+  }
+
+  // --- Geocode address (geofield_map widget's built-in geocode input) ---
+  $geocode_address = $request->query->get('geocode_address', '');
+  if ($geocode_address !== '' && isset($form['field_geofield']['widget'][0]['value'])) {
+    // The geofield_map widget renders the geocode address box via JS.
+    // Pass the address as a data attribute so JS or the user can use it.
+    $form['field_geofield']['widget'][0]['value']['#default_value'] = [
+      'lat' => 0,
+      'lon' => 0,
+    ];
+    // Attach the address for the geocode search box via drupalSettings.
+    $form['#attached']['drupalSettings']['estimatePropertyGeocode'] = $geocode_address;
+  }
+
+  // --- Full address (computed on presave, but pre-fill for reference) ---
+  if ($geocode_address !== '' && isset($form['field_full_address']['widget'][0]['value'])) {
+    $form['field_full_address']['widget'][0]['value']['#default_value'] = $geocode_address;
+  }
+
+  // --- Primary contact from estimate request ---
+  $contact_id = (int) $request->query->get('contact_id', 0);
+  if ($contact_id > 0 && isset($form['field_primary_contact_ref']['widget'][0]['target_id'])) {
+    $contact = $etm->getStorage('contacts')->load($contact_id);
+    if ($contact) {
+      $form['field_primary_contact_ref']['widget'][0]['target_id']['#default_value'] = $contact;
+    }
+  }
+
+  // --- County account/parcel lookup hint ---
+  if ($zipcode_entity && $geocode_address !== '') {
+    $county_name = '';
+    if (!$zipcode_entity->get('field_county')->isEmpty()) {
+      $county_entity = $zipcode_entity->get('field_county')->entity;
+      if ($county_entity) {
+        $county_name = $county_entity->label();
+      }
+    }
+    if ($county_name && isset($form['field_county_account_number']['widget'][0]['value'])) {
+      $form['field_county_account_number']['widget'][0]['value']['#description'] =
+        t('Look up at the @county assessor website using address: @addr', [
+          '@county' => $county_name,
+          '@addr' => $geocode_address,
+        ]);
+    }
+    if ($county_name && isset($form['field_parcel_number']['widget'][0]['value'])) {
+      $form['field_parcel_number']['widget'][0]['value']['#description'] =
+        t('Look up at the @county assessor website using address: @addr', [
+          '@county' => $county_name,
+          '@addr' => $geocode_address,
+        ]);
+    }
+  }
+
+  // Store the estimate request ID so we can link back after save.
+  $form['from_estimate_request'] = [
+    '#type' => 'hidden',
+    '#value' => $er_id,
+  ];
+
+  // Add submit handler to link the property back to the request.
+  $form['actions']['submit']['#submit'][] = '_estimate_property_created_from_request_submit';
+}
+
+/**
+ * Submit handler: link newly created property back to the estimate request.
+ */
+function _estimate_property_created_from_request_submit(array &$form, \Drupal\Core\Form\FormStateInterface $form_state): void {
+  $er_id = (int) $form_state->getValue('from_estimate_request');
+  if ($er_id <= 0) {
+    return;
+  }
+
+  $entity = $form_state->getFormObject()->getEntity();
+  if (!$entity || $entity->getEntityTypeId() !== 'properties') {
+    return;
+  }
+
+  $property_id = (int) $entity->id();
+  if ($property_id <= 0) {
+    return;
+  }
+
+  $req = \Drupal::entityTypeManager()->getStorage('estimate_request')->load($er_id);
+  if (!$req) {
+    return;
+  }
+
+  // Link property to request.
+  if ($req->hasField('field_property') && $req->get('field_property')->isEmpty()) {
+    $req->set('field_property', ['target_id' => $property_id]);
+    $req->save();
+
+    \Drupal::messenger()->addStatus(t('Property linked to Estimate Request #@id.', ['@id' => $er_id]));
+    \Drupal::logger('estimate')->notice('Linked Property @pid to Estimate Request @rid.', [
+      '@pid' => $property_id,
+      '@rid' => $er_id,
+    ]);
+  }
+
+  // Redirect back to the estimate request.
+  $form_state->setRedirect('entity.estimate_request.canonical', ['estimate_request' => $er_id]);
+}
+
 /**
  * IMPORTANT:
  * This file intentionally does NOT contain:

@@ -1,0 +1,29 @@
+uuid: 62eba41c-8a7f-4c5c-9d9d-8378b2c42368
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.ips_beetle_on_pinion_pine
+    - eck.eck_type.estimate.pinyon_pine_ips_beetle
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.ips_beetle_on_pinion_pine.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: ips_beetle_on_pinion_pine
+label: 'Ips Beetle Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      pinyon_pine_ips_beetle: pinyon_pine_ips_beetle
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: pinyon_pine_ips_beetle
+field_type: entity_reference

@@ -1,0 +1,29 @@
+uuid: d55e3c87-936d-4beb-bae2-fb8bc922f4e6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contract_sections.dethatching_of_lawn_areas
+    - eck.eck_type.estimate.dethatching
+    - field.storage.contract_sections.field_estimates
+id: contract_sections.dethatching_of_lawn_areas.field_estimates
+field_name: field_estimates
+entity_type: contract_sections
+bundle: dethatching_of_lawn_areas
+label: 'Dethatching Estimates'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:estimate'
+  handler_settings:
+    target_bundles:
+      dethatching: dethatching
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: dethatching
+field_type: entity_reference

@@ -1,0 +1,27 @@
+uuid: b5f9d2e6-3a1c-4d8f-a7b2-6c4e9f1a3b85
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.profile.field_position
+    - profile.type.teammate_profile
+id: profile.teammate_profile.field_position
+field_name: field_position
+entity_type: profile
+bundle: teammate_profile
+label: Position
+description: 'The company position assigned to this teammate.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:positions'
+  handler_settings:
+    target_bundles:
+      role: role
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+field_type: entity_reference

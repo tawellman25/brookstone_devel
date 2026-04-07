@@ -162,9 +162,8 @@ class SprinklerSchedulingController extends ControllerBase {
         'field_work_order'    => ['target_id' => $wo_id],
         'field_date'          => [
           'value'     => $ts,
-          'end_value' => $ts,
+          'end_value' => $ts + 86340,
           'duration'  => 1439,
-          'all_day'   => TRUE,
         ],
         'field_assigned_to'      => ['target_id' => $teammate_uid],
         'field_scheduled_oder'   => $order,

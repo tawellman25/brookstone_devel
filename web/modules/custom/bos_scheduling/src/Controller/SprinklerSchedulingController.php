@@ -168,7 +168,7 @@ class SprinklerSchedulingController extends ControllerBase {
         ],
         'field_assigned_to'      => ['target_id' => $teammate_uid],
         'field_scheduled_oder'   => $order,
-        'field_scheduled_firm'   => TRUE,
+        'field_scheduled_firm'   => FALSE,
       ]);
       $scheduling->save();
 

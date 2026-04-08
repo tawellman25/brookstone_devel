@@ -421,8 +421,8 @@ function wo_sprinkler_start_up_entity_update(\Drupal\Core\Entity\EntityInterface
 /**
  * Sets or clears field_sprinkler_started on active aerating WOs for a property.
  *
- * Checks whether the property has ANY completed SSU WO. If yes, flags all
- * active aerating WOs as started. If no, clears the flag.
+ * "This season" = a wo_complete_info (irrigation_crew) referencing an SSU
+ * for this property has field_date_completed >= January 1 of current year.
  */
 function _wo_sprinkler_start_up_update_aerating_flag(\Drupal\Core\Entity\EntityInterface $entity): void {
   $property_id = $entity->get('field_property')->target_id ?? NULL;
@@ -430,16 +430,7 @@ function _wo_sprinkler_start_up_update_aerating_flag(\Drupal\Core\Entity\EntityI
     return;
   }
 
-  // Check if this property has any completed SSU WO.
-  $completed_count = \Drupal::entityQuery('work_order')
-    ->condition('type', 'sprinkler_start_up')
-    ->condition('field_property', $property_id)
-    ->condition('field_status', 1097)
-    ->accessCheck(FALSE)
-    ->count()
-    ->execute();
-
-  $flag_value = ($completed_count > 0) ? 1 : 0;
+  $flag_value = _wo_sprinkler_start_up_property_started_this_season($property_id) ? 1 : 0;
 
   // Find active aerating WOs for this property.
   $active_statuses = [1089, 1099, 1095, 1503, 1091, 1090, 1092, 1093, 1094, 1096];
@@ -462,4 +453,30 @@ function _wo_sprinkler_start_up_update_aerating_flag(\Drupal\Core\Entity\EntityI
       $aerating_wo->save();
     }
   }
+}
+
+/**
+ * Returns TRUE if the property has a completed SSU this season.
+ *
+ * Looks for any wo_complete_info (irrigation_crew bundle) referencing an
+ * SSU for this property where field_date_completed is on or after Jan 1
+ * of the current year.
+ */
+function _wo_sprinkler_start_up_property_started_this_season(int $property_id): bool {
+  $year_start = strtotime('first day of January this year 00:00:00');
+
+  $database = \Drupal::database();
+  $query = $database->select('wo_complete_info', 'wci');
+  $query->join('wo_complete_info__field_work_order', 'wcfw', 'wcfw.entity_id = wci.id AND wcfw.deleted = 0');
+  $query->join('wo_complete_info__field_date_completed', 'wcdc', 'wcdc.entity_id = wci.id AND wcdc.deleted = 0');
+  $query->join('work_order', 'wo', 'wo.id = wcfw.field_work_order_target_id');
+  $query->join('work_order__field_property', 'wop', 'wop.entity_id = wo.id AND wop.deleted = 0');
+  $query->condition('wci.type', 'irrigation_crew');
+  $query->condition('wo.type', 'sprinkler_start_up');
+  $query->condition('wop.field_property_target_id', $property_id);
+  $query->condition('wcdc.field_date_completed_value', $year_start, '>=');
+  $query->range(0, 1);
+  $query->addField('wci', 'id');
+
+  return (bool) $query->execute()->fetchField();
 }

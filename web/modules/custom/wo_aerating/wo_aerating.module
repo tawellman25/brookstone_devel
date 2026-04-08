@@ -271,10 +271,13 @@ function get_trucks_for_aerating($workOrderId) {
 }
 
 /**
- * Checks if this property has a completed SSU and sets field_sprinkler_started.
+ * Checks if this property has a completed SSU this season and sets the flag.
+ *
+ * "This season" = a wo_complete_info (irrigation_crew) referencing an SSU
+ * for this property has field_date_completed >= January 1 of current year.
  *
  * Called on aerating WO insert so newly created aerating WOs immediately
- * reflect whether the sprinkler system has been started up.
+ * reflect whether the sprinkler system has been started up this season.
  */
 function _wo_aerating_check_sprinkler_started(\Drupal\Core\Entity\EntityInterface $entity): void {
   $property_id = $entity->get('field_property')->target_id ?? NULL;
@@ -282,15 +285,22 @@ function _wo_aerating_check_sprinkler_started(\Drupal\Core\Entity\EntityInterfac
     return;
   }
 
-  $completed_count = \Drupal::entityQuery('work_order')
-    ->condition('type', 'sprinkler_start_up')
-    ->condition('field_property', $property_id)
-    ->condition('field_status', 1097)
-    ->accessCheck(FALSE)
-    ->count()
-    ->execute();
+  $year_start = strtotime('first day of January this year 00:00:00');
 
-  if ($completed_count > 0) {
+  $database = \Drupal::database();
+  $query = $database->select('wo_complete_info', 'wci');
+  $query->join('wo_complete_info__field_work_order', 'wcfw', 'wcfw.entity_id = wci.id AND wcfw.deleted = 0');
+  $query->join('wo_complete_info__field_date_completed', 'wcdc', 'wcdc.entity_id = wci.id AND wcdc.deleted = 0');
+  $query->join('work_order', 'wo', 'wo.id = wcfw.field_work_order_target_id');
+  $query->join('work_order__field_property', 'wop', 'wop.entity_id = wo.id AND wop.deleted = 0');
+  $query->condition('wci.type', 'irrigation_crew');
+  $query->condition('wo.type', 'sprinkler_start_up');
+  $query->condition('wop.field_property_target_id', $property_id);
+  $query->condition('wcdc.field_date_completed_value', $year_start, '>=');
+  $query->range(0, 1);
+  $query->addField('wci', 'id');
+
+  if ((bool) $query->execute()->fetchField()) {
     $entity->set('field_sprinkler_started', 1);
     $entity->save();
   }

@@ -73,6 +73,7 @@ function wo_aerating_entity_insert(EntityInterface $entity) {
     if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'aerating') {
       _wo_aerating_handle_work_order($entity, 'insert');
       _wo_aerating_sync_aeration_flag($entity);
+      _wo_aerating_check_sprinkler_started($entity);
     }
   }
   
@@ -267,6 +268,32 @@ function get_trucks_for_aerating($workOrderId) {
     $totalTrucks = $trucksSelected;
 
     return $totalTrucks;
+}
+
+/**
+ * Checks if this property has a completed SSU and sets field_sprinkler_started.
+ *
+ * Called on aerating WO insert so newly created aerating WOs immediately
+ * reflect whether the sprinkler system has been started up.
+ */
+function _wo_aerating_check_sprinkler_started(\Drupal\Core\Entity\EntityInterface $entity): void {
+  $property_id = $entity->get('field_property')->target_id ?? NULL;
+  if (!$property_id) {
+    return;
+  }
+
+  $completed_count = \Drupal::entityQuery('work_order')
+    ->condition('type', 'sprinkler_start_up')
+    ->condition('field_property', $property_id)
+    ->condition('field_status', 1097)
+    ->accessCheck(FALSE)
+    ->count()
+    ->execute();
+
+  if ($completed_count > 0) {
+    $entity->set('field_sprinkler_started', 1);
+    $entity->save();
+  }
 }
 
 /**

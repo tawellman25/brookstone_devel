@@ -401,6 +401,7 @@ function wo_sprinkler_start_up_entity_insert(\Drupal\Core\Entity\EntityInterface
 /**
  * Implements hook_entity_update() for sprinkler_start_up work orders.
  * Refreshes the aeration flag when a Start Up WO is updated.
+ * Updates sprinkler_started flag on aerating WOs when SSU status changes.
  */
 function wo_sprinkler_start_up_entity_update(\Drupal\Core\Entity\EntityInterface $entity): void {
   if ($entity->getEntityTypeId() !== 'work_order' || $entity->bundle() !== 'sprinkler_start_up') {
@@ -411,5 +412,54 @@ function wo_sprinkler_start_up_entity_update(\Drupal\Core\Entity\EntityInterface
   $property_id = $service->getPropertyId((int) $entity->id());
   if ($property_id) {
     $service->updateStartUpFlag((int) $entity->id(), $property_id);
+  }
+
+  // Update sprinkler_started flag on active aerating WOs for this property.
+  _wo_sprinkler_start_up_update_aerating_flag($entity);
+}
+
+/**
+ * Sets or clears field_sprinkler_started on active aerating WOs for a property.
+ *
+ * Checks whether the property has ANY completed SSU WO. If yes, flags all
+ * active aerating WOs as started. If no, clears the flag.
+ */
+function _wo_sprinkler_start_up_update_aerating_flag(\Drupal\Core\Entity\EntityInterface $entity): void {
+  $property_id = $entity->get('field_property')->target_id ?? NULL;
+  if (!$property_id) {
+    return;
+  }
+
+  // Check if this property has any completed SSU WO.
+  $completed_count = \Drupal::entityQuery('work_order')
+    ->condition('type', 'sprinkler_start_up')
+    ->condition('field_property', $property_id)
+    ->condition('field_status', 1097)
+    ->accessCheck(FALSE)
+    ->count()
+    ->execute();
+
+  $flag_value = ($completed_count > 0) ? 1 : 0;
+
+  // Find active aerating WOs for this property.
+  $active_statuses = [1089, 1099, 1095, 1503, 1091, 1090, 1092, 1093, 1094, 1096];
+  $aerating_ids = \Drupal::entityQuery('work_order')
+    ->condition('type', 'aerating')
+    ->condition('field_property', $property_id)
+    ->condition('field_status', $active_statuses, 'IN')
+    ->accessCheck(FALSE)
+    ->execute();
+
+  if (empty($aerating_ids)) {
+    return;
+  }
+
+  $storage = \Drupal::entityTypeManager()->getStorage('work_order');
+  foreach ($storage->loadMultiple($aerating_ids) as $aerating_wo) {
+    $current = (int) ($aerating_wo->get('field_sprinkler_started')->value ?? 0);
+    if ($current !== $flag_value) {
+      $aerating_wo->set('field_sprinkler_started', $flag_value);
+      $aerating_wo->save();
+    }
   }
 }

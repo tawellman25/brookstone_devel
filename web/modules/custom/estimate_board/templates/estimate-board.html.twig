@@ -52,20 +52,15 @@
           {% if item.estimates %}
             <tr class="estimate-board-estimates-row">
               <td colspan="8">
-                <details class="estimate-board-estimates-details">
-                  <summary>{{ item.estimates|length }} Estimate{{ item.estimates|length != 1 ? 's' : '' }}</summary>
-                  <ul class="estimate-board-estimates-list">
-                    {% for estimate in item.estimates %}
-                      <li>
-                        <span class="estimate-stage-badge stage-{{ estimate.stage_key }}">{{ estimate.stage }}</span>
-                        <a href="{{ estimate.url }}" target="_blank" class="estimate-bundle-label">{{ estimate.label }}</a>
-                        {% if estimate.total %}
-                          <span class="estimate-total">{{ estimate.total }}</span>
-                        {% endif %}
-                      </li>
-                    {% endfor %}
-                  </ul>
-                </details>
+                <ul class="estimate-board-estimates-sublist">
+                  {% for estimate in item.estimates %}
+                    <li>
+                      <span class="estimate-stage-badge stage-{{ estimate.stage_key }}">{{ estimate.stage }}</span>
+                      <a href="{{ estimate.url }}" target="_blank">{{ estimate.label }}</a>
+                      {% if estimate.total %}— {{ estimate.total }}{% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
               </td>
             </tr>
           {% endif %}

@@ -58,11 +58,10 @@
                     {% for estimate in item.estimates %}
                       <li>
                         <span class="estimate-stage-badge stage-{{ estimate.stage_key }}">{{ estimate.stage }}</span>
-                        <span class="estimate-bundle-label">{{ estimate.label }}</span>
+                        <a href="{{ estimate.url }}" target="_blank" class="estimate-bundle-label">{{ estimate.label }}</a>
                         {% if estimate.total %}
                           <span class="estimate-total">{{ estimate.total }}</span>
                         {% endif %}
-                        <a href="{{ estimate.url }}" target="_blank" class="estimate-view-link">View</a>
                       </li>
                     {% endfor %}
                   </ul>
@@ -97,9 +96,8 @@
                   {% for estimate in item.estimates %}
                     <li>
                       <span class="estimate-stage-badge stage-{{ estimate.stage_key }}">{{ estimate.stage }}</span>
-                      {{ estimate.label }}
+                      <a href="{{ estimate.url }}" target="_blank">{{ estimate.label }}</a>
                       {% if estimate.total %}— {{ estimate.total }}{% endif %}
-                      <a href="{{ estimate.url }}" target="_blank">View</a>
                     </li>
                   {% endfor %}
                 </ul>

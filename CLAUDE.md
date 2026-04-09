@@ -460,7 +460,29 @@ All Drupal config is exported to `config/sync/` and deployed via `drush cim`. Th
   ```bash
   sed -i 's/foreach (\$defaults as \$entityTypeId/foreach (\$defaults ?? [] as \$entityTypeId/' web/modules/contrib/form_mode_control/form_mode_control.module
   ```
-  NOTE: `contrib/` is excluded from rsync deploy — patch must be re-applied manually on live after `composer update`/`composer install`.
+- **`views_bulk_operations`** (4.4.4) — `viewsFormValidate()` crashes with `end(): Argument #1 must be of type array, null given` when `getTriggeringElement()` returns null (e.g., AJAX rebuild after batch step). Patch makes it defensive:
+  ```bash
+  patch -p1 -d web/modules/contrib/views_bulk_operations <<'EOF'
+  --- a/src/Plugin/views/field/ViewsBulkOperationsBulkForm.php
+  +++ b/src/Plugin/views/field/ViewsBulkOperationsBulkForm.php
+  @@ -975,7 +975,12 @@ class ViewsBulkOperationsBulkForm extends FieldPluginBase implements CacheableDe
+     public function viewsFormValidate(array &$form, FormStateInterface $form_state): void {
+       if ($this->options['buttons']) {
+         $trigger = $form_state->getTriggeringElement();
+  -      $action_delta = \end($trigger['#parents']);
+  +      if (!empty($trigger['#parents']) && \is_array($trigger['#parents'])) {
+  +        $action_delta = \end($trigger['#parents']);
+  +      }
+  +      else {
+  +        $action_delta = '';
+  +      }
+         $form_state->setValue('action', $action_delta);
+       }
+       else {
+  EOF
+  ```
+
+NOTE: `contrib/` is excluded from rsync deploy — patches must be re-applied manually on live after `composer update`/`composer install`.
 
 ## BOS Architectural Rules
 

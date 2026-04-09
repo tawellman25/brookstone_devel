@@ -142,6 +142,7 @@ class EstimateBoardController extends ControllerBase {
         'last_action' => $last_action,
         'url' => $url,
         'severity' => $days >= self::CRITICAL_DAYS ? 'critical' : 'warning',
+        'estimates' => $this->getRequestEstimates((int) $row->id),
       ];
     }
 
@@ -188,6 +189,7 @@ class EstimateBoardController extends ControllerBase {
           'title' => $row->title,
           'client' => $client,
           'url' => $url,
+          'estimates' => $this->getRequestEstimates((int) $row->id),
         ];
       }
 
@@ -361,6 +363,90 @@ class EstimateBoardController extends ControllerBase {
     $query->orderBy('svc.name');
     $names = $query->execute()->fetchCol();
     return implode(', ', $names);
+  }
+
+  /**
+   * Returns nested estimate data for an estimate_request.
+   *
+   * For each estimate referenced by field_estimates, returns an array with
+   * label, stage, stage_key, total, and url for template rendering.
+   *
+   * @param int $request_id
+   *   The estimate_request entity ID.
+   *
+   * @return array
+   *   List of estimate row arrays. Empty array if request has no estimates.
+   */
+  protected function getRequestEstimates(int $request_id): array {
+    static $bundle_info = NULL;
+    if ($bundle_info === NULL) {
+      $bundle_info = \Drupal::service('entity_type.bundle.info')->getBundleInfo('estimate');
+    }
+
+    $estimate_request = $this->entityTypeManager()
+      ->getStorage('estimate_request')
+      ->load($request_id);
+    if (!$estimate_request || $estimate_request->get('field_estimates')->isEmpty()) {
+      return [];
+    }
+
+    $estimate_ids = array_column(
+      $estimate_request->get('field_estimates')->getValue(),
+      'target_id'
+    );
+    if (empty($estimate_ids)) {
+      return [];
+    }
+
+    $estimates = $this->entityTypeManager()
+      ->getStorage('estimate')
+      ->loadMultiple($estimate_ids);
+
+    $rows = [];
+    foreach ($estimates as $estimate) {
+      $bundle = $estimate->bundle();
+      $label = $bundle_info[$bundle]['label'] ?? $bundle;
+
+      // Stage label and CSS key.
+      $stage_name = '';
+      $stage_key = '';
+      if ($estimate->hasField('field_stage') && !$estimate->get('field_stage')->isEmpty()) {
+        $stage_term = $estimate->get('field_stage')->entity;
+        if ($stage_term) {
+          $stage_name = (string) $stage_term->label();
+          $stage_key = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $stage_name));
+          $stage_key = trim($stage_key, '-');
+        }
+      }
+
+      // Total — only show if non-zero.
+      $total = '';
+      if ($estimate->hasField('field_estimate_total') && !$estimate->get('field_estimate_total')->isEmpty()) {
+        $total_value = (float) $estimate->get('field_estimate_total')->value;
+        if ($total_value > 0) {
+          $total = '$' . number_format($total_value, 2);
+        }
+      }
+
+      // Canonical URL.
+      try {
+        $url = Url::fromRoute('entity.estimate.canonical', ['estimate' => $estimate->id()])->toString();
+      }
+      catch (\Exception $e) {
+        $url = '/estimate/' . $estimate->id();
+      }
+
+      $rows[] = [
+        'id' => (int) $estimate->id(),
+        'label' => (string) $label,
+        'stage' => $stage_name ?: '—',
+        'stage_key' => $stage_key,
+        'total' => $total,
+        'url' => $url,
+      ];
+    }
+
+    return $rows;
   }
 
   /**

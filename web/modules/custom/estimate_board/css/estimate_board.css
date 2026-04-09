@@ -164,3 +164,98 @@
   color: #999;
   font-style: italic;
 }
+
+/* ── Nested estimates (Needs Follow-Up) ────────────────────────── */
+.estimate-board-estimates-row td {
+  border-top: none;
+  background: #f9f9f9;
+  padding: 0.4rem 0.8rem;
+}
+.estimate-board-needs-followup tr.overdue-critical + .estimate-board-estimates-row td,
+.estimate-board-needs-followup tr.overdue-warning + .estimate-board-estimates-row td {
+  background: #f9f9f9;
+}
+.estimate-board-estimates-details summary {
+  cursor: pointer;
+  font-size: 0.85em;
+  color: #666;
+  padding: 2px 0;
+}
+.estimate-board-estimates-details summary:hover {
+  color: #1a5276;
+}
+.estimate-board-estimates-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+.estimate-board-estimates-list li {
+  padding: 3px 8px;
+  font-size: 0.85em;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.estimate-bundle-label {
+  font-weight: 500;
+  color: #333;
+}
+.estimate-total {
+  color: #155724;
+  font-weight: 600;
+}
+.estimate-view-link {
+  margin-left: auto;
+  font-size: 0.85em;
+}
+
+/* ── Nested estimates (Pipeline sublist) ──────────────────────── */
+.estimate-board-estimates-sublist {
+  list-style: none;
+  margin: 4px 0 0 12px;
+  padding: 0;
+}
+.estimate-board-estimates-sublist li {
+  font-size: 0.8em;
+  color: #555;
+  padding: 1px 0;
+  border-bottom: none;
+}
+
+/* ── Stage badges ──────────────────────────────────────────────── */
+.estimate-stage-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.75em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.estimate-stage-badge.stage-accepted {
+  background: #d4edda;
+  color: #155724;
+}
+.estimate-stage-badge.stage-declined {
+  background: #f8d7da;
+  color: #721c24;
+}
+.estimate-stage-badge.stage-estimating,
+.estimate-stage-badge.stage-estimating-in-progress {
+  background: #fff3cd;
+  color: #856404;
+}
+.estimate-stage-badge.stage-in-preparation {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+.estimate-stage-badge.stage-new {
+  background: #e2e3e5;
+  color: #383d41;
+}
+.estimate-stage-badge.stage-pending,
+.estimate-stage-badge.stage-waiting-on-client,
+.estimate-stage-badge.stage-under-review,
+.estimate-stage-badge.stage-client-feedback {
+  background: #ffeeba;
+  color: #856404;
+}

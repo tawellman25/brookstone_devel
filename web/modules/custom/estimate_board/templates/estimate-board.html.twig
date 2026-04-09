@@ -49,6 +49,27 @@
               </form>
             </td>
           </tr>
+          {% if item.estimates %}
+            <tr class="estimate-board-estimates-row">
+              <td colspan="8">
+                <details class="estimate-board-estimates-details">
+                  <summary>{{ item.estimates|length }} Estimate{{ item.estimates|length != 1 ? 's' : '' }}</summary>
+                  <ul class="estimate-board-estimates-list">
+                    {% for estimate in item.estimates %}
+                      <li>
+                        <span class="estimate-stage-badge stage-{{ estimate.stage_key }}">{{ estimate.stage }}</span>
+                        <span class="estimate-bundle-label">{{ estimate.label }}</span>
+                        {% if estimate.total %}
+                          <span class="estimate-total">{{ estimate.total }}</span>
+                        {% endif %}
+                        <a href="{{ estimate.url }}" target="_blank" class="estimate-view-link">View</a>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </details>
+              </td>
+            </tr>
+          {% endif %}
         {% endfor %}
       </tbody>
     </table>
@@ -69,7 +90,21 @@
       {% if group.items|length > 0 %}
         <ul class="pipeline-list">
           {% for item in group.items %}
-            <li><a href="{{ item.url }}" target="_blank">{{ item.client }}</a> — {{ item.title }}</li>
+            <li>
+              <a href="{{ item.url }}" target="_blank">{{ item.client }}</a> — {{ item.title }}
+              {% if item.estimates %}
+                <ul class="estimate-board-estimates-sublist">
+                  {% for estimate in item.estimates %}
+                    <li>
+                      <span class="estimate-stage-badge stage-{{ estimate.stage_key }}">{{ estimate.stage }}</span>
+                      {{ estimate.label }}
+                      {% if estimate.total %}— {{ estimate.total }}{% endif %}
+                      <a href="{{ estimate.url }}" target="_blank">View</a>
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </li>
           {% endfor %}
         </ul>
       {% else %}

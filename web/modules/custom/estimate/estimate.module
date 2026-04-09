@@ -350,6 +350,7 @@ function _estimate_request_missing_ready_requirements(EntityInterface $req): arr
 function estimate_entity_insert(EntityInterface $entity): void {
   estimate__maybe_recalculate_total($entity);
   _estimate_log_note_added($entity);
+  _estimate_maybe_update_request_status_on_wo_insert($entity);
 }
 
 /**
@@ -792,6 +793,98 @@ function _estimate_log_request_status_change(EntityInterface $entity): void {
       '@id' => $entity->id(),
       '@msg' => $e->getMessage(),
     ]);
+  }
+}
+
+/**
+ * Update estimate_request status when a Work Order is created from an Estimate.
+ *
+ * Walks back from the new WO → estimate → estimate_request, then checks
+ * every estimate on the request. If all estimates have reached a terminal
+ * stage (Accepted=1418 or Declined=1419), sets the request status to
+ * Converted (1658) when at least one was Accepted, or Declined/Canceled
+ * (1657) when none were.
+ *
+ * Called from estimate_entity_insert(). Only acts on work_order entities.
+ * Idempotent — landscaping containers create multiple WOs and each will
+ * re-fire this, but the status will simply be set to the same value.
+ */
+function _estimate_maybe_update_request_status_on_wo_insert(EntityInterface $entity): void {
+  // Only process work_order entities.
+  if ($entity->getEntityTypeId() !== 'work_order') {
+    return;
+  }
+
+  // Must have field_estimate populated.
+  if (!$entity->hasField('field_estimate') || $entity->get('field_estimate')->isEmpty()) {
+    return;
+  }
+
+  $estimate_id = (int) $entity->get('field_estimate')->target_id;
+  $estimate_storage = \Drupal::entityTypeManager()->getStorage('estimate');
+  $estimate = $estimate_storage->load($estimate_id);
+  if (!$estimate) {
+    return;
+  }
+
+  // Walk back to the estimate_request.
+  if (!$estimate->hasField('field_estimate_request') || $estimate->get('field_estimate_request')->isEmpty()) {
+    return;
+  }
+
+  $request_id = (int) $estimate->get('field_estimate_request')->target_id;
+  $request_storage = \Drupal::entityTypeManager()->getStorage('estimate_request');
+  $estimate_request = $request_storage->load($request_id);
+  if (!$estimate_request) {
+    return;
+  }
+
+  // Load all estimates on this request.
+  $sibling_estimate_ids = array_column(
+    $estimate_request->get('field_estimates')->getValue(),
+    'target_id'
+  );
+
+  if (empty($sibling_estimate_ids)) {
+    return;
+  }
+
+  $open_stages = [1412, 1413, 1414, 1415, 1416, 1417, 1420, 1421];
+  $has_open = FALSE;
+  $has_accepted = FALSE;
+
+  foreach ($sibling_estimate_ids as $sibling_id) {
+    $sibling = $estimate_storage->load($sibling_id);
+    if (!$sibling) {
+      continue;
+    }
+    $stage_id = (int) $sibling->get('field_stage')->target_id;
+    if (in_array($stage_id, $open_stages, TRUE)) {
+      $has_open = TRUE;
+      break;
+    }
+    if ($stage_id === 1418) {
+      $has_accepted = TRUE;
+    }
+  }
+
+  // If any estimates are still open, do not change request status yet.
+  if ($has_open) {
+    return;
+  }
+
+  // All estimates are terminal — set request status accordingly.
+  $new_status_tid = $has_accepted ? 1658 : 1657;
+
+  try {
+    $estimate_request->set('field_status', ['target_id' => $new_status_tid]);
+    $estimate_request->save();
+  }
+  catch (\Exception $e) {
+    \Drupal::logger('estimate')->warning(
+      'Could not update estimate_request @id status after WO creation: @message',
+      ['@id' => $request_id, '@message' => $e->getMessage()]
+    );
   }
 }
 

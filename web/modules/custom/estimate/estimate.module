@@ -1005,6 +1005,18 @@ function _estimate_load_term_label(int $tid): string {
  * - owner_uid: property owner user ID
  */
 function estimate_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, string $form_id): void {
+  // Pre-fill field_property on estimate_request add form when ?property_id= is present.
+  if ($form_id === 'estimate_request_standard_form') {
+    $property_id = (int) \Drupal::request()->query->get('property_id', 0);
+    if ($property_id > 0 && isset($form['field_property']['widget'][0]['target_id'])) {
+      $property = \Drupal::entityTypeManager()->getStorage('properties')->load($property_id);
+      if ($property) {
+        $form['field_property']['widget'][0]['target_id']['#default_value'] = $property;
+      }
+    }
+    return;
+  }
+
   // Property form ID is "properties_property_form" (ECK pattern).
   if ($form_id !== 'properties_property_form') {
     return;

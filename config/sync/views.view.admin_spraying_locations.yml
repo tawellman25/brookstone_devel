@@ -3,10 +3,17 @@ langcode: en
 status: true
 dependencies:
   config:
-    - taxonomy.vocabulary.spraying_locations
     - field.storage.taxonomy_term.field_applicable_services
+    - field.storage.taxonomy_term.field_teammate_description
+    - system.menu.admin
+    - taxonomy.vocabulary.spraying_locations
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.site_assistant
   module:
     - taxonomy
+    - text
     - user
 id: admin_spraying_locations
 label: 'Admin - Spraying Locations'
@@ -90,6 +97,132 @@ display:
           separator: ', '
           field_api_classes: false
           convert_spaces: false
+        description__value:
+          id: description__value
+          table: taxonomy_term_field_revision
+          field: description__value
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: taxonomy_term
+          entity_field: description
+          plugin_id: field
+          label: Description
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 200
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: true
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: text_default
+          settings: {  }
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_teammate_description:
+          id: field_teammate_description
+          table: taxonomy_term__field_teammate_description
+          field: field_teammate_description
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Teammate Instructions'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 200
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: true
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: text_default
+          settings: {  }
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
         field_applicable_services:
           id: field_applicable_services
           table: taxonomy_term__field_applicable_services
@@ -155,14 +288,14 @@ display:
           field_api_classes: false
         operations:
           id: operations
-          table: taxonomy_term_field_data
+          table: taxonomy_term_data
           field: operations
           relationship: none
           group_type: group
           admin_label: ''
           entity_type: taxonomy_term
           plugin_id: entity_operations
-          label: Operations
+          label: 'Operations links'
           exclude: false
           alter:
             alter_text: false
@@ -203,7 +336,7 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
-          destination: true
+          destination: false
       pager:
         type: none
         options:
@@ -224,6 +357,7 @@ display:
           role:
             administrator: administrator
             site_admin: site_admin
+            site_assistant: site_assistant
             administration: administration
       cache:
         type: tag
@@ -358,6 +492,7 @@ display:
         - user.roles
       tags:
         - 'config:field.storage.taxonomy_term.field_applicable_services'
+        - 'config:field.storage.taxonomy_term.field_teammate_description'
   page_1:
     id: page_1
     display_title: Page
@@ -368,7 +503,7 @@ display:
       path: admin/operations/system_content/spray_department/site_locations
       menu:
         type: normal
-        title: 'Spraying Locations'
+        title: Locations
         description: 'Manage spraying location terms and teammate instructions'
         weight: 0
         expanded: false
@@ -384,3 +519,4 @@ display:
         - user.roles
       tags:
         - 'config:field.storage.taxonomy_term.field_applicable_services'
+        - 'config:field.storage.taxonomy_term.field_teammate_description'

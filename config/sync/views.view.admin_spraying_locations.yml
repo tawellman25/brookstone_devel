@@ -1,0 +1,160 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - taxonomy.vocabulary.spraying_locations
+    - field.storage.taxonomy_term.field_applicable_services
+    - field.storage.taxonomy_term.field_teammate_description
+  module:
+    - taxonomy
+id: admin_spraying_locations
+label: 'Admin - Spraying Locations'
+module: views
+description: 'Admin view of spraying location taxonomy terms for editing.'
+tag: ''
+base_table: taxonomy_term_field_data
+base_field: tid
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'Spraying Locations'
+      fields:
+        name:
+          id: name
+          table: taxonomy_term_field_data
+          field: name
+          entity_type: taxonomy_term
+          entity_field: name
+          plugin_id: taxonomy_term_name
+          label: Name
+          type: string
+          settings:
+            link_to_entity: true
+        field_applicable_services:
+          id: field_applicable_services
+          table: taxonomy_term__field_applicable_services
+          field: field_applicable_services
+          plugin_id: field
+          label: 'Applicable Services'
+          type: entity_reference_label
+          settings:
+            link: false
+          delta_limit: 0
+          multi_type: separator
+          separator: ', '
+        operations:
+          id: operations
+          table: taxonomy_term_field_data
+          field: operations
+          entity_type: taxonomy_term
+          plugin_id: entity_operations
+          label: Operations
+          destination: true
+      pager:
+        type: none
+        options:
+          offset: 0
+      exposed_form:
+        type: basic
+        options:
+          submit_button: Apply
+          reset_button: false
+          reset_button_label: Reset
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: 'No spraying locations found.'
+            format: basic_html
+          tokenize: false
+      sorts:
+        weight:
+          id: weight
+          table: taxonomy_term_field_data
+          field: weight
+          entity_type: taxonomy_term
+          entity_field: weight
+          plugin_id: standard
+          order: ASC
+        name:
+          id: name
+          table: taxonomy_term_field_data
+          field: name
+          entity_type: taxonomy_term
+          entity_field: name
+          plugin_id: standard
+          order: ASC
+      arguments: {  }
+      filters:
+        vid:
+          id: vid
+          table: taxonomy_term_field_data
+          field: vid
+          entity_type: taxonomy_term
+          entity_field: vid
+          plugin_id: bundle
+          value:
+            spraying_locations: spraying_locations
+      style:
+        type: table
+        options:
+          columns:
+            name: name
+            field_applicable_services: field_applicable_services
+            operations: operations
+          default: name
+          info:
+            name:
+              sortable: true
+              default_sort_order: asc
+            field_applicable_services:
+              sortable: false
+            operations:
+              sortable: false
+          empty_table: true
+      row:
+        type: fields
+      query:
+        type: views_query
+        options:
+          disable_sql_rewrite: false
+          distinct: false
+      relationships: {  }
+      header: {  }
+      footer: {  }
+      display_extenders: {  }
+  page_1:
+    id: page_1
+    display_title: Page
+    display_plugin: page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/operations/system_content/spray_department/site_locations
+      menu:
+        type: normal
+        title: 'Spraying Locations'
+        description: 'Manage spraying location terms and teammate instructions'
+        weight: 0
+        expanded: false
+        menu_name: admin
+        parent: ''
+        context: '0'

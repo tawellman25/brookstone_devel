@@ -79,35 +79,26 @@ final class PropertyWorkOrderLinksBlock extends BlockBase implements ContainerFa
     $bundle_info = \Drupal::service('entity_type.bundle.info')->getBundleInfo('work_order');
     $excluded = ['estimate'];
 
-    $options = '';
-    foreach ($bundle_info as $bundle_key => $info) {
-      if (in_array($bundle_key, $excluded, TRUE)) {
-        continue;
-      }
-      $label = htmlspecialchars($info['label'], ENT_QUOTES, 'UTF-8');
-      $options .= '<option value="' . $bundle_key . '">' . $label . '</option>';
-    }
-
     $base_url = '/admin/content/work_order/add/';
     $query_param = 'edit[field_property][widget][0][target_id]=' . $property_id;
 
-    $markup = <<<HTML
-<div class="property-wo-create">
-  <select class="property-wo-create__select form-select" id="property-wo-type-select">
-    <option value="">— Select type —</option>
-    {$options}
-  </select>
-  <button type="button" class="button button--primary button--small property-wo-create__go" onclick="(function(){
-    var sel = document.getElementById('property-wo-type-select');
-    if (!sel.value) return;
-    window.open('{$base_url}' + sel.value + '?{$query_param}', '_blank');
-  })();">Create</button>
-</div>
-HTML;
-
     return [
-      '#markup' => $markup,
-      '#allowed_tags' => ['div', 'select', 'option', 'button'],
+      '#type' => 'inline_template',
+      '#template' => '
+        <div class="property-wo-create">
+          <select class="property-wo-create__select form-select" id="property-wo-type-select">
+            <option value="">— Select type —</option>
+            {% for key, label in options %}
+              <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+          <button type="button" class="button button--primary button--small property-wo-create__go" onclick="var s=document.getElementById(\'property-wo-type-select\');if(s.value)window.open(\'{{ base_url }}\'+s.value+\'?{{ query_param }}\',\'_blank\');">Create</button>
+        </div>',
+      '#context' => [
+        'options' => array_map(fn($info) => $info['label'], array_diff_key($bundle_info, array_flip($excluded))),
+        'base_url' => $base_url,
+        'query_param' => $query_param,
+      ],
       '#cache' => [
         'contexts' => ['route', 'url.path'],
         'max-age' => 0,

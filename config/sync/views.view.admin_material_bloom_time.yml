@@ -2,21 +2,19 @@ langcode: en
 status: true
 dependencies:
   config:
-    - field.storage.taxonomy_term.field_teammate_description
     - system.menu.admin
-    - taxonomy.vocabulary.rock_types
+    - taxonomy.vocabulary.bloom_time
     - user.role.administration
     - user.role.administrator
     - user.role.site_admin
     - user.role.site_assistant
   module:
     - taxonomy
-    - text
     - user
-id: admin_material_rock_types
-label: 'Admin - Rock Types'
+id: admin_material_bloom_time
+label: 'Admin - Bloom Time'
 module: views
-description: 'Manage decorative rock type classifications.'
+description: 'Manage bloom timing options for perennials, shrubs, and annuals.'
 tag: ''
 base_table: taxonomy_term_field_data
 base_field: tid
@@ -27,7 +25,7 @@ display:
     display_plugin: default
     position: 0
     display_options:
-      title: 'Rock Types'
+      title: 'Bloom Time'
       fields:
         name:
           id: name
@@ -106,68 +104,6 @@ display:
           entity_field: description
           plugin_id: field
           label: Description
-          exclude: false
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 200
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: true
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: true
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: text_default
-          settings: {  }
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        field_teammate_description:
-          id: field_teammate_description
-          table: taxonomy_term__field_teammate_description
-          field: field_teammate_description
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: field
-          label: 'Teammate Instructions'
           exclude: false
           alter:
             alter_text: false
@@ -308,7 +244,7 @@ display:
           plugin_id: text
           empty: true
           content:
-            value: 'No rock types found.'
+            value: 'No bloom time terms found.'
             format: basic_html
           tokenize: false
       sorts:
@@ -356,7 +292,7 @@ display:
           plugin_id: bundle
           operator: in
           value:
-            rock_types: rock_types
+            bloom_time: bloom_time
           group: 1
           exposed: false
           is_grouped: false
@@ -369,7 +305,6 @@ display:
           columns:
             name: name
             description__value: description__value
-            field_teammate_description: field_teammate_description
             operations: operations
           default: name
           info:
@@ -381,13 +316,6 @@ display:
               empty_column: false
               responsive: ''
             description__value:
-              sortable: false
-              default_sort_order: asc
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
-            field_teammate_description:
               sortable: false
               default_sort_order: asc
               align: ''
@@ -433,8 +361,7 @@ display:
         - 'languages:language_interface'
         - url.query_args
         - user.roles
-      tags:
-        - 'config:field.storage.taxonomy_term.field_teammate_description'
+      tags: {  }
   page_1:
     id: page_1
     display_title: Page
@@ -442,12 +369,12 @@ display:
     position: 1
     display_options:
       display_extenders: {  }
-      path: admin/operations/system_content/material_info/rock_types
+      path: admin/operations/system_content/material_info/bloom_time
       menu:
         type: normal
-        title: 'Rock Types'
-        description: 'Manage decorative rock type classifications.'
-        weight: 6
+        title: 'Bloom Time'
+        description: 'Manage bloom timing options for perennials, shrubs, and annuals.'
+        weight: 0
         expanded: false
         menu_name: admin
         parent: 'menu_link_content:7361406e-a3fd-48bd-84e3-3e9c0ba6db18'
@@ -459,5 +386,4 @@ display:
         - 'languages:language_interface'
         - url.query_args
         - user.roles
-      tags:
-        - 'config:field.storage.taxonomy_term.field_teammate_description'
+      tags: {  }

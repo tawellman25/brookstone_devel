@@ -1,12 +1,14 @@
-uuid: 298ad693-b817-4298-9f2d-8ababefcc171
 langcode: en
 status: true
 dependencies:
   config:
-    - field.storage.taxonomy_term.field_public_description
     - field.storage.taxonomy_term.field_teammate_description
     - system.menu.admin
     - taxonomy.vocabulary.material_types
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.site_assistant
   module:
     - taxonomy
     - text
@@ -14,7 +16,7 @@ dependencies:
 id: admin_material_types
 label: 'Admin - Material Types'
 module: views
-description: ''
+description: 'Manage material type classifications.'
 tag: ''
 base_table: taxonomy_term_field_data
 base_field: tid
@@ -27,17 +29,17 @@ display:
     display_options:
       title: 'Material Types'
       fields:
-        tid:
-          id: tid
+        name:
+          id: name
           table: taxonomy_term_field_data
-          field: tid
+          field: name
           relationship: none
           group_type: group
           admin_label: ''
           entity_type: taxonomy_term
-          entity_field: tid
-          plugin_id: field
-          label: 'Type ID'
+          entity_field: name
+          plugin_id: taxonomy_term_name
+          label: Name
           exclude: false
           alter:
             alter_text: false
@@ -79,72 +81,6 @@ display:
           empty_zero: false
           hide_alter_empty: true
           click_sort_column: value
-          type: number_integer
-          settings:
-            thousand_separator: ''
-            prefix_suffix: true
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
-        name:
-          id: name
-          table: taxonomy_term_field_data
-          field: name
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: taxonomy_term
-          entity_field: name
-          plugin_id: term_name
-          label: ''
-          exclude: true
-          alter:
-            alter_text: true
-            text: '<h3>{{ name }}</h3>'
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: false
-            ellipsis: false
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
           type: string
           settings:
             link_to_entity: true
@@ -159,15 +95,17 @@ display:
           separator: ', '
           field_api_classes: false
           convert_spaces: false
-        field_public_description:
-          id: field_public_description
-          table: taxonomy_term__field_public_description
-          field: field_public_description
+        description__value:
+          id: description__value
+          table: taxonomy_term_field_revision
+          field: description__value
           relationship: none
           group_type: group
           admin_label: ''
+          entity_type: taxonomy_term
+          entity_field: description
           plugin_id: field
-          label: 'Public Description'
+          label: Description
           exclude: false
           alter:
             alter_text: false
@@ -186,14 +124,14 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: 0
+            max_length: 200
             word_boundary: true
             ellipsis: true
             more_link: false
             more_link_text: ''
             more_link_path: ''
             strip_tags: false
-            trim: false
+            trim: true
             preserve_tags: ''
             html: false
           element_type: ''
@@ -248,14 +186,14 @@ display:
             suffix: ''
             target: ''
             nl2br: false
-            max_length: 0
+            max_length: 200
             word_boundary: true
             ellipsis: true
             more_link: false
             more_link_text: ''
             more_link_path: ''
             strip_tags: false
-            trim: false
+            trim: true
             preserve_tags: ''
             html: false
           element_type: ''
@@ -283,11 +221,61 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        operations:
+          id: operations
+          table: taxonomy_term_data
+          field: operations
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: taxonomy_term
+          plugin_id: entity_operations
+          label: 'Operations links'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          destination: false
       pager:
         type: none
         options:
           offset: 0
-          items_per_page: 0
       exposed_form:
         type: basic
         options:
@@ -299,57 +287,100 @@ display:
           sort_asc_label: Asc
           sort_desc_label: Desc
       access:
-        type: perm
+        type: role
         options:
-          perm: 'access content'
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            site_assistant: site_assistant
+            administration: administration
       cache:
         type: tag
         options: {  }
-      empty: {  }
-      sorts: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: true
+          content:
+            value: 'No material types found.'
+            format: basic_html
+          tokenize: false
+      sorts:
+        weight:
+          id: weight
+          table: taxonomy_term_field_data
+          field: weight
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: taxonomy_term
+          entity_field: weight
+          plugin_id: standard
+          order: ASC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
+        name:
+          id: name
+          table: taxonomy_term_field_data
+          field: name
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: taxonomy_term
+          entity_field: name
+          plugin_id: standard
+          order: ASC
+          expose:
+            label: ''
+            field_identifier: ''
+          exposed: false
       arguments: {  }
       filters:
         vid:
           id: vid
           table: taxonomy_term_field_data
           field: vid
+          relationship: none
+          group_type: group
+          admin_label: ''
           entity_type: taxonomy_term
           entity_field: vid
           plugin_id: bundle
+          operator: in
           value:
             material_types: material_types
+          group: 1
+          exposed: false
+          is_grouped: false
       style:
         type: table
         options:
-          grouping:
-            -
-              field: name
-              rendered: true
-              rendered_strip: false
+          grouping: {  }
           row_class: ''
           default_row_class: true
           columns:
-            tid: tid
             name: name
-            field_public_description: field_public_description
+            description__value: description__value
             field_teammate_description: field_teammate_description
-          default: '-1'
+            operations: operations
+          default: name
           info:
-            tid:
-              sortable: false
-              default_sort_order: asc
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
             name:
-              sortable: false
+              sortable: true
               default_sort_order: asc
               align: ''
               separator: ''
               empty_column: false
               responsive: ''
-            field_public_description:
+            description__value:
               sortable: false
               default_sort_order: asc
               align: ''
@@ -363,14 +394,26 @@ display:
               separator: ''
               empty_column: false
               responsive: ''
+            operations:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
           override: true
           sticky: false
           summary: ''
-          empty_table: false
+          empty_table: true
           caption: ''
           description: ''
       row:
         type: fields
+        options:
+          default_field_elements: true
+          inline: {  }
+          separator: ''
+          hide_empty: false
       query:
         type: views_query
         options:
@@ -388,9 +431,9 @@ display:
       contexts:
         - 'languages:language_content'
         - 'languages:language_interface'
-        - user.permissions
+        - url.query_args
+        - user.roles
       tags:
-        - 'config:field.storage.taxonomy_term.field_public_description'
         - 'config:field.storage.taxonomy_term.field_teammate_description'
   page_1:
     id: page_1
@@ -399,19 +442,22 @@ display:
     position: 1
     display_options:
       display_extenders: {  }
-      path: admin/materials/types
+      path: admin/operations/system_content/material_info/material_types
       menu:
         type: normal
         title: 'Material Types'
-        weight: 3
+        description: 'Manage material type classifications.'
+        weight: 4
+        expanded: false
         menu_name: admin
-        parent: 'views_view:views.materials.page_1'
+        parent: 'menu_link_content:7361406e-a3fd-48bd-84e3-3e9c0ba6db18'
+        context: '0'
     cache_metadata:
       max-age: -1
       contexts:
         - 'languages:language_content'
         - 'languages:language_interface'
-        - user.permissions
+        - url.query_args
+        - user.roles
       tags:
-        - 'config:field.storage.taxonomy_term.field_public_description'
         - 'config:field.storage.taxonomy_term.field_teammate_description'

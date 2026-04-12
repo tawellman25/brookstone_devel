@@ -6,12 +6,10 @@ namespace Drupal\properties\Plugin\Block;
 
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Block\BlockBase;
-use Drupal\Core\Link;
 use Drupal\Core\Path\CurrentPathStack;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Session\AccountInterface;
-use Drupal\Core\Url;
 use Drupal\path_alias\AliasManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -77,54 +75,39 @@ final class PropertyWorkOrderLinksBlock extends BlockBase implements ContainerFa
       ];
     }
 
-    $work_order_types = [
-      'aerating' => 'Aerating',
-      'aspen_twig_gall' => 'Aspen Twig Gall',
-      'christmas_decorations' => 'Christmas Decorations',
-      'cooley_spruce_gall' => 'Cooley Spruce Gall',
-      'deciduous_bore' => 'Deciduous Bore',
-      'deer_prevention' => 'Deer Prevention',
-      'dethatching' => 'Dethatching',
-      'dormant_oil' => 'Dormant Oil',
-      'fall_cleanup' => 'Fall Cleanup',
-      'fertilizing' => 'Fertilizing',
-      'fertilizing_trees_and_shrubs' => 'Fertilizing Trees and Shrubs',
-      'grub_prevention' => 'Grub Prevention',
-      'in_house_tasks' => 'In House Tasks',
-      'landscaping' => 'Landscaping',
-      'lawn_mowing' => 'Lawn Mowing',
-      'misc_services' => 'Misc Services',
-      'pinion_pine_ips_beetle' => 'Pinion Pine Ips Beetle',
-      'pre_emergent' => 'Pre-emergent',
-      'summer_pruning' => 'Pruning',
-      'snow_removal' => 'Snow Removal',
-      'special_mowing' => 'Special Mowing',
-      'spring_cleanup' => 'Spring Cleanup',
-      'sprinkler_check_up' => 'Sprinkler Check-Up',
-      'sprinkler_design' => 'Sprinkler Design',
-      'sprinkler_installation' => 'Sprinkler Installation',
-      'sprinkler_repair' => 'Sprinkler Repair',
-      'sprinkler_start_up' => 'Sprinkler Start-Up',
-      'sprinkler_winterizing' => 'Sprinkler Winterizing',
-      'trunk_bore' => 'Trunk Bore',
-      'weed_pulling' => 'Weed Pulling',
-    ];
+    // Dynamically load all work_order bundles, excluding the legacy 'estimate' bundle.
+    $bundle_info = \Drupal::service('entity_type.bundle.info')->getBundleInfo('work_order');
+    $excluded = ['estimate'];
 
-    $links = [];
-    foreach ($work_order_types as $type_key => $type_label) {
-      $url = Url::fromUri("internal:/admin/content/work_order/add/{$type_key}", [
-        'query' => [
-          'edit[field_property][widget][0][target_id]' => $property_id,
-        ],
-      ]);
-      $links[] = Link::fromTextAndUrl($type_label, $url)->toRenderable() + [
-        '#attributes' => ['target' => '_blank'],
-      ];
+    $options = '';
+    foreach ($bundle_info as $bundle_key => $info) {
+      if (in_array($bundle_key, $excluded, TRUE)) {
+        continue;
+      }
+      $label = htmlspecialchars($info['label'], ENT_QUOTES, 'UTF-8');
+      $options .= '<option value="' . $bundle_key . '">' . $label . '</option>';
     }
 
+    $base_url = '/admin/content/work_order/add/';
+    $query_param = 'edit[field_property][widget][0][target_id]=' . $property_id;
+
+    $markup = <<<HTML
+<div class="property-wo-create">
+  <select class="property-wo-create__select form-select" id="property-wo-type-select">
+    <option value="">— Select type —</option>
+    {$options}
+  </select>
+  <button type="button" class="button button--primary button--small property-wo-create__go" onclick="(function(){
+    var sel = document.getElementById('property-wo-type-select');
+    if (!sel.value) return;
+    window.open('{$base_url}' + sel.value + '?{$query_param}', '_blank');
+  })();">Create</button>
+</div>
+HTML;
+
     return [
-      '#theme' => 'item_list',
-      '#items' => $links,
+      '#markup' => $markup,
+      '#allowed_tags' => ['div', 'select', 'option', 'button'],
       '#cache' => [
         'contexts' => ['route', 'url.path'],
         'max-age' => 0,

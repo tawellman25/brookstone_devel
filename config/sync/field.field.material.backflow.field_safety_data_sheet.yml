@@ -1,0 +1,32 @@
+uuid: null
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.backflow
+    - field.storage.material.field_safety_data_sheet
+  module:
+    - epp
+    - file
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: material.backflow.field_safety_data_sheet
+field_name: field_safety_data_sheet
+entity_type: material
+bundle: backflow
+label: 'Material Safety Data Sheet (MSDS)'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: material/irrigation/safety_data_sheets
+  file_extensions: 'txt pdf doc'
+  max_filesize: ''
+  description_field: false
+field_type: file

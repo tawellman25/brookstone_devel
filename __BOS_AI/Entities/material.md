@@ -45,6 +45,8 @@ sod | Sod
 supplies | Supplies
 trees | Trees
 xmas | Christmas Lights
+mulch | Mulch
+backflow | Backflow
 
 ---
 
@@ -208,6 +210,17 @@ Notable differences vs common hardware pattern:
 - field_cost_integer label differs (Cost)
 - field_installed_price label differs (Price)
 - (no field_supplier field present; uses field_suppliers)
+
+### mulch (Mulch)
+Cloned from decorative_rock bundle. Bulk landscape material:
+- Shares decorative_rock field set (quantity in stock, lead time, est weight, yard per ton)
+- field_rock_type → Rock Type taxonomy (shared with decorative_rock)
+
+### backflow (Backflow)
+Cloned from irrigation bundle. Backflow prevention devices:
+- Shares irrigation field set (common hardware/parts pattern)
+- Created to separate Febco backflow items from general irrigation materials
+- 52 Febco items moved from irrigation → backflow via `dev_scripts/move_backflow_materials.php`
 
 ---
 

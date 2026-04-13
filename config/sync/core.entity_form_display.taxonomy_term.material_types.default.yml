@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.taxonomy_term.material_types.field_material_bundle
     - field.field.taxonomy_term.material_types.field_public_description
     - field.field.taxonomy_term.material_types.field_teammate_description
     - field.field.taxonomy_term.material_types.field_wording_document
@@ -22,6 +23,7 @@ third_party_settings:
   field_group:
     group_office_admin:
       children:
+        - field_material_bundle
         - description
         - path
         - status
@@ -49,6 +51,14 @@ content:
     region: content
     settings:
       rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_material_bundle:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
       placeholder: ''
     third_party_settings: {  }
   field_public_description:

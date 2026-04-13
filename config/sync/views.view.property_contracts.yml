@@ -159,24 +159,9 @@ display:
           separator: ', '
           field_api_classes: false
       pager:
-        type: mini
+        type: none
         options:
           offset: 0
-          pagination_heading_level: h4
-          items_per_page: 25
-          total_pages: null
-          id: 0
-          tags:
-            next: ››
-            previous: ‹‹
-          expose:
-            items_per_page: false
-            items_per_page_label: 'Items per page'
-            items_per_page_options: '5, 10, 25, 50'
-            items_per_page_options_all: false
-            items_per_page_options_all_label: '- All -'
-            offset: false
-            offset_label: Offset
       exposed_form:
         type: basic
         options:
@@ -199,7 +184,20 @@ display:
       cache:
         type: tag
         options: {  }
-      empty: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: true
+          content:
+            value: 'No Contracts are entered for the Property.'
+            format: full_html
+          tokenize: false
       sorts:
         created:
           id: created
@@ -257,6 +255,35 @@ display:
       filters: {  }
       style:
         type: table
+        options:
+          grouping: {  }
+          row_class: ''
+          default_row_class: true
+          columns:
+            title: title
+            type: type
+          default: '-1'
+          info:
+            title:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            type:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          override: true
+          sticky: false
+          summary: ''
+          empty_table: true
+          caption: ''
+          description: ''
       row:
         type: fields
       query:
@@ -268,7 +295,8 @@ display:
           replica: false
           query_tags: {  }
       relationships: {  }
-      header:
+      header: {  }
+      footer:
         area:
           id: area
           table: views
@@ -277,12 +305,11 @@ display:
           group_type: group
           admin_label: ''
           plugin_id: text
-          empty: false
+          empty: true
           content:
             value: '<div class="property-contract-buttons"><a class="button button--primary button--small" href="/admin/content/contracts/add/commercial?edit[field_property][widget][0][target_id]={{ raw_arguments.field_property_target_id }}&destination=properties/{{ raw_arguments.field_property_target_id }}/contracts">+ Commercial</a> <a class="button button--primary button--small" href="/admin/content/contracts/add/residential?edit[field_property][widget][0][target_id]={{ raw_arguments.field_property_target_id }}&destination=properties/{{ raw_arguments.field_property_target_id }}/contracts">+ Residential</a> <a class="button button--primary button--small" href="/admin/content/contracts/add/snow_removal?edit[field_property][widget][0][target_id]={{ raw_arguments.field_property_target_id }}&destination=properties/{{ raw_arguments.field_property_target_id }}/contracts">+ Snow Removal</a></div>'
             format: full_html
           tokenize: true
-      footer: {  }
       display_extenders: {  }
     cache_metadata:
       max-age: -1
@@ -290,7 +317,6 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - url.query_args
         - user.roles
       tags: {  }
   page_1:
@@ -305,7 +331,7 @@ display:
         type: tab
         title: Contracts
         description: ''
-        weight: 2
+        weight: 6
         expanded: false
         menu_name: main
         parent: ''
@@ -321,6 +347,5 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - url.query_args
         - user.roles
       tags: {  }

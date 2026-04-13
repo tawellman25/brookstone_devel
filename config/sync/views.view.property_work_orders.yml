@@ -691,6 +691,63 @@ display:
           not: false
           target_entity_type_id: properties
       filters:
+        created:
+          id: created
+          table: work_order_field_data
+          field: created
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: work_order
+          entity_field: created
+          plugin_id: date
+          operator: between
+          value:
+            min: '[current-date:custom:Y]-01-01'
+            max: '[current-date:custom:Y]-12-31'
+            value: ''
+            type: date
+          group: 1
+          exposed: true
+          expose:
+            operator_id: created_op
+            label: Created
+            description: ''
+            use_operator: false
+            operator: created_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: created
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+              anonymous: '0'
+              administrator: '0'
+              site_admin: '0'
+              site_assistant: '0'
+              administration: '0'
+              supervisor: '0'
+              teammates: '0'
+              client: '0'
+              user: '0'
+            min_placeholder: '[current-date:custom:Y]-01-01'
+            max_placeholder: '[current-date:custom:Y]-12-31'
+            placeholder: ''
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+          use_tokens: 1
         field_service_target_id:
           id: field_service_target_id
           table: work_order__field_service
@@ -789,63 +846,10 @@ display:
           hierarchy: true
           limit: true
           error_message: true
-        created:
-          id: created
-          table: work_order_field_data
-          field: created
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: work_order
-          entity_field: created
-          plugin_id: date
-          operator: between
-          value:
-            min: '[current-date:custom:Y]-01-01'
-            max: '[current-date:custom:Y]-12-31'
-            value: ''
-            type: date
-          group: 1
-          exposed: true
-          expose:
-            operator_id: created_op
-            label: Created
-            description: ''
-            use_operator: false
-            operator: created_op
-            operator_limit_selection: false
-            operator_list: {  }
-            identifier: created
-            required: false
-            remember: false
-            multiple: false
-            remember_roles:
-              authenticated: authenticated
-              anonymous: '0'
-              administrator: '0'
-              site_admin: '0'
-              site_assistant: '0'
-              administration: '0'
-              supervisor: '0'
-              teammates: '0'
-              client: '0'
-              user: '0'
-            min_placeholder: '[current-date:custom:Y]-01-01'
-            max_placeholder: '[current-date:custom:Y]-12-31'
-            placeholder: ''
-          is_grouped: false
-          group_info:
-            label: ''
-            description: ''
-            identifier: ''
-            optional: true
-            widget: select
-            multiple: false
-            remember: false
-            default_group: All
-            default_group_multiple: {  }
-            group_items: {  }
-          use_tokens: 1
+      filter_groups:
+        operator: AND
+        groups:
+          1: AND
       style:
         type: views_bootstrap_table
         options:
@@ -971,7 +975,7 @@ display:
         type: tab
         title: 'Work Orders'
         description: ''
-        weight: 3
+        weight: 8
         expanded: false
         menu_name: main
         parent: ''

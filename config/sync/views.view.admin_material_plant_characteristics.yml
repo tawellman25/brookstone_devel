@@ -1,3 +1,4 @@
+uuid: null
 langcode: en
 status: true
 dependencies:
@@ -10,6 +11,7 @@ dependencies:
     - user.role.site_assistant
   module:
     - taxonomy
+    - text
     - user
 id: admin_material_plant_characteristics
 label: 'Admin - Plant Characteristics'
@@ -351,7 +353,20 @@ display:
           replica: false
           query_tags: {  }
       relationships: {  }
-      header: {  }
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: false
+          content:
+            value: '<a class="button--primary button js-form-submit form-submit" target="_blank" href="/admin/structure/taxonomy/manage/plant_characteristics/add">Add Term</a>'
+            format: full_html
+          tokenize: false
       footer: {  }
       display_extenders: {  }
     cache_metadata:

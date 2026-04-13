@@ -528,7 +528,20 @@ display:
           entity_type: properties
           plugin_id: entity_reverse
           required: false
-      header: {  }
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: true
+          content:
+            value: " <a class=\"button button--primary button--small\" href=\"/admin/content/ownership_record/add/record?edit[field_property_reference][widget][0][target_id]={{ raw_arguments.id }}&destination=properties/{{ raw_arguments.id }}/ownership_records\">+ New Ownership</a>\r\n"
+            format: full_html
+          tokenize: true
       footer: {  }
       display_extenders: {  }
     cache_metadata:
@@ -554,7 +567,7 @@ display:
         type: tab
         title: Ownership
         description: ''
-        weight: 6
+        weight: 5
         expanded: false
         menu_name: main
         parent: ''

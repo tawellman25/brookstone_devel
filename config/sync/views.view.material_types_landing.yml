@@ -3,9 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
-    - field.storage.taxonomy_term.field_material_bundle
     - field.storage.taxonomy_term.field_public_description
-    - system.menu.main
     - taxonomy.vocabulary.material_types
     - user.role.administration
     - user.role.administrator
@@ -43,11 +41,11 @@ display:
           entity_type: taxonomy_term
           entity_field: name
           plugin_id: taxonomy_term_name
-          label: Name
+          label: ''
           exclude: false
           alter:
-            alter_text: false
-            text: ''
+            alter_text: true
+            text: '<h4>{{ name }}</h4>'
             make_link: false
             path: ''
             absolute: false
@@ -76,7 +74,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -87,7 +85,7 @@ display:
           click_sort_column: value
           type: string
           settings:
-            link_to_entity: true
+            link_to_entity: 1
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -97,8 +95,8 @@ display:
           delta_first_last: false
           multi_type: separator
           separator: ', '
-          field_api_classes: false
-          convert_spaces: false
+          field_api_classes: 0
+          convert_spaces: 0
         field_public_description:
           id: field_public_description
           table: taxonomy_term__field_public_description
@@ -140,7 +138,7 @@ display:
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -176,15 +174,9 @@ display:
           sort_asc_label: Asc
           sort_desc_label: Desc
       access:
-        type: role
+        type: perm
         options:
-          role:
-            administrator: administrator
-            site_admin: site_admin
-            site_assistant: site_assistant
-            administration: administration
-            supervisor: supervisor
-            teammates: teammates
+          perm: 'access content'
       cache:
         type: tag
         options: {  }
@@ -295,10 +287,8 @@ display:
       contexts:
         - 'languages:language_content'
         - 'languages:language_interface'
-        - url.query_args
         - user.roles
       tags:
-        - 'config:field.storage.taxonomy_term.field_material_bundle'
         - 'config:field.storage.taxonomy_term.field_public_description'
   page_1:
     id: page_1
@@ -322,8 +312,6 @@ display:
       contexts:
         - 'languages:language_content'
         - 'languages:language_interface'
-        - url.query_args
         - user.roles
       tags:
-        - 'config:field.storage.taxonomy_term.field_material_bundle'
         - 'config:field.storage.taxonomy_term.field_public_description'

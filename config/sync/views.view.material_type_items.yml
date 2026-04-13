@@ -7,10 +7,8 @@ dependencies:
     - field.storage.material.field_main_image
     - field.storage.material.field_name
     - image.style.thumbnail
-    - user.role.administration
-    - user.role.administrator
-    - user.role.site_admin
-    - user.role.site_assistant
+    - user.role.anonymous
+    - user.role.authenticated
   module:
     - eck
     - eva
@@ -290,9 +288,27 @@ display:
           separator: ', '
           field_api_classes: false
       pager:
-        type: none
+        type: full
         options:
           offset: 0
+          pagination_heading_level: h4
+          items_per_page: 50
+          total_pages: null
+          id: 0
+          tags:
+            next: 'Next ›'
+            previous: '‹ Previous'
+            first: '« First'
+            last: 'Last »'
+          expose:
+            items_per_page: false
+            items_per_page_label: 'Items per page'
+            items_per_page_options: '5, 10, 25, 50'
+            items_per_page_options_all: false
+            items_per_page_options_all_label: '- All -'
+            offset: false
+            offset_label: Offset
+          quantity: 9
       exposed_form:
         type: basic
         options:
@@ -307,10 +323,8 @@ display:
         type: role
         options:
           role:
-            administrator: administrator
-            site_admin: site_admin
-            site_assistant: site_assistant
-            administration: administration
+            anonymous: anonymous
+            authenticated: authenticated
       cache:
         type: tag
         options: {  }
@@ -470,6 +484,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
+        - url.query_args
         - user.roles
       tags:
         - 'config:field.storage.material.field_description'
@@ -537,6 +552,7 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
+        - url.query_args
         - user.roles
       tags:
         - 'config:field.storage.material.field_description'

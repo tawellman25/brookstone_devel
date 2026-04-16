@@ -13,6 +13,14 @@ use Drupal\Core\Datetime\DrupalDateTime;
 /**
  * Creates multiple sprinkler check-up work orders and schedules them for May-September on Mondays.
  *
+ * LEGACY: This bulk action has been largely replaced by the automated cron-based
+ * check-up generator (ContractResidentialCheckupGeneratorQueueWorker). The cron
+ * generator runs daily, uses a rolling 21-day horizon, respects zipcode route days,
+ * and is idempotent. This action remains available for manual one-off bulk creation
+ * but should not be the primary method for scheduling check-ups.
+ *
+ * @see \Drupal\contract_residential\Plugin\QueueWorker\ContractResidentialCheckupGeneratorQueueWorker
+ *
  * @Action(
  *   id = "create_and_schedule_sprinkler_check_up_work_orders_action",
  *   label = @Translation("Create and Schedule Sprinkler Check-up Work Orders (May-Sep)"),

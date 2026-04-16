@@ -307,7 +307,7 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
   private function isWithinIrrigationSeason(DrupalDateTime $date) : bool {
     $year = (int) $date->format('Y');
     $tz = $date->getTimezone();
-    $season_start = new DrupalDateTime("$year-03-15", $tz);
+    $season_start = new DrupalDateTime("$year-05-01", $tz);
     $season_end = new DrupalDateTime("$year-10-15", $tz);
     return ($date >= $season_start && $date <= $season_end);
   }

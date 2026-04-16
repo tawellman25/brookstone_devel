@@ -26,8 +26,8 @@ This taxonomy governs **planning and contract intent only**. It must not be used
 ## Irrigation Season Definition
 These definitions assume the standard regional irrigation season:
 
-- **Season Start:** Mid-March
-- **Season End:** Mid-October
+- **Season Start:** May 1
+- **Season End:** October 15
 
 All frequency terms are interpreted within this seasonal window.
 

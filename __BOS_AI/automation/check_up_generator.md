@@ -114,7 +114,7 @@ Missing zipcode route day **blocks generation** by design.
 ---
 
 ## Season Rules
-- Irrigation season: **March 15 – October 15**
+- Irrigation season: **May 1 – October 15**
 - Work Orders are only scheduled **within the season window**
 - Generator may enqueue without creating Work Orders when out of season
 - This preserves execution truth while allowing automation readiness
@@ -149,6 +149,17 @@ Missing zipcode route day **blocks generation** by design.
 - Service term is not WO-enabled
 
 All skips are intentional and preserve BOS invariants.
+
+---
+
+## Legacy Bulk Action
+A VBO action (`CreateAndScheduleSprinklerCheckUpWorkOrdersAction`) still exists in the
+`contract_residential` module. It creates all season check-up WOs at once for selected
+contracts, scheduled on Mondays May through September.
+
+This action has been **largely replaced** by the automated cron generator above, which
+is smarter (rolling horizon, zipcode route days, idempotent). The bulk action remains
+available for manual one-off use but should not be the primary scheduling method.
 
 ---
 
@@ -188,3 +199,7 @@ type hint on `nextWeekdayOnOrAfter()` and safety counter on while loop.
 Scheduling entities created by the checkup generator now set `all_day: TRUE` on
 `field_date` (smartdate) in addition to duration 1439. Also sets
 `field_scheduled_date_and_time` alongside `field_date` for legacy field compat.
+
+### April 2026 — Season start changed from March 15 to May 1
+March/April check-ups were being created too early, requiring manual deletion.
+Season start moved to May 1 to match actual operational start. Season end remains October 15.

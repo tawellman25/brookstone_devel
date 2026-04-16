@@ -51,40 +51,27 @@ class WeedSprayWorkOrderController extends ControllerBase {
       return $this->redirect('/teammates/work-orders/spraying/weeds/route');
     }
 
-    // Get the current year and set the start/end timestamps for the year.
-    $current_year = date('Y');
-    $year_start = strtotime("{$current_year}-01-01 00:00:00");
-    $year_end = strtotime("{$current_year}-12-31 23:59:59");
-
-    // Check for existing weed spraying work orders for this property in the current year.
-    $query = $this->entityTypeManager->getStorage('work_order')->getQuery()
+    // Check for any open weed spraying work order for this property.
+    $done_statuses = [1097, 1098, 1281, 1283]; // Complete, Canceled, Invoiced, Warrantied.
+    $existing_ids = $this->entityTypeManager->getStorage('work_order')->getQuery()
+      ->accessCheck(FALSE)
       ->condition('type', 'weed_spraying')
       ->condition('field_property', $property_id)
-      ->condition('created', [$year_start, $year_end], 'BETWEEN')
-      ->sort('created', 'DESC') // Sort by creation date to get the latest first.
-      ->accessCheck(TRUE); // Explicitly enable access checks.
-    $existing_work_order_ids = $query->execute();
+      ->condition('field_status', $done_statuses, 'NOT IN')
+      ->range(0, 1)
+      ->execute();
 
-    if (!empty($existing_work_order_ids)) {
-      // Load the existing work orders to check their status.
-      $existing_work_orders = $this->entityTypeManager->getStorage('work_order')->loadMultiple($existing_work_order_ids);
-      $allowed_statuses = [1097, 1098, 1283, 1281]; // Complete, Canceled, Warrantied, Invoiced.
-
-      foreach ($existing_work_orders as $work_order) {
-        $status = $work_order->get('field_status')->target_id;
-        // If the status is not in the allowed list (or is NULL), redirect to this work order.
-        if (!in_array($status, $allowed_statuses)) {
-          $this->messenger()->addWarning(t('A weed spraying work order (ID: @id) with an active status already exists for this property in @year. Redirecting to it.', [
-            '@id' => $work_order->id(),
-            '@year' => $current_year,
-          ]));
-          $url = $work_order->toUrl('canonical'); // Redirect to the canonical page.
-          return new RedirectResponse($url->toString());
-        }
-        // Since we sorted by created DESC, we can break after the first non-allowed status.
-        break;
-      }
+    if (!empty($existing_ids)) {
+      $existing_id = reset($existing_ids);
+      $existing_wo = $this->entityTypeManager->getStorage('work_order')->load($existing_id);
+      $this->messenger()->addWarning(t('A weed spraying work order (ID: @id) with an active status already exists for this property. Redirecting to it.', [
+        '@id' => $existing_id,
+      ]));
+      $url = $existing_wo->toUrl('canonical');
+      return new RedirectResponse($url->toString());
     }
+
+    $current_year = date('Y');
 
     $current_user_id = $this->currentUser()->id();
 
@@ -97,7 +84,24 @@ class WeedSprayWorkOrderController extends ControllerBase {
       'field_property' => $property_id,
       'field_work_todo_description' => "$current_year - Weed Spray Route as needed",
     ]);
-    $work_order->save();
+    try {
+      $work_order->save();
+    }
+    catch (\Drupal\Core\Entity\EntityStorageException $e) {
+      // Presave guard caught a duplicate — redirect to the existing WO.
+      $duplicate_ids = $this->entityTypeManager->getStorage('work_order')->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('type', 'weed_spraying')
+        ->condition('field_property', $property_id)
+        ->condition('field_status', [1097, 1098, 1281, 1283], 'NOT IN')
+        ->range(0, 1)
+        ->execute();
+      if (!empty($duplicate_ids)) {
+        $dup_wo = $this->entityTypeManager->getStorage('work_order')->load(reset($duplicate_ids));
+        return new RedirectResponse($dup_wo->toUrl('canonical')->toString());
+      }
+      throw $e;
+    }
 
     // Create the Scheduling entity and set the reference to the work_order.
     $scheduled_datetime = new DrupalDateTime('now', new \DateTimeZone('America/Denver'));

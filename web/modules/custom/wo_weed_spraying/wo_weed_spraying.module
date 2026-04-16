@@ -14,15 +14,19 @@ function wo_weed_spraying_entity_presave(EntityInterface $entity) {
     return;
   }
 
-  // Guard: block duplicate open weed spray WOs for the same property.
+  // Guard: block duplicate open weed spray WOs for the same property in the current year.
   if ($entity->isNew() && !$entity->get('field_property')->isEmpty()) {
     $property_id = (int) $entity->get('field_property')->target_id;
     $done_statuses = [1097, 1098, 1281, 1283];
+    $year = date('Y');
+    $year_start = strtotime("{$year}-01-01 00:00:00");
+    $year_end = strtotime("{$year}-12-31 23:59:59");
     $existing = \Drupal::entityQuery('work_order')
       ->accessCheck(FALSE)
       ->condition('type', 'weed_spraying')
       ->condition('field_property', $property_id)
       ->condition('field_status', $done_statuses, 'NOT IN')
+      ->condition('created', [$year_start, $year_end], 'BETWEEN')
       ->range(0, 1)
       ->execute();
     if (!empty($existing)) {

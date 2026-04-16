@@ -51,27 +51,30 @@ class WeedSprayWorkOrderController extends ControllerBase {
       return $this->redirect('/teammates/work-orders/spraying/weeds/route');
     }
 
-    // Check for any open weed spraying work order for this property.
+    // Check for any open weed spraying work order for this property in the current year.
+    $current_year = date('Y');
+    $year_start = strtotime("{$current_year}-01-01 00:00:00");
+    $year_end = strtotime("{$current_year}-12-31 23:59:59");
     $done_statuses = [1097, 1098, 1281, 1283]; // Complete, Canceled, Invoiced, Warrantied.
     $existing_ids = $this->entityTypeManager->getStorage('work_order')->getQuery()
       ->accessCheck(FALSE)
       ->condition('type', 'weed_spraying')
       ->condition('field_property', $property_id)
       ->condition('field_status', $done_statuses, 'NOT IN')
+      ->condition('created', [$year_start, $year_end], 'BETWEEN')
       ->range(0, 1)
       ->execute();
 
     if (!empty($existing_ids)) {
       $existing_id = reset($existing_ids);
       $existing_wo = $this->entityTypeManager->getStorage('work_order')->load($existing_id);
-      $this->messenger()->addWarning(t('A weed spraying work order (ID: @id) with an active status already exists for this property. Redirecting to it.', [
+      $this->messenger()->addWarning(t('A weed spraying work order (ID: @id) with an active status already exists for this property in @year. Redirecting to it.', [
         '@id' => $existing_id,
+        '@year' => $current_year,
       ]));
       $url = $existing_wo->toUrl('canonical');
       return new RedirectResponse($url->toString());
     }
-
-    $current_year = date('Y');
 
     $current_user_id = $this->currentUser()->id();
 
@@ -94,6 +97,7 @@ class WeedSprayWorkOrderController extends ControllerBase {
         ->condition('type', 'weed_spraying')
         ->condition('field_property', $property_id)
         ->condition('field_status', [1097, 1098, 1281, 1283], 'NOT IN')
+        ->condition('created', [$year_start, $year_end], 'BETWEEN')
         ->range(0, 1)
         ->execute();
       if (!empty($duplicate_ids)) {

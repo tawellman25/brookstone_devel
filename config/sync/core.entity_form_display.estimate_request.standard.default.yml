@@ -24,6 +24,7 @@ dependencies:
     - field_group
     - field_layout
     - layout_discovery
+    - path
     - telephone
     - text
 third_party_settings:
@@ -53,9 +54,10 @@ third_party_settings:
         required_fields: true
     group_office_adm:
       children:
+        - field_assigned_to
         - field_contract
         - field_contract_section
-        - field_assigned_to
+        - path
       label: 'Office Administration'
       region: content
       parent_name: ''
@@ -125,7 +127,7 @@ content:
     third_party_settings: {  }
   field_contract:
     type: entity_reference_autocomplete
-    weight: 7
+    weight: 10
     region: content
     settings:
       match_operator: CONTAINS
@@ -135,7 +137,7 @@ content:
     third_party_settings: {  }
   field_contract_section:
     type: entity_reference_autocomplete
-    weight: 8
+    weight: 11
     region: content
     settings:
       match_operator: CONTAINS
@@ -209,6 +211,12 @@ content:
   field_status:
     type: options_select
     weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 12
     region: content
     settings: {  }
     third_party_settings: {  }

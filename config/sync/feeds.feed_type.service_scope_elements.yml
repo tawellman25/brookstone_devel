@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.field.taxonomy_term.service_scope_elements.field_applicable_bundles
     - field.field.taxonomy_term.service_scope_elements.field_internal_only
     - field.field.taxonomy_term.service_scope_elements.field_scope_code
     - taxonomy.vocabulary.service_scope_elements
@@ -78,6 +79,11 @@ custom_sources:
     label: internal
     machine_name: internal
     type: csv
+  applicable_bundles:
+    value: applicable_bundles
+    label: applicable_bundles
+    machine_name: applicable_bundles
+    type: csv
 mappings:
   -
     target: name
@@ -105,5 +111,11 @@ mappings:
     target: field_internal_only
     map:
       value: internal
+    settings:
+      language: null
+  -
+    target: field_applicable_bundles
+    map:
+      value: applicable_bundles
     settings:
       language: null

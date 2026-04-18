@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Drupal\estimate\Plugin\Validation\Constraint;
 
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 
@@ -12,10 +11,6 @@ use Symfony\Component\Validator\ConstraintValidator;
  * Validates the ScopeCodeUnique constraint.
  */
 final class ScopeCodeUniqueConstraintValidator extends ConstraintValidator {
-
-  public function __construct(
-    private readonly EntityTypeManagerInterface $entityTypeManager,
-  ) {}
 
   public function validate($items, Constraint $constraint): void {
     if (!$constraint instanceof ScopeCodeUniqueConstraint) {
@@ -39,7 +34,7 @@ final class ScopeCodeUniqueConstraintValidator extends ConstraintValidator {
       return;
     }
 
-    $storage = $this->entityTypeManager->getStorage('taxonomy_term');
+    $storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
 
     $candidates = [
       $raw,

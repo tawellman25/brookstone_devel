@@ -36,7 +36,7 @@ third_party_settings:
       label: 'Client Information'
       parent_name: ''
       region: content
-      weight: 1
+      weight: 7
       format_type: details
       format_settings:
         classes: ''
@@ -53,7 +53,7 @@ third_party_settings:
       label: Notes
       parent_name: ''
       region: content
-      weight: 4
+      weight: 8
       format_type: details
       format_settings:
         classes: ''
@@ -96,16 +96,13 @@ third_party_settings:
         required_fields: false
     group_client_requested:
       children:
-        - field_stage
         - field_scope_summary
         - field_scope_elements
         - field_requires_subs
-        - estimate_tasks_on_estimate_eva_1
-        - field_estimated_duration_days
       label: 'Client Requested'
       parent_name: ''
       region: content
-      weight: 2
+      weight: 3
       format_type: fieldset
       format_settings:
         classes: ''
@@ -116,7 +113,7 @@ third_party_settings:
     group_items:
       children: {  }
       label: Materials
-      parent_name: ''
+      parent_name: group_tasks
       region: content
       weight: 7
       format_type: details
@@ -129,6 +126,7 @@ third_party_settings:
         description: ''
     group_office_admin:
       children:
+        - field_stage
         - field_revision_of
         - field_revision_number
         - field_is_current_revision
@@ -136,7 +134,7 @@ third_party_settings:
       label: 'Office Admin'
       parent_name: ''
       region: content
-      weight: 10
+      weight: 13
       format_type: details
       format_settings:
         classes: ''
@@ -149,7 +147,7 @@ third_party_settings:
     group_labor_estimate:
       children: {  }
       label: 'Labor Estimate'
-      parent_name: ''
+      parent_name: group_tasks
       region: content
       weight: 6
       format_type: details
@@ -163,7 +161,7 @@ third_party_settings:
     group_equipment_estimate:
       children: {  }
       label: 'Equipment Estimate'
-      parent_name: ''
+      parent_name: group_tasks
       region: content
       weight: 8
       format_type: details
@@ -177,9 +175,29 @@ third_party_settings:
     group_contracted_services:
       children: {  }
       label: 'Contracted Services'
-      parent_name: ''
+      parent_name: group_tasks
       region: content
       weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+    group_tasks:
+      children:
+        - estimate_tasks_on_estimate_eva_1
+        - estimate_components_entity_view_1
+        - group_labor_estimate
+        - group_items
+        - group_equipment_estimate
+        - group_contracted_services
+      label: Pricing
+      parent_name: ''
+      region: content
+      weight: 4
       format_type: details
       format_settings:
         classes: ''
@@ -196,7 +214,7 @@ content:
   estimate_components_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 10
+    weight: 5
     region: content
   estimate_contact_card:
     settings: {  }
@@ -211,7 +229,7 @@ content:
   estimate_designs_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 3
+    weight: 5
     region: content
   estimate_files_entity_view_1:
     settings: {  }
@@ -233,6 +251,11 @@ content:
     third_party_settings: {  }
     weight: 8
     region: content
+  estimate_stage_form:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
   estimate_tasks_on_estimate_eva_1:
     settings: {  }
     third_party_settings: {  }
@@ -244,7 +267,7 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 15
+    weight: 4
     region: content
   field_estimate_total:
     type: number_decimal
@@ -255,16 +278,16 @@ content:
       scale: 2
       prefix_suffix: true
     third_party_settings: {  }
-    weight: 5
+    weight: 1
     region: content
   field_estimated_duration_days:
     type: number_integer
-    label: above
+    label: inline
     settings:
       thousand_separator: ''
       prefix_suffix: true
     third_party_settings: {  }
-    weight: 5
+    weight: 2
     region: content
   field_is_current_revision:
     type: boolean
@@ -274,7 +297,7 @@ content:
       format_custom_false: ''
       format_custom_true: ''
     third_party_settings: {  }
-    weight: 14
+    weight: 3
     region: content
   field_requires_subs:
     type: boolean
@@ -293,7 +316,7 @@ content:
       thousand_separator: ''
       prefix_suffix: true
     third_party_settings: {  }
-    weight: 13
+    weight: 2
     region: content
   field_revision_of:
     type: entity_reference_label
@@ -301,7 +324,7 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 12
+    weight: 1
     region: content
   field_scope_elements:
     type: entity_reference_label

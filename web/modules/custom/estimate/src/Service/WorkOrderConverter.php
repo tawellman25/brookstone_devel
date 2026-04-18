@@ -112,7 +112,7 @@ final class WorkOrderConverter {
     }
 
     // Validate work_order bundle exists.
-    $bundles = $this->entityTypeManager->getBundleInfo('work_order');
+    $bundles = \Drupal::service('entity_type.bundle.info')->getBundleInfo('work_order');
     if (!isset($bundles[$bundle])) {
       throw new EstimateConversionException(sprintf('Work Order bundle "%s" does not exist. Bundle mapping requires work_order.bundle == estimate.bundle.', $bundle));
     }
@@ -133,7 +133,23 @@ final class WorkOrderConverter {
     // Optional mappings if fields exist on target bundle.
     $this->setEntityReferenceTargetIdFrom($work_order, 'field_contract', $estimate_request, 'field_contract');
     $this->setEntityReferenceTargetIdFrom($work_order, 'field_property', $estimate_request, 'field_property');
-    $this->setEntityReferenceTargetIdFrom($work_order, 'field_service', $estimate_request, 'field_service');
+
+    // field_service: look up the Services term whose field_service_bundle matches
+    // this estimate's bundle. This enforces the critical invariant:
+    // work_order.bundle == work_order.field_service.term.field_service_bundle.
+    if ($work_order->hasField('field_service')) {
+      $service_tids = \Drupal::entityTypeManager()
+        ->getStorage('taxonomy_term')
+        ->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('vid', 'services')
+        ->condition('field_service_bundle', $bundle)
+        ->range(0, 1)
+        ->execute();
+      if (!empty($service_tids)) {
+        $work_order->set('field_service', ['target_id' => (int) reset($service_tids)]);
+      }
+    }
 
     // Estimated price mirror (if the field exists).
     if ($work_order->hasField('field_estimated_price')) {

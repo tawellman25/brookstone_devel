@@ -5,7 +5,7 @@ dependencies:
   config:
     - eck.eck_type.estimate.rock_work
     - field.storage.estimate.field_scope_elements
-    - taxonomy.vocabulary.service_scope_elements
+    - views.view.scope_elements_by_bundle
 id: estimate.rock_work.field_scope_elements
 field_name: field_scope_elements
 entity_type: estimate
@@ -17,13 +17,11 @@ translatable: false
 default_value: {  }
 default_value_callback: ''
 settings:
-  handler: 'default:taxonomy_term'
+  handler: views
   handler_settings:
-    target_bundles:
-      service_scope_elements: service_scope_elements
-    sort:
-      field: name
-      direction: asc
-    auto_create: false
-    auto_create_bundle: ''
+    view:
+      view_name: scope_elements_by_bundle
+      display_name: entity_reference_1
+      arguments:
+        - rock_work
 field_type: entity_reference

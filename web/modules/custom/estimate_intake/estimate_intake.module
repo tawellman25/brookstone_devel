@@ -3,6 +3,82 @@
 declare(strict_types=1);
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\ReplaceCommand;
+
+/**
+ * Implements hook_form_FORM_ID_alter() for estimate_request_standard_form.
+ *
+ * Auto-populates field_owner when the office selects a property.
+ */
+function estimate_intake_form_estimate_request_standard_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  if (isset($form['field_property']['widget'][0]['target_id'])) {
+    $form['field_property']['widget'][0]['target_id']['#ajax'] = [
+      'callback' => '_estimate_intake_property_owner_ajax',
+      'event' => 'autocompleteclose',
+      'wrapper' => 'estimate-request-owner-wrapper',
+      'progress' => ['type' => 'throbber', 'message' => NULL],
+    ];
+  }
+  if (isset($form['field_owner'])) {
+    $form['field_owner']['#prefix'] = '<div id="estimate-request-owner-wrapper">';
+    $form['field_owner']['#suffix'] = '</div>';
+  }
+
+  // Pre-fill owner when property_id is in the query string (e.g. "Add Estimate" from property page).
+  $property_id = (int) \Drupal::request()->query->get('property_id', 0);
+  if ($property_id > 0 && isset($form['field_owner']['widget'][0]['target_id'])) {
+    $owner_default = $form['field_owner']['widget'][0]['target_id']['#default_value'] ?? NULL;
+    if (empty($owner_default)) {
+      /** @var \Drupal\estimate_intake\Service\EstimateRequestIntakeLookup $lookup */
+      $lookup = \Drupal::service('estimate_intake.intake_lookup');
+      $owner_uid = $lookup->findLatestOwner($property_id);
+      if ($owner_uid !== NULL) {
+        $owner = \Drupal::entityTypeManager()->getStorage('user')->load($owner_uid);
+        if ($owner) {
+          $form['field_owner']['widget'][0]['target_id']['#default_value'] = $owner;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * AJAX callback: look up property owner when field_property changes.
+ */
+function _estimate_intake_property_owner_ajax(array &$form, FormStateInterface $form_state): AjaxResponse {
+  $response = new AjaxResponse();
+
+  // Check if owner is already set — don't overwrite.
+  $owner_value = $form_state->getValue('field_owner');
+  $owner_target = $owner_value[0]['target_id'] ?? NULL;
+  if (!empty($owner_target)) {
+    $response->addCommand(new ReplaceCommand('#estimate-request-owner-wrapper', $form['field_owner']));
+    return $response;
+  }
+
+  // Get the selected property ID from the submitted value.
+  $property_value = $form_state->getValue('field_property');
+  $property_id = (int) ($property_value[0]['target_id'] ?? 0);
+
+  if ($property_id > 0) {
+    /** @var \Drupal\estimate_intake\Service\EstimateRequestIntakeLookup $lookup */
+    $lookup = \Drupal::service('estimate_intake.intake_lookup');
+    $owner_uid = $lookup->findLatestOwner($property_id);
+
+    if ($owner_uid !== NULL) {
+      $owner = \Drupal::entityTypeManager()->getStorage('user')->load($owner_uid);
+      if ($owner) {
+        $form['field_owner']['widget'][0]['target_id']['#value'] = $owner->getDisplayName() . ' (' . $owner_uid . ')';
+        \Drupal::messenger()->addStatus(t('Owner auto-filled: @name', ['@name' => $owner->getDisplayName()]));
+      }
+    }
+  }
+
+  $response->addCommand(new ReplaceCommand('#estimate-request-owner-wrapper', $form['field_owner']));
+  return $response;
+}
 
 /**
  * Implements hook_module_implements_alter().
@@ -48,56 +124,78 @@ function estimate_intake_entity_presave(EntityInterface $entity): void {
     $email = trim((string) $entity->get('field_requestor_email')->value);
   }
 
-  // Nothing to look up.
-  if ($address === '' && $name === '' && $phone === '' && $email === '') {
-    return;
-  }
+  // If no requestor info, skip orchestrate but still try owner lookup below.
+  $has_requestor_info = ($address !== '' || $name !== '' || $phone !== '' || $email !== '');
 
-  // Split name on first space.
-  $first_name = $name;
-  $last_name = '';
-  if (str_contains($name, ' ')) {
-    $parts = explode(' ', $name, 2);
-    $first_name = $parts[0];
-    $last_name = $parts[1];
-  }
-
-  $result = $lookup->orchestrate($address, $first_name, $last_name, $phone, $email);
   $messages = [];
-
-  // --- Property: only populate if not already set ---
+  $result = ['properties' => [], 'owner_uid' => NULL, 'contact_id' => 0, 'contact_created' => FALSE];
   $property_already_set = $entity->hasField('field_property') && !$entity->get('field_property')->isEmpty();
-  if (!$property_already_set && $address !== '') {
-    $properties = $result['properties'];
-    if (count($properties) === 1) {
-      $prop = reset($properties);
-      $entity->set('field_property', ['target_id' => (int) $prop->id()]);
-      $label = $prop->hasField('field_street_address') ? ($prop->get('field_street_address')->value ?? '') : '';
-      $messages[] = t('Property matched: @label (#@id)', ['@label' => $label, '@id' => $prop->id()]);
+
+  // --- Requestor-based lookup (property, contact) ---
+  if ($has_requestor_info) {
+    // Split name on first space.
+    $first_name = $name;
+    $last_name = '';
+    if (str_contains($name, ' ')) {
+      $parts = explode(' ', $name, 2);
+      $first_name = $parts[0];
+      $last_name = $parts[1];
     }
-    elseif (count($properties) > 1) {
-      $addrs = [];
-      foreach ($properties as $prop) {
-        $addr = $prop->hasField('field_street_address') ? ($prop->get('field_street_address')->value ?? '') : ('Property ' . $prop->id());
-        $addrs[] = $addr . ' (#' . $prop->id() . ')';
+
+    $result = $lookup->orchestrate($address, $first_name, $last_name, $phone, $email);
+
+    // --- Property: only populate if not already set ---
+    if (!$property_already_set && $address !== '') {
+      $properties = $result['properties'];
+      if (count($properties) === 1) {
+        $prop = reset($properties);
+        $entity->set('field_property', ['target_id' => (int) $prop->id()]);
+        $label = $prop->hasField('field_street_address') ? ($prop->get('field_street_address')->value ?? '') : '';
+        $messages[] = t('Property matched: @label (#@id)', ['@label' => $label, '@id' => $prop->id()]);
       }
-      $messages[] = t('Multiple properties match "@address": @list — set field_property manually.', [
-        '@address' => $address,
-        '@list' => implode(', ', $addrs),
-      ]);
+      elseif (count($properties) > 1) {
+        $addrs = [];
+        foreach ($properties as $prop) {
+          $addr = $prop->hasField('field_street_address') ? ($prop->get('field_street_address')->value ?? '') : ('Property ' . $prop->id());
+          $addrs[] = $addr . ' (#' . $prop->id() . ')';
+        }
+        $messages[] = t('Multiple properties match "@address": @list — set field_property manually.', [
+          '@address' => $address,
+          '@list' => implode(', ', $addrs),
+        ]);
+      }
+      else {
+        $messages[] = t('No property found matching "@address".', ['@address' => $address]);
+      }
     }
-    else {
-      $messages[] = t('No property found matching "@address".', ['@address' => $address]);
+
+    // --- Contact: only populate if not already set ---
+    $contact_already_set = $entity->hasField('field_contact') && !$entity->get('field_contact')->isEmpty();
+    if (!$contact_already_set && $result['contact_id'] > 0) {
+      $entity->set('field_contact', ['target_id' => $result['contact_id']]);
+      $contact = \Drupal::entityTypeManager()->getStorage('contacts')->load($result['contact_id']);
+      if ($result['contact_created']) {
+        $messages[] = t('Contact created: @name (#@id)', [
+          '@name' => $contact ? $contact->label() : 'Unknown',
+          '@id' => $result['contact_id'],
+        ]);
+      }
+      else {
+        $messages[] = t('Existing contact found: @name (#@id)', [
+          '@name' => $contact ? $contact->label() : 'Unknown',
+          '@id' => $result['contact_id'],
+        ]);
+      }
     }
   }
 
-  // --- Owner: only populate if not already set and property is now set ---
+  // --- Owner: always populate if not set and property is available ---
   $owner_already_set = $entity->hasField('field_owner') && !$entity->get('field_owner')->isEmpty();
   if (!$owner_already_set && $entity->hasField('field_property') && !$entity->get('field_property')->isEmpty()) {
     $property_id = (int) $entity->get('field_property')->target_id;
     $owner_uid = $result['owner_uid'];
-    // If property was already set before orchestrate, owner_uid won't be populated — look it up directly.
-    if ($owner_uid === NULL && $property_already_set) {
+    // If orchestrate didn't find it (property was pre-set or no requestor info), look up directly.
+    if ($owner_uid === NULL) {
       $owner_uid = $lookup->findLatestOwner($property_id);
     }
     if ($owner_uid !== NULL) {
@@ -106,25 +204,6 @@ function estimate_intake_entity_presave(EntityInterface $entity): void {
       $messages[] = t('Owner set: @name (#@uid)', [
         '@name' => $owner ? $owner->getDisplayName() : 'Unknown',
         '@uid' => $owner_uid,
-      ]);
-    }
-  }
-
-  // --- Contact: only populate if not already set ---
-  $contact_already_set = $entity->hasField('field_contact') && !$entity->get('field_contact')->isEmpty();
-  if (!$contact_already_set && $result['contact_id'] > 0) {
-    $entity->set('field_contact', ['target_id' => $result['contact_id']]);
-    $contact = \Drupal::entityTypeManager()->getStorage('contacts')->load($result['contact_id']);
-    if ($result['contact_created']) {
-      $messages[] = t('Contact created: @name (#@id)', [
-        '@name' => $contact ? $contact->label() : 'Unknown',
-        '@id' => $result['contact_id'],
-      ]);
-    }
-    else {
-      $messages[] = t('Existing contact found: @name (#@id)', [
-        '@name' => $contact ? $contact->label() : 'Unknown',
-        '@id' => $result['contact_id'],
       ]);
     }
   }

@@ -360,6 +360,7 @@ function estimate_entity_update(EntityInterface $entity): void {
   estimate__maybe_recalculate_total($entity);
   _estimate_log_stage_change($entity);
   _estimate_log_request_status_change($entity);
+  _estimate_auto_convert_on_acceptance($entity);
 }
 
 /**
@@ -432,6 +433,12 @@ function estimate_entity_extra_field_info(): array {
       'weight' => -10,
       'visible' => TRUE,
     ];
+    $extra['estimate'][$bundle]['display']['estimate_stage_form'] = [
+      'label' => t('Stage Actions'),
+      'description' => t('Dropdown to change estimate stage and convert to Work Order.'),
+      'weight' => -9,
+      'visible' => TRUE,
+    ];
   }
 
   return $extra;
@@ -453,58 +460,64 @@ function estimate_entity_view(
     return;
   }
 
-  if (!$display->getComponent('estimate_contact_card')) {
-    return;
-  }
-
-  // Load parent estimate_request.
-  if (!$entity->hasField('field_estimate_request') || $entity->get('field_estimate_request')->isEmpty()) {
-    $build['estimate_contact_card'] = ['#markup' => ''];
-    return;
-  }
-
-  try {
-    $request = $entity->get('field_estimate_request')->entity;
-    if (!$request) {
+  // --- Contact / Owner card ---
+  if ($display->getComponent('estimate_contact_card')) {
+    if (!$entity->hasField('field_estimate_request') || $entity->get('field_estimate_request')->isEmpty()) {
       $build['estimate_contact_card'] = ['#markup' => ''];
-      return;
     }
+    else {
+      try {
+        $request = $entity->get('field_estimate_request')->entity;
+        if (!$request) {
+          $build['estimate_contact_card'] = ['#markup' => ''];
+        }
+        else {
+          $etm = \Drupal::entityTypeManager();
+          $html = '';
 
-    $etm = \Drupal::entityTypeManager();
-    $html = '';
+          // Priority 1: Owner.
+          if ($request->hasField('field_owner') && !$request->get('field_owner')->isEmpty()) {
+            $owner = $request->get('field_owner')->entity;
+            if ($owner) {
+              $html = _estimate_build_owner_card($owner, $request, $etm);
+            }
+          }
 
-    // Priority 1: Owner.
-    if ($request->hasField('field_owner') && !$request->get('field_owner')->isEmpty()) {
-      $owner = $request->get('field_owner')->entity;
-      if ($owner) {
-        $html = _estimate_build_owner_card($owner, $request, $etm);
+          // Priority 2: Contact.
+          if (empty($html) && $request->hasField('field_contact') && !$request->get('field_contact')->isEmpty()) {
+            $contact = $request->get('field_contact')->entity;
+            if ($contact) {
+              $html = _estimate_build_contact_card($contact);
+            }
+          }
+
+          // Priority 3: Requestor info.
+          if (empty($html)) {
+            $html = _estimate_build_requestor_card($request);
+          }
+
+          $build['estimate_contact_card'] = [
+            '#markup' => $html ?: '<div class="er-card er-card--empty">No contact information available.</div>',
+            '#weight' => -10,
+          ];
+        }
+      }
+      catch (\Throwable $e) {
+        \Drupal::logger('estimate')->error('Estimate contact card error on estimate @id: @msg', [
+          '@id' => $entity->id(),
+          '@msg' => $e->getMessage(),
+        ]);
+        $build['estimate_contact_card'] = ['#markup' => ''];
       }
     }
-
-    // Priority 2: Contact.
-    if (empty($html) && $request->hasField('field_contact') && !$request->get('field_contact')->isEmpty()) {
-      $contact = $request->get('field_contact')->entity;
-      if ($contact) {
-        $html = _estimate_build_contact_card($contact);
-      }
-    }
-
-    // Priority 3: Requestor info.
-    if (empty($html)) {
-      $html = _estimate_build_requestor_card($request);
-    }
-
-    $build['estimate_contact_card'] = [
-      '#markup' => $html ?: '<div class="er-card er-card--empty">No contact information available.</div>',
-      '#weight' => -10,
-    ];
   }
-  catch (\Throwable $e) {
-    \Drupal::logger('estimate')->error('Estimate contact card error on estimate @id: @msg', [
-      '@id' => $entity->id(),
-      '@msg' => $e->getMessage(),
-    ]);
-    $build['estimate_contact_card'] = ['#markup' => ''];
+
+  // --- Stage change form ---
+  if ($display->getComponent('estimate_stage_form')) {
+    $build['estimate_stage_form'] = \Drupal::formBuilder()->getForm(
+      'Drupal\estimate\Form\EstimateStageChangeForm',
+      $entity
+    );
   }
 }
 
@@ -751,6 +764,59 @@ function _estimate_log_stage_change(EntityInterface $entity): void {
       '@id' => $entity->id(),
       '@msg' => $e->getMessage(),
     ]);
+  }
+}
+
+/**
+ * Auto-convert estimate to Work Order when stage changes to Accepted.
+ *
+ * Called from hook_entity_update. Only fires on the transition INTO
+ * Accepted — not on re-saves where stage is already Accepted.
+ */
+function _estimate_auto_convert_on_acceptance(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate') {
+    return;
+  }
+  if (!$entity->hasField('field_stage') || !isset($entity->original)) {
+    return;
+  }
+
+  $accepted_tid = (int) \Drupal::config('estimate.settings')->get('accepted_stage_tid');
+  if ($accepted_tid <= 0) {
+    return;
+  }
+
+  $old_tid = (int) ($entity->original->get('field_stage')->target_id ?? 0);
+  $new_tid = (int) ($entity->get('field_stage')->target_id ?? 0);
+
+  // Only fire on the transition into Accepted, not re-saves.
+  if ($new_tid !== $accepted_tid || $old_tid === $accepted_tid) {
+    return;
+  }
+
+  // Already linked to a WO — nothing to do.
+  if ($entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty()) {
+    return;
+  }
+
+  try {
+    /** @var \Drupal\estimate\Service\WorkOrderConverter $converter */
+    $converter = \Drupal::service('estimate.work_order_converter');
+    $work_order = $converter->convert($entity);
+
+    \Drupal::messenger()->addStatus(t('Work Order #@wid automatically created from accepted Estimate #@eid.', [
+      '@wid' => $work_order->id(),
+      '@eid' => $entity->id(),
+    ]));
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('estimate')->error('Auto-conversion failed for Estimate @eid: @msg', [
+      '@eid' => $entity->id(),
+      '@msg' => $e->getMessage(),
+    ]);
+    \Drupal::messenger()->addWarning(t('Estimate accepted but Work Order could not be created automatically: @msg', [
+      '@msg' => $e->getMessage(),
+    ]));
   }
 }
 
@@ -1164,3 +1230,20 @@ function _estimate_property_created_from_request_submit(array &$form, \Drupal\Co
  *
  * Those live in services/classes so they can be tested and reused.
  */
+
+/**
+ * Implements hook_views_query_alter().
+ *
+ * For the scope_elements_by_bundle entity reference view: makes the
+ * field_applicable_bundles contextual filter include terms where the field
+ * is empty (NULL), so "empty = show for all bundles".
+ */
+/**
+ * Implements hook_views_query_alter().
+ *
+ * No custom logic needed — the contextual filter on field_applicable_bundles
+ * handles filtering directly. Only terms explicitly tagged with the bundle
+ * are returned. Untagged terms do not appear.
+ */
+function estimate_views_query_alter(\Drupal\views\ViewExecutable $view, \Drupal\views\Plugin\views\query\Sql $query): void {
+}

@@ -1,4 +1,86 @@
 <?php
 
+declare(strict_types=1);
 
+use Drupal\Core\Entity\EntityInterface;
 
+/**
+ * Implements hook_entity_presave().
+ *
+ * When a customer_profile is saved without a primary contact, auto-creates
+ * a contacts.contact entity from the profile's name/email and links it.
+ */
+function customer_entity_presave(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'profile' || $entity->bundle() !== 'customer_profile') {
+    return;
+  }
+
+  // Skip if primary contact is already set.
+  if ($entity->hasField('field_primary_contact_ref') && !$entity->get('field_primary_contact_ref')->isEmpty()) {
+    return;
+  }
+
+  $first = $entity->hasField('field_first_name') ? trim((string) ($entity->get('field_first_name')->value ?? '')) : '';
+  $last = $entity->hasField('field_last_name') ? trim((string) ($entity->get('field_last_name')->value ?? '')) : '';
+
+  // Need at least a name to create a contact.
+  if ($first === '' && $last === '') {
+    return;
+  }
+
+  // Get email from user account.
+  $email = '';
+  $uid = (int) ($entity->getOwnerId() ?? 0);
+  if ($uid > 0) {
+    $user = \Drupal::entityTypeManager()->getStorage('user')->load($uid);
+    if ($user) {
+      $email = (string) ($user->getEmail() ?? '');
+    }
+  }
+
+  // Check if a contact already exists with this name (avoid duplicates).
+  $contact_storage = \Drupal::entityTypeManager()->getStorage('contacts');
+  $query = $contact_storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'contact')
+    ->condition('field_first_name', $first)
+    ->condition('field_last_name', $last)
+    ->range(0, 1);
+  $existing = $query->execute();
+
+  if (!empty($existing)) {
+    // Link the existing contact.
+    $contact_id = (int) reset($existing);
+    $entity->set('field_primary_contact_ref', ['target_id' => $contact_id]);
+    \Drupal::messenger()->addStatus(t('Existing contact @name linked as primary contact.', [
+      '@name' => trim($first . ' ' . $last),
+    ]));
+    return;
+  }
+
+  // Create new contact.
+  $contact = $contact_storage->create([
+    'type' => 'contact',
+    'title' => trim($first . ' ' . $last),
+    'field_first_name' => $first,
+    'field_last_name' => $last,
+  ]);
+  if ($email !== '') {
+    $contact->set('field_email', $email);
+  }
+
+  try {
+    $contact->save();
+    $entity->set('field_primary_contact_ref', ['target_id' => (int) $contact->id()]);
+    \Drupal::messenger()->addStatus(t('Primary contact @name (#@id) created automatically.', [
+      '@name' => trim($first . ' ' . $last),
+      '@id' => $contact->id(),
+    ]));
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('customer')->error('Failed to auto-create contact for profile @pid: @msg', [
+      '@pid' => $entity->id() ?? 'new',
+      '@msg' => $e->getMessage(),
+    ]);
+  }
+}

@@ -105,10 +105,34 @@ final class WorkOrderConverter {
       throw new EstimateConversionException(sprintf('Estimate Request %d could not be loaded.', $estimate_request_id));
     }
 
-    // Required: Contact must be present on the request (WO requires it).
+    // Contact: try estimate request first, then property's primary contact,
+    // then owner's primary contact via customer_profile.
     $contact_id = $this->getTargetId($estimate_request, 'field_contact');
     if ($contact_id <= 0) {
-      throw new EstimateConversionException('Estimate Request is missing field_contact. Link a Contact before converting.');
+      $property_id = $this->getTargetId($estimate_request, 'field_property');
+      if ($property_id > 0) {
+        $property = $this->entityTypeManager->getStorage('properties')->load($property_id);
+        if ($property && $property->hasField('field_primary_contact_ref') && !$property->get('field_primary_contact_ref')->isEmpty()) {
+          $contact_id = (int) $property->get('field_primary_contact_ref')->target_id;
+        }
+      }
+    }
+    if ($contact_id <= 0) {
+      $owner_id = $this->getTargetId($estimate_request, 'field_owner');
+      if ($owner_id > 0) {
+        $profiles = $this->entityTypeManager->getStorage('profile')->loadByProperties([
+          'uid' => $owner_id,
+          'type' => 'customer_profile',
+          'status' => 1,
+        ]);
+        $profile = $profiles ? reset($profiles) : NULL;
+        if ($profile && $profile->hasField('field_primary_contact_ref') && !$profile->get('field_primary_contact_ref')->isEmpty()) {
+          $contact_id = (int) $profile->get('field_primary_contact_ref')->target_id;
+        }
+      }
+    }
+    if ($contact_id <= 0) {
+      throw new EstimateConversionException('No contact found. Add a Contact to the Estimate Request, or ensure the Property or Owner has a Primary Contact.');
     }
 
     // Validate work_order bundle exists.

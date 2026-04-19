@@ -54,10 +54,20 @@
               <td colspan="8">
                 <ul class="estimate-board-estimates-sublist">
                   {% for estimate in item.estimates %}
-                    <li>
+                    <li class="estimate-board-estimate-row">
                       <span class="estimate-stage-badge stage-{{ estimate.stage_key }}">{{ estimate.stage }}</span>
+                      <button type="button" class="estimate-stage-toggle" aria-label="Change stage" title="Change stage">▾</button>
                       <a href="{{ estimate.url }}" target="_blank">{{ estimate.label }} - Estimate</a>
                       {% if estimate.total %}— {{ estimate.total }}{% endif %}
+                      <span class="estimate-inline-stage-widget" hidden>
+                        <select class="estimate-inline-stage-select" data-estimate-id="{{ estimate.id }}" data-canonical-url="{{ estimate.url }}">
+                          {% for option in estimate.stage_options %}
+                            <option value="{{ option.tid }}"{% if option.tid == estimate.stage_tid %} selected{% endif %}>{{ option.label }}</option>
+                          {% endfor %}
+                        </select>
+                        <button type="button" class="estimate-inline-stage-save button button--small">Save</button>
+                        <button type="button" class="estimate-inline-stage-cancel button button--small">Cancel</button>
+                      </span>
                     </li>
                   {% endfor %}
                 </ul>
@@ -72,16 +82,20 @@
   {% endif %}
 </div>
 
-{# ── Section 2: Active Pipeline ──────────────────────────────────── #}
-<div class="estimate-board-section estimate-board-pipeline">
-  <h2 class="estimate-board-section__title">Active Pipeline</h2>
-  {% for group in pipeline %}
-    <details class="estimate-board-pipeline-group"{% if group.count > 0 and loop.first %} open{% endif %}>
-      <summary>
+{# ── Section 2: Pipeline Swimlanes (one per status) ────────────── #}
+{% for group in pipeline %}
+  <div class="estimate-board-section estimate-board-swimlane estimate-board-swimlane--{{ group.slug }}">
+    <details {% if group.count > 0 and group.slug not in ['converted', 'declined-canceled'] %}open{% endif %}>
+      <summary class="estimate-board-section__title">
         {{ group.label }}
-        <span class="estimate-board-badge">{{ group.count }}</span>
+        <span class="estimate-board-badge estimate-board-badge--{{ group.slug }}{% if group.count == 0 %} estimate-board-badge--empty{% endif %}">
+          {{ group.count }}
+        </span>
       </summary>
-      {% if group.items|length > 0 %}
+
+      {% if group.count == 0 %}
+        <p class="estimate-board-empty">No requests in this status.</p>
+      {% else %}
         <ul class="pipeline-list">
           {% for item in group.items %}
             <li>
@@ -89,10 +103,20 @@
               {% if item.estimates %}
                 <ul class="estimate-board-estimates-sublist">
                   {% for estimate in item.estimates %}
-                    <li>
+                    <li class="estimate-board-estimate-row">
                       <span class="estimate-stage-badge stage-{{ estimate.stage_key }}">{{ estimate.stage }}</span>
+                      <button type="button" class="estimate-stage-toggle" aria-label="Change stage" title="Change stage">▾</button>
                       <a href="{{ estimate.url }}" target="_blank">{{ estimate.label }} - Estimate</a>
                       {% if estimate.total %}— {{ estimate.total }}{% endif %}
+                      <span class="estimate-inline-stage-widget" hidden>
+                        <select class="estimate-inline-stage-select" data-estimate-id="{{ estimate.id }}" data-canonical-url="{{ estimate.url }}">
+                          {% for option in estimate.stage_options %}
+                            <option value="{{ option.tid }}"{% if option.tid == estimate.stage_tid %} selected{% endif %}>{{ option.label }}</option>
+                          {% endfor %}
+                        </select>
+                        <button type="button" class="estimate-inline-stage-save button button--small">Save</button>
+                        <button type="button" class="estimate-inline-stage-cancel button button--small">Cancel</button>
+                      </span>
                     </li>
                   {% endfor %}
                 </ul>
@@ -100,12 +124,10 @@
             </li>
           {% endfor %}
         </ul>
-      {% else %}
-        <p class="estimate-board-empty">No requests in this status.</p>
       {% endif %}
     </details>
-  {% endfor %}
-</div>
+  </div>
+{% endfor %}
 
 {# ── Section 3: Estimator Workload ───────────────────────────────── #}
 <div class="estimate-board-section estimate-board-workload">

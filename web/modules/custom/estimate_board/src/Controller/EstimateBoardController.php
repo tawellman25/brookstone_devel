@@ -33,6 +33,8 @@ class EstimateBoardController extends ControllerBase {
     1654 => 'Ready to Estimate',
     1655 => 'Estimating In Progress',
     1656 => 'Waiting on Client',
+    1658 => 'Converted',
+    1657 => 'Declined / Canceled',
   ];
 
   /**
@@ -193,9 +195,12 @@ class EstimateBoardController extends ControllerBase {
         ];
       }
 
+      $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $label));
+      $slug = trim($slug, '-');
       $pipeline[] = [
         'tid' => $tid,
         'label' => $label,
+        'slug' => $slug,
         'count' => count($items),
         'items' => $items,
       ];
@@ -379,8 +384,19 @@ class EstimateBoardController extends ControllerBase {
    */
   protected function getRequestEstimates(int $request_id): array {
     static $bundle_info = NULL;
+    static $stage_options = NULL;
     if ($bundle_info === NULL) {
       $bundle_info = \Drupal::service('entity_type.bundle.info')->getBundleInfo('estimate');
+    }
+    if ($stage_options === NULL) {
+      $stage_options = [];
+      $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadTree('estimate_stage', 0, NULL, TRUE);
+      foreach ($terms as $term) {
+        $stage_options[] = [
+          'tid' => (int) $term->id(),
+          'label' => (string) $term->label(),
+        ];
+      }
     }
 
     $estimate_request = $this->entityTypeManager()
@@ -407,10 +423,12 @@ class EstimateBoardController extends ControllerBase {
       $bundle = $estimate->bundle();
       $label = $bundle_info[$bundle]['label'] ?? $bundle;
 
-      // Stage label and CSS key.
+      // Stage label, TID, and CSS key.
       $stage_name = '';
       $stage_key = '';
+      $stage_tid = 0;
       if ($estimate->hasField('field_stage') && !$estimate->get('field_stage')->isEmpty()) {
+        $stage_tid = (int) $estimate->get('field_stage')->target_id;
         $stage_term = $estimate->get('field_stage')->entity;
         if ($stage_term) {
           $stage_name = (string) $stage_term->label();
@@ -441,6 +459,8 @@ class EstimateBoardController extends ControllerBase {
         'label' => (string) $label,
         'stage' => $stage_name ?: '—',
         'stage_key' => $stage_key,
+        'stage_tid' => $stage_tid,
+        'stage_options' => $stage_options,
         'total' => $total,
         'url' => $url,
       ];

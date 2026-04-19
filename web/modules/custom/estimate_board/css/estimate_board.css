@@ -45,39 +45,88 @@
   text-decoration: underline;
 }
 
-/* ── Pipeline ──────────────────────────────────────────────────── */
-.estimate-board-pipeline-group {
-  margin-bottom: 0.5rem;
+/* === Estimate Board Swimlanes === */
+.estimate-board-swimlane {
+  border-left: 4px solid #dee2e6;
+  margin-bottom: 24px;
 }
-.estimate-board-pipeline-group summary {
+
+.estimate-board-swimlane details {
+  width: 100%;
+}
+.estimate-board-swimlane summary.estimate-board-section__title {
   cursor: pointer;
-  padding: 0.5rem 0.75rem;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0 10px 12px;
+  border-bottom: 1px solid #dee2e6;
+  user-select: none;
+  margin: 0;
+}
+.estimate-board-swimlane summary::-webkit-details-marker {
+  display: none;
+}
+.estimate-board-swimlane summary::before {
+  content: '\25B6';
+  font-size: 0.65rem;
+  color: #6c757d;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+.estimate-board-swimlane details[open] summary::before {
+  transform: rotate(90deg);
+}
+.estimate-board-swimlane summary:hover {
   background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 3px;
-  font-weight: 500;
-  font-size: 0.9rem;
 }
-.estimate-board-pipeline-group summary:hover {
-  background: #e9ecef;
+.estimate-board-swimlane details[open] > *:not(summary) {
+  padding-top: 8px;
 }
-.estimate-board-pipeline-group .pipeline-list {
+
+.estimate-board-swimlane .pipeline-list {
   padding: 0.5rem 1rem;
   margin: 0;
   list-style: none;
 }
-.estimate-board-pipeline-group .pipeline-list li {
+.estimate-board-swimlane .pipeline-list li {
   padding: 0.3rem 0;
   border-bottom: 1px solid #f0f0f0;
   font-size: 0.85rem;
 }
-.estimate-board-pipeline-group .pipeline-list a {
+.estimate-board-swimlane .pipeline-list a {
   color: #1a5276;
   text-decoration: none;
 }
-.estimate-board-pipeline-group .pipeline-list a:hover {
+.estimate-board-swimlane .pipeline-list a:hover {
   text-decoration: underline;
 }
+
+/* Per-status border colors */
+.estimate-board-swimlane--new                    { border-left-color: #0d6efd; }
+.estimate-board-swimlane--needs-info             { border-left-color: #fd7e14; }
+.estimate-board-swimlane--ready-to-estimate      { border-left-color: #ffc107; }
+.estimate-board-swimlane--estimating-in-progress { border-left-color: #6f42c1; }
+.estimate-board-swimlane--waiting-on-client      { border-left-color: #0dcaf0; }
+.estimate-board-swimlane--converted              { border-left-color: #198754; }
+.estimate-board-swimlane--declined-canceled      { border-left-color: #dc3545; }
+
+/* Per-status badge colors */
+.estimate-board-badge--new                    { background: #0d6efd; color: #fff; }
+.estimate-board-badge--needs-info             { background: #fd7e14; color: #fff; }
+.estimate-board-badge--ready-to-estimate      { background: #ffc107; color: #000; }
+.estimate-board-badge--estimating-in-progress { background: #6f42c1; color: #fff; }
+.estimate-board-badge--waiting-on-client      { background: #0dcaf0; color: #000; }
+.estimate-board-badge--converted              { background: #198754; color: #fff; }
+.estimate-board-badge--declined-canceled      { background: #dc3545; color: #fff; }
+
+/* Empty badge */
+.estimate-board-badge--empty {
+  background: #dee2e6;
+  color: #6c757d;
+}
+/* === End Estimate Board Swimlanes === */
 
 /* ── Badge ─────────────────────────────────────────────────────── */
 .estimate-board-badge {
@@ -259,3 +308,141 @@ a.estimate-bundle-label:hover {
   background: #ffeeba;
   color: #856404;
 }
+
+/* === Inline Stage Widget === */
+.estimate-board-estimate-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.estimate-stage-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #6c757d;
+  padding: 0 2px;
+  line-height: 1;
+}
+.estimate-stage-toggle:hover {
+  color: #343a40;
+}
+
+.estimate-inline-stage-widget {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+}
+.estimate-inline-stage-widget[hidden] {
+  display: none;
+}
+
+.estimate-inline-stage-select {
+  font-size: 0.8rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  max-width: 160px;
+}
+
+.estimate-inline-stage-save,
+.estimate-inline-stage-cancel {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+}
+.estimate-inline-stage-save {
+  background: #198754;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.estimate-inline-stage-save:hover {
+  background: #146c43;
+}
+.estimate-inline-stage-cancel {
+  background: none;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #6c757d;
+}
+/* === End Inline Stage Widget === */
+
+/* === Filter Bar === */
+.estimate-board-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+.estimate-board-filter-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #495057;
+  white-space: nowrap;
+}
+.estimate-board-filter-input {
+  flex: 1;
+  max-width: 380px;
+  padding: 6px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+.estimate-board-filter-input:focus {
+  outline: none;
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15);
+}
+.estimate-board-filter-count {
+  font-size: 0.8rem;
+  color: #6c757d;
+  display: none;
+}
+.estimate-board-filter-clear {
+  background: none;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #6c757d;
+}
+.estimate-board-filter-clear:hover {
+  background: #e9ecef;
+}
+
+/* === Row Limit === */
+.estimate-board-row--hidden-limit {
+  display: none !important;
+}
+.estimate-board-row--filter-override {
+  display: revert !important;
+}
+.estimate-board-row--filtered-out {
+  display: none !important;
+}
+.estimate-board-row-limit-toggle {
+  padding: 8px 0 4px;
+}
+.estimate-board-show-more {
+  background: none;
+  border: none;
+  color: #0d6efd;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+.estimate-board-show-more:hover {
+  color: #0a58ca;
+}
+/* === End Filter Bar + Row Limit === */

@@ -152,7 +152,126 @@
     }
   };
 
+  // ── Helper: update swimlane badge count ─────────────────────────
+  function updateSwimlaneBadge(swimlane, delta) {
+    var badge = swimlane ? swimlane.querySelector('.estimate-board-badge') : null;
+    if (badge) {
+      var current = parseInt(badge.textContent.trim(), 10) || 0;
+      var newCount = Math.max(0, current + delta);
+      badge.textContent = newCount;
+      // Toggle empty class.
+      if (newCount === 0) {
+        badge.classList.add('estimate-board-badge--empty');
+      } else {
+        badge.classList.remove('estimate-board-badge--empty');
+      }
+    }
+  }
+
+  // ── Helper: insert row HTML into destination swimlane ───────────
+  function insertRowIntoSwimlane(swimlane, rowHtml) {
+    var tbody = swimlane.querySelector('tbody');
+
+    // If swimlane was empty (no table), create the table structure.
+    if (!tbody) {
+      var emptyMsg = swimlane.querySelector('.estimate-board-empty');
+      if (emptyMsg) emptyMsg.remove();
+
+      var details = swimlane.querySelector('details');
+      var target = details || swimlane;
+
+      var table = document.createElement('table');
+      table.className = 'estimate-board-table';
+      table.innerHTML =
+        '<thead><tr>' +
+        '<th>Client</th><th>Property</th><th>Services</th>' +
+        '<th>Coordinator</th><th>Age</th><th>Estimates</th><th>Actions</th>' +
+        '</tr></thead><tbody></tbody>';
+      target.appendChild(table);
+      tbody = table.querySelector('tbody');
+    }
+
+    var temp = document.createElement('tbody');
+    temp.innerHTML = rowHtml;
+    var newRow = temp.firstElementChild;
+    if (!newRow) return;
+
+    newRow.style.opacity = '0';
+    tbody.appendChild(newRow);
+
+    // Attach Drupal behaviors to the new row so buttons work.
+    if (typeof Drupal !== 'undefined' && Drupal.attachBehaviors) {
+      Drupal.attachBehaviors(newRow);
+    }
+
+    // Fade in.
+    requestAnimationFrame(function () {
+      newRow.style.transition = 'opacity 0.3s';
+      newRow.style.opacity = '1';
+    });
+  }
+
+  // ── Helper: build row HTML from server data ────────────────────
+  function buildRowHtml(data) {
+    var escHtml = function (s) {
+      var div = document.createElement('div');
+      div.textContent = s || '';
+      return div.innerHTML;
+    };
+
+    var backBtn = data.prev_status_tid
+      ? '<button type="button" class="estimate-board-status-btn estimate-board-status-btn--back" ' +
+        'data-request-id="' + data.request_id + '" ' +
+        'data-status-tid="' + data.prev_status_tid + '" ' +
+        'data-status-label="' + escHtml(data.prev_status_label) + '" ' +
+        'title="Move back to: ' + escHtml(data.prev_status_label) + '">' +
+        '\u2190 Back</button>'
+      : '';
+
+    var nextBtn = data.next_status_tid
+      ? '<button type="button" class="estimate-board-status-btn estimate-board-status-btn--next estimate-board-status-btn--' + data.new_status_slug + '" ' +
+        'data-request-id="' + data.request_id + '" ' +
+        'data-status-tid="' + data.next_status_tid + '" ' +
+        'data-status-label="' + escHtml(data.next_status_label) + '" ' +
+        'title="Advance to: ' + escHtml(data.next_status_label) + '">' +
+        escHtml(data.next_status_label) + ' \u2192</button>'
+      : '';
+
+    var declineBtn =
+      '<button type="button" class="estimate-board-status-btn estimate-board-status-btn--decline" ' +
+      'data-request-id="' + data.request_id + '" ' +
+      'data-status-tid="' + data.decline_tid + '" ' +
+      'data-status-label="Declined" ' +
+      'data-confirm="Mark this estimate request as Declined?" ' +
+      'title="Decline">\u2715</button>';
+
+    var estimatesHtml = '';
+    if (data.estimates && data.estimates.length) {
+      data.estimates.forEach(function (est) {
+        estimatesHtml +=
+          '<a href="' + escHtml(est.url) + '" target="_blank" class="estimate-board-est-link">' +
+          escHtml(est.label) +
+          (est.total ? ' <span class="estimate-board-est-total">' + escHtml(est.total) + '</span>' : '') +
+          '</a>';
+      });
+    }
+
+    var ageClass = data.age_days > 7 ? ' estimate-board-age--warning' : '';
+
+    return '<tr class="estimate-board-request-row" data-request-id="' + data.request_id + '">' +
+      '<td><a href="' + escHtml(data.url) + '" target="_blank">' + escHtml(data.client_name) + '</a></td>' +
+      '<td>' + escHtml(data.property) + '</td>' +
+      '<td>' + escHtml(data.services) + '</td>' +
+      '<td>' + escHtml(data.coordinator) + '</td>' +
+      '<td class="' + ageClass + '">' + data.age_days + 'd</td>' +
+      '<td class="estimate-board-estimates-cell">' + estimatesHtml + '</td>' +
+      '<td class="estimate-board-actions-cell">' + backBtn + nextBtn + declineBtn + '</td>' +
+      '</tr>';
+  }
+
   // ── Status action buttons (← Back, Next →, ✕ Decline) ─────────
+  var OFF_BOARD_SLUGS = ['declined', 'converted', 'accepted'];
+
   Drupal.behaviors.estimateBoardStatusButtons = {
     attach: function (context) {
       context.querySelectorAll('.estimate-board-status-btn').forEach(function (btn) {
@@ -170,39 +289,56 @@
           btn.disabled = true;
           btn.textContent = '...';
 
-          // Get CSRF token from Drupal's session token endpoint.
-          fetch('/session/token', { credentials: 'same-origin' })
-            .then(function (r) { return r.text(); })
-            .then(function (csrfToken) {
-              return fetch('/admin/office/estimates/status-update', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-Requested-With': 'XMLHttpRequest',
-                  'X-CSRF-Token': csrfToken,
-                },
-                body: JSON.stringify({
-                  estimate_request_id: requestId,
-                  new_status_tid: parseInt(statusTid, 10),
-                }),
-                credentials: 'same-origin',
-              });
-            })
+          var csrfToken = drupalSettings.estimateBoard
+            ? drupalSettings.estimateBoard.csrfToken
+            : '';
+
+          fetch('/admin/office/estimates/status-update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-Token': csrfToken,
+            },
+            body: JSON.stringify({
+              estimate_request_id: requestId,
+              new_status_tid: parseInt(statusTid, 10),
+            }),
+            credentials: 'same-origin',
+          })
             .then(function (r) { return r.json(); })
             .then(function (data) {
               if (data.success) {
                 var row = btn.closest('tr');
-                var swimlane = btn.closest('.estimate-board-swimlane');
+                var sourceSwimlane = btn.closest('.estimate-board-swimlane');
 
                 if (row) {
                   row.style.transition = 'opacity 0.3s';
                   row.style.opacity = '0';
+
                   setTimeout(function () {
                     row.remove();
-                    var badge = swimlane ? swimlane.querySelector('.estimate-board-badge') : null;
-                    if (badge) {
-                      var current = parseInt(badge.textContent, 10);
-                      badge.textContent = Math.max(0, current - 1);
+                    updateSwimlaneBadge(sourceSwimlane, -1);
+
+                    // If status is off-board, don't insert anywhere.
+                    if (OFF_BOARD_SLUGS.indexOf(data.new_status_slug) !== -1) {
+                      return;
+                    }
+
+                    // Find destination swimlane and insert row.
+                    var destSwimlane = document.querySelector(
+                      '.estimate-board-swimlane--' + data.new_status_slug
+                    );
+                    if (destSwimlane) {
+                      var rowHtml = buildRowHtml(data);
+                      insertRowIntoSwimlane(destSwimlane, rowHtml);
+                      updateSwimlaneBadge(destSwimlane, +1);
+
+                      // Open destination if closed.
+                      var destDetails = destSwimlane.querySelector('details');
+                      if (destDetails && !destDetails.open) {
+                        destDetails.setAttribute('open', '');
+                      }
                     }
                   }, 300);
                 }

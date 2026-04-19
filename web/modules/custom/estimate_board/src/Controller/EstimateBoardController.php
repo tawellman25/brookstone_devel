@@ -78,6 +78,11 @@ class EstimateBoardController extends ControllerBase {
       '#csrf_token' => \Drupal::csrfToken()->get('estimate_board_status_update'),
       '#attached' => [
         'library' => ['estimate_board/estimate_board'],
+        'drupalSettings' => [
+          'estimateBoard' => [
+            'csrfToken' => \Drupal::csrfToken()->get('estimate_board_status_update'),
+          ],
+        ],
       ],
     ];
   }
@@ -517,14 +522,14 @@ class EstimateBoardController extends ControllerBase {
       $new_status = (int) $request->request->get('new_status', 0);
     }
 
-    // Validate CSRF — check token from header or POST body.
+    // Validate CSRF token (passed via drupalSettings → JS → header).
     $token = $request->headers->get('X-CSRF-Token')
       ?: $request->request->get('token', '');
     if (!$token || !\Drupal::csrfToken()->validate($token, 'estimate_board_status_update')) {
       return new JsonResponse(['success' => FALSE, 'error' => 'Invalid token.'], 403);
     }
 
-    $all_statuses = array_keys(self::PIPELINE_ORDER) + [self::DECLINED_TID];
+    $all_statuses = array_merge(array_keys(self::PIPELINE_ORDER), [self::DECLINED_TID]);
     if (!$request_id || !in_array($new_status, $all_statuses, TRUE)) {
       return new JsonResponse(['success' => FALSE, 'error' => 'Invalid request or status.'], 400);
     }
@@ -541,8 +546,74 @@ class EstimateBoardController extends ControllerBase {
     $term = $this->entityTypeManager()
       ->getStorage('taxonomy_term')->load($new_status);
     $label = $term ? $term->label() : (string) $new_status;
+    $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $label));
+    $slug = trim($slug, '-');
 
-    return new JsonResponse(['success' => TRUE, 'new_status' => $label]);
+    // Build row data for the destination swimlane.
+    $order_keys = array_keys(self::PIPELINE_ORDER);
+    $new_index = array_search($new_status, $order_keys);
+    $prev_tid = ($new_index !== FALSE && $new_index > 0) ? $order_keys[$new_index - 1] : NULL;
+    $next_tid = ($new_index !== FALSE && $new_index < count($order_keys) - 1) ? $order_keys[$new_index + 1] : NULL;
+
+    // Owner/requestor.
+    $client_name = 'Unknown';
+    if ($estimate_request->hasField('field_owner') && !$estimate_request->get('field_owner')->isEmpty()) {
+      $owner = $estimate_request->get('field_owner')->entity;
+      if ($owner) {
+        $client_name = $owner->getDisplayName();
+      }
+    }
+    if ($client_name === 'Unknown' && $estimate_request->hasField('field_requestor_name') && !$estimate_request->get('field_requestor_name')->isEmpty()) {
+      $client_name = trim((string) $estimate_request->get('field_requestor_name')->value);
+    }
+
+    // Property.
+    $property = '';
+    if ($estimate_request->hasField('field_property') && !$estimate_request->get('field_property')->isEmpty()) {
+      $prop = $estimate_request->get('field_property')->entity;
+      if ($prop && $prop->hasField('field_nickname') && !$prop->get('field_nickname')->isEmpty()) {
+        $property = (string) $prop->get('field_nickname')->value;
+      }
+    }
+
+    // Coordinator.
+    $coordinator = 'Unassigned';
+    if ($estimate_request->hasField('field_assigned_to') && !$estimate_request->get('field_assigned_to')->isEmpty()) {
+      $assigned = $estimate_request->get('field_assigned_to')->entity;
+      if ($assigned) {
+        $coordinator = $assigned->getDisplayName();
+      }
+    }
+
+    // Age.
+    $age_days = (int) ((\Drupal::time()->getRequestTime() - (int) $estimate_request->getCreatedTime()) / 86400);
+
+    // URL.
+    try {
+      $url = Url::fromRoute('entity.estimate_request.canonical', ['estimate_request' => $request_id])->toString();
+    }
+    catch (\Exception $e) {
+      $url = '/estimate_request/' . $request_id;
+    }
+
+    return new JsonResponse([
+      'success' => TRUE,
+      'new_status' => $label,
+      'new_status_slug' => $slug,
+      'request_id' => $request_id,
+      'client_name' => $client_name,
+      'property' => $property,
+      'services' => $this->getRequestServices($request_id),
+      'coordinator' => $coordinator,
+      'age_days' => $age_days,
+      'estimates' => $this->getRequestEstimatesSimple($request_id),
+      'prev_status_tid' => $prev_tid,
+      'prev_status_label' => $prev_tid ? self::PIPELINE_ORDER[$prev_tid] : NULL,
+      'next_status_tid' => $next_tid,
+      'next_status_label' => $next_tid ? self::PIPELINE_ORDER[$next_tid] : NULL,
+      'decline_tid' => self::DECLINED_TID,
+      'url' => $url,
+    ]);
   }
 
   // ── Helper methods ──────────────────────────────────────────────

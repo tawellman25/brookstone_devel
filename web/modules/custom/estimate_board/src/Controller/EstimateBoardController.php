@@ -64,6 +64,24 @@ class EstimateBoardController extends ControllerBase {
   }
 
   /**
+   * Renders the estimate_request add form inline.
+   */
+  public function newRequest(): array {
+    $entity = $this->entityTypeManager()
+      ->getStorage('estimate_request')
+      ->create(['type' => 'standard']);
+
+    $form = \Drupal::service('entity.form_builder')
+      ->getForm($entity, 'default');
+
+    return [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['estimate-board-new-request']],
+      'form' => $form,
+    ];
+  }
+
+  /**
    * Renders the Estimate Board dashboard.
    */
   public function board(): array {

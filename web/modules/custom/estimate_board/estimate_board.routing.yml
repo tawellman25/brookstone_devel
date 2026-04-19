@@ -8,6 +8,16 @@ estimate_board.board:
   options:
     _admin_route: TRUE
 
+estimate_board.new_request:
+  path: '/admin/office/estimates/new-request'
+  defaults:
+    _controller: '\Drupal\estimate_board\Controller\EstimateBoardController::newRequest'
+    _title: '+ New Request'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  options:
+    _admin_route: TRUE
+
 estimate_board.status_update:
   path: '/admin/office/estimates/status-update'
   defaults:

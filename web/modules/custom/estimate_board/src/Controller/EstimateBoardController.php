@@ -5,10 +5,9 @@ namespace Drupal\estimate_board\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Datetime\DateFormatterInterface;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -20,28 +19,38 @@ class EstimateBoardController extends ControllerBase {
   protected DateFormatterInterface $dateFormatter;
 
   /**
-   * Status TIDs to exclude from active pipeline.
+   * Terminal statuses excluded from active pipeline and follow-ups.
    */
   const CLOSED_STATUSES = [1657, 1658];
 
   /**
    * Active pipeline statuses in display order.
+   * Converted (1658) and Declined (1657) are excluded — they have their own tabs.
    */
   const PIPELINE_ORDER = [
     1652 => 'New',
     1653 => 'Needs Info',
-    1654 => 'Ready to Estimate',
-    1655 => 'Estimating In Progress',
-    1656 => 'Waiting on Client',
-    1658 => 'Converted',
-    1657 => 'Declined / Canceled',
+    1654 => 'Appointment Scheduled',
+    1655 => 'Estimating',
+    1810 => 'Estimate Sent',
+    1656 => 'Waiting on Customer',
   ];
+
+  /**
+   * Declined TID — passed to template for the ✕ button.
+   */
+  const DECLINED_TID = 1657;
 
   /**
    * Follow-up threshold in days.
    */
   const FOLLOWUP_DAYS = 5;
   const CRITICAL_DAYS = 10;
+
+  /**
+   * Closed estimate stage TIDs (Accepted, Declined).
+   */
+  const CLOSED_STAGES = [1418, 1419];
 
   public function __construct(Connection $database, DateFormatterInterface $date_formatter) {
     $this->database = $database;
@@ -65,6 +74,7 @@ class EstimateBoardController extends ControllerBase {
       '#pipeline' => $this->getPipeline(),
       '#workload' => $this->getWorkload(),
       '#activity' => $this->getRecentActivity(),
+      '#decline_tid' => self::DECLINED_TID,
       '#csrf_token' => \Drupal::csrfToken()->get('estimate_board_status_update'),
       '#attached' => [
         'library' => ['estimate_board/estimate_board'],
@@ -82,31 +92,25 @@ class EstimateBoardController extends ControllerBase {
     $now = new \DateTime('now', $site_tz);
     $threshold = (clone $now)->modify('-' . self::FOLLOWUP_DAYS . ' days')->getTimestamp();
 
-    // Get all active requests.
     $query = $this->database->select('estimate_request_field_data', 'er');
     $query->fields('er', ['id', 'title', 'changed']);
     $query->join('estimate_request__field_status', 'ers', 'ers.entity_id = er.id AND ers.deleted = 0');
     $query->condition('ers.field_status_target_id', self::CLOSED_STATUSES, 'NOT IN');
 
-    // Owner name.
     $query->leftJoin('estimate_request__field_owner', 'ero', 'ero.entity_id = er.id AND ero.deleted = 0');
     $query->leftJoin('users_field_data', 'ou', 'ou.uid = ero.field_owner_target_id');
     $query->addField('ou', 'name', 'owner_name');
 
-    // Requestor name fallback.
     $query->leftJoin('estimate_request__field_requestor_name', 'ern', 'ern.entity_id = er.id AND ern.deleted = 0');
     $query->addField('ern', 'field_requestor_name_value', 'requestor_name');
 
-    // Assigned estimator.
     $query->leftJoin('estimate_request__field_assigned_to', 'era', 'era.entity_id = er.id AND era.deleted = 0');
     $query->leftJoin('users_field_data', 'au', 'au.uid = era.field_assigned_to_target_id');
     $query->addField('au', 'name', 'assigned_name');
 
-    // Status label.
     $query->leftJoin('taxonomy_term_field_data', 'stterm', 'stterm.tid = ers.field_status_target_id');
     $query->addField('stterm', 'name', 'status_label');
 
-    // Property address.
     $query->leftJoin('estimate_request__field_property', 'erp', 'erp.entity_id = er.id AND erp.deleted = 0');
     $query->leftJoin('properties__field_nickname', 'pnick', 'pnick.entity_id = erp.field_property_target_id AND pnick.deleted = 0');
     $query->addField('pnick', 'field_nickname_value', 'property_name');
@@ -144,11 +148,9 @@ class EstimateBoardController extends ControllerBase {
         'last_action' => $last_action,
         'url' => $url,
         'severity' => $days >= self::CRITICAL_DAYS ? 'critical' : 'warning',
-        'estimates' => $this->getRequestEstimates((int) $row->id),
       ];
     }
 
-    // Sort by days since activity DESC.
     usort($followups, fn($a, $b) => $b['days'] <=> $a['days']);
 
     return $followups;
@@ -159,10 +161,13 @@ class EstimateBoardController extends ControllerBase {
    */
   protected function getPipeline(): array {
     $pipeline = [];
+    $order_keys = array_keys(self::PIPELINE_ORDER);
 
     foreach (self::PIPELINE_ORDER as $tid => $label) {
+      $now_ts = \Drupal::time()->getRequestTime();
+
       $query = $this->database->select('estimate_request_field_data', 'er');
-      $query->fields('er', ['id', 'title']);
+      $query->fields('er', ['id', 'title', 'created']);
       $query->join('estimate_request__field_status', 'ers', 'ers.entity_id = er.id AND ers.deleted = 0');
       $query->condition('ers.field_status_target_id', $tid);
 
@@ -173,10 +178,27 @@ class EstimateBoardController extends ControllerBase {
       $query->leftJoin('estimate_request__field_requestor_name', 'ern', 'ern.entity_id = er.id AND ern.deleted = 0');
       $query->addField('ern', 'field_requestor_name_value', 'requestor_name');
 
+      // Coordinator.
+      $query->leftJoin('estimate_request__field_assigned_to', 'era', 'era.entity_id = er.id AND era.deleted = 0');
+      $query->leftJoin('users_field_data', 'au', 'au.uid = era.field_assigned_to_target_id');
+      $query->addField('au', 'name', 'assigned_name');
+
+      // Property.
+      $query->leftJoin('estimate_request__field_property', 'erp', 'erp.entity_id = er.id AND erp.deleted = 0');
+      $query->leftJoin('properties__field_nickname', 'pnick', 'pnick.entity_id = erp.field_property_target_id AND pnick.deleted = 0');
+      $query->addField('pnick', 'field_nickname_value', 'property_name');
+
       $query->orderBy('er.changed', 'DESC');
       $results = $query->execute()->fetchAll();
 
-      $items = [];
+      // Compute prev/next status.
+      $current_index = array_search($tid, $order_keys);
+      $prev_tid = $current_index > 0 ? $order_keys[$current_index - 1] : NULL;
+      $next_tid = ($current_index !== FALSE && $current_index < count($order_keys) - 1) ? $order_keys[$current_index + 1] : NULL;
+      $prev_label = $prev_tid ? self::PIPELINE_ORDER[$prev_tid] : NULL;
+      $next_label = $next_tid ? self::PIPELINE_ORDER[$next_tid] : NULL;
+
+      $requests = [];
       foreach ($results as $row) {
         try {
           $url = Url::fromRoute('entity.estimate_request.canonical', ['estimate_request' => $row->id])->toString();
@@ -186,12 +208,22 @@ class EstimateBoardController extends ControllerBase {
         }
 
         $client = trim($row->owner_name ?? '') ?: trim($row->requestor_name ?? '') ?: 'Unknown';
-        $items[] = [
+        $age_days = (int) (($now_ts - (int) $row->created) / 86400);
+
+        $requests[] = [
           'id' => (int) $row->id,
           'title' => $row->title,
-          'client' => $client,
+          'client_name' => $client,
+          'property' => trim($row->property_name ?? '') ?: '',
+          'services' => $this->getRequestServices((int) $row->id),
+          'coordinator' => trim($row->assigned_name ?? '') ?: 'Unassigned',
+          'age_days' => $age_days,
           'url' => $url,
-          'estimates' => $this->getRequestEstimates((int) $row->id),
+          'estimates' => $this->getRequestEstimatesSimple((int) $row->id),
+          'prev_status_tid' => $prev_tid,
+          'prev_status_label' => $prev_label,
+          'next_status_tid' => $next_tid,
+          'next_status_label' => $next_label,
         ];
       }
 
@@ -201,8 +233,8 @@ class EstimateBoardController extends ControllerBase {
         'tid' => $tid,
         'label' => $label,
         'slug' => $slug,
-        'count' => count($items),
-        'items' => $items,
+        'count' => count($requests),
+        'requests' => $requests,
       ];
     }
 
@@ -210,26 +242,195 @@ class EstimateBoardController extends ControllerBase {
   }
 
   /**
-   * Closed estimate stage TIDs (Accepted, Declined).
+   * Returns simplified estimate data for pipeline rows (no stage info).
    */
-  const CLOSED_STAGES = [1418, 1419];
+  protected function getRequestEstimatesSimple(int $request_id): array {
+    static $bundle_info = NULL;
+    if ($bundle_info === NULL) {
+      $bundle_info = \Drupal::service('entity_type.bundle.info')->getBundleInfo('estimate');
+    }
+
+    $estimate_request = $this->entityTypeManager()
+      ->getStorage('estimate_request')
+      ->load($request_id);
+    if (!$estimate_request || $estimate_request->get('field_estimates')->isEmpty()) {
+      return [];
+    }
+
+    $estimate_ids = array_column(
+      $estimate_request->get('field_estimates')->getValue(),
+      'target_id'
+    );
+    if (empty($estimate_ids)) {
+      return [];
+    }
+
+    $estimates = $this->entityTypeManager()
+      ->getStorage('estimate')
+      ->loadMultiple($estimate_ids);
+
+    $rows = [];
+    foreach ($estimates as $estimate) {
+      $bundle = $estimate->bundle();
+      $label = $bundle_info[$bundle]['label'] ?? $bundle;
+
+      $total = '';
+      if ($estimate->hasField('field_estimate_total') && !$estimate->get('field_estimate_total')->isEmpty()) {
+        $total_value = (float) $estimate->get('field_estimate_total')->value;
+        if ($total_value > 0) {
+          $total = '$' . number_format($total_value, 2);
+        }
+      }
+
+      try {
+        $url = Url::fromRoute('entity.estimate.canonical', ['estimate' => $estimate->id()])->toString();
+      }
+      catch (\Exception $e) {
+        $url = '/estimate/' . $estimate->id();
+      }
+
+      $rows[] = [
+        'id' => (int) $estimate->id(),
+        'label' => (string) $label,
+        'total' => $total,
+        'url' => $url,
+      ];
+    }
+
+    return $rows;
+  }
+
+  /**
+   * Accepted tab: shows Converted requests and requests with accepted estimates.
+   */
+  public function acceptedTab(Request $request): array {
+    $days = (int) $request->query->get('days', 90);
+    $cutoff = \Drupal::time()->getRequestTime() - ($days * 86400);
+
+    $query = $this->database->select('estimate_request_field_data', 'er');
+    $query->fields('er', ['id', 'title', 'changed']);
+    $query->join('estimate_request__field_status', 'ers', 'ers.entity_id = er.id AND ers.deleted = 0');
+    $query->condition('ers.field_status_target_id', 1658); // Converted.
+    $query->condition('er.changed', $cutoff, '>=');
+
+    $query->leftJoin('estimate_request__field_owner', 'ero', 'ero.entity_id = er.id AND ero.deleted = 0');
+    $query->leftJoin('users_field_data', 'ou', 'ou.uid = ero.field_owner_target_id');
+    $query->addField('ou', 'name', 'owner_name');
+    $query->leftJoin('estimate_request__field_requestor_name', 'ern', 'ern.entity_id = er.id AND ern.deleted = 0');
+    $query->addField('ern', 'field_requestor_name_value', 'requestor_name');
+    $query->leftJoin('estimate_request__field_assigned_to', 'era', 'era.entity_id = er.id AND era.deleted = 0');
+    $query->leftJoin('users_field_data', 'au', 'au.uid = era.field_assigned_to_target_id');
+    $query->addField('au', 'name', 'assigned_name');
+    $query->leftJoin('estimate_request__field_property', 'erp', 'erp.entity_id = er.id AND erp.deleted = 0');
+    $query->leftJoin('properties__field_nickname', 'pnick', 'pnick.entity_id = erp.field_property_target_id AND pnick.deleted = 0');
+    $query->addField('pnick', 'field_nickname_value', 'property_name');
+
+    $query->orderBy('er.changed', 'DESC');
+    $results = $query->execute()->fetchAll();
+
+    $rows = [];
+    foreach ($results as $row) {
+      try {
+        $url = Url::fromRoute('entity.estimate_request.canonical', ['estimate_request' => $row->id])->toString();
+      }
+      catch (\Exception $e) {
+        $url = '/estimate_request/' . $row->id;
+      }
+
+      $client = trim($row->owner_name ?? '') ?: trim($row->requestor_name ?? '') ?: 'Unknown';
+
+      $rows[] = [
+        'id' => (int) $row->id,
+        'client' => $client,
+        'property' => trim($row->property_name ?? '') ?: '',
+        'services' => $this->getRequestServices((int) $row->id),
+        'coordinator' => trim($row->assigned_name ?? '') ?: 'Unassigned',
+        'date' => $this->dateFormatter->format((int) $row->changed, 'short'),
+        'url' => $url,
+        'estimates' => $this->getRequestEstimatesSimple((int) $row->id),
+      ];
+    }
+
+    return [
+      '#theme' => 'estimate_board_accepted',
+      '#rows' => $rows,
+      '#days' => $days,
+      '#attached' => [
+        'library' => ['estimate_board/estimate_board'],
+      ],
+    ];
+  }
+
+  /**
+   * Declined tab: shows Declined requests.
+   */
+  public function declinedTab(Request $request): array {
+    $days = (int) $request->query->get('days', 90);
+    $cutoff = \Drupal::time()->getRequestTime() - ($days * 86400);
+
+    $query = $this->database->select('estimate_request_field_data', 'er');
+    $query->fields('er', ['id', 'title', 'changed']);
+    $query->join('estimate_request__field_status', 'ers', 'ers.entity_id = er.id AND ers.deleted = 0');
+    $query->condition('ers.field_status_target_id', 1657); // Declined.
+    $query->condition('er.changed', $cutoff, '>=');
+
+    $query->leftJoin('estimate_request__field_owner', 'ero', 'ero.entity_id = er.id AND ero.deleted = 0');
+    $query->leftJoin('users_field_data', 'ou', 'ou.uid = ero.field_owner_target_id');
+    $query->addField('ou', 'name', 'owner_name');
+    $query->leftJoin('estimate_request__field_requestor_name', 'ern', 'ern.entity_id = er.id AND ern.deleted = 0');
+    $query->addField('ern', 'field_requestor_name_value', 'requestor_name');
+    $query->leftJoin('estimate_request__field_assigned_to', 'era', 'era.entity_id = er.id AND era.deleted = 0');
+    $query->leftJoin('users_field_data', 'au', 'au.uid = era.field_assigned_to_target_id');
+    $query->addField('au', 'name', 'assigned_name');
+    $query->leftJoin('estimate_request__field_property', 'erp', 'erp.entity_id = er.id AND erp.deleted = 0');
+    $query->leftJoin('properties__field_nickname', 'pnick', 'pnick.entity_id = erp.field_property_target_id AND pnick.deleted = 0');
+    $query->addField('pnick', 'field_nickname_value', 'property_name');
+
+    $query->orderBy('er.changed', 'DESC');
+    $results = $query->execute()->fetchAll();
+
+    $rows = [];
+    foreach ($results as $row) {
+      try {
+        $url = Url::fromRoute('entity.estimate_request.canonical', ['estimate_request' => $row->id])->toString();
+      }
+      catch (\Exception $e) {
+        $url = '/estimate_request/' . $row->id;
+      }
+
+      $client = trim($row->owner_name ?? '') ?: trim($row->requestor_name ?? '') ?: 'Unknown';
+
+      $rows[] = [
+        'id' => (int) $row->id,
+        'client' => $client,
+        'property' => trim($row->property_name ?? '') ?: '',
+        'services' => $this->getRequestServices((int) $row->id),
+        'coordinator' => trim($row->assigned_name ?? '') ?: 'Unassigned',
+        'date' => $this->dateFormatter->format((int) $row->changed, 'short'),
+        'url' => $url,
+      ];
+    }
+
+    return [
+      '#theme' => 'estimate_board_declined',
+      '#rows' => $rows,
+      '#days' => $days,
+      '#attached' => [
+        'library' => ['estimate_board/estimate_board'],
+      ],
+    ];
+  }
 
   /**
    * Returns estimator workload summary.
-   *
-   * Counts estimate entities (not requests) grouped by estimate.field_assigned_to.
-   * Only counts active revision, excludes Accepted and Declined stages.
    */
   protected function getWorkload(): array {
     $query = $this->database->select('estimate_field_data', 'e');
     $query->addExpression('COUNT(e.id)', 'estimate_count');
-    // Only current revisions.
     $query->join('estimate__field_is_current_revision', 'icr', 'icr.entity_id = e.id AND icr.deleted = 0');
     $query->condition('icr.field_is_current_revision_value', 1);
-    // Exclude closed stages.
     $query->join('estimate__field_stage', 'es', 'es.entity_id = e.id AND es.deleted = 0');
     $query->condition('es.field_stage_target_id', self::CLOSED_STAGES, 'NOT IN');
-    // Estimator assignment.
     $query->leftJoin('estimate__field_assigned_to', 'ea', 'ea.entity_id = e.id AND ea.deleted = 0');
     $query->leftJoin('users_field_data', 'au', 'au.uid = ea.field_assigned_to_target_id');
     $query->addField('au', 'uid', 'estimator_uid');
@@ -261,29 +462,17 @@ class EstimateBoardController extends ControllerBase {
 
     $query = $this->database->select('estimate_action_log_field_data', 'eal');
     $query->fields('eal', ['id', 'created', 'uid', 'type']);
-
     $query->condition('eal.created', $cutoff, '>=');
-
-    // Action.
     $query->leftJoin('estimate_action_log__field_action', 'fa', 'fa.entity_id = eal.id AND fa.deleted = 0');
     $query->addField('fa', 'field_action_value', 'action');
-
-    // Context.
     $query->leftJoin('estimate_action_log__field_context', 'fc', 'fc.entity_id = eal.id AND fc.deleted = 0');
     $query->addField('fc', 'field_context_value', 'context');
-
-    // User name.
     $query->leftJoin('users_field_data', 'u', 'u.uid = eal.uid');
     $query->addField('u', 'name', 'user_name');
-
-    // Estimate reference (log bundle).
     $query->leftJoin('estimate_action_log__field_estimate', 'fe', 'fe.entity_id = eal.id AND fe.deleted = 0');
     $query->addField('fe', 'field_estimate_target_id', 'estimate_id');
-
-    // Request reference (request_log bundle).
     $query->leftJoin('estimate_action_log__field_request', 'fr', 'fr.entity_id = eal.id AND fr.deleted = 0');
     $query->addField('fr', 'field_request_target_id', 'request_id');
-
     $query->orderBy('eal.created', 'DESC');
     $query->range(0, 15);
 
@@ -291,15 +480,11 @@ class EstimateBoardController extends ControllerBase {
     foreach ($query->execute()->fetchAll() as $row) {
       $url = '';
       if (!empty($row->request_id)) {
-        try {
-          $url = Url::fromRoute('entity.estimate_request.canonical', ['estimate_request' => $row->request_id])->toString();
-        }
+        try { $url = Url::fromRoute('entity.estimate_request.canonical', ['estimate_request' => $row->request_id])->toString(); }
         catch (\Exception $e) {}
       }
       elseif (!empty($row->estimate_id)) {
-        try {
-          $url = Url::fromRoute('entity.estimate.canonical', ['estimate' => $row->estimate_id])->toString();
-        }
+        try { $url = Url::fromRoute('entity.estimate.canonical', ['estimate' => $row->estimate_id])->toString(); }
         catch (\Exception $e) {}
       }
 
@@ -317,8 +502,51 @@ class EstimateBoardController extends ControllerBase {
   }
 
   /**
-   * Returns the timestamp of the most recent action log entry for a request.
+   * AJAX status update endpoint. Returns JSON.
    */
+  public function statusUpdate(Request $request): JsonResponse {
+    // Support both JSON body and form POST.
+    $content_type = $request->headers->get('Content-Type', '');
+    if (str_contains($content_type, 'application/json')) {
+      $data = json_decode($request->getContent(), TRUE) ?? [];
+      $request_id = (int) ($data['estimate_request_id'] ?? 0);
+      $new_status = (int) ($data['new_status_tid'] ?? 0);
+    }
+    else {
+      $request_id = (int) $request->request->get('request_id', 0);
+      $new_status = (int) $request->request->get('new_status', 0);
+    }
+
+    // Validate CSRF — check token from header or POST body.
+    $token = $request->headers->get('X-CSRF-Token')
+      ?: $request->request->get('token', '');
+    if (!$token || !\Drupal::csrfToken()->validate($token, 'estimate_board_status_update')) {
+      return new JsonResponse(['success' => FALSE, 'error' => 'Invalid token.'], 403);
+    }
+
+    $all_statuses = array_keys(self::PIPELINE_ORDER) + [self::DECLINED_TID];
+    if (!$request_id || !in_array($new_status, $all_statuses, TRUE)) {
+      return new JsonResponse(['success' => FALSE, 'error' => 'Invalid request or status.'], 400);
+    }
+
+    $estimate_request = $this->entityTypeManager()
+      ->getStorage('estimate_request')->load($request_id);
+    if (!$estimate_request) {
+      return new JsonResponse(['success' => FALSE, 'error' => 'Request not found.'], 404);
+    }
+
+    $estimate_request->set('field_status', ['target_id' => $new_status]);
+    $estimate_request->save();
+
+    $term = $this->entityTypeManager()
+      ->getStorage('taxonomy_term')->load($new_status);
+    $label = $term ? $term->label() : (string) $new_status;
+
+    return new JsonResponse(['success' => TRUE, 'new_status' => $label]);
+  }
+
+  // ── Helper methods ──────────────────────────────────────────────
+
   protected function getLastActivityTimestamp(int $request_id, int $fallback_changed): int {
     $result = $this->database->select('estimate_action_log_field_data', 'eal')
       ->fields('eal', ['created'])
@@ -328,13 +556,9 @@ class EstimateBoardController extends ControllerBase {
     $result->orderBy('eal.created', 'DESC');
     $result->range(0, 1);
     $ts = $result->execute()->fetchField();
-
     return $ts ? (int) $ts : $fallback_changed;
   }
 
-  /**
-   * Returns a human-readable description of the last action on a request.
-   */
   protected function getLastActionDescription(int $request_id): string {
     $query = $this->database->select('estimate_action_log_field_data', 'eal');
     $query->fields('eal', ['created']);
@@ -347,18 +571,10 @@ class EstimateBoardController extends ControllerBase {
     $query->addField('fc', 'field_context_value', 'context');
     $query->orderBy('eal.created', 'DESC');
     $query->range(0, 1);
-
     $row = $query->execute()->fetch();
-    if (!$row) {
-      return '';
-    }
-
-    return trim($row->context ?? $row->action ?? '');
+    return $row ? trim($row->context ?? $row->action ?? '') : '';
   }
 
-  /**
-   * Returns comma-separated service names for an estimate request.
-   */
   protected function getRequestServices(int $request_id): string {
     $query = $this->database->select('estimate_request__field_service', 'esvc');
     $query->condition('esvc.entity_id', $request_id);
@@ -366,146 +582,7 @@ class EstimateBoardController extends ControllerBase {
     $query->join('taxonomy_term_field_data', 'svc', 'svc.tid = esvc.field_service_target_id');
     $query->addField('svc', 'name');
     $query->orderBy('svc.name');
-    $names = $query->execute()->fetchCol();
-    return implode(', ', $names);
-  }
-
-  /**
-   * Returns nested estimate data for an estimate_request.
-   *
-   * For each estimate referenced by field_estimates, returns an array with
-   * label, stage, stage_key, total, and url for template rendering.
-   *
-   * @param int $request_id
-   *   The estimate_request entity ID.
-   *
-   * @return array
-   *   List of estimate row arrays. Empty array if request has no estimates.
-   */
-  protected function getRequestEstimates(int $request_id): array {
-    static $bundle_info = NULL;
-    static $stage_options = NULL;
-    if ($bundle_info === NULL) {
-      $bundle_info = \Drupal::service('entity_type.bundle.info')->getBundleInfo('estimate');
-    }
-    if ($stage_options === NULL) {
-      $stage_options = [];
-      $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadTree('estimate_stage', 0, NULL, TRUE);
-      foreach ($terms as $term) {
-        $stage_options[] = [
-          'tid' => (int) $term->id(),
-          'label' => (string) $term->label(),
-        ];
-      }
-    }
-
-    $estimate_request = $this->entityTypeManager()
-      ->getStorage('estimate_request')
-      ->load($request_id);
-    if (!$estimate_request || $estimate_request->get('field_estimates')->isEmpty()) {
-      return [];
-    }
-
-    $estimate_ids = array_column(
-      $estimate_request->get('field_estimates')->getValue(),
-      'target_id'
-    );
-    if (empty($estimate_ids)) {
-      return [];
-    }
-
-    $estimates = $this->entityTypeManager()
-      ->getStorage('estimate')
-      ->loadMultiple($estimate_ids);
-
-    $rows = [];
-    foreach ($estimates as $estimate) {
-      $bundle = $estimate->bundle();
-      $label = $bundle_info[$bundle]['label'] ?? $bundle;
-
-      // Stage label, TID, and CSS key.
-      $stage_name = '';
-      $stage_key = '';
-      $stage_tid = 0;
-      if ($estimate->hasField('field_stage') && !$estimate->get('field_stage')->isEmpty()) {
-        $stage_tid = (int) $estimate->get('field_stage')->target_id;
-        $stage_term = $estimate->get('field_stage')->entity;
-        if ($stage_term) {
-          $stage_name = (string) $stage_term->label();
-          $stage_key = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $stage_name));
-          $stage_key = trim($stage_key, '-');
-        }
-      }
-
-      // Total — only show if non-zero.
-      $total = '';
-      if ($estimate->hasField('field_estimate_total') && !$estimate->get('field_estimate_total')->isEmpty()) {
-        $total_value = (float) $estimate->get('field_estimate_total')->value;
-        if ($total_value > 0) {
-          $total = '$' . number_format($total_value, 2);
-        }
-      }
-
-      // Canonical URL.
-      try {
-        $url = Url::fromRoute('entity.estimate.canonical', ['estimate' => $estimate->id()])->toString();
-      }
-      catch (\Exception $e) {
-        $url = '/estimate/' . $estimate->id();
-      }
-
-      $rows[] = [
-        'id' => (int) $estimate->id(),
-        'label' => (string) $label,
-        'stage' => $stage_name ?: '—',
-        'stage_key' => $stage_key,
-        'stage_tid' => $stage_tid,
-        'stage_options' => $stage_options,
-        'total' => $total,
-        'url' => $url,
-      ];
-    }
-
-    return $rows;
-  }
-
-  /**
-   * Handles quick status update from the Needs Follow-Up table.
-   */
-  public function statusUpdate(Request $request): RedirectResponse {
-    $token = $request->request->get('token');
-    if (!\Drupal::csrfToken()->validate($token, 'estimate_board_status_update')) {
-      \Drupal::messenger()->addError('Invalid form token. Please try again.');
-      return new RedirectResponse('/admin/office/estimates');
-    }
-
-    $request_id = (int) $request->request->get('request_id');
-    $new_status = (int) $request->request->get('new_status');
-
-    $allowed_statuses = [1652, 1653, 1654, 1655, 1656, 1657];
-    if (!$request_id || !in_array($new_status, $allowed_statuses, TRUE)) {
-      \Drupal::messenger()->addError('Invalid status selection.');
-      return new RedirectResponse('/admin/office/estimates');
-    }
-
-    $estimate_request = \Drupal::entityTypeManager()
-      ->getStorage('estimate_request')->load($request_id);
-    if (!$estimate_request) {
-      \Drupal::messenger()->addError('Estimate request not found.');
-      return new RedirectResponse('/admin/office/estimates');
-    }
-
-    $estimate_request->set('field_status', $new_status);
-    $estimate_request->save();
-
-    $term = \Drupal::entityTypeManager()
-      ->getStorage('taxonomy_term')->load($new_status);
-    $label = $term ? $term->label() : (string) $new_status;
-    \Drupal::messenger()->addStatus(
-      t('Status updated to @status.', ['@status' => $label])
-    );
-
-    return new RedirectResponse('/admin/office/estimates');
+    return implode(', ', $query->execute()->fetchCol());
   }
 
 }

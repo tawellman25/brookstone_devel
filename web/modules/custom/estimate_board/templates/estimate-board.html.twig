@@ -19,7 +19,6 @@
           <th>Coordinator</th>
           <th>Days</th>
           <th>Last Action</th>
-          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -32,48 +31,7 @@
             <td>{{ item.assigned }}</td>
             <td><strong>{{ item.days }}d</strong></td>
             <td>{{ item.last_action ?: '—' }}</td>
-            <td>
-              <form method="post" action="/admin/office/estimates/status-update" class="estimate-board-status-form">
-                <input type="hidden" name="request_id" value="{{ item.id }}">
-                <input type="hidden" name="token" value="{{ csrf_token }}">
-                <select name="new_status" class="estimate-board-status-select">
-                  <option value="">— Change —</option>
-                  <option value="1652">New</option>
-                  <option value="1653">Needs Info</option>
-                  <option value="1654">Ready to Estimate</option>
-                  <option value="1655">Estimating</option>
-                  <option value="1656">Waiting on Client</option>
-                  <option value="1657">Declined / Canceled</option>
-                </select>
-                <button type="submit" class="button button--small">Go</button>
-              </form>
-            </td>
           </tr>
-          {% if item.estimates %}
-            <tr class="estimate-board-estimates-row">
-              <td colspan="8">
-                <ul class="estimate-board-estimates-sublist">
-                  {% for estimate in item.estimates %}
-                    <li class="estimate-board-estimate-row">
-                      <span class="estimate-stage-badge stage-{{ estimate.stage_key }}">{{ estimate.stage }}</span>
-                      <button type="button" class="estimate-stage-toggle" aria-label="Change stage" title="Change stage">▾</button>
-                      <a href="{{ estimate.url }}" target="_blank">{{ estimate.label }} - Estimate</a>
-                      {% if estimate.total %}— {{ estimate.total }}{% endif %}
-                      <span class="estimate-inline-stage-widget" hidden>
-                        <select class="estimate-inline-stage-select" data-estimate-id="{{ estimate.id }}" data-canonical-url="{{ estimate.url }}">
-                          {% for option in estimate.stage_options %}
-                            <option value="{{ option.tid }}"{% if option.tid == estimate.stage_tid %} selected{% endif %}>{{ option.label }}</option>
-                          {% endfor %}
-                        </select>
-                        <button type="button" class="estimate-inline-stage-save button button--small">Save</button>
-                        <button type="button" class="estimate-inline-stage-cancel button button--small">Cancel</button>
-                      </span>
-                    </li>
-                  {% endfor %}
-                </ul>
-              </td>
-            </tr>
-          {% endif %}
         {% endfor %}
       </tbody>
     </table>
@@ -85,7 +43,7 @@
 {# ── Section 2: Pipeline Swimlanes (one per status) ────────────── #}
 {% for group in pipeline %}
   <div class="estimate-board-section estimate-board-swimlane estimate-board-swimlane--{{ group.slug }}">
-    <details {% if group.count > 0 and group.slug not in ['converted', 'declined-canceled'] %}open{% endif %}>
+    <details {% if group.count > 0 %}open{% endif %}>
       <summary class="estimate-board-section__title">
         {{ group.label }}
         <span class="estimate-board-badge estimate-board-badge--{{ group.slug }}{% if group.count == 0 %} estimate-board-badge--empty{% endif %}">
@@ -94,36 +52,79 @@
       </summary>
 
       {% if group.count == 0 %}
-        <p class="estimate-board-empty">No requests in this status.</p>
+        <p class="estimate-board-empty">No requests.</p>
       {% else %}
-        <ul class="pipeline-list">
-          {% for item in group.items %}
-            <li>
-              <a href="{{ item.url }}" target="_blank">{{ item.client }}</a> — {{ item.title }}
-              {% if item.estimates %}
-                <ul class="estimate-board-estimates-sublist">
-                  {% for estimate in item.estimates %}
-                    <li class="estimate-board-estimate-row">
-                      <span class="estimate-stage-badge stage-{{ estimate.stage_key }}">{{ estimate.stage }}</span>
-                      <button type="button" class="estimate-stage-toggle" aria-label="Change stage" title="Change stage">▾</button>
-                      <a href="{{ estimate.url }}" target="_blank">{{ estimate.label }} - Estimate</a>
-                      {% if estimate.total %}— {{ estimate.total }}{% endif %}
-                      <span class="estimate-inline-stage-widget" hidden>
-                        <select class="estimate-inline-stage-select" data-estimate-id="{{ estimate.id }}" data-canonical-url="{{ estimate.url }}">
-                          {% for option in estimate.stage_options %}
-                            <option value="{{ option.tid }}"{% if option.tid == estimate.stage_tid %} selected{% endif %}>{{ option.label }}</option>
-                          {% endfor %}
-                        </select>
-                        <button type="button" class="estimate-inline-stage-save button button--small">Save</button>
-                        <button type="button" class="estimate-inline-stage-cancel button button--small">Cancel</button>
-                      </span>
-                    </li>
-                  {% endfor %}
-                </ul>
-              {% endif %}
-            </li>
-          {% endfor %}
-        </ul>
+        <table class="estimate-board-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Property</th>
+              <th>Services</th>
+              <th>Coordinator</th>
+              <th>Age</th>
+              <th>Estimates</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for request in group.requests %}
+            <tr class="estimate-board-request-row" data-request-id="{{ request.id }}">
+              <td>
+                <a href="{{ request.url }}" target="_blank">{{ request.client_name }}</a>
+              </td>
+              <td>{{ request.property }}</td>
+              <td>{{ request.services }}</td>
+              <td>{{ request.coordinator }}</td>
+              <td class="{% if request.age_days > 7 %}estimate-board-age--warning{% endif %}">
+                {{ request.age_days }}d
+              </td>
+              <td class="estimate-board-estimates-cell">
+                {% for est in request.estimates %}
+                  <a href="{{ est.url }}" target="_blank" class="estimate-board-est-link">
+                    {{ est.label }}
+                    {% if est.total %}
+                      <span class="estimate-board-est-total">{{ est.total }}</span>
+                    {% endif %}
+                  </a>
+                {% endfor %}
+              </td>
+              <td class="estimate-board-actions-cell">
+                {% if request.prev_status_tid %}
+                  <button type="button"
+                    class="estimate-board-status-btn estimate-board-status-btn--back"
+                    data-request-id="{{ request.id }}"
+                    data-status-tid="{{ request.prev_status_tid }}"
+                    data-status-label="{{ request.prev_status_label }}"
+                    title="Move back to: {{ request.prev_status_label }}">
+                    ← Back
+                  </button>
+                {% endif %}
+
+                {% if request.next_status_tid %}
+                  <button type="button"
+                    class="estimate-board-status-btn estimate-board-status-btn--next estimate-board-status-btn--{{ group.slug }}"
+                    data-request-id="{{ request.id }}"
+                    data-status-tid="{{ request.next_status_tid }}"
+                    data-status-label="{{ request.next_status_label }}"
+                    title="Advance to: {{ request.next_status_label }}">
+                    {{ request.next_status_label }} →
+                  </button>
+                {% endif %}
+
+                <button type="button"
+                  class="estimate-board-status-btn estimate-board-status-btn--decline"
+                  data-request-id="{{ request.id }}"
+                  data-status-tid="{{ decline_tid }}"
+                  data-status-label="Declined"
+                  data-confirm="Mark this estimate request as Declined?"
+                  title="Decline">
+                  ✕
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       {% endif %}
     </details>
   </div>
@@ -137,7 +138,7 @@
       <thead>
         <tr>
           <th>Estimator</th>
-          <th>Active Requests</th>
+          <th>Active Estimates</th>
         </tr>
       </thead>
       <tbody>

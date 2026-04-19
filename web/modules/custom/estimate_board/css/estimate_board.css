@@ -45,12 +45,11 @@
   text-decoration: underline;
 }
 
-/* === Estimate Board Swimlanes === */
+/* === Swimlanes === */
 .estimate-board-swimlane {
   border-left: 4px solid #dee2e6;
   margin-bottom: 24px;
 }
-
 .estimate-board-swimlane details {
   width: 100%;
 }
@@ -85,48 +84,52 @@
   padding-top: 8px;
 }
 
-.estimate-board-swimlane .pipeline-list {
-  padding: 0.5rem 1rem;
-  margin: 0;
-  list-style: none;
+/* Swimlane tables */
+.estimate-board-table {
+  width: 100%;
+  border-collapse: collapse;
 }
-.estimate-board-swimlane .pipeline-list li {
-  padding: 0.3rem 0;
-  border-bottom: 1px solid #f0f0f0;
+.estimate-board-table th,
+.estimate-board-table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #eee;
+  text-align: left;
   font-size: 0.85rem;
 }
-.estimate-board-swimlane .pipeline-list a {
+.estimate-board-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+.estimate-board-table a {
   color: #1a5276;
   text-decoration: none;
 }
-.estimate-board-swimlane .pipeline-list a:hover {
+.estimate-board-table a:hover {
   text-decoration: underline;
 }
 
 /* Per-status border colors */
 .estimate-board-swimlane--new                    { border-left-color: #0d6efd; }
 .estimate-board-swimlane--needs-info             { border-left-color: #fd7e14; }
-.estimate-board-swimlane--ready-to-estimate      { border-left-color: #ffc107; }
-.estimate-board-swimlane--estimating-in-progress { border-left-color: #6f42c1; }
-.estimate-board-swimlane--waiting-on-client      { border-left-color: #0dcaf0; }
-.estimate-board-swimlane--converted              { border-left-color: #198754; }
-.estimate-board-swimlane--declined-canceled      { border-left-color: #dc3545; }
+.estimate-board-swimlane--appointment-scheduled  { border-left-color: #0dcaf0; }
+.estimate-board-swimlane--estimating             { border-left-color: #6f42c1; }
+.estimate-board-swimlane--estimate-sent          { border-left-color: #ffc107; }
+.estimate-board-swimlane--waiting-on-customer    { border-left-color: #6c757d; }
 
 /* Per-status badge colors */
 .estimate-board-badge--new                    { background: #0d6efd; color: #fff; }
 .estimate-board-badge--needs-info             { background: #fd7e14; color: #fff; }
-.estimate-board-badge--ready-to-estimate      { background: #ffc107; color: #000; }
-.estimate-board-badge--estimating-in-progress { background: #6f42c1; color: #fff; }
-.estimate-board-badge--waiting-on-client      { background: #0dcaf0; color: #000; }
-.estimate-board-badge--converted              { background: #198754; color: #fff; }
-.estimate-board-badge--declined-canceled      { background: #dc3545; color: #fff; }
+.estimate-board-badge--appointment-scheduled  { background: #0dcaf0; color: #000; }
+.estimate-board-badge--estimating             { background: #6f42c1; color: #fff; }
+.estimate-board-badge--estimate-sent          { background: #ffc107; color: #000; }
+.estimate-board-badge--waiting-on-customer    { background: #6c757d; color: #fff; }
 
 /* Empty badge */
 .estimate-board-badge--empty {
   background: #dee2e6;
   color: #6c757d;
 }
-/* === End Estimate Board Swimlanes === */
+/* === End Swimlanes === */
 
 /* ── Badge ─────────────────────────────────────────────────────── */
 .estimate-board-badge {
@@ -191,186 +194,96 @@
 }
 
 /* ── Empty state ───────────────────────────────────────────────── */
-/* ── Status change form ─────────────────────────────────────────── */
-.estimate-board-status-form {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  white-space: nowrap;
-}
-.estimate-board-status-form select {
-  font-size: 0.8rem;
-  padding: 2px 4px;
-}
-.estimate-board-status-form button {
-  font-size: 0.8rem;
-  padding: 2px 8px;
-}
-
-/* ── Empty state ───────────────────────────────────────────────── */
 .estimate-board-empty {
   padding: 1rem;
   color: #999;
   font-style: italic;
 }
 
-/* ── Nested estimates (Needs Follow-Up) ────────────────────────── */
-.estimate-board-estimates-row td {
-  border-top: none;
-  background: #f9f9f9;
-  padding: 0.4rem 0.8rem;
-}
-.estimate-board-needs-followup tr.overdue-critical + .estimate-board-estimates-row td,
-.estimate-board-needs-followup tr.overdue-warning + .estimate-board-estimates-row td {
-  background: #f9f9f9;
-}
-.estimate-board-estimates-details summary {
-  cursor: pointer;
-  font-size: 0.85em;
-  color: #666;
-  padding: 2px 0;
-}
-.estimate-board-estimates-details summary:hover {
-  color: #1a5276;
-}
-.estimate-board-estimates-list {
-  list-style: none;
-  margin: 0;
-  padding: 4px 0;
-}
-.estimate-board-estimates-list li {
-  padding: 3px 8px;
-  font-size: 0.85em;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-a.estimate-bundle-label {
-  font-weight: 500;
-  color: #1a5276;
-  text-decoration: none;
-}
-a.estimate-bundle-label:hover {
-  text-decoration: underline;
-}
-.estimate-total {
-  color: #155724;
-  font-weight: 600;
-}
-
-/* ── Nested estimates (Pipeline sublist) ──────────────────────── */
-.estimate-board-estimates-sublist {
-  list-style: none;
-  margin: 4px 0 0 12px;
-  padding: 0;
-}
-.estimate-board-estimates-sublist li {
-  font-size: 0.95em;
-  color: #555;
-  padding: 2px 0;
-  border-bottom: none;
-}
-
-/* ── Stage badges ──────────────────────────────────────────────── */
-.estimate-stage-badge {
-  display: inline-block;
-  padding: 1px 6px;
-  border-radius: 3px;
-  font-size: 0.75em;
-  font-weight: 600;
+/* === Action Buttons === */
+.estimate-board-actions-cell {
   white-space: nowrap;
-}
-.estimate-stage-badge.stage-accepted {
-  background: #d4edda;
-  color: #155724;
-}
-.estimate-stage-badge.stage-declined {
-  background: #f8d7da;
-  color: #721c24;
-}
-.estimate-stage-badge.stage-estimating,
-.estimate-stage-badge.stage-estimating-in-progress {
-  background: #fff3cd;
-  color: #856404;
-}
-.estimate-stage-badge.stage-in-preparation {
-  background: #d1ecf1;
-  color: #0c5460;
-}
-.estimate-stage-badge.stage-new {
-  background: #e2e3e5;
-  color: #383d41;
-}
-.estimate-stage-badge.stage-pending,
-.estimate-stage-badge.stage-waiting-on-client,
-.estimate-stage-badge.stage-under-review,
-.estimate-stage-badge.stage-client-feedback {
-  background: #ffeeba;
-  color: #856404;
-}
-
-/* === Inline Stage Widget === */
-.estimate-board-estimate-row {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.estimate-stage-toggle {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.75rem;
-  color: #6c757d;
-  padding: 0 2px;
-  line-height: 1;
-}
-.estimate-stage-toggle:hover {
-  color: #343a40;
-}
-
-.estimate-inline-stage-widget {
-  display: inline-flex;
-  align-items: center;
   gap: 4px;
+  align-items: center;
+}
+.estimate-board-status-btn {
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.15s;
+  color: #fff;
+}
+.estimate-board-status-btn:hover { opacity: 0.85; }
+.estimate-board-status-btn:disabled { opacity: 0.4; cursor: wait; }
+
+.estimate-board-status-btn--back {
+  background: #e9ecef;
+  color: #495057;
+}
+.estimate-board-status-btn--next {
+  background: #0d6efd;
+}
+
+/* Per-swimlane next button colors */
+.estimate-board-status-btn--new { background: #0d6efd; }
+.estimate-board-status-btn--needs-info { background: #fd7e14; }
+.estimate-board-status-btn--appointment-scheduled { background: #0dcaf0; color: #000; }
+.estimate-board-status-btn--estimating { background: #6f42c1; }
+.estimate-board-status-btn--estimate-sent { background: #ffc107; color: #000; }
+.estimate-board-status-btn--waiting-on-customer { background: #6c757d; }
+
+.estimate-board-status-btn--decline {
+  background: none;
+  border: 1px solid #dc3545;
+  color: #dc3545;
+  padding: 4px 8px;
+}
+.estimate-board-status-btn--decline:hover {
+  background: #dc3545;
+  color: #fff;
+}
+
+/* === Estimates Cell === */
+.estimate-board-estimates-cell {
+  font-size: 0.82rem;
+}
+.estimate-board-est-link {
+  display: block;
+  color: #0d6efd;
+  text-decoration: none;
+  line-height: 1.6;
+}
+.estimate-board-est-link:hover { text-decoration: underline; }
+.estimate-board-est-total {
+  color: #198754;
+  font-weight: 600;
   margin-left: 4px;
 }
-.estimate-inline-stage-widget[hidden] {
-  display: none;
+
+/* === Age warning === */
+.estimate-board-age--warning {
+  color: #dc3545;
+  font-weight: 700;
 }
 
-.estimate-inline-stage-select {
-  font-size: 0.8rem;
-  padding: 2px 4px;
-  border-radius: 4px;
-  border: 1px solid #ced4da;
-  max-width: 160px;
+/* === Date filter (Accepted/Declined tabs) === */
+.estimate-board-date-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
 }
-
-.estimate-inline-stage-save,
-.estimate-inline-stage-cancel {
-  font-size: 0.75rem;
-  padding: 2px 8px;
-}
-.estimate-inline-stage-save {
-  background: #198754;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.estimate-inline-stage-save:hover {
-  background: #146c43;
-}
-.estimate-inline-stage-cancel {
-  background: none;
+.estimate-board-date-filter select {
+  padding: 4px 8px;
   border: 1px solid #ced4da;
   border-radius: 4px;
-  cursor: pointer;
-  color: #6c757d;
+  font-size: 0.85rem;
 }
-/* === End Inline Stage Widget === */
 
 /* === Filter Bar === */
 .estimate-board-filter-bar {

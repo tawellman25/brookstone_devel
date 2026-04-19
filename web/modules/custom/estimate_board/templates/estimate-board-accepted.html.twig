@@ -1,0 +1,51 @@
+{# Accepted Estimates tab #}
+<div class="estimate-board-section estimate-board-accepted-tab">
+  <div class="estimate-board-date-filter">
+    <label for="accepted-days-filter">Show last:</label>
+    <select id="accepted-days-filter" onchange="window.location.search='?days='+this.value">
+      <option value="30"{% if days == 30 %} selected{% endif %}>30 days</option>
+      <option value="90"{% if days == 90 %} selected{% endif %}>90 days</option>
+      <option value="180"{% if days == 180 %} selected{% endif %}>6 months</option>
+      <option value="365"{% if days == 365 %} selected{% endif %}>1 year</option>
+      <option value="9999"{% if days == 9999 %} selected{% endif %}>All time</option>
+    </select>
+  </div>
+
+  {% if rows|length > 0 %}
+    <table class="estimate-board-table">
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Property</th>
+          <th>Services</th>
+          <th>Coordinator</th>
+          <th>Date</th>
+          <th>Estimates</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td><a href="{{ row.url }}" target="_blank">{{ row.client }}</a></td>
+            <td>{{ row.property }}</td>
+            <td>{{ row.services }}</td>
+            <td>{{ row.coordinator }}</td>
+            <td>{{ row.date }}</td>
+            <td class="estimate-board-estimates-cell">
+              {% for est in row.estimates %}
+                <a href="{{ est.url }}" target="_blank" class="estimate-board-est-link">
+                  {{ est.label }}
+                  {% if est.total %}
+                    <span class="estimate-board-est-total">{{ est.total }}</span>
+                  {% endif %}
+                </a>
+              {% endfor %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="estimate-board-empty">No accepted estimates in the selected period.</p>
+  {% endif %}
+</div>

@@ -18,3 +18,23 @@ estimate_board.status_update:
   methods: [POST]
   options:
     _admin_route: TRUE
+
+estimate_board.accepted:
+  path: '/admin/office/estimates/accepted'
+  defaults:
+    _controller: '\Drupal\estimate_board\Controller\EstimateBoardController::acceptedTab'
+    _title: 'Accepted'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  options:
+    _admin_route: TRUE
+
+estimate_board.declined:
+  path: '/admin/office/estimates/declined'
+  defaults:
+    _controller: '\Drupal\estimate_board\Controller\EstimateBoardController::declinedTab'
+    _title: 'Declined'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  options:
+    _admin_route: TRUE

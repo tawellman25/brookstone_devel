@@ -29,9 +29,9 @@ class EstimateBoardController extends ControllerBase {
    */
   const PIPELINE_ORDER = [
     1652 => 'New - Gathering Info',
-    1654 => 'Appointment Scheduled',
+    1654 => 'Ready to Estimate',
     1655 => 'Estimating',
-    1810 => 'Estimate Sent',
+    1810 => 'Send Estimate',
     1656 => 'Waiting on Customer',
   ];
 

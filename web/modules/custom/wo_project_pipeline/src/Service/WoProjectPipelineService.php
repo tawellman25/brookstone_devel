@@ -354,7 +354,7 @@ class WoProjectPipelineService {
         $container->set('uid', \Drupal::currentUser()->id());
         if ($container->hasField('field_scope_summary')
             && $container->get('field_scope_summary')->isEmpty()) {
-          $container->set('field_scope_summary', 'Client is requesting a Landscaping project. Please review and update this scope summary with specific project details.');
+          $container->set('field_scope_summary', $this->buildScopeSummary($estimate_request));
         }
         $container->save();
 
@@ -390,7 +390,7 @@ class WoProjectPipelineService {
         ->create($estimate_values);
       if ($estimate->hasField('field_scope_summary')
           && $estimate->get('field_scope_summary')->isEmpty()) {
-        $estimate->set('field_scope_summary', 'Client is requesting a Landscaping project. Please review and update this scope summary with specific project details.');
+        $estimate->set('field_scope_summary', $this->buildScopeSummary($estimate_request));
       }
       $estimate->save();
 
@@ -414,6 +414,21 @@ class WoProjectPipelineService {
     // Note: req_ keys are intentionally never unset — once a container
     // estimate is created (or attempted) for a request in this PHP process,
     // the guard prevents any further attempts for the same request.
+  }
+
+  /**
+   * Builds scope summary text from the estimate request's client_requested field.
+   */
+  protected function buildScopeSummary(EntityInterface $estimate_request): string {
+    $client_requested = '';
+    if ($estimate_request->hasField('field_client_requested')
+        && !$estimate_request->get('field_client_requested')->isEmpty()) {
+      $client_requested = trim(strip_tags((string) $estimate_request->get('field_client_requested')->value));
+    }
+    if ($client_requested !== '') {
+      return "CLIENT REQUEST (update after site visit):\n\n" . $client_requested;
+    }
+    return 'Update this scope summary after the site visit.';
   }
 
   /**

@@ -1078,6 +1078,9 @@ function _estimate_load_term_label(int $tid): string {
  * - owner_uid: property owner user ID
  */
 function estimate_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, string $form_id): void {
+  // Scope summary validation for estimate edit forms.
+  estimate_form_alter_estimate_scope($form, $form_state, $form_id);
+
   // Pre-fill field_property on estimate_request add form when ?property_id= is present.
   if ($form_id === 'estimate_request_standard_form') {
     $property_id = (int) \Drupal::request()->query->get('property_id', 0);
@@ -1226,6 +1229,82 @@ function _estimate_property_created_from_request_submit(array &$form, \Drupal\Co
 
   // Redirect back to the estimate request.
   $form_state->setRedirect('entity.estimate_request.canonical', ['estimate_request' => $er_id]);
+}
+
+/* --------------------------------------------------------------------------
+ * Scope Summary Validation — prevents advancing past "In Preparation"
+ * without a real scope summary.
+ * -------------------------------------------------------------------------- */
+
+/**
+ * Implements hook_form_FORM_ID_alter() pattern for estimate edit forms.
+ *
+ * Adds a validation handler that requires field_scope_summary to be filled
+ * with real content (not the auto-generated placeholder) before the estimate
+ * stage can advance past "In Preparation".
+ */
+function estimate_form_alter_estimate_scope(&$form, \Drupal\Core\Form\FormStateInterface $form_state, string $form_id): void {
+  // Only target estimate edit forms (estimate_{bundle}_edit_form).
+  if (!str_starts_with($form_id, 'estimate_') || !str_ends_with($form_id, '_edit_form')) {
+    return;
+  }
+  // Exclude estimate_request, estimate_items, etc.
+  if (str_starts_with($form_id, 'estimate_request_')
+      || str_starts_with($form_id, 'estimate_items_')
+      || str_starts_with($form_id, 'estimate_notes_')
+      || str_starts_with($form_id, 'estimate_action_log_')
+      || str_starts_with($form_id, 'estimate_tasks_')
+      || str_starts_with($form_id, 'estimate_board_')) {
+    return;
+  }
+  // Only if the form has both fields.
+  if (!isset($form['field_scope_summary']) || !isset($form['field_stage'])) {
+    return;
+  }
+  $form['#validate'][] = '_estimate_scope_summary_validate';
+}
+
+/**
+ * Validation handler: scope summary must have real content for advanced stages.
+ */
+function _estimate_scope_summary_validate(array $form, \Drupal\Core\Form\FormStateInterface $form_state): void {
+  $requires_scope_tids = [1420, 1416, 1421, 1417, 1418];
+
+  $stage_value = $form_state->getValue('field_stage');
+  $stage_tid = (int) ($stage_value[0]['target_id'] ?? 0);
+
+  if (!in_array($stage_tid, $requires_scope_tids, TRUE)) {
+    return;
+  }
+
+  $scope_value = $form_state->getValue('field_scope_summary');
+  $scope = trim(strip_tags($scope_value[0]['value'] ?? ''));
+
+  if (_estimate_scope_is_placeholder($scope)) {
+    $form_state->setErrorByName('field_scope_summary',
+      t('Scope Summary must be updated with specific project details before advancing past "In Preparation". Replace the placeholder text with a description of the actual work to be done at this property.')
+    );
+  }
+}
+
+/**
+ * Checks if scope text is empty or still contains placeholder text.
+ */
+function _estimate_scope_is_placeholder(string $scope): bool {
+  if ($scope === '') {
+    return TRUE;
+  }
+  $placeholders = [
+    'CLIENT REQUEST (update after site visit)',
+    'Update this scope summary after the site visit.',
+    'Client is requesting a Landscaping project. Please review and update',
+  ];
+  foreach ($placeholders as $p) {
+    if (str_starts_with($scope, $p)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 /**

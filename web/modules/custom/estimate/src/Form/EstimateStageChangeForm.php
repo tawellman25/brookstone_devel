@@ -86,6 +86,28 @@ final class EstimateStageChangeForm extends FormBase {
     return $form;
   }
 
+  public function validateForm(array &$form, FormStateInterface $form_state): void {
+    $requires_scope_tids = [1420, 1416, 1421, 1417, 1418];
+    $new_stage_tid = (int) $form_state->getValue('stage');
+
+    if (!in_array($new_stage_tid, $requires_scope_tids, TRUE)) {
+      return;
+    }
+
+    $estimate_id = (int) $form_state->getValue('estimate_id');
+    $estimate = $this->entityTypeManager->getStorage('estimate')->load($estimate_id);
+    if (!$estimate || !$estimate->hasField('field_scope_summary')) {
+      return;
+    }
+
+    $scope = trim(strip_tags($estimate->get('field_scope_summary')->value ?? ''));
+    if (_estimate_scope_is_placeholder($scope)) {
+      $form_state->setErrorByName('stage',
+        $this->t('Scope Summary must be updated with specific project details before advancing past "In Preparation". Edit the estimate and update the scope summary field.')
+      );
+    }
+  }
+
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $estimate_id = (int) $form_state->getValue('estimate_id');
     $new_stage_tid = (int) $form_state->getValue('stage');

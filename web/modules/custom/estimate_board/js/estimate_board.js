@@ -565,6 +565,16 @@
           })
           .then(function (r) { return r.json(); })
           .then(function (data) {
+            if (data.scope_required) {
+              btn.disabled = false;
+              btn.textContent = origText;
+              alert(
+                'Scope Summary needs to be updated before this estimate ' +
+                'can advance past In Preparation.\n\n' +
+                'Open the estimate to update the scope summary.'
+              );
+              return;
+            }
             if (data.success) {
               var row = btn.closest('tr');
               var swimlane = btn.closest('.estimate-board-stage-swimlane');

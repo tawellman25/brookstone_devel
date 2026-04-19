@@ -375,6 +375,25 @@ function _estimate_intake_create_estimate(EntityInterface $request): void {
     // 6. Create and save estimate.
     $estimate_storage = \Drupal::entityTypeManager()->getStorage('estimate');
     $estimate = $estimate_storage->create($values);
+
+    // Copy client request description as starting scope summary.
+    if ($estimate->hasField('field_scope_summary')) {
+      $client_requested = '';
+      if ($request->hasField('field_client_requested') && !$request->get('field_client_requested')->isEmpty()) {
+        $client_requested = trim(strip_tags((string) $request->get('field_client_requested')->value));
+      }
+      if ($client_requested !== '') {
+        $estimate->set('field_scope_summary',
+          "CLIENT REQUEST (update after site visit):\n\n" . $client_requested
+        );
+      }
+      else {
+        $estimate->set('field_scope_summary',
+          'Update this scope summary after the site visit.'
+        );
+      }
+    }
+
     $estimate->save();
     $estimate_id = (int) $estimate->id();
 

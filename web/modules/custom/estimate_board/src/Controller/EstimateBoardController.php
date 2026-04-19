@@ -569,6 +569,20 @@ class EstimateBoardController extends ControllerBase {
       return new JsonResponse(['success' => FALSE, 'message' => 'Invalid stage.'], 400);
     }
 
+    // Scope summary validation for stages past "In Preparation".
+    $requires_scope_tids = [1420, 1416, 1421, 1417, 1418];
+    if (in_array($new_stage_tid, $requires_scope_tids, TRUE)
+        && $estimate->hasField('field_scope_summary')) {
+      $scope = trim(strip_tags($estimate->get('field_scope_summary')->value ?? ''));
+      if (_estimate_scope_is_placeholder($scope)) {
+        return new JsonResponse([
+          'success' => FALSE,
+          'message' => 'Scope Summary must be updated before advancing past In Preparation. Open the estimate and update the scope with actual project details.',
+          'scope_required' => TRUE,
+        ], 422);
+      }
+    }
+
     $estimate->set('field_stage', ['target_id' => $new_stage_tid]);
     $estimate->save();
 

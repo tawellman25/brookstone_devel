@@ -529,4 +529,84 @@
     }
   };
 
+  // ── Estimate stage buttons (My Estimates board) ────────────────
+  Drupal.behaviors.estimateBoardEstimateStage = {
+    attach: function (context) {
+      context.querySelectorAll('[data-action="estimate_stage"]').forEach(function (btn) {
+        if (btn.dataset.estStageInit) return;
+        btn.dataset.estStageInit = 'true';
+
+        btn.addEventListener('click', function () {
+          var confirmMsg = btn.dataset.confirm;
+          if (confirmMsg && !window.confirm(confirmMsg)) return;
+
+          var estimateId = btn.dataset.estimateId;
+          var stageTid   = btn.dataset.stageTid;
+          var origText   = btn.textContent;
+
+          btn.disabled = true;
+          btn.textContent = '...';
+
+          var csrfToken = drupalSettings.estimateBoard
+            ? drupalSettings.estimateBoard.csrfToken : '';
+
+          fetch('/admin/office/estimates/estimate-stage-update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-Token': csrfToken,
+            },
+            body: JSON.stringify({
+              estimate_id:   estimateId,
+              new_stage_tid: stageTid,
+            }),
+            credentials: 'same-origin',
+          })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.success) {
+              var row = btn.closest('tr');
+              var swimlane = btn.closest('.estimate-board-stage-swimlane');
+
+              row.style.transition = 'opacity 0.3s';
+              row.style.opacity = '0';
+
+              setTimeout(function () {
+                row.remove();
+
+                // Update source swimlane badge.
+                updateSwimlaneBadge(swimlane, -1);
+
+                if (!data.off_board) {
+                  // Find destination swimlane by slug.
+                  var dest = document.querySelector(
+                    '.estimate-board-stage-swimlane--' + data.new_stage_slug
+                  );
+                  if (dest) {
+                    var details = dest.querySelector('details');
+                    if (details && !details.open) {
+                      details.setAttribute('open', '');
+                    }
+                    updateSwimlaneBadge(dest, +1);
+                  }
+                }
+              }, 300);
+            } else {
+              btn.disabled = false;
+              btn.textContent = origText;
+              alert('Stage update failed: ' +
+                    (data.message || 'Unknown error'));
+            }
+          })
+          .catch(function () {
+            btn.disabled = false;
+            btn.textContent = origText;
+            alert('Network error. Please try again.');
+          });
+        });
+      });
+    }
+  };
+
 })(jQuery, Drupal, drupalSettings);

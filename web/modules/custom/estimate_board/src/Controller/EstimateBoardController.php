@@ -371,6 +371,224 @@ class EstimateBoardController extends ControllerBase {
   }
 
   /**
+   * Estimate stage pipeline order for My Estimates board.
+   */
+  const ESTIMATE_PIPELINE = [
+    1412 => ['label' => 'New',             'slug' => 'new'],
+    1413 => ['label' => 'Contacted',       'slug' => 'contacted'],
+    1414 => ['label' => 'Appointment Set', 'slug' => 'appointment-set'],
+    1415 => ['label' => 'In Preparation',  'slug' => 'in-preparation'],
+    1420 => ['label' => 'Under Review',    'slug' => 'under-review'],
+    1416 => ['label' => 'Estimate Sent',   'slug' => 'estimate-sent'],
+    1421 => ['label' => 'Client Feedback', 'slug' => 'client-feedback'],
+    1417 => ['label' => 'Pending',         'slug' => 'pending'],
+  ];
+
+  /**
+   * Renders the My Estimates swimlane board.
+   */
+  public function myEstimates(): array {
+    $current_uid = (int) \Drupal::currentUser()->id();
+    $pipeline_tids = array_keys(self::ESTIMATE_PIPELINE);
+
+    $estimate_ids = \Drupal::entityQuery('estimate')
+      ->accessCheck(TRUE)
+      ->condition('field_assigned_to', $current_uid)
+      ->condition('field_stage', $pipeline_tids, 'IN')
+      ->condition('field_is_current_revision', TRUE)
+      ->sort('created', 'ASC')
+      ->execute();
+
+    $estimates = $this->entityTypeManager()
+      ->getStorage('estimate')
+      ->loadMultiple($estimate_ids);
+
+    $bundle_info = \Drupal::service('entity_type.bundle.info')->getBundleInfo('estimate');
+
+    // Initialize groups.
+    $groups = [];
+    foreach (self::ESTIMATE_PIPELINE as $tid => $info) {
+      $groups[$tid] = [
+        'tid'       => $tid,
+        'label'     => $info['label'],
+        'slug'      => $info['slug'],
+        'estimates' => [],
+        'count'     => 0,
+      ];
+    }
+
+    foreach ($estimates as $estimate) {
+      $stage_tid = (int) $estimate->get('field_stage')->target_id;
+      if (!isset($groups[$stage_tid])) {
+        continue;
+      }
+
+      // Get estimate request for context.
+      $request = NULL;
+      if ($estimate->hasField('field_estimate_request') && !$estimate->get('field_estimate_request')->isEmpty()) {
+        $request = $estimate->get('field_estimate_request')->entity;
+      }
+
+      // Client name from request.
+      $client_name = '';
+      if ($request) {
+        if ($request->hasField('field_owner') && !$request->get('field_owner')->isEmpty()) {
+          $owner = $request->get('field_owner')->entity;
+          if ($owner) {
+            $client_name = $owner->getDisplayName();
+          }
+        }
+        if (!$client_name && $request->hasField('field_contact') && !$request->get('field_contact')->isEmpty()) {
+          $contact = $request->get('field_contact')->entity;
+          if ($contact) {
+            $client_name = $contact->label();
+          }
+        }
+        if (!$client_name && $request->hasField('field_requestor_name') && !$request->get('field_requestor_name')->isEmpty()) {
+          $client_name = (string) $request->get('field_requestor_name')->value;
+        }
+      }
+      if (!$client_name) {
+        $client_name = 'Unknown';
+      }
+
+      // Prev/next stage.
+      $pos = array_search($stage_tid, $pipeline_tids);
+      $prev_tid = ($pos !== FALSE && $pos > 0) ? $pipeline_tids[$pos - 1] : NULL;
+      $next_tid = ($pos !== FALSE && $pos < count($pipeline_tids) - 1) ? $pipeline_tids[$pos + 1] : NULL;
+
+      try {
+        $url = $estimate->toUrl()->toString();
+      }
+      catch (\Exception $e) {
+        $url = '/estimate/' . $estimate->id();
+      }
+
+      $bundle_label = $bundle_info[$estimate->bundle()]['label'] ?? ucfirst(str_replace('_', ' ', $estimate->bundle()));
+
+      $total = $estimate->hasField('field_estimate_total') && !$estimate->get('field_estimate_total')->isEmpty()
+        ? (float) $estimate->get('field_estimate_total')->value
+        : NULL;
+      $total_formatted = ($total && $total > 0) ? '$' . number_format($total, 2) : NULL;
+
+      $age_days = (int) floor((time() - $estimate->getCreatedTime()) / 86400);
+
+      $request_url = NULL;
+      $request_label = NULL;
+      if ($request) {
+        try {
+          $request_url = $request->toUrl()->toString();
+        }
+        catch (\Exception $e) {
+          $request_url = '/estimate_request/' . $request->id();
+        }
+        $request_label = $request->label();
+      }
+
+      // Property from request.
+      $property = '';
+      if ($request && $request->hasField('field_property') && !$request->get('field_property')->isEmpty()) {
+        $prop = $request->get('field_property')->entity;
+        if ($prop && $prop->hasField('field_nickname') && !$prop->get('field_nickname')->isEmpty()) {
+          $property = (string) $prop->get('field_nickname')->value;
+        }
+      }
+
+      $groups[$stage_tid]['estimates'][] = [
+        'id'            => (int) $estimate->id(),
+        'label'         => $estimate->label(),
+        'bundle_label'  => $bundle_label,
+        'url'           => $url,
+        'client_name'   => $client_name,
+        'property'      => $property,
+        'request_url'   => $request_url,
+        'request_label' => $request_label,
+        'total'         => $total_formatted,
+        'age_days'      => $age_days,
+        'stage_tid'     => $stage_tid,
+        'stage_label'   => self::ESTIMATE_PIPELINE[$stage_tid]['label'],
+        'prev_tid'      => $prev_tid,
+        'prev_label'    => $prev_tid ? self::ESTIMATE_PIPELINE[$prev_tid]['label'] : NULL,
+        'next_tid'      => $next_tid,
+        'next_label'    => $next_tid ? self::ESTIMATE_PIPELINE[$next_tid]['label'] : NULL,
+        'decline_tid'   => 1419,
+      ];
+      $groups[$stage_tid]['count']++;
+    }
+
+    return [
+      '#theme'    => 'estimate_board_my_estimates',
+      '#groups'   => array_values($groups),
+      '#attached' => [
+        'library' => ['estimate_board/estimate_board'],
+        'drupalSettings' => [
+          'estimateBoard' => [
+            'csrfToken' => \Drupal::csrfToken()->get('estimate_board_status_update'),
+          ],
+        ],
+      ],
+      '#cache' => ['max-age' => 0],
+    ];
+  }
+
+  /**
+   * AJAX estimate stage update endpoint. Returns JSON.
+   */
+  public function updateEstimateStage(Request $request): JsonResponse {
+    $data = json_decode($request->getContent(), TRUE) ?? [];
+    $token = $request->headers->get('X-CSRF-Token');
+
+    if (!$token || !\Drupal::csrfToken()->validate($token, 'estimate_board_status_update')) {
+      return new JsonResponse(['success' => FALSE, 'message' => 'Invalid token.'], 403);
+    }
+
+    $estimate_id = (int) ($data['estimate_id'] ?? 0);
+    $new_stage_tid = (int) ($data['new_stage_tid'] ?? 0);
+
+    if (!$estimate_id || !$new_stage_tid) {
+      return new JsonResponse(['success' => FALSE, 'message' => 'Missing parameters.'], 400);
+    }
+
+    $estimate = $this->entityTypeManager()
+      ->getStorage('estimate')
+      ->load($estimate_id);
+
+    if (!$estimate) {
+      return new JsonResponse(['success' => FALSE, 'message' => 'Estimate not found.'], 404);
+    }
+
+    if (!$estimate->access('update')) {
+      return new JsonResponse(['success' => FALSE, 'message' => 'Access denied.'], 403);
+    }
+
+    $stage_term = $this->entityTypeManager()
+      ->getStorage('taxonomy_term')
+      ->load($new_stage_tid);
+
+    if (!$stage_term) {
+      return new JsonResponse(['success' => FALSE, 'message' => 'Invalid stage.'], 400);
+    }
+
+    $estimate->set('field_stage', ['target_id' => $new_stage_tid]);
+    $estimate->save();
+
+    $label = $stage_term->label();
+    $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $label));
+    $slug = trim($slug, '-');
+
+    $off_board = in_array($new_stage_tid, [1418, 1419]);
+
+    return new JsonResponse([
+      'success'        => TRUE,
+      'estimate_id'    => $estimate_id,
+      'new_stage'      => $label,
+      'new_stage_slug' => $slug,
+      'new_stage_tid'  => $new_stage_tid,
+      'off_board'      => $off_board,
+    ]);
+  }
+
+  /**
    * Accepted tab: shows Converted requests and requests with accepted estimates.
    */
   public function acceptedTab(Request $request): array {

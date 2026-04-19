@@ -29,6 +29,27 @@ estimate_board.status_update:
   options:
     _admin_route: TRUE
 
+estimate_board.my_estimates:
+  path: '/admin/office/estimates/my-estimates'
+  defaults:
+    _controller: '\Drupal\estimate_board\Controller\EstimateBoardController::myEstimates'
+    _title: 'My Estimates'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  options:
+    _admin_route: TRUE
+
+estimate_board.estimate_stage_update:
+  path: '/admin/office/estimates/estimate-stage-update'
+  defaults:
+    _controller: '\Drupal\estimate_board\Controller\EstimateBoardController::updateEstimateStage'
+    _title: 'Update Estimate Stage'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  methods: [POST]
+  options:
+    _admin_route: TRUE
+
 estimate_board.accepted:
   path: '/admin/office/estimates/accepted'
   defaults:

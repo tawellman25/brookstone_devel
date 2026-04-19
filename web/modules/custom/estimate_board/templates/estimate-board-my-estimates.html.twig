@@ -1,0 +1,109 @@
+{# My Estimates — swimlane board grouped by estimate stage #}
+
+{% for group in groups %}
+<div class="estimate-board-section estimate-board-swimlane
+            estimate-board-stage-swimlane
+            estimate-board-stage-swimlane--{{ group.slug }}">
+  <details{% if group.count > 0 %} open{% endif %}>
+    <summary class="estimate-board-section__title">
+      {{ group.label }}
+      <span class="estimate-board-badge
+                   estimate-board-badge--stage-{{ group.slug }}
+                   {% if group.count == 0 %}
+                     estimate-board-badge--empty
+                   {% endif %}">
+        {{ group.count }}
+      </span>
+    </summary>
+
+    {% if group.count == 0 %}
+      <p class="estimate-board-empty">No estimates in this stage.</p>
+    {% else %}
+      <table class="estimate-board-table">
+        <thead>
+          <tr>
+            <th>Estimate</th>
+            <th>Client</th>
+            <th>Property</th>
+            <th>Request</th>
+            <th>Total</th>
+            <th>Age</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for est in group.estimates %}
+          <tr class="estimate-board-request-row"
+              data-estimate-id="{{ est.id }}">
+            <td>
+              <a href="{{ est.url }}" target="_blank">
+                {{ est.bundle_label }}
+              </a>
+            </td>
+            <td>{{ est.client_name }}</td>
+            <td>{{ est.property }}</td>
+            <td>
+              {% if est.request_url %}
+                <a href="{{ est.request_url }}" target="_blank">
+                  {{ est.request_label }}
+                </a>
+              {% endif %}
+            </td>
+            <td>
+              {% if est.total %}
+                <span class="estimate-board-est-total">{{ est.total }}</span>
+              {% else %}
+                <span class="estimate-board-est-total--empty">&mdash;</span>
+              {% endif %}
+            </td>
+            <td class="{{ est.age_days > 7 ? 'estimate-board-age--warning' : '' }}">
+              {{ est.age_days }}d
+            </td>
+            <td class="estimate-board-actions-cell">
+              {% if est.prev_tid %}
+                <button type="button"
+                  class="estimate-board-status-btn
+                         estimate-board-status-btn--back"
+                  data-estimate-id="{{ est.id }}"
+                  data-stage-tid="{{ est.prev_tid }}"
+                  data-stage-label="{{ est.prev_label }}"
+                  data-action="estimate_stage"
+                  title="Back to: {{ est.prev_label }}">
+                  &larr; Back
+                </button>
+              {% endif %}
+
+              {% if est.next_tid %}
+                <button type="button"
+                  class="estimate-board-status-btn
+                         estimate-board-status-btn--next
+                         estimate-board-status-btn--stage-{{ group.slug }}"
+                  data-estimate-id="{{ est.id }}"
+                  data-stage-tid="{{ est.next_tid }}"
+                  data-stage-label="{{ est.next_label }}"
+                  data-action="estimate_stage"
+                  title="Advance to: {{ est.next_label }}">
+                  {{ est.next_label }} &rarr;
+                </button>
+              {% endif %}
+
+              <button type="button"
+                class="estimate-board-status-btn
+                       estimate-board-status-btn--decline"
+                data-estimate-id="{{ est.id }}"
+                data-stage-tid="1419"
+                data-stage-label="Declined"
+                data-action="estimate_stage"
+                data-confirm="Mark this estimate as Declined?"
+                title="Decline">
+                &#10005;
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </details>
+</div>
+{% endfor %}

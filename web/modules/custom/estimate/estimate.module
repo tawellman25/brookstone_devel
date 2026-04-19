@@ -368,6 +368,7 @@ function estimate_entity_update(EntityInterface $entity): void {
   _estimate_log_stage_change($entity);
   _estimate_log_request_status_change($entity);
   _estimate_auto_convert_on_acceptance($entity);
+  _estimate_update_contract_section_on_acceptance($entity);
 }
 
 /**
@@ -824,6 +825,79 @@ function _estimate_auto_convert_on_acceptance(EntityInterface $entity): void {
     \Drupal::messenger()->addWarning(t('Estimate accepted but Work Order could not be created automatically: @msg', [
       '@msg' => $e->getMessage(),
     ]));
+  }
+}
+
+/**
+ * Updates the linked contract section when an estimate is accepted.
+ *
+ * Sets field_do_you_want to '4' (Accepted / Price Confirmed) and copies the
+ * accepted estimate total to field_estimate. Skips silently for standalone
+ * estimates that have no contract section link.
+ */
+function _estimate_update_contract_section_on_acceptance(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'estimate') {
+    return;
+  }
+  if (!$entity->hasField('field_stage') || !isset($entity->original)) {
+    return;
+  }
+
+  $accepted_tid = 1418;
+  $new_tid = (int) ($entity->get('field_stage')->target_id ?? 0);
+  $old_tid = (int) ($entity->original->get('field_stage')->target_id ?? 0);
+
+  // Only fire on the transition into Accepted.
+  if ($new_tid !== $accepted_tid || $old_tid === $accepted_tid) {
+    return;
+  }
+
+  // Find the linked contract section — try direct link first, then via request.
+  $section = NULL;
+  if ($entity->hasField('field_contract_section') && !$entity->get('field_contract_section')->isEmpty()) {
+    $section = $entity->get('field_contract_section')->entity;
+  }
+  if (!$section && $entity->hasField('field_estimate_request') && !$entity->get('field_estimate_request')->isEmpty()) {
+    $request = $entity->get('field_estimate_request')->entity;
+    if ($request && $request->hasField('field_contract_section') && !$request->get('field_contract_section')->isEmpty()) {
+      $section = $request->get('field_contract_section')->entity;
+    }
+  }
+
+  if (!$section) {
+    // Standalone estimate — no contract section link. Skip silently.
+    return;
+  }
+
+  $total = $entity->hasField('field_estimate_total') && !$entity->get('field_estimate_total')->isEmpty()
+    ? (string) $entity->get('field_estimate_total')->value
+    : NULL;
+
+  try {
+    $section->set('field_do_you_want', '4');
+    if ($total !== NULL && $section->hasField('field_estimate')) {
+      $section->set('field_estimate', $total);
+    }
+    $section->save();
+
+    \Drupal::logger('estimate')->info(
+      'Contract section @section_id updated to Accepted / Price Confirmed from estimate @estimate_id (total: @total).',
+      [
+        '@section_id' => $section->id(),
+        '@estimate_id' => $entity->id(),
+        '@total' => $total ?? 'N/A',
+      ]
+    );
+  }
+  catch (\Exception $e) {
+    \Drupal::logger('estimate')->error(
+      'Failed to update contract section @section_id after estimate @estimate_id accepted: @message',
+      [
+        '@section_id' => $section->id(),
+        '@estimate_id' => $entity->id(),
+        '@message' => $e->getMessage(),
+      ]
+    );
   }
 }
 

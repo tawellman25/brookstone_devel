@@ -388,6 +388,7 @@ final class WorkOrderGenerator {
    * - 1 = Yes
    * - 2 = No
    * - 3 = Request Quote
+   * - 4 = Accepted / Price Confirmed
    */
   private function sectionWantsWorkOrder(EntityInterface $section, WorkOrderGenerationResult $result): bool {
     $sid = (int) $section->id();
@@ -405,7 +406,8 @@ final class WorkOrderGenerator {
 
     $raw = trim((string) $section->get('field_do_you_want')->value);
 
-    if ($raw === '1') {
+    // '1' (Yes) and '4' (Accepted / Price Confirmed) both allow WO creation.
+    if ($raw === '1' || $raw === '4') {
       return TRUE;
     }
 

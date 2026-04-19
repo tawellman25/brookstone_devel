@@ -7,7 +7,6 @@ dependencies:
     - field.storage.estimate.field_estimate_request
     - field.storage.estimate.field_stage
     - field.storage.estimate_request.field_property
-    - field.storage.properties.field_nickname
     - user.role.administration
     - user.role.administrator
     - user.role.site_admin
@@ -60,11 +59,13 @@ display:
           type: string
           settings:
             link_to_entity: true
-        field_nickname:
-          id: field_nickname
-          table: properties__field_nickname
-          field: field_nickname
+        property_title:
+          id: property_title
+          table: properties_field_data
+          field: title
           relationship: field_property
+          entity_type: properties
+          entity_field: title
           plugin_id: field
           label: Property
           type: string
@@ -160,7 +161,7 @@ display:
         options:
           columns:
             title: title
-            field_nickname: field_nickname
+            property_title: property_title
             field_stage: field_stage
             field_assigned_to: field_assigned_to
             created: created
@@ -173,7 +174,7 @@ display:
               separator: ''
               empty_column: false
               responsive: ''
-            field_nickname:
+            property_title:
               sortable: true
               default_sort_order: asc
               align: ''
@@ -221,7 +222,6 @@ display:
         - 'config:field.storage.estimate.field_estimate_request'
         - 'config:field.storage.estimate.field_stage'
         - 'config:field.storage.estimate_request.field_property'
-        - 'config:field.storage.properties.field_nickname'
   all_estimates:
     id: all_estimates
     display_title: 'All Estimates'
@@ -244,7 +244,6 @@ display:
         - 'config:field.storage.estimate.field_estimate_request'
         - 'config:field.storage.estimate.field_stage'
         - 'config:field.storage.estimate_request.field_property'
-        - 'config:field.storage.properties.field_nickname'
   my_estimates:
     id: my_estimates
     display_title: 'My Estimates'
@@ -291,4 +290,3 @@ display:
         - 'config:field.storage.estimate.field_estimate_request'
         - 'config:field.storage.estimate.field_stage'
         - 'config:field.storage.estimate_request.field_property'
-        - 'config:field.storage.properties.field_nickname'

@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_on_demand
+    - taxonomy.vocabulary.services
+id: taxonomy_term.services.field_on_demand
+field_name: field_on_demand
+entity_type: taxonomy_term
+bundle: services
+label: 'On-Demand Service'
+description: 'Check if Work Orders for this service are created on demand throughout the year (route-based recurring services like mowing, or condition-based services like sprinkler repair). On-demand services are intentionally excluded from automatic Work Order generation at contract approval, and are exempt from the "section has no Work Order" check when marking a contract Completed for the Year.'
+required: false
+translatable: false
+default_value:
+  -
+    value: 0
+default_value_callback: ''
+settings:
+  on_label: 'On Demand'
+  off_label: Standard
+field_type: boolean

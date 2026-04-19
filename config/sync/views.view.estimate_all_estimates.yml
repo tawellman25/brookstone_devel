@@ -4,7 +4,10 @@ status: true
 dependencies:
   config:
     - field.storage.estimate.field_assigned_to
+    - field.storage.estimate.field_estimate_request
     - field.storage.estimate.field_stage
+    - field.storage.estimate_request.field_property
+    - field.storage.properties.field_nickname
     - user.role.administration
     - user.role.administrator
     - user.role.site_admin
@@ -26,6 +29,25 @@ display:
     display_plugin: default
     position: 0
     display_options:
+      relationships:
+        field_estimate_request:
+          id: field_estimate_request
+          table: estimate__field_estimate_request
+          field: field_estimate_request
+          relationship: none
+          group_type: group
+          admin_label: 'Estimate Request'
+          plugin_id: standard
+          required: false
+        field_property:
+          id: field_property
+          table: estimate_request__field_property
+          field: field_property
+          relationship: field_estimate_request
+          group_type: group
+          admin_label: Property
+          plugin_id: standard
+          required: false
       fields:
         title:
           id: title
@@ -38,14 +60,13 @@ display:
           type: string
           settings:
             link_to_entity: true
-        type:
-          id: type
-          table: estimate_field_data
-          field: type
-          entity_type: estimate
-          entity_field: type
+        field_nickname:
+          id: field_nickname
+          table: properties__field_nickname
+          field: field_nickname
+          relationship: field_property
           plugin_id: field
-          label: Type
+          label: Property
           type: string
           settings:
             link_to_entity: false
@@ -139,7 +160,7 @@ display:
         options:
           columns:
             title: title
-            type: type
+            field_nickname: field_nickname
             field_stage: field_stage
             field_assigned_to: field_assigned_to
             created: created
@@ -152,7 +173,7 @@ display:
               separator: ''
               empty_column: false
               responsive: ''
-            type:
+            field_nickname:
               sortable: true
               default_sort_order: asc
               align: ''
@@ -197,7 +218,10 @@ display:
         - user.roles
       tags:
         - 'config:field.storage.estimate.field_assigned_to'
+        - 'config:field.storage.estimate.field_estimate_request'
         - 'config:field.storage.estimate.field_stage'
+        - 'config:field.storage.estimate_request.field_property'
+        - 'config:field.storage.properties.field_nickname'
   all_estimates:
     id: all_estimates
     display_title: 'All Estimates'
@@ -217,7 +241,10 @@ display:
         - user.roles
       tags:
         - 'config:field.storage.estimate.field_assigned_to'
+        - 'config:field.storage.estimate.field_estimate_request'
         - 'config:field.storage.estimate.field_stage'
+        - 'config:field.storage.estimate_request.field_property'
+        - 'config:field.storage.properties.field_nickname'
   my_estimates:
     id: my_estimates
     display_title: 'My Estimates'
@@ -261,4 +288,7 @@ display:
         - user.roles
       tags:
         - 'config:field.storage.estimate.field_assigned_to'
+        - 'config:field.storage.estimate.field_estimate_request'
         - 'config:field.storage.estimate.field_stage'
+        - 'config:field.storage.estimate_request.field_property'
+        - 'config:field.storage.properties.field_nickname'

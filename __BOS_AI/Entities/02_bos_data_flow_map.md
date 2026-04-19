@@ -221,3 +221,16 @@ Outputs:
 - Billing exports / costing
 - Compliance history
 
+---
+
+## Estimate → Work Order Flow
+
+Estimate Request (intake)
+  → Estimate entities (one per service, auto-created by estimate_intake)
+  → Estimate Tasks (auto-calculated pricing for supported bundles)
+  → Estimate Items (manual line items: labor, materials, equipment, subcontractor)
+  → Stage progression via Estimate Board
+  → Accepted stage → auto-creates Work Order via WorkOrderConverter
+
+> **Governance Note (2026-04-19):** The correct flow for recurring services is Estimate → Contract → Work Order, not Estimate → Work Order directly. A "Convert to Contract" action is on the backlog to close this gap. See `__BOS_AI/Entities/estimate.md` for full spec. The direct WO path is reserved for design-build (landscaping, sprinkler installation) only.
+

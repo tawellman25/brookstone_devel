@@ -270,4 +270,63 @@ Conditions: field_contract_signed=TRUE, field_signing_deposit_received=TRUE, fie
 
 ## Status
 
-Updated: March 2026 — Phase 1 Project Pipeline complete
+Updated: April 2026 — Estimate Board rebuild, scope elements, auto-convert on acceptance
+
+---
+
+## Backlog: Estimate → Contract Conversion Action
+
+**Priority:** High
+**Status:** Not started
+**Added:** 2026-04-19
+
+### Problem
+When a recurring service estimate is accepted (mowing, spraying, pre-emergent, check-ups, etc.), there is no automated path from the accepted estimate into a residential contract. Office staff must manually create the contract and re-enter scope and pricing from the estimate. This creates data integrity risk and is the primary gap between BOS's estimate system and its contract system.
+
+### Governance Rule (Authoritative)
+Estimates and contracts are separate entities serving different purposes and must never be conflated:
+
+- **Estimate** = Proposal / Pricing model. Flexible, editable, non-binding. Sales-driven. May be revised freely.
+- **Contract** = Agreement / Commitment. Structured, enforced, immutable after approval. Operations-driven. Drives Work Orders.
+
+Estimates must NEVER directly generate Work Orders.
+Only Contracts should generate Work Orders (via the existing contract_sections → WO machinery).
+
+**Exception:** The landscaping and sprinkler_installation bundles use a deposit-based WO auto-creation path (field_contract_signed + field_deposit_received) which functions as a lightweight contract acknowledgment for design-build work. This path is intentional and should be preserved.
+
+### Required Feature: "Convert to Contract" Action
+
+When an estimate request reaches "Accepted" status on the board, a "Convert to Contract" button should appear on the estimate request page. Clicking it:
+
+1. Creates a residential Contract for the property (or links to the existing active contract if one exists for this year)
+2. Creates a Contract Section for each accepted estimate, populated with:
+   - field_service from the estimate's service
+   - Pricing from field_estimate_total
+   - Scope from field_scope_summary
+   - Back-reference: contract_sections.field_estimate_request → this estimate request
+3. Sets the estimate request status to "Converted"
+4. Links the contract back to the estimate request
+
+### Services Where This Applies
+Recurring services that should flow through contracts:
+- Weekly Lawn Mowing
+- Weed Spraying
+- Pre-emergent
+- Sprinkler Check-Ups
+- Fertilizing
+- Fertilizing Trees and Shrubs
+- Aerating
+- Dethatching
+- Spring/Fall Cleanup
+- Snow Removal
+
+### Services That Keep Direct WO Path (no change needed)
+- Landscaping (deposit-based WO auto-creation)
+- Sprinkler Installation (deposit-based WO auto-creation)
+
+### Implementation Notes
+- The conversion must be explicit (button click) — never silent or automatic
+- Must be idempotent — clicking twice must not create duplicate contract sections
+- Must check for existing active contract before creating new one
+- Contract section back-reference (field_estimate_request) enables the auto-created estimate request path to detect existing requests on renewal
+- This feature belongs in a new module: estimate_contract_bridge or as an extension of estimate_contract_residential

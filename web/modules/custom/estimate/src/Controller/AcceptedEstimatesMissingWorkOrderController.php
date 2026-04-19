@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Drupal\estimate\Controller;
 
-use Drupal\Core\Link;
 use Drupal\Core\Url;
 
 /**
@@ -61,17 +60,21 @@ final class AcceptedEstimatesMissingWorkOrderController {
     if (!empty($ids)) {
       $estimates = $storage->loadMultiple($ids);
       $date_formatter = \Drupal::service('date.formatter');
+      $renderer = \Drupal::service('renderer');
 
       foreach ($estimates as $estimate) {
-        $estimate_link = $estimate->toLink($estimate->label() ?: ('Estimate ' . $estimate->id()))->toRenderable();
+        $estimate_label = $estimate->label() ?: ('Estimate ' . $estimate->id());
+        $estimate_url = $estimate->toUrl()->toString();
 
         $bundle = $estimate->bundle();
 
-        $req_link = ['#markup' => '-'];
+        $req_html = '-';
         if ($estimate->hasField('field_estimate_request') && !$estimate->get('field_estimate_request')->isEmpty()) {
           $req = $estimate->get('field_estimate_request')->entity;
           if ($req) {
-            $req_link = $req->toLink($req->label() ?: ('Request ' . $req->id()))->toRenderable();
+            $req_label = $req->label() ?: ('Request ' . $req->id());
+            $req_url = $req->toUrl()->toString();
+            $req_html = '<a href="' . htmlspecialchars($req_url) . '">' . htmlspecialchars($req_label) . '</a>';
           }
         }
 
@@ -82,23 +85,15 @@ final class AcceptedEstimatesMissingWorkOrderController {
 
         $updated = $date_formatter->format((int) $estimate->getChangedTime(), 'short');
 
-        $convert_link = Link::fromTextAndUrl(
-          t('Convert'),
-          Url::fromRoute('estimate.convert_to_work_order', ['estimate' => $estimate->id()])
-        )->toRenderable();
+        $convert_url = Url::fromRoute('estimate.convert_to_work_order', ['estimate' => $estimate->id()])->toString();
 
         $rows[] = [
-          'data' => [
-            $estimate_link,
-            ['#markup' => $bundle],
-            $req_link,
-            ['#markup' => $total],
-            ['#markup' => $updated],
-            [
-              '#type' => 'container',
-              'convert' => $convert_link,
-            ],
-          ],
+          ['data' => ['#markup' => '<a href="' . htmlspecialchars($estimate_url) . '">' . htmlspecialchars($estimate_label) . '</a>']],
+          $bundle,
+          ['data' => ['#markup' => $req_html]],
+          $total,
+          $updated,
+          ['data' => ['#markup' => '<a href="' . htmlspecialchars($convert_url) . '">Convert</a>']],
         ];
       }
     }

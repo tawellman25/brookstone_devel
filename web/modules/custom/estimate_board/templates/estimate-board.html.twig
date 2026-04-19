@@ -120,6 +120,14 @@
                   title="Decline">
                   ✕
                 </button>
+
+                <button type="button"
+                  class="estimate-board-status-btn estimate-board-status-btn--hold"
+                  data-request-id="{{ request.id }}"
+                  data-action="hold"
+                  title="Put on hold">
+                  ⏸
+                </button>
               </td>
             </tr>
             {% endfor %}
@@ -129,6 +137,53 @@
     </details>
   </div>
 {% endfor %}
+
+{# ── On Hold Section ────────────────────────────────────────────── #}
+<div class="estimate-board-section estimate-board-on-hold"{% if on_hold_requests|length == 0 %} style="display:none"{% endif %}>
+  <details>
+    <summary class="estimate-board-section__title">
+      ⏸ On Hold
+      <span class="estimate-board-badge estimate-board-badge--on-hold">{{ on_hold_requests|length }}</span>
+    </summary>
+
+    <table class="estimate-board-table">
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Pipeline Stage</th>
+          <th>Property</th>
+          <th>Services</th>
+          <th>Coordinator</th>
+          <th>Hold Until</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for request in on_hold_requests %}
+        <tr class="estimate-board-request-row estimate-board-request-row--on-hold"
+            data-request-id="{{ request.id }}">
+          <td><a href="{{ request.url }}" target="_blank">{{ request.client_name }}</a></td>
+          <td><span class="estimate-board-hold-stage">{{ request.current_status_label }}</span></td>
+          <td>{{ request.property }}</td>
+          <td>{{ request.services }}</td>
+          <td>{{ request.coordinator }}</td>
+          <td class="estimate-board-hold-date">{{ request.hold_until ?: 'Indefinite' }}</td>
+          <td class="estimate-board-actions-cell">
+            <button type="button"
+              class="estimate-board-status-btn estimate-board-status-btn--lift-hold"
+              data-request-id="{{ request.id }}"
+              data-action="lift_hold"
+              data-status-slug="{{ request.current_status_slug }}"
+              title="Lift hold — return to pipeline">
+              ▶ Resume
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
+</div>
 
 {# ── Section 3: Estimator Workload ───────────────────────────────── #}
 <div class="estimate-board-section estimate-board-workload">

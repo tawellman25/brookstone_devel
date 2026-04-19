@@ -269,7 +269,62 @@
       '</tr>';
   }
 
-  // ── Status action buttons (← Back, Next →, ✕ Decline) ─────────
+  // ── On Hold helpers ─────────────────────────────────────────────
+  function insertRowIntoOnHold(data) {
+    var onHoldSection = document.querySelector('.estimate-board-on-hold');
+    if (!onHoldSection) return;
+
+    onHoldSection.style.display = '';
+    var tbody = onHoldSection.querySelector('tbody');
+    if (!tbody) return;
+
+    var rowHtml = buildOnHoldRowHtml(data);
+    var temp = document.createElement('tbody');
+    temp.innerHTML = rowHtml;
+    var newRow = temp.firstElementChild;
+    if (!newRow) return;
+
+    newRow.style.opacity = '0';
+    tbody.appendChild(newRow);
+    if (typeof Drupal !== 'undefined' && Drupal.attachBehaviors) {
+      Drupal.attachBehaviors(newRow);
+    }
+    requestAnimationFrame(function () {
+      newRow.style.transition = 'opacity 0.3s';
+      newRow.style.opacity = '1';
+    });
+  }
+
+  function buildOnHoldRowHtml(data) {
+    var escHtml = function (s) {
+      var div = document.createElement('div');
+      div.textContent = s || '';
+      return div.innerHTML;
+    };
+    return '<tr class="estimate-board-request-row estimate-board-request-row--on-hold" data-request-id="' + data.request_id + '">' +
+      '<td><a href="' + escHtml(data.url) + '" target="_blank">' + escHtml(data.client_name) + '</a></td>' +
+      '<td><span class="estimate-board-hold-stage">' + escHtml(data.current_status_label) + '</span></td>' +
+      '<td>' + escHtml(data.property) + '</td>' +
+      '<td>' + escHtml(data.services) + '</td>' +
+      '<td>' + escHtml(data.coordinator) + '</td>' +
+      '<td class="estimate-board-hold-date">' + (data.hold_until || 'Indefinite') + '</td>' +
+      '<td class="estimate-board-actions-cell">' +
+        '<button type="button" class="estimate-board-status-btn estimate-board-status-btn--lift-hold" ' +
+        'data-request-id="' + data.request_id + '" data-action="lift_hold" ' +
+        'data-status-slug="' + escHtml(data.current_status_slug) + '" ' +
+        'title="Lift hold — return to pipeline">\u25B6 Resume</button>' +
+      '</td></tr>';
+  }
+
+  function updateOnHoldBadge(delta) {
+    var badge = document.querySelector('.estimate-board-on-hold .estimate-board-badge');
+    if (badge) {
+      var current = parseInt(badge.textContent.trim(), 10) || 0;
+      badge.textContent = Math.max(0, current + delta);
+    }
+  }
+
+  // ── Status action buttons (← Back, Next →, ✕ Decline, ⏸ Hold, ▶ Resume)
   var OFF_BOARD_SLUGS = ['declined', 'converted', 'accepted'];
 
   Drupal.behaviors.estimateBoardStatusButtons = {
@@ -279,31 +334,113 @@
         btn.dataset.statusBtnInit = 'true';
 
         btn.addEventListener('click', function () {
+          var action = btn.dataset.action || 'status';
           var confirmMsg = btn.dataset.confirm;
           if (confirmMsg && !window.confirm(confirmMsg)) return;
 
           var requestId = btn.dataset.requestId;
-          var statusTid = btn.dataset.statusTid;
           var originalText = btn.textContent;
 
+          // Handle hold action — prompt for date.
+          if (action === 'hold') {
+            var holdUntil = window.prompt(
+              'Hold until date (optional, format YYYY-MM-DD):\nLeave blank for indefinite hold.',
+              ''
+            );
+            if (holdUntil === null) return;
+            if (holdUntil && !/^\d{4}-\d{2}-\d{2}$/.test(holdUntil)) {
+              alert('Invalid date format. Use YYYY-MM-DD or leave blank.');
+              return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            var csrfToken = drupalSettings.estimateBoard ? drupalSettings.estimateBoard.csrfToken : '';
+            fetch('/admin/office/estimates/status-update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+              body: JSON.stringify({ action: 'hold', estimate_request_id: requestId, hold_until: holdUntil || null }),
+              credentials: 'same-origin',
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (data.success) {
+                var row = btn.closest('tr');
+                var swimlane = btn.closest('.estimate-board-swimlane');
+                if (row) {
+                  row.style.transition = 'opacity 0.3s';
+                  row.style.opacity = '0';
+                  setTimeout(function () {
+                    row.remove();
+                    updateSwimlaneBadge(swimlane, -1);
+                    insertRowIntoOnHold(data);
+                    updateOnHoldBadge(+1);
+                  }, 300);
+                }
+              } else {
+                btn.disabled = false;
+                btn.textContent = originalText;
+                alert('Hold failed: ' + (data.error || 'Unknown error'));
+              }
+            })
+            .catch(function () { btn.disabled = false; btn.textContent = originalText; alert('Network error.'); });
+            return;
+          }
+
+          // Handle lift_hold action.
+          if (action === 'lift_hold') {
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            var csrfToken2 = drupalSettings.estimateBoard ? drupalSettings.estimateBoard.csrfToken : '';
+            fetch('/admin/office/estimates/status-update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken2 },
+              body: JSON.stringify({ action: 'lift_hold', estimate_request_id: requestId }),
+              credentials: 'same-origin',
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (data.success) {
+                var row = btn.closest('tr');
+                if (row) {
+                  row.style.transition = 'opacity 0.3s';
+                  row.style.opacity = '0';
+                  setTimeout(function () {
+                    row.remove();
+                    updateOnHoldBadge(-1);
+
+                    var destSwimlane = document.querySelector('.estimate-board-swimlane--' + data.new_status_slug);
+                    if (destSwimlane) {
+                      var rowHtml = buildRowHtml(data);
+                      insertRowIntoSwimlane(destSwimlane, rowHtml);
+                      updateSwimlaneBadge(destSwimlane, +1);
+                      var destDetails = destSwimlane.querySelector('details');
+                      if (destDetails && !destDetails.open) destDetails.setAttribute('open', '');
+                    }
+                  }, 300);
+                }
+              } else {
+                btn.disabled = false;
+                btn.textContent = originalText;
+                alert('Resume failed: ' + (data.error || 'Unknown error'));
+              }
+            })
+            .catch(function () { btn.disabled = false; btn.textContent = originalText; alert('Network error.'); });
+            return;
+          }
+
+          // Default: status change.
+          var statusTid = btn.dataset.statusTid;
           btn.disabled = true;
           btn.textContent = '...';
 
-          var csrfToken = drupalSettings.estimateBoard
-            ? drupalSettings.estimateBoard.csrfToken
-            : '';
-
+          var csrfToken3 = drupalSettings.estimateBoard ? drupalSettings.estimateBoard.csrfToken : '';
           fetch('/admin/office/estimates/status-update', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-Token': csrfToken,
-            },
-            body: JSON.stringify({
-              estimate_request_id: requestId,
-              new_status_tid: parseInt(statusTid, 10),
-            }),
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken3 },
+            body: JSON.stringify({ action: 'status', estimate_request_id: requestId, new_status_tid: parseInt(statusTid, 10) }),
             credentials: 'same-origin',
           })
             .then(function (r) { return r.json(); })
@@ -315,30 +452,19 @@
                 if (row) {
                   row.style.transition = 'opacity 0.3s';
                   row.style.opacity = '0';
-
                   setTimeout(function () {
                     row.remove();
                     updateSwimlaneBadge(sourceSwimlane, -1);
 
-                    // If status is off-board, don't insert anywhere.
-                    if (OFF_BOARD_SLUGS.indexOf(data.new_status_slug) !== -1) {
-                      return;
-                    }
+                    if (OFF_BOARD_SLUGS.indexOf(data.new_status_slug) !== -1) return;
 
-                    // Find destination swimlane and insert row.
-                    var destSwimlane = document.querySelector(
-                      '.estimate-board-swimlane--' + data.new_status_slug
-                    );
+                    var destSwimlane = document.querySelector('.estimate-board-swimlane--' + data.new_status_slug);
                     if (destSwimlane) {
                       var rowHtml = buildRowHtml(data);
                       insertRowIntoSwimlane(destSwimlane, rowHtml);
                       updateSwimlaneBadge(destSwimlane, +1);
-
-                      // Open destination if closed.
                       var destDetails = destSwimlane.querySelector('details');
-                      if (destDetails && !destDetails.open) {
-                        destDetails.setAttribute('open', '');
-                      }
+                      if (destDetails && !destDetails.open) destDetails.setAttribute('open', '');
                     }
                   }, 300);
                 }
@@ -348,11 +474,7 @@
                 alert('Status update failed: ' + (data.error || 'Unknown error'));
               }
             })
-            .catch(function () {
-              btn.disabled = false;
-              btn.textContent = originalText;
-              alert('Network error. Please try again.');
-            });
+            .catch(function () { btn.disabled = false; btn.textContent = originalText; alert('Network error.'); });
         });
       });
     }

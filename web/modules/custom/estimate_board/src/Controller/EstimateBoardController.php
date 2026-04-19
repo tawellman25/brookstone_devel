@@ -68,10 +68,12 @@ class EstimateBoardController extends ControllerBase {
    * Renders the Estimate Board dashboard.
    */
   public function board(): array {
+    [$pipeline, $on_hold_requests] = $this->getPipeline();
     return [
       '#theme' => 'estimate_board',
       '#followups' => $this->getFollowUps(),
-      '#pipeline' => $this->getPipeline(),
+      '#pipeline' => $pipeline,
+      '#on_hold_requests' => $on_hold_requests,
       '#workload' => $this->getWorkload(),
       '#activity' => $this->getRecentActivity(),
       '#decline_tid' => self::DECLINED_TID,
@@ -162,33 +164,33 @@ class EstimateBoardController extends ControllerBase {
   }
 
   /**
-   * Returns active pipeline grouped by status.
+   * Returns [pipeline, on_hold_requests].
+   *
+   * Pipeline: active requests grouped by status swimlane.
+   * On-hold: requests with field_on_hold = TRUE, collected separately.
    */
   protected function getPipeline(): array {
     $pipeline = [];
+    $on_hold_requests = [];
     $order_keys = array_keys(self::PIPELINE_ORDER);
+    $now_ts = \Drupal::time()->getRequestTime();
+    $today = date('Y-m-d');
+    $er_storage = $this->entityTypeManager()->getStorage('estimate_request');
 
     foreach (self::PIPELINE_ORDER as $tid => $label) {
-      $now_ts = \Drupal::time()->getRequestTime();
-
       $query = $this->database->select('estimate_request_field_data', 'er');
       $query->fields('er', ['id', 'title', 'created']);
       $query->join('estimate_request__field_status', 'ers', 'ers.entity_id = er.id AND ers.deleted = 0');
       $query->condition('ers.field_status_target_id', $tid);
 
-      // Owner/requestor name.
       $query->leftJoin('estimate_request__field_owner', 'ero', 'ero.entity_id = er.id AND ero.deleted = 0');
       $query->leftJoin('users_field_data', 'ou', 'ou.uid = ero.field_owner_target_id');
       $query->addField('ou', 'name', 'owner_name');
       $query->leftJoin('estimate_request__field_requestor_name', 'ern', 'ern.entity_id = er.id AND ern.deleted = 0');
       $query->addField('ern', 'field_requestor_name_value', 'requestor_name');
-
-      // Coordinator.
       $query->leftJoin('estimate_request__field_assigned_to', 'era', 'era.entity_id = er.id AND era.deleted = 0');
       $query->leftJoin('users_field_data', 'au', 'au.uid = era.field_assigned_to_target_id');
       $query->addField('au', 'name', 'assigned_name');
-
-      // Property.
       $query->leftJoin('estimate_request__field_property', 'erp', 'erp.entity_id = er.id AND erp.deleted = 0');
       $query->leftJoin('properties__field_nickname', 'pnick', 'pnick.entity_id = erp.field_property_target_id AND pnick.deleted = 0');
       $query->addField('pnick', 'field_nickname_value', 'property_name');
@@ -196,44 +198,72 @@ class EstimateBoardController extends ControllerBase {
       $query->orderBy('er.changed', 'DESC');
       $results = $query->execute()->fetchAll();
 
-      // Compute prev/next status.
       $current_index = array_search($tid, $order_keys);
       $prev_tid = $current_index > 0 ? $order_keys[$current_index - 1] : NULL;
       $next_tid = ($current_index !== FALSE && $current_index < count($order_keys) - 1) ? $order_keys[$current_index + 1] : NULL;
       $prev_label = $prev_tid ? self::PIPELINE_ORDER[$prev_tid] : NULL;
       $next_label = $next_tid ? self::PIPELINE_ORDER[$next_tid] : NULL;
 
+      $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $label));
+      $slug = trim($slug, '-');
+
       $requests = [];
       foreach ($results as $row) {
+        $rid = (int) $row->id;
+
+        // Check on-hold status via entity load.
+        $er_entity = $er_storage->load($rid);
+        if (!$er_entity) {
+          continue;
+        }
+
+        // Auto-lift hold if hold_until date has passed.
+        $this->checkAndLiftHold($er_entity, $today);
+
+        $is_on_hold = (bool) ($er_entity->get('field_on_hold')->value ?? FALSE);
+
         try {
-          $url = Url::fromRoute('entity.estimate_request.canonical', ['estimate_request' => $row->id])->toString();
+          $url = Url::fromRoute('entity.estimate_request.canonical', ['estimate_request' => $rid])->toString();
         }
         catch (\Exception $e) {
-          $url = '/estimate_request/' . $row->id;
+          $url = '/estimate_request/' . $rid;
         }
 
         $client = trim($row->owner_name ?? '') ?: trim($row->requestor_name ?? '') ?: 'Unknown';
         $age_days = (int) (($now_ts - (int) $row->created) / 86400);
 
-        $requests[] = [
-          'id' => (int) $row->id,
+        $row_data = [
+          'id' => $rid,
           'title' => $row->title,
           'client_name' => $client,
           'property' => trim($row->property_name ?? '') ?: '',
-          'services' => $this->getRequestServices((int) $row->id),
+          'services' => $this->getRequestServices($rid),
           'coordinator' => trim($row->assigned_name ?? '') ?: 'Unassigned',
           'age_days' => $age_days,
           'url' => $url,
-          'estimates' => $this->getRequestEstimatesSimple((int) $row->id),
+          'estimates' => $this->getRequestEstimatesSimple($rid),
           'prev_status_tid' => $prev_tid,
           'prev_status_label' => $prev_label,
           'next_status_tid' => $next_tid,
           'next_status_label' => $next_label,
+          'on_hold' => $is_on_hold,
+          'current_status_label' => $label,
+          'current_status_tid' => $tid,
+          'current_status_slug' => $slug,
         ];
+
+        if ($is_on_hold) {
+          $hold_until = $er_entity->hasField('field_hold_until') && !$er_entity->get('field_hold_until')->isEmpty()
+            ? $er_entity->get('field_hold_until')->value
+            : NULL;
+          $row_data['hold_until'] = $hold_until;
+          $on_hold_requests[] = $row_data;
+        }
+        else {
+          $requests[] = $row_data;
+        }
       }
 
-      $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $label));
-      $slug = trim($slug, '-');
       $pipeline[] = [
         'tid' => $tid,
         'label' => $label,
@@ -243,7 +273,25 @@ class EstimateBoardController extends ControllerBase {
       ];
     }
 
-    return $pipeline;
+    return [$pipeline, $on_hold_requests];
+  }
+
+  /**
+   * Auto-lifts hold if the hold_until date has passed.
+   */
+  private function checkAndLiftHold($entity, string $today): void {
+    if (!$entity->hasField('field_on_hold') || !(bool) $entity->get('field_on_hold')->value) {
+      return;
+    }
+    if (!$entity->hasField('field_hold_until') || $entity->get('field_hold_until')->isEmpty()) {
+      return;
+    }
+    $hold_until = $entity->get('field_hold_until')->value;
+    if ($hold_until <= $today) {
+      $entity->set('field_on_hold', FALSE);
+      $entity->set('field_hold_until', NULL);
+      $entity->save();
+    }
   }
 
   /**
@@ -508,30 +556,30 @@ class EstimateBoardController extends ControllerBase {
 
   /**
    * AJAX status update endpoint. Returns JSON.
+   *
+   * Supports actions: 'status' (default), 'hold', 'lift_hold'.
    */
   public function statusUpdate(Request $request): JsonResponse {
-    // Support both JSON body and form POST.
     $content_type = $request->headers->get('Content-Type', '');
     if (str_contains($content_type, 'application/json')) {
       $data = json_decode($request->getContent(), TRUE) ?? [];
-      $request_id = (int) ($data['estimate_request_id'] ?? 0);
-      $new_status = (int) ($data['new_status_tid'] ?? 0);
     }
     else {
-      $request_id = (int) $request->request->get('request_id', 0);
-      $new_status = (int) $request->request->get('new_status', 0);
+      $data = $request->request->all();
     }
 
-    // Validate CSRF token (passed via drupalSettings → JS → header).
+    // CSRF validation.
     $token = $request->headers->get('X-CSRF-Token')
-      ?: $request->request->get('token', '');
+      ?: ($data['token'] ?? '');
     if (!$token || !\Drupal::csrfToken()->validate($token, 'estimate_board_status_update')) {
       return new JsonResponse(['success' => FALSE, 'error' => 'Invalid token.'], 403);
     }
 
-    $all_statuses = array_merge(array_keys(self::PIPELINE_ORDER), [self::DECLINED_TID]);
-    if (!$request_id || !in_array($new_status, $all_statuses, TRUE)) {
-      return new JsonResponse(['success' => FALSE, 'error' => 'Invalid request or status.'], 400);
+    $action = $data['action'] ?? 'status';
+    $request_id = (int) ($data['estimate_request_id'] ?? 0);
+
+    if (!$request_id) {
+      return new JsonResponse(['success' => FALSE, 'error' => 'Missing request ID.'], 400);
     }
 
     $estimate_request = $this->entityTypeManager()
@@ -540,34 +588,106 @@ class EstimateBoardController extends ControllerBase {
       return new JsonResponse(['success' => FALSE, 'error' => 'Request not found.'], 404);
     }
 
+    if ($action === 'hold') {
+      return $this->handleHold($estimate_request, $data);
+    }
+    if ($action === 'lift_hold') {
+      return $this->handleLiftHold($estimate_request);
+    }
+
+    // Default: status change.
+    $new_status = (int) ($data['new_status_tid'] ?? 0);
+    $all_statuses = array_merge(array_keys(self::PIPELINE_ORDER), [self::DECLINED_TID]);
+    if (!in_array($new_status, $all_statuses, TRUE)) {
+      return new JsonResponse(['success' => FALSE, 'error' => 'Invalid status.'], 400);
+    }
+
     $estimate_request->set('field_status', ['target_id' => $new_status]);
     $estimate_request->save();
 
-    $term = $this->entityTypeManager()
-      ->getStorage('taxonomy_term')->load($new_status);
-    $label = $term ? $term->label() : (string) $new_status;
-    $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $label));
+    return new JsonResponse(array_merge(
+      ['success' => TRUE],
+      $this->buildRowResponseData($estimate_request, $new_status)
+    ));
+  }
+
+  /**
+   * Handle putting a request on hold.
+   */
+  private function handleHold($estimate_request, array $data): JsonResponse {
+    $estimate_request->set('field_on_hold', TRUE);
+    $hold_until = $data['hold_until'] ?? NULL;
+    if ($hold_until && preg_match('/^\d{4}-\d{2}-\d{2}$/', $hold_until)) {
+      $estimate_request->set('field_hold_until', $hold_until);
+    }
+    else {
+      $estimate_request->set('field_hold_until', NULL);
+    }
+    $estimate_request->save();
+
+    $status_tid = (int) ($estimate_request->get('field_status')->target_id ?? 0);
+    $status_label = '';
+    $status_slug = '';
+    if (isset(self::PIPELINE_ORDER[$status_tid])) {
+      $status_label = self::PIPELINE_ORDER[$status_tid];
+      $status_slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $status_label));
+      $status_slug = trim($status_slug, '-');
+    }
+
+    return new JsonResponse(array_merge(
+      [
+        'success' => TRUE,
+        'action' => 'hold',
+        'hold_until' => $hold_until,
+      ],
+      $this->buildRowResponseData($estimate_request, $status_tid)
+    ));
+  }
+
+  /**
+   * Handle lifting hold on a request.
+   */
+  private function handleLiftHold($estimate_request): JsonResponse {
+    $estimate_request->set('field_on_hold', FALSE);
+    $estimate_request->set('field_hold_until', NULL);
+    $estimate_request->save();
+
+    $status_tid = (int) ($estimate_request->get('field_status')->target_id ?? 0);
+
+    return new JsonResponse(array_merge(
+      ['success' => TRUE, 'action' => 'lift_hold'],
+      $this->buildRowResponseData($estimate_request, $status_tid)
+    ));
+  }
+
+  /**
+   * Builds common row response data for JSON responses.
+   */
+  private function buildRowResponseData($estimate_request, int $status_tid): array {
+    $request_id = (int) $estimate_request->id();
+    $order_keys = array_keys(self::PIPELINE_ORDER);
+    $index = array_search($status_tid, $order_keys);
+
+    $status_label = self::PIPELINE_ORDER[$status_tid] ?? '';
+    if (!$status_label) {
+      $term = $this->entityTypeManager()->getStorage('taxonomy_term')->load($status_tid);
+      $status_label = $term ? $term->label() : (string) $status_tid;
+    }
+    $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $status_label));
     $slug = trim($slug, '-');
 
-    // Build row data for the destination swimlane.
-    $order_keys = array_keys(self::PIPELINE_ORDER);
-    $new_index = array_search($new_status, $order_keys);
-    $prev_tid = ($new_index !== FALSE && $new_index > 0) ? $order_keys[$new_index - 1] : NULL;
-    $next_tid = ($new_index !== FALSE && $new_index < count($order_keys) - 1) ? $order_keys[$new_index + 1] : NULL;
+    $prev_tid = ($index !== FALSE && $index > 0) ? $order_keys[$index - 1] : NULL;
+    $next_tid = ($index !== FALSE && $index < count($order_keys) - 1) ? $order_keys[$index + 1] : NULL;
 
-    // Owner/requestor.
     $client_name = 'Unknown';
     if ($estimate_request->hasField('field_owner') && !$estimate_request->get('field_owner')->isEmpty()) {
       $owner = $estimate_request->get('field_owner')->entity;
-      if ($owner) {
-        $client_name = $owner->getDisplayName();
-      }
+      if ($owner) $client_name = $owner->getDisplayName();
     }
     if ($client_name === 'Unknown' && $estimate_request->hasField('field_requestor_name') && !$estimate_request->get('field_requestor_name')->isEmpty()) {
       $client_name = trim((string) $estimate_request->get('field_requestor_name')->value);
     }
 
-    // Property.
     $property = '';
     if ($estimate_request->hasField('field_property') && !$estimate_request->get('field_property')->isEmpty()) {
       $prop = $estimate_request->get('field_property')->entity;
@@ -576,19 +696,14 @@ class EstimateBoardController extends ControllerBase {
       }
     }
 
-    // Coordinator.
     $coordinator = 'Unassigned';
     if ($estimate_request->hasField('field_assigned_to') && !$estimate_request->get('field_assigned_to')->isEmpty()) {
       $assigned = $estimate_request->get('field_assigned_to')->entity;
-      if ($assigned) {
-        $coordinator = $assigned->getDisplayName();
-      }
+      if ($assigned) $coordinator = $assigned->getDisplayName();
     }
 
-    // Age.
     $age_days = (int) ((\Drupal::time()->getRequestTime() - (int) $estimate_request->getCreatedTime()) / 86400);
 
-    // URL.
     try {
       $url = Url::fromRoute('entity.estimate_request.canonical', ['estimate_request' => $request_id])->toString();
     }
@@ -596,10 +711,12 @@ class EstimateBoardController extends ControllerBase {
       $url = '/estimate_request/' . $request_id;
     }
 
-    return new JsonResponse([
-      'success' => TRUE,
-      'new_status' => $label,
+    return [
+      'new_status' => $status_label,
       'new_status_slug' => $slug,
+      'current_status_label' => $status_label,
+      'current_status_slug' => $slug,
+      'current_status_tid' => $status_tid,
       'request_id' => $request_id,
       'client_name' => $client_name,
       'property' => $property,
@@ -613,7 +730,7 @@ class EstimateBoardController extends ControllerBase {
       'next_status_label' => $next_tid ? self::PIPELINE_ORDER[$next_tid] : NULL,
       'decline_tid' => self::DECLINED_TID,
       'url' => $url,
-    ]);
+    ];
   }
 
   // ── Helper methods ──────────────────────────────────────────────

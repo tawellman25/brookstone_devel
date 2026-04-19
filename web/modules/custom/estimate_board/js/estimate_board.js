@@ -283,6 +283,12 @@
       'data-confirm="Mark this estimate request as Declined?" ' +
       'title="Decline">\u2715</button>';
 
+    var holdBtn =
+      '<button type="button" class="estimate-board-status-btn estimate-board-status-btn--hold" ' +
+      'data-request-id="' + data.request_id + '" ' +
+      'data-action="hold" ' +
+      'title="Put on hold">\u23F8</button>';
+
     var estimatesHtml = '';
     if (data.estimates && data.estimates.length) {
       data.estimates.forEach(function (est) {
@@ -303,7 +309,7 @@
       '<td>' + escHtml(data.coordinator) + '</td>' +
       '<td class="' + ageClass + '">' + data.age_days + 'd</td>' +
       '<td class="estimate-board-estimates-cell">' + estimatesHtml + '</td>' +
-      '<td class="estimate-board-actions-cell">' + backBtn + nextBtn + declineBtn + '</td>' +
+      '<td class="estimate-board-actions-cell">' + backBtn + nextBtn + declineBtn + holdBtn + '</td>' +
       '</tr>';
   }
 

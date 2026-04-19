@@ -1,5 +1,110 @@
 {# Estimate Board dashboard #}
 
+<button type="button"
+        id="estimate-board-help-btn"
+        class="estimate-board-help-btn"
+        aria-label="Pipeline help"
+        title="How does the pipeline work?">
+  ?
+</button>
+
+<div id="estimate-board-help-modal"
+     class="estimate-board-help-modal"
+     hidden
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="estimate-board-help-title">
+  <div class="estimate-board-help-modal__backdrop"></div>
+  <div class="estimate-board-help-modal__content">
+    <button type="button"
+            class="estimate-board-help-modal__close"
+            aria-label="Close help">✕</button>
+
+    <h2 id="estimate-board-help-title"
+        class="estimate-board-help-modal__title">
+      How the Estimate Pipeline Works
+    </h2>
+
+    <p class="estimate-board-help-modal__intro">
+      Each estimate request moves through the pipeline below.
+      The board shows where every customer opportunity stands
+      right now — and what needs to happen next.
+    </p>
+
+    <ol class="estimate-board-help-steps">
+
+      <li class="estimate-board-help-step estimate-board-help-step--new-gathering-info">
+        <span class="estimate-board-help-step__badge">1</span>
+        <div class="estimate-board-help-step__body">
+          <strong>New — Gathering Info</strong>
+          <span class="estimate-board-help-step__who">Office</span>
+          <p>A new request just came in. The office collects the customer's name, phone number, address, and what they're looking for. Once you have everything needed for an estimator to go look at the job, move it to Ready to Estimate.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step estimate-board-help-step--ready-to-estimate">
+        <span class="estimate-board-help-step__badge">2</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Ready to Estimate</strong>
+          <span class="estimate-board-help-step__who">Office → Estimator</span>
+          <p>The office has everything needed. This is the handoff point. Gerald or Todd picks this up, calls the customer, schedules a site visit, and goes to look at the job. Move to Estimating once the estimator has taken ownership.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step estimate-board-help-step--estimating">
+        <span class="estimate-board-help-step__badge">3</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Estimating</strong>
+          <span class="estimate-board-help-step__who">Estimator</span>
+          <p>Gerald or Todd has visited the property and is building the estimate. For simple maintenance jobs the price may be given on the spot. For larger jobs numbers are calculated and entered into BOS. Move to Send Estimate when the proposal is ready to go to the customer.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step estimate-board-help-step--send-estimate">
+        <span class="estimate-board-help-step__badge">4</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Send Estimate</strong>
+          <span class="estimate-board-help-step__who">Office or Estimator</span>
+          <p>The estimate is finished and ready to go to the customer. Send the proposal by email or present it in person. Move to Waiting on Customer as soon as it has been sent.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step estimate-board-help-step--waiting-on-customer">
+        <span class="estimate-board-help-step__badge">5</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Waiting on Customer</strong>
+          <span class="estimate-board-help-step__who">Office</span>
+          <p>The customer has the estimate. Follow up if you haven't heard back within a few days. When the customer responds, move to Accepted or Declined.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step estimate-board-help-step--accepted">
+        <span class="estimate-board-help-step__badge">✓</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Accepted</strong>
+          <span class="estimate-board-help-step__who">Office</span>
+          <p>The customer said yes. Move to the Accepted tab. For recurring services, convert to a contract. For design-build jobs, collect the deposit and the Work Order will be created automatically.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step estimate-board-help-step--declined">
+        <span class="estimate-board-help-step__badge">✕</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Declined</strong>
+          <span class="estimate-board-help-step__who">Office</span>
+          <p>The customer said no. The request moves to the Declined tab for reference. These records are kept for follow-up opportunities in future seasons.</p>
+        </div>
+      </li>
+
+    </ol>
+
+    <div class="estimate-board-help-modal__footer">
+      <strong>On Hold:</strong> Any request can be put on hold using the ⏸ button. It moves to the On Hold section at the bottom of the board and shows the date it will automatically come back into the active pipeline.
+    </div>
+
+  </div>
+</div>
+
 {# ── Section 1: Needs Follow-Up ──────────────────────────────────── #}
 <div class="estimate-board-section estimate-board-needs-followup">
   <h2 class="estimate-board-section__title">

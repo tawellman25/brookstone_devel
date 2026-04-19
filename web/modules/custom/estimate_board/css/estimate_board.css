@@ -1,3 +1,155 @@
+/* === Pipeline Help Button === */
+.estimate-board-help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #0d6efd;
+  color: #fff;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 12px;
+  vertical-align: middle;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.estimate-board-help-btn:hover {
+  background: #0a58ca;
+}
+
+/* === Pipeline Help Modal === */
+.estimate-board-help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.estimate-board-help-modal[hidden] {
+  display: none;
+}
+.estimate-board-help-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+.estimate-board-help-modal__content {
+  position: relative;
+  background: #fff;
+  border-radius: 8px;
+  padding: 32px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.estimate-board-help-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #6c757d;
+  line-height: 1;
+  padding: 4px 8px;
+}
+.estimate-board-help-modal__close:hover {
+  color: #000;
+}
+.estimate-board-help-modal__title {
+  font-size: 1.25rem;
+  margin: 0 0 8px;
+  padding-right: 40px;
+}
+.estimate-board-help-modal__intro {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+}
+
+/* Steps list */
+.estimate-board-help-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+}
+.estimate-board-help-step {
+  display: flex;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.estimate-board-help-step:last-child {
+  border-bottom: none;
+}
+.estimate-board-help-step__badge {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  background: #6c757d;
+  margin-top: 2px;
+}
+
+/* Per-step badge colors */
+.estimate-board-help-step--new-gathering-info .estimate-board-help-step__badge { background: #0d6efd; }
+.estimate-board-help-step--ready-to-estimate .estimate-board-help-step__badge { background: #0dcaf0; color: #000; }
+.estimate-board-help-step--estimating .estimate-board-help-step__badge { background: #6f42c1; }
+.estimate-board-help-step--send-estimate .estimate-board-help-step__badge { background: #ffc107; color: #000; }
+.estimate-board-help-step--waiting-on-customer .estimate-board-help-step__badge { background: #6c757d; }
+.estimate-board-help-step--accepted .estimate-board-help-step__badge { background: #198754; }
+.estimate-board-help-step--declined .estimate-board-help-step__badge { background: #dc3545; }
+
+.estimate-board-help-step__body {
+  flex: 1;
+}
+.estimate-board-help-step__body strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+.estimate-board-help-step__body p {
+  font-size: 0.85rem;
+  color: #495057;
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+.estimate-board-help-step__who {
+  font-size: 0.75rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Footer note */
+.estimate-board-help-modal__footer {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  color: #495057;
+  border-left: 3px solid #6c757d;
+}
+
+/* Prevent body scroll when modal is open */
+body.estimate-board-help--open {
+  overflow: hidden;
+}
+/* === End Pipeline Help Modal === */
+
 /* ── Estimate Board ─────────────────────────────────────────────── */
 .estimate-board-section {
   margin-bottom: 2rem;

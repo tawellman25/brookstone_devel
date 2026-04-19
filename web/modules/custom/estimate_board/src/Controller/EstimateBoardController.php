@@ -136,8 +136,8 @@ class EstimateBoardController extends ControllerBase {
     $query->addField('stterm', 'name', 'status_label');
 
     $query->leftJoin('estimate_request__field_property', 'erp', 'erp.entity_id = er.id AND erp.deleted = 0');
-    $query->leftJoin('properties__field_nickname', 'pnick', 'pnick.entity_id = erp.field_property_target_id AND pnick.deleted = 0');
-    $query->addField('pnick', 'field_nickname_value', 'property_name');
+    $query->leftJoin('properties_field_data', 'pfd', 'pfd.id = erp.field_property_target_id');
+    $query->addField('pfd', 'title', 'property_name');
 
     $results = $query->execute()->fetchAll();
 
@@ -209,8 +209,8 @@ class EstimateBoardController extends ControllerBase {
       $query->leftJoin('users_field_data', 'au', 'au.uid = era.field_assigned_to_target_id');
       $query->addField('au', 'name', 'assigned_name');
       $query->leftJoin('estimate_request__field_property', 'erp', 'erp.entity_id = er.id AND erp.deleted = 0');
-      $query->leftJoin('properties__field_nickname', 'pnick', 'pnick.entity_id = erp.field_property_target_id AND pnick.deleted = 0');
-      $query->addField('pnick', 'field_nickname_value', 'property_name');
+      $query->leftJoin('properties_field_data', 'pfd', 'pfd.id = erp.field_property_target_id');
+      $query->addField('pfd', 'title', 'property_name');
 
       $query->orderBy('er.changed', 'DESC');
       $results = $query->execute()->fetchAll();
@@ -485,12 +485,12 @@ class EstimateBoardController extends ControllerBase {
         $request_label = $request->label();
       }
 
-      // Property from request.
+      // Property from request — use entity title (address + city).
       $property = '';
       if ($request && $request->hasField('field_property') && !$request->get('field_property')->isEmpty()) {
         $prop = $request->get('field_property')->entity;
-        if ($prop && $prop->hasField('field_nickname') && !$prop->get('field_nickname')->isEmpty()) {
-          $property = (string) $prop->get('field_nickname')->value;
+        if ($prop) {
+          $property = (string) ($prop->label() ?? '');
         }
       }
 
@@ -624,8 +624,8 @@ class EstimateBoardController extends ControllerBase {
     $query->leftJoin('users_field_data', 'au', 'au.uid = era.field_assigned_to_target_id');
     $query->addField('au', 'name', 'assigned_name');
     $query->leftJoin('estimate_request__field_property', 'erp', 'erp.entity_id = er.id AND erp.deleted = 0');
-    $query->leftJoin('properties__field_nickname', 'pnick', 'pnick.entity_id = erp.field_property_target_id AND pnick.deleted = 0');
-    $query->addField('pnick', 'field_nickname_value', 'property_name');
+    $query->leftJoin('properties_field_data', 'pfd', 'pfd.id = erp.field_property_target_id');
+    $query->addField('pfd', 'title', 'property_name');
 
     $query->orderBy('er.changed', 'DESC');
     $results = $query->execute()->fetchAll();
@@ -685,8 +685,8 @@ class EstimateBoardController extends ControllerBase {
     $query->leftJoin('users_field_data', 'au', 'au.uid = era.field_assigned_to_target_id');
     $query->addField('au', 'name', 'assigned_name');
     $query->leftJoin('estimate_request__field_property', 'erp', 'erp.entity_id = er.id AND erp.deleted = 0');
-    $query->leftJoin('properties__field_nickname', 'pnick', 'pnick.entity_id = erp.field_property_target_id AND pnick.deleted = 0');
-    $query->addField('pnick', 'field_nickname_value', 'property_name');
+    $query->leftJoin('properties_field_data', 'pfd', 'pfd.id = erp.field_property_target_id');
+    $query->addField('pfd', 'title', 'property_name');
 
     $query->orderBy('er.changed', 'DESC');
     $results = $query->execute()->fetchAll();
@@ -940,8 +940,8 @@ class EstimateBoardController extends ControllerBase {
     $property = '';
     if ($estimate_request->hasField('field_property') && !$estimate_request->get('field_property')->isEmpty()) {
       $prop = $estimate_request->get('field_property')->entity;
-      if ($prop && $prop->hasField('field_nickname') && !$prop->get('field_nickname')->isEmpty()) {
-        $property = (string) $prop->get('field_nickname')->value;
+      if ($prop) {
+        $property = (string) ($prop->label() ?? '');
       }
     }
 

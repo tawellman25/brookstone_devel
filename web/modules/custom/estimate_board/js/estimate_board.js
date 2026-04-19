@@ -107,7 +107,7 @@
       function applyFilter(query) {
         var visibleTotal = 0;
 
-        document.querySelectorAll('.estimate-board-swimlane').forEach(function (lane) {
+        document.querySelectorAll('.estimate-board-swimlane, .estimate-board-on-hold').forEach(function (lane) {
           var rows = Array.from(lane.querySelectorAll('.estimate-board-request-row'));
           var visibleInLane = 0;
 
@@ -344,13 +344,18 @@
           // Handle hold action — prompt for date.
           if (action === 'hold') {
             var holdUntil = window.prompt(
-              'Hold until date (optional, format YYYY-MM-DD):\nLeave blank for indefinite hold.',
+              'Hold until date (optional, format MM-DD-YYYY):\nLeave blank for indefinite hold.',
               ''
             );
             if (holdUntil === null) return;
-            if (holdUntil && !/^\d{4}-\d{2}-\d{2}$/.test(holdUntil)) {
-              alert('Invalid date format. Use YYYY-MM-DD or leave blank.');
-              return;
+            // Convert MM-DD-YYYY to YYYY-MM-DD for the server.
+            if (holdUntil) {
+              var match = holdUntil.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+              if (!match) {
+                alert('Invalid date format. Use MM-DD-YYYY or leave blank.');
+                return;
+              }
+              holdUntil = match[3] + '-' + match[1] + '-' + match[2];
             }
 
             btn.disabled = true;

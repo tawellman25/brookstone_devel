@@ -28,8 +28,7 @@ class EstimateBoardController extends ControllerBase {
    * Converted (1658) and Declined (1657) are excluded — they have their own tabs.
    */
   const PIPELINE_ORDER = [
-    1652 => 'New',
-    1653 => 'Needs Info',
+    1652 => 'New - Gathering Info',
     1654 => 'Appointment Scheduled',
     1655 => 'Estimating',
     1810 => 'Estimate Sent',
@@ -253,10 +252,10 @@ class EstimateBoardController extends ControllerBase {
         ];
 
         if ($is_on_hold) {
-          $hold_until = $er_entity->hasField('field_hold_until') && !$er_entity->get('field_hold_until')->isEmpty()
+          $hold_until_raw = $er_entity->hasField('field_hold_until') && !$er_entity->get('field_hold_until')->isEmpty()
             ? $er_entity->get('field_hold_until')->value
             : NULL;
-          $row_data['hold_until'] = $hold_until;
+          $row_data['hold_until'] = $hold_until_raw ? date('m-d-Y', strtotime($hold_until_raw)) : NULL;
           $on_hold_requests[] = $row_data;
         }
         else {
@@ -638,7 +637,7 @@ class EstimateBoardController extends ControllerBase {
       [
         'success' => TRUE,
         'action' => 'hold',
-        'hold_until' => $hold_until,
+        'hold_until' => $hold_until ? date('m-d-Y', strtotime($hold_until)) : NULL,
       ],
       $this->buildRowResponseData($estimate_request, $status_tid)
     ));

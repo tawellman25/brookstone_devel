@@ -249,6 +249,13 @@ function _estimate_request_add_intake_warnings(EntityInterface $req): void {
     return;
   }
 
+  // Only show warnings on estimate_request entity routes (form, canonical),
+  // not on board pages, AJAX endpoints, or other contexts.
+  $route = \Drupal::routeMatch()->getRouteName() ?? '';
+  if (!str_starts_with($route, 'entity.estimate_request.')) {
+    return;
+  }
+
   // Warn if no contact info at all.
   $has_contact_entity = $req->hasField('field_contact') && !$req->get('field_contact')->isEmpty();
   $has_name = $req->hasField('field_requestor_name') && trim((string) ($req->get('field_requestor_name')->value ?? '')) !== '';

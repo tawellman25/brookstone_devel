@@ -39,6 +39,42 @@
     }
   };
 
+  // ── My Estimates stage help modal ───────────────────────────────
+  Drupal.behaviors.estimateMyEstimatesHelp = {
+    attach: function (context) {
+      var btn = document.getElementById('estimate-my-estimates-help-btn');
+      if (!btn || btn.dataset.helpInit) return;
+      btn.dataset.helpInit = 'true';
+
+      var modal = document.getElementById('estimate-my-estimates-help-modal');
+      if (!modal) return;
+      var closeBtn = modal.querySelector('.estimate-board-help-modal__close');
+      var backdrop = modal.querySelector('.estimate-board-help-modal__backdrop');
+
+      function openModal() {
+        modal.removeAttribute('hidden');
+        document.body.classList.add('estimate-board-help--open');
+        if (closeBtn) closeBtn.focus();
+      }
+
+      function closeModal() {
+        modal.setAttribute('hidden', '');
+        document.body.classList.remove('estimate-board-help--open');
+        btn.focus();
+      }
+
+      btn.addEventListener('click', openModal);
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (backdrop) backdrop.addEventListener('click', closeModal);
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modal.hasAttribute('hidden')) {
+          closeModal();
+        }
+      });
+    }
+  };
+
   // ── Swimlane collapse/expand persistence ───────────────────────
   var STORAGE_KEY = 'estimate_board_swimlane_state';
 

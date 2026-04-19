@@ -1,5 +1,135 @@
 {# My Estimates — swimlane board grouped by estimate stage #}
 
+<button type="button"
+        id="estimate-my-estimates-help-btn"
+        class="estimate-board-help-btn"
+        aria-label="Stage help"
+        title="How do the estimate stages work?">
+  ?
+</button>
+
+<div id="estimate-my-estimates-help-modal"
+     class="estimate-board-help-modal"
+     hidden
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="estimate-my-estimates-help-title">
+  <div class="estimate-board-help-modal__backdrop"></div>
+  <div class="estimate-board-help-modal__content">
+    <button type="button"
+            class="estimate-board-help-modal__close"
+            aria-label="Close help">&#10005;</button>
+
+    <h2 id="estimate-my-estimates-help-title"
+        class="estimate-board-help-modal__title">
+      How the Estimate Stages Work
+    </h2>
+
+    <p class="estimate-board-help-modal__intro">
+      Each estimate moves through these stages as you work it from first contact to a sent proposal. Use the &larr; Back and Next Stage &rarr; buttons to advance or step back. Move to Accepted or Declined when the customer responds.
+    </p>
+
+    <ol class="estimate-board-help-steps">
+
+      <li class="estimate-board-help-step">
+        <span class="estimate-board-help-step__badge" style="background:#6c757d;">1</span>
+        <div class="estimate-board-help-step__body">
+          <strong>New</strong>
+          <span class="estimate-board-help-step__who">Estimator</span>
+          <p>The estimate has been created and assigned to you. You have not yet contacted the customer to schedule a site visit.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step">
+        <span class="estimate-board-help-step__badge" style="background:#0d6efd;">2</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Contacted</strong>
+          <span class="estimate-board-help-step__who">Estimator</span>
+          <p>You have reached out to the customer to schedule a site visit. Move here as soon as you have made first contact.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step">
+        <span class="estimate-board-help-step__badge" style="background:#0dcaf0;color:#000;">3</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Appointment Set</strong>
+          <span class="estimate-board-help-step__who">Estimator</span>
+          <p>A site visit has been scheduled with the customer. Move here once a date and time are confirmed.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step">
+        <span class="estimate-board-help-step__badge" style="background:#fd7e14;">4</span>
+        <div class="estimate-board-help-step__body">
+          <strong>In Preparation</strong>
+          <span class="estimate-board-help-step__who">Estimator</span>
+          <p>You have visited the property and are calculating the numbers and building the estimate in BOS. Before advancing from this stage, you must update the Scope Summary with specific details about what will be done — the placeholder text is not acceptable.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step">
+        <span class="estimate-board-help-step__badge" style="background:#6f42c1;">5</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Under Review</strong>
+          <span class="estimate-board-help-step__who">Estimator / Office</span>
+          <p>The estimate is complete and is being reviewed internally before going to the customer. Use this stage if the estimate needs a second set of eyes before sending.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step">
+        <span class="estimate-board-help-step__badge" style="background:#ffc107;color:#000;">6</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Estimate Sent</strong>
+          <span class="estimate-board-help-step__who">Office or Estimator</span>
+          <p>The proposal has been sent to the customer. Move here as soon as it goes out — this is what triggers the follow-up clock on the office side.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step">
+        <span class="estimate-board-help-step__badge" style="background:#20c997;">7</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Client Feedback</strong>
+          <span class="estimate-board-help-step__who">Office or Estimator</span>
+          <p>The customer has responded with questions, revisions, or concerns. Work through their feedback and update the estimate if needed before resubmitting.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step">
+        <span class="estimate-board-help-step__badge" style="background:#0d6efd;">8</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Pending</strong>
+          <span class="estimate-board-help-step__who">Office</span>
+          <p>The customer is considering the proposal. No decision has been made yet. The office is following up.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step">
+        <span class="estimate-board-help-step__badge" style="background:#198754;">&#10003;</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Accepted</strong>
+          <span class="estimate-board-help-step__who">Office</span>
+          <p>The customer said yes. The estimate moves off this board. For recurring services, the office will convert this to a contract. For design-build jobs, collect the deposit and the Work Order is created automatically.</p>
+        </div>
+      </li>
+
+      <li class="estimate-board-help-step">
+        <span class="estimate-board-help-step__badge" style="background:#dc3545;">&#10005;</span>
+        <div class="estimate-board-help-step__body">
+          <strong>Declined</strong>
+          <span class="estimate-board-help-step__who">Office</span>
+          <p>The customer said no. The estimate moves off this board. Declined estimates are kept for reference and potential follow-up in future seasons.</p>
+        </div>
+      </li>
+
+    </ol>
+
+    <div class="estimate-board-help-modal__footer">
+      <strong>Scope Summary requirement:</strong> You must replace the placeholder scope text with real project details before advancing past "In Preparation". The system will block the stage change until this is done.
+    </div>
+
+  </div>
+</div>
+
 {% for group in groups %}
 <div class="estimate-board-section estimate-board-swimlane
             estimate-board-stage-swimlane

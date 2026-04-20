@@ -503,6 +503,51 @@ function wo_weed_spraying_wo_complete_info_submit($form, FormStateInterface $for
 }
 
 /**
+ * Implements hook_entity_view().
+ *
+ * Shows a "Customer Prefers Mystic" alert on weed spraying work orders
+ * when the property's spraying info has field_prefers_mystic = TRUE.
+ */
+function wo_weed_spraying_entity_view(array &$build, EntityInterface $entity, $display, $view_mode) {
+  if ($entity->getEntityTypeId() !== 'work_order' || $entity->bundle() !== 'weed_spraying') {
+    return;
+  }
+
+  if (!$entity->hasField('field_property') || $entity->get('field_property')->isEmpty()) {
+    return;
+  }
+
+  $property_id = (int) $entity->get('field_property')->target_id;
+  if ($property_id <= 0) {
+    return;
+  }
+
+  $spraying_infos = \Drupal::entityTypeManager()
+    ->getStorage('property_spraying_info')
+    ->loadByProperties([
+      'field_property' => $property_id,
+      'type' => 'weed_spraying',
+    ]);
+
+  if (empty($spraying_infos)) {
+    return;
+  }
+
+  $spraying_info = reset($spraying_infos);
+  if (!$spraying_info->hasField('field_prefers_mystic')
+      || $spraying_info->get('field_prefers_mystic')->isEmpty()
+      || !(int) $spraying_info->get('field_prefers_mystic')->value) {
+    return;
+  }
+
+  $build['mystic_alert'] = [
+    '#type' => 'markup',
+    '#markup' => '<div class="messages messages--warning" role="alert" style="margin-bottom:1rem;"><strong>Customer Preference:</strong> This customer prefers <strong>"Mystic"</strong> chemical for weed spraying.</div>',
+    '#weight' => -100,
+  ];
+}
+
+/**
  * Implements hook_form_FORM_ID_alter() for work_order_weed_spraying_form.
  *
  * For crew roles: checks if an open weed spray WO already exists for

@@ -136,6 +136,7 @@ Contracts themselves never map directly to Work Orders.
 - field_client_signature (string)
 - field_ip_address_of_submitter (string)
 - field_paper_contract_pdf (file)
+- field_cancellation_reason (text_long) — set by MarkContractCanceledAction; reason captured at cancellation time
 
 ### Legacy / Import Fields
 - field_old_contract_id (integer)
@@ -186,6 +187,7 @@ Current fields:
 - field_client_signature (string)
 - field_per_push_rate (decimal)
 - field_shoveling_labor_included (boolean)
+- field_cancellation_reason (text_long) — set by MarkContractCanceledAction; reason captured at cancellation time
 
 Planned direction:
 - Adopt explicit service/section commitments consistent with Residential.
@@ -197,6 +199,7 @@ Planned direction:
 
 Current state:
 - Base/system fields only.
+- field_cancellation_reason (text_long) — set by MarkContractCanceledAction; reason captured at cancellation time
 
 Planned direction:
 - Define commercial-specific service commitments.

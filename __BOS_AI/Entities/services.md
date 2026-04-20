@@ -244,14 +244,48 @@ If grandchildren are introduced:
 
 ---
 
+## On-Demand Flag
+
+Field:
+- field_on_demand (boolean)
+
+Purpose:
+Identifies services whose Work Orders are created on demand throughout
+the year, rather than being pre-generated when a Contract is approved.
+
+Two operational categories qualify as on-demand:
+- Route-based: recurring services driven by a route schedule
+  (mowing, weed control, snow removal).
+- Condition-based: services triggered by an event or customer call
+  (sprinkler repair, misc one-off requests).
+
+Behavior:
+- Excluded from automatic Work Order generation at contract approval.
+- Exempt from the "section has no Work Order" check in
+  MarkContractCompletedAction.
+- TRUE = on-demand. FALSE (default) = standard.
+
+Authority:
+- contract_status.md defines the operational rule.
+- This field is the data representation of that rule.
+
+Currently flagged on-demand (5):
+- 368 Repair (Sprinkler Systems → Repair)
+- 373 Snow Removal
+- 377 Weekly Lawn Mowing
+- 414 Landscape Beds (Weed Control → Landscape Beds)
+- 1277 Weed Control
+
+---
+
 ## Current Service Inventory
 
-Format: tid | label | WO | EST | bundle
+Format: tid | label | WO | EST | OD | bundle
 
 ### Landscape and Lawn Care
 372 | Landscape and Lawn Care     | WO=0 | EST=0 | bundle=misc_services
 397 | Mowing                      | WO=0 | EST=0 | bundle=mowing
-377 | Weekly Lawn Mowing          | WO=1 | EST=1 | bundle=lawn_mowing
+377 | Weekly Lawn Mowing          | WO=1 | EST=1 | OD=1 | bundle=lawn_mowing
 395 | Lawn Special Mowing         | WO=1 | EST=1 | bundle=special_mowing
 367 | Fertilizing                 | WO=1 | EST=1 | bundle=fertilizing
 417 | Trees and Shrubs            | WO=1 | EST=1 | bundle=fertilizing_trees_and_shrubs
@@ -270,9 +304,9 @@ Format: tid | label | WO | EST | bundle
 379 | Licensed Weed Control       | WO=0 | EST=0 | bundle=spraying
 398 | Licensed Insect Control     | WO=0 | EST=0 | bundle=Licensed Insect Control (NEEDS FIX)
 410 | Pre-emergent                | WO=1 | EST=1 | bundle=pre_emergent
-1277| Weed Control                | WO=1 | EST=0 | bundle=weed_spraying
+1277| Weed Control                | WO=1 | EST=0 | OD=1 | bundle=weed_spraying
 415 | Misc. Areas                 | WO=0 | EST=0 | bundle=weed_spraying
-414 | Landscape Beds              | WO=1 | EST=0 | bundle=weed_spraying
+414 | Landscape Beds              | WO=1 | EST=0 | OD=1 | bundle=weed_spraying
 399 | Aspen Twig Gall             | WO=1 | EST=1 | bundle=aspen_twig_gall
 407 | Cooley Spruce Gall          | WO=1 | EST=1 | bundle=cooley_spruce_gall
 406 | Deciduous Bore Treatment    | WO=1 | EST=1 | bundle=deciduous_bore
@@ -308,7 +342,7 @@ Format: tid | label | WO | EST | bundle
 393 | Check Up                    | WO=1 | EST=0 | bundle=sprinkler_check_up
 371 | Design                      | WO=1 | EST=0 | bundle=sprinkler_design
 392 | Installation                | WO=1 | EST=1 | bundle=sprinkler_installation
-368 | Repair                      | WO=1 | EST=0 | bundle=sprinkler_repair
+368 | Repair                      | WO=1 | EST=0 | OD=1 | bundle=sprinkler_repair
 375 | Spring Start Up             | WO=1 | EST=1 | bundle=sprinkler_start_up
 369 | Winterizing                 | WO=1 | EST=1 | bundle=sprinkler_winterizing
 
@@ -319,7 +353,7 @@ Format: tid | label | WO | EST | bundle
 396 | Holiday Decorations         | WO=1 | EST=0 | bundle=christmas_decorations
 
 ### Other
-373 | Snow Removal                | WO=1 | EST=0 | bundle=snow_removal
+373 | Snow Removal                | WO=1 | EST=0 | OD=1 | bundle=snow_removal
 403 | In House Task               | WO=1 | EST=0 | bundle=in_house_tasks
 
 ---

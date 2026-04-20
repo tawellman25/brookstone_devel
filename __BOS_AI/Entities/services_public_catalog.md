@@ -9,7 +9,7 @@ Notes:
   - field_service_bundle (work_order bundle machine name)
 
 Format:
-- ID | Label | WO flag | bundle mapping
+- ID | Label | WO flag | OD flag | bundle mapping
 
 ---
 
@@ -19,7 +19,7 @@ Format:
 
 ### Mowing
 397 | Mowing | WO=0 | bundle=mowing
-- 377 | Weekly Lawn Mowing | WO=1 | bundle=lawn_mowing
+- 377 | Weekly Lawn Mowing | WO=1 | OD=1 | bundle=lawn_mowing
 - 395 | Lawn Special Mowing | WO=1 | bundle=special_mowing
 
 ### Fertilizing
@@ -33,9 +33,9 @@ Format:
 - 379 | Licensed Weed Control | WO=0 | bundle=spraying
 - 398 | Licensed Insect Control | WO=0 | bundle=Licensed Insect Control
 - 410 | Pre-emergent | WO=1 | bundle=pre_emergent
-- 1277 | Weed Control | WO=1 | bundle=weed_spraying
+- 1277 | Weed Control | WO=1 | OD=1 | bundle=weed_spraying
   - 415 | Misc. Areas | WO=0 | bundle=weed_spraying
-  - 414 | Landscape Beds | WO=1 | bundle=weed_spraying
+  - 414 | Landscape Beds | WO=1 | OD=1 | bundle=weed_spraying
 - 399 | Aspen Twig Gall | WO=1 | bundle=aspen_twig_gall
 - 407 | Cooley Spruce Gall Treatment | WO=1 | bundle=cooley_spruce_gall
 - 406 | Deciduous Bore Treatment | WO=1 | bundle=deciduous_bore
@@ -94,7 +94,7 @@ Format:
 - 393 | Check Up | WO=1 | bundle=sprinkler_check_up
 - 371 | Design | WO=1 | bundle=sprinkler_design
 - 392 | Installation | WO=1 | bundle=sprinkler_installation
-- 368 | Repair | WO=1 | bundle=sprinkler_repair
+- 368 | Repair | WO=1 | OD=1 | bundle=sprinkler_repair
 - 375 | Spring Start Up | WO=1 | bundle=sprinkler_start_up
 - 369 | Winterizing | WO=1 | bundle=sprinkler_winterizing
 
@@ -111,7 +111,7 @@ Format:
 
 ## Snow Removal
 
-373 | Snow Removal | WO=1 | bundle=snow_removal
+373 | Snow Removal | WO=1 | OD=1 | bundle=snow_removal
 
 ---
 

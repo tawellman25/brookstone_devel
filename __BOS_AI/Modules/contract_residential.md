@@ -94,9 +94,16 @@ Sets: field_spray_route=FALSE, beds_contracted=FALSE,
 - Mark Received Back (1121)
 - Mark Changes Entered (1122)
 - Mark Approved (1123)
+- Mark Completed for the Year (1127)
+- Mark Canceled / Void (1128)
 
 Each enforces allowed-from/disallowed-from states.
 Administrator role may bypass guardrails.
+
+Additional lifecycle action Work Orders Created (1124) is set
+automatically by the Work Order generation flow, not by a manual
+action plugin. Status 1125 Assigned is no longer used in active
+workflow (kept in taxonomy for legacy compatibility only).
 
 ---
 

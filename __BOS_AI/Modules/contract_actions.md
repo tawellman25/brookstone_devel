@@ -84,6 +84,8 @@ The following VBO Action plugins write log rows:
 | `contract_residential_mark_received_back`   | 1118, 1119, 1120, 1126 | 1121      |
 | `contract_residential_mark_changes_entered` | 1121, 1120, 1126       | 1122      |
 | `contract_residential_mark_approved`        | 1122, 1121, 1126       | 1123      |
+| `contract_residential_mark_completed`       | 1124, 1126             | 1127      |
+| `contract_residential_mark_canceled`        | any non-terminal       | 1128      |
 
 *(Status term 1120 — Client Viewed — is reserved for future client-driven transitions.)*
 

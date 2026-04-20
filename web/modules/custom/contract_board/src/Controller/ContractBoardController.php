@@ -256,7 +256,12 @@ class ContractBoardController extends ControllerBase {
     }
 
     usort($followups, fn($a, $b) => $b['days'] <=> $a['days']);
-    return $followups;
+
+    // Return top 25 most overdue, with total count for display.
+    return [
+      'items' => array_slice($followups, 0, 25),
+      'total' => count($followups),
+    ];
   }
 
   /**

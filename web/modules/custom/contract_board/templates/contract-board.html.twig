@@ -107,11 +107,14 @@
 <div class="contract-board-section contract-board-needs-followup">
   <h2 class="contract-board-section__title">
     Needs Follow-Up
-    {% if followups|length > 0 %}
-      <span class="contract-board-badge contract-board-badge--critical">{{ followups|length }}</span>
+    {% if followups.total > 0 %}
+      <span class="contract-board-badge contract-board-badge--critical">{{ followups.total }}</span>
     {% endif %}
   </h2>
-  {% if followups|length > 0 %}
+  {% if followups.items|length > 0 %}
+    {% if followups.total > followups.items|length %}
+      <p class="contract-board-followup-note">Showing top {{ followups.items|length }} of {{ followups.total }} contracts needing follow-up (sorted by most overdue).</p>
+    {% endif %}
     <table>
       <thead>
         <tr>
@@ -124,7 +127,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for item in followups %}
+        {% for item in followups.items %}
           <tr class="overdue-{{ item.severity }}">
             <td><a href="{{ item.url }}" target="_blank">{{ item.client }}</a></td>
             <td>{{ item.status }}</td>

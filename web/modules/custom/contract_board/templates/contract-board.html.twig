@@ -1,0 +1,226 @@
+{# Contract Board pipeline dashboard #}
+
+<button type="button"
+        id="contract-board-help-btn"
+        class="contract-board-help-btn"
+        aria-label="Pipeline help"
+        title="How does the contract pipeline work?">
+  ?
+</button>
+
+<div id="contract-board-help-modal"
+     class="contract-board-help-modal"
+     hidden
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="contract-board-help-title">
+  <div class="contract-board-help-modal__backdrop"></div>
+  <div class="contract-board-help-modal__content">
+    <button type="button"
+            class="contract-board-help-modal__close"
+            aria-label="Close help">&#10005;</button>
+
+    <h2 id="contract-board-help-title"
+        class="contract-board-help-modal__title">
+      How the Contract Pipeline Works
+    </h2>
+
+    <p class="contract-board-help-modal__intro">
+      Each residential contract moves through the pipeline below. The board shows where every contract stands right now and what needs to happen next.
+    </p>
+
+    <ol class="contract-board-help-steps">
+
+      <li class="contract-board-help-step">
+        <span class="contract-board-help-step__badge" style="background:#6c757d;">1</span>
+        <div class="contract-board-help-step__body">
+          <strong>Created &ndash; Updating</strong>
+          <span class="contract-board-help-step__who">Office</span>
+          <p>A new contract has been created. The office is entering or updating the service commitments (contract sections). Once all sections are filled in, advance to Ready to Send.</p>
+        </div>
+      </li>
+
+      <li class="contract-board-help-step">
+        <span class="contract-board-help-step__badge" style="background:#0d6efd;">2</span>
+        <div class="contract-board-help-step__body">
+          <strong>Ready to Send</strong>
+          <span class="contract-board-help-step__who">Office</span>
+          <p>The contract is complete and ready to be mailed or emailed to the customer. Advance once it has been sent out.</p>
+        </div>
+      </li>
+
+      <li class="contract-board-help-step">
+        <span class="contract-board-help-step__badge" style="background:#0dcaf0;color:#000;">3</span>
+        <div class="contract-board-help-step__body">
+          <strong>Sent / Posted</strong>
+          <span class="contract-board-help-step__who">Office</span>
+          <p>The contract is with the customer. Follow up if you haven't heard back within a week. Advance when the signed contract is received.</p>
+        </div>
+      </li>
+
+      <li class="contract-board-help-step">
+        <span class="contract-board-help-step__badge" style="background:#fd7e14;">4</span>
+        <div class="contract-board-help-step__body">
+          <strong>Received Back</strong>
+          <span class="contract-board-help-step__who">Office</span>
+          <p>The signed contract has arrived. Upload the signed PDF and enter any changes the customer made. Advance to Changes Entered when data entry is complete.</p>
+        </div>
+      </li>
+
+      <li class="contract-board-help-step">
+        <span class="contract-board-help-step__badge" style="background:#6f42c1;">5</span>
+        <div class="contract-board-help-step__body">
+          <strong>Changes Entered</strong>
+          <span class="contract-board-help-step__who">Office</span>
+          <p>All customer changes have been entered. Review the contract for accuracy, then advance to Approved. The signed contract PDF must be uploaded before approval.</p>
+        </div>
+      </li>
+
+      <li class="contract-board-help-step">
+        <span class="contract-board-help-step__badge" style="background:#198754;">6</span>
+        <div class="contract-board-help-step__body">
+          <strong>Approved</strong>
+          <span class="contract-board-help-step__who">System</span>
+          <p>The contract is approved and ready for Work Order generation. This board does not advance past Approved &mdash; the WO generation flow handles the transition to Work Orders Created.</p>
+        </div>
+      </li>
+
+      <li class="contract-board-help-step">
+        <span class="contract-board-help-step__badge" style="background:#1a5276;">7</span>
+        <div class="contract-board-help-step__body">
+          <strong>Work Orders Created</strong>
+          <span class="contract-board-help-step__who">Office</span>
+          <p>Work Orders have been generated from this contract. The active season is underway. When all Work Orders are complete or the season ends, advance to Completed for the Year.</p>
+        </div>
+      </li>
+
+    </ol>
+
+    <div class="contract-board-help-modal__footer">
+      <strong>Cancel:</strong> Any contract can be canceled using the &#10005; button. A cancellation reason is required (administrators may override this).
+    </div>
+
+  </div>
+</div>
+
+{# ── Needs Follow-Up ──────────────────────────────────── #}
+<div class="contract-board-section contract-board-needs-followup">
+  <h2 class="contract-board-section__title">
+    Needs Follow-Up
+    {% if followups|length > 0 %}
+      <span class="contract-board-badge contract-board-badge--critical">{{ followups|length }}</span>
+    {% endif %}
+  </h2>
+  {% if followups|length > 0 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Status</th>
+          <th>Property</th>
+          <th>Services</th>
+          <th>Days</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in followups %}
+          <tr class="overdue-{{ item.severity }}">
+            <td><a href="{{ item.url }}" target="_blank">{{ item.client }}</a></td>
+            <td>{{ item.status }}</td>
+            <td>{{ item.property }}</td>
+            <td>{{ item.services }}</td>
+            <td><strong>{{ item.days }}d</strong></td>
+            <td class="contract-board-actions-cell">
+              {% if item.next_action %}
+                <button type="button"
+                  class="contract-board-status-btn contract-board-status-btn--next"
+                  data-contract-id="{{ item.id }}"
+                  data-action-id="{{ item.next_action }}"
+                  data-status-label="{{ item.next_label }}"
+                  title="Advance to: {{ item.next_label }}">
+                  {{ item.next_label }} &rarr;
+                </button>
+              {% endif %}
+              <button type="button"
+                class="contract-board-status-btn contract-board-status-btn--cancel"
+                data-contract-id="{{ item.id }}"
+                data-action-id="contract_residential_mark_canceled"
+                data-confirm="cancel"
+                title="Cancel">
+                &#10005;
+              </button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="contract-board-empty">All contracts are up to date &mdash; no follow-ups needed.</p>
+  {% endif %}
+</div>
+
+{# ── Pipeline Swimlanes ──────────────────────────────── #}
+{% for group in pipeline %}
+  <div class="contract-board-section contract-board-swimlane contract-board-swimlane--{{ group.slug }}">
+    <details {% if group.count > 0 %}open{% endif %}>
+      <summary class="contract-board-section__title">
+        {{ group.label }}
+        <span class="contract-board-badge contract-board-badge--{{ group.slug }}{% if group.count == 0 %} contract-board-badge--empty{% endif %}">
+          {{ group.count }}
+        </span>
+      </summary>
+
+      {% if group.count == 0 %}
+        <p class="contract-board-empty">No contracts.</p>
+      {% else %}
+        <table class="contract-board-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Property</th>
+              <th>Services</th>
+              <th>Year</th>
+              <th>Age</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for request in group.requests %}
+            <tr class="contract-board-request-row" data-contract-id="{{ request.id }}">
+              <td><a href="{{ request.url }}" target="_blank">{{ request.client_name }}</a></td>
+              <td>{{ request.property }}</td>
+              <td>{{ request.services }}</td>
+              <td>{{ request.year }}</td>
+              <td class="{% if request.age_days > 7 %}contract-board-age--warning{% endif %}">
+                {{ request.age_days }}d
+              </td>
+              <td class="contract-board-actions-cell">
+                {% if request.next_action %}
+                  <button type="button"
+                    class="contract-board-status-btn contract-board-status-btn--next contract-board-status-btn--{{ group.slug }}"
+                    data-contract-id="{{ request.id }}"
+                    data-action-id="{{ request.next_action }}"
+                    data-status-label="{{ request.next_label }}"
+                    title="Advance to: {{ request.next_label }}">
+                    {{ request.next_label }} &rarr;
+                  </button>
+                {% endif %}
+
+                <button type="button"
+                  class="contract-board-status-btn contract-board-status-btn--cancel"
+                  data-contract-id="{{ request.id }}"
+                  data-action-id="contract_residential_mark_canceled"
+                  data-confirm="cancel"
+                  title="Cancel">
+                  &#10005;
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </details>
+  </div>
+{% endfor %}

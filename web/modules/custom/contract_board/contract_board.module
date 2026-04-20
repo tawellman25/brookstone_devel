@@ -1,0 +1,37 @@
+<?php
+
+/**
+ * @file
+ * Contract Board — pipeline dashboard for residential contract processing.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function contract_board_theme(): array {
+  return [
+    'contract_board' => [
+      'variables' => [
+        'followups' => [],
+        'pipeline' => [],
+        'year' => 0,
+        'csrf_token' => '',
+      ],
+      'template' => 'contract-board',
+    ],
+    'contract_board_completed' => [
+      'variables' => [
+        'rows' => [],
+        'days' => 90,
+      ],
+      'template' => 'contract-board-completed',
+    ],
+    'contract_board_canceled' => [
+      'variables' => [
+        'rows' => [],
+        'days' => 90,
+      ],
+      'template' => 'contract-board-canceled',
+    ],
+  ];
+}

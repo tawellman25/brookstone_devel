@@ -36,7 +36,7 @@ class MarkContractCanceledAction extends ViewsBulkOperationsActionBase {
   /**
    * {@inheritdoc}
    */
-  public function defaultConfiguration() {
+  public function defaultConfiguration(): array {
     return [
       'cancellation_reason' => '',
     ] + parent::defaultConfiguration();
@@ -45,7 +45,7 @@ class MarkContractCanceledAction extends ViewsBulkOperationsActionBase {
   /**
    * {@inheritdoc}
    */
-  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state): array {
     $is_admin = \Drupal::currentUser()->hasRole('administrator');
 
     $form['cancellation_reason'] = [
@@ -65,7 +65,7 @@ class MarkContractCanceledAction extends ViewsBulkOperationsActionBase {
   /**
    * {@inheritdoc}
    */
-  public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
+  public function submitConfigurationForm(array &$form, FormStateInterface $form_state): void {
     $this->configuration['cancellation_reason'] = trim((string) $form_state->getValue('cancellation_reason'));
   }
 

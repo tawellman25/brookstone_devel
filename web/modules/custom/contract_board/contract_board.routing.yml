@@ -1,0 +1,40 @@
+contract_board.board:
+  path: '/admin/office/contracts/board'
+  defaults:
+    _controller: '\Drupal\contract_board\Controller\ContractBoardController::board'
+    _title: 'Contract Board'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  options:
+    _admin_route: TRUE
+
+contract_board.status_update:
+  path: '/admin/office/contracts/board/status-update'
+  defaults:
+    _controller: '\Drupal\contract_board\Controller\ContractBoardController::statusUpdate'
+    _title: 'Update Contract Status'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  methods: [POST]
+  options:
+    _admin_route: TRUE
+
+contract_board.completed:
+  path: '/admin/office/contracts/board/completed'
+  defaults:
+    _controller: '\Drupal\contract_board\Controller\ContractBoardController::completedTab'
+    _title: 'Completed'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  options:
+    _admin_route: TRUE
+
+contract_board.canceled:
+  path: '/admin/office/contracts/board/canceled'
+  defaults:
+    _controller: '\Drupal\contract_board\Controller\ContractBoardController::canceledTab'
+    _title: 'Canceled'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  options:
+    _admin_route: TRUE

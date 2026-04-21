@@ -28,25 +28,6 @@ display:
     display_plugin: default
     position: 0
     display_options:
-      relationships:
-        field_estimate_request:
-          id: field_estimate_request
-          table: estimate__field_estimate_request
-          field: field_estimate_request
-          relationship: none
-          group_type: group
-          admin_label: 'Estimate Request'
-          plugin_id: standard
-          required: false
-        field_property:
-          id: field_property
-          table: estimate_request__field_property
-          field: field_property
-          relationship: field_estimate_request
-          group_type: group
-          admin_label: Property
-          plugin_id: standard
-          required: false
       fields:
         title:
           id: title
@@ -209,6 +190,25 @@ display:
         options:
           disable_sql_rewrite: false
           distinct: false
+      relationships:
+        field_estimate_request:
+          id: field_estimate_request
+          table: estimate__field_estimate_request
+          field: field_estimate_request
+          relationship: none
+          group_type: group
+          admin_label: 'Estimate Request'
+          plugin_id: standard
+          required: false
+        field_property:
+          id: field_property
+          table: estimate_request__field_property
+          field: field_property
+          relationship: field_estimate_request
+          group_type: group
+          admin_label: Property
+          plugin_id: standard
+          required: false
       display_extenders: {  }
     cache_metadata:
       max-age: -1

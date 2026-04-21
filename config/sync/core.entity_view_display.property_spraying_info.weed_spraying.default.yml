@@ -10,6 +10,7 @@ dependencies:
     - field.field.property_spraying_info.weed_spraying.field_last_applied_by
     - field.field.property_spraying_info.weed_spraying.field_last_applied_date
     - field.field.property_spraying_info.weed_spraying.field_misc_spraying_frequency
+    - field.field.property_spraying_info.weed_spraying.field_prefers_mystic
     - field.field.property_spraying_info.weed_spraying.field_property
     - field.field.property_spraying_info.weed_spraying.field_route_order
     - field.field.property_spraying_info.weed_spraying.field_spray_map
@@ -92,7 +93,7 @@ third_party_settings:
                   format_custom_false: ''
                   format_custom_true: ''
                 third_party_settings: {  }
-            weight: 0
+            weight: 1
             additional: {  }
           c8d2ce6c-3277-4945-8ebd-c5f9b2edb7fd:
             uuid: c8d2ce6c-3277-4945-8ebd-c5f9b2edb7fd
@@ -113,7 +114,7 @@ third_party_settings:
                   format_custom_false: ''
                   format_custom_true: ''
                 third_party_settings: {  }
-            weight: 2
+            weight: 3
             additional: {  }
           d912aaa3-ccd8-46f1-b7a2-4136deeb1834:
             uuid: d912aaa3-ccd8-46f1-b7a2-4136deeb1834
@@ -173,7 +174,7 @@ third_party_settings:
                 settings:
                   link: true
                 third_party_settings: {  }
-            weight: 3
+            weight: 4
             additional: {  }
           01fdf660-5ec5-4897-aefb-f9049fca02e3:
             uuid: 01fdf660-5ec5-4897-aefb-f9049fca02e3
@@ -192,7 +193,7 @@ third_party_settings:
                 settings:
                   link: true
                 third_party_settings: {  }
-            weight: 1
+            weight: 2
             additional: {  }
           aea243cb-3277-4a2b-8c82-adef91ddfc3c:
             uuid: aea243cb-3277-4a2b-8c82-adef91ddfc3c
@@ -210,6 +211,27 @@ third_party_settings:
                   prefix_suffix: true
                 third_party_settings: {  }
             weight: 8
+            additional: {  }
+          28494ec9-c5a5-4513-bb59-57eac179f8db:
+            uuid: 28494ec9-c5a5-4513-bb59-57eac179f8db
+            region: second
+            configuration:
+              id: 'field_block:property_spraying_info:weed_spraying:field_prefers_mystic'
+              label: 'Customer Prefers "Mystic" Chemical'
+              label_display: '0'
+              provider: layout_builder
+              context_mapping:
+                entity: layout_builder.entity
+                view_mode: view_mode
+              formatter:
+                type: boolean
+                label: hidden
+                settings:
+                  format: custom
+                  format_custom_false: ''
+                  format_custom_true: 'Customer Prefers "Mystic" Chemical'
+                third_party_settings: {  }
+            weight: 0
             additional: {  }
         third_party_settings: {  }
       -
@@ -421,3 +443,4 @@ content:
     region: content
 hidden:
   changed: true
+  field_prefers_mystic: true

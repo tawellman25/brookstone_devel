@@ -23,6 +23,7 @@ dependencies:
     - field.field.estimate_request.standard.field_status
   module:
     - allowed_formats
+    - datetime
     - field_group
     - field_layout
     - layout_discovery
@@ -59,6 +60,11 @@ third_party_settings:
         - field_assigned_to
         - field_contract
         - field_contract_section
+        - field_estimates
+        - field_on_hold
+        - field_hold_until
+        - uid
+        - created
         - path
       label: 'Office Administration'
       region: content
@@ -96,6 +102,12 @@ targetEntityType: estimate_request
 bundle: standard
 mode: default
 content:
+  created:
+    type: datetime_timestamp
+    weight: 16
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_assigned_to:
     type: entity_reference_autocomplete
     weight: 9
@@ -146,6 +158,29 @@ content:
       match_limit: 10
       size: 60
       placeholder: ''
+    third_party_settings: {  }
+  field_estimates:
+    type: entity_reference_autocomplete
+    weight: 12
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_hold_until:
+    type: datetime_default
+    weight: 14
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_on_hold:
+    type: boolean_checkbox
+    weight: 13
+    region: content
+    settings:
+      display_label: true
     third_party_settings: {  }
   field_owner:
     type: entity_reference_autocomplete
@@ -218,14 +253,19 @@ content:
     third_party_settings: {  }
   path:
     type: path
-    weight: 12
+    weight: 17
     region: content
     settings: {  }
     third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 15
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
 hidden:
-  created: true
-  field_estimates: true
-  field_hold_until: true
-  field_on_hold: true
   title: true
-  uid: true

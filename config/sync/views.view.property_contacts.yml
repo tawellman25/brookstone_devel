@@ -697,7 +697,20 @@ display:
           plugin_id: standard
           required: false
       header: {  }
-      footer: {  }
+      footer:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: false
+          content:
+            value: "<a\r\n  href=\"/contacts/add?bos_host=property&bos_host_id={{ raw_arguments.id }}&bos_field=field_contacts&destination=/properties/{{ raw_arguments.id }}\"\r\n  class=\"button button--primary use-ajax\"\r\n  data-dialog-type=\"modal\"\r\n  data-dialog-options='{\"width\":800}'\r\n>\r\n  + Contact\r\n</a>"
+            format: full_html
+          tokenize: true
       display_extenders: {  }
     cache_metadata:
       max-age: -1

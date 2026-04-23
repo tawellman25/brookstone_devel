@@ -80,8 +80,7 @@ function bos_contact_attach_preprocess_views_view(array &$variables): void {
     return;
   }
 
-  $ajax_views = ['property_contacts', 'property_additional_contacts'];
-  if (in_array($view->id(), $ajax_views, TRUE)) {
+  if ($view->id() === 'property_contacts') {
     $variables['#attached']['library'][] = 'core/drupal.dialog.ajax';
   }
 }

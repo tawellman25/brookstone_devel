@@ -490,20 +490,7 @@ display:
       cache:
         type: tag
         options: {  }
-      empty:
-        area:
-          id: area
-          table: views
-          field: area
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: text
-          empty: true
-          content:
-            value: '<em>No additional contacts yet.</em>'
-            format: full_html
-          tokenize: false
+      empty: {  }
       sorts: {  }
       arguments:
         id:
@@ -578,46 +565,8 @@ display:
           plugin_id: standard
           required: false
       header: {  }
-      footer:
-        area:
-          id: area
-          table: views
-          field: area
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: text
-          empty: false
-          content:
-            value: "<a class=\"button--primary button js-form-submit form-submit use-ajax\" href=\"/admin/content/contacts/add/contact?bos_host=property&bos_host_id={{ raw_arguments.id }}&bos_field=field_contacts&destination=/properties/{{ raw_arguments.id }}\" data-dialog-type=\"modal\" data-dialog-options='{\"width\":\"min(100%, 700px)\"}'>+ Contact</a>"
-            format: full_html
-          tokenize: true
+      footer: {  }
       display_extenders: {  }
-    cache_metadata:
-      max-age: -1
-      contexts:
-        - 'languages:language_content'
-        - 'languages:language_interface'
-        - url
-        - user.roles
-      tags:
-        - 'config:field.storage.contacts.field_email'
-        - 'config:field.storage.contacts.field_first_name'
-        - 'config:field.storage.contacts.field_job_title'
-        - 'config:field.storage.contacts.field_last_name'
-        - 'config:field.storage.contacts.field_phone_number'
-  entity_view_1:
-    id: entity_view_1
-    display_title: EVA
-    display_plugin: entity_view
-    position: 1
-    display_options:
-      title: 'Additional Contacts'
-      display_extenders: {  }
-      entity_type: properties
-      bundles:
-        - property
-      show_title: true
     cache_metadata:
       max-age: -1
       contexts:

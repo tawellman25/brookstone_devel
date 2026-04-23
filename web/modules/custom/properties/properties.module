@@ -6,10 +6,117 @@ use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Implements hook_ENTITY_TYPE_presave() for the 'properties' entity type.
- * Reserved for future logic. Currently unused.
+ *
+ * Contact handling on property save:
+ * 1. Auto-fill Primary Contact from the current owner's customer_profile
+ *    primary contact if not already set. Leaves blank if no owner or no
+ *    owner primary contact is available.
+ * 2. Deduplicate Additional Contacts (unique target_ids).
+ * 3. Ensure the Primary Contact is not also in Additional Contacts.
  */
 function properties_properties_presave(EntityInterface $entity): void {
-  // Add presave logic here when needed.
+  _properties_autofill_primary_contact($entity);
+  _properties_separate_primary_from_additional($entity);
+}
+
+/**
+ * Auto-fills field_primary_contact_ref from the current owner's customer_profile.
+ */
+function _properties_autofill_primary_contact(EntityInterface $property): void {
+  if (!$property->hasField('field_primary_contact_ref')) {
+    return;
+  }
+  if (!$property->get('field_primary_contact_ref')->isEmpty()) {
+    return;
+  }
+
+  // Find the most recent owner via ownership_record (newest record).
+  $property_id = (int) ($property->id() ?? 0);
+  if ($property_id <= 0) {
+    return;
+  }
+
+  $etm = \Drupal::entityTypeManager();
+  $or_storage = $etm->getStorage('ownership_record');
+  $ids = $or_storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_property_reference', $property_id)
+    ->sort('created', 'DESC')
+    ->range(0, 1)
+    ->execute();
+
+  if (empty($ids)) {
+    return;
+  }
+
+  $record = $or_storage->load(reset($ids));
+  if (!$record || !$record->hasField('field_property_owner') || $record->get('field_property_owner')->isEmpty()) {
+    return;
+  }
+
+  $owner_uid = (int) $record->get('field_property_owner')->target_id;
+  if ($owner_uid <= 0) {
+    return;
+  }
+
+  // Load the owner's customer_profile and read its primary contact.
+  $profile_storage = $etm->getStorage('profile');
+  $profile_ids = $profile_storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'customer_profile')
+    ->condition('uid', $owner_uid)
+    ->range(0, 1)
+    ->execute();
+
+  if (empty($profile_ids)) {
+    return;
+  }
+
+  $profile = $profile_storage->load(reset($profile_ids));
+  if (!$profile || !$profile->hasField('field_primary_contact_ref')
+      || $profile->get('field_primary_contact_ref')->isEmpty()) {
+    return;
+  }
+
+  $contact_id = (int) $profile->get('field_primary_contact_ref')->target_id;
+  if ($contact_id <= 0) {
+    return;
+  }
+
+  $property->set('field_primary_contact_ref', ['target_id' => $contact_id]);
+}
+
+/**
+ * Deduplicates field_contacts and removes the primary contact from it.
+ */
+function _properties_separate_primary_from_additional(EntityInterface $property): void {
+  if (!$property->hasField('field_contacts') || $property->get('field_contacts')->isEmpty()) {
+    return;
+  }
+
+  $primary_id = 0;
+  if ($property->hasField('field_primary_contact_ref') && !$property->get('field_primary_contact_ref')->isEmpty()) {
+    $primary_id = (int) $property->get('field_primary_contact_ref')->target_id;
+  }
+
+  $seen = [];
+  $clean = [];
+  foreach ($property->get('field_contacts')->getValue() as $item) {
+    $target = (int) ($item['target_id'] ?? 0);
+    if ($target <= 0) {
+      continue;
+    }
+    if ($target === $primary_id) {
+      continue;
+    }
+    if (isset($seen[$target])) {
+      continue;
+    }
+    $seen[$target] = TRUE;
+    $clean[] = ['target_id' => $target];
+  }
+
+  $property->set('field_contacts', $clean);
 }
 
 /**

@@ -1,4 +1,3 @@
-uuid: 219107a8-a648-4446-9643-2a6958302b3f
 langcode: en
 status: true
 dependencies:
@@ -20,8 +19,8 @@ dependencies:
     - eva
     - user
     - views_url_path_arguments
-id: property_contacts
-label: 'Property - Contacts'
+id: property_additional_contacts
+label: 'Property - Additional Contacts'
 module: views
 description: ''
 tag: ''
@@ -35,76 +34,11 @@ display:
     position: 0
     display_options:
       fields:
-        title:
-          id: title
-          table: properties_field_data
-          field: title
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: null
-          entity_field: title
-          plugin_id: field
-          label: ''
-          exclude: true
-          alter:
-            alter_text: false
-            text: ''
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: true
-          click_sort_column: value
-          type: string
-          settings:
-            link_to_entity: false
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
         title_1:
           id: title_1
           table: contacts_field_data
           field: title
-          relationship: field_primary_contact_ref
+          relationship: field_contacts
           group_type: group
           admin_label: ''
           entity_type: contacts
@@ -169,7 +103,7 @@ display:
           id: field_first_name
           table: contacts__field_first_name
           field: field_first_name
-          relationship: field_primary_contact_ref
+          relationship: field_contacts
           group_type: group
           admin_label: ''
           plugin_id: field
@@ -232,7 +166,7 @@ display:
           id: field_job_title
           table: contacts__field_job_title
           field: field_job_title
-          relationship: field_primary_contact_ref
+          relationship: field_contacts
           group_type: group
           admin_label: ''
           plugin_id: field
@@ -295,7 +229,7 @@ display:
           id: field_last_name
           table: contacts__field_last_name
           field: field_last_name
-          relationship: field_primary_contact_ref
+          relationship: field_contacts
           group_type: group
           admin_label: ''
           plugin_id: field
@@ -358,7 +292,7 @@ display:
           id: field_phone_number
           table: contacts__field_phone_number
           field: field_phone_number
-          relationship: field_primary_contact_ref
+          relationship: field_contacts
           group_type: group
           admin_label: ''
           plugin_id: field
@@ -421,7 +355,7 @@ display:
           id: field_email
           table: contacts__field_email
           field: field_email
-          relationship: field_primary_contact_ref
+          relationship: field_contacts
           group_type: group
           admin_label: ''
           plugin_id: field
@@ -479,72 +413,6 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        id:
-          id: id
-          table: properties_field_data
-          field: id
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: properties
-          entity_field: id
-          plugin_id: field
-          label: ''
-          exclude: false
-          alter:
-            alter_text: true
-            text: "<h4>Primary Contact</h4>\r\n{{ field_first_name }} {{ field_last_name }} {{ field_job_title }}\r\n{{ field_phone_number }}\r\n{{ field_email }}"
-            make_link: false
-            path: ''
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: ''
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: true
-          empty: "<a\r\n  href=\"/contacts/add?bos_host=property&bos_host_id={{ raw_arguments.id }}&bos_field=field_primary_contact_ref&destination=/properties/{{ raw_arguments.id }}\"\r\n  class=\"button button--primary use-ajax\"\r\n  data-dialog-type=\"modal\"\r\n  data-dialog-options='{\"width\":800}'\r\n>\r\n  Set Primary Contact\r\n</a>"
-          hide_empty: false
-          empty_zero: true
-          hide_alter_empty: true
-          click_sort_column: value
-          type: number_integer
-          settings:
-            thousand_separator: ''
-            prefix_suffix: false
-          group_column: value
-          group_columns: {  }
-          group_rows: true
-          delta_limit: 0
-          delta_offset: 0
-          delta_reversed: false
-          delta_first_last: false
-          multi_type: separator
-          separator: ', '
-          field_api_classes: false
         nothing:
           id: nothing
           table: views
@@ -554,10 +422,10 @@ display:
           admin_label: ''
           plugin_id: custom
           label: ''
-          exclude: true
+          exclude: false
           alter:
             alter_text: true
-            text: "<a\r\n  href=\"/contacts/add?bos_host=property&bos_host_id={{ raw_arguments.id }}&bos_field=field_primary_contact_ref&destination=/properties/{{ raw_arguments.id }}\"\r\n  class=\"button button--primary use-ajax\"\r\n  data-dialog-type=\"modal\"\r\n  data-dialog-options='{\"width\":800}'\r\n>\r\n  Set Primary Contact\r\n</a>"
+            text: "{{ field_first_name }} {{ field_last_name }} {{ field_job_title }}{{ field_phone_number }}{{ field_email }}"
             make_link: false
             path: ''
             absolute: false
@@ -622,7 +490,20 @@ display:
       cache:
         type: tag
         options: {  }
-      empty: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: true
+          content:
+            value: '<em>No additional contacts yet.</em>'
+            format: full_html
+          tokenize: false
       sorts: {  }
       arguments:
         id:
@@ -687,17 +568,30 @@ display:
           replica: false
           query_tags: {  }
       relationships:
-        field_primary_contact_ref:
-          id: field_primary_contact_ref
-          table: properties__field_primary_contact_ref
-          field: field_primary_contact_ref
+        field_contacts:
+          id: field_contacts
+          table: properties__field_contacts
+          field: field_contacts
           relationship: none
           group_type: group
-          admin_label: 'Primary Contacts'
+          admin_label: 'Additional Contacts'
           plugin_id: standard
           required: false
       header: {  }
-      footer: {  }
+      footer:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: false
+          content:
+            value: "<a class=\"button--primary button js-form-submit form-submit use-ajax\" href=\"/admin/content/contacts/add/contact?bos_host=property&bos_host_id={{ raw_arguments.id }}&bos_field=field_contacts&destination=/properties/{{ raw_arguments.id }}\" data-dialog-type=\"modal\" data-dialog-options='{\"width\":\"min(100%, 700px)\"}'>+ Contact</a>"
+            format: full_html
+          tokenize: true
       display_extenders: {  }
     cache_metadata:
       max-age: -1
@@ -718,12 +612,12 @@ display:
     display_plugin: entity_view
     position: 1
     display_options:
-      title: 'Primary Contact'
+      title: 'Additional Contacts'
       display_extenders: {  }
       entity_type: properties
       bundles:
         - property
-      show_title: false
+      show_title: true
     cache_metadata:
       max-age: -1
       contexts:

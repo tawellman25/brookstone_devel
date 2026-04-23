@@ -84,6 +84,109 @@ function _properties_autofill_primary_contact(EntityInterface $property): void {
   }
 
   $property->set('field_primary_contact_ref', ['target_id' => $contact_id]);
+
+  // Also copy the owner's phone numbers to the primary contact (if missing).
+  _properties_copy_owner_phones_to_contact($owner_uid, $contact_id);
+}
+
+/**
+ * Copies owner's profile phone numbers to the contact's field_phone_number.
+ *
+ * Only adds phones that aren't already on the contact (dedupe by
+ * normalized number). Creates new phone_number.contacts entities
+ * since the contact's reference field targets that bundle only.
+ */
+function _properties_copy_owner_phones_to_contact(int $owner_uid, int $contact_id): void {
+  if ($owner_uid <= 0 || $contact_id <= 0) {
+    return;
+  }
+
+  $etm = \Drupal::entityTypeManager();
+  $phone_storage = $etm->getStorage('phone_number');
+  $contact_storage = $etm->getStorage('contacts');
+
+  // Load the owner's profile phones.
+  $profile_phone_ids = $phone_storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'profile_phone_numbers')
+    ->condition('field_user', $owner_uid)
+    ->execute();
+
+  if (empty($profile_phone_ids)) {
+    return;
+  }
+
+  $profile_phones = $phone_storage->loadMultiple($profile_phone_ids);
+
+  // Load the contact and its existing phones (for dedupe).
+  $contact = $contact_storage->load($contact_id);
+  if (!$contact) {
+    return;
+  }
+
+  $existing_numbers = [];
+  if ($contact->hasField('field_phone_number') && !$contact->get('field_phone_number')->isEmpty()) {
+    foreach ($contact->get('field_phone_number')->referencedEntities() as $phone) {
+      if ($phone->hasField('field_phone_number') && !$phone->get('field_phone_number')->isEmpty()) {
+        $existing_numbers[_properties_normalize_phone((string) $phone->get('field_phone_number')->value)] = TRUE;
+      }
+    }
+  }
+
+  $appended = FALSE;
+  foreach ($profile_phones as $profile_phone) {
+    if (!$profile_phone->hasField('field_phone_number') || $profile_phone->get('field_phone_number')->isEmpty()) {
+      continue;
+    }
+    $number = (string) $profile_phone->get('field_phone_number')->value;
+    $key = _properties_normalize_phone($number);
+    if ($key === '' || isset($existing_numbers[$key])) {
+      continue;
+    }
+
+    // Create a matching phone_number.contacts entity.
+    $values = [
+      'type' => 'contacts',
+      'field_phone_number' => $number,
+    ];
+    if ($profile_phone->hasField('field_phone_type') && !$profile_phone->get('field_phone_type')->isEmpty()) {
+      $values['field_phone_type'] = $profile_phone->get('field_phone_type')->value;
+    }
+
+    try {
+      $new_phone = $phone_storage->create($values);
+      $new_phone->save();
+      $contact->get('field_phone_number')->appendItem(['target_id' => (int) $new_phone->id()]);
+      $existing_numbers[$key] = TRUE;
+      $appended = TRUE;
+    }
+    catch (\Throwable $e) {
+      \Drupal::logger('properties')->error('Failed to copy phone @num to contact @cid: @msg', [
+        '@num' => $number,
+        '@cid' => $contact_id,
+        '@msg' => $e->getMessage(),
+      ]);
+    }
+  }
+
+  if ($appended) {
+    try {
+      $contact->save();
+    }
+    catch (\Throwable $e) {
+      \Drupal::logger('properties')->error('Failed to save contact @cid after phone copy: @msg', [
+        '@cid' => $contact_id,
+        '@msg' => $e->getMessage(),
+      ]);
+    }
+  }
+}
+
+/**
+ * Normalizes a phone number to digits only for dedupe comparison.
+ */
+function _properties_normalize_phone(string $number): string {
+  return preg_replace('/\D+/', '', $number) ?? '';
 }
 
 /**

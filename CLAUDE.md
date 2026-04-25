@@ -61,6 +61,78 @@ All scripts are in `dev_scripts/`. They require SSH host aliases configured in `
 
 The deploy script rsyncs code to live, then runs `composer install --no-dev` and `drush cr` on the remote. Config import (`drush cim`) does **not** run by default — pass `--cim` to enable it. **The DB is never touched by the deploy.** Directories `.vscode/`, `dev_scripts/`, and `__BOS_AI/` are protected from deletion on live even with `--delete`.
 
+## __BOS_AI Documentation Bundle
+
+The `__BOS_AI/` tree is the authoritative governance documentation for BOS, organized into subdirectories (`Entities/`, `Modules/`, `Governance/`, `Business/`, etc.). Claude.ai's project knowledge UI requires a flat list of files for upload, so we maintain a flattened staging dir at `__BOS_AI/_upload_bundle/` for that purpose.
+
+### Regenerating the bundle
+
+When `__BOS_AI/` content changes, regenerate the upload bundle:
+
+```bash
+# 1. Clean and re-stage
+rm -rf __BOS_AI/_upload_bundle
+mkdir -p __BOS_AI/_upload_bundle
+```
+
+Then run the staging logic (Python, since `zip` isn't available in WSL by default):
+
+```python
+import os, shutil
+
+SRC = '__BOS_AI'
+DEST = '__BOS_AI/_upload_bundle'
+EXCLUDE_DIRS = {'Archive', '_upload_bundle', '.last_bundle'}
+EXCLUDE_FILES = {'bos-ai-sync.sh', '__BOS_AI.zip'}
+ALLOWED_EXT = {'.md', '.docx'}
+
+# Collision rename map: source rel-path → staged basename.
+# Entity/Business specs keep the clean name (canonical); Module docs get _module suffix.
+RENAME = {
+    'Modules/estimate.md': 'estimate_module.md',
+    'Modules/weed_spray_reconciliation.md': 'weed_spray_reconciliation_module.md',
+}
+
+for root, dirs, files in os.walk(SRC):
+    rel_root = os.path.relpath(root, SRC)
+    parts = [] if rel_root == '.' else rel_root.split(os.sep)
+    if any(p.startswith('.') or p in EXCLUDE_DIRS for p in parts):
+        dirs[:] = []
+        continue
+    dirs[:] = [d for d in dirs if not d.startswith('.') and d not in EXCLUDE_DIRS]
+    for f in files:
+        if f.startswith('.') or f in EXCLUDE_FILES:
+            continue
+        if os.path.splitext(f)[1].lower() not in ALLOWED_EXT:
+            continue
+        full = os.path.join(root, f)
+        rel = os.path.relpath(full, SRC).replace(os.sep, '/')
+        arcname = RENAME.get(rel, f)
+        shutil.copy2(full, os.path.join(DEST, arcname))
+```
+
+### Verification (always run after staging)
+
+```bash
+ls __BOS_AI/_upload_bundle | sort | uniq -d                # must output nothing
+ls __BOS_AI/_upload_bundle | wc -l                         # report count
+ls __BOS_AI/_upload_bundle/{estimate,estimate_module}.md   # both must exist
+ls __BOS_AI/_upload_bundle/weed_spray_reconciliation*.md   # both must exist
+```
+
+### Invariants
+
+- `_upload_bundle/` is **gitignored** (it's a generated artifact, not source).
+- `Archive/`, `_upload_bundle/`, `.last_bundle/`, and hidden files are **excluded** from the bundle.
+- The bundle is **flat** — no subdirectories.
+- **Collisions:** `Entities/estimate.md` keeps the clean name (`estimate.md`); `Modules/estimate.md` becomes `estimate_module.md`. Same pattern for `weed_spray_reconciliation.md` (Business/ wins, Modules/ gets `_module` suffix).
+- Source files in `__BOS_AI/` are **never modified** — staging is copy-only with `shutil.copy2()` (preserves mtimes).
+- When new collisions appear (a new `Modules/foo.md` matches an `Entities/foo.md`), update the `RENAME` map above before re-staging — don't let the staging step silently overwrite.
+
+### Distribution
+
+The legacy `__BOS_AI/__BOS_AI.zip` (also gitignored) is a separate artifact for distributing the docs as a single file. The flat-bundle staging dir is preferred for Claude.ai uploads since it gives per-file timestamps and avoids zip extraction overhead.
+
 ## Custom Drush Commands
 
 ```bash

@@ -3,22 +3,21 @@
 Module machine name: `material_supplier`
 Drupal version: 10.x
 
+> Doc regenerated from active code on 2026-04-25. Findings flagged inline.
+
 ---
 
 ## Purpose
 
-The `material_supplier` module enforces **data integrity** and **data hygiene** for the Material ↔ Supplier link entity (`material_suppliers`, bundle `supplier`).
+The `material_supplier` module enforces **data integrity** and **data hygiene** on `material_suppliers:supplier` link records. It exists alongside the `material` module which owns the bulk of validation and the price auto-sync.
 
-This module exists to prevent sourcing data from drifting over time and to encode operational guardrails that cannot be reliably enforced through UI configuration alone.
-
-Specifically, it protects against:
+This module specifically protects against:
 
 * duplicate Material–Supplier link records
-* broken unit math caused by missing pack quantities
 * multiple preferred suppliers for the same material
 * polluted Supplier Item Numbers caused by pasted labels or descriptions
 
-It also provides an audit command for ongoing verification.
+It also provides the `drush ms-audit` command for ongoing verification.
 
 ---
 
@@ -35,77 +34,72 @@ This module does **not** act on:
 * `supplier` entities
 * Work Orders or historical execution data
 
-Snapshot costing rules remain authoritative at the Work Order level.
+---
+
+## Hooks Implemented
+
+| Hook | Purpose |
+|------|---------|
+| `material_supplier_entity_validate()` | Uniqueness check, Preferred-supplier singleton, Pack Quantity check (see drift note) |
+| `material_supplier_entity_presave()` | Supplier Item Number normalization |
 
 ---
 
-## Enforced Rules (Authoritative)
+## Enforced Rules (this module)
 
 ### 1) Uniqueness — Material + Supplier (Hard Block)
 
-For `material_suppliers:supplier` records:
+* Exactly one `material_suppliers:supplier` record per `(field_material, field_supplier)` pair.
+* Validation error blocks save when a duplicate is attempted.
 
-* There must be **exactly one** record per `(field_material, field_supplier)` pair.
-* Attempts to create duplicates are blocked at save-time with a validation error.
+### 2) Preferred Supplier Singleton (Hard Block)
 
----
+* Only one `material_suppliers:supplier` record per material may have `field_preferred_supplier = TRUE`.
+* Validation error blocks save when a second preferred is set.
 
-### 2) Pack Quantity Requirement (Hard Block)
+### 3) Pack Quantity Check (DEAD CODE — see drift note)
 
-If the following fields exist on the entity:
+⚠ **`material_supplier_entity_validate()` checks for `field_order_uom` and `field_cost_uom`. Those fields DO NOT exist on the active bundle.** The actual machine names are `field_order_unit` and `field_cost_unit_of_measure`. This validation block currently never fires.
 
-* `field_order_uom`
-* `field_cost_uom`
-* `field_pack_quantity`
+The equivalent check using correct field names IS active in `material.module → material_entity_validate()` and works as intended. So pack-quantity enforcement isn't broken — it's just running from the other module.
 
-Then:
+### 4) Supplier Item Number Normalization (Auto-clean, Presave)
 
-* When `field_order_uom` and `field_cost_uom` are both set **and differ**,
-* `field_pack_quantity` must be set and must be **greater than zero**.
+On save, `field_supplier_item_number` is normalized:
 
-This prevents silent unit conversion errors.
+* Trim leading/trailing whitespace
+* Collapse internal whitespace to a single space
+* Strip common pasted prefixes (case-insensitive): `Item #`, `Item Number`, `SKU`, `Part #`, `Part Number`, `Item No`, `Part No`
+* After prefix removal, strip leading separators (`:`, `-`, `#`) and re-normalize
 
----
+Example: `Item # RBL15F` → `RBL15F`
 
-### 3) Preferred Supplier Constraint (Hard Block)
-
-If `field_preferred_supplier` exists and is set to TRUE:
-
-* Only **one** supplier may be marked as preferred per material.
-* Additional preferred selections are blocked until the existing one is cleared.
+Empty values are preserved as NULL (not empty string).
 
 ---
 
-### 4) Supplier Item Number Normalization (Auto-clean)
+## Dual Validation: this module vs material.module
 
-On save, if `field_supplier_item_number` exists:
+`material.module` ALSO implements `material_entity_validate()` for `material_suppliers` and covers a broader set of rules. **There is intentional / accidental overlap.** Current state of where each rule actually fires:
 
-The value is normalized as follows:
+| Rule | This module | material.module |
+|------|-------------|-----------------|
+| Required references (material, supplier) | — | ✅ |
+| Uniqueness | ✅ | ✅ (duplicate check) |
+| Preferred supplier singleton | ✅ | — |
+| Pack Quantity required when units differ | ⚠ dead code (wrong field names) | ✅ (correct field names) |
+| MOQ > 0 sanity | — | ✅ |
+| Supplier unit cost > 0 sanity | — | ✅ |
+| Effective status `do_not_use` blocks save | — | ✅ |
+| SKU normalization (presave) | ✅ | — |
 
-* Trim leading and trailing whitespace
-* Collapse internal whitespace sequences to a single space
-* Strip common pasted prefixes (case-insensitive), including:
-
-  * `Item #`
-  * `Item Number`
-  * `SKU`
-  * `Part #`
-  * `Part Number`
-* After prefix removal, strip common separators (`:`, `-`, `#`) and normalize again
-
-Example:
-
-* `Item # RBL15F` → `RBL15F`
-
-This correction is automatic and non-destructive.
+**Recommendation when changing validation:** decide which module owns each rule and remove the duplicate. Today, neither module is broken, but uniqueness errors may surface twice (one from each hook) on duplicate save attempts.
 
 ---
 
 ## Drush Tooling
 
 ### Audit Command
-
-Command:
 
 ```
 drush material-supplier:audit
@@ -123,7 +117,7 @@ The audit reports:
 * missing pack quantities where Order UOM ≠ Cost UOM
 * suspicious Supplier Item Number values (URLs, emails, long pasted descriptions)
 
-This command is intended for periodic operational checks and cleanup.
+Intended for periodic operational checks and cleanup.
 
 ---
 
@@ -131,31 +125,31 @@ This command is intended for periodic operational checks and cleanup.
 
 ```
 web/modules/custom/material_supplier/
+  README.md
   material_supplier.info.yml
   material_supplier.module
   drush.services.yml
   src/Commands/MaterialSupplierCommands.php
 ```
 
-Key hooks implemented:
+---
 
-* `material_supplier_entity_validate()` — rules 1, 2, and 3
-* `material_supplier_entity_presave()` — rule 4
+## What This Module Does NOT Do
+
+These belong elsewhere — do not add them here:
+
+* **Material price auto-sync** — owned by `material.module → material_sync_material_pricing_from_supplier_links()`. Recalculates `material.field_cost_integer` as MAX of eligible supplier unit costs on every link insert/update/delete.
+* **Effective status resolution** — owned by `Drupal\material\Service\MaterialSourcing::getEffectiveSupplierStatus()`.
+* **Supplier-side validation** — `supplier` entity is not in scope.
+* **Work Order snapshot mutation** — never. Snapshots are immutable.
 
 ---
 
 ## Install & Usage
 
-Enable the module:
-
 ```
 drush en material_supplier -y
 drush cr
-```
-
-Run the audit:
-
-```
 drush ms-audit
 ```
 
@@ -164,7 +158,12 @@ drush ms-audit
 ## Operational Guidance
 
 * Use `material_suppliers` records as the **authoritative sourcing layer** for each material.
+* Per-vendor unit costs entered here automatically drive the material's `field_cost_integer` (MAX-cost rule, see `material.md`).
 * Do not store per-material SKUs or pricing directly on `supplier` entities.
 * Do not retroactively alter historical Work Order data.
 
-This module is intentionally conservative and should be treated as a **settled guardrail layer** within BOS.
+---
+
+## Status
+
+Production-ready, but ripe for a refactor pass to consolidate the dual validation into one module. The dead `field_order_uom` / `field_cost_uom` block in this module is harmless because `material.module` covers it correctly.

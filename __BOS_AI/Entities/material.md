@@ -85,17 +85,54 @@ Invariant:
 BOS uses Materials as the source for current/default costs and pricing.
 Work Orders snapshot costs at time of use.
 
-Rules:
-- Material bundles may store:
-  - cost (internal)
-  - retail price (customer-facing)
-  - installed price (our installed price)
-- wo_material_list_item snapshots unit cost into:
-  - field_material_cost (decimal)
+### Pricing fields on the material entity
 
-Invariant:
-- Changing Material pricing must not retroactively change historical Work Order totals.
-- The Work Order snapshot field is the authority for “price at time of use”.
+The exact fields present vary by bundle:
+
+- `field_cost_integer` (decimal, label varies “Cost” / “Cost Integer”) — **internal cost**, used by estimating and snapshotted into `wo_material_list_item`.
+- `field_installed_price` (decimal, label varies “Our Installed Price” / “Price”) — **our installed/sale price**, computed from `field_cost_integer × business_setting.field_markup`.
+- `field_price` (decimal) — present on `decorative_rock`, `shrubs`, `mulch` bundles only. Bulk-material price.
+- `field_price_updated` (boolean) — flag for the price-maintenance workflow.
+- `field_retail_price_disclaimer` (string) — public-facing disclaimer text.
+- `field_unit_of_measure` (list_string) — the UOM `field_cost_integer` applies to.
+
+### Auto-sync from material_suppliers (Critical Behavior)
+
+`field_cost_integer` and `field_installed_price` are **NOT manually maintained** for bundles with `material_suppliers` links. They are auto-recalculated whenever a supplier link is inserted, updated, or deleted.
+
+**Implemented in:** `material.module → material_sync_material_pricing_from_supplier_links()`
+
+**Logic:**
+
+1. Load all `material_suppliers` records for this material.
+2. Filter out:
+   - Links with no/zero `field_supplier_unit_cost`
+   - Links whose effective status (override OR supplier-level) = `do_not_use`
+3. Take the **MAX (most expensive)** unit cost across remaining eligible links.
+4. Write that max to `field_cost_integer`.
+5. If `business_setting.field_markup` is set: write `max × markup` to `field_installed_price`. Integer fields are rounded to whole numbers.
+6. Save the material entity (only when values actually change).
+
+**Why MAX:** Pricing jobs at worst-case cost protects margin if the cheaper supplier is out of stock.
+
+**Safety:** If no eligible supplier costs exist, the material is **not zeroed out** — existing values remain.
+
+### Snapshot rules
+
+- `wo_material_list_item` snapshots `field_cost_integer` into `field_material_cost` at execution time.
+- The snapshot field is the authority for “price at time of use” on historical work orders.
+
+### Invariants
+
+- Changing Material pricing must NEVER retroactively change historical Work Order totals.
+- The auto-sync function MUST NOT touch any Work Order or wo_material_list_item entity.
+- The cost source-of-truth chain is:
+  ```
+  material_suppliers.field_supplier_unit_cost (MAX, eligible only)
+    → material.field_cost_integer
+      → material.field_installed_price (× business markup)
+        → wo_material_list_item.field_material_cost (snapshot at use)
+  ```
 
 ---
 

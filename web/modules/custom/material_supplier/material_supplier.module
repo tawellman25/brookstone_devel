@@ -11,8 +11,12 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
  *
  * BOS integrity rules for material_suppliers:supplier:
  * 1) Uniqueness: one record per (Material, Supplier).
- * 2) Pack Quantity required when Order Unit != Cost UOM.
- * 3) Only one Preferred Supplier per Material.
+ * 2) Only one Preferred Supplier per Material.
+ *
+ * Other validation (required references, pack-qty, MOQ, cost sanity,
+ * do_not_use status block) lives in material.module's
+ * material_entity_validate(). See __BOS_AI/Modules/material_supplier_module.md
+ * for the full rule-ownership matrix.
  */
 function material_supplier_entity_validate(EntityInterface $entity, ConstraintViolationListInterface $violations): void {
   if ($entity->getEntityTypeId() !== 'material_suppliers') {
@@ -87,30 +91,9 @@ function material_supplier_entity_validate(EntityInterface $entity, ConstraintVi
     }
   }
 
-  // ---- 2) Pack Quantity required when Order Unit != Cost UOM ----
-  // This is safe even if you haven't created these fields yet.
-  if (
-    $entity->hasField('field_order_uom') &&
-    $entity->hasField('field_cost_uom') &&
-    $entity->hasField('field_pack_quantity')
-  ) {
-    $order_uom = trim((string) ($entity->get('field_order_uom')->value ?? ''));
-    $cost_uom = trim((string) ($entity->get('field_cost_uom')->value ?? ''));
-
-    if ($order_uom !== '' && $cost_uom !== '' && $order_uom !== $cost_uom) {
-      $pack_qty = (int) ($entity->get('field_pack_quantity')->value ?? 0);
-      if ($pack_qty <= 0) {
-        $violations->add(new ConstraintViolation(
-          'Pack Quantity is required when Order Unit differs from Cost Unit of Measure.',
-          '',
-          [],
-          $entity,
-          'field_pack_quantity',
-          (string) $pack_qty
-        ));
-      }
-    }
-  }
+  // Pack-quantity enforcement is owned by material.module's
+  // material_entity_validate() using the correct field machine names
+  // (field_order_unit, field_cost_unit_of_measure). Do not duplicate it here.
 }
 
 /**

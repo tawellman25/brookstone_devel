@@ -57,13 +57,7 @@ This module does **not** act on:
 * Only one `material_suppliers:supplier` record per material may have `field_preferred_supplier = TRUE`.
 * Validation error blocks save when a second preferred is set.
 
-### 3) Pack Quantity Check (DEAD CODE — see drift note)
-
-⚠ **`material_supplier_entity_validate()` checks for `field_order_uom` and `field_cost_uom`. Those fields DO NOT exist on the active bundle.** The actual machine names are `field_order_unit` and `field_cost_unit_of_measure`. This validation block currently never fires.
-
-The equivalent check using correct field names IS active in `material.module → material_entity_validate()` and works as intended. So pack-quantity enforcement isn't broken — it's just running from the other module.
-
-### 4) Supplier Item Number Normalization (Auto-clean, Presave)
+### 3) Supplier Item Number Normalization (Auto-clean, Presave)
 
 On save, `field_supplier_item_number` is normalized:
 
@@ -87,7 +81,7 @@ Empty values are preserved as NULL (not empty string).
 | Required references (material, supplier) | — | ✅ |
 | Uniqueness | ✅ | ✅ (duplicate check) |
 | Preferred supplier singleton | ✅ | — |
-| Pack Quantity required when units differ | ⚠ dead code (wrong field names) | ✅ (correct field names) |
+| Pack Quantity required when units differ | — | ✅ |
 | MOQ > 0 sanity | — | ✅ |
 | Supplier unit cost > 0 sanity | — | ✅ |
 | Effective status `do_not_use` blocks save | — | ✅ |
@@ -166,4 +160,4 @@ drush ms-audit
 
 ## Status
 
-Production-ready, but ripe for a refactor pass to consolidate the dual validation into one module. The dead `field_order_uom` / `field_cost_uom` block in this module is harmless because `material.module` covers it correctly.
+Production-ready. Dead pack-qty validation block (referenced obsolete field names `field_order_uom` / `field_cost_uom`) was removed on 2026-04-25; equivalent enforcement remains in `material.module`. Future refactor could consolidate the remaining duplicate uniqueness check into a single module.

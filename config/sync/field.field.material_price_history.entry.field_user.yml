@@ -1,3 +1,4 @@
+uuid: 6b408bba-40c1-48fd-a3dc-f3f73dc5c9e3
 langcode: en
 status: true
 dependencies:
@@ -8,8 +9,8 @@ id: material_price_history.entry.field_user
 field_name: field_user
 entity_type: material_price_history
 bundle: entry
-label: 'User'
-description: "The user who triggered this entry (crew member on WO entry, office on manual edit, system on auto_created)."
+label: User
+description: 'The user who triggered this entry (crew member on WO entry, office on manual edit, system on auto_created).'
 required: true
 translatable: false
 default_value: {  }
@@ -17,11 +18,11 @@ default_value_callback: ''
 settings:
   handler: 'default:user'
   handler_settings:
-    include_anonymous: false
-    filter:
-      type: _none
     sort:
       field: _none
       direction: ASC
     auto_create: false
+    filter:
+      type: _none
+    include_anonymous: false
 field_type: entity_reference

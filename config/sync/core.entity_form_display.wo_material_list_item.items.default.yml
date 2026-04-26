@@ -34,7 +34,7 @@ mode: default
 content:
   field_alternate_name_description:
     type: string_textfield
-    weight: 4
+    weight: 3
     region: content
     settings:
       size: 60
@@ -61,7 +61,7 @@ content:
             selector: ''
   field_list_id:
     type: entity_reference_autocomplete
-    weight: 7
+    weight: 8
     region: content
     settings:
       match_operator: CONTAINS
@@ -71,7 +71,7 @@ content:
     third_party_settings: {  }
   field_material_cost:
     type: number
-    weight: 5
+    weight: 4
     region: content
     settings:
       placeholder: ''
@@ -84,7 +84,7 @@ content:
     third_party_settings: {  }
   field_parts_used:
     type: entity_reference_autocomplete
-    weight: 3
+    weight: 2
     region: content
     settings:
       match_operator: CONTAINS
@@ -113,32 +113,41 @@ content:
             selector: ''
   field_purchased_supplier:
     type: entity_reference_autocomplete
-    weight: 1
+    weight: 5
     region: content
     settings:
       match_operator: CONTAINS
       match_limit: 10
       size: 60
       placeholder: 'Vendor (required if price changed)'
-    third_party_settings: {  }
-  field_supplier_invoice_number:
-    type: string_textfield
-    weight: 2
-    region: content
-    settings:
-      size: 25
-      placeholder: 'e.g. 4582910 or SO-2026-04-15-7782'
-    third_party_settings: {  }
+    third_party_settings:
+      conditional_fields:
+        f7a19fb9-b4b9-4b85-85c3-cba3f8807eb2:
+          entity_type: wo_material_list_item
+          bundle: items
+          dependee: field_material_cost
+          settings:
+            state: visible
+            reset: false
+            condition: '!empty'
+            grouping: AND
+            values_set: 0
+            value: ''
+            values: {  }
+            value_form: {  }
+            effect: show
+            effect_options: {  }
+            selector: ''
   field_quantity:
     type: number
-    weight: 2
+    weight: 1
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_reciept_pic:
     type: image_image
-    weight: 6
+    weight: 7
     region: content
     settings:
       progress_indicator: throbber
@@ -160,6 +169,31 @@ content:
             value_form:
               -
                 value: purchased
+            effect: show
+            effect_options: {  }
+            selector: ''
+  field_supplier_invoice_number:
+    type: string_textfield
+    weight: 6
+    region: content
+    settings:
+      size: 25
+      placeholder: 'e.g. 4582910 or SO-2026-04-15-7782'
+    third_party_settings:
+      conditional_fields:
+        b82c575f-6519-4026-bba8-0647a745d59c:
+          entity_type: wo_material_list_item
+          bundle: items
+          dependee: field_material_cost
+          settings:
+            state: visible
+            reset: false
+            condition: '!empty'
+            grouping: AND
+            values_set: 0
+            value: ''
+            values: {  }
+            value_form: {  }
             effect: show
             effect_options: {  }
             selector: ''

@@ -1,3 +1,4 @@
+uuid: d16c5f70-687b-4f7e-b7be-7d9ebec74a0f
 langcode: en
 status: true
 dependencies:
@@ -41,8 +42,8 @@ third_party_settings:
         show_empty_fields: false
         id: ''
         open: true
-        required_fields: true
         description: ''
+        required_fields: true
     group_source_origin:
       children:
         - field_source
@@ -60,8 +61,8 @@ third_party_settings:
         show_empty_fields: false
         id: ''
         open: true
-        required_fields: true
         description: ''
+        required_fields: true
     group_office_review:
       children:
         - field_review_notes
@@ -77,8 +78,12 @@ third_party_settings:
         show_empty_fields: false
         id: ''
         open: false
-        required_fields: false
         description: 'Populated by the Office Manager when approving or rejecting a flagged entry.'
+        required_fields: false
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
 id: material_price_history.entry.default
 targetEntityType: material_price_history
 bundle: entry
@@ -194,6 +199,21 @@ content:
     settings:
       match_operator: CONTAINS
       match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    weight: 100
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: -5
+    region: content
+    settings:
       size: 60
       placeholder: ''
     third_party_settings: {  }

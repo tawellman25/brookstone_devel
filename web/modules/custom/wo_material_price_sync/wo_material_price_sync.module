@@ -1,0 +1,194 @@
+<?php
+
+/**
+ * @file
+ * WO Material Price Sync — detects price entries on WO material lines and
+ * syncs vendor pricing back to material_suppliers with threshold guardrails.
+ *
+ * Hook ownership:
+ *  - hook_entity_validate          → vendor required when price differs
+ *  - hook_ENTITY_TYPE_presave      → trim invoice number whitespace
+ *  - hook_ENTITY_TYPE_insert       → run PriceSyncService::process() (new)
+ *  - hook_ENTITY_TYPE_update       → run PriceSyncService::process() (edit)
+ *  - hook_form_alter               → attach JS, default supplier from
+ *                                    preferred when material is set
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
+
+/**
+ * Implements hook_entity_validate().
+ *
+ * Delegates to PriceSyncService::validate() which adds a constraint
+ * violation when crew enters a non-catalog price without setting the
+ * Bought From vendor. Returns silently for any non-line-item entity.
+ */
+function wo_material_price_sync_entity_validate(EntityInterface $entity, ConstraintViolationListInterface $violations): void {
+  if ($entity->getEntityTypeId() !== 'wo_material_list_item') {
+    return;
+  }
+  /** @var \Drupal\wo_material_price_sync\Service\PriceSyncService $service */
+  $service = \Drupal::service('wo_material_price_sync.price_sync');
+  $service->validate($entity, $violations);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for wo_material_list_item.
+ *
+ * Defensive whitespace trim on the invoice number. The JS copy-down
+ * usually handles this on the client, but presave is the belt to that
+ * suspenders for direct API saves and partial form submissions.
+ */
+function wo_material_price_sync_wo_material_list_item_presave(EntityInterface $entity): void {
+  if ($entity->bundle() !== 'items') {
+    return;
+  }
+  if (!$entity->hasField('field_supplier_invoice_number')) {
+    return;
+  }
+  if ($entity->get('field_supplier_invoice_number')->isEmpty()) {
+    return;
+  }
+  $raw = (string) $entity->get('field_supplier_invoice_number')->value;
+  $trimmed = trim($raw);
+  if ($trimmed === '') {
+    $entity->set('field_supplier_invoice_number', NULL);
+  }
+  elseif ($trimmed !== $raw) {
+    $entity->set('field_supplier_invoice_number', $trimmed);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for wo_material_list_item.
+ *
+ * Runs the price-sync flow on new lines. The service decides whether
+ * anything actually needs to happen (silent path for unchanged catalog
+ * prices).
+ */
+function wo_material_price_sync_wo_material_list_item_insert(EntityInterface $entity): void {
+  if ($entity->bundle() !== 'items') {
+    return;
+  }
+  /** @var \Drupal\wo_material_price_sync\Service\PriceSyncService $service */
+  $service = \Drupal::service('wo_material_price_sync.price_sync');
+  $service->process($entity);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for wo_material_list_item.
+ *
+ * Runs the price-sync flow on edited lines. The service uses
+ * $entity->original to detect whether the price actually changed.
+ */
+function wo_material_price_sync_wo_material_list_item_update(EntityInterface $entity): void {
+  if ($entity->bundle() !== 'items') {
+    return;
+  }
+  /** @var \Drupal\wo_material_price_sync\Service\PriceSyncService $service */
+  $service = \Drupal::service('wo_material_price_sync.price_sync');
+  $service->process($entity);
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Two responsibilities on any form that contains the invoice number field:
+ *
+ * 1. Attach the invoice copy-down JS library so the first invoice number
+ *    on the form auto-fills empty subsequent fields.
+ * 2. When the form's underlying entity already has field_parts_used set
+ *    AND field_purchased_supplier is empty, default the vendor to the
+ *    material's preferred supplier (the material_suppliers row where
+ *    field_preferred_supplier = TRUE).
+ *
+ * Detection is by field presence rather than form_id pattern so this
+ * works for the standalone form, the inline_entity_form embed, and any
+ * future composed forms.
+ */
+function wo_material_price_sync_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  if (!_wo_material_price_sync_form_has_invoice_field($form)) {
+    return;
+  }
+
+  $form['#attached']['library'][] = 'wo_material_price_sync/invoice_copy_down';
+
+  // Only set a default supplier on add/edit forms backed by a real entity.
+  $form_object = $form_state->getFormObject();
+  if (!$form_object || !method_exists($form_object, 'getEntity')) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'wo_material_list_item') {
+    return;
+  }
+  if (!$entity->hasField('field_parts_used') || $entity->get('field_parts_used')->isEmpty()) {
+    return;
+  }
+  if (!$entity->hasField('field_purchased_supplier') || !$entity->get('field_purchased_supplier')->isEmpty()) {
+    // Already has a vendor — do not override.
+    return;
+  }
+  if (!isset($form['field_purchased_supplier']['widget'][0]['target_id'])) {
+    return;
+  }
+
+  $material_id = (int) $entity->get('field_parts_used')->target_id;
+  if ($material_id <= 0) {
+    return;
+  }
+
+  $supplier = _wo_material_price_sync_preferred_supplier_for_material($material_id);
+  if ($supplier !== NULL) {
+    $form['field_purchased_supplier']['widget'][0]['target_id']['#default_value'] = $supplier;
+  }
+}
+
+/**
+ * Returns TRUE when the rendered form contains a supplier_invoice_number widget.
+ */
+function _wo_material_price_sync_form_has_invoice_field(array $form): bool {
+  if (isset($form['field_supplier_invoice_number'])) {
+    return TRUE;
+  }
+  // Recurse one level into nested groups (covers inline_entity_form wrappers).
+  foreach ($form as $key => $element) {
+    if (!is_array($element) || !is_string($key) || str_starts_with($key, '#')) {
+      continue;
+    }
+    if (isset($element['field_supplier_invoice_number'])) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Looks up the preferred supplier entity for a material via material_suppliers.
+ * Returns NULL when no preferred row exists.
+ */
+function _wo_material_price_sync_preferred_supplier_for_material(int $material_id): ?EntityInterface {
+  $etm = \Drupal::entityTypeManager();
+  $ids = $etm->getStorage('material_suppliers')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_material', $material_id)
+    ->condition('field_preferred_supplier', 1)
+    ->range(0, 1)
+    ->execute();
+  if (empty($ids)) {
+    return NULL;
+  }
+  $link = $etm->getStorage('material_suppliers')->load(reset($ids));
+  if (!$link || !$link->hasField('field_supplier') || $link->get('field_supplier')->isEmpty()) {
+    return NULL;
+  }
+  $supplier_id = (int) $link->get('field_supplier')->target_id;
+  if ($supplier_id <= 0) {
+    return NULL;
+  }
+  return $etm->getStorage('supplier')->load($supplier_id);
+}

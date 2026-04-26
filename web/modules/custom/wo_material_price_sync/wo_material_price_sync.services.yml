@@ -1,0 +1,14 @@
+services:
+  wo_material_price_sync.history_writer:
+    class: Drupal\wo_material_price_sync\Service\PriceHistoryWriter
+    arguments:
+      - '@entity_type.manager'
+      - '@current_user'
+  wo_material_price_sync.price_sync:
+    class: Drupal\wo_material_price_sync\Service\PriceSyncService
+    arguments:
+      - '@entity_type.manager'
+      - '@current_user'
+      - '@datetime.time'
+      - '@logger.factory'
+      - '@wo_material_price_sync.history_writer'

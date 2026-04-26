@@ -10,6 +10,7 @@ dependencies:
     - field.storage.material_price_history.field_status
     - field.storage.material_price_history.field_supplier
     - field.storage.material_price_history.field_supplier_invoice_number
+    - field.storage.material_price_history.field_supplier_item_number
     - field.storage.material_price_history.field_user
     - field.storage.material_price_history.field_wo_reference
     - system.menu.admin
@@ -169,6 +170,46 @@ display:
           admin_label: ''
           plugin_id: field
           label: 'Invoice #'
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: true
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: '—'
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: false
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
+          group_column: value
+          group_columns: {  }
+          group_rows: true
+          delta_limit: 0
+          delta_offset: 0
+          delta_reversed: false
+          delta_first_last: false
+          multi_type: separator
+          separator: ', '
+          field_api_classes: false
+        field_supplier_item_number:
+          id: field_supplier_item_number
+          table: material_price_history__field_supplier_item_number
+          field: field_supplier_item_number
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: field
+          label: 'Supplier SKU #'
           exclude: false
           alter:
             alter_text: false
@@ -746,6 +787,7 @@ display:
             field_material: field_material
             field_supplier: field_supplier
             field_supplier_invoice_number: field_supplier_invoice_number
+            field_supplier_item_number: field_supplier_item_number
             field_old_cost: field_old_cost
             field_new_cost: field_new_cost
             field_delta_percent: field_delta_percent
@@ -773,6 +815,13 @@ display:
               empty_column: false
               responsive: ''
             field_supplier_invoice_number:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_supplier_item_number:
               sortable: true
               default_sort_order: asc
               align: ''
@@ -886,6 +935,7 @@ display:
         - 'config:field.storage.material_price_history.field_status'
         - 'config:field.storage.material_price_history.field_supplier'
         - 'config:field.storage.material_price_history.field_supplier_invoice_number'
+        - 'config:field.storage.material_price_history.field_supplier_item_number'
         - 'config:field.storage.material_price_history.field_user'
         - 'config:field.storage.material_price_history.field_wo_reference'
   page_1:
@@ -922,5 +972,6 @@ display:
         - 'config:field.storage.material_price_history.field_status'
         - 'config:field.storage.material_price_history.field_supplier'
         - 'config:field.storage.material_price_history.field_supplier_invoice_number'
+        - 'config:field.storage.material_price_history.field_supplier_item_number'
         - 'config:field.storage.material_price_history.field_user'
         - 'config:field.storage.material_price_history.field_wo_reference'

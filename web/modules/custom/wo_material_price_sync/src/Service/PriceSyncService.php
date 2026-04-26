@@ -160,7 +160,7 @@ final class PriceSyncService {
     $delta_pct = (($entered_cost - $baseline) / $baseline) * 100.0;
 
     if ($delta_pct >= self::THRESHOLD_PERCENT) {
-      $this->flagHigh($ms_row, $baseline, $entered_cost, $delta_pct, $invoice_number, $wo_id);
+      $this->flagHigh($ms_row, $baseline, $entered_cost, $delta_pct, $invoice_number, $supplier_item_number, $wo_id);
       return;
     }
 
@@ -368,6 +368,7 @@ final class PriceSyncService {
       status: 'auto_created',
       wo_id: $wo_id,
       invoice_number: $invoice_number,
+      supplier_item_number: $supplier_item_number,
       change_notes: $context,
     );
   }
@@ -422,6 +423,7 @@ final class PriceSyncService {
       status: 'applied',
       wo_id: $wo_id,
       invoice_number: $invoice_number,
+      supplier_item_number: $supplier_item_number,
       change_notes: $notes,
     );
   }
@@ -430,7 +432,7 @@ final class PriceSyncService {
    * Price increase exceeds threshold — flag for office review, catalog NOT
    * updated. History status: flagged_high.
    */
-  private function flagHigh(EntityInterface $ms_row, float $baseline, float $entered_cost, float $delta_pct, ?string $invoice_number, ?int $wo_id): void {
+  private function flagHigh(EntityInterface $ms_row, float $baseline, float $entered_cost, float $delta_pct, ?string $invoice_number, ?string $supplier_item_number, ?int $wo_id): void {
     $delta_str = number_format($delta_pct, 1);
     $threshold_str = number_format(self::THRESHOLD_PERCENT, 0);
 
@@ -452,6 +454,7 @@ final class PriceSyncService {
       status: 'flagged_high',
       wo_id: $wo_id,
       invoice_number: $invoice_number,
+      supplier_item_number: $supplier_item_number,
       change_notes: $notes,
     );
   }
@@ -510,6 +513,7 @@ final class PriceSyncService {
       status: 'applied',
       wo_id: $wo_id,
       invoice_number: $invoice_number,
+      supplier_item_number: $supplier_item_number,
       change_notes: $notes,
     );
   }

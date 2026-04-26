@@ -16,6 +16,7 @@ dependencies:
     - field.field.material_price_history.entry.field_status
     - field.field.material_price_history.entry.field_supplier
     - field.field.material_price_history.entry.field_supplier_invoice_number
+    - field.field.material_price_history.entry.field_supplier_item_number
     - field.field.material_price_history.entry.field_user
     - field.field.material_price_history.entry.field_wo_reference
   module:
@@ -29,6 +30,7 @@ third_party_settings:
         - field_material
         - field_supplier
         - field_supplier_invoice_number
+        - field_supplier_item_number
         - field_old_cost
         - field_new_cost
         - field_delta_percent
@@ -177,6 +179,14 @@ content:
   field_supplier_invoice_number:
     type: string_textfield
     weight: 2
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_supplier_item_number:
+    type: string_textfield
+    weight: 3
     region: content
     settings:
       size: 30

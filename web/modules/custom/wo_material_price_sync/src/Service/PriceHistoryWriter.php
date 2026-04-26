@@ -29,16 +29,17 @@ final class PriceHistoryWriter {
   /**
    * Write one history entry.
    *
-   * @param int         $material_id      Material entity id.
-   * @param int         $supplier_id      Supplier entity id.
-   * @param float|null  $old_cost         Prior unit cost; NULL for first/auto_created.
-   * @param float       $new_cost         The cost being recorded.
-   * @param float|null  $delta_percent    Computed delta percent; NULL when no baseline.
-   * @param string      $source           wo_entry|manual|invoice|auto_created
-   * @param string      $status           applied|flagged_high|auto_created|approved|rejected|resolved
-   * @param int|null    $wo_id            WO id when WO-driven; NULL otherwise.
-   * @param string|null $invoice_number   Vendor invoice/receipt number; NULL when not provided.
-   * @param string|null $change_notes     Free-text context for the entry.
+   * @param int         $material_id          Material entity id.
+   * @param int         $supplier_id          Supplier entity id.
+   * @param float|null  $old_cost             Prior unit cost; NULL for first/auto_created.
+   * @param float       $new_cost             The cost being recorded.
+   * @param float|null  $delta_percent        Computed delta percent; NULL when no baseline.
+   * @param string      $source               wo_entry|manual|invoice|auto_created
+   * @param string      $status               applied|flagged_high|auto_created|approved|rejected|resolved
+   * @param int|null    $wo_id                WO id when WO-driven; NULL otherwise.
+   * @param string|null $invoice_number       Vendor invoice/receipt number; NULL when not provided.
+   * @param string|null $supplier_item_number Vendor SKU snapshot at time of entry; NULL when not provided.
+   * @param string|null $change_notes         Free-text context for the entry.
    */
   public function write(
     int $material_id,
@@ -50,6 +51,7 @@ final class PriceHistoryWriter {
     string $status,
     ?int $wo_id = NULL,
     ?string $invoice_number = NULL,
+    ?string $supplier_item_number = NULL,
     ?string $change_notes = NULL,
   ): bool {
     try {
@@ -77,6 +79,9 @@ final class PriceHistoryWriter {
       }
       if ($invoice_number !== NULL && $invoice_number !== '') {
         $values['field_supplier_invoice_number'] = $invoice_number;
+      }
+      if ($supplier_item_number !== NULL && $supplier_item_number !== '') {
+        $values['field_supplier_item_number'] = $supplier_item_number;
       }
       if ($change_notes !== NULL && $change_notes !== '') {
         $values['field_change_notes'] = $change_notes;

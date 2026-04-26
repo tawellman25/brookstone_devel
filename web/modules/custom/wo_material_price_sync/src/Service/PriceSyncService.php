@@ -319,7 +319,7 @@ final class PriceSyncService {
     $today = date('Y-m-d', $this->time->getRequestTime());
     $username = $this->currentUser->getDisplayName();
 
-    $price_notes = "Auto-created from WO #{$wo_id} by {$username} on {$today}";
+    $price_notes = "Auto-updated from WO #{$wo_id} by {$username} on {$today}";
     if ($invoice_number !== NULL) {
       $price_notes .= " — invoice #{$invoice_number}";
     }
@@ -353,7 +353,7 @@ final class PriceSyncService {
       return;
     }
 
-    $context = "New (material, vendor) pairing. Auto-created from WO #{$wo_id}.";
+    $context = "New (material, vendor) pairing. Auto-updated from WO #{$wo_id}.";
     $context .= $invoice_number !== NULL
       ? " Invoice #{$invoice_number}."
       : ' No invoice number provided.';
@@ -378,10 +378,22 @@ final class PriceSyncService {
    */
   private function firstCostRecorded(EntityInterface $ms_row, float $entered_cost, ?string $invoice_number, ?string $supplier_item_number, ?int $wo_id): void {
     $today = date('Y-m-d', $this->time->getRequestTime());
+    $username = $this->currentUser->getDisplayName();
+
+    $existing_notes = '';
+    if ($ms_row->hasField('field_price_notes') && !$ms_row->get('field_price_notes')->isEmpty()) {
+      $existing_notes = trim((string) $ms_row->get('field_price_notes')->value);
+    }
+    $append = "First cost recorded from WO #{$wo_id} by {$username} on {$today}";
+    if ($invoice_number !== NULL) {
+      $append .= " — invoice #{$invoice_number}";
+    }
+    $combined_notes = $existing_notes !== '' ? $existing_notes . "\n" . $append : $append;
 
     $ms_row->set('field_supplier_unit_cost', $entered_cost);
     $ms_row->set('field_price_effective_date', $today);
     $ms_row->set('field_price_source', $this->priceSourceFor($invoice_number));
+    $ms_row->set('field_price_notes', $combined_notes);
     $this->maybeSetSupplierItemNumber($ms_row, $supplier_item_number);
     try {
       $ms_row->save();

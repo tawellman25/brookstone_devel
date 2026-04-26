@@ -13,6 +13,8 @@ dependencies:
     - field.field.user.user.field_qb_refnum
     - field.field.user.user.field_service_suspension_reason
     - field.field.user.user.field_sms_consent
+    - field.field.user.user.field_time_clock_id
+    - field.field.user.user.field_time_clock_system
     - field.field.user.user.user_picture
     - image.style.thumbnail
   module:
@@ -98,6 +100,23 @@ third_party_settings:
         label_as_html: false
         open: true
         description: 'Office-only controls used to manage account exceptions and workflow restrictions. These settings can affect billing and scheduling behavior across BOS.'
+        required_fields: true
+    group_external_time_clock_mapping:
+      children:
+        - field_time_clock_id
+        - field_time_clock_system
+      label: 'External Time Clock Mapping'
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: 'Maps this BOS user to an employee record on an external time clock system (e.g., Timetrax). Required for imported time clock records to attribute correctly. Time Clock ID must be unique across users.'
         required_fields: true
 _core:
   default_config_hash: FaQ9Ptcpxpg30AtiqRDtl_8zbJArHP1LPfug_s59TOA
@@ -201,6 +220,20 @@ content:
     region: content
     settings:
       display_label: true
+    third_party_settings: {  }
+  field_time_clock_id:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_time_clock_system:
+    type: options_select
+    weight: 1
+    region: content
+    settings: {  }
     third_party_settings: {  }
   timezone:
     weight: 6

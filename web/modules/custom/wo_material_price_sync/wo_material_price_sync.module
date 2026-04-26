@@ -117,6 +117,15 @@ function wo_material_price_sync_form_alter(array &$form, FormStateInterface $for
 
   $form['#attached']['library'][] = 'wo_material_price_sync/invoice_copy_down';
 
+  // Apply Drupal #states API to show/hide the three "post-cost" fields
+  // (Bought From, Invoice #, Item #) based on whether field_material_cost
+  // has a value. This is purely client-side — the form widgets always
+  // render and any submitted value is always saved. (We previously used
+  // the conditional_fields module here, which strips submitted values
+  // when its server-side evaluation thinks the dependee is empty —
+  // breaking edits on existing line items.)
+  _wo_material_price_sync_apply_visibility_states($form);
+
   // Only set a default supplier on add/edit forms backed by a real entity.
   $form_object = $form_state->getFormObject();
   if (!$form_object || !method_exists($form_object, 'getEntity')) {
@@ -146,6 +155,87 @@ function wo_material_price_sync_form_alter(array &$form, FormStateInterface $for
   if ($supplier !== NULL) {
     $form['field_purchased_supplier']['widget'][0]['target_id']['#default_value'] = $supplier;
   }
+}
+
+/**
+ * Apply #states visibility to the three "after price entry" fields,
+ * keying off of field_material_cost being filled.
+ *
+ * Walks the form (one level deep) so this works for both standalone
+ * wo_material_list_item forms and inline_entity_form embeds.
+ */
+function _wo_material_price_sync_apply_visibility_states(array &$form): void {
+  $dependents = [
+    'field_purchased_supplier',
+    'field_supplier_invoice_number',
+    'field_supplier_item_number',
+  ];
+
+  // Find the field_material_cost wrapper at the same level as the dependents.
+  // Look at the top level first; if not present, peek one level down.
+  $containers = [&$form];
+  foreach ($form as $key => &$child) {
+    if (!is_array($child) || !is_string($key) || str_starts_with($key, '#')) {
+      continue;
+    }
+    if (isset($child['field_material_cost'])) {
+      $containers[] = &$child;
+    }
+  }
+  unset($child);
+
+  foreach ($containers as &$container) {
+    if (!isset($container['field_material_cost'])) {
+      continue;
+    }
+    // Resolve the cost input's name attribute. Widget renders
+    // field_material_cost[0][value] for decimal/number widgets.
+    $cost_name = _wo_material_price_sync_input_name($container['field_material_cost']);
+    if ($cost_name === NULL) {
+      continue;
+    }
+    $selector = ':input[name="' . $cost_name . '"]';
+    $state = [
+      'visible' => [
+        $selector => ['filled' => TRUE],
+      ],
+    ];
+    foreach ($dependents as $field) {
+      if (isset($container[$field])) {
+        $container[$field]['#states'] = $state;
+      }
+    }
+  }
+  unset($container);
+}
+
+/**
+ * Best-effort: resolve the HTML "name" attribute of a field's first widget
+ * input. Returns NULL when the structure isn't recognized.
+ */
+function _wo_material_price_sync_input_name(array $field_render): ?string {
+  // Standard scalar widget: field_NAME[widget][0][value].
+  if (isset($field_render['widget'][0]['value']['#name'])) {
+    return $field_render['widget'][0]['value']['#name'];
+  }
+  if (isset($field_render['widget']['#name'])) {
+    return $field_render['widget']['#name'];
+  }
+  if (isset($field_render['widget'][0]['#name'])) {
+    return $field_render['widget'][0]['#name'];
+  }
+  // Fall back to the standard naming convention.
+  if (isset($field_render['widget']['#field_name'])) {
+    return $field_render['widget']['#field_name'] . '[0][value]';
+  }
+  if (isset($field_render['#parents']) && is_array($field_render['#parents'])) {
+    $parts = $field_render['#parents'];
+    if (count($parts) === 1) {
+      return $parts[0] . '[0][value]';
+    }
+    return $parts[0] . '[' . implode('][', array_slice($parts, 1)) . '][0][value]';
+  }
+  return NULL;
 }
 
 /**

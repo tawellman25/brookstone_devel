@@ -509,6 +509,19 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 
 All Drupal config is exported to `config/sync/` and deployed via `drush cim`. The `config_ignore` module excludes environment-specific config (credentials, keys, `stage_file_proxy` origin) from config management. Never commit `settings.php` or `services.yml`.
 
+### ECK config file naming (BOS standard)
+
+When creating a new ECK entity type or bundle, use the older pattern across the board:
+
+| Config | File path |
+|---|---|
+| Entity type | `eck.eck_entity_type.{type}.yml` |
+| Bundle | `eck.eck_type.{type}.{bundle}.yml` |
+| Field storage | `field.storage.{type}.{field}.yml` |
+| Field instance | `field.field.{type}.{bundle}.{field}.yml` |
+
+Field instance dependencies must reference the bundle as `eck.eck_type.{type}.{bundle}`. **Do NOT use the newer `eck.eck_entity_bundle.{name}.yml` pattern** — it has a recurring `drush cex` bug that exports broken dependencies. Full convention details and step-by-step process: `__BOS_AI/Entities/01_entities_policy.md` → "ECK Config File Conventions".
+
 ## Themes
 
 - `web/themes/custom/multipro/` — primary admin/staff theme (includes Font Awesome)

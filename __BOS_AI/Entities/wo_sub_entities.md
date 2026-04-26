@@ -132,13 +132,13 @@ Storage: ECK
 
 ## Required Relationships
 - `field_list_id` → `wo_material_list` (required — parent list)
-- `field_parts_used` → `material` (conditional — stocked material path)
-- `field_purchased_supplier` → `supplier` (conditional — purchased path)
-- `field_supplier` → `user` (who sourced it)
+- `field_parts_used` → `material` (conditional — stocked material path; visible when material_type = stocked_item)
+- `field_purchased_supplier` → `supplier` (conditional — visible when `field_material_cost` is filled). Labeled "Bought From" in the UI. Captures the vendor for both purchased items and stocked items where the crew overrode the catalog price.
 
 ## Key Fields
 - `field_material_type` — `list_string`: how acquired (stocked vs purchased)
-- `field_material_cost` — snapshot of unit cost at time of use; immutable after WO completion
+- `field_material_cost` — snapshot of unit cost at time of use; immutable after WO completion. Used as the trigger to reveal Bought From and Supplier Invoice # fields.
+- `field_supplier_invoice_number` — string (max 64). Invoice/receipt # from the vendor when crew records a non-catalog price. Soft-required — visible on the form (revealed when material_cost is filled), but no field-level enforcement. JS copy-down auto-fills empty invoice fields on subsequent lines from the first entry.
 - `field_quantity` — units used
 - `field_subtotal` — quantity × cost
 - `field_subtotal_w_markup` — subtotal with markup applied
@@ -150,9 +150,22 @@ Storage: ECK
 - `field_subtotal` and `field_subtotal_w_markup` computed by `wo_material_item_subtotal` module.
 - Stocked path: `field_parts_used` populated, `field_alternate_name_description` empty.
 - Purchased path: `field_alternate_name_description` populated, `field_parts_used` empty.
+- When crew enters a non-catalog price: `field_purchased_supplier` is required (enforced by the `wo_material_price_sync` module's PriceSyncService at presave). Save is blocked with the message "Bought From vendor is required when the material price is changed from catalog."
+
+## Form Display Behavior
+- `field_purchased_supplier` (Bought From) and `field_supplier_invoice_number` are hidden until the crew enters a value into `field_material_cost`. Implemented via the `conditional_fields` module with `condition: '!empty'` on `field_material_cost`. This keeps the form clean for the common "stocked item, no price change" case.
 
 ## Deletion / Archival
 - Do not delete from completed/invoiced WOs.
+
+## Issues / Notes (Observed from current schema)
+
+- `field_supplier` is LEGACY — `entity_reference → user`. From the old system where suppliers were expected to update their own prices via user accounts. Never implemented. The current authority for vendor capture on a WO line is `field_purchased_supplier` → `supplier` ECK entity. **Marked for removal** once we confirm:
+  - No active code reads from `wo_material_list_item.field_supplier`
+  - No reports or invoice exports reference it
+  - All historical data has been audited (the old field's data is not migrated to `field_purchased_supplier` because old data referenced users, not supplier entities — historical lookups go via `field_purchased_supplier` going forward)
+  - The form display config has it under `hidden:` so users do not interact with it (already done as of April 2026)
+- The label on `field_supplier_invoice_number` is `Supplier Invoice #` — the `#` is part of the label, not a Markdown header.
 
 ---
 

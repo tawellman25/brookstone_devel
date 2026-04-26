@@ -667,8 +667,8 @@ display:
           plugin_id: text
           empty: true
           content:
-            value: 'No price changes need review. The catalog is current.'
-            format: plain_text
+            value: '<p><em>No price changes are currently flagged for review — all recent WO-driven price changes have been within tolerance, or have already been approved or rejected.</em></p>'
+            format: full_html
           tokenize: false
       sorts:
         created:
@@ -915,7 +915,20 @@ display:
           replica: false
           query_tags: {  }
       relationships: {  }
-      header: {  }
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: false
+          content:
+            value: "<p>When a crew member enters a material price on a Work Order that is <strong>more than 10% above the current catalog price</strong> — or records a price for a material/vendor pairing that doesn't yet exist in the catalog — the change is held here for office review instead of being applied automatically.</p>\r\n<p><strong>Approve</strong> to update the supplier catalog with the new price (and let it roll into the material's cost via the standard MAX-cost sync). <strong>Reject</strong> to leave the catalog unchanged. Either decision is recorded in the price history along with your review notes.</p>"
+            format: full_html
+          tokenize: false
       footer: {  }
       display_extenders: {  }
     cache_metadata:

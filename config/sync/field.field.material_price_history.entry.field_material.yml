@@ -1,0 +1,26 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material_price_history.entry
+    - field.storage.material_price_history.field_material
+id: material_price_history.entry.field_material
+field_name: field_material
+entity_type: material_price_history
+bundle: entry
+label: 'Material'
+description: "The material whose price changed."
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:material'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

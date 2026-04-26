@@ -1,0 +1,38 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+    - options
+id: material_price_history.field_status
+field_name: field_status
+entity_type: material_price_history
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: applied
+      label: 'Applied (catalog updated)'
+    -
+      value: flagged_high
+      label: 'Flagged High (>10% increase, awaiting review)'
+    -
+      value: auto_created
+      label: 'Auto-Created (new pair, awaiting review)'
+    -
+      value: approved
+      label: 'Approved (Office Manager approved post-flag)'
+    -
+      value: rejected
+      label: 'Rejected (Office Manager rejected, no catalog change)'
+    -
+      value: resolved
+      label: 'Resolved'
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

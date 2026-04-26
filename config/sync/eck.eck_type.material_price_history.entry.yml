@@ -1,0 +1,8 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_entity_type.material_price_history
+name: Entry
+type: entry
+description: "Append-only record of a material price change for a specific (material, vendor) pair.</br>\r\n</br>\r\nEach entry captures the old and new cost, percent change, source (WO entry, manual, invoice, auto_created), status (applied, flagged_high, awaiting review, approved, rejected), the user who triggered it, optional WO reference, and the supplier invoice number when provided.</br></br>\r\n\r\nThis entity is the audit trail for the WO → Material Supplier price sync system. Entries are NEVER updated or deleted in normal operation. The Office Manager review dashboard updates only the field_status, field_review_notes, field_reviewed_by, and field_reviewed_on fields when a flagged entry is approved or rejected."

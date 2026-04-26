@@ -1,0 +1,32 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+    - options
+id: material_price_history.field_source
+field_name: field_source
+entity_type: material_price_history
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: wo_entry
+      label: 'WO Entry (crew typed a different price on a WO line)'
+    -
+      value: manual
+      label: 'Manual (office staff edited the supplier link directly)'
+    -
+      value: invoice
+      label: 'Invoice (entered from a supplier invoice)'
+    -
+      value: auto_created
+      label: 'Auto-Created (new material/supplier pairing)'
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

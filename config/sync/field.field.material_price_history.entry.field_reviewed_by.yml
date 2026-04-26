@@ -1,0 +1,27 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material_price_history.entry
+    - field.storage.material_price_history.field_reviewed_by
+id: material_price_history.entry.field_reviewed_by
+field_name: field_reviewed_by
+entity_type: material_price_history
+bundle: entry
+label: 'Reviewed By'
+description: "The Office Manager (or admin) who approved or rejected this entry."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    include_anonymous: false
+    filter:
+      type: _none
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+field_type: entity_reference

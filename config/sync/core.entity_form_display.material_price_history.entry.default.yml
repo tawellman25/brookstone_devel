@@ -1,0 +1,202 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material_price_history.entry
+    - field.field.material_price_history.entry.field_change_notes
+    - field.field.material_price_history.entry.field_delta_percent
+    - field.field.material_price_history.entry.field_material
+    - field.field.material_price_history.entry.field_new_cost
+    - field.field.material_price_history.entry.field_old_cost
+    - field.field.material_price_history.entry.field_review_notes
+    - field.field.material_price_history.entry.field_reviewed_by
+    - field.field.material_price_history.entry.field_reviewed_on
+    - field.field.material_price_history.entry.field_source
+    - field.field.material_price_history.entry.field_status
+    - field.field.material_price_history.entry.field_supplier
+    - field.field.material_price_history.entry.field_supplier_invoice_number
+    - field.field.material_price_history.entry.field_user
+    - field.field.material_price_history.entry.field_wo_reference
+  module:
+    - datetime
+    - field_group
+    - options
+third_party_settings:
+  field_group:
+    group_change_details:
+      children:
+        - field_material
+        - field_supplier
+        - field_supplier_invoice_number
+        - field_old_cost
+        - field_new_cost
+        - field_delta_percent
+      label: 'Change Details'
+      region: content
+      parent_name: ''
+      weight: 0
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        required_fields: true
+        description: ''
+    group_source_origin:
+      children:
+        - field_source
+        - field_status
+        - field_wo_reference
+        - field_user
+        - field_change_notes
+      label: 'Source / Origin'
+      region: content
+      parent_name: ''
+      weight: 1
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        required_fields: true
+        description: ''
+    group_office_review:
+      children:
+        - field_review_notes
+        - field_reviewed_by
+        - field_reviewed_on
+      label: 'Office Review'
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        required_fields: false
+        description: 'Populated by the Office Manager when approving or rejecting a flagged entry.'
+id: material_price_history.entry.default
+targetEntityType: material_price_history
+bundle: entry
+mode: default
+content:
+  field_change_notes:
+    type: string_textarea
+    weight: 4
+    region: content
+    settings:
+      rows: 3
+      placeholder: ''
+    third_party_settings: {  }
+  field_delta_percent:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_material:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_new_cost:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_old_cost:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_review_notes:
+    type: string_textarea
+    weight: 0
+    region: content
+    settings:
+      rows: 3
+      placeholder: ''
+    third_party_settings: {  }
+  field_reviewed_by:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_reviewed_on:
+    type: datetime_default
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_source:
+    type: options_select
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_status:
+    type: options_select
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_supplier:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_supplier_invoice_number:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_user:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_wo_reference:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  uid: true

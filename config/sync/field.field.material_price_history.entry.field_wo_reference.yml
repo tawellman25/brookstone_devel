@@ -1,0 +1,26 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material_price_history.entry
+    - field.storage.material_price_history.field_wo_reference
+id: material_price_history.entry.field_wo_reference
+field_name: field_wo_reference
+entity_type: material_price_history
+bundle: entry
+label: 'Work Order'
+description: "The Work Order that triggered this entry, when applicable."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

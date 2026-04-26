@@ -1,0 +1,27 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material_price_history.entry
+    - field.storage.material_price_history.field_user
+id: material_price_history.entry.field_user
+field_name: field_user
+entity_type: material_price_history
+bundle: entry
+label: 'User'
+description: "The user who triggered this entry (crew member on WO entry, office on manual edit, system on auto_created)."
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    include_anonymous: false
+    filter:
+      type: _none
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+field_type: entity_reference

@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material_price_history.entry
+    - field.storage.material_price_history.field_old_cost
+id: material_price_history.entry.field_old_cost
+field_name: field_old_cost
+entity_type: material_price_history
+bundle: entry
+label: 'Old Cost'
+description: "Previous supplier_unit_cost on the material_suppliers row before this change. NULL when no prior cost existed (auto_created path)."
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: 0.0
+  max: null
+  prefix: '$'
+  suffix: ''
+field_type: decimal

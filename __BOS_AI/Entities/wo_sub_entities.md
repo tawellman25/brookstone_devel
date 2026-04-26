@@ -139,6 +139,7 @@ Storage: ECK
 - `field_material_type` — `list_string`: how acquired (stocked vs purchased)
 - `field_material_cost` — snapshot of unit cost at time of use; immutable after WO completion. Used as the trigger to reveal Bought From and Supplier Invoice # fields.
 - `field_supplier_invoice_number` — string (max 64). Invoice/receipt # from the vendor when crew records a non-catalog price. Soft-required — visible on the form (revealed when material_cost is filled), but no field-level enforcement. JS copy-down auto-fills empty invoice fields on subsequent lines from the first entry.
+- `field_supplier_item_number` — string (max 255). Vendor SKU / item number for the material the crew bought. Helpful for the office when re-ordering. Soft-required (revealed alongside the invoice field). Synced to `material_suppliers.field_supplier_item_number` by PriceSyncService **only when the supplier link's existing SKU is empty** — manual catalog edits are never overwritten by WO entries. Auto-normalized at the supplier link level by `material_supplier.module` (strips common pasted prefixes like `Item #`, `SKU`, `Part #`).
 - `field_quantity` — units used
 - `field_subtotal` — quantity × cost
 - `field_subtotal_w_markup` — subtotal with markup applied

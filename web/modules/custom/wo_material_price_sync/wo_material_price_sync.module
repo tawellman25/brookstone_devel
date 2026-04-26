@@ -39,27 +39,27 @@ function wo_material_price_sync_entity_validate(EntityInterface $entity, Constra
 /**
  * Implements hook_ENTITY_TYPE_presave() for wo_material_list_item.
  *
- * Defensive whitespace trim on the invoice number. The JS copy-down
- * usually handles this on the client, but presave is the belt to that
- * suspenders for direct API saves and partial form submissions.
+ * Defensive whitespace trim on the invoice number and supplier item
+ * number. The JS copy-down handles invoice trim on the client; presave
+ * is the belt to that suspenders for direct API saves and any partial
+ * form submissions.
  */
 function wo_material_price_sync_wo_material_list_item_presave(EntityInterface $entity): void {
   if ($entity->bundle() !== 'items') {
     return;
   }
-  if (!$entity->hasField('field_supplier_invoice_number')) {
-    return;
-  }
-  if ($entity->get('field_supplier_invoice_number')->isEmpty()) {
-    return;
-  }
-  $raw = (string) $entity->get('field_supplier_invoice_number')->value;
-  $trimmed = trim($raw);
-  if ($trimmed === '') {
-    $entity->set('field_supplier_invoice_number', NULL);
-  }
-  elseif ($trimmed !== $raw) {
-    $entity->set('field_supplier_invoice_number', $trimmed);
+  foreach (['field_supplier_invoice_number', 'field_supplier_item_number'] as $field) {
+    if (!$entity->hasField($field) || $entity->get($field)->isEmpty()) {
+      continue;
+    }
+    $raw = (string) $entity->get($field)->value;
+    $trimmed = trim($raw);
+    if ($trimmed === '') {
+      $entity->set($field, NULL);
+    }
+    elseif ($trimmed !== $raw) {
+      $entity->set($field, $trimmed);
+    }
   }
 }
 

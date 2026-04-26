@@ -73,7 +73,7 @@ This entity exists to capture supplier-specific knowledge that would otherwise l
 | `field_supplier_unit_cost`   | Supplier Unit Cost   | decimal (10,2) | —                                                           | **Cost per Cost UOM from this supplier. Feeds `material.field_cost_integer` via auto-sync.** Validated > 0 if set. |
 | `field_cost_unit_of_measure` | Cost Unit of Measure | list_string    | each, case, box, bag, roll                                  | Unit this cost applies to.                                       |
 | `field_price_effective_date` | Price Effective Date | datetime       | —                                                           | When this price was last confirmed.                              |
-| `field_price_source`         | Price Source         | list_string    | invoice, quote, catalog, website, phone                     | Where the price came from.                                       |
+| `field_price_source`         | Price Source         | list_string    | invoice, quote, catalog, website, phone, wo_entry           | Where the price came from. `invoice` is set automatically by the `wo_material_price_sync` module when a WO line entry includes an invoice number; `wo_entry` is set when the WO line had no invoice number (the crew typed a price without showing one). |
 | `field_price_notes`          | Price Notes          | string_long    | —                                                           | Free-text pricing conditions/constraints.                        |
 
 ### Ordering Mechanics

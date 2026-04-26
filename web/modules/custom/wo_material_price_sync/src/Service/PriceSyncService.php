@@ -109,6 +109,14 @@ final class PriceSyncService {
       }
     }
 
+    $supplier_item_number = NULL;
+    if ($entity->hasField('field_supplier_item_number') && !$entity->get('field_supplier_item_number')->isEmpty()) {
+      $supplier_item_number = trim((string) $entity->get('field_supplier_item_number')->value);
+      if ($supplier_item_number === '') {
+        $supplier_item_number = NULL;
+      }
+    }
+
     $wo_id = $this->getWorkOrderId($entity);
 
     // Find existing material_suppliers row for this (material, vendor) pair.
@@ -121,7 +129,7 @@ final class PriceSyncService {
       ->execute();
 
     if (empty($ms_ids)) {
-      $this->autoCreatePair($material_id, $vendor_id, $entered_cost, $invoice_number, $wo_id);
+      $this->autoCreatePair($material_id, $vendor_id, $entered_cost, $invoice_number, $supplier_item_number, $wo_id);
       return;
     }
 
@@ -145,7 +153,7 @@ final class PriceSyncService {
     }
 
     if ($baseline === NULL || $baseline <= 0.0) {
-      $this->firstCostRecorded($ms_row, $entered_cost, $invoice_number, $wo_id);
+      $this->firstCostRecorded($ms_row, $entered_cost, $invoice_number, $supplier_item_number, $wo_id);
       return;
     }
 
@@ -156,7 +164,7 @@ final class PriceSyncService {
       return;
     }
 
-    $this->applyChange($ms_row, $baseline, $entered_cost, $delta_pct, $invoice_number, $wo_id);
+    $this->applyChange($ms_row, $baseline, $entered_cost, $delta_pct, $invoice_number, $supplier_item_number, $wo_id);
   }
 
   // ── Skip / change-detection helpers ─────────────────────────────────
@@ -272,10 +280,42 @@ final class PriceSyncService {
   // ── Branch handlers (one per terminal state in the decision tree) ───
 
   /**
+   * Resolve the material_suppliers field_price_source value from invoice presence.
+   *
+   * @return string  'invoice' when an invoice number was provided; 'wo_entry' otherwise.
+   */
+  private function priceSourceFor(?string $invoice_number): string {
+    return $invoice_number !== NULL && $invoice_number !== '' ? 'invoice' : 'wo_entry';
+  }
+
+  /**
+   * Sets field_supplier_item_number on the ms_row only when the row's
+   * existing value is empty. Manual SKU edits in the supplier catalog
+   * are NEVER overwritten by WO entries.
+   */
+  private function maybeSetSupplierItemNumber(EntityInterface $ms_row, ?string $supplier_item_number): void {
+    if ($supplier_item_number === NULL || $supplier_item_number === '') {
+      return;
+    }
+    if (!$ms_row->hasField('field_supplier_item_number')) {
+      return;
+    }
+    $existing = '';
+    if (!$ms_row->get('field_supplier_item_number')->isEmpty()) {
+      $existing = trim((string) $ms_row->get('field_supplier_item_number')->value);
+    }
+    if ($existing !== '') {
+      // Manual SKU already set — never overwrite.
+      return;
+    }
+    $ms_row->set('field_supplier_item_number', $supplier_item_number);
+  }
+
+  /**
    * Auto-create a new material_suppliers row from this WO entry.
    * History status: auto_created.
    */
-  private function autoCreatePair(int $material_id, int $vendor_id, float $entered_cost, ?string $invoice_number, ?int $wo_id): void {
+  private function autoCreatePair(int $material_id, int $vendor_id, float $entered_cost, ?string $invoice_number, ?string $supplier_item_number, ?int $wo_id): void {
     $today = date('Y-m-d', $this->time->getRequestTime());
     $username = $this->currentUser->getDisplayName();
 
@@ -284,17 +324,23 @@ final class PriceSyncService {
       $price_notes .= " — invoice #{$invoice_number}";
     }
 
+    $values = [
+      'type' => 'supplier',
+      'field_material' => ['target_id' => $material_id],
+      'field_supplier' => ['target_id' => $vendor_id],
+      'field_supplier_unit_cost' => $entered_cost,
+      'field_price_effective_date' => $today,
+      'field_price_source' => $this->priceSourceFor($invoice_number),
+      'field_price_notes' => $price_notes,
+    ];
+    if ($supplier_item_number !== NULL) {
+      $values['field_supplier_item_number'] = $supplier_item_number;
+    }
+
     try {
-      $row = $this->entityTypeManager->getStorage('material_suppliers')->create([
-        'type' => 'supplier',
-        'field_material' => ['target_id' => $material_id],
-        'field_supplier' => ['target_id' => $vendor_id],
-        'field_supplier_unit_cost' => $entered_cost,
-        'field_price_effective_date' => $today,
-        'field_price_source' => 'wo_entry',
-        'field_price_notes' => $price_notes,
-      ]);
+      $row = $this->entityTypeManager->getStorage('material_suppliers')->create($values);
       // Saving fires material.module's MAX-cost auto-sync.
+      // material_supplier.module presave normalizes the supplier_item_number.
       $row->save();
     }
     catch (\Throwable $e) {
@@ -330,12 +376,13 @@ final class PriceSyncService {
    * Existing pair but no prior cost — record the entered cost as the first
    * known cost. History status: applied.
    */
-  private function firstCostRecorded(EntityInterface $ms_row, float $entered_cost, ?string $invoice_number, ?int $wo_id): void {
+  private function firstCostRecorded(EntityInterface $ms_row, float $entered_cost, ?string $invoice_number, ?string $supplier_item_number, ?int $wo_id): void {
     $today = date('Y-m-d', $this->time->getRequestTime());
 
     $ms_row->set('field_supplier_unit_cost', $entered_cost);
     $ms_row->set('field_price_effective_date', $today);
-    $ms_row->set('field_price_source', 'wo_entry');
+    $ms_row->set('field_price_source', $this->priceSourceFor($invoice_number));
+    $this->maybeSetSupplierItemNumber($ms_row, $supplier_item_number);
     try {
       $ms_row->save();
     }
@@ -402,7 +449,7 @@ final class PriceSyncService {
    * updates via material.module's MAX-sync on the row save.
    * History status: applied.
    */
-  private function applyChange(EntityInterface $ms_row, float $baseline, float $entered_cost, float $delta_pct, ?string $invoice_number, ?int $wo_id): void {
+  private function applyChange(EntityInterface $ms_row, float $baseline, float $entered_cost, float $delta_pct, ?string $invoice_number, ?string $supplier_item_number, ?int $wo_id): void {
     $today = date('Y-m-d', $this->time->getRequestTime());
 
     $existing_notes = '';
@@ -417,12 +464,14 @@ final class PriceSyncService {
 
     $ms_row->set('field_supplier_unit_cost', $entered_cost);
     $ms_row->set('field_price_effective_date', $today);
-    $ms_row->set('field_price_source', 'wo_entry');
+    $ms_row->set('field_price_source', $this->priceSourceFor($invoice_number));
     $ms_row->set('field_price_notes', $combined_notes);
+    $this->maybeSetSupplierItemNumber($ms_row, $supplier_item_number);
     try {
       // Saving fires material.module's MAX-cost auto-sync, which propagates
       // the new cost to material.field_cost_integer (and field_installed_price)
       // when this vendor is the most expensive eligible source.
+      // material_supplier.module presave normalizes any new supplier_item_number.
       $ms_row->save();
     }
     catch (\Throwable $e) {

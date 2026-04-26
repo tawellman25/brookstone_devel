@@ -1,0 +1,25 @@
+wo_material_price_sync.approve:
+  path: '/admin/materials/price-review/{material_price_history}/approve'
+  defaults:
+    _form: '\Drupal\wo_material_price_sync\Form\PriceReviewApproveForm'
+    _title: 'Approve Price Change'
+  requirements:
+    _permission: 'review material price changes'
+  options:
+    _admin_route: TRUE
+    parameters:
+      material_price_history:
+        type: 'entity:material_price_history'
+
+wo_material_price_sync.reject:
+  path: '/admin/materials/price-review/{material_price_history}/reject'
+  defaults:
+    _form: '\Drupal\wo_material_price_sync\Form\PriceReviewRejectForm'
+    _title: 'Reject Price Change'
+  requirements:
+    _permission: 'review material price changes'
+  options:
+    _admin_route: TRUE
+    parameters:
+      material_price_history:
+        type: 'entity:material_price_history'

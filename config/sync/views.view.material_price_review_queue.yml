@@ -661,24 +661,22 @@ display:
             flagged_high: flagged_high
             auto_created: auto_created
           group: 1
-          exposed: true
+          exposed: false
           expose:
-            operator_id: field_status_value_op
-            label: Status
+            operator_id: ''
+            label: ''
             description: ''
             use_operator: false
-            operator: field_status_value_op
+            operator: ''
             operator_limit_selection: false
             operator_list: {  }
-            identifier: status
+            identifier: ''
             required: false
             remember: false
-            multiple: true
+            multiple: false
             remember_roles:
               authenticated: authenticated
             reduce: false
-            placeholder: ''
-            argument: ''
           is_grouped: false
           group_info:
             label: ''
@@ -699,21 +697,17 @@ display:
           group_type: group
           admin_label: 'Missing invoice number'
           plugin_id: string
-          operator: empty
+          operator: '='
           value: ''
           group: 1
-          exposed: true
+          exposed: false
           expose:
-            operator_id: no_invoice_op
-            label: 'Invoice # is empty'
-            description: 'Filter to entries that have no invoice number recorded.'
+            operator_id: ''
+            label: ''
+            description: ''
             use_operator: false
-            operator: no_invoice_op
-            operator_limit_selection: true
-            operator_list:
-              - empty
-              - not empty
-            identifier: no_invoice
+            operator: ''
+            identifier: ''
             required: false
             remember: false
             multiple: false
@@ -722,18 +716,26 @@ display:
             placeholder: ''
             min_placeholder: ''
             max_placeholder: ''
-          is_grouped: false
+          is_grouped: true
           group_info:
-            label: ''
+            label: 'Invoice number'
             description: ''
-            identifier: ''
+            identifier: invoice
             optional: true
             widget: select
             multiple: false
             remember: false
             default_group: All
             default_group_multiple: {  }
-            group_items: {  }
+            group_items:
+              1:
+                title: 'Has invoice'
+                operator: 'not empty'
+                value: ''
+              2:
+                title: 'Missing invoice'
+                operator: empty
+                value: ''
       style:
         type: table
         options:

@@ -1,35 +1,28 @@
-uuid: 70eebc1c-1042-4718-bf06-1ec2bb826323
+uuid: 0118c624-22fb-46ff-9225-55f2c4e56a56
 langcode: en
 status: true
 dependencies:
   config:
-    - eck.eck_type.material.backflow
-    - field.field.material.backflow.field_banner_images
-    - field.field.material.backflow.field_carton_quantity
-    - field.field.material.backflow.field_cost_integer
-    - field.field.material.backflow.field_description
-    - field.field.material.backflow.field_discontinued
-    - field.field.material.backflow.field_documentation
-    - field.field.material.backflow.field_front_promoted
-    - field.field.material.backflow.field_installed_price
-    - field.field.material.backflow.field_instructional_video
-    - field.field.material.backflow.field_main_image
-    - field.field.material.backflow.field_manufacturer
-    - field.field.material.backflow.field_manufacturer_item_number
-    - field.field.material.backflow.field_manufacturer_website_item
-    - field.field.material.backflow.field_material_tags
-    - field.field.material.backflow.field_name
-    - field.field.material.backflow.field_price_updated
-    - field.field.material.backflow.field_retail_price_disclaimer
-    - field.field.material.backflow.field_safety_data_sheet
-    - field.field.material.backflow.field_size
-    - field.field.material.backflow.field_slideshow_image
-    - field.field.material.backflow.field_subheader_text
-    - field.field.material.backflow.field_supplier_item_number
-    - field.field.material.backflow.field_supplier_website_item_link
-    - field.field.material.backflow.field_suppliers
-    - field.field.material.backflow.field_supporting_images
-    - field.field.material.backflow.field_unit_of_measure
+    - eck.eck_type.material.supplies
+    - field.field.material.supplies.field_cost_integer
+    - field.field.material.supplies.field_description
+    - field.field.material.supplies.field_discontinued
+    - field.field.material.supplies.field_documentation
+    - field.field.material.supplies.field_installed_price
+    - field.field.material.supplies.field_main_image
+    - field.field.material.supplies.field_manufacturer
+    - field.field.material.supplies.field_manufacturer_item_number
+    - field.field.material.supplies.field_manufacturer_website_item
+    - field.field.material.supplies.field_material_tags
+    - field.field.material.supplies.field_name
+    - field.field.material.supplies.field_price_updated
+    - field.field.material.supplies.field_safety_data_sheet
+    - field.field.material.supplies.field_size
+    - field.field.material.supplies.field_supplier_item_number
+    - field.field.material.supplies.field_supplier_website_item_link
+    - field.field.material.supplies.field_suppliers
+    - field.field.material.supplies.field_supporting_images
+    - field.field.material.supplies.field_unit_of_measure
     - image.style.max_325x325
   module:
     - colorbox
@@ -89,19 +82,11 @@ third_party_settings:
         open: true
         description: 'This information is going to get phased out with the addition of multiple suppliers per item.'
         required_fields: false
-id: material.backflow.default
+id: material.supplies.default
 targetEntityType: material
-bundle: backflow
+bundle: supplies
 mode: default
 content:
-  field_carton_quantity:
-    type: string
-    label: above
-    settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    weight: 6
-    region: content
   field_cost_integer:
     type: number_decimal
     label: inline
@@ -138,14 +123,6 @@ content:
       prefix_suffix: true
     third_party_settings: {  }
     weight: 2
-    region: content
-  field_instructional_video:
-    type: entity_reference_label
-    label: hidden
-    settings:
-      link: true
-    third_party_settings: {  }
-    weight: 10
     region: content
   field_main_image:
     type: colorbox
@@ -258,14 +235,9 @@ content:
 hidden:
   changed: true
   created: true
-  field_banner_images: true
   field_discontinued: true
-  field_front_promoted: true
   field_material_tags: true
   field_name: true
-  field_retail_price_disclaimer: true
-  field_slideshow_image: true
-  field_subheader_text: true
   field_supporting_images: true
   title: true
   uid: true

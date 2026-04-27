@@ -34,6 +34,7 @@ dependencies:
     - field.field.material.annuals.field_width
     - image.style.thumbnail
   module:
+    - field_group
     - field_layout
     - image
     - layout_discovery
@@ -45,6 +46,123 @@ third_party_settings:
     id: layout_onecol
     settings:
       label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - uid
+        - created
+        - field_front_promoted
+        - path
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 15
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_public_information:
+      children:
+        - field_description
+      label: 'Public Information'
+      region: content
+      parent_name: ''
+      weight: 12
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_plant_characteristics:
+      children:
+        - field_plant_genus
+        - field_plant_species
+        - field_cultivar
+        - field_plant_family
+        - field_plant_color
+        - field_flower_color
+        - field_fall_color
+        - field_bloom_time
+        - field_height
+        - field_width
+        - field_water_use
+        - field_plant_characteristics
+        - field_care_instructions
+      label: 'Plant Characteristics'
+      region: content
+      parent_name: ''
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_suppliers:
+      children:
+        - field_suppliers
+        - field_supplier_item_number
+        - field_supplier_website_item_link
+      label: Suppliers
+      region: content
+      parent_name: ''
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: "These are getting phased out for the inclusion of multiple supplies per material item.</br>\r\n</br>\r\n<h3>Please Add after you have saved</h3>"
+        required_fields: true
+    group_stock_lead_time:
+      children:
+        - field_quantity_in_stock
+        - field_lead_time
+        - field_last_restocked_date
+      label: 'Stock & Lead Time'
+      region: content
+      parent_name: ''
+      weight: 14
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_supporting_images:
+      children:
+        - field_banner_images
+        - field_main_image
+      label: 'Supporting Images'
+      region: content
+      parent_name: ''
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
 id: material.annuals.default
 targetEntityType: material
 bundle: annuals
@@ -303,4 +421,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  {  }

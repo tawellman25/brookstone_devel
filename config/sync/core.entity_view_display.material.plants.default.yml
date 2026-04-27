@@ -32,11 +32,90 @@ dependencies:
     - field.field.material.plants.field_suppliers
     - field.field.material.plants.field_water_use
     - field.field.material.plants.field_width
+    - image.style.max_325x325
   module:
+    - field_group
     - image
     - options
     - text
     - user
+third_party_settings:
+  field_group:
+    group_plant_characteristics:
+      children:
+        - field_plant_genus
+        - field_plant_species
+        - field_cultivar
+        - field_plant_family
+        - field_plant_color
+        - field_flower_color
+        - field_fall_color
+        - field_bloom_time
+        - field_height
+        - field_width
+        - field_water_use
+        - field_plant_characteristics
+        - field_care_instructions
+      label: 'Plant Characteristics'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_stock_lead_time:
+      children:
+        - field_quantity_in_stock
+        - field_lead_time
+        - field_last_restocked_date
+      label: 'Stock & Lead Time'
+      parent_name: ''
+      region: content
+      weight: 6
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_suppliers:
+      children:
+        - material_supplier_info_entity_view_1
+        - group_old_info
+      label: Suppliers
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_old_info:
+      children:
+        - field_suppliers
+        - field_supplier_item_number
+        - field_supplier_website_item_link
+      label: 'Old Info'
+      parent_name: group_suppliers
+      region: content
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'This information is going to get phased out with the addition of multiple suppliers per item.'
+        required_fields: false
 id: material.plants.default
 targetEntityType: material
 bundle: plants
@@ -115,6 +194,34 @@ content:
     third_party_settings: {  }
     weight: 11
     region: content
+  field_last_restocked_date:
+    type: timestamp
+    label: above
+    settings:
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_lead_time:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
   field_main_image:
     type: image
     label: above
@@ -185,6 +292,35 @@ content:
     third_party_settings: {  }
     weight: 28
     region: content
+  field_quantity_in_stock:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_supplier_item_number:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_supplier_website_item_link:
+    type: link
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 10
+    region: content
   field_suppliers:
     type: entity_reference_label
     label: above
@@ -230,13 +366,12 @@ content:
     region: content
 hidden:
   changed: true
+  created: true
   field_banner_images: true
   field_cost_integer: true
   field_front_promoted: true
-  field_last_restocked_date: true
-  field_lead_time: true
   field_material_tags: true
+  field_name: true
   field_price_updated: true
-  field_quantity_in_stock: true
-  field_supplier_item_number: true
-  field_supplier_website_item_link: true
+  title: true
+  uid: true

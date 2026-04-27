@@ -31,13 +31,66 @@ dependencies:
     - field.field.material.xmas.field_suppliers
     - field.field.material.xmas.field_supporting_images
     - field.field.material.xmas.field_unit_of_measure
+    - image.style.max_325x325
   module:
+    - field_group
     - file
     - image
     - link
     - options
     - text
     - user
+third_party_settings:
+  field_group:
+    group_manufacturer_information:
+      children:
+        - field_manufacturer
+        - field_manufacturer_item_number
+        - field_manufacturer_website_item
+      label: 'Manufacturer Information'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_suppliers:
+      children:
+        - material_supplier_info_entity_view_1
+        - group_old_info
+      label: Suppliers
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_old_info:
+      children:
+        - field_suppliers
+        - field_supplier_item_number
+        - field_supplier_website_item_link
+      label: 'Old Info'
+      parent_name: group_suppliers
+      region: content
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'This information is going to get phased out with the addition of multiple suppliers per item.'
+        required_fields: false
 id: material.xmas.default
 targetEntityType: material
 bundle: xmas
@@ -308,6 +361,11 @@ content:
     third_party_settings: {  }
     weight: 16
     region: content
+  material_supplier_info_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
   title:
     type: string
     label: hidden
@@ -325,3 +383,16 @@ content:
     region: content
 hidden:
   changed: true
+  created: true
+  field_banner_images: true
+  field_discontinued: true
+  field_front_promoted: true
+  field_material_tags: true
+  field_name: true
+  field_retail_price_disclaimer: true
+  field_slideshow_image: true
+  field_subheader_text: true
+  field_supplier: true
+  field_supporting_images: true
+  title: true
+  uid: true

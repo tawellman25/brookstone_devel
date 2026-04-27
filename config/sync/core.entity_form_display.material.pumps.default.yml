@@ -50,67 +50,31 @@ third_party_settings:
     settings:
       label: ''
   field_group:
-    group_supplier_info:
-      children:
-        - field_supplier
-        - field_supplier_item_number
-        - field_supplier_website_item_link
-      label: 'Supplier Info'
-      region: content
-      parent_name: ''
-      weight: 9
-      format_type: details
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        open: false
-        description: ''
-        required_fields: true
-    group_manufacturer_info:
-      children:
-        - field_manufacturer
-        - field_manufacturer_item_number
-        - field_manufacturer_website_item
-      label: 'Manufacturer Info'
-      region: content
-      parent_name: ''
-      weight: 10
-      format_type: details
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        open: false
-        description: ''
-        required_fields: true
-    group_public_info:
-      children:
-        - field_banner_images
-        - field_supporting_images
-        - field_slideshow_image
-        - field_subheader_text
-        - field_description
-      label: 'Public Info'
-      region: content
-      parent_name: ''
-      weight: 11
-      format_type: details
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        open: false
-        description: ''
-        required_fields: true
     group_office_admin:
       children:
-        - title
-        - field_front_promoted
-        - created
         - uid
+        - created
+        - field_front_promoted
         - path
-      label: 'Office Administration'
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 15
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_public_information:
+      children:
+        - field_subheader_text
+        - field_description
+        - field_retail_price_disclaimer
+      label: 'Public Information'
       region: content
       parent_name: ''
       weight: 12
@@ -119,59 +83,85 @@ third_party_settings:
         classes: ''
         show_empty_fields: false
         id: ''
+        label_as_html: false
         open: false
         description: ''
         required_fields: true
-    group_pricing:
+    group_manufacturer_information:
       children:
-        - field_price_updated
-        - field_cost_integer
-        - field_installed_price
-        - field_retail_price_disclaimer
-      label: Pricing
-      region: content
-      parent_name: ''
-      weight: 7
-      format_type: details
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        open: false
-        description: ''
-        required_fields: true
-    group_pump_specs:
-      children:
-        - field_pump_volts
-        - field_pump_phase
-        - field_pump_suction_size
-        - field_pump_discharge_size
-      label: 'Pump Specs'
-      region: content
-      parent_name: ''
-      weight: 6
-      format_type: details
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        open: false
-        description: ''
-        required_fields: true
-    group_documentation:
-      children:
-        - field_instructional_video
+        - field_manufacturer
+        - field_manufacturer_item_number
         - field_documentation
         - field_safety_data_sheet
-      label: Documentation
+        - field_manufacturer_website_item
+      label: 'Manufacturer Information'
       region: content
       parent_name: ''
-      weight: 8
+      weight: 11
       format_type: details
       format_settings:
         classes: ''
         show_empty_fields: false
         id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_pump_specifications:
+      children:
+        - field_pump_model_number
+        - field_pump_size
+        - field_pump_phase
+        - field_pump_volts
+        - field_pump_discharge_size
+        - field_pump_suction_size
+      label: 'Pump Specifications'
+      region: content
+      parent_name: ''
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_suppliers:
+      children:
+        - field_suppliers
+        - field_supplier_item_number
+        - field_supplier_website_item_link
+      label: Suppliers
+      region: content
+      parent_name: ''
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: "These are getting phased out for the inclusion of multiple supplies per material item.</br>\r\n</br>\r\n<h3>Please Add after you have saved</h3>"
+        required_fields: true
+    group_supporting_images:
+      children:
+        - field_banner_images
+        - field_main_image
+        - field_slideshow_image
+        - field_supporting_images
+      label: 'Supporting Images'
+      region: content
+      parent_name: ''
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
         open: false
         description: ''
         required_fields: true
@@ -445,4 +435,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  field_supplier: true

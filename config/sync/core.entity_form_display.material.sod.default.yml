@@ -21,6 +21,7 @@ dependencies:
     - field.field.material.sod.field_suppliers
     - image.style.thumbnail
   module:
+    - field_group
     - field_layout
     - image
     - layout_discovery
@@ -32,6 +33,111 @@ third_party_settings:
     id: layout_onecol
     settings:
       label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - uid
+        - created
+        - path
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 15
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_public_information:
+      children:
+        - field_description
+      label: 'Public Information'
+      region: content
+      parent_name: ''
+      weight: 12
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_bulk_specifications:
+      children:
+        - field_coverage_per_pallet
+        - field_roll_or_pallet
+        - field_sod_variety
+      label: 'Bulk Specifications'
+      region: content
+      parent_name: ''
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_suppliers:
+      children:
+        - field_suppliers
+        - field_supplier_item_number
+        - field_supplier_website_item_link
+      label: Suppliers
+      region: content
+      parent_name: ''
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: "These are getting phased out for the inclusion of multiple supplies per material item.</br>\r\n</br>\r\n<h3>Please Add after you have saved</h3>"
+        required_fields: true
+    group_stock_lead_time:
+      children:
+        - field_quantity_in_stock
+        - field_lead_time
+        - field_last_restocked_date
+      label: 'Stock & Lead Time'
+      region: content
+      parent_name: ''
+      weight: 14
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_supporting_images:
+      children:
+        - field_main_image
+      label: 'Supporting Images'
+      region: content
+      parent_name: ''
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
 id: material.sod.default
 targetEntityType: material
 bundle: sod
@@ -189,4 +295,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  {  }

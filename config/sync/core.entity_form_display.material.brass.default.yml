@@ -33,6 +33,7 @@ dependencies:
     - field.field.material.brass.field_unit_of_measure
     - image.style.thumbnail
   module:
+    - field_group
     - field_layout
     - file
     - image
@@ -45,6 +46,101 @@ third_party_settings:
     id: layout_onecol
     settings:
       label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - uid
+        - created
+        - field_front_promoted
+        - path
+      label: 'Office Admin'
+      region: content
+      parent_name: ''
+      weight: 15
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_public_information:
+      children:
+        - field_subheader_text
+        - field_description
+        - field_retail_price_disclaimer
+      label: 'Public Information'
+      region: content
+      parent_name: ''
+      weight: 12
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_manufacturer_information:
+      children:
+        - field_manufacturer
+        - field_manufacturer_item_number
+        - field_documentation
+        - field_safety_data_sheet
+        - field_manufacturer_website_item
+      label: 'Manufacturer Information'
+      region: content
+      parent_name: ''
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_suppliers:
+      children:
+        - field_suppliers
+        - field_supplier_item_number
+        - field_supplier_website_item_link
+      label: Suppliers
+      region: content
+      parent_name: ''
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: "These are getting phased out for the inclusion of multiple supplies per material item.</br>\r\n</br>\r\n<h3>Please Add after you have saved</h3>"
+        required_fields: true
+    group_supporting_images:
+      children:
+        - field_banner_images
+        - field_main_image
+        - field_slideshow_image
+        - field_supporting_images
+      label: 'Supporting Images'
+      region: content
+      parent_name: ''
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
 id: material.brass.default
 targetEntityType: material
 bundle: brass
@@ -299,4 +395,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  field_supplier: true

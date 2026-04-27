@@ -4,7 +4,6 @@ status: true
 dependencies:
   config:
     - eck.eck_type.material.decorative_rock
-    - field.field.material.decorative_rock.feeds_item
     - field.field.material.decorative_rock.field_banner_images
     - field.field.material.decorative_rock.field_cost_integer
     - field.field.material.decorative_rock.field_description
@@ -44,14 +43,14 @@ third_party_settings:
   field_group:
     group_office_admin:
       children:
-        - field_front_promoted
-        - created
         - uid
+        - created
+        - field_front_promoted
         - path
       label: 'Office Admin'
       region: content
       parent_name: ''
-      weight: 6
+      weight: 15
       format_type: details
       format_settings:
         classes: ''
@@ -61,32 +60,74 @@ third_party_settings:
         open: false
         description: ''
         required_fields: true
-    group_inventory_management:
+    group_public_information:
       children:
-        - field_discontinued
-        - field_unit_of_measure
-        - field_est_wt_per_yard
-        - field_yard_per_ton
-        - field_cost_integer
-        - field_quantity_in_stock
-        - field_price
-        - field_price_updated
-        - field_last_restocked_date
-        - field_lead_time
-        - field_supplier_item_number
-        - field_supplier
-        - field_supplier_website_item_link
-      label: 'Inventory Management'
+        - field_description
+      label: 'Public Information'
       region: content
       parent_name: ''
-      weight: 5
+      weight: 12
       format_type: details
       format_settings:
         classes: ''
         show_empty_fields: false
         id: ''
         label_as_html: false
-        open: true
+        open: false
+        description: ''
+        required_fields: true
+    group_bulk_specifications:
+      children:
+        - field_yard_per_ton
+        - field_est_wt_per_yard
+        - field_rock_type
+      label: 'Bulk Specifications'
+      region: content
+      parent_name: ''
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_suppliers:
+      children:
+        - field_suppliers
+        - field_supplier_item_number
+        - field_supplier_website_item_link
+      label: Suppliers
+      region: content
+      parent_name: ''
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: "These are getting phased out for the inclusion of multiple supplies per material item.</br>\r\n</br>\r\n<h3>Please Add after you have saved</h3>"
+        required_fields: true
+    group_stock_lead_time:
+      children:
+        - field_quantity_in_stock
+        - field_lead_time
+        - field_last_restocked_date
+      label: 'Stock & Lead Time'
+      region: content
+      parent_name: ''
+      weight: 14
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
         description: ''
         required_fields: true
     group_supporting_images:
@@ -97,14 +138,14 @@ third_party_settings:
       label: 'Supporting Images'
       region: content
       parent_name: ''
-      weight: 4
+      weight: 13
       format_type: details
       format_settings:
         classes: ''
         show_empty_fields: false
         id: ''
         label_as_html: false
-        open: true
+        open: false
         description: ''
         required_fields: true
 id: material.decorative_rock.default
@@ -297,6 +338,14 @@ content:
     region: content
     settings: {  }
     third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
     weight: 14
@@ -309,4 +358,4 @@ content:
     third_party_settings: {  }
 hidden:
   feeds_item: true
-  title: true
+  field_supplier: true

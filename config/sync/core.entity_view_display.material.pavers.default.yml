@@ -31,11 +31,64 @@ dependencies:
     - field.field.material.pavers.field_suppliers
     - field.field.material.pavers.field_supporting_images
     - field.field.material.pavers.field_unit_of_measure
+    - image.style.max_325x325
   module:
+    - field_group
     - file
     - image
     - link
     - text
+third_party_settings:
+  field_group:
+    group_manufacturer_information:
+      children:
+        - field_manufacturer
+        - field_manufacturer_item_number
+        - field_manufacturer_website_item
+      label: 'Manufacturer Information'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_suppliers:
+      children:
+        - material_supplier_info_entity_view_1
+        - group_old_info
+      label: Suppliers
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        description: ''
+    group_old_info:
+      children:
+        - field_suppliers
+        - field_supplier_item_number
+        - field_supplier_website_item_link
+      label: 'Old Info'
+      parent_name: group_suppliers
+      region: content
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: 'This information is going to get phased out with the addition of multiple suppliers per item.'
+        required_fields: false
 id: material.pavers.default
 targetEntityType: material
 bundle: pavers
@@ -75,6 +128,14 @@ content:
     third_party_settings: {  }
     weight: 1
     region: content
+  field_manufacturer_item_number:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 10
+    region: content
   field_manufacturer_website_item:
     type: link
     label: above
@@ -102,6 +163,34 @@ content:
       link_to_entity: false
     third_party_settings: {  }
     weight: 7
+    region: content
+  field_supplier_item_number:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_supplier_website_item_link:
+    type: link
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_suppliers:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 10
     region: content
   field_supporting_images:
     type: image
@@ -137,16 +226,15 @@ hidden:
   field_front_promoted: true
   field_installed_price: true
   field_instructional_video: true
-  field_manufacturer_item_number: true
   field_material_tags: true
+  field_name: true
   field_price_updated: true
   field_retail_price_disclaimer: true
   field_safety_data_sheet: true
   field_slideshow_image: true
   field_subheader_text: true
   field_supplier: true
-  field_supplier_item_number: true
-  field_supplier_website_item_link: true
-  field_suppliers: true
+  field_supporting_images: true
   field_unit_of_measure: true
+  title: true
   uid: true

@@ -46,29 +46,8 @@ third_party_settings:
     settings:
       label: ''
   field_group:
-    group_shrub_name:
-      children:
-        - title
-        - field_plant_genus
-        - field_plant_species
-        - field_cultivar
-        - field_plant_family
-      label: 'Shrub Name'
-      region: content
-      parent_name: ''
-      weight: 0
-      format_type: details
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        label_as_html: false
-        open: true
-        description: ''
-        required_fields: true
     group_office_admin:
       children:
-        - field_material_tags
         - uid
         - created
         - field_front_promoted
@@ -76,7 +55,87 @@ third_party_settings:
       label: 'Office Admin'
       region: content
       parent_name: ''
-      weight: 6
+      weight: 15
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_public_information:
+      children:
+        - field_description
+      label: 'Public Information'
+      region: content
+      parent_name: ''
+      weight: 12
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_plant_characteristics:
+      children:
+        - field_plant_genus
+        - field_plant_species
+        - field_cultivar
+        - field_plant_family
+        - field_plant_color
+        - field_flower_color
+        - field_fall_color
+        - field_bloom_time
+        - field_height
+        - field_width
+        - field_water_use
+        - field_plant_characteristics
+        - field_care_instructions
+      label: 'Plant Characteristics'
+      region: content
+      parent_name: ''
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: true
+    group_suppliers:
+      children:
+        - field_suppliers
+        - field_supplier_item_number
+        - field_supplier_website_item_link
+      label: Suppliers
+      region: content
+      parent_name: ''
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: "These are getting phased out for the inclusion of multiple supplies per material item.</br>\r\n</br>\r\n<h3>Please Add after you have saved</h3>"
+        required_fields: true
+    group_stock_lead_time:
+      children:
+        - field_quantity_in_stock
+        - field_lead_time
+        - field_last_restocked_date
+      label: 'Stock & Lead Time'
+      region: content
+      parent_name: ''
+      weight: 14
       format_type: details
       format_settings:
         classes: ''
@@ -88,66 +147,19 @@ third_party_settings:
         required_fields: true
     group_supporting_images:
       children:
-        - field_main_image
         - field_banner_images
+        - field_main_image
       label: 'Supporting Images'
       region: content
       parent_name: ''
-      weight: 4
+      weight: 13
       format_type: details
       format_settings:
         classes: ''
         show_empty_fields: false
         id: ''
         label_as_html: false
-        open: true
-        description: ''
-        required_fields: true
-    group_characteristics:
-      children:
-        - field_plant_characteristics
-        - field_plant_color
-        - field_flower_color
-        - field_bloom_time
-        - field_fall_color
-        - field_height
-        - field_width
-        - field_water_use
-      label: Characteristics
-      region: content
-      parent_name: ''
-      weight: 3
-      format_type: details
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        label_as_html: false
-        open: true
-        description: ''
-        required_fields: true
-    group_inventory_management:
-      children:
-        - field_price_updated
-        - field_cost_integer
-        - field_price
-        - field_suppliers
-        - field_supplier_item_number
-        - field_supplier_website_item_link
-        - field_quantity_in_stock
-        - field_last_restocked_date
-        - field_lead_time
-      label: 'Inventory Management'
-      region: content
-      parent_name: ''
-      weight: 5
-      format_type: details
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        label_as_html: false
-        open: true
+        open: false
         description: ''
         required_fields: true
 id: material.shrubs.default
@@ -397,4 +409,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  {  }

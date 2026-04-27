@@ -102,7 +102,12 @@ imported rows to the correct BOS user, two new fields live on the
 | `field_time_clock_system`   | list_string | Which external system the ID corresponds to (e.g., `timetrax`). |
 
 Both live in an "External Time Clock Mapping" fieldset on the user
-edit form.
+edit form. The fieldset is **only rendered when the user being edited
+has the `teammates` role** — non-teammates (clients, applicants,
+public users) never see it. New users (no roles yet) also have it
+hidden until first save with the `teammates` role assigned. Gating is
+implemented by the [`bos_user_time_clock_mapping`](#related-modules)
+module.
 
 ### Critical Invariant: `field_time_clock_id` MUST Be Unique
 
@@ -204,7 +209,11 @@ renders below `field_clocking_in_out_date`.
 * `field_time_clock_id` and `field_time_clock_system` added on user.
 * "External Time Clock Mapping" fieldset added to user edit form.
 
-Out of scope for Phase 1A and explicitly NOT implemented:
+**Phase 1A.1 (2026-04-26).** Role-gated visibility of the External Time
+Clock Mapping fieldset on the user edit form, via the new
+`bos_user_time_clock_mapping` module.
+
+Out of scope and explicitly NOT yet implemented:
 
 * No Timetrax import module.
 * No admin UI for supervisor manual entry.
@@ -213,6 +222,15 @@ Out of scope for Phase 1A and explicitly NOT implemented:
 * No changes to `wo_time_clock` or any `wo_*` modules.
 
 ---
+
+## Related Modules
+
+* **`bos_user_time_clock_mapping`** — implements
+  `hook_form_user_form_alter` to hide the External Time Clock Mapping
+  fieldset (and its two underlying fields) on the user edit form when
+  the user being edited does not have the `teammates` role. Also hides
+  it on the user-add form (no roles assigned yet). No effect when the
+  user has `teammates`.
 
 ## See Also
 

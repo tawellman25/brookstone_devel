@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @file
+ * Hides the External Time Clock Mapping fieldset on user forms when the
+ * user being edited does not have the 'teammates' role.
+ *
+ * The two underlying fields (field_time_clock_id, field_time_clock_system)
+ * are configured to render on the user edit form unconditionally. This
+ * module gates that rendering so non-teammate users (clients, applicants,
+ * public users) never see a fieldset that would never apply to them.
+ *
+ * On the user-add form (/admin/people/create) the new user has no roles
+ * yet — the fieldset is hidden by default. After the user is saved with
+ * the 'teammates' role, a subsequent edit will show the fieldset.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\user\UserInterface;
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter() for user_form.
+ *
+ * Fires for both the user add form (/admin/people/create) and the user
+ * edit form. Does NOT fire for user_register_form (public registration),
+ * which is intentional — the time clock mapping fields are not part of
+ * the registration form display anyway.
+ */
+function bos_user_time_clock_mapping_form_user_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  $form_object = $form_state->getFormObject();
+  if (!method_exists($form_object, 'getEntity')) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if (!$entity instanceof UserInterface) {
+    return;
+  }
+
+  // Non-teammates never need time clock mapping. New users (no roles
+  // yet) also fall through to FALSE here — fieldset is hidden until
+  // the user is saved with the 'teammates' role.
+  if ($entity->hasRole('teammates')) {
+    return;
+  }
+
+  foreach (['field_time_clock_id', 'field_time_clock_system'] as $field) {
+    if (isset($form[$field])) {
+      $form[$field]['#access'] = FALSE;
+    }
+  }
+
+  // Detach the field_group wrapper so the empty fieldset doesn't render.
+  if (isset($form['#fieldgroups']['group_external_time_clock_mapping'])) {
+    unset($form['#fieldgroups']['group_external_time_clock_mapping']);
+  }
+  foreach (['field_time_clock_id', 'field_time_clock_system'] as $field) {
+    if (isset($form['#group_children'][$field])) {
+      unset($form['#group_children'][$field]);
+    }
+  }
+}

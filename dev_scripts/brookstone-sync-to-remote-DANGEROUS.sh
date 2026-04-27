@@ -115,6 +115,7 @@ RSYNC_FLAGS=(
   --exclude ".vscode/"
   --exclude "dev_scripts/"
   --exclude "__BOS_AI/"
+  --exclude "TimeTrax_Hack/"
 
   # deps/local-only
   --exclude "vendor/"

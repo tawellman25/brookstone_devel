@@ -296,11 +296,15 @@ Violation of this structure results in SOP rejection.
 
 ## COPY-PASTE ENFORCEMENT
 
-- No paragraphs
-- No narrative blocks
-- No mixed-field content
-- Each field must stand alone
+- No mixed-field content — each field's content must stay
+  within its defined scope
+- Each field must stand alone and be independently pasteable
+  into its Drupal ECK field
 - Content must paste directly into Drupal without modification
+- Prose paragraphs are permitted only in field_sop_steps to
+  provide context before procedural steps
+- All other fields must use lists and directive statements only
+- HTML must use inline styles only — no class dependencies
 
 Non-compliant SOPs are invalid.
 

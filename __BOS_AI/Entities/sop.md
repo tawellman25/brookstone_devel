@@ -165,6 +165,12 @@ Use numbered lists.
 No prose blocks.
 Every step must be actionable.
 
+HTML formatting note:
+This field accepts Full HTML. In dual-format SOPs, this
+field holds the majority of visual content including
+step tables, pipeline diagrams, warning boxes, and
+reference tables. All HTML must use inline styles only.
+
 ### 11. `field_sop__kpis` — Key Performance Indicators (text_long)
 Content rule:
 - Measurable indicators only
@@ -257,3 +263,66 @@ and exception tracking must NOT be stored as SOP body content. These must be
 tracked in the `sop_log` entity. See `__BOS_AI/Entities/sop_log.md`.
 
 Updated: April 2026 — governance-aligned field grouping, sop_log entity added.
+
+---
+
+## Document Generation Standards
+
+### SOP Authoring Outputs (Mandatory — Effective April 2026)
+
+All SOPs must produce two outputs. See GOV-SOP-001
+Dual-Format Standard for full rules.
+
+#### Output 1: Printed Document
+- Format: .docx
+- Visual standard: Color-coded step tables, pipeline
+  flow diagrams, warning boxes, do/don't comparison tables
+- Brand colors: Green #2E7D32, Blue #0D47A1,
+  Gold #F57F17, Red #B71C1C
+- Storage: __BOS_AI/SOPs/[SOP_CODE]/
+
+#### Output 2: HTML Field Content
+- Format: Inline HTML with inline styles
+- Pasted into Drupal SOP entity fields field-by-field
+- Must visually match the printed document
+- Text format required: Full HTML
+
+### HTML Style Reference (Inline Styles)
+
+Use these inline style patterns for consistency across
+all SOP HTML content:
+
+**Step table header row (green):**
+background:#2E7D32; color:#fff; font-weight:bold;
+padding:8px 12px;
+
+**Step table detail row:**
+background:#F5F5F5; padding:8px 12px;
+
+**Warning box (amber):**
+background:#FFF8E1; border-left:4px solid #F57F17;
+padding:12px 16px; margin:12px 0;
+
+**Blocker box (red):**
+background:#FFEBEE; border-left:4px solid #B71C1C;
+padding:12px 16px; margin:12px 0;
+
+**Info box (blue):**
+background:#E3F2FD; border-left:4px solid #0D47A1;
+padding:12px 16px; margin:12px 0;
+
+**Pipeline badge:**
+display:inline-block; background:#1565C0; color:#fff;
+font-weight:bold; padding:4px 12px; border-radius:4px;
+font-size:0.9em;
+
+**Do/Don't table — Don't column header:**
+background:#B71C1C; color:#fff; padding:8px 12px;
+font-weight:bold;
+
+**Do/Don't table — Do column header:**
+background:#2E7D32; color:#fff; padding:8px 12px;
+font-weight:bold;
+
+**Role attribution tag:**
+color:#0D47A1; font-style:italic; font-size:0.9em;

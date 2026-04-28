@@ -31,7 +31,14 @@ Does NOT apply to:
 - SOPs must be authored field-by-field using BOS field structure
 - SOPs must be copy-paste ready into Drupal ECK fields
 - SOPs must use directive language only (`must / must not`)
-- SOPs must not contain narrative or unstructured content
+- SOPs must use rich HTML formatting within each field's
+  defined content scope
+- SOPs must not bleed content across field boundaries
+  (e.g. steps must not appear in field_sop_purpose)
+- HTML content must use inline styles only — no class
+  dependencies on external stylesheets
+- Narrative prose blocks are permitted only within
+  field_sop_steps to explain context before procedural steps
 - Parent and Child SOP hierarchy must be enforced
 - SOP Codes must follow the defined format and are immutable once approved
 - Any SOP not compliant with this standard is invalid and must not be used
@@ -59,6 +66,61 @@ Note: "Notes / Exceptions" was removed from the required output order.
 Operational notes, review history, clarifications, exception requests,
 and audit commentary must be tracked in the `sop_log` entity, not in
 the SOP body. See `__BOS_AI/Entities/sop_log.md`.
+
+---
+
+## DUAL-FORMAT STANDARD (MANDATORY — Effective April 2026)
+
+Every SOP must be produced in two parallel formats that are
+visually consistent with each other:
+
+### Format 1 — Printed Document (.docx)
+- Full visual layout with color-coded steps, tables,
+  pipeline diagrams, and warning boxes
+- Uses the Brookstone brand color palette (green #2E7D32,
+  blue #0D47A1, gold #F57F17, red #B71C1C)
+- Step tables use numbered green header rows with role
+  attribution on the right
+- Pipeline flows use sequential colored badges with arrows
+- Warning boxes use amber background for cautions,
+  red background for blockers
+- Do/Don't comparison tables use red left column and
+  green right column
+- Generated as .docx using the BOS SOP document template
+- Filed in: __BOS_AI/SOPs/[SOP_CODE]/[SOP_CODE]_v[VERSION].docx
+
+### Format 2 — HTML Field Content
+- The same visual design recreated in inline HTML + CSS
+- Pasted into Drupal ECK SOP entity fields
+- Each field receives the HTML content for its section only
+- Inline styles only — no external CSS, no class dependencies
+- Must render correctly in Drupal's Full HTML text format
+- Uses the same colors, tables, and visual hierarchy as the
+  printed document
+
+### Authoring Rule
+- Both formats must be produced in the same authoring session
+- Both formats must reflect identical content
+- If content changes, both formats must be updated together
+- The printed document is the authoritative reference
+- The HTML content is the in-system staff reference
+- Neither format is optional
+
+### Field-to-Section Mapping
+Each SOP field receives HTML content for its specific section:
+
+| Field | Content |
+|---|---|
+| field_sop_purpose | Styled purpose box with purpose statement |
+| field_sop_scope | Applies-to / Does-not-apply table |
+| field_sop_responsibilities | Color-coded must/must not rules list |
+| field_prerequisites | Prerequisites checklist |
+| field_sop_steps | Step tables, pipeline diagrams, warning boxes, do/don't tables |
+| field_sop__kpis | Styled KPI list |
+
+field_sop_steps is the primary content field and holds the
+majority of the visual content including all procedural
+sections, diagrams, and reference tables.
 
 ---
 
@@ -172,9 +234,16 @@ Must follow this exact structure:
 - Define required documentation or system updates
 
 Rules:
-- No paragraphs
-- No narrative blocks
-- No skipped structure
+- Must follow the Pre-Checks / Steps / Quality Checks /
+  Completion structure
+- May include pipeline flow diagrams, warning boxes,
+  comparison tables, and role-attribution step tables
+- Brief contextual paragraphs are permitted before
+  procedural steps to orient the reader
+- No content from other fields may appear here
+  (purpose, scope, and responsibilities belong in their
+  own fields)
+- HTML formatting must use inline styles only
 
 ### Key Performance Indicators (`field_sop__kpis`)
 - Must be measurable

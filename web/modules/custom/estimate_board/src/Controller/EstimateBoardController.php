@@ -569,9 +569,13 @@ class EstimateBoardController extends ControllerBase {
       return new JsonResponse(['success' => FALSE, 'message' => 'Invalid stage.'], 400);
     }
 
-    // Scope summary validation for stages past "In Preparation".
-    $requires_scope_tids = [1420, 1416, 1421, 1417, 1418];
-    if (in_array($new_stage_tid, $requires_scope_tids, TRUE)
+    // Scope summary validation: only fire when the estimate is currently
+    // at "In Preparation" and is moving to any later stage. Skipping
+    // In Preparation entirely (e.g. New → Pending) does not require scope.
+    $in_preparation_tid = 1415;
+    $old_stage_tid = (int) $estimate->get('field_stage')->target_id;
+    if ($old_stage_tid === $in_preparation_tid
+        && $new_stage_tid !== $in_preparation_tid
         && $estimate->hasField('field_scope_summary')) {
       $scope = trim(strip_tags($estimate->get('field_scope_summary')->value ?? ''));
       if (_estimate_scope_is_placeholder($scope)) {

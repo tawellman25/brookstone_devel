@@ -87,16 +87,20 @@ final class EstimateStageChangeForm extends FormBase {
   }
 
   public function validateForm(array &$form, FormStateInterface $form_state): void {
-    $requires_scope_tids = [1420, 1416, 1421, 1417, 1418];
+    // Scope summary validation: only fire when the estimate is currently
+    // at "In Preparation" and is moving to any later stage. Skipping
+    // In Preparation entirely (e.g. New → Pending) does not require scope.
+    $in_preparation_tid = 1415;
     $new_stage_tid = (int) $form_state->getValue('stage');
-
-    if (!in_array($new_stage_tid, $requires_scope_tids, TRUE)) {
-      return;
-    }
 
     $estimate_id = (int) $form_state->getValue('estimate_id');
     $estimate = $this->entityTypeManager->getStorage('estimate')->load($estimate_id);
     if (!$estimate || !$estimate->hasField('field_scope_summary')) {
+      return;
+    }
+
+    $old_stage_tid = (int) $estimate->get('field_stage')->target_id;
+    if ($old_stage_tid !== $in_preparation_tid || $new_stage_tid === $in_preparation_tid) {
       return;
     }
 

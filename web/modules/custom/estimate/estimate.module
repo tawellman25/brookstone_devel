@@ -1339,15 +1339,31 @@ function estimate_form_alter_estimate_scope(&$form, \Drupal\Core\Form\FormStateI
 }
 
 /**
- * Validation handler: scope summary must have real content for advanced stages.
+ * Validation handler: scope summary must have real content when leaving
+ * the "In Preparation" stage. Skipping In Preparation entirely (e.g.
+ * jumping New → Pending) does not require a scope summary.
  */
 function _estimate_scope_summary_validate(array $form, \Drupal\Core\Form\FormStateInterface $form_state): void {
-  $requires_scope_tids = [1420, 1416, 1421, 1417, 1418];
+  $in_preparation_tid = 1415;
 
   $stage_value = $form_state->getValue('field_stage');
-  $stage_tid = (int) ($stage_value[0]['target_id'] ?? 0);
+  $new_stage_tid = (int) ($stage_value[0]['target_id'] ?? 0);
 
-  if (!in_array($stage_tid, $requires_scope_tids, TRUE)) {
+  // Get the OLD (current) stage from the form's underlying entity.
+  $form_object = $form_state->getFormObject();
+  $entity = method_exists($form_object, 'getEntity') ? $form_object->getEntity() : NULL;
+  if (!$entity || !$entity->hasField('field_stage')) {
+    return;
+  }
+  // For an existing entity in an edit form, $entity holds the unchanged
+  // values (the form-state copy is what's been submitted). isNew() guards
+  // the entity-add case, where there is no "old" stage to leave.
+  if ($entity->isNew()) {
+    return;
+  }
+  $old_stage_tid = (int) ($entity->get('field_stage')->target_id ?? 0);
+
+  if ($old_stage_tid !== $in_preparation_tid || $new_stage_tid === $in_preparation_tid) {
     return;
   }
 

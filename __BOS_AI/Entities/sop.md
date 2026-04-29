@@ -286,6 +286,13 @@ Dual-Format Standard for full rules.
 - Pasted into Drupal SOP entity fields field-by-field
 - Must visually match the printed document
 - Text format required: Full HTML
+- Delivered as a paste-ready .html file with
+  one-click Copy buttons per field
+- File naming: [SOP_CODE]_HTML_Fields_PASTE.html
+- Button label: "Copy HTML for CKEditor Source view"
+- Plain text fields use: "Copy Plain Text"
+- See GOV-SOP-001 HTML Paste File Standard for
+  full spec
 
 ### HTML Style Reference (Inline Styles)
 

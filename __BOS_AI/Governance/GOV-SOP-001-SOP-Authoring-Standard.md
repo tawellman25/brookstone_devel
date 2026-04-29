@@ -98,6 +98,46 @@ visually consistent with each other:
 - Uses the same colors, tables, and visual hierarchy as the
   printed document
 
+### HTML Paste File Standard (MANDATORY)
+
+Every SOP HTML output must be delivered as a paste-ready
+HTML file with the following structure:
+
+- One section per BOS SOP field
+- Each section has:
+  - A dark green header bar showing the field machine name
+    and a hint (e.g. "HTML — paste into CKEditor Source view"
+    or "Plain text — paste directly")
+  - A textarea containing the raw HTML (or plain text)
+    for that field — pre-selected on click
+  - A blue "Copy HTML for CKEditor Source view" button
+    (or "Copy Plain Text" for plain text fields) that:
+    - Selects and copies the textarea content automatically
+    - Changes to green "✓ Copied — now paste into BOS
+      Source view" for 3 seconds to confirm the copy
+    - Returns to original label after confirmation
+
+- A clear instruction block at the top of the file
+  explaining the 5-step paste process:
+  1. Click the blue Copy button
+  2. In BOS: open the SOP entity, find the matching field
+  3. Click Source (<>) in CKEditor toolbar
+  4. Select all (Ctrl+A) and paste (Ctrl+V)
+  5. Click Source again to return to visual view
+
+- field_prerequisites is always plain text —
+  its button must read "Copy Plain Text" and its
+  hint must read "Plain text — paste directly
+  (no Source view needed)"
+
+- File naming convention:
+  [SOP_CODE]_HTML_Fields_PASTE.html
+  Example: OFF-ADM-EST-001_HTML_Fields_PASTE.html
+
+This format must be used for all SOP HTML outputs
+going forward. The original _HTML_Field_Content.html
+format (without copy buttons) is deprecated.
+
 ### Authoring Rule
 - Both formats must be produced in the same authoring session
 - Both formats must reflect identical content

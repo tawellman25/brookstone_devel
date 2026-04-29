@@ -619,6 +619,25 @@ Contract Section editing opens in a **modal dialog** from the Contract page. Two
 - Shown in: WO title block, sprinkler scheduling tool, My Schedule, Dispatch board
 - Backfill command: drush php-eval with AerationFlagService->updateStartUpFlag() loop
 
+## SOP Governance
+
+When making changes to BOS workflows that involve human
+action, Code must follow the SOP Maintenance Rules defined
+in `__BOS_AI/SOPs/SOP-AUTHORING-WORKFLOW.md`.
+
+Key rules:
+- If a workflow change affects an existing SOP → update it
+  in the same commit.
+- If a new human-facing workflow is built → flag ⚠ SOP NEEDED
+  at the end of the completion report.
+- Never write SOP content directly — flag it and Claude Chat
+  authors it.
+- SOP source files live in `__BOS_AI/SOPs/[SOP_CODE]/`.
+- Regenerate docx with:
+
+      ddev exec "NODE_PATH=/usr/local/lib/node_modules \
+        node /var/www/html/__BOS_AI/SOPs/[SOP_CODE]/[SOP_CODE]_source.js"
+
 ## Change Log
 
 - **2026-03-12** — Removed debug logging from `wo_total_time` (Presave Debug, Not updating UID notices) and `wo_timer_flag_update` (Flag state notice). Updated `teammate_pre_emergent_wos` view config.

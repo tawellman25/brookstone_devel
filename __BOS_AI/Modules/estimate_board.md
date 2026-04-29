@@ -167,15 +167,22 @@ Same "?" pattern as the main board. 10 stages explained with role ownership and 
 
 ## Scope Summary Validation
 
-The AJAX endpoint `updateEstimateStage()` blocks advancement past "In Preparation" (TID 1415) if `field_scope_summary` is empty or still contains placeholder text. Placeholder strings checked:
+The AJAX endpoint `updateEstimateStage()` and `EstimateStageChangeForm::validateForm()` block stage advancement ONLY when the estimate is transitioning FROM In Preparation (TID 1415) to any later stage.
+
+Placeholder strings checked via `_estimate_scope_is_placeholder()`:
 
 - `"CLIENT REQUEST (update after site visit)"`
 - `"Update this scope summary after the site visit."`
 - `"Client is requesting a Landscaping project. Please review and update"`
 
-The same `_estimate_scope_is_placeholder()` helper is shared with `estimate.module`'s form validation and `EstimateStageChangeForm::validateForm()`. Stages that require real scope: 1420, 1416, 1421, 1417, 1418.
+**The validation does NOT fire if In Preparation is skipped entirely.** If an estimator moves directly from New/Contacted/Appointment Set to any later stage, no scope check occurs. This supports on-the-spot quoting for simple jobs.
 
-JS receives the 422 response, shows an alert, and re-enables the button.
+Transition rule (authoritative):
+
+- Old stage = 1415 (In Preparation) + new stage = any later stage + scope is placeholder → BLOCKED
+- Old stage = anything other than 1415 → ALLOWED regardless of scope content
+
+JS receives the 422 response, shows an alert with a link to the estimate, and re-enables the button.
 
 ---
 

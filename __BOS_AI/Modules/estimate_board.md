@@ -167,9 +167,15 @@ Same "?" pattern as the main board. 10 stages explained with role ownership and 
 
 ## Scope Summary Validation
 
-The AJAX endpoint `updateEstimateStage()` and `EstimateStageChangeForm::validateForm()` block stage advancement ONLY when the estimate is transitioning FROM In Preparation (TID 1415) to any later stage.
+Three validation sites enforce the same rule, all sharing the `_estimate_scope_is_placeholder()` helper:
 
-Placeholder strings checked via `_estimate_scope_is_placeholder()`:
+- `updateEstimateStage()` — this module's AJAX endpoint (board drag/drop and quick-change buttons)
+- `EstimateStageChangeForm::validateForm()` — the modal stage-change form on the estimate page
+- `_estimate_scope_summary_validate()` in `estimate.module` — the standard estimate edit form (`estimate_*_edit_form`)
+
+All three block stage advancement ONLY when the estimate is transitioning FROM In Preparation (TID 1415) to any later stage.
+
+Placeholder strings checked:
 
 - `"CLIENT REQUEST (update after site visit)"`
 - `"Update this scope summary after the site visit."`

@@ -154,6 +154,13 @@ Content rule:
 - List conditions that must exist before execution
 - Include required access, approvals, setup, or prior SOPs completed
 
+Entry method: Multi-value string field.
+Each prerequisite must be entered as a separate
+individual item — BOS renders them as a bulleted
+list automatically.
+In paste files: display each prerequisite as its
+own copyable line, not as a combined block.
+
 ### 10. `field_sop_steps` — Steps & Procedures (text_long)
 Content rule — mandatory structure:
 1. **Pre-Checks:** Verify prerequisites and readiness

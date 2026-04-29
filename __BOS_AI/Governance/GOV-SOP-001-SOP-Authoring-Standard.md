@@ -125,10 +125,14 @@ HTML file with the following structure:
   4. Select all (Ctrl+A) and paste (Ctrl+V)
   5. Click Source again to return to visual view
 
-- field_prerequisites is always plain text —
-  its button must read "Copy Plain Text" and its
-  hint must read "Plain text — paste directly
-  (no Source view needed)"
+- field_prerequisites is a multi-value string field.
+  Each prerequisite must be entered as a SEPARATE
+  individual item in BOS — not as one block of text.
+  The paste file must display each prerequisite as
+  its own individually copyable line with its own
+  "Copy" button. BOS renders these as a bulleted
+  list automatically — do not add bullet characters
+  in the text itself.
 
 - File naming convention:
   [SOP_CODE]_HTML_Fields_PASTE.html

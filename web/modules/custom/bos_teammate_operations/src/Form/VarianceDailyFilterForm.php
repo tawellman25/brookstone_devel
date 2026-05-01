@@ -31,10 +31,15 @@ final class VarianceDailyFilterForm extends FormBase {
     // Suppress Drupal's GET-form noise (form_token / form_id).
     $form['#token'] = FALSE;
 
+    $boundary = $defaults['boundary_date'] ?? '';
+    $startHelp = $boundary
+      ? $this->t('(recommended: @b or later)', ['@b' => $boundary])
+      : '';
     $form['start_date'] = [
       '#type' => 'date',
       '#title' => $this->t('Start date'),
       '#default_value' => $defaults['start_date'] ?? '',
+      '#description' => $startHelp,
       '#size' => 14,
     ];
 

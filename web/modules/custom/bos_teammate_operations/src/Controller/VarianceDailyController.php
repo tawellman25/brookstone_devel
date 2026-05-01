@@ -48,11 +48,24 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
 
   public function build(Request $request): array {
     // ── filters ────────────────────────────────────────────────────────
-    $start = $request->query->get('start_date') ?: date('Y-m-d', strtotime('-30 days'));
+    $boundary = $this->compensableHours->getDataQualityBoundary();
+    $boundaryStr = $boundary->format('Y-m-d');
+
+    $startQuery = $request->query->get('start_date');
+    if ($startQuery) {
+      $start = $startQuery;
+    }
+    else {
+      // Default start: max(today - 30 days, boundary).
+      $candidate = date('Y-m-d', strtotime('-30 days'));
+      $start = ($candidate < $boundaryStr) ? $boundaryStr : $candidate;
+    }
     $end   = $request->query->get('end_date')   ?: date('Y-m-d');
     $deptFilter = $request->query->get('department') ?: 'all';
     $teammateFilter = (int) ($request->query->get('teammate') ?: 0);
     $showInactive = (bool) $request->query->get('show_inactive');
+
+    $preBoundary = ($start < $boundaryStr);
 
     // ── filter form ────────────────────────────────────────────────────
     $form = $this->forms->getForm(
@@ -63,6 +76,7 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
         'department'    => $deptFilter,
         'teammate'      => $teammateFilter ?: NULL,
         'show_inactive' => $showInactive,
+        'boundary_date' => $boundaryStr,
       ]
     );
 
@@ -91,6 +105,18 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
     $build['#attached']['library'][] = 'bos_teammate_operations/variance_dashboard';
 
     $build['filters'] = $form;
+
+    if ($preBoundary) {
+      $build['boundary_warning'] = [
+        '#markup' => '<div class="bos-variance-boundary-warning">'
+          . $this->t(
+            '⚠ You are viewing data from before the data quality boundary (<strong>@b</strong>). Variance numbers may be unreliable due to inconsistent time clock discipline before this date. Adjust the start date to <strong>@b</strong> or later for reliable data.',
+            ['@b' => $boundaryStr]
+          )->render()
+          . '</div>',
+        '#allowed_tags' => ['div', 'strong'],
+      ];
+    }
 
     $build['summary'] = [
       '#markup' => '<div class="bos-variance-summary">'
@@ -362,26 +388,65 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
   // DATA HYGIENE CHECK
   // ──────────────────────────────────────────────────────────────────────
 
-  public function dataCheck(): array {
+  public function dataCheck(Request $request): array {
     $build = [];
     $build['#attached']['library'][] = 'bos_teammate_operations/variance_dashboard';
     $build['#attributes']['class'][] = 'bos-variance-data-check';
 
-    $build['intro'] = [
-      '#markup' => '<p>'
-        . $this->t('Diagnostic report of suspicious <code>wo_time_clock</code> records. Rows are not modified or deleted by this page — review and clean up manually as appropriate.')->render()
-        . '</p>',
-    ];
+    $boundary = $this->compensableHours->getDataQualityBoundary();
+    $boundaryStr = $boundary->format('Y-m-d');
+    $showAll = (bool) $request->query->get('show_all');
 
-    $checks = [
+    // Pre-compute the full row sets (we need them either way for the
+    // active vs historical counts at the top).
+    $allChecks = [
       'Negative total_time'     => $this->checkNegativeHours(),
       'Implausibly long shifts (> 16 hrs)' => $this->checkLongShifts(),
       'Future start_time'       => $this->checkFutureStart(),
       'Forgotten clock-outs (> 7 days open)' => $this->checkOpenStale(),
       'End time before start time' => $this->checkTimeTravel(),
     ];
+    $activeTotal = 0;
+    $historicalTotal = 0;
+    foreach ($allChecks as $rows) {
+      foreach ($rows as $r) {
+        if ($this->rowIsPostBoundary($r, $boundaryStr)) {
+          $activeTotal++;
+        }
+        else {
+          $historicalTotal++;
+        }
+      }
+    }
 
-    foreach ($checks as $title => $rows) {
+    // Top summary block + toggle.
+    $toggleUrl = Url::fromRoute('bos_teammate_operations.variance_data_check', [], [
+      'query' => $showAll ? [] : ['show_all' => 1],
+    ])->toString();
+    $toggleLabel = $showAll
+      ? $this->t('← Show only active anomalies')
+      : $this->t('Show all anomalies including pre-boundary data →');
+
+    $build['intro'] = [
+      '#markup' => '<p>'
+        . $this->t('Diagnostic report of suspicious <code>wo_time_clock</code> records. Rows are not modified or deleted by this page — review and clean up manually as appropriate.')->render()
+        . '</p>'
+        . '<div class="bos-variance-data-check-counts">'
+        . '<span class="count-active">'
+        . $this->t('<strong>Active anomalies</strong> (since @b): @n', ['@b' => $boundaryStr, '@n' => $activeTotal])->render()
+        . '</span> · '
+        . '<span class="count-historical">'
+        . $this->t('<strong>Historical anomalies</strong> (before @b): @m', ['@b' => $boundaryStr, '@m' => $historicalTotal])->render()
+        . '</span> · '
+        . '<a href="' . htmlspecialchars($toggleUrl) . '">' . $toggleLabel . '</a>'
+        . '</div>',
+      '#allowed_tags' => ['p', 'code', 'div', 'span', 'strong', 'a'],
+    ];
+
+    foreach ($allChecks as $title => $rows) {
+      $rows = $showAll
+        ? $rows
+        : array_values(array_filter($rows, fn(array $r) => $this->rowIsPostBoundary($r, $boundaryStr)));
       $count = count($rows);
       $pillClass = $count === 0 ? 'zero' : 'nonzero';
       $build['heading_' . md5($title)] = [
@@ -404,6 +469,20 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
     }
 
     return $build;
+  }
+
+  /**
+   * The render rows from check methods carry "Start Time" in column 2
+   * (index 2). Compare its date prefix against the boundary string.
+   */
+  protected function rowIsPostBoundary(array $row, string $boundaryStr): bool {
+    $start = (string) ($row['data'][2]['data'] ?? '');
+    if ($start === '' || $start === '—') {
+      // Forgotten clock-outs without a sensible start_time are surfaced
+      // as "active" — they need attention regardless of when they began.
+      return TRUE;
+    }
+    return substr($start, 0, 10) >= $boundaryStr;
   }
 
   protected function checkNegativeHours(): array {

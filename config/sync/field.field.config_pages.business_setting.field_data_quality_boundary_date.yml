@@ -1,0 +1,24 @@
+uuid: 17575157-9075-44a8-87b9-d4c392df429f
+langcode: en
+status: true
+dependencies:
+  config:
+    - config_pages.type.business_setting
+    - field.storage.config_pages.field_data_quality_boundary_date
+  module:
+    - datetime
+id: config_pages.business_setting.field_data_quality_boundary_date
+field_name: field_data_quality_boundary_date
+entity_type: config_pages
+bundle: business_setting
+label: 'Data Quality Boundary Date'
+description: 'Date before which wo_time_clock data is considered unreliable due to inconsistent enforcement of time clock discipline. Variance dashboards default to showing data from this date forward. Users can override to view earlier data, but will see a warning that data quality may be lower.'
+required: true
+translatable: false
+default_value:
+  -
+    default_date_type: relative
+    default_date: '2026-01-01'
+default_value_callback: ''
+settings: {  }
+field_type: datetime

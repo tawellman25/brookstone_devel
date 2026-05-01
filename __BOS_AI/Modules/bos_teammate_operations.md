@@ -98,6 +98,7 @@ See [`__BOS_AI/Strategy/timetrax_strategy.md`](../Strategy/timetrax_strategy.md)
 |---|---|---|
 | **2A** | Service layer + business_setting fields + install hook | ✅ built |
 | **2B** | Daily Variance dashboard + Time Clock data hygiene check | ✅ built |
+| **2B.1** | Data quality boundary (configurable cutoff date for reliable data) | ✅ built |
 | 2C | Teammate detail page (single teammate, last 30 days, drill into a date) | planned |
 | 2D | Hub landing page at `/admin/office/operations/teammates/` (route, menu, view-mode picker) | planned |
 | 2E | "Active Now" view (who's clocked in right now, current WO context) | planned |
@@ -160,6 +161,51 @@ Diagnostic-only — does NOT modify or delete any rows. Surfaces five categories
 5. **Time travel** — `field_end_time` before `field_start_time`.
 
 Each section shows row id, teammate, start/end times, total time, and a snippet of notes. Cleanup is a per-row manual decision; this page exists to make the cleanup queue visible.
+
+---
+
+## Phase 2B.1 — Data Quality Boundary
+
+Time-clock discipline at Brookstone has a clear historical seam:
+
+- **Pre-2025** — previous owner. Different processes, different software conventions. Wholly untrustworthy for variance work.
+- **2025** — Brookstone's first year. Time clock was in use but enforcement of clock-in/clock-out discipline was inconsistent. Data is mostly correct but missing punches and stale entries are frequent.
+- **2026 onwards** — discipline established. This is the only fully reliable window.
+
+The variance dashboards used to average all three eras together, which made the productivity numbers look uniformly worse than reality and washed out the signal Todd needed. Phase 2B.1 introduces a single configurable **data quality boundary**: dashboards default to data on or after the boundary, but every pre-boundary date remains queryable with a clear warning.
+
+### How it works
+
+A new business_setting field — **`field_data_quality_boundary_date`** — holds the cutoff. Default `2026-01-01`. Adjustable at `/admin/config/system/config_pages/business_setting`.
+
+A new service method exposes it:
+
+```php
+$boundary = $svc->getDataQualityBoundary();
+// → DrupalDateTime at midnight in the site default timezone
+```
+
+Daily Variance dashboard behavior:
+
+- **No query string** → start date is `max(today − 30 days, boundary)`. So the default 30-day view never crosses the boundary.
+- **Explicit pre-boundary start** → an amber banner at the top of the page reads: *"⚠ You are viewing data from before the data quality boundary (yyyy-mm-dd). Variance numbers may be unreliable due to inconsistent time clock discipline before this date. Adjust the start date to yyyy-mm-dd or later for reliable data."*
+- The start-date picker shows *"(recommended: yyyy-mm-dd or later)"* as helper text.
+- Pre-boundary dates are **not blocked** — they're available with the warning, on purpose.
+
+Data hygiene check page behavior:
+
+- Two counts at the top: **Active anomalies** (since boundary) and **Historical anomalies** (before boundary).
+- Default view shows only active anomalies (the actionable cleanup queue).
+- A toggle link surfaces the historical set when needed.
+- Forgotten-clock-out rows with empty start_time are always counted as active (they need attention regardless of when they began).
+
+### Why a single boundary, not multi-tier
+
+Multi-tier (e.g., red/yellow/green by year) was considered and rejected: it adds UI noise without clarifying decisions. A single cutoff that says "trust nothing before this date by default" is sharper, and adjustable as the team's understanding evolves. If Brookstone later wants to extend trust further back, it's one field edit.
+
+### Phase 2C and beyond
+
+Future phases (per-teammate detail, hub landing, active-now, weekly trend) all consume the same service. They will inherit boundary-aware defaults automatically — `getDataQualityBoundary()` is the single source of truth. No dashboard should reach back before the boundary except by explicit user action.
 
 ---
 
@@ -231,5 +277,7 @@ The spec called for `entity_type.manager` and `config.factory`. Substituted `con
 **Phase 2A foundation built 2026-04-30** (commit `8d98ba2a`). Service exercised against a real teammate (Donald Shultz, uid 8206) across 5 recent dates; all return values plausible.
 
 **Phase 2B Daily Variance + Data Hygiene Check built 2026-05-01.** Default 30-day view renders 15 active teammates in ~1.2 s. Color coding visible in the live dataset (significant red coverage; small yellow band; no green in the 30-day window — the dashboard is doing exactly what it was built to do). The data-check page surfaces 281 anomalous `wo_time_clock` rows across 5 categories — that is the pre-Phase 3 cleanup backlog, not a regression introduced by this module.
+
+**Phase 2B.1 Data Quality Boundary built 2026-05-01.** Default boundary `2026-01-01` (Brookstone's discipline cutoff). Active vs historical anomaly split: 19 active vs 262 historical. The boundary made the boss-facing productivity numbers tighter and more honest — recent-only data shows that the underperformance signal is real, not a 5-year averaging artifact.
 
 Ready for Phase 2C (per-teammate detail page).

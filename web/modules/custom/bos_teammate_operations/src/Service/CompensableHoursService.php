@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\bos_teammate_operations\Service;
 
 use Drupal\config_pages\ConfigPagesLoaderServiceInterface;
+use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 
@@ -33,6 +34,14 @@ final class CompensableHoursService {
 
   /** Default yellow threshold (variance <= this is worth a look). */
   private const DEFAULT_YELLOW_MAX = 3.0;
+
+  /**
+   * Default data quality boundary — wo_time_clock data on/after this
+   * date is considered reliable (Brookstone's enforcement of time clock
+   * discipline began Jan 2026; pre-2025 was the previous owner; 2025
+   * was the transition year).
+   */
+  private const DEFAULT_BOUNDARY_DATE = '2026-01-01';
 
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
@@ -77,6 +86,32 @@ final class CompensableHoursService {
     }
     $value = $cfg->get('field_assumed_daily_hours')->value;
     return is_numeric($value) ? (float) $value : self::DEFAULT_ASSUMED_DAILY_HOURS;
+  }
+
+  /**
+   * Reads field_data_quality_boundary_date from business_setting.
+   *
+   * Returns the boundary as a DrupalDateTime in the site's default
+   * timezone, anchored at midnight on the configured date. Variance
+   * dashboards use this as the floor for their default date range —
+   * pre-boundary data is still queryable but flagged as unreliable.
+   *
+   * @return \Drupal\Core\Datetime\DrupalDateTime
+   *   Midnight of the configured boundary date in the site timezone.
+   */
+  public function getDataQualityBoundary(): DrupalDateTime {
+    $cfg = $this->configPagesLoader->load('business_setting');
+    $value = NULL;
+    if ($cfg && $cfg->hasField('field_data_quality_boundary_date') && !$cfg->get('field_data_quality_boundary_date')->isEmpty()) {
+      $raw = (string) $cfg->get('field_data_quality_boundary_date')->value;
+      if ($raw !== '') {
+        $value = $raw;
+      }
+    }
+    $value = $value ?? self::DEFAULT_BOUNDARY_DATE;
+    // Date-only fields store as 'YYYY-MM-DD'; build at midnight local TZ.
+    $tz = new \DateTimeZone(date_default_timezone_get());
+    return new DrupalDateTime(substr($value, 0, 10) . ' 00:00:00', $tz);
   }
 
   /**

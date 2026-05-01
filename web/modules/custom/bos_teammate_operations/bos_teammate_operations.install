@@ -1,0 +1,70 @@
+<?php
+
+/**
+ * @file
+ * Install / update / uninstall hooks for bos_teammate_operations.
+ *
+ * Phase 2A only needs hook_install: ensure the three business_setting
+ * fields are populated with sensible defaults so the
+ * CompensableHoursService works the moment the module is enabled.
+ */
+
+declare(strict_types=1);
+
+use Drupal\config_pages\Entity\ConfigPages;
+
+/**
+ * Implements hook_install().
+ *
+ * Loads (or creates) the business_setting config_pages entity and
+ * populates the three teammate-operations fields with their defaults
+ * if they are currently empty. Existing values are never overwritten.
+ */
+function bos_teammate_operations_install(): void {
+  $defaults = [
+    'field_assumed_daily_hours'  => 8.5,
+    'field_variance_green_max'   => 1.5,
+    'field_variance_yellow_max'  => 3.0,
+  ];
+
+  /** @var \Drupal\config_pages\ConfigPagesLoaderServiceInterface $loader */
+  $loader = \Drupal::service('config_pages.loader');
+  $entity = $loader->load('business_setting');
+
+  if (!$entity) {
+    // No business_setting config_pages entity yet — create one.
+    $entity = ConfigPages::create([
+      'type' => 'business_setting',
+    ]);
+  }
+
+  $changed = FALSE;
+  foreach ($defaults as $field => $default) {
+    if (!$entity->hasField($field)) {
+      // Field instance hasn't been imported yet — drush cim will land it.
+      // Nothing to do here on first install if config wasn't imported
+      // before module-enable; the service's defaults still apply.
+      continue;
+    }
+    if ($entity->get($field)->isEmpty()) {
+      $entity->set($field, $default);
+      $changed = TRUE;
+    }
+  }
+
+  if ($changed || $entity->isNew()) {
+    try {
+      $entity->save();
+      \Drupal::logger('bos_teammate_operations')->notice(
+        'Populated business_setting defaults for teammate operations.'
+      );
+    }
+    catch (\Throwable $e) {
+      // Don't block install — service already falls back to constants.
+      \Drupal::logger('bos_teammate_operations')->warning(
+        'Could not populate business_setting defaults on install: @msg. Service defaults will still apply.',
+        ['@msg' => $e->getMessage()]
+      );
+    }
+  }
+}

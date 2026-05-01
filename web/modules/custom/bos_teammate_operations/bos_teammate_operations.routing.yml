@@ -1,0 +1,19 @@
+bos_teammate_operations.variance_daily:
+  path: '/admin/office/operations/teammates/variance'
+  defaults:
+    _controller: '\Drupal\bos_teammate_operations\Controller\VarianceDailyController::build'
+    _title: 'Daily Variance — Teammate Operations'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  options:
+    _admin_route: TRUE
+
+bos_teammate_operations.variance_data_check:
+  path: '/admin/office/operations/teammates/variance/data-check'
+  defaults:
+    _controller: '\Drupal\bos_teammate_operations\Controller\VarianceDailyController::dataCheck'
+    _title: 'Time Clock Data Hygiene Check'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  options:
+    _admin_route: TRUE

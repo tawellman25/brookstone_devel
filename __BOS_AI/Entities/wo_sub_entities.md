@@ -424,6 +424,26 @@ Storage: ECK
 - Roll-up to WO total time managed by `wo_total_time` module.
 - Do not delete time entries from completed/invoiced WOs.
 
+## Invariants Enforced at Presave (Phase 1)
+
+The `wo_total_time` module enforces five hard data integrity rules in `hook_entity_presave` on `wo_time_clock`. Any rule violation throws `\Drupal\Core\Entity\EntityStorageException`, aborting the save. These guards apply uniformly to every save path — manual edits, REST writes, imports, programmatic creation. They cannot be bypassed except by the documented exemptions below.
+
+| # | Rule | Applies to | Exemption |
+|---|---|---|---|
+| 1 | `field_end_time` must be ≥ `field_start_time` (when both set) | insert + update | none |
+| 2 | `field_start_time` must be ≤ now + 5 min grace | insert + update | none |
+| 3 | `field_end_time` must be ≤ now + 5 min grace | insert + update | none |
+| 4 | If parent WO status is Invoiced (1281) or Paid (1504), entry cannot be modified | **update only** | `'administer eck entities'` permission OR `_signoff_reconciliation` flag set on entity |
+| 5 | If parent WO status is Canceled (1098), entry cannot be created or modified | insert + update | `'administer eck entities'` permission |
+
+The 5-minute future-time grace accommodates clock skew and the wo_timer_flag_update flag flow's `time()`-based timestamps.
+
+Long-shift detection (>16 hours, configurable via `business_setting.field_long_shift_hours`) is a soft form-layer warning, not a presave guard — legitimate long shifts are entry-able after checking a confirmation box on the form.
+
+The `_signoff_reconciliation` context flag (`$entity->_signoff_reconciliation = TRUE` before save) bypasses guard 4 only. Phase 2's sign-off-time reconciliation will set this flag; Phase 1 reads it but never sets it.
+
+See `__BOS_AI/Modules/wo_total_time.md` for full implementation detail.
+
 ## Deletion / Archival
 - Do not delete from completed WOs. Payroll and billing history.
 

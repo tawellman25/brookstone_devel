@@ -6,7 +6,14 @@ Package: Work Orders
 Purpose:
 - Custom field type: `wo_total_time` — stores computed decimal hours
 - Computes `field_total_time` from start/end datetime fields on `wo_time_clock` entities
+- Enforces presave-layer data integrity invariants on `wo_time_clock` entries (Phase 1 of the wo_time_clock anomaly prevention work)
+- Provides form-layer UX (inline error messages + soft long-shift confirmation) on the wo_time_clock add/edit form
 - Triggers WO billing recalculation when time clock entries are saved/updated
+- Reads `field_long_shift_hours` from `business_setting` for the soft >threshold confirmation cutoff (defaults to 16.0 via private fallback constant)
+
+Dependencies:
+- drupal:field
+- config_pages:config_pages
 
 ---
 
@@ -14,20 +21,72 @@ Purpose:
 
 Fires on `wo_time_clock` entities.
 
-Behavior:
-- Reads field_start_time and field_end_time
-- Computes difference in hours (rounded to 2 decimal places)
-- Sets field_total_time on the time clock entry
-- If either time is missing: sets field_total_time = NULL
+Behavior, in order:
 
-Also handles manual entry ownership:
-- On POST requests where field_teammate differs from entity owner
-- Updates entity owner to match field_teammate
+### 1. Phase 1 data integrity guards
+
+`_wo_total_time_validate_time_clock_entry()` runs FIRST. Throws `\Drupal\Core\Entity\EntityStorageException` when any of five guards fail. The exception aborts the save and bubbles to the caller — catches manual edits, REST writes, imports, and any future programmatic save path.
+
+| # | Guard | Condition | Applies to | Bypass |
+|---|---|---|---|---|
+| 1 | END BEFORE START | `field_end_time < field_start_time` | insert + update | none |
+| 2 | START IN THE FUTURE | `field_start_time > now + 5 min grace` | insert + update | none |
+| 3 | END IN THE FUTURE | `field_end_time > now + 5 min grace` | insert + update | none |
+| 4 | PARENT WO LOCKED | WO status TID is Invoiced (1281) or Paid (1504) | **update only** | `'administer eck entities'` permission OR `_signoff_reconciliation` flag |
+| 5 | CANCELED WO | WO status TID is Canceled (1098) | insert + update | `'administer eck entities'` permission |
+
+Guard 4 only applies on update — legitimate insert paths exist for adding new entries on closed WOs via admin tools. Guard 5 applies to both because no new entries should land on a canceled WO.
+
+The 5-minute future-time grace accommodates clock skew between server/client and the wo_timer_flag_update flow's `time()`-based timestamps.
+
+Long-shift (>16 hour) checking is deliberately NOT a presave guard — it lives in the form-layer validate handler with a soft confirmation flow, so legitimate long shifts are entry-able without admin intervention.
+
+### 2. field_total_time computation (existing behavior, preserved)
+
+- Reads `field_start_time` and `field_end_time`
+- Computes difference in hours (rounded to 2 decimal places)
+- Sets `field_total_time` on the time clock entry
+- If either time is missing: sets `field_total_time = NULL`
+
+### 3. Manual entry ownership reassignment (existing behavior, preserved)
+
+- On POST requests where `field_teammate` differs from entity owner
+- Updates entity owner to match `field_teammate`
 - Logs the UID change
+
+Phase 2 will skip this block when the `_signoff_reconciliation` context flag is set on the entity, to allow sign-off-time reconciliation to write entries owned by the actual teammate without reassignment side effects. Phase 1 leaves a TODO comment marking the spot.
 
 ---
 
-## hook_entity_insert / hook_entity_update (Added March 2026)
+## Phase 2 hook point: `_signoff_reconciliation` context flag
+
+When set as a property on the entity (`$entity->_signoff_reconciliation = TRUE`) before save, guard 4 (PARENT WO LOCKED for Invoiced/Paid) is skipped. This lets sign-off-time reconciliation legitimately write entries on closing WOs.
+
+Phase 1 reads the flag in guard 4 but never sets it. Phase 2's reconciliation code will set it before save and unset it after.
+
+---
+
+## hook_form_alter — Phase 1 Layer B
+
+`wo_total_time_form_alter()` activates on any form whose underlying entity is a `wo_time_clock`. Detection by entity type rather than form ID, so this works for the standalone add/edit form, future inline entity form embeds, and any composed forms.
+
+Two responsibilities:
+
+### Long-shift confirmation checkbox
+
+Always rendered (weight 100). Description text explains the user only needs to interact with it when they get the long-shift error. Default unchecked.
+
+### `_wo_total_time_form_validate` handler
+
+Custom validate handler appended to `$form['#validate']`. Mirrors presave guards 1–3 (end<start, future start, future end) as friendly inline `setErrorByName()` errors before submit completes — better UX than a hard exception. Then enforces the soft >threshold confirmation requirement.
+
+If the would-be duration is over `field_long_shift_hours` AND `long_shift_confirmed` is unchecked, the user gets an error directing them to check the confirmation box and re-submit. The presave layer has no >threshold guard, so a confirmed long shift saves through.
+
+The presave-layer guards still backstop the form layer (defense in depth) — a malformed form submission, REST write, or import bypassing the form layer will still be rejected at presave.
+
+---
+
+## hook_entity_insert / hook_entity_update
 
 Both hooks call `_wo_total_time_trigger_wo_recalc()`.
 
@@ -43,7 +102,7 @@ Guards:
 - Static processing guard prevents infinite loops (keyed by WO ID)
 - WO status must NOT be in protected statuses
 
-Protected statuses (no recalc):
+Protected statuses (no recalc) — single source of truth via `_wo_total_time_get_protected_status_tids()`:
 - Invoiced: TID 1281
 - Paid: TID 1504
 - Canceled: TID 1098
@@ -51,17 +110,25 @@ Protected statuses (no recalc):
 Behavior:
 - Loads parent WO via field_work_order
 - Checks WO status against protected list
-- If not protected: calls $wo->save() which triggers presave billing hooks
+- If not protected: calls `$wo->save()` which triggers presave billing hooks
 - Unsets static guard on completion
 
 Use case:
 Office staff correcting a clock-in/out time (e.g., 3:00 AM entered
 instead of 3:00 PM) — saving the correction now automatically
-recalculates the WO's labor total and grand total.
+recalculates the WO's labor total and grand total. (Phase 1 enforces additional integrity rules — see above.)
+
+---
+
+## Threshold reading: `_wo_total_time_get_long_shift_hours()`
+
+Reads `field_long_shift_hours` from `business_setting` via the injected `@config_pages.loader` service. Falls back to private constant `WO_TOTAL_TIME_DEFAULT_LONG_SHIFT_HOURS = 16.0` if the field is missing or empty.
+
+This deliberately uses an independent injection rather than going through `bos_teammate_operations` — `wo_total_time` is foundational and shouldn't depend on an analytics module. Both modules read the same business_setting field with the same fallback default; AnomalyDetectionService and wo_total_time each hold their own private constant for resilience.
 
 ---
 
 ## Status
 
-Updated: March 2026
-Added: WO billing recalc trigger on time clock save
+Updated: 2026-05-02 (Phase 1 — wo_time_clock data integrity guards)
+Prior milestone: March 2026 (WO billing recalc trigger on time clock save)

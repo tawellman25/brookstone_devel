@@ -1,13 +1,48 @@
 <?php
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 
 /**
+ * Future-time grace window in minutes. start_time / end_time values up to
+ * this many minutes ahead of "now" are accepted (clock skew tolerance).
+ */
+const WO_TOTAL_TIME_FUTURE_GRACE_MINUTES = 5;
+
+/**
+ * Default long-shift threshold in hours, used as fallback when
+ * business_setting.field_long_shift_hours is unavailable. Live value
+ * should always come from that field — see
+ * _wo_total_time_get_long_shift_hours().
+ */
+const WO_TOTAL_TIME_DEFAULT_LONG_SHIFT_HOURS = 16.0;
+
+/**
  * Implements hook_entity_presave().
+ *
+ * Two responsibilities, in order:
+ *
+ *   1. Phase 1 data integrity guards. Five hard checks that throw
+ *      EntityStorageException when violated. Catches manual edits,
+ *      REST writes, imports, and any future programmatic save path.
+ *      The cancellation of the save propagates to the caller — Drupal
+ *      lets the exception bubble out of presave naturally.
+ *
+ *   2. Existing computation logic (preserved unchanged):
+ *      - field_total_time roll-up from start/end
+ *      - manual-entry ownership reassignment based on field_teammate
+ *
+ * Phase 2 will modify (2) to skip ownership reassignment when the
+ * _signoff_reconciliation context flag is set on the entity. Do not
+ * change that logic in Phase 1.
  */
 function wo_total_time_entity_presave(EntityInterface $entity) {
   if ($entity->getEntityTypeId() === 'wo_time_clock') {
+    // Phase 1 — data integrity guards. May throw.
+    _wo_total_time_validate_time_clock_entry($entity);
+
     // Existing logic for calculating total time.
     if ($entity->hasField('field_start_time') && $entity->hasField('field_end_time')) {
       $startTime = $entity->get('field_start_time')->date;
@@ -34,6 +69,9 @@ function wo_total_time_entity_presave(EntityInterface $entity) {
     $original_uid = $entity->getOwnerId();
 
     // Simplified manual entry check: Any POST request for now.
+    // TODO Phase 2: skip this block when $entity->_signoff_reconciliation
+    // is set, to allow sign-off-time reconciliation to write entries
+    // owned by the actual teammate without reassignment side effects.
     $is_manual_entry = $request->getMethod() === 'POST';
 
     if ($is_manual_entry && $entity->hasField('field_teammate') && !$entity->get('field_teammate')->isEmpty()) {
@@ -70,6 +108,203 @@ function wo_total_time_entity_insert(EntityInterface $entity) {
 }
 
 /**
+ * Implements hook_form_alter().
+ *
+ * Phase 1 Layer B — friendly inline form-layer validation that mirrors
+ * presave guards 1–3 and adds a soft confirmation flow for unusually
+ * long shifts (> field_long_shift_hours from business_setting).
+ *
+ * Detection by element presence rather than form_id pattern so this
+ * works for the standalone wo_time_clock add/edit form, the inline
+ * entity form embed, and any future composed forms.
+ */
+function wo_total_time_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  if (!_wo_total_time_form_targets_time_clock($form, $form_state)) {
+    return;
+  }
+
+  // Always render the long-shift confirmation checkbox. It only matters
+  // on a re-submit after the soft >threshold validate handler triggers,
+  // so the description tells the user when to interact with it.
+  $form['long_shift_confirmed'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Yes, this long shift is correct'),
+    '#description' => t("Only check this box if you are intentionally entering a shift over @h hours. Otherwise the entry will be rejected as a likely AM/PM error.", [
+      '@h' => rtrim(rtrim(number_format(_wo_total_time_get_long_shift_hours(), 1), '0'), '.'),
+    ]),
+    '#default_value' => 0,
+    '#weight' => 100,
+  ];
+
+  $form['#validate'][] = '_wo_total_time_form_validate';
+}
+
+/**
+ * Form validate handler for wo_time_clock add/edit forms.
+ *
+ * Mirrors presave guards 1–3 (end-before-start, future start, future
+ * end) so the user gets inline errors before submit completes — better
+ * UX than a hard exception. Then enforces the soft >long-shift-hours
+ * confirmation requirement.
+ *
+ * The presave-layer guards are still active and will catch anything
+ * the form misses (defense in depth).
+ */
+function _wo_total_time_form_validate(array &$form, FormStateInterface $form_state): void {
+  $start = _wo_total_time_form_value_to_timestamp($form_state, 'field_start_time');
+  $end = _wo_total_time_form_value_to_timestamp($form_state, 'field_end_time');
+  $now = \Drupal::time()->getRequestTime();
+  $grace = WO_TOTAL_TIME_FUTURE_GRACE_MINUTES * 60;
+
+  if ($start !== NULL && $end !== NULL && $end < $start) {
+    $form_state->setErrorByName(
+      'field_end_time',
+      t('End time (@e) is before start time (@s). Please verify the date and AM/PM.', [
+        '@e' => date('m/d/Y g:i A', $end),
+        '@s' => date('m/d/Y g:i A', $start),
+      ])
+    );
+  }
+  if ($start !== NULL && $start > $now + $grace) {
+    $form_state->setErrorByName(
+      'field_start_time',
+      t('Start time (@s) is in the future. Time entries cannot be dated forward.', [
+        '@s' => date('m/d/Y g:i A', $start),
+      ])
+    );
+  }
+  if ($end !== NULL && $end > $now + $grace) {
+    $form_state->setErrorByName(
+      'field_end_time',
+      t('End time (@e) is in the future.', [
+        '@e' => date('m/d/Y g:i A', $end),
+      ])
+    );
+  }
+
+  // Soft >long-shift-hours confirmation. Only triggered when start and
+  // end are both set and produce a positive duration — the other guards
+  // already covered the bad-data cases.
+  if ($start !== NULL && $end !== NULL && $end >= $start) {
+    $hours = ($end - $start) / 3600;
+    $threshold = _wo_total_time_get_long_shift_hours();
+    if ($hours > $threshold) {
+      $confirmed = $form_state->getValue('long_shift_confirmed');
+      if (empty($confirmed)) {
+        $form_state->setErrorByName(
+          'long_shift_confirmed',
+          t('This entry is @h hours, which is over the @t-hour threshold and likely an AM/PM error. If this entry is correct (e.g., a real long shift), check the "Yes, this long shift is correct" box below and re-submit.', [
+            '@h' => number_format($hours, 1),
+            '@t' => rtrim(rtrim(number_format($threshold, 1), '0'), '.'),
+          ])
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Phase 1 — five hard data integrity guards on wo_time_clock entries.
+ *
+ * Throws \Drupal\Core\Entity\EntityStorageException when any guard
+ * fails. The exception aborts the save and bubbles to the caller.
+ *
+ * Guards (in order):
+ *
+ *   1. END BEFORE START — end_time < start_time (both required for the
+ *      check; either being empty skips it).
+ *   2. START IN THE FUTURE — start_time > now + grace window.
+ *   3. END IN THE FUTURE — end_time > now + grace window.
+ *   4. PARENT WO LOCKED — WO status is Invoiced (1281) or Paid (1504),
+ *      AND current user lacks 'administer eck entities' (so site_admin
+ *      and administrator roles can still bypass), AND this is an
+ *      UPDATE not an INSERT. Insert is allowed because legitimate
+ *      reasons exist to add new entries on a closed WO via admin tools.
+ *      Skipped when $entity->_signoff_reconciliation is set — Phase 2
+ *      uses this flag for sign-off-time reconciliation that legitimately
+ *      writes entries on closing WOs.
+ *   5. CANCELED WO — WO status is 1098 AND current user lacks
+ *      'administer eck entities'. Applies to both insert and update —
+ *      no new entries should land on a canceled WO.
+ *
+ * Long-shift (>16 hour) checking is NOT a presave guard — it lives in
+ * the form-layer validate handler with a soft confirmation flow, so
+ * legitimate long shifts are entry-able without admin intervention.
+ */
+function _wo_total_time_validate_time_clock_entry(EntityInterface $entity): void {
+  $start = ($entity->hasField('field_start_time') && !$entity->get('field_start_time')->isEmpty())
+    ? (int) strtotime((string) $entity->get('field_start_time')->value . 'Z')
+    : NULL;
+  $end = ($entity->hasField('field_end_time') && !$entity->get('field_end_time')->isEmpty())
+    ? (int) strtotime((string) $entity->get('field_end_time')->value . 'Z')
+    : NULL;
+  $now = \Drupal::time()->getRequestTime();
+  $grace = WO_TOTAL_TIME_FUTURE_GRACE_MINUTES * 60;
+
+  // Guard 1 — end before start.
+  if ($start !== NULL && $end !== NULL && $end < $start) {
+    throw new EntityStorageException(sprintf(
+      'Time entry rejected: end time (%s) is before start time (%s). Please verify the date and AM/PM.',
+      date('m/d/Y g:i A', $end),
+      date('m/d/Y g:i A', $start)
+    ));
+  }
+
+  // Guard 2 — start in the future (with 5-minute grace).
+  if ($start !== NULL && $start > $now + $grace) {
+    throw new EntityStorageException(sprintf(
+      'Time entry rejected: start time (%s) is in the future. Time entries cannot be dated forward.',
+      date('m/d/Y g:i A', $start)
+    ));
+  }
+
+  // Guard 3 — end in the future (with 5-minute grace).
+  if ($end !== NULL && $end > $now + $grace) {
+    throw new EntityStorageException(sprintf(
+      'Time entry rejected: end time (%s) is in the future.',
+      date('m/d/Y g:i A', $end)
+    ));
+  }
+
+  // Guards 4 and 5 — parent WO status checks.
+  $wo_id = ($entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty())
+    ? (int) $entity->get('field_work_order')->target_id
+    : 0;
+  if ($wo_id <= 0) {
+    return;
+  }
+  $wo = \Drupal::entityTypeManager()->getStorage('work_order')->load($wo_id);
+  if (!$wo || !$wo->hasField('field_status') || $wo->get('field_status')->isEmpty()) {
+    return;
+  }
+  $status_tid = (int) $wo->get('field_status')->target_id;
+
+  // Phase 2 hook: sign-off-time reconciliation legitimately writes
+  // entries on closing WOs. The reconciliation code sets this flag on
+  // the entity before save to bypass the lock guard. Phase 1 reads
+  // the flag but never sets it.
+  $is_signoff = !empty($entity->_signoff_reconciliation);
+
+  $is_admin = _wo_total_time_user_can_bypass_lock();
+
+  // Guard 4 — Invoiced / Paid lock. Update only.
+  if (!$is_admin && !$is_signoff && !$entity->isNew()) {
+    if ($status_tid === 1281 || $status_tid === 1504) {
+      throw new EntityStorageException(
+        'Time entry cannot be modified: parent Work Order is Invoiced or Paid. Contact a site administrator if a correction is required.'
+      );
+    }
+  }
+
+  // Guard 5 — Canceled WO. Insert AND update.
+  if (!$is_admin && $status_tid === 1098) {
+    throw new EntityStorageException(
+      'Time entry cannot be created or modified: parent Work Order is Canceled.'
+    );
+  }
+}
+
+/**
  * Trigger WO billing recalculation when a time clock entry changes.
  *
  * Skips WOs in protected statuses (Invoiced, Paid, Canceled) to
@@ -102,13 +337,91 @@ function _wo_total_time_trigger_wo_recalc(EntityInterface $entity) {
   }
 
   // Do NOT recalculate if WO is already Invoiced, Paid, or Canceled.
-  $protected_tids = [1281, 1504, 1098];
   $status_tid = (int) ($wo->get('field_status')->target_id ?? 0);
-  if (in_array($status_tid, $protected_tids, TRUE)) {
+  if (in_array($status_tid, _wo_total_time_get_protected_status_tids(), TRUE)) {
     unset($processing[$wo_id]);
     return;
   }
 
   $wo->save();
   unset($processing[$wo_id]);
+}
+
+/**
+ * Single source of truth for WO status TIDs that are "locked" against
+ * billing changes: Invoiced (1281), Paid (1504), Canceled (1098).
+ *
+ * @return int[]
+ */
+function _wo_total_time_get_protected_status_tids(): array {
+  return [1281, 1504, 1098];
+}
+
+/**
+ * Reads the long-shift threshold from business_setting.
+ *
+ * Falls back to WO_TOTAL_TIME_DEFAULT_LONG_SHIFT_HOURS (16.0) if the
+ * field is missing or empty.
+ *
+ * @return float
+ */
+function _wo_total_time_get_long_shift_hours(): float {
+  /** @var \Drupal\config_pages\ConfigPagesLoaderServiceInterface $loader */
+  $loader = \Drupal::service('config_pages.loader');
+  $cfg = $loader->load('business_setting');
+  if (!$cfg || !$cfg->hasField('field_long_shift_hours') || $cfg->get('field_long_shift_hours')->isEmpty()) {
+    return WO_TOTAL_TIME_DEFAULT_LONG_SHIFT_HOURS;
+  }
+  $value = $cfg->get('field_long_shift_hours')->value;
+  return is_numeric($value) ? (float) $value : WO_TOTAL_TIME_DEFAULT_LONG_SHIFT_HOURS;
+}
+
+/**
+ * Whether the current user can bypass the wo_time_clock lock guards
+ * (parent WO Invoiced/Paid/Canceled). Returns TRUE for site_admin and
+ * administrator roles; FALSE for everyone else.
+ *
+ * Uses 'administer eck entities' as the proxy permission since that's
+ * the granted-to-site_admin permission that semantically covers
+ * "elevated ECK admin access". administrator gets it via is_admin: true.
+ *
+ * @return bool
+ */
+function _wo_total_time_user_can_bypass_lock(): bool {
+  return \Drupal::currentUser()->hasPermission('administer eck entities');
+}
+
+/**
+ * Whether the form being altered targets a wo_time_clock entity.
+ *
+ * @return bool
+ */
+function _wo_total_time_form_targets_time_clock(array $form, FormStateInterface $form_state): bool {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object || !method_exists($form_object, 'getEntity')) {
+    return FALSE;
+  }
+  $entity = $form_object->getEntity();
+  return $entity instanceof EntityInterface && $entity->getEntityTypeId() === 'wo_time_clock';
+}
+
+/**
+ * Resolve a datetime form value to a UTC timestamp.
+ *
+ * Drupal datetime widgets submit either a DrupalDateTime instance or
+ * an array with 'date'/'time' keys. Returns NULL when the value isn't
+ * present or can't be parsed.
+ *
+ * @return int|null
+ */
+function _wo_total_time_form_value_to_timestamp(FormStateInterface $form_state, string $field_name): ?int {
+  $value = $form_state->getValue([$field_name, 0, 'value']);
+  if ($value instanceof \Drupal\Core\Datetime\DrupalDateTime) {
+    return $value->getTimestamp();
+  }
+  if (is_string($value) && $value !== '') {
+    $ts = strtotime($value);
+    return $ts !== FALSE ? $ts : NULL;
+  }
+  return NULL;
 }

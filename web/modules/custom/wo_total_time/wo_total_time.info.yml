@@ -1,7 +1,8 @@
 name: WO Total Time Field
 type: module
-description: Provides a PHP for the Work Order Bundle's field_total_time.
+description: 'Computes field_total_time on wo_time_clock entries and enforces presave-layer data integrity invariants on those entries (Phase 1 of the wo_time_clock anomaly prevention work). Reads field_long_shift_hours from business_setting for the soft >16-hour confirmation threshold.'
 core_version_requirement: ^9 || ^10
 package: Work Orders
 dependencies:
   - drupal:field
+  - config_pages:config_pages

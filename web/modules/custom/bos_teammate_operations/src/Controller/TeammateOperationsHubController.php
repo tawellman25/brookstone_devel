@@ -77,7 +77,7 @@ final class TeammateOperationsHubController extends ControllerBase implements Co
     $boundary = $this->compensableHours->getDataQualityBoundary()->format('Y-m-d');
     $build['footer'] = [
       '#markup' => '<div class="bos-hub-footer">'
-        . 'Data quality boundary: <strong>' . htmlspecialchars($boundary) . '</strong>. '
+        . 'Data quality boundary: <strong>' . htmlspecialchars($this->formatDateUs($boundary)) . '</strong>. '
         . 'Records before this date are considered legacy and excluded from default views. '
         . 'Adjust at <a href="/admin/config/system/config_pages/business_setting">'
         . '/admin/config/system/config_pages/business_setting</a> if needed.'
@@ -139,7 +139,7 @@ final class TeammateOperationsHubController extends ControllerBase implements Co
     );
 
     $cards[] = $this->card(
-      'Active Anomalies (since ' . $boundary . ')',
+      'Active Anomalies (since ' . $this->formatDateUs($boundary) . ')',
       (string) $anomCount,
       'data hygiene items',
       $anomCount > 0 ? 'bos-stat-warn' : 'bos-variance-green',
@@ -326,7 +326,7 @@ final class TeammateOperationsHubController extends ControllerBase implements Co
       }
       $typeLabel = $this->anomalyDetection->getAnomalyTypes()[$type] ?? $type;
       $html .= '<tr>'
-        . '<td>' . htmlspecialchars($date) . '</td>'
+        . '<td>' . htmlspecialchars($this->formatDateUs($date)) . '</td>'
         . '<td>' . $teammateLink . '</td>'
         . '<td>' . htmlspecialchars($typeLabel) . '</td>'
         . '<td>' . htmlspecialchars($detail) . '</td>'
@@ -544,6 +544,22 @@ final class TeammateOperationsHubController extends ControllerBase implements Co
     while ($cur <= $end) {
       yield $cur->format('Y-m-d');
       $cur->modify('+1 day');
+    }
+  }
+
+  /**
+   * Display a 'Y-m-d' (or fuller) date string as MM/DD/YYYY for the
+   * US-facing UI. Returns the input unchanged on parse failure.
+   */
+  protected function formatDateUs(string $date): string {
+    if ($date === '' || $date === '—') {
+      return $date;
+    }
+    try {
+      return (new \DateTime(substr($date, 0, 10)))->format('m/d/Y');
+    }
+    catch (\Throwable $e) {
+      return $date;
     }
   }
 

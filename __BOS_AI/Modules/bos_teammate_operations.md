@@ -100,7 +100,7 @@ See [`__BOS_AI/Strategy/timetrax_strategy.md`](../Strategy/timetrax_strategy.md)
 | **2B** | Daily Variance dashboard + Time Clock data hygiene check | ✅ built |
 | **2B.1** | Data quality boundary (configurable cutoff date for reliable data) | ✅ built |
 | **2C** | Per-teammate detail page (day-by-day breakdown + WO drill-down) | ✅ built |
-| 2D | Hub landing page at `/admin/office/operations/teammates/` (route, menu, view-mode picker) | planned |
+| **2D** | Hub landing page at `/admin/office/operations/teammates` (stats + nav + recent anomalies) | ✅ built |
 | 2E | "Active Now" view (who's clocked in right now, current WO context) | planned |
 | 2F | Weekly trend chart (one-month rolling productivity %) | planned |
 
@@ -235,6 +235,56 @@ The hub landing page (Phase 2D) will surface this view as the canonical drill-do
 
 ---
 
+## Phase 2D — Teammate Operations Hub landing page
+
+URL: **`/admin/office/operations/teammates`**
+Same role gate as the rest of the suite. New canonical front door for the variance suite. Direct links to `/variance` and `/variance/data-check` still work for bookmark compatibility — the hub is just the recommended starting point.
+
+### Six Today-at-a-Glance stat cards
+
+| Card | What it measures |
+|---|---|
+| **Active Teammates Today** | Distinct teammates with at least one `wo_time_clock` entry whose `field_start_time` is today (local TZ). |
+| **Active WOs Now** | Distinct work_order entities with at least one currently-open punch (start set, end NULL). |
+| **Active But No Open WO** | Teammates active today minus teammates currently clocked into a WO. Soft-yellow when > 0. |
+| **Active Anomalies (since boundary)** | `AnomalyDetectionService` total across all 5 types since the data quality boundary. Amber when > 0; green when 0. Linked to data-check page. |
+| **Avg Productive % (last 7 days)** | Per-teammate productive % computed across each user's last-7-day window (skipping no-activity days), then averaged across teammates. Uses **hub-specific thresholds** distinct from the per-day variance bands: red < 50%, yellow 50–70%, green > 70%. |
+| **Lowest Productive % (30 days)** | Lowest individual teammate productivity in the boundary-aware 30-day window, displayed as `Name: pct%`. Always red (it's the bottom-of-the-list spotlight). Linked to the rollup pre-sorted ascending. |
+
+### Variance Suite navigation grid
+
+Six cards. Two ACTIVE (linked) and four PLANNED (visually muted, no link, status badge):
+
+- ACTIVE: Daily Variance, Data Hygiene Check
+- PLANNED — Phase 2E: Active Now
+- PLANNED — Phase 2F: Weekly Trends
+- PLANNED — Tier 2: Team Roster, Today's Schedule
+
+### Recent Active Anomalies snippet
+
+Up to 5 most recent active (post-boundary) anomalies in a compact table: date, teammate (linked to detail), anomaly type, brief detail. "View all N active anomalies →" link below pointing at the data-check page. When zero anomalies exist, a green "✓ No active anomalies" banner replaces the table.
+
+### Boundary footer
+
+Single-line transparency note at the bottom: "Data quality boundary: yyyy-mm-dd. Records before this date are considered legacy and excluded from default views. Adjust at /admin/config/system/config_pages/business_setting if needed."
+
+### Why hub-specific productivity thresholds
+
+Per-day variance bands (configurable in business_setting) measure single-day deviation from the 8.5-hour assumption. Team-average productivity is a different statistic — averaging produces a smoother distribution where 50/70/90% become the meaningful breakpoints. Hardcoded `TEAM_AVG_RED = 50.0` and `TEAM_AVG_YELLOW = 70.0` constants live on the hub controller; they're rarely going to need adjustment, and putting them in business_setting would invite confusion with the per-day thresholds.
+
+### Menu reorganization
+
+Phase 2B/2B.1 had Daily Variance and Data Hygiene Check as direct children of `system.admin`. Phase 2D promotes the hub to that position and demotes the two existing routes to be its children:
+
+```
+system.admin
+└── Teammate Operations             (bos_teammate_operations.hub)
+    ├── Daily Variance              (bos_teammate_operations.variance_daily)
+    └── Time Clock Data Check       (bos_teammate_operations.variance_data_check)
+```
+
+---
+
 ## AnomalyDetectionService (extracted in Phase 2C)
 
 Phase 2B's data-check page contained inline anomaly detection logic (5 type-specific entity queries). Phase 2C needed the same logic to flag individual rows on the teammate detail page — extracting it into a service eliminated duplication.
@@ -276,6 +326,7 @@ web/modules/custom/bos_teammate_operations/
                                               Phase 2C — refactored to use AnomalyDetectionService;
                                               teammate column links to detail page)
       VarianceTeammateDetailController.php  (Phase 2C — single-teammate drill-down)
+      TeammateOperationsHubController.php   (Phase 2D — hub landing page)
     Form/
       VarianceDailyFilterForm.php           (Phase 2B — GET filter form for rollup)
       VarianceTeammateDetailFilterForm.php  (Phase 2C — GET filter form for detail page)
@@ -335,4 +386,6 @@ The spec called for `entity_type.manager` and `config.factory`. Substituted `con
 
 **Phase 2C Per-Teammate Variance Detail page built 2026-05-01.** AnomalyDetectionService extracted from inline data-check logic; data-check page refactored to call it. Detail page renders in 0.1–0.7 s for a 30-day window. Verified end-to-end against three teammates: Donald Shultz (17/31 active days, no anomalies), Gerald Reeves (6/31, no anomalies), Steven Lischke (11/31, **2 days flagged with `implausible_long` anomaly** — explains his 151.1% productivity in the rollup; his >16 hr shifts are inflating WO hours).
 
-Ready for Phase 2D (hub landing page).
+**Phase 2D Teammate Operations Hub built 2026-05-02.** Hub renders in ~1.6 s on live data. Six stat cards live on first read: 0 active teammates today (no one clocked in yet), 72 active WOs now (most are forgotten clock-outs), 0 active-but-no-open-WO, 19 active anomalies since boundary, 5.8% team avg productive % over last 7 days (red — significant decline from 30-day baseline of 42%), and Gerald Reeves at 10.1% as the lowest 30-day performer. Menu reorganized so the hub is the umbrella entry under `system.admin`, with Daily Variance and Data Check as children.
+
+Ready for Phase 2E (Active Now view).

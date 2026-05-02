@@ -1,13 +1,20 @@
-bos_teammate_operations.variance_daily:
-  title: 'Teammate Variance — Daily'
-  route_name: bos_teammate_operations.variance_daily
+bos_teammate_operations.hub:
+  title: 'Teammate Operations'
+  route_name: bos_teammate_operations.hub
   parent: system.admin
-  description: 'Compensable hours vs WO hours per teammate, with variance and productivity %.'
+  description: 'Visibility into teammate productivity, activity, and operational health.'
   weight: -3
+
+bos_teammate_operations.variance_daily:
+  title: 'Daily Variance'
+  route_name: bos_teammate_operations.variance_daily
+  parent: bos_teammate_operations.hub
+  description: 'Compensable hours vs WO hours per teammate, with variance and productivity %.'
+  weight: 0
 
 bos_teammate_operations.variance_data_check:
   title: 'Time Clock Data Check'
   route_name: bos_teammate_operations.variance_data_check
-  parent: bos_teammate_operations.variance_daily
-  description: 'Diagnostic report of suspicious wo_time_clock records (negative hours, future dates, forgotten clock-outs, etc.).'
+  parent: bos_teammate_operations.hub
+  description: 'Diagnostic report of suspicious wo_time_clock records.'
   weight: 10

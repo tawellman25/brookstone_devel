@@ -17,3 +17,17 @@ bos_teammate_operations.variance_data_check:
     _role: 'administrator+site_admin+administration+supervisor+site_assistant'
   options:
     _admin_route: TRUE
+
+bos_teammate_operations.variance_teammate_detail:
+  path: '/admin/office/operations/teammates/variance/{user}'
+  defaults:
+    _controller: '\Drupal\bos_teammate_operations\Controller\VarianceTeammateDetailController::build'
+    _title_callback: '\Drupal\bos_teammate_operations\Controller\VarianceTeammateDetailController::getPageTitle'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+    user: \d+
+  options:
+    _admin_route: TRUE
+    parameters:
+      user:
+        type: entity:user

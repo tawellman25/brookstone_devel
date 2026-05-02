@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Drupal\bos_teammate_operations\Controller;
 
+use Drupal\bos_teammate_operations\Service\AnomalyDetectionService;
 use Drupal\bos_teammate_operations\Service\CompensableHoursService;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Url;
@@ -28,6 +30,7 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
 
   public function __construct(
     private readonly CompensableHoursService $compensableHours,
+    private readonly AnomalyDetectionService $anomalyDetection,
     private readonly EntityTypeManagerInterface $em,
     private readonly FormBuilderInterface $forms,
     private readonly DateFormatterInterface $dateFmt,
@@ -36,6 +39,7 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
   public static function create(ContainerInterface $container): self {
     return new self(
       $container->get('bos_teammate_operations.compensable_hours'),
+      $container->get('bos_teammate_operations.anomaly_detection'),
       $container->get('entity_type.manager'),
       $container->get('form_builder'),
       $container->get('date.formatter'),
@@ -92,7 +96,7 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
       if (!$showInactive && $data['days_active'] === 0) {
         continue;
       }
-      $rows[] = $this->renderRow($user, $data, $thresholds);
+      $rows[] = $this->renderRow($user, $data, $thresholds, $start, $end);
     }
 
     // ── default sort: productive % ASC (lowest = top of list) ───────────
@@ -266,7 +270,7 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
   /**
    * Build a single rendered table row from raw row data.
    */
-  protected function renderRow(UserInterface $user, array $data, array $thresholds): array {
+  protected function renderRow(UserInterface $user, array $data, array $thresholds, string $start = '', string $end = ''): array {
     $hadActivity = $data['days_active'] > 0;
     $statusForAvg = $this->compensableHours->getVarianceStatus($data['avg_variance'], $hadActivity);
     $varClass = 'bos-variance-' . $statusForAvg;
@@ -284,7 +288,16 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
       $pctClass = 'bos-variance-' . $pctStatus;
     }
 
-    $teammateLink = $user->toLink($user->getDisplayName(), 'edit-form')->toString();
+    // Link teammate name to the per-teammate detail page (Phase 2C),
+    // carrying forward the rollup's date range so the detail page
+    // inherits the same window without forcing a re-select.
+    $detailUrl = Url::fromRoute(
+      'bos_teammate_operations.variance_teammate_detail',
+      ['user' => $user->id()],
+      ['query' => array_filter(['start_date' => $start, 'end_date' => $end])]
+    );
+    $teammateLink = '<a href="' . htmlspecialchars($detailUrl->toString()) . '">'
+      . htmlspecialchars($user->getDisplayName()) . '</a>';
 
     return [
       'data' => [
@@ -398,14 +411,21 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
     $showAll = (bool) $request->query->get('show_all');
 
     // Pre-compute the full row sets (we need them either way for the
-    // active vs historical counts at the top).
-    $allChecks = [
-      'Negative total_time'     => $this->checkNegativeHours(),
-      'Implausibly long shifts (> 16 hrs)' => $this->checkLongShifts(),
-      'Future start_time'       => $this->checkFutureStart(),
-      'Forgotten clock-outs (> 7 days open)' => $this->checkOpenStale(),
-      'End time before start time' => $this->checkTimeTravel(),
+    // active vs historical counts at the top). Anomaly type → label
+    // mapping comes from the AnomalyDetectionService so it stays in
+    // sync with per-row detection on the teammate detail page.
+    $typeLabels = [
+      'negative_hours'   => 'Negative total_time',
+      'implausible_long' => 'Implausibly long shifts (> 16 hrs)',
+      'future_start'     => 'Future start_time',
+      'open_stale'       => 'Forgotten clock-outs (> 7 days open)',
+      'time_travel'      => 'End time before start time',
     ];
+    $allChecks = [];
+    foreach ($typeLabels as $type => $label) {
+      $entries = $this->anomalyDetection->findAnomaliesByType($type);
+      $allChecks[$label] = $this->renderRowsForEntries($entries);
+    }
     $activeTotal = 0;
     $historicalTotal = 0;
     foreach ($allChecks as $rows) {
@@ -485,91 +505,17 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
     return substr($start, 0, 10) >= $boundaryStr;
   }
 
-  protected function checkNegativeHours(): array {
-    $storage = $this->em->getStorage('wo_time_clock');
-    $ids = $storage->getQuery()
-      ->accessCheck(FALSE)
-      ->condition('field_total_time', 0, '<')
-      ->range(0, 200)
-      ->execute();
-    return $this->renderRowsForIds($ids);
-  }
-
-  protected function checkLongShifts(): array {
-    $storage = $this->em->getStorage('wo_time_clock');
-    $ids = $storage->getQuery()
-      ->accessCheck(FALSE)
-      ->condition('field_total_time', 16, '>')
-      ->range(0, 200)
-      ->execute();
-    return $this->renderRowsForIds($ids);
-  }
-
-  protected function checkFutureStart(): array {
-    $storage = $this->em->getStorage('wo_time_clock');
-    $todayUtcEnd = (new \DateTime('tomorrow 00:00:00', new \DateTimeZone(date_default_timezone_get())))
-      ->setTimezone(new \DateTimeZone('UTC'))
-      ->format('Y-m-d\TH:i:s');
-    $ids = $storage->getQuery()
-      ->accessCheck(FALSE)
-      ->condition('field_start_time', $todayUtcEnd, '>')
-      ->range(0, 200)
-      ->execute();
-    return $this->renderRowsForIds($ids);
-  }
-
-  protected function checkOpenStale(): array {
-    $storage = $this->em->getStorage('wo_time_clock');
-    $cutoff = (new \DateTime('-7 days', new \DateTimeZone(date_default_timezone_get())))
-      ->setTimezone(new \DateTimeZone('UTC'))
-      ->format('Y-m-d\TH:i:s');
-    $ids = $storage->getQuery()
-      ->accessCheck(FALSE)
-      ->notExists('field_end_time')
-      ->condition('field_start_time', $cutoff, '<')
-      ->range(0, 200)
-      ->execute();
-    return $this->renderRowsForIds($ids);
-  }
-
-  protected function checkTimeTravel(): array {
-    // Loadable rows where end < start. Entity query can't compare two
-    // fields directly, so pull a window and filter in PHP.
-    $storage = $this->em->getStorage('wo_time_clock');
-    $ids = $storage->getQuery()
-      ->accessCheck(FALSE)
-      ->exists('field_start_time')
-      ->exists('field_end_time')
-      ->sort('field_start_time', 'DESC')
-      ->range(0, 5000)
-      ->execute();
-    if (empty($ids)) {
-      return [];
-    }
-    $entries = $storage->loadMultiple($ids);
-    $bad = [];
-    foreach ($entries as $entry) {
-      $s = $entry->get('field_start_time')->value;
-      $e = $entry->get('field_end_time')->value;
-      if ($s && $e && strtotime($e) < strtotime($s)) {
-        $bad[] = $entry->id();
-      }
-    }
-    return $this->renderRowsForIds($bad);
-  }
-
   /**
-   * Build human-readable rows for a list of wo_time_clock entity IDs.
+   * Build human-readable rows for an array of wo_time_clock entities.
    *
-   * @param int[]|string[] $ids
+   * @param EntityInterface[] $entries
    *
    * @return array
    */
-  protected function renderRowsForIds(array $ids): array {
-    if (empty($ids)) {
+  protected function renderRowsForEntries(array $entries): array {
+    if (empty($entries)) {
       return [];
     }
-    $entries = $this->em->getStorage('wo_time_clock')->loadMultiple($ids);
     $rows = [];
     foreach ($entries as $entry) {
       $teammateLabel = '—';

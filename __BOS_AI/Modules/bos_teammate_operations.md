@@ -99,7 +99,7 @@ See [`__BOS_AI/Strategy/timetrax_strategy.md`](../Strategy/timetrax_strategy.md)
 | **2A** | Service layer + business_setting fields + install hook | ✅ built |
 | **2B** | Daily Variance dashboard + Time Clock data hygiene check | ✅ built |
 | **2B.1** | Data quality boundary (configurable cutoff date for reliable data) | ✅ built |
-| 2C | Teammate detail page (single teammate, last 30 days, drill into a date) | planned |
+| **2C** | Per-teammate detail page (day-by-day breakdown + WO drill-down) | ✅ built |
 | 2D | Hub landing page at `/admin/office/operations/teammates/` (route, menu, view-mode picker) | planned |
 | 2E | "Active Now" view (who's clocked in right now, current WO context) | planned |
 | 2F | Weekly trend chart (one-month rolling productivity %) | planned |
@@ -209,6 +209,54 @@ Future phases (per-teammate detail, hub landing, active-now, weekly trend) all c
 
 ---
 
+## Phase 2C — Per-Teammate Variance Detail page
+
+URL: **`/admin/office/operations/teammates/variance/{user}`**
+Same role gate as the rollup. Reached by clicking a teammate's name on the rollup (the link forwards the rollup's current date range), or by direct URL.
+
+### Sections
+
+- **Header card** — large display name; department label (`teammate_profile.field_assigned_crew`); role badges (everything except `authenticated`); back link to the rollup (preserves date range); profile link to `/user/{uid}/edit`.
+- **Filter form** — start/end date, "days with anomalies only", "days with activity only". GET-submission so the URL is bookmarkable. Same boundary helper text as the rollup.
+- **Boundary warning banner** — same amber banner used on the rollup when an explicit pre-boundary start is selected.
+- **Summary stat-card grid** (8 cards) — Days w/Activity (N of M), Total Compensable, Total WO, Total Variance, Avg Productive %, Best Day (date + %), Worst Day (date + %), Active Anomalies in range. Variance and Productive % cards color-coded via the same threshold logic as the rollup.
+- **Daily breakdown table** — one row per day in range, sorted date-descending. Columns: Date (Mon yyyy-mm-dd), Activity (✓/blank), Comp Hrs, WO Hrs, Variance (color-coded), Productive %, WOs Touched, Anomaly (⚠ if any of that day's WO entries flag).
+- **Per-row expansion** — `<details>`/`<summary>` (no JS). Expanding a day surfaces a sub-table of that day's `wo_time_clock` entries: WO id (linked), title, start/end (local-tz formatted), hours, anomaly note. Open punches show a red "OPEN ⚠" label in the End column.
+
+### What gets queried
+
+Per-day calls to `CompensableHoursService` for compensable / WO / variance / status. Per-row anomaly classification through `AnomalyDetectionService::detectAnomalies($entry)`. Total per-user anomaly count via `countAnomaliesForUser()` (boundary-aware by default).
+
+Page render time on a 30-day window is ~0.1–0.7 s per teammate depending on how many entries they have — well under the 3 s benchmark.
+
+### Phase 2D and beyond
+
+The hub landing page (Phase 2D) will surface this view as the canonical drill-down from any future variance / active-now / weekly-trend dashboard.
+
+---
+
+## AnomalyDetectionService (extracted in Phase 2C)
+
+Phase 2B's data-check page contained inline anomaly detection logic (5 type-specific entity queries). Phase 2C needed the same logic to flag individual rows on the teammate detail page — extracting it into a service eliminated duplication.
+
+`@bos_teammate_operations.anomaly_detection` — `src/Service/AnomalyDetectionService.php`. Public methods:
+
+| Method | Purpose |
+|---|---|
+| `detectAnomalies(EntityInterface $entry)` | Single-entity check. Returns array of `{type, message, severity}` descriptors, empty when clean. |
+| `getAnomalyTypes()` | Canonical list of 5 anomaly type machine names → human labels. |
+| `findAnomaliesByType(string $type)` | All-users entries matching one anomaly type. Used by the data-check page. |
+| `countAnomaliesForUser(int $uid, string $start, string $end, bool $boundaryAware = TRUE)` | Number of anomalous entries for a teammate in a date range. Used by the detail page summary. |
+| `getAnomalousEntriesForUser(int $uid, string $start, string $end, bool $boundaryAware = TRUE)` | The actual matching entries. Used by future phases (e.g., weekly trend). |
+
+Five canonical anomaly types: `negative_hours`, `implausible_long` (> 16 hrs), `future_start`, `open_stale` (no end_time, > 7 days old), `time_travel` (end < start).
+
+Thresholds (16 hr long-shift cutoff, 7-day open-stale cutoff) are private constants on the service — single source of truth for both the data-check page and per-row classification.
+
+The data-check page (Phase 2B/2B.1) was refactored to call `findAnomaliesByType()` instead of running its own queries. Same behavior, no duplicated rules.
+
+---
+
 ## Files owned by this module
 
 ```
@@ -224,11 +272,16 @@ web/modules/custom/bos_teammate_operations/
     bos-teammate-operations.css          (Phase 2B — variance status colors + table)
   src/
     Controller/
-      VarianceDailyController.php        (Phase 2B — main view + data-check page)
+      VarianceDailyController.php           (Phase 2B — main view + data-check page;
+                                              Phase 2C — refactored to use AnomalyDetectionService;
+                                              teammate column links to detail page)
+      VarianceTeammateDetailController.php  (Phase 2C — single-teammate drill-down)
     Form/
-      VarianceDailyFilterForm.php        (Phase 2B — GET filter form)
+      VarianceDailyFilterForm.php           (Phase 2B — GET filter form for rollup)
+      VarianceTeammateDetailFilterForm.php  (Phase 2C — GET filter form for detail page)
     Service/
       CompensableHoursService.php
+      AnomalyDetectionService.php           (Phase 2C — extracted from inline data-check logic)
 ```
 
 Configuration owned (`config/sync/`):
@@ -280,4 +333,6 @@ The spec called for `entity_type.manager` and `config.factory`. Substituted `con
 
 **Phase 2B.1 Data Quality Boundary built 2026-05-01.** Default boundary `2026-01-01` (Brookstone's discipline cutoff). Active vs historical anomaly split: 19 active vs 262 historical. The boundary made the boss-facing productivity numbers tighter and more honest — recent-only data shows that the underperformance signal is real, not a 5-year averaging artifact.
 
-Ready for Phase 2C (per-teammate detail page).
+**Phase 2C Per-Teammate Variance Detail page built 2026-05-01.** AnomalyDetectionService extracted from inline data-check logic; data-check page refactored to call it. Detail page renders in 0.1–0.7 s for a 30-day window. Verified end-to-end against three teammates: Donald Shultz (17/31 active days, no anomalies), Gerald Reeves (6/31, no anomalies), Steven Lischke (11/31, **2 days flagged with `implausible_long` anomaly** — explains his 151.1% productivity in the rollup; his >16 hr shifts are inflating WO hours).
+
+Ready for Phase 2D (hub landing page).

@@ -5,3 +5,10 @@ services:
       - '@entity_type.manager'
       - '@config_pages.loader'
       - '@logger.factory'
+
+  bos_teammate_operations.anomaly_detection:
+    class: Drupal\bos_teammate_operations\Service\AnomalyDetectionService
+    arguments:
+      - '@entity_type.manager'
+      - '@bos_teammate_operations.compensable_hours'
+      - '@logger.factory'

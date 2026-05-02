@@ -546,8 +546,8 @@ The UUID-stripping bug in BOS field-instance configs (CLAUDE.md "Drush cim quirk
 
 ## Themes
 
-- `web/themes/custom/multipro/` — primary admin/staff theme (includes Font Awesome)
-- `web/themes/custom/olivero_sewards/` — client-facing portal theme (sub-theme of Olivero)
+- `web/themes/custom/brookstone_admin/` — primary admin/staff theme (Claro sub-theme)
+- `web/themes/custom/brookstone_olivero/` — client-facing portal theme (Olivero sub-theme)
 
 ## What Is Not in Git
 

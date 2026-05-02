@@ -1,0 +1,25 @@
+uuid: 7696cfa4-c26d-4816-99fe-90d76fd6faf8
+langcode: en
+status: true
+dependencies:
+  config:
+    - config_pages.type.business_setting
+    - field.storage.config_pages.field_long_shift_hours
+id: config_pages.business_setting.field_long_shift_hours
+field_name: field_long_shift_hours
+entity_type: config_pages
+bundle: business_setting
+label: 'Long Shift Threshold (hours)'
+description: 'Time clock entries with a duration over this many hours are flagged as potentially anomalous. Drives both the Teammate Operations anomaly dashboard and the soft confirmation prompt on the wo_time_clock entry form.'
+required: false
+translatable: false
+default_value:
+  -
+    value: '16.00'
+default_value_callback: ''
+settings:
+  min: null
+  max: null
+  prefix: ''
+  suffix: ' hrs'
+field_type: decimal

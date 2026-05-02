@@ -528,6 +528,22 @@ When creating a new ECK entity type or bundle, use the older pattern across the 
 
 Field instance dependencies must reference the bundle as `eck.eck_type.{type}.{bundle}`. **Do NOT use the newer `eck.eck_entity_bundle.{name}.yml` pattern** — it has a recurring `drush cex` bug that exports broken dependencies. Full convention details and step-by-step process: `__BOS_AI/Entities/01_entities_policy.md` → "ECK Config File Conventions".
 
+### UUID drift between environments
+
+Config-entity UUIDs are **environment-local** in BOS. When a field instance, view, or other config entity is created in one environment (local DDEV vs live), it gets a UUID generated locally. That UUID does not propagate to other environments — each environment generates its own when the config is created there independently.
+
+Implications:
+- **Sync-dir YAMLs SHOULD include the local UUID** for consistency across `drush cim` cycles. Missing UUID in sync triggers unstable diffs (sync vs active perpetually look "different" because active has a UUID and sync doesn't).
+- **The same field on local vs live will have different UUIDs.** This is fine — UUIDs don't affect functionality. Code references config entities by name (`config_pages.business_setting`), never by UUID.
+- **When a field is created via the cim silent-skip workaround** (direct `field_config` entity storage from PHP), Drupal generates a UUID at save time. Patch that UUID back into the sync YAML so future cim cycles produce clean diffs:
+  ```bash
+  ddev drush php-eval '$e = \Drupal::entityTypeManager()->getStorage("field_config")->load("ENTITY.BUNDLE.FIELD"); echo $e->uuid();'
+  ```
+  Then add `uuid: <printed-value>` as the first line of the sync YAML.
+- **Apprentices cloning the repo** will adopt the committed UUIDs when cim runs against their fresh DDEV — that's good for dev consistency. Live retains its own pre-existing UUIDs because cim doesn't modify existing entities' UUIDs.
+
+The UUID-stripping bug in BOS field-instance configs (CLAUDE.md "Drush cim quirk") is the recurring cause of UUID drift. Always verify sync YAMLs have a `uuid:` line before committing field configs.
+
 ## Themes
 
 - `web/themes/custom/multipro/` — primary admin/staff theme (includes Font Awesome)

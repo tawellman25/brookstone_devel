@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\bos_teammate_operations\Service;
 
+use Drupal\config_pages\ConfigPagesLoaderServiceInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
@@ -26,25 +27,54 @@ use Drupal\Core\Logger\LoggerChannelFactoryInterface;
  */
 final class AnomalyDetectionService {
 
-  private const TYPES = [
-    'negative_hours'   => 'Negative total_time',
-    'implausible_long' => 'Implausibly long shift (> 16 hrs)',
-    'future_start'     => 'Future start_time',
-    'open_stale'       => 'Forgotten clock-out (> 7 days open)',
-    'time_travel'      => 'End time before start time',
-  ];
-
-  /** Long-shift threshold in hours. */
+  /**
+   * Default long-shift threshold in hours. Used as fallback only when
+   * business_setting.field_long_shift_hours is unavailable. Live value
+   * should always come from that field — see getLongShiftHours().
+   */
   private const HOURS_LONG = 16.0;
 
-  /** Open-stale threshold in days. */
+  /**
+   * Default open-stale threshold in days. Used as fallback only when
+   * business_setting.field_stale_clock_out_days is unavailable. Live
+   * value should always come from that field — see getStaleClockOutDays().
+   */
   private const DAYS_STALE = 7;
 
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly CompensableHoursService $compensableHours,
     private readonly LoggerChannelFactoryInterface $loggerFactory,
+    private readonly ConfigPagesLoaderServiceInterface $configPagesLoader,
   ) {}
+
+  /**
+   * Reads the long-shift threshold from business_setting.
+   *
+   * Falls back to self::HOURS_LONG (16.0) if the field is missing or empty.
+   */
+  private function getLongShiftHours(): float {
+    $cfg = $this->configPagesLoader->load('business_setting');
+    if (!$cfg || !$cfg->hasField('field_long_shift_hours') || $cfg->get('field_long_shift_hours')->isEmpty()) {
+      return self::HOURS_LONG;
+    }
+    $value = $cfg->get('field_long_shift_hours')->value;
+    return is_numeric($value) ? (float) $value : self::HOURS_LONG;
+  }
+
+  /**
+   * Reads the stale-clock-out threshold from business_setting.
+   *
+   * Falls back to self::DAYS_STALE (7) if the field is missing or empty.
+   */
+  private function getStaleClockOutDays(): int {
+    $cfg = $this->configPagesLoader->load('business_setting');
+    if (!$cfg || !$cfg->hasField('field_stale_clock_out_days') || $cfg->get('field_stale_clock_out_days')->isEmpty()) {
+      return self::DAYS_STALE;
+    }
+    $value = $cfg->get('field_stale_clock_out_days')->value;
+    return is_numeric($value) ? (int) $value : self::DAYS_STALE;
+  }
 
   // ── Public API ─────────────────────────────────────────────────────────
 
@@ -80,7 +110,7 @@ final class AnomalyDetectionService {
         'severity' => 'high',
       ];
     }
-    if ($total !== NULL && $total > self::HOURS_LONG) {
+    if ($total !== NULL && $total > $this->getLongShiftHours()) {
       $found[] = [
         'type' => 'implausible_long',
         'message' => 'Implausibly long shift: ' . number_format($total, 2) . ' hrs',
@@ -99,7 +129,7 @@ final class AnomalyDetectionService {
     if ($start !== '' && $end === '') {
       $age_seconds = time() - (int) strtotime($start);
       $age_days = (int) floor($age_seconds / 86400);
-      if ($age_days > self::DAYS_STALE) {
+      if ($age_days > $this->getStaleClockOutDays()) {
         $found[] = [
           'type' => 'open_stale',
           'message' => 'Forgotten clock-out: ' . $age_days . ' days open',
@@ -121,9 +151,22 @@ final class AnomalyDetectionService {
 
   /**
    * @return array<string, string>  Machine name => human label.
+   *   Labels include the live threshold values from business_setting so
+   *   the dashboard reflects configured values rather than the original
+   *   defaults of 16 hrs / 7 days.
    */
   public function getAnomalyTypes(): array {
-    return self::TYPES;
+    $hours = number_format($this->getLongShiftHours(), 1);
+    // Trim trailing .0 for cleaner display ("16" not "16.0").
+    $hours = rtrim(rtrim($hours, '0'), '.');
+    $days = $this->getStaleClockOutDays();
+    return [
+      'negative_hours'   => 'Negative total_time',
+      'implausible_long' => "Implausibly long shift (> {$hours} hrs)",
+      'future_start'     => 'Future start_time',
+      'open_stale'       => "Forgotten clock-out (> {$days} days open)",
+      'time_travel'      => 'End time before start time',
+    ];
   }
 
   /**
@@ -132,7 +175,7 @@ final class AnomalyDetectionService {
    * should use getAnomalousEntriesForUser() instead.
    *
    * @param string $type
-   *   One of the keys in self::TYPES.
+   *   One of the keys returned by getAnomalyTypes().
    *
    * @return EntityInterface[]
    *   Loaded entries (capped at 5000 to bound memory; in practice the
@@ -152,7 +195,7 @@ final class AnomalyDetectionService {
 
         case 'implausible_long':
           $ids = $storage->getQuery()->accessCheck(FALSE)
-            ->condition('field_total_time', self::HOURS_LONG, '>')
+            ->condition('field_total_time', $this->getLongShiftHours(), '>')
             ->range(0, 5000)
             ->execute();
           break;
@@ -168,7 +211,7 @@ final class AnomalyDetectionService {
           break;
 
         case 'open_stale':
-          $cutoff = (new \DateTime('-' . self::DAYS_STALE . ' days', new \DateTimeZone(date_default_timezone_get())))
+          $cutoff = (new \DateTime('-' . $this->getStaleClockOutDays() . ' days', new \DateTimeZone(date_default_timezone_get())))
             ->setTimezone(new \DateTimeZone('UTC'))
             ->format('Y-m-d\TH:i:s');
           $ids = $storage->getQuery()->accessCheck(FALSE)

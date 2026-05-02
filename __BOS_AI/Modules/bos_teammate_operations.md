@@ -306,9 +306,18 @@ Phase 2B's data-check page contained inline anomaly detection logic (5 type-spec
 | `countAnomaliesForUser(int $uid, string $start, string $end, bool $boundaryAware = TRUE)` | Number of anomalous entries for a teammate in a date range. Used by the detail page summary. |
 | `getAnomalousEntriesForUser(int $uid, string $start, string $end, bool $boundaryAware = TRUE)` | The actual matching entries. Used by future phases (e.g., weekly trend). |
 
-Five canonical anomaly types: `negative_hours`, `implausible_long` (> 16 hrs), `future_start`, `open_stale` (no end_time, > 7 days old), `time_travel` (end < start).
+Five canonical anomaly types: `negative_hours`, `implausible_long`, `future_start`, `open_stale` (no end_time), `time_travel` (end < start).
 
-Thresholds (16 hr long-shift cutoff, 7-day open-stale cutoff) are private constants on the service — single source of truth for both the data-check page and per-row classification.
+**Thresholds live in business_setting** (Phase 0.5):
+
+| Field | Default | Purpose |
+|---|---|---|
+| `field_long_shift_hours` | 16.00 | Long-shift cutoff used by `implausible_long` detection |
+| `field_stale_clock_out_days` | 7 | Open-stale cutoff used by `open_stale` detection |
+
+`AnomalyDetectionService` reads these at runtime via `@config_pages.loader`. Private const fallbacks (`HOURS_LONG = 16.0`, `DAYS_STALE = 7`) only engage if the business_setting fields are unavailable. Anomaly type labels rendered by `getAnomalyTypes()` interpolate the live values, so the dashboard stays in sync with configured thresholds.
+
+`wo_total_time` (Phase 1) reads `field_long_shift_hours` independently via its own `@config_pages.loader` injection, deliberately avoiding a dependency from a foundational module on this analytics module. Both classes hold their own private fallback constant for resilience.
 
 The data-check page (Phase 2B/2B.1) was refactored to call `findAnomaliesByType()` instead of running its own queries. Same behavior, no duplicated rules.
 

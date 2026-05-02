@@ -12,6 +12,7 @@ dependencies:
     - field.field.config_pages.business_setting.field_aspen_twig_6_more_rate
     - field.field.config_pages.business_setting.field_aspen_twig_gall_min_time
     - field.field.config_pages.business_setting.field_aspen_twig_tree_number
+    - field.field.config_pages.business_setting.field_assumed_daily_hours
     - field.field.config_pages.business_setting.field_atv_and_sprayer_charge
     - field.field.config_pages.business_setting.field_backflow_testing_rate
     - field.field.config_pages.business_setting.field_bio_90_rate_per_gallon
@@ -20,6 +21,7 @@ dependencies:
     - field.field.config_pages.business_setting.field_cleanup_labor_minimum
     - field.field.config_pages.business_setting.field_cooley_spruce_gall_rate
     - field.field.config_pages.business_setting.field_cooley_spruce_min_time
+    - field.field.config_pages.business_setting.field_data_quality_boundary_date
     - field.field.config_pages.business_setting.field_debris_minimum_time
     - field.field.config_pages.business_setting.field_deciduous_bore_min_time
     - field.field.config_pages.business_setting.field_deciduous_over_break_rate
@@ -57,6 +59,7 @@ dependencies:
     - field.field.config_pages.business_setting.field_labor_cost_spray_crew
     - field.field.config_pages.business_setting.field_landscape_labor_rate
     - field.field.config_pages.business_setting.field_lighting_crew_labor_rate
+    - field.field.config_pages.business_setting.field_long_shift_hours
     - field.field.config_pages.business_setting.field_mag_chloride_rate
     - field.field.config_pages.business_setting.field_mag_minimum_gallons
     - field.field.config_pages.business_setting.field_maintenance_crew_labor
@@ -83,11 +86,14 @@ dependencies:
     - field.field.config_pages.business_setting.field_spreader_charge
     - field.field.config_pages.business_setting.field_sprinkler_tech_minimum
     - field.field.config_pages.business_setting.field_sprinkler_technician_rate
+    - field.field.config_pages.business_setting.field_stale_clock_out_days
     - field.field.config_pages.business_setting.field_start_up_base_fee
     - field.field.config_pages.business_setting.field_trash_minimum_time
     - field.field.config_pages.business_setting.field_tree_sprayer_rate
     - field.field.config_pages.business_setting.field_trunk_bore_min_time
     - field.field.config_pages.business_setting.field_trunk_bore_rate
+    - field.field.config_pages.business_setting.field_variance_green_max
+    - field.field.config_pages.business_setting.field_variance_yellow_max
     - field.field.config_pages.business_setting.field_winterizing_base_fee
     - field.field.config_pages.business_setting.field_winterizing_extra_zone_fee
     - field.field.config_pages.business_setting.field_winterizing_pump_fee
@@ -182,6 +188,17 @@ content:
     third_party_settings: {  }
     weight: 61
     region: content
+  field_assumed_daily_hours:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 197
+    region: content
   field_atv_and_sprayer_charge:
     type: number_decimal
     label: above
@@ -243,6 +260,15 @@ content:
       prefix_suffix: true
     third_party_settings: {  }
     weight: 54
+    region: content
+  field_data_quality_boundary_date:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 196
     region: content
   field_debris_minimum_time:
     type: number_decimal
@@ -640,6 +666,17 @@ content:
     third_party_settings: {  }
     weight: 83
     region: content
+  field_long_shift_hours:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 200
+    region: content
   field_mag_chloride_rate:
     type: number_decimal
     label: above
@@ -879,6 +916,15 @@ content:
     third_party_settings: {  }
     weight: 2
     region: content
+  field_stale_clock_out_days:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 201
+    region: content
   field_start_up_base_fee:
     type: number_decimal
     label: above
@@ -933,6 +979,28 @@ content:
       prefix_suffix: true
     third_party_settings: {  }
     weight: 51
+    region: content
+  field_variance_green_max:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 198
+    region: content
+  field_variance_yellow_max:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 199
     region: content
   field_winterizing_base_fee:
     type: number_decimal

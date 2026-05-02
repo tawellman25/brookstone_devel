@@ -276,16 +276,19 @@ All user-facing dates in this module render in US format (`MM/DD/YYYY` for date-
 
 Per-day variance bands (configurable in business_setting) measure single-day deviation from the 8.5-hour assumption. Team-average productivity is a different statistic — averaging produces a smoother distribution where 50/70/90% become the meaningful breakpoints. Hardcoded `TEAM_AVG_RED = 50.0` and `TEAM_AVG_YELLOW = 70.0` constants live on the hub controller; they're rarely going to need adjustment, and putting them in business_setting would invite confusion with the per-day thresholds.
 
-### Menu reorganization
+### Menu placement
 
-Phase 2B/2B.1 had Daily Variance and Data Hygiene Check as direct children of `system.admin`. Phase 2D promotes the hub to that position and demotes the two existing routes to be its children:
+The hub and its two children live under the existing **Operations** parent at `/admin/operations` in the `admin` menu — not under `system.admin`. The Operations link is a UI-managed `menu_link_content` (uuid `6663ea83-4467-4783-bda0-20deaba2216b`); the hub references it as `parent: 'menu_link_content:6663ea83-4467-4783-bda0-20deaba2216b'` and explicitly sets `menu_name: admin` on all three entries so the subtree lives together. This matches the pattern used by other BOS admin hubs (e.g., `estimate_board.links.menu.yml`).
 
 ```
-system.admin
-└── Teammate Operations             (bos_teammate_operations.hub)
-    ├── Daily Variance              (bos_teammate_operations.variance_daily)
-    └── Time Clock Data Check       (bos_teammate_operations.variance_data_check)
+admin (menu)
+└── Operations                          (/admin/operations)
+    └── Teammate Operations             (bos_teammate_operations.hub)
+        ├── Daily Variance              (bos_teammate_operations.variance_daily)
+        └── Time Clock Data Check       (bos_teammate_operations.variance_data_check)
 ```
+
+The page paths (`/admin/office/operations/teammates`, `/variance`, `/variance/data-check`) are independent of the menu placement — bookmarks stay valid. The detail route at `/admin/office/operations/teammates/variance/{user}` deliberately has no menu entry (it's reached by clicking a teammate name on the rollup or hub).
 
 ---
 
@@ -390,6 +393,10 @@ The spec called for `entity_type.manager` and `config.factory`. Substituted `con
 
 **Phase 2C Per-Teammate Variance Detail page built 2026-05-01.** AnomalyDetectionService extracted from inline data-check logic; data-check page refactored to call it. Detail page renders in 0.1–0.7 s for a 30-day window. Verified end-to-end against three teammates: Donald Shultz (17/31 active days, no anomalies), Gerald Reeves (6/31, no anomalies), Steven Lischke (11/31, **2 days flagged with `implausible_long` anomaly** — explains his 151.1% productivity in the rollup; his >16 hr shifts are inflating WO hours).
 
-**Phase 2D Teammate Operations Hub built 2026-05-02.** Hub renders in ~1.6 s on live data. Six stat cards live on first read: 0 active teammates today (no one clocked in yet), 72 active WOs now (most are forgotten clock-outs), 0 active-but-no-open-WO, 19 active anomalies since boundary, 5.8% team avg productive % over last 7 days (red — significant decline from 30-day baseline of 42%), and Gerald Reeves at 10.1% as the lowest 30-day performer. Menu reorganized so the hub is the umbrella entry under `system.admin`, with Daily Variance and Data Check as children.
+**Phase 2D Teammate Operations Hub built 2026-05-02.** Hub renders in ~1.6 s on live data. Six stat cards live on first read: 0 active teammates today (no one clocked in yet), 72 active WOs now (most are forgotten clock-outs), 0 active-but-no-open-WO, 19 active anomalies since boundary, 5.8% team avg productive % over last 7 days (red — significant decline from 30-day baseline of 42%), and Gerald Reeves at 10.1% as the lowest 30-day performer.
+
+**Menu nested under `/admin/operations` (commit `8c752524`).** The hub link was initially placed under `system.admin`; immediately moved to nest under the existing UI-managed Operations parent so it joins Services / Equipment / System Content / Training / Team Structure as siblings rather than a top-level admin entry. Daily Variance and Time Clock Data Check follow as children of the hub.
+
+**MM/DD/YYYY date format established as project convention (commits `19f27523`, `cedef3de`).** All four pages (hub, rollup, detail, data-check) render dates in US format; storage and URL params stay ISO. Documented in CLAUDE.md → "Date Formatting".
 
 Ready for Phase 2E (Active Now view).

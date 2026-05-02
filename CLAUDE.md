@@ -481,7 +481,13 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 |---|---|
 | `user_teammate_profile` | Auto-creates `teammate_profile` when user is assigned the `teammates` role |
 | `custom_user_redirect` | Redirects to appropriate profile edit page after user creation based on role |
+| `bos_user_time_clock_mapping` | Hides the External Time Clock Mapping fieldset on the user edit form when the user being edited does not have the `teammates` role. Phase 1A.1 of the time-clock foundation. |
 | `role_delegation` | (contrib) Role assignment delegation |
+
+### Operations dashboard modules
+| Module | Purpose |
+|---|---|
+| `bos_teammate_operations` | Teammate Operations Hub at `/admin/office/operations/teammates`. Variance dashboards (compensable hrs vs WO hrs per teammate), per-teammate detail drill-down, time-clock data hygiene check. Provides `CompensableHoursService` (8.5-hour assumption now, swappable to real `time_clock_entry` data when TimeTrax integration completes — see `__BOS_AI/Strategy/timetrax_strategy.md`) and `AnomalyDetectionService`. Phases 2A through 2D delivered (commits `8d98ba2a`, `dcb6c67f`, `1e72a804`, `6b1714b1`, `dd17e77f`); Phase 2E (Active Now) and 2F (Weekly Trends) planned. |
 
 ### Utility/infrastructure modules
 | Module | Purpose |

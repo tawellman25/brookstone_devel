@@ -68,16 +68,61 @@ Field machine names omit "by" to fit Drupal's 32-character field name limit (`fi
 
 Each audit field's `target_bundles` is restricted to the Phase 2 in-scope bundles for its target entity type. The `_complete` fields can only reference the six wo_complete_info sign-off bundles (excluding lawn_mowing, snow_removal). The `_tasks` fields can only reference `wo_tasks_list:lawn_mowing` (excluding special_mowing). This enforces data integrity at the storage layer — programmatic populates with out-of-scope target bundles fail validation.
 
-### Population semantics (Phase 2b/2c will implement)
+### Population semantics
 
-Phase 2 reconciliation handlers will:
+Phase 2 reconciliation handlers (Phase 2b for the wo_complete_info path; Phase 2c for the wo_tasks_list:lawn_mowing path):
 - Save an existing `wo_time_clock` entry with `field_end_time` populated and the appropriate `field_closed_signoff_*` field set to the parent sign-off entity ID
 - Create a new `wo_time_clock` entry with the appropriate `field_created_signoff_*` field set to the parent sign-off entity ID
 - Always set `$entity->_signoff_reconciliation = TRUE` before save to bypass the Phase 1 guard 4 (Invoiced/Paid lock)
 
 Audit notes are also auto-prepended to `field_notes` with the format `"[Closed/Created by {signer_name} at sign-off, MM/DD/YYYY h:i AM/PM] {user note}"`.
 
+### New-entity audit field population (Phase 2b-fix)
+
+For NEW wo_complete_info entities (the common case — first sign-off save), the parent's entity ID isn't assigned until after the entity save commits, but the reconciliation submit handler runs BEFORE that save. The handler can't set `field_closed_signoff_complete` / `field_created_signoff_complete` inline because there's no parent ID to reference yet.
+
+Solution: the submit handler stashes the IDs of touched wo_time_clock entries onto two transient properties on the parent entity (`_reconciled_closed_ids` and `_reconciled_created_ids`). `wo_sign_off_entity_insert()` fires after the entity has an ID, reads the stashed arrays, and back-fills the audit reference field on each entry via a second save (passing through Phase 1's `_signoff_reconciliation` flag to bypass the lock guard).
+
+For EXISTING wo_complete_info entities being re-saved, the parent ID is already populated when the submit handler runs. The audit field gets set inline during the first wo_time_clock save and the post-save hook is a no-op (no stashed IDs).
+
+Audit notes (in `field_notes`) preserve signer name + timestamp regardless of which path runs — those work uniformly for new and existing entities.
+
 ---
+
+## Reconciliation UX behavior (Phase 2b)
+
+The reconciliation fieldset's contents depend on the current roster. Three behaviors were considered:
+
+- **A** — render only at submit/validate time (no in-form fieldset)
+- **B** — initial render based on form state, no reaction to roster changes
+- **C** — AJAX rebuild on every roster change
+
+The Phase 2 spec called for **Behavior C** on the wo_complete_info path (office/desktop usage; AJAX round-trips are fine). Implementation pivoted to a **Refresh-button hybrid** rather than full auto-AJAX.
+
+### Decision: explicit "Refresh reconciliation list" button
+
+The form alter injects a "Refresh reconciliation list" button adjacent to the reconciliation fieldset wrapper. Clicking it triggers an AJAX round-trip that re-builds the fieldset based on the current roster in form state. This is reliable, easy to reason about, and works across browsers and Drupal versions.
+
+### Reasoning: entity_reference_autocomplete + #ajax fragility
+
+True Behavior C — auto-update on every roster change — would require attaching `#ajax` to each child autocomplete element of `field_those_on_crew`'s widget, typically via `#after_build` walking children and adding `'event' => 'autocompleteclose'`. This pattern works in some Drupal core/contrib combinations but is fragile in practice:
+
+- HTML5 autocomplete + Drupal AJAX is sensitive to JS timing and browser implementations
+- Autocomplete-close events don't always fire reliably across Drupal core versions
+- Multi-value fields with "Add another item" buttons add complexity around when to fire AJAX
+- Layout/region wrappers can interfere with AJAX wrapper targeting
+
+### Safety: validate handler always re-categorizes at submit
+
+Regardless of whether the user clicked Refresh after editing the roster, the form's validate handler always re-runs `_wo_sign_off_categorize_roster()` against the current submitted roster. If the categorization produces orphan or missing entries that weren't in the rendered fieldset (because the user added someone after the last refresh), the validate handler emits a clear error directing the user to click Refresh.
+
+This means the worst-case UX from a user not clicking Refresh is: form submit → friendly error pointing at the Refresh button → click → page reflects updated reconciliation state → submit again.
+
+### Upgrade path
+
+If user feedback indicates the Refresh-button friction is meaningful, the upgrade path is to add a single `#after_build` callback on the `field_those_on_crew` widget that walks each child autocomplete element and attaches `#ajax` with `event => 'autocompleteclose'`. The validate handler stays as the safety net. The Refresh button can stay or be removed depending on preference.
+
+Defer this upgrade until field usage data shows the friction is real — premature complexity here is more expensive than the click.
 
 ## Existing presave / update / delete behavior (pre-Phase 2)
 

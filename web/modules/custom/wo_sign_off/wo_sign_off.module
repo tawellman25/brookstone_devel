@@ -753,12 +753,15 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
   $apply_end = $values['signoff_reconciliation']['apply_to_all']['end_time'] ?? NULL;
   $apply_note = trim((string) ($values['signoff_reconciliation']['apply_to_all']['note'] ?? ''));
 
-  // Note: the _signoff_complete entity ID. For NEW wo_complete_info,
-  // the entity hasn't saved yet so its ID is NULL. Audit-field
-  // population in that case would need to chain into a post-save
-  // handler. To keep Phase 2b scope tight, we skip audit-field
-  // population on new entities and log it.
+  // For EXISTING wo_complete_info entities, the entity already has an
+  // ID — set the audit field inline. For NEW entities, the ID is NULL
+  // here (assigned during the entity save that follows). We stash the
+  // touched wo_time_clock IDs onto the parent and a post-save
+  // hook_entity_insert (Phase 2b-fix) does a second pass to populate
+  // the audit field once the parent ID exists.
   $parent_id = $entity->isNew() ? NULL : (int) $entity->id();
+  $reconciled_closed_ids = [];
+  $reconciled_created_ids = [];
 
   foreach ($needs_action as $uid => $info) {
     $row = $values['signoff_reconciliation']['rows'][$uid] ?? [];
@@ -805,6 +808,7 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
       $orphan->_signoff_reconciliation = TRUE;
       try {
         $orphan->save();
+        $reconciled_closed_ids[] = (int) $orphan->id();
       }
       catch (\Exception $e) {
         \Drupal::logger('wo_sign_off')->error(
@@ -842,6 +846,7 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
     $new->_signoff_reconciliation = TRUE;
     try {
       $new->save();
+      $reconciled_created_ids[] = (int) $new->id();
     }
     catch (\Exception $e) {
       \Drupal::logger('wo_sign_off')->error(
@@ -854,6 +859,99 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
   // Mark the parent so the presave guard doesn't re-evaluate the
   // (now-resolved) roster.
   $entity->_signoff_reconciliation_in_progress = TRUE;
+
+  // Phase 2b-fix: stash IDs for new entities so wo_sign_off_entity_insert
+  // can populate the audit reference fields once the parent has an ID.
+  // Existing entities had their audit fields set inline above
+  // (parent_id was non-NULL).
+  if ($entity->isNew()) {
+    if (!empty($reconciled_closed_ids)) {
+      $entity->_reconciled_closed_ids = $reconciled_closed_ids;
+    }
+    if (!empty($reconciled_created_ids)) {
+      $entity->_reconciled_created_ids = $reconciled_created_ids;
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ *
+ * Phase 2b-fix: completes the audit reference field population for
+ * wo_time_clock entries that were closed or created by sign-off
+ * reconciliation on a NEW wo_complete_info entity.
+ *
+ * The pre-save submit handler couldn't set field_closed_signoff_complete
+ * or field_created_signoff_complete because $entity->id() was NULL.
+ * This insert hook fires after the entity has an ID assigned, walks
+ * the stashed wo_time_clock IDs, and back-fills the audit reference
+ * field with the parent ID.
+ *
+ * For UPDATE on existing wo_complete_info entities, the pre-save
+ * handler already set the audit fields inline — no second pass needed.
+ */
+function wo_sign_off_entity_insert(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'wo_complete_info') {
+    return;
+  }
+  /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
+  $svc = \Drupal::service('wo_sign_off.crew_roster');
+  if (!$svc->isInScope('wo_complete_info', $entity->bundle())) {
+    return;
+  }
+
+  $closed_ids = $entity->_reconciled_closed_ids ?? [];
+  $created_ids = $entity->_reconciled_created_ids ?? [];
+  if (empty($closed_ids) && empty($created_ids)) {
+    return;
+  }
+
+  $tc_storage = \Drupal::entityTypeManager()->getStorage('wo_time_clock');
+  $parent_id = (int) $entity->id();
+
+  foreach ($closed_ids as $tc_id) {
+    $tc = $tc_storage->load($tc_id);
+    if (!$tc) {
+      \Drupal::logger('wo_sign_off')->warning(
+        'Phase 2b-fix: wo_time_clock @id missing during audit-field backfill (closed pass).',
+        ['@id' => $tc_id]
+      );
+      continue;
+    }
+    $tc->set('field_closed_signoff_complete', $parent_id);
+    $tc->_signoff_reconciliation = TRUE;
+    try {
+      $tc->save();
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('wo_sign_off')->error(
+        'Phase 2b-fix: failed to back-fill field_closed_signoff_complete on @id: @msg',
+        ['@id' => $tc_id, '@msg' => $e->getMessage()]
+      );
+    }
+  }
+
+  foreach ($created_ids as $tc_id) {
+    $tc = $tc_storage->load($tc_id);
+    if (!$tc) {
+      \Drupal::logger('wo_sign_off')->warning(
+        'Phase 2b-fix: wo_time_clock @id missing during audit-field backfill (created pass).',
+        ['@id' => $tc_id]
+      );
+      continue;
+    }
+    $tc->set('field_created_signoff_complete', $parent_id);
+    $tc->_signoff_reconciliation = TRUE;
+    try {
+      $tc->save();
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('wo_sign_off')->error(
+        'Phase 2b-fix: failed to back-fill field_created_signoff_complete on @id: @msg',
+        ['@id' => $tc_id, '@msg' => $e->getMessage()]
+      );
+    }
+  }
 }
 
 /**

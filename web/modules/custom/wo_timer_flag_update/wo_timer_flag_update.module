@@ -45,6 +45,10 @@ function wo_timer_flag_update_flagging_insert(FlaggingInterface $flagging) {
           'field_work_order' => $flagging->getFlaggable()->id(),
           'field_notes' => 'Start time entered through system',
           'field_start_time' => DrupalDateTime::createFromTimestamp(time(), new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s'),
+          // Explicitly NULL — overrides the field's default_date: 'now' config.
+          // Active clock-ins must have NULL end_time so AnomalyDetectionService
+          // and Phase 2 reconciliation can detect them via notExists('field_end_time').
+          'field_end_time' => NULL,
           'uid' => $current_user->id(),
           'field_teammate' => $current_user->id(),
         ]);

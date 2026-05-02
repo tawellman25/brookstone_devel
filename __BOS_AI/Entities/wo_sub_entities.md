@@ -424,6 +424,16 @@ Storage: ECK
 - Roll-up to WO total time managed by `wo_total_time` module.
 - Do not delete time entries from completed/invoiced WOs.
 
+## Open vs Closed semantics
+
+A `wo_time_clock` entry is **open** (active clock-in) when `field_end_time IS NULL`. It becomes **closed** when `field_end_time` is populated, which happens when the corresponding `work_order_timer` flag is removed (clock-out via `wo_timer_flag_update_flagging_delete`).
+
+The `wo_time_clock.entry.field_end_time` field config has `default_date: 'now'` set at the field level. **Code paths that create new entries must explicitly pass `'field_end_time' => NULL`** in the create() array to override the field-default and produce a true open entry. The `wo_timer_flag_update_flagging_insert` hook does this for the standard flag-driven clock-in flow; future code paths creating clock-in entries must do the same.
+
+Operational consumers (`AnomalyDetectionService::open_stale`, `CompensableHoursService::getWoHoursForUserOnDate`, the `teammate_wo_clocked_in_not_complet` view, Phase 2 sign-off reconciliation) all rely on `notExists('field_end_time')` (or its SQL equivalent `IS NULL`) to identify open entries. If the field-default fires and populates `field_end_time` to "now" on insert, those consumers misclassify the entry as closed-zero-duration and silently miss it.
+
+A one-time backfill in 2026-05-02 corrected 111 historical entries that had `start == end + total = 0` (the field-default firing pattern from before this convention was enforced) to `field_end_time = NULL`, restoring visibility for those orphans.
+
 ## Invariants Enforced at Presave (Phase 1)
 
 The `wo_total_time` module enforces five hard data integrity rules in `hook_entity_presave` on `wo_time_clock`. Any rule violation throws `\Drupal\Core\Entity\EntityStorageException`, aborting the save. These guards apply uniformly to every save path — manual edits, REST writes, imports, programmatic creation. They cannot be bypassed except by the documented exemptions below.

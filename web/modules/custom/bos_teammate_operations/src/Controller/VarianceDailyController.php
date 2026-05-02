@@ -115,7 +115,7 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
         '#markup' => '<div class="bos-variance-boundary-warning">'
           . $this->t(
             '⚠ You are viewing data from before the data quality boundary (<strong>@b</strong>). Variance numbers may be unreliable due to inconsistent time clock discipline before this date. Adjust the start date to <strong>@b</strong> or later for reliable data.',
-            ['@b' => $boundaryStr]
+            ['@b' => $this->formatDateUs($boundaryStr)]
           )->render()
           . '</div>',
         '#allowed_tags' => ['div', 'strong'],
@@ -126,8 +126,8 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
       '#markup' => '<div class="bos-variance-summary">'
         . $this->t('Showing variance for <strong>@n</strong> teammates from <strong>@s</strong> to <strong>@e</strong>.', [
           '@n' => count($rows),
-          '@s' => $start,
-          '@e' => $end,
+          '@s' => $this->formatDateUs($start),
+          '@e' => $this->formatDateUs($end),
         ])->render()
         . ' ' . $this->t('<a href=":url">Time Clock data hygiene check ↗</a>', [
           ':url' => Url::fromRoute('bos_teammate_operations.variance_data_check')->toString(),
@@ -397,6 +397,42 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
     return number_format((float) $pct, 1) . '%';
   }
 
+  /**
+   * BOS date convention — render a 'Y-m-d' (or fuller) date as
+   * MM/DD/YYYY for the US-facing UI. See CLAUDE.md → Date Formatting.
+   * Returns the input unchanged on parse failure.
+   */
+  protected function formatDateUs(string $date): string {
+    if ($date === '' || $date === '—') {
+      return $date;
+    }
+    try {
+      return (new \DateTime(substr($date, 0, 10)))->format('m/d/Y');
+    }
+    catch (\Throwable $e) {
+      return $date;
+    }
+  }
+
+  /**
+   * BOS datetime convention — render a stored UTC datetime string as
+   * local-tz MM/DD/YYYY h:i AM/PM. See CLAUDE.md → Date Formatting.
+   * Returns the input unchanged on parse failure.
+   */
+  protected function formatDateTimeUs(string $utcStored): string {
+    if ($utcStored === '' || $utcStored === '—') {
+      return $utcStored;
+    }
+    try {
+      $dt = new \DateTime($utcStored, new \DateTimeZone('UTC'));
+      $dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+      return $dt->format('m/d/Y g:i A');
+    }
+    catch (\Throwable $e) {
+      return $utcStored;
+    }
+  }
+
   // ──────────────────────────────────────────────────────────────────────
   // DATA HYGIENE CHECK
   // ──────────────────────────────────────────────────────────────────────
@@ -421,22 +457,28 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
       'open_stale'       => 'Forgotten clock-outs (> 7 days open)',
       'time_travel'      => 'End time before start time',
     ];
+    // Group entities by type, then split each group into active vs
+    // historical at the entity level. Filtering at the entity level
+    // means renderRowsForEntries can format date columns however it
+    // likes without breaking the boundary comparison.
     $allChecks = [];
-    foreach ($typeLabels as $type => $label) {
-      $entries = $this->anomalyDetection->findAnomaliesByType($type);
-      $allChecks[$label] = $this->renderRowsForEntries($entries);
-    }
     $activeTotal = 0;
     $historicalTotal = 0;
-    foreach ($allChecks as $rows) {
-      foreach ($rows as $r) {
-        if ($this->rowIsPostBoundary($r, $boundaryStr)) {
-          $activeTotal++;
+    foreach ($typeLabels as $type => $label) {
+      $entries = $this->anomalyDetection->findAnomaliesByType($type);
+      $active = [];
+      $historical = [];
+      foreach ($entries as $entry) {
+        if ($this->entryIsPostBoundary($entry, $boundaryStr)) {
+          $active[] = $entry;
         }
         else {
-          $historicalTotal++;
+          $historical[] = $entry;
         }
       }
+      $activeTotal += count($active);
+      $historicalTotal += count($historical);
+      $allChecks[$label] = ['active' => $active, 'historical' => $historical];
     }
 
     // Top summary block + toggle.
@@ -453,21 +495,21 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
         . '</p>'
         . '<div class="bos-variance-data-check-counts">'
         . '<span class="count-active">'
-        . $this->t('<strong>Active anomalies</strong> (since @b): @n', ['@b' => $boundaryStr, '@n' => $activeTotal])->render()
+        . $this->t('<strong>Active anomalies</strong> (since @b): @n', ['@b' => $this->formatDateUs($boundaryStr), '@n' => $activeTotal])->render()
         . '</span> · '
         . '<span class="count-historical">'
-        . $this->t('<strong>Historical anomalies</strong> (before @b): @m', ['@b' => $boundaryStr, '@m' => $historicalTotal])->render()
+        . $this->t('<strong>Historical anomalies</strong> (before @b): @m', ['@b' => $this->formatDateUs($boundaryStr), '@m' => $historicalTotal])->render()
         . '</span> · '
         . '<a href="' . htmlspecialchars($toggleUrl) . '">' . $toggleLabel . '</a>'
         . '</div>',
       '#allowed_tags' => ['p', 'code', 'div', 'span', 'strong', 'a'],
     ];
 
-    foreach ($allChecks as $title => $rows) {
-      $rows = $showAll
-        ? $rows
-        : array_values(array_filter($rows, fn(array $r) => $this->rowIsPostBoundary($r, $boundaryStr)));
-      $count = count($rows);
+    foreach ($allChecks as $title => $bucket) {
+      $entries = $showAll
+        ? array_merge($bucket['active'], $bucket['historical'])
+        : $bucket['active'];
+      $count = count($entries);
       $pillClass = $count === 0 ? 'zero' : 'nonzero';
       $build['heading_' . md5($title)] = [
         '#markup' => '<h2>' . htmlspecialchars($title)
@@ -483,7 +525,7 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
       $build['table_' . md5($title)] = [
         '#type' => 'table',
         '#header' => ['ID', 'Teammate', 'Start Time', 'End Time', 'Total Time', 'Notes'],
-        '#rows' => $rows,
+        '#rows' => $this->renderRowsForEntries($entries),
         '#attributes' => ['class' => ['bos-variance-table']],
       ];
     }
@@ -492,17 +534,17 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
   }
 
   /**
-   * The render rows from check methods carry "Start Time" in column 2
-   * (index 2). Compare its date prefix against the boundary string.
+   * Checks whether a wo_time_clock entry's field_start_time is on or
+   * after the boundary string (a 'Y-m-d' literal). Forgotten clock-outs
+   * with empty start_time are counted as active — they need attention
+   * regardless of when they began.
    */
-  protected function rowIsPostBoundary(array $row, string $boundaryStr): bool {
-    $start = (string) ($row['data'][2]['data'] ?? '');
-    if ($start === '' || $start === '—') {
-      // Forgotten clock-outs without a sensible start_time are surfaced
-      // as "active" — they need attention regardless of when they began.
+  protected function entryIsPostBoundary(EntityInterface $entry, string $boundaryStr): bool {
+    if (!$entry->hasField('field_start_time') || $entry->get('field_start_time')->isEmpty()) {
       return TRUE;
     }
-    return substr($start, 0, 10) >= $boundaryStr;
+    $iso = substr((string) $entry->get('field_start_time')->value, 0, 10);
+    return $iso === '' || $iso >= $boundaryStr;
   }
 
   /**
@@ -526,9 +568,9 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
         }
       }
       $start = $entry->hasField('field_start_time') && !$entry->get('field_start_time')->isEmpty()
-        ? $entry->get('field_start_time')->value : '—';
+        ? $this->formatDateTimeUs((string) $entry->get('field_start_time')->value) : '—';
       $end = $entry->hasField('field_end_time') && !$entry->get('field_end_time')->isEmpty()
-        ? $entry->get('field_end_time')->value : '(open)';
+        ? $this->formatDateTimeUs((string) $entry->get('field_end_time')->value) : '(open)';
       $total = $entry->hasField('field_total_time') && !$entry->get('field_total_time')->isEmpty()
         ? (string) $entry->get('field_total_time')->value : '—';
       $notes = $entry->hasField('field_notes') && !$entry->get('field_notes')->isEmpty()

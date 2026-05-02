@@ -32,8 +32,17 @@ final class VarianceDailyFilterForm extends FormBase {
     $form['#token'] = FALSE;
 
     $boundary = $defaults['boundary_date'] ?? '';
-    $startHelp = $boundary
-      ? $this->t('(recommended: @b or later)', ['@b' => $boundary])
+    $boundaryDisplay = '';
+    if ($boundary) {
+      try {
+        $boundaryDisplay = (new \DateTime(substr($boundary, 0, 10)))->format('m/d/Y');
+      }
+      catch (\Throwable $e) {
+        $boundaryDisplay = $boundary;
+      }
+    }
+    $startHelp = $boundaryDisplay
+      ? $this->t('(recommended: @b or later)', ['@b' => $boundaryDisplay])
       : '';
     $form['start_date'] = [
       '#type' => 'date',

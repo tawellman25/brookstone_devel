@@ -97,7 +97,7 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
         '#markup' => '<div class="bos-variance-boundary-warning">'
           . $this->t(
             '⚠ You are viewing data from before the data quality boundary (<strong>@b</strong>). Variance numbers may be unreliable due to inconsistent time clock discipline before this date. Adjust the start date to <strong>@b</strong> or later for reliable data.',
-            ['@b' => $boundaryStr]
+            ['@b' => $this->formatDateUs($boundaryStr)]
           )->render()
           . '</div>',
         '#allowed_tags' => ['div', 'strong'],
@@ -215,8 +215,8 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
       ['label' => 'Total WO',  'value' => $this->fmtHrs($totalWo), 'class' => ''],
       ['label' => 'Total Variance', 'value' => $this->fmtHrs($totalVar), 'class' => 'bos-variance-' . $varStatus],
       ['label' => 'Avg Productive %', 'value' => $avgPct === NULL ? '—' : $avgPct . '%', 'class' => 'bos-variance-' . $pctStatus],
-      ['label' => 'Best Day', 'value' => $bestDate ? "$bestDate (" . round($bestPct, 1) . '%)' : '—', 'class' => ''],
-      ['label' => 'Worst Day', 'value' => $worstDate ? "$worstDate (" . round($worstPct, 1) . '%)' : '—', 'class' => ''],
+      ['label' => 'Best Day', 'value' => $bestDate ? $this->formatDateUs($bestDate) . ' (' . round($bestPct, 1) . '%)' : '—', 'class' => ''],
+      ['label' => 'Worst Day', 'value' => $worstDate ? $this->formatDateUs($worstDate) . ' (' . round($worstPct, 1) . '%)' : '—', 'class' => ''],
       ['label' => 'Active Anomalies', 'value' => (string) $anomalyCount, 'class' => $anomalyCount > 0 ? 'bos-stat-warn' : ''],
     ];
 
@@ -271,8 +271,8 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
       $productPct = $comp > 0 ? round(($wo / $comp) * 100.0, 1) : NULL;
       $woTouched = $this->countDistinctWosOnDate($entries);
 
-      // Date label: "Mon 2026-04-14"
-      $dateLabel = (new \DateTime($date))->format('D Y-m-d');
+      // Date label per BOS convention: "Mon 04/14/2026"
+      $dateLabel = (new \DateTime($date))->format('D m/d/Y');
 
       $expandedHtml = $hadActivity
         ? $this->renderWoEntriesExpansion($entries)
@@ -420,7 +420,26 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
   }
 
   /**
+   * BOS date convention — render a 'Y-m-d' (or fuller) date as
+   * MM/DD/YYYY for the US-facing UI. See CLAUDE.md → Date Formatting.
+   * Returns the input unchanged on parse failure.
+   */
+  protected function formatDateUs(string $date): string {
+    if ($date === '' || $date === '—') {
+      return $date;
+    }
+    try {
+      return (new \DateTime(substr($date, 0, 10)))->format('m/d/Y');
+    }
+    catch (\Throwable $e) {
+      return $date;
+    }
+  }
+
+  /**
    * Render a stored UTC datetime string as local-tz "h:i AM/PM".
+   * Used inside the day expansion where context already establishes
+   * the date — only the time-of-day matters per row.
    */
   protected function fmtTime(string $utcStored): string {
     try {

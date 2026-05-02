@@ -266,7 +266,11 @@ Up to 5 most recent active (post-boundary) anomalies in a compact table: date, t
 
 ### Boundary footer
 
-Single-line transparency note at the bottom: "Data quality boundary: yyyy-mm-dd. Records before this date are considered legacy and excluded from default views. Adjust at /admin/config/system/config_pages/business_setting if needed."
+Single-line transparency note at the bottom: "Data quality boundary: MM/DD/YYYY. Records before this date are considered legacy and excluded from default views. Adjust at /admin/config/system/config_pages/business_setting if needed."
+
+### Date formatting
+
+All user-facing dates in this module render in US format (`MM/DD/YYYY` for date-only, `MM/DD/YYYY h:i AM/PM` for datetime). ISO `YYYY-MM-DD` is for storage and URL query parameters only. The convention applies project-wide — see CLAUDE.md → "Date Formatting". Each controller carries small `formatDateUs()` / `formatDateTimeUs()` helpers as the canonical implementation.
 
 ### Why hub-specific productivity thresholds
 

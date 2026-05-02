@@ -619,6 +619,44 @@ Contract Section editing opens in a **modal dialog** from the Contract page. Two
 - Shown in: WO title block, sprinkler scheduling tool, My Schedule, Dispatch board
 - Backfill command: drush php-eval with AerationFlagService->updateStartUpFlag() loop
 
+## Date Formatting
+
+All user-facing dates and datetimes in BOS admin UIs must render in
+US format. ISO `YYYY-MM-DD` is for storage and queries only — never
+display.
+
+- **Date-only:** `MM/DD/YYYY` (e.g., `04/15/2026`)
+- **Datetime:** `MM/DD/YYYY h:i AM/PM` in the site's default timezone
+  (e.g., `04/15/2026 2:23 PM`). Stored values are UTC; format at the
+  display layer.
+- **Day-of-week prefix is allowed** when it adds context (e.g., daily
+  tables): `Mon 04/14/2026`.
+- **Time-only is allowed** when a date-context wrapper makes the date
+  obvious (e.g., a per-day expansion where every row is from the same
+  date — show only `2:23 PM`).
+
+This applies to:
+- Rendered cell values, banner text, helper text, footer notes,
+  stat card values
+- Form field hint/description text (the native `<input type="date">`
+  picker is browser-controlled and respects locale; only our
+  surrounding helper text needs formatting)
+
+This does NOT apply to:
+- Storage formats — Drupal datetime fields stay UTC `Y-m-d\TH:i:s`
+- URL query parameters — `?start_date=2026-04-15` (ISO is stable
+  across locales for parsing)
+- Internal comparison / sorting / canonicalization
+- Log messages and exception traces
+
+The `bos_teammate_operations` module's controllers each carry small
+`formatDateUs()` and `formatDateTimeUs()` helpers as the canonical
+implementation. New BOS UIs should follow the same pattern (small
+helper on the controller / form, using `\DateTime->format('m/d/Y')`
+and `'m/d/Y g:i A'`). If you find yourself adding more than two,
+promote them to a shared trait or a tiny `BosDateFormatter` service
+— do not let a third copy land.
+
 ## SOP Governance
 
 When making changes to BOS workflows that involve human

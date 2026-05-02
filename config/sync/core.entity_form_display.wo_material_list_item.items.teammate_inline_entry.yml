@@ -16,6 +16,8 @@ dependencies:
     - field.field.wo_material_list_item.items.field_subtotal
     - field.field.wo_material_list_item.items.field_subtotal_w_markup
     - field.field.wo_material_list_item.items.field_supplier
+    - field.field.wo_material_list_item.items.field_supplier_invoice_number
+    - field.field.wo_material_list_item.items.field_supplier_item_number
     - image.style.thumbnail
   module:
     - conditional_fields
@@ -145,6 +147,22 @@ content:
             effect: show
             effect_options: {  }
             selector: ''
+  field_supplier_invoice_number:
+    type: string_textfield
+    weight: 20
+    region: fourth
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_supplier_item_number:
+    type: string_textfield
+    weight: 10
+    region: second
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
 hidden:
   created: true
   field_list_id: true

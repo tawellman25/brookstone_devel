@@ -418,6 +418,12 @@ Storage: ECK
 - `field_end_time` — datetime
 - `field_total_time` — computed field (type: `wo_total_time`); auto-calculated from start/end
 - `field_notes` — optional notes for the time entry
+- `field_closed_signoff_complete` — entity_reference to `wo_complete_info` (six in-scope sign-off bundles); audit field, populated automatically when the entry was closed during Phase 2 sign-off reconciliation. Hidden on form, visible on view display. Internal use only — not for direct editing.
+- `field_closed_signoff_tasks` — entity_reference to `wo_tasks_list:lawn_mowing`; audit field, same role as above for the mowing sign-off path.
+- `field_created_signoff_complete` — entity_reference to `wo_complete_info` (six in-scope sign-off bundles); audit field, populated automatically when the entry was created during Phase 2 sign-off reconciliation. Hidden on form, visible on view display.
+- `field_created_signoff_tasks` — entity_reference to `wo_tasks_list:lawn_mowing`; audit field, same role as above for the mowing sign-off path.
+
+The four `*_signoff_*` field names omit "by" to fit Drupal's 32-character field name limit. User-facing labels and help text retain "Closed by sign-off" / "Created by sign-off" wording.
 
 ## Invariants
 - `field_total_time` is a computed field — do not write to it directly.

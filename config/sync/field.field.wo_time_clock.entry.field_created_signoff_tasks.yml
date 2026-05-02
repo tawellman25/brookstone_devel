@@ -1,0 +1,28 @@
+uuid: 66a39258-a176-44c6-8b2c-cf4d14aeed7d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.lawn_mowing
+    - eck.eck_type.wo_time_clock.entry
+    - field.storage.wo_time_clock.field_created_signoff_tasks
+id: wo_time_clock.entry.field_created_signoff_tasks
+field_name: field_created_signoff_tasks
+entity_type: wo_time_clock
+bundle: entry
+label: 'Created by sign-off (tasks list)'
+description: 'Audit field — populated automatically when this wo_time_clock entry was created during the sign-off reconciliation process. Internal use only; not for direct editing.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:wo_tasks_list'
+  handler_settings:
+    target_bundles:
+      lawn_mowing: lawn_mowing
+    sort:
+      field: _none
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

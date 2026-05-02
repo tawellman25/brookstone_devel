@@ -1,0 +1,38 @@
+uuid: 9ee484ef-10cc-42f2-a712-005822e3a2e2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_complete_info.clean_up_crew
+    - eck.eck_type.wo_complete_info.complete
+    - eck.eck_type.wo_complete_info.fertilizing_crew
+    - eck.eck_type.wo_complete_info.irrigation_crew
+    - eck.eck_type.wo_complete_info.landscape_crew
+    - eck.eck_type.wo_complete_info.spray_crew
+    - eck.eck_type.wo_time_clock.entry
+    - field.storage.wo_time_clock.field_created_signoff_complete
+id: wo_time_clock.entry.field_created_signoff_complete
+field_name: field_created_signoff_complete
+entity_type: wo_time_clock
+bundle: entry
+label: 'Created by sign-off (complete info)'
+description: 'Audit field — populated automatically when this wo_time_clock entry was created during the sign-off reconciliation process. Internal use only; not for direct editing.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:wo_complete_info'
+  handler_settings:
+    target_bundles:
+      clean_up_crew: clean_up_crew
+      complete: complete
+      fertilizing_crew: fertilizing_crew
+      irrigation_crew: irrigation_crew
+      landscape_crew: landscape_crew
+      spray_crew: spray_crew
+    sort:
+      field: _none
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

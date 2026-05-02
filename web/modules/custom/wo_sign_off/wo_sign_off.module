@@ -1,6 +1,11 @@
 <?php
 
+use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\Entity\EntityFormInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\wo_sign_off\Service\WoCrewRosterService;
 
 /**
  * Implements hook_entity_presave() for wo_status_update entities.
@@ -8,10 +13,21 @@ use Drupal\Core\Entity\EntityInterface;
 function wo_sign_off_entity_presave(EntityInterface $entity) {
   // Set allowed bundles for this presave.
   $allowedBundles = ['complete', 'landscape_crew', 'clean_up_crew', 'fertilizing_crew', 'irrigation_crew', 'spray_crew'];
-  
+
   // Check if the entity type is 'wo_complete_info' and bundle is allowed.
   if ($entity->getEntityTypeId() !== 'wo_complete_info' || !in_array($entity->bundle(), $allowedBundles)) {
     return;
+  }
+
+  // Phase 2b defense-in-depth: refuse save if any roster member lacks a
+  // complete wo_time_clock entry on this WO. Catches programmatic /
+  // REST / VBO writes that bypass the form-layer reconciliation.
+  // Skipped when the legitimate reconciliation flow is in flight (the
+  // form submit handler sets _signoff_reconciliation_in_progress on
+  // the entity right before saving so this guard doesn't fire on the
+  // already-reconciled save).
+  if (empty($entity->_signoff_reconciliation_in_progress)) {
+    _wo_sign_off_assert_roster_complete($entity);
   }
 
   // Get the work order ID from the reference field.
@@ -276,4 +292,632 @@ function get_trip_fee_for_property($propertyId) {
     }
   }
   return $tripFee;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Phase 2b — wo_complete_info reconciliation form alter
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Phase 2b: injects a "Time Entry Reconciliation" fieldset on
+ * wo_complete_info forms (six in-scope bundles) when any roster
+ * member from field_those_on_crew has an orphaned (open) or missing
+ * wo_time_clock entry on the parent WO.
+ *
+ * Behavior C — initial render reflects current form state. A
+ * "Refresh reconciliation" button re-renders the wrapper without
+ * submitting. Validate handler re-categorizes at submit time as
+ * defense-in-depth in case the user changed roster after the last
+ * refresh.
+ */
+function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof EntityFormInterface) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'wo_complete_info') {
+    return;
+  }
+  /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
+  $svc = \Drupal::service('wo_sign_off.crew_roster');
+  if (!$svc->isInScope('wo_complete_info', $entity->bundle())) {
+    return;
+  }
+
+  // Wrapper for AJAX rebuild target.
+  $wrapper_id = 'signoff-reconciliation-wrapper';
+  $form['signoff_reconciliation'] = [
+    '#type' => 'container',
+    '#attributes' => ['id' => $wrapper_id],
+    '#weight' => 100,
+    '#tree' => TRUE,
+  ];
+
+  // Add a refresh button outside the wrapper but adjacent — pressing it
+  // re-evaluates roster from form state and re-renders the wrapper.
+  $form['signoff_reconciliation_refresh'] = [
+    '#type' => 'button',
+    '#value' => t('Refresh reconciliation list'),
+    '#weight' => 99,
+    '#limit_validation_errors' => [],
+    '#ajax' => [
+      'callback' => '_wo_sign_off_reconciliation_ajax_rebuild',
+      'wrapper' => $wrapper_id,
+      'effect' => 'fade',
+    ],
+  ];
+
+  _wo_sign_off_build_reconciliation_fieldset($form, $form_state, $entity);
+
+  // Append validate + submit handlers. Validate is form-level so it
+  // runs alongside Drupal's field validation. Submit is prepended to
+  // the actions submit chain so reconciliation runs BEFORE the entity
+  // save (which fires wo_sign_off_entity_presave).
+  $form['#validate'][] = '_wo_sign_off_reconciliation_validate';
+  if (isset($form['actions']['submit']['#submit'])) {
+    array_unshift($form['actions']['submit']['#submit'], '_wo_sign_off_reconciliation_submit');
+  }
+  else {
+    // Fallback: form-level submit. ECK forms typically have actions.submit
+    // but defensive coding for variants.
+    array_unshift($form['#submit'], '_wo_sign_off_reconciliation_submit');
+  }
+}
+
+/**
+ * AJAX callback: re-render the reconciliation wrapper based on current
+ * form state. The form rebuild has already re-run the form alter, so
+ * the updated $form contains the freshly-categorized fieldset.
+ */
+function _wo_sign_off_reconciliation_ajax_rebuild(array $form, FormStateInterface $form_state): array {
+  return $form['signoff_reconciliation'];
+}
+
+/**
+ * Build the reconciliation fieldset content based on current form state.
+ *
+ * Reads the roster from form state (so AJAX rebuild reflects user edits
+ * to field_those_on_crew without requiring a save). Categorizes each
+ * roster member as clean / orphan / missing. Renders one row per
+ * orphan or missing — clean members get no row.
+ *
+ * If the roster is empty OR all members are clean, the fieldset
+ * contents collapse to a brief informational message rather than a
+ * full reconciliation UI.
+ */
+function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInterface $form_state, EntityInterface $entity): void {
+  /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
+  $svc = \Drupal::service('wo_sign_off.crew_roster');
+
+  // Roster source priority: form state values (AJAX-aware), then the
+  // entity's current field values (covers initial render of both new
+  // and existing entities, where form state hasn't been populated yet).
+  $values = $form_state->getValues();
+  $roster = $svc->normalizeRosterFromFormState($values, 'wo_complete_info', $entity->bundle());
+  if (empty($roster) && $entity->hasField('field_those_on_crew') && !$entity->get('field_those_on_crew')->isEmpty()) {
+    foreach ($entity->get('field_those_on_crew') as $item) {
+      if (!empty($item->target_id)) {
+        $roster[] = (int) $item->target_id;
+      }
+    }
+    $roster = array_values(array_unique($roster));
+  }
+
+  $wo_id = ($entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty())
+    ? (int) $entity->get('field_work_order')->target_id
+    : 0;
+
+  // Empty roster — nothing to reconcile (cardinality on field_those_on_crew
+  // is multi-value but not required, so empty is allowed).
+  if (empty($roster) || $wo_id <= 0) {
+    $form['signoff_reconciliation']['empty_state'] = [
+      '#markup' => '<p><em>' . t('No crew members assigned yet — reconciliation will appear once you add crew above and click "Refresh reconciliation list".') . '</em></p>',
+    ];
+    return;
+  }
+
+  $categorized = _wo_sign_off_categorize_roster($wo_id, $roster);
+  $needs_action = array_filter($categorized, fn($r) => $r['status'] !== 'clean');
+
+  if (empty($needs_action)) {
+    $form['signoff_reconciliation']['ok_state'] = [
+      '#markup' => '<p><em>' . t('All @n crew members have complete time entries on this work order.', ['@n' => count($roster)]) . '</em></p>',
+    ];
+    return;
+  }
+
+  // Header + Apply-to-all controls.
+  $form['signoff_reconciliation']['title'] = [
+    '#markup' => '<h3>' . t('Time Entry Reconciliation') . '</h3>',
+  ];
+  $form['signoff_reconciliation']['help'] = [
+    '#markup' => '<p>' . t('The following crew members need their time entries resolved before this sign-off can be saved.') . '</p>',
+  ];
+  $form['signoff_reconciliation']['apply_to_all'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Apply to all unresolved rows'),
+    '#description' => t('Values entered here will be copied to any row below where you leave the matching field empty. Per-row values always win.'),
+    'end_time' => [
+      '#type' => 'datetime',
+      '#title' => t('Apply end time to all'),
+      '#default_value' => NULL,
+    ],
+    'note' => [
+      '#type' => 'textfield',
+      '#title' => t('Apply note to all'),
+      '#size' => 60,
+    ],
+  ];
+
+  // One row per orphan / missing member.
+  $form['signoff_reconciliation']['rows'] = [
+    '#type' => 'container',
+  ];
+  $user_storage = \Drupal::entityTypeManager()->getStorage('user');
+  foreach ($needs_action as $uid => $row_info) {
+    $user = $user_storage->load($uid);
+    $user_label = $user ? $user->getDisplayName() : 'User ID ' . $uid;
+    $status = $row_info['status'];
+
+    $row_title = $status === 'orphan'
+      ? t('@name — open clock-in needs closing', ['@name' => $user_label])
+      : t('@name — no entry; will be created', ['@name' => $user_label]);
+
+    $form['signoff_reconciliation']['rows'][$uid] = [
+      '#type' => 'fieldset',
+      '#title' => $row_title,
+      '#tree' => TRUE,
+    ];
+
+    if ($status === 'orphan') {
+      $orphan_entity = $row_info['orphan_entity'];
+      $orphan_start = $orphan_entity->get('field_start_time')->value;
+      $form['signoff_reconciliation']['rows'][$uid]['orphan_id'] = [
+        '#type' => 'value',
+        '#value' => (int) $orphan_entity->id(),
+      ];
+      $form['signoff_reconciliation']['rows'][$uid]['start_display'] = [
+        '#markup' => '<p><strong>' . t('Started at:') . '</strong> '
+          . _wo_sign_off_fmt_datetime($orphan_start)
+          . ' <em>(' . t('time clock entry #@id', ['@id' => $orphan_entity->id()]) . ')</em></p>',
+      ];
+    }
+    else {
+      // Missing — editable start_time.
+      $form['signoff_reconciliation']['rows'][$uid]['start_time'] = [
+        '#type' => 'datetime',
+        '#title' => t('Start time'),
+        '#description' => t('When did this teammate begin work on this WO?'),
+        '#default_value' => NULL,
+      ];
+    }
+
+    $form['signoff_reconciliation']['rows'][$uid]['end_time'] = [
+      '#type' => 'datetime',
+      '#title' => t('End time'),
+      '#default_value' => new DrupalDateTime(),
+    ];
+    $form['signoff_reconciliation']['rows'][$uid]['notes'] = [
+      '#type' => 'textfield',
+      '#title' => t('Note (optional)'),
+      '#size' => 60,
+    ];
+    if ($status === 'orphan') {
+      $form['signoff_reconciliation']['rows'][$uid]['mistake_delete'] = [
+        '#type' => 'checkbox',
+        '#title' => t('This clock-in was a mistake — delete it instead of closing it'),
+        '#description' => t('Use only when the teammate clocked in by accident on this WO. The open entry will be deleted with no time recorded.'),
+      ];
+    }
+
+    // Carry the categorized status into form state for the submit handler.
+    $form['signoff_reconciliation']['rows'][$uid]['_status'] = [
+      '#type' => 'value',
+      '#value' => $status,
+    ];
+  }
+}
+
+/**
+ * Categorize each roster member's wo_time_clock entries on this WO.
+ *
+ * @return array<int, array{status: string, orphan_entity?: \Drupal\Core\Entity\EntityInterface}>
+ *   Keyed by uid. Status is one of 'clean', 'orphan', 'missing'.
+ *   When orphan, includes the open wo_time_clock entity (most recent
+ *   open punch if multiple).
+ */
+function _wo_sign_off_categorize_roster(int $wo_id, array $roster): array {
+  $tc_storage = \Drupal::entityTypeManager()->getStorage('wo_time_clock');
+  $result = [];
+  foreach ($roster as $uid) {
+    $uid = (int) $uid;
+    if ($uid <= 0) {
+      continue;
+    }
+    // Any closed entry → clean.
+    $closed_count = (int) $tc_storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_work_order', $wo_id)
+      ->condition('field_teammate', $uid)
+      ->exists('field_end_time')
+      ->count()
+      ->execute();
+    if ($closed_count > 0) {
+      $result[$uid] = ['status' => 'clean'];
+      continue;
+    }
+    // Any open entry → orphan (load most recent).
+    $open_ids = $tc_storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_work_order', $wo_id)
+      ->condition('field_teammate', $uid)
+      ->notExists('field_end_time')
+      ->sort('field_start_time', 'DESC')
+      ->range(0, 1)
+      ->execute();
+    if (!empty($open_ids)) {
+      $result[$uid] = [
+        'status' => 'orphan',
+        'orphan_entity' => $tc_storage->load(reset($open_ids)),
+      ];
+      continue;
+    }
+    // No entries at all → missing.
+    $result[$uid] = ['status' => 'missing'];
+  }
+  return $result;
+}
+
+/**
+ * Form validate handler for the reconciliation fieldset.
+ *
+ * Re-categorizes at submit time so the handler always operates on
+ * fresh roster data (defense against the user editing roster between
+ * the last fieldset render and submit). Mirrors Phase 1 guards 1-3
+ * (end < start, future start, future end) for inline error reporting.
+ *
+ * Apply-to-all values are copied into per-row values where the row
+ * doesn't have its own value, before per-row validation.
+ */
+function _wo_sign_off_reconciliation_validate(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof EntityFormInterface) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if ($entity->getEntityTypeId() !== 'wo_complete_info') {
+    return;
+  }
+  /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
+  $svc = \Drupal::service('wo_sign_off.crew_roster');
+  if (!$svc->isInScope('wo_complete_info', $entity->bundle())) {
+    return;
+  }
+
+  $values = $form_state->getValues();
+  $roster = $svc->normalizeRosterFromFormState($values, 'wo_complete_info', $entity->bundle());
+  $wo_id = (int) ($values['field_work_order'][0]['target_id'] ?? $entity->get('field_work_order')->target_id ?? 0);
+
+  if (empty($roster) || $wo_id <= 0) {
+    return;
+  }
+
+  $categorized = _wo_sign_off_categorize_roster($wo_id, $roster);
+  $needs_action = array_filter($categorized, fn($r) => $r['status'] !== 'clean');
+  if (empty($needs_action)) {
+    return;
+  }
+
+  // Apply-to-all defaults (will copy into empty row values during this
+  // validation pass and during submit).
+  $apply_end = $values['signoff_reconciliation']['apply_to_all']['end_time'] ?? NULL;
+  $apply_note = $values['signoff_reconciliation']['apply_to_all']['note'] ?? '';
+
+  $now = \Drupal::time()->getRequestTime();
+  $grace = (defined('WO_TOTAL_TIME_FUTURE_GRACE_MINUTES') ? WO_TOTAL_TIME_FUTURE_GRACE_MINUTES : 5) * 60;
+
+  foreach ($needs_action as $uid => $info) {
+    $row = $values['signoff_reconciliation']['rows'][$uid] ?? NULL;
+    if ($row === NULL) {
+      // The user submitted but the row wasn't rendered (likely because
+      // they added someone to the roster after the last refresh). Force
+      // a generic error pointing at the refresh button.
+      $form_state->setErrorByName(
+        'signoff_reconciliation_refresh',
+        t('Crew roster has changed since the reconciliation list was last built. Click "Refresh reconciliation list" to surface the new entries.')
+      );
+      return;
+    }
+
+    // Mistake-delete short-circuits per-row validation (no end_time required).
+    if ($info['status'] === 'orphan' && !empty($row['mistake_delete'])) {
+      continue;
+    }
+
+    // Apply-to-all default for missing end_time.
+    $end_time = $row['end_time'] ?? NULL;
+    if (!$end_time instanceof DrupalDateTime && $apply_end instanceof DrupalDateTime) {
+      $end_time = $apply_end;
+    }
+    if (!$end_time instanceof DrupalDateTime) {
+      $form_state->setErrorByName(
+        "signoff_reconciliation][rows][$uid][end_time",
+        t('End time is required for this entry.')
+      );
+      continue;
+    }
+
+    // Future end time check.
+    if ($end_time->getTimestamp() > $now + $grace) {
+      $form_state->setErrorByName(
+        "signoff_reconciliation][rows][$uid][end_time",
+        t('End time (@e) is in the future.', ['@e' => $end_time->format('m/d/Y g:i A')])
+      );
+      continue;
+    }
+
+    if ($info['status'] === 'missing') {
+      $start_time = $row['start_time'] ?? NULL;
+      if (!$start_time instanceof DrupalDateTime) {
+        $form_state->setErrorByName(
+          "signoff_reconciliation][rows][$uid][start_time",
+          t('Start time is required for this entry (no existing clock-in to use).')
+        );
+        continue;
+      }
+      if ($start_time->getTimestamp() > $now + $grace) {
+        $form_state->setErrorByName(
+          "signoff_reconciliation][rows][$uid][start_time",
+          t('Start time (@s) is in the future.', ['@s' => $start_time->format('m/d/Y g:i A')])
+        );
+        continue;
+      }
+      if ($end_time->getTimestamp() < $start_time->getTimestamp()) {
+        $form_state->setErrorByName(
+          "signoff_reconciliation][rows][$uid][end_time",
+          t('End time (@e) is before start time (@s). Please verify the date and AM/PM.', [
+            '@e' => $end_time->format('m/d/Y g:i A'),
+            '@s' => $start_time->format('m/d/Y g:i A'),
+          ])
+        );
+        continue;
+      }
+    }
+    else {
+      // Orphan — start_time is the existing entry's start_time.
+      $orphan = $info['orphan_entity'];
+      $orphan_start = $orphan->get('field_start_time')->value;
+      $orphan_start_ts = strtotime($orphan_start . 'Z');
+      if ($end_time->getTimestamp() < $orphan_start_ts) {
+        $form_state->setErrorByName(
+          "signoff_reconciliation][rows][$uid][end_time",
+          t('End time (@e) is before the existing start time (@s). Please verify the date and AM/PM, or check the "mistake — delete" box if the original clock-in was wrong.', [
+            '@e' => $end_time->format('m/d/Y g:i A'),
+            '@s' => date('m/d/Y g:i A', $orphan_start_ts),
+          ])
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Form submit handler — runs BEFORE the entity save fires. Performs all
+ * reconciliation actions (close orphans, create missing, delete mistakes),
+ * then sets the _signoff_reconciliation_in_progress flag on the parent
+ * entity so the defense-in-depth presave guard skips this save.
+ */
+function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof EntityFormInterface) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if ($entity->getEntityTypeId() !== 'wo_complete_info') {
+    return;
+  }
+  /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
+  $svc = \Drupal::service('wo_sign_off.crew_roster');
+  if (!$svc->isInScope('wo_complete_info', $entity->bundle())) {
+    return;
+  }
+
+  $values = $form_state->getValues();
+  $roster = $svc->normalizeRosterFromFormState($values, 'wo_complete_info', $entity->bundle());
+  $wo_id = (int) ($values['field_work_order'][0]['target_id'] ?? $entity->get('field_work_order')->target_id ?? 0);
+  if (empty($roster) || $wo_id <= 0) {
+    // No reconciliation work to do; let entity save proceed normally.
+    return;
+  }
+
+  $categorized = _wo_sign_off_categorize_roster($wo_id, $roster);
+  $needs_action = array_filter($categorized, fn($r) => $r['status'] !== 'clean');
+  if (empty($needs_action)) {
+    return;
+  }
+
+  // Determine signer for audit. Prefer field_signed_off_by on the
+  // wo_complete_info entity; fall back to current user.
+  $signer_uid = (int) ($values['field_signed_off_by'][0]['target_id'] ?? 0);
+  if ($signer_uid <= 0) {
+    $signer_uid = (int) \Drupal::currentUser()->id();
+  }
+  $signer_user = \Drupal::entityTypeManager()->getStorage('user')->load($signer_uid);
+  $signer_name = $signer_user ? $signer_user->getDisplayName() : 'Unknown';
+  $now_label = (new DrupalDateTime())->format('m/d/Y g:i A');
+
+  $tc_storage = \Drupal::entityTypeManager()->getStorage('wo_time_clock');
+  $apply_end = $values['signoff_reconciliation']['apply_to_all']['end_time'] ?? NULL;
+  $apply_note = trim((string) ($values['signoff_reconciliation']['apply_to_all']['note'] ?? ''));
+
+  // Note: the _signoff_complete entity ID. For NEW wo_complete_info,
+  // the entity hasn't saved yet so its ID is NULL. Audit-field
+  // population in that case would need to chain into a post-save
+  // handler. To keep Phase 2b scope tight, we skip audit-field
+  // population on new entities and log it.
+  $parent_id = $entity->isNew() ? NULL : (int) $entity->id();
+
+  foreach ($needs_action as $uid => $info) {
+    $row = $values['signoff_reconciliation']['rows'][$uid] ?? [];
+    $end_time = $row['end_time'] ?? NULL;
+    if (!$end_time instanceof DrupalDateTime && $apply_end instanceof DrupalDateTime) {
+      $end_time = $apply_end;
+    }
+    $row_note = trim((string) ($row['notes'] ?? ''));
+    if ($row_note === '') {
+      $row_note = $apply_note;
+    }
+
+    if ($info['status'] === 'orphan' && !empty($row['mistake_delete'])) {
+      // Delete the orphan entry; no closure, no audit field.
+      $orphan = $info['orphan_entity'];
+      try {
+        // Bypass Phase 1 lock guards on the delete operation (entity
+        // delete doesn't go through the presave guard, but be safe).
+        $orphan->_signoff_reconciliation = TRUE;
+        $orphan->delete();
+        \Drupal::logger('wo_sign_off')->info(
+          'Reconciliation: deleted mistake clock-in entry @id (uid=@uid, WO=@wo) per signer @s.',
+          ['@id' => $orphan->id(), '@uid' => $uid, '@wo' => $wo_id, '@s' => $signer_name]
+        );
+      }
+      catch (\Exception $e) {
+        \Drupal::logger('wo_sign_off')->error(
+          'Reconciliation: failed to delete mistake entry @id: @msg',
+          ['@id' => $orphan->id(), '@msg' => $e->getMessage()]
+        );
+      }
+      continue;
+    }
+
+    if ($info['status'] === 'orphan') {
+      $orphan = $info['orphan_entity'];
+      $audit_prefix = "[Closed by {$signer_name} at sign-off, {$now_label}]";
+      $combined_note = trim($audit_prefix . ' ' . $row_note);
+      $orphan->set('field_end_time', $end_time->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s'));
+      $orphan->set('field_notes', $combined_note);
+      if ($parent_id !== NULL) {
+        $orphan->set('field_closed_signoff_complete', $parent_id);
+      }
+      $orphan->_signoff_reconciliation = TRUE;
+      try {
+        $orphan->save();
+      }
+      catch (\Exception $e) {
+        \Drupal::logger('wo_sign_off')->error(
+          'Reconciliation: failed to close orphan @id: @msg',
+          ['@id' => $orphan->id(), '@msg' => $e->getMessage()]
+        );
+      }
+      continue;
+    }
+
+    // MISSING — create a new wo_time_clock entry.
+    $start_time = $row['start_time'] ?? NULL;
+    if (!$start_time instanceof DrupalDateTime || !$end_time instanceof DrupalDateTime) {
+      // Validate handler should have caught this — defensive skip.
+      \Drupal::logger('wo_sign_off')->warning(
+        'Reconciliation: missing-row for uid @uid skipped due to incomplete time values.',
+        ['@uid' => $uid]
+      );
+      continue;
+    }
+    $audit_prefix = "[Created by {$signer_name} at sign-off, {$now_label}]";
+    $combined_note = trim($audit_prefix . ' ' . $row_note);
+    $new = $tc_storage->create([
+      'type' => 'entry',
+      'field_work_order' => $wo_id,
+      'field_teammate' => $uid,
+      'uid' => $uid,
+      'field_start_time' => $start_time->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s'),
+      'field_end_time' => $end_time->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s'),
+      'field_notes' => $combined_note,
+    ]);
+    if ($parent_id !== NULL) {
+      $new->set('field_created_signoff_complete', $parent_id);
+    }
+    $new->_signoff_reconciliation = TRUE;
+    try {
+      $new->save();
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('wo_sign_off')->error(
+        'Reconciliation: failed to create entry for uid @uid on WO @wo: @msg',
+        ['@uid' => $uid, '@wo' => $wo_id, '@msg' => $e->getMessage()]
+      );
+    }
+  }
+
+  // Mark the parent so the presave guard doesn't re-evaluate the
+  // (now-resolved) roster.
+  $entity->_signoff_reconciliation_in_progress = TRUE;
+}
+
+/**
+ * Defense-in-depth: refuse to save a sign-off wo_complete_info if any
+ * roster member lacks a complete wo_time_clock entry.
+ *
+ * Throws \Drupal\Core\Entity\EntityStorageException, aborting the save.
+ *
+ * Skipped via _signoff_reconciliation_in_progress on the entity, set
+ * by the form submit handler after legitimate reconciliation completes.
+ */
+function _wo_sign_off_assert_roster_complete(EntityInterface $entity): void {
+  /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
+  $svc = \Drupal::service('wo_sign_off.crew_roster');
+  if (!$svc->isInScope('wo_complete_info', $entity->bundle())) {
+    return;
+  }
+
+  $wo_id = ($entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty())
+    ? (int) $entity->get('field_work_order')->target_id
+    : 0;
+  if ($wo_id <= 0) {
+    return;
+  }
+
+  $roster = [];
+  if ($entity->hasField('field_those_on_crew') && !$entity->get('field_those_on_crew')->isEmpty()) {
+    foreach ($entity->get('field_those_on_crew') as $item) {
+      if (!empty($item->target_id)) {
+        $roster[] = (int) $item->target_id;
+      }
+    }
+    $roster = array_values(array_unique($roster));
+  }
+  if (empty($roster)) {
+    return;
+  }
+
+  $categorized = _wo_sign_off_categorize_roster($wo_id, $roster);
+  $offenders = [];
+  $user_storage = \Drupal::entityTypeManager()->getStorage('user');
+  foreach ($categorized as $uid => $info) {
+    if ($info['status'] !== 'clean') {
+      $u = $user_storage->load($uid);
+      $offenders[] = ($u ? $u->getDisplayName() : "uid=$uid")
+        . ' (' . $info['status'] . ')';
+    }
+  }
+  if (!empty($offenders)) {
+    throw new EntityStorageException(sprintf(
+      'Sign-off cannot be saved: the following crew member(s) need time entry reconciliation — %s. Use the form interface to reconcile time entries before signing off.',
+      implode(', ', $offenders)
+    ));
+  }
+}
+
+/**
+ * Format a UTC datetime string for display in the reconciliation UI.
+ * Tolerates NULL or malformed input gracefully.
+ */
+function _wo_sign_off_fmt_datetime(?string $iso_utc): string {
+  if (!$iso_utc) {
+    return '(no value)';
+  }
+  $ts = strtotime($iso_utc . 'Z');
+  return $ts ? date('m/d/Y g:i A', $ts) : $iso_utc;
 }

@@ -253,10 +253,9 @@ Same role gate as the rest of the suite. New canonical front door for the varian
 
 ### Variance Suite navigation grid
 
-Six cards. Two ACTIVE (linked) and four PLANNED (visually muted, no link, status badge):
+Six cards. Three ACTIVE (linked) and three PLANNED (visually muted, no link, status badge):
 
-- ACTIVE: Daily Variance, Data Hygiene Check
-- PLANNED — Phase 2E: Active Now
+- ACTIVE: Daily Variance, Data Hygiene Check, Active Now (Phase 2E)
 - PLANNED — Phase 2F: Weekly Trends
 - PLANNED — Tier 2: Team Roster, Today's Schedule
 
@@ -284,11 +283,54 @@ The hub and its two children live under the existing **Operations** parent at `/
 admin (menu)
 └── Operations                          (/admin/operations)
     └── Teammate Operations             (bos_teammate_operations.hub)
-        ├── Daily Variance              (bos_teammate_operations.variance_daily)
-        └── Time Clock Data Check       (bos_teammate_operations.variance_data_check)
+        ├── Daily Variance              (bos_teammate_operations.variance_daily)   weight 0
+        ├── Active Now                  (bos_teammate_operations.active_now)       weight 5
+        └── Time Clock Data Check       (bos_teammate_operations.variance_data_check) weight 10
 ```
 
 The page paths (`/admin/office/operations/teammates`, `/variance`, `/variance/data-check`) are independent of the menu placement — bookmarks stay valid. The detail route at `/admin/office/operations/teammates/variance/{user}` deliberately has no menu entry (it's reached by clicking a teammate name on the rollup or hub).
+
+---
+
+## Phase 2E — Active Now view
+
+URL: **`/admin/office/operations/teammates/active`**
+Same role gate as the rest of the suite. Operational snapshot answering "right now, who is working on what?" — the question variance dashboards (which look backward) cannot answer.
+
+Read-only against existing `wo_time_clock` data. No service swaps, no auto-refresh, no JS polling, no caching, no TimeTrax dependency. Render on each page load.
+
+### Two stacked sections
+
+**Section 1 — Currently Clocked In (primary).** Every open punch in the system: `field_start_time IS NOT NULL` AND `field_end_time IS NULL`, regardless of how long ago it started. Columns: Teammate (linked to per-teammate detail), Department, Work Order (linked to admin edit), Clocked In At (MM/DD/YYYY h:i AM/PM), Duration ("X hr Y min"), Status indicator. Default sort: clock-in time DESC. Empty state: "✓ No teammates currently clocked into a WO."
+
+**Section 2 — Today's Activity (secondary).** Every teammate who has had ANY `wo_time_clock` activity today (closed entries that started today plus currently-open entries from any time). Columns: Teammate, Department, WOs Touched Today (distinct count), Total Closed Hrs (sum of `field_total_time` for entries closed-today), Currently On (linked WO if open, else "—"), Last Activity (h:i AM/PM — date implied by section context). Default sort: last activity DESC. Empty state: "No teammate activity recorded today yet."
+
+### Status indicators (Section 1)
+
+Visual cue based on duration since clock-in:
+
+| Color | Range | Meaning |
+|---|---|---|
+| 🟢 Green | < 8 hours | Likely currently working |
+| 🟡 Yellow | 8 – 16 hours | Long shift in progress, or possibly stale |
+| 🔴 Red | > 16 hours | Almost certainly stale / forgotten clock-out |
+
+Thresholds are hardcoded constants on the controller (`GREEN_MAX = 8 * 3600`, `YELLOW_MAX = 16 * 3600`). They are operational visual cues, not business rules — distinct from the Phase 1 `field_long_shift_hours` threshold (which gates form-layer save validation). Keeping them out of business_setting avoids confusion with the per-day variance bands.
+
+### Filters
+
+- **Department** — dropdown sourced from `crew_types` ECK entity, defaults to "All Departments". Filters via `teammate_profile.field_assigned_crew` lookup. Applies to BOTH sections simultaneously.
+- **Group by department** — checkbox, defaults to UNCHECKED. When checked, both sections regroup with department headings + per-group counts.
+
+GET-submission so filters live in the URL — bookmarkable, shareable.
+
+### Stale punches — accepted, not filtered
+
+Some "currently clocked in" rows on live are forgotten clock-outs from days or weeks ago. Phase 2E does NOT filter or bucket them away. The page shows reality as the data presents it — the Status column's red dot makes the staleness visible, and the AnomalyDetectionService `open_stale` category surfaces them on the data-check page for cleanup. Filtering them off would hide the data hygiene problem the variance suite is built to expose.
+
+### Teammate resolution priority
+
+Each row's teammate is resolved by `field_teammate` first (the explicit roster reference, populated going forward by `wo_total_time`'s presave auto-sync — commit `69d6f3cc`). Falls back to entity owner uid when `field_teammate` is empty. Pre-2026 historical entries with empty `field_teammate` still display correctly via the fallback.
 
 ---
 
@@ -342,10 +384,13 @@ web/modules/custom/bos_teammate_operations/
                                               Phase 2C — refactored to use AnomalyDetectionService;
                                               teammate column links to detail page)
       VarianceTeammateDetailController.php  (Phase 2C — single-teammate drill-down)
-      TeammateOperationsHubController.php   (Phase 2D — hub landing page)
+      TeammateOperationsHubController.php   (Phase 2D — hub landing page;
+                                              Phase 2E — Active Now card promoted ACTIVE)
+      ActiveNowController.php               (Phase 2E — operational snapshot view)
     Form/
       VarianceDailyFilterForm.php           (Phase 2B — GET filter form for rollup)
       VarianceTeammateDetailFilterForm.php  (Phase 2C — GET filter form for detail page)
+      ActiveNowFilterForm.php               (Phase 2E — GET filter form: dept + group toggle)
     Service/
       CompensableHoursService.php
       AnomalyDetectionService.php           (Phase 2C — extracted from inline data-check logic)
@@ -408,4 +453,6 @@ The spec called for `entity_type.manager` and `config.factory`. Substituted `con
 
 **MM/DD/YYYY date format established as project convention (commits `19f27523`, `cedef3de`).** All four pages (hub, rollup, detail, data-check) render dates in US format; storage and URL params stay ISO. Documented in CLAUDE.md → "Date Formatting".
 
-Ready for Phase 2E (Active Now view).
+**Phase 2E Active Now built 2026-05-03.** Operational snapshot view at `/admin/office/operations/teammates/active`. Two stacked sections — Currently Clocked In + Today's Activity — with department filter and group-by-department toggle. Status indicator dots (green / yellow / red) make stale forgotten clock-outs visually obvious without filtering them out. Hub card promoted from PLANNED to ACTIVE; menu entry added between Daily Variance (weight 0) and Time Clock Data Check (weight 10).
+
+Ready for Phase 2F (Weekly Trends).

@@ -28,6 +28,16 @@ bos_teammate_operations.variance_data_check:
   options:
     _admin_route: TRUE
 
+bos_teammate_operations.active_now:
+  path: '/admin/office/operations/teammates/active'
+  defaults:
+    _controller: '\Drupal\bos_teammate_operations\Controller\ActiveNowController::build'
+    _title: 'Active Now'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  options:
+    _admin_route: TRUE
+
 bos_teammate_operations.variance_teammate_detail:
   path: '/admin/office/operations/teammates/variance/{user}'
   defaults:

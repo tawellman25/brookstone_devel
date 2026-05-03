@@ -216,8 +216,8 @@ final class TeammateOperationsHubController extends ControllerBase implements Co
       [
         'icon' => '⏰', 'title' => 'Active Now',
         'desc' => "See who's currently clocked into a work order, where they're working, and how long they've been on each WO.",
-        'url'  => NULL,
-        'badge' => 'PLANNED — Phase 2E', 'badge_class' => 'badge-planned',
+        'url'  => Url::fromRoute('bos_teammate_operations.active_now')->toString(),
+        'badge' => 'ACTIVE', 'badge_class' => 'badge-active',
       ],
       [
         'icon' => '📈', 'title' => 'Weekly Trends',

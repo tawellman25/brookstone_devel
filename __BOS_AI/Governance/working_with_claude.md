@@ -132,6 +132,100 @@ Each push happened after the work block completed verification and committed loc
 
 ---
 
+## Live deploy discipline
+
+Deploying BOS to live is a separate, deliberate operation distinct from pushing to origin. The deploy script is `dev_scripts/brookstone-sync-to-remote-DANGEROUS.sh`. It defaults to dry-run; live deploy requires explicit `--live`.
+
+### Always dry-run first
+
+Run the script with no flags to see exactly what will change. The output is verbose — most lines are timestamp-only updates (`<f..T......` rsync flag) that don't affect functionality. Filter to substantive changes:
+
+```bash
+./dev_scripts/brookstone-sync-to-remote-DANGEROUS.sh 2>&1 | grep -vE "^<f\.\.T\.\.\.\.\.\."
+```
+
+What to look for:
+- `<f+++++++++` — new file
+- `<f.sT......` — content size differs (real change)
+- `*deleting` — file will be removed (verify it's expected)
+- `cd+++++++++` — new directory (typically a new module)
+
+Pay particular attention to `config/sync/` entries and `web/modules/custom/` additions. Theme/twig-only timestamp changes are noise.
+
+### `--cim` is opt-in and frequently required
+
+The script does NOT run `drush cim` by default. Pass `--cim` when:
+
+- Any `config/sync/field.field.*` or `field.storage.*` files are new or changed
+- Any `core.entity_form_display.*` or `core.entity_view_display.*` files are changed
+- `core.extension.yml` is changed (new module being enabled)
+- `views.view.*` is created or modified
+
+Without `--cim`, code on live tries to read fields that don't exist in the active config → broken forms, broken queries, errors. If you skip `--cim` and the code expects new infrastructure, live breaks silently.
+
+Without `--cim`, new modules in `core.extension.yml` are NOT installed; their routes 404. The rsync delivers their files to disk, but Drupal's module-installer never fires.
+
+### The BOS field-instance silent-skip bug — recurring on cim with new fields
+
+Documented in [drupal_bos_gotchas.md](drupal_bos_gotchas.md). When a `drush cim` cycle simultaneously creates new `field.field.*` instances AND updates `core.entity_*_display.*` configs that reference them, Drupal sometimes lists the field instances as "Create" in the planner but fails at dependency validation:
+
+```
+The import failed due to the following reasons:
+Configuration core.entity_form_display.X depends on configuration
+(field.field.X.field_new) that will not exist after import.
+```
+
+The deploy script's failure trap leaves live in maintenance mode when this happens — users are blocked, but live isn't actively serving the broken state.
+
+**Recovery procedure (used on the 2026-05-03 deploy):**
+
+1. Confirm live is in maintenance mode: `ssh brookstone 'cd /home/brookstoneadmin/brookstone && drush sget system.maintenance_mode'` (returns `1`)
+2. Write a one-shot PHP script that loops the new field YAML pairs and creates each via `FieldStorageConfig::create()` + `FieldConfig::create()` directly. Use absolute path for `config/sync/` (drush php:script may run from a different cwd):
+
+   ```php
+   $sync = '/home/brookstoneadmin/brookstone/config/sync/';
+   $storage_data = Yaml::parseFile($sync . 'field.storage.X.yml');
+   $instance_data = Yaml::parseFile($sync . 'field.field.X.yml');
+   unset($storage_data['_core'], $instance_data['_core']);
+   if (!FieldStorageConfig::loadByName(...)) { FieldStorageConfig::create($storage_data)->save(); }
+   if (!FieldConfig::loadByName(...))      { FieldConfig::create($instance_data)->save(); }
+   ```
+
+3. `scp` the script to remote `/tmp/`, run via `drush php:script`, then delete it
+4. Re-run `drush cim -y` — succeeds for everything else now that the dependency targets exist
+5. `drush cr -y && drush sset system.maintenance_mode 0 -y && drush cr -y`
+6. Smoke-test the new infrastructure with a read-only PHP script (verify fields exist, services resolve, controllers build)
+
+The live UUIDs generated during step 2 will differ from the local sync YAMLs' UUIDs. Per [drupal_bos_gotchas.md → UUID drift](drupal_bos_gotchas.md), this is benign — code references configs by name, not UUID, and cim never modifies an existing config's UUID. Don't patch.
+
+### Pre-deploy mitigation (preferred when feasible)
+
+The recovery dance is avoidable if you pre-create new field configs on live BEFORE running the deploy that includes the dependent display updates. Two-deploy pattern:
+
+1. **Deploy 1**: ship the new field configs only. Dry-run shows just the new `field.field.*` and `field.storage.*` files. Run with `--cim` — Drupal can create new fields with no display dependencies in a single cim cycle.
+2. **Deploy 2** (in a follow-up commit): ship the display updates that reference those fields. Cim now succeeds because the field instances already exist on live.
+
+In practice the work usually arrives bundled (a feature commits the field configs and the display updates together), so the recovery procedure is what gets used. Keep both options in mind.
+
+### Failure log: instances of this bug triggering on BOS
+
+| Date | Context | Recovery |
+|---|---|---|
+| 2026-03-XX | Phase 0.5 | Local — six business_setting threshold fields |
+| 2026-04-XX | Phase 2a | Local — four wo_time_clock audit fields |
+| 2026-05-03 | This deploy | Live — same ten fields hit again on first deploy to production; recovery script + re-cim took ~10 min |
+
+The pattern is reliable enough that any deploy with new `field.field.*` configs should anticipate the failure and have the recovery script ready.
+
+### Cleanup checklist after deploy
+
+- Delete temporary recovery scripts from both local `/tmp/` and remote `/tmp/`
+- Confirm `system.maintenance_mode = 0` on live
+- Run a smoke test as a known admin user (controller invocations, field reads, service resolution)
+- Verify any new module's routes resolve via `drush php:eval` against `\Drupal::service('router.route_provider')->getRouteByName('module.route')`
+
+---
+
 ## Memory and session continuity
 
 When a Claude session resumes after a context break (compaction, new session, browser refresh), the persistent file-based memory at `~/.claude/projects/-home-todd-code-brookstone/memory/` carries forward project-specific knowledge between sessions. Key entries to be aware of:
@@ -177,4 +271,5 @@ User feedback during Phase 0.5 explicitly endorsed this pattern as "the right on
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)
+- 2026-05-03: added "Live deploy discipline" section after the Phase 2 simplification was deployed — first live cim hit the silent-skip bug; recovery procedure documented while still fresh.
 - Living document — append new process discipline patterns as they emerge.

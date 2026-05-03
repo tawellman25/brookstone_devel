@@ -76,14 +76,25 @@ function wo_timer_flag_update_flagging_delete(FlaggingInterface $flagging) {
         ->load($wo_time_clock_id);
   
       if ($wo_time_clock) {
-        // Update the 'field_end_time'.
-        $wo_time_clock->set('field_end_time', DrupalDateTime::createFromTimestamp(time(), new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s'));
-  
-        // Add a new entry to the 'field_notes' multi-value field.
-        $wo_time_clock->get('field_notes')->appendItem('End Time entered by system');
-        
-        // Save the updated entity.
-        $wo_time_clock->save();
+        // Skip if the entry has already been closed (e.g., by Phase 2c
+        // sign-off reconciliation that ran before the cascade fired,
+        // or by manual office cleanup that pre-closed the entry).
+        // The flag deletion itself still completes; we just don't
+        // clobber an already-populated end_time or its audit trail.
+        if ($wo_time_clock->get('field_end_time')->isEmpty()) {
+          $wo_time_clock->set('field_end_time', DrupalDateTime::createFromTimestamp(time(), new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s'));
+
+          // Append rather than overwrite — field_notes is single-value
+          // (cardinality 1), so appendItem() does not append correctly.
+          // Concatenate with a newline and trim to handle the
+          // empty-prefix case cleanly.
+          $existing_notes = $wo_time_clock->get('field_notes')->value ?? '';
+          $appended_notes = trim($existing_notes . "\n" . 'End Time entered by system');
+          $wo_time_clock->set('field_notes', $appended_notes);
+
+          // Save the updated entity.
+          $wo_time_clock->save();
+        }
       }
     }
   }

@@ -62,6 +62,23 @@ Investigate. If the cleanup was intentional and reverted by accident, re-apply. 
 
 ---
 
+### 16. Pre-boundary `wo_time_clock` dual-field drift backfill (deferred)
+
+The dual-field drift pattern (`uid` populated, `field_teammate` empty on the same entry) affected 9,118 wo_time_clock entries at time of discovery. The reverse-sync guard added to `wo_total_time` corrects new writes going forward, and 72 of 74 post-boundary affected entries were backfilled (2 blocked by pre-existing `time_travel` data corruption). The remaining **9,043 pre-boundary entries** were left as-is.
+
+These are predominantly outside the variance dashboard's default boundary (`field_data_quality_boundary_date = 2026-01-01`), so operational reports already filter them out. But:
+
+- Per-teammate historical reports that go pre-boundary will under-attribute time to teammates whose entries are in this state
+- Phase 2 reconciliation on a pre-boundary WO sign-off would surface these as MISSING for any teammate whose only entries are dual-field-drifted
+
+If a backfill is wanted: the same drush eval pattern used for the post-boundary set can be expanded by removing the date filter. ~9,000 saves; expect maybe 50-100 failures from existing data corruption (`time_travel`, `negative_hours`, etc.) that Phase 1 guards block.
+
+Deferral rationale: scale of operation deserves its own decision; pre-boundary accuracy isn't the dashboard's primary signal; failures would need batch-level error handling rather than per-entity surfacing.
+
+**Surfaced 2026-05-02 during Phase 2 sign-off live use.** Greg Kouri's wo_complete_info form showed reconciliation-needed for an entry he'd already populated; diagnostic revealed the dual-field drift pattern. Forward fix in `wo_total_time` commit (this work).
+
+---
+
 ## Cosmetic / UX cleanups
 
 ### 4. `teammate_wo_clocked_in_not_complet` view — candidate for deprecation

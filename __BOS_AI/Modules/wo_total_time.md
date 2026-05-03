@@ -56,6 +56,18 @@ Long-shift (>16 hour) checking is deliberately NOT a presave guard — it lives 
 
 Phase 2 will skip this block when the `_signoff_reconciliation` context flag is set on the entity, to allow sign-off-time reconciliation to write entries owned by the actual teammate without reassignment side effects. Phase 1 leaves a TODO comment marking the spot.
 
+### 4. Reverse auto-sync: field_teammate from uid (added 2026-05-02)
+
+- On any save path (not POST-gated): if `field_teammate` is empty AND `uid` is non-anonymous, set `field_teammate = uid`
+- Does NOT fire when `field_teammate` is already populated (preserves legitimate office-staff-on-behalf attribution where uid != field_teammate)
+- Does NOT fire when uid is anonymous (uid 0)
+
+This is the symmetric sibling of the existing forward-sync (which goes `uid := field_teammate`). It addresses the dual-field drift pattern where teammates manually entered their own time via the standalone form and didn't notice the `field_teammate` field — leaving the entry with `uid` populated but `field_teammate` empty. Without this sync, Phase 2 reconciliation and per-teammate variance queries can't find the entry.
+
+The forward and reverse syncs are mutually exclusive — only one fires per save (forward gates on `!isEmpty`, reverse gates on `isEmpty`).
+
+Backfill: 72 post-boundary entries (start_time ≥ 2026-01-01) corrected at the time the guard was added. 2 entries failed backfill due to existing `end_time < start_time` data corruption (Phase 1 guard 1 blocked the save) — surfaced via AnomalyDetectionService's `time_travel` category for separate manual review. ~9,043 pre-boundary historical entries left as-is (deferred decision).
+
 ---
 
 ## Phase 2 hook point: `_signoff_reconciliation` context flag

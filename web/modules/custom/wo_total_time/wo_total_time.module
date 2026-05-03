@@ -90,6 +90,29 @@ function wo_total_time_entity_presave(EntityInterface $entity) {
         ]);
       }
     }
+
+    // Phase 1 extension: reverse auto-sync. When field_teammate is
+    // empty AND uid is populated and non-anonymous, sync field_teammate
+    // FROM uid. Common case: a teammate manually enters their own time
+    // via the standalone form and doesn't notice the field_teammate
+    // field. Without this sync the entry stays attributed to "no one"
+    // via field_teammate, which breaks downstream consumers
+    // (Phase 2 reconciliation, variance dashboard per-teammate
+    // queries) that key on field_teammate rather than uid.
+    //
+    // Runs on all save paths, not just POST. Programmatic writes that
+    // fail to set field_teammate are also bug paths worth correcting.
+    //
+    // Does NOT fire when field_teammate is already populated (preserves
+    // legitimate office-staff-on-behalf attribution where uid !=
+    // field_teammate). Does NOT fire when uid is anonymous (uid 0) —
+    // leaves edge-case entries alone.
+    if ($entity->hasField('field_teammate') && $entity->get('field_teammate')->isEmpty()) {
+      $owner_uid = (int) $entity->getOwnerId();
+      if ($owner_uid > 0) {
+        $entity->set('field_teammate', $owner_uid);
+      }
+    }
   }
 }
 

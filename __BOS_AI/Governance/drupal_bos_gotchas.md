@@ -200,6 +200,32 @@ See [wo_timer_flag_update.md](../Modules/wo_timer_flag_update.md) for the full l
 
 ---
 
+## `wo_time_clock` dual-field attribution: `uid` vs `field_teammate`
+
+Two different user-reference fields on `wo_time_clock:entry` track attribution, and **different consumers query different fields**:
+
+| Field | Purpose | Consumed by |
+|---|---|---|
+| `uid` (base field) | Entity owner — who entered the data | `views.view.wo_time_clock_entries` (display grouping/header), Drupal entity access checks, `EntityOwnerInterface` consumers |
+| `field_teammate` (custom field) | Operational attribution — who the entry is *for* | Phase 2 sign-off reconciliation, `AnomalyDetectionService::*ForUser` queries, variance dashboard per-teammate breakdowns, `wo_sign_off`'s billing math (counts crew members via this field) |
+
+These two fields agree by convention but can drift in practice. The drift was operationally invisible until Phase 2 sign-off reconciliation surfaced it — entries with `uid` populated and `field_teammate` empty appeared in display views (using `uid`) but invisible to per-teammate queries (using `field_teammate`).
+
+`wo_total_time` has two presave auto-syncs to keep these consistent:
+
+- **Forward sync** (POST-only): when `field_teammate` is set and differs from `uid`, copy `field_teammate` → `uid`. Use case: office staff manually enters on behalf of a teammate; the entity should be owned by the teammate, not the data entrant.
+- **Reverse sync** (all save paths): when `field_teammate` is empty and `uid` is non-anonymous, copy `uid` → `field_teammate`. Use case: a teammate manually enters their own time and doesn't notice the `field_teammate` field; the entity stays consistent without requiring the user to know about both fields.
+
+Both syncs are mutually exclusive — only one fires per save (forward gates on `!isEmpty`; reverse gates on `isEmpty`).
+
+**When extending wo_time_clock with new fields or save paths:** maintain this attribution invariant. Any new writer that sets `uid` should also set `field_teammate` (or rely on the reverse sync to fill it).
+
+**When querying wo_time_clock for "what entries does this user have":** prefer `field_teammate` for operational attribution; use `uid` only when you specifically mean "who entered the data."
+
+**Surfaced 2026-05-02 during Phase 2 live use.** Reverse sync added in the same commit. See [wo_total_time.md](../Modules/wo_total_time.md) for implementation detail and [deferred_work.md item 16](deferred_work.md#16-pre-boundary-wo_time_clock-dual-field-drift-backfill-deferred) for the historical-entries scope question.
+
+---
+
 ## `wo_time_clock` lifecycle: where end_time gets written
 
 Multiple code paths can write `field_end_time` on a `wo_time_clock` entry. Future contributors adding new write paths should be aware of all existing ones to avoid clobbering or coordination issues:

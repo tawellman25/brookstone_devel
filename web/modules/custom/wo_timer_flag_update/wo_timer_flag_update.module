@@ -96,6 +96,26 @@ function wo_timer_flag_update_flagging_delete(FlaggingInterface $flagging) {
           $wo_time_clock->save();
         }
       }
+      else {
+        // Phase 2d: silent-no-op visibility. The flag's
+        // field_wo_timer_entered points at a wo_time_clock that
+        // doesn't load — either deleted, never created, or pointing
+        // at a stale ID. Without this log, the user's clock-out tap
+        // appears to succeed (the flag is removed) but no end_time
+        // gets written and no record of the failure exists.
+        $flaggable = $flagging->getFlaggable();
+        \Drupal::logger('wo_timer_flag_update')->warning(
+          'Clock-out flag delete fired but field_wo_timer_entered references no valid wo_time_clock entity. '
+          . 'target_id: @target_id, user: @uid, flag_id: @flag_id, work_order_id: @wo_id. '
+          . 'Clock-out was silently skipped — user may believe their tap succeeded but no end_time was written.',
+          [
+            '@target_id' => $wo_time_clock_id ?? 'NULL',
+            '@uid' => \Drupal::currentUser()->id(),
+            '@flag_id' => $flagging->id(),
+            '@wo_id' => $flaggable ? $flaggable->id() : 'unknown',
+          ]
+        );
+      }
     }
   }
 

@@ -231,6 +231,6 @@ Plus updates to `core.entity_form_display.wo_time_clock.entry.default.yml` (4 au
 - Phase 2b: wo_complete_info form alter + reconciliation + presave guard
 - Phase 2b-fix: audit field population on new wo_complete_info entities
 - Phase 2c: wo_tasks_list:lawn_mowing form alter + reconciliation + hard validation on field_mowing_who_on_site + presave guard
-- Phase 2d (planned): wo_timer_flag_update silent-no-op logging (separate small commit)
+- Phase 2d: wo_timer_flag_update silent-no-op logging (separate module — see `__BOS_AI/Modules/wo_timer_flag_update.md`)
 
 Updated: 2026-05-02 (Phase 2a)

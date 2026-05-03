@@ -63,6 +63,35 @@ final class WoCrewRosterService {
    */
   public const TASKS_LIST_BUNDLES = ['lawn_mowing'];
 
+  /**
+   * Bundles where missing-entry creation needs explicit per-person
+   * start/end times (multi-cycle work — sprinkler, landscape — where
+   * teammates work different windows on the same WO and a single
+   * default for the WO would be wildly wrong for half the crew).
+   *
+   * All other in-scope bundles silent-create missing entries with a
+   * derived default (earliest existing entry on the WO, or WO created
+   * timestamp). Orphan close-out is universal across all bundles
+   * regardless of complexity.
+   *
+   * Currently only applies to wo_complete_info bundles; there is no
+   * "complex" wo_tasks_list bundle in scope.
+   */
+  public const COMPLEX_BUNDLES = [
+    'landscape_crew',
+    'irrigation_crew',
+  ];
+
+  /**
+   * Whether the bundle requires per-row UI for missing entries.
+   *
+   * @see self::COMPLEX_BUNDLES
+   */
+  public function isComplexBundle(string $signoff_entity_type, string $signoff_bundle): bool {
+    return $signoff_entity_type === 'wo_complete_info'
+      && in_array($signoff_bundle, self::COMPLEX_BUNDLES, TRUE);
+  }
+
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
   ) {}

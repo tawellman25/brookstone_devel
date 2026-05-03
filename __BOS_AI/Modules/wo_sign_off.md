@@ -47,6 +47,17 @@ Both read methods deduplicate user IDs and return integers.
 
 The bundle lists are exposed as public class constants `COMPLETE_INFO_BUNDLES` and `TASKS_LIST_BUNDLES` so callers can reuse them for their own scope checks (e.g., `hook_form_alter` early returns).
 
+### Simple vs Complex bundle classification
+
+`COMPLEX_BUNDLES` constant + `isComplexBundle($entity_type, $bundle): bool` method partition the in-scope bundles by missing-entry handling policy:
+
+- **Simple** (default — silent-create on save): `complete`, `clean_up_crew`, `fertilizing_crew`, `lawn_mowing` (both wo_tasks_list and wo_complete_info paths), `spray_crew`. Single-block work where the whole crew works the same window. A computed default (earliest existing clock-in on the WO, fallback to WO created timestamp) approximates reality closely enough for routine sign-off.
+- **Complex** (per-row UI required): `irrigation_crew`, `landscape_crew`. Multi-cycle work where teammates work different windows on the same WO (one tech 8-12, another 1-3, another 2-6). A single default would be wildly wrong for half the crew, so the form requires explicit per-person start/end times for missing entries.
+
+Orphan close-out is universal across both classifications. Only missing-entry handling diverges.
+
+To reclassify a bundle, move it in/out of the `COMPLEX_BUNDLES` array. Both the form alter (build helper, validate handler, submit handler) and the Refresh button visibility branch off `isComplexBundle()` — single source of truth.
+
 ---
 
 ## Audit fields on wo_time_clock:entry (Phase 2a)
@@ -89,52 +100,70 @@ Audit notes (in `field_notes`) preserve signer name + timestamp regardless of wh
 
 ---
 
-## Reconciliation UX behavior (Phase 2b)
+## Reconciliation UX (Phase 2 simplification)
 
-The reconciliation fieldset's contents depend on the current roster. Three behaviors were considered:
+The Phase 2b/2c flows initially used per-row inputs for both orphan close-out (set end_time, optional note, optional "mistake — delete") and missing-entry creation (set start_time, end_time, optional note). User feedback during real-world testing surfaced that this was over-engineered for the most common case — a teammate or foreman saving the form *at the moment of clock-out*. The answer to "what's everyone's end time" is just "now", and most teammates already have an open clock-in from clicking the timer flag at the start of work.
 
-- **A** — render only at submit/validate time (no in-form fieldset)
-- **B** — initial render based on form state, no reaction to roster changes
-- **C** — AJAX rebuild on every roster change
+The simplification: silent close orphans across all bundles, and split missing-entry handling by bundle complexity.
 
-The Phase 2 spec called for **Behavior C** on the wo_complete_info path (office/desktop usage; AJAX round-trips are fine). Implementation pivoted to a **Refresh-button hybrid** rather than full auto-AJAX.
+### Universal: orphans close silently
 
-### Decision: explicit "Refresh reconciliation list" button — conditional visibility
+Any roster member with at least one open `wo_time_clock` entry on the WO is an "orphan" — close all their open entries with `end_time = now` and a standardized audit note (`[Closed by {signer} at sign-off, MM/DD/YYYY h:i AM/PM]`). Multi-cycle teammates may have multiple open entries (the categorize fn loads ALL `notExists('field_end_time')` matches, not just the most recent) — every one closes.
 
-The form alter injects a "Refresh reconciliation list" button adjacent to the reconciliation fieldset wrapper, but **only when the wrapper has actionable rows** (orphan or missing crew members). When the categorization is "all clean" (every roster member has a complete time entry) or "empty roster," the button is hidden — it would serve no purpose and only add visual clutter.
+No per-row inputs. The build helper renders an inline preview note: *"Open clock-ins will be closed when you save: Russell, Jonathan."* — visible confirmation of what's about to happen, but no action required from the user. Messenger reports the result after save with the actual end_time stamp.
 
-Clicking the button triggers an AJAX round-trip that re-builds the fieldset based on the current roster in form state. This is reliable, easy to reason about, and works across browsers and Drupal versions. If the user edits the roster after the page loads on a "clean" form (where Refresh isn't visible), the validate handler at submit time still re-categorizes and surfaces any new orphans/missing entries — defense in depth covers the no-button case.
+To set a non-`now` end_time on an orphan, or to delete an erroneous open clock-in, edit the `wo_time_clock` entry directly via the standalone form. The trade-off (rare custom-end-time case → standalone form) was accepted in favor of zero-friction routine sign-off.
 
-### Position: immediately after the roster field
+### Categorization rule (multi-cycle correctness)
 
-The reconciliation block (Refresh button + wrapper) renders with weights set just above the roster field's weight: `roster_weight + 0.1` for the Refresh button and `roster_weight + 0.2` for the wrapper. This places reconciliation in the form's read order between the roster ("who was on the crew") and the rest of the form ("how many trucks, when completed, who signed off"), keeping reconciliation visually adjacent to the roster the user just edited.
+`_wo_sign_off_categorize_roster()` checks for **open entries first**. A teammate with 3 closed entries (e.g., morning + afternoon + evening cycles) plus 1 open entry (forgot the final clock-out) is categorized as orphan, not clean. Pre-simplification logic checked closed-first and would have silently ignored the open entry, leaving permanently corrupt data on sprinkler/landscape WOs. Categorization order:
 
-The roster field's weight is read dynamically per entity_type/bundle from the form display config, since `field_those_on_crew` (wo_complete_info, weight 0) and `field_mowing_who_on_site` (wo_tasks_list:lawn_mowing, weight 12) sit at very different positions on their respective forms.
+1. Any open entries → orphan (load all of them)
+2. No open entries, but ≥1 closed → clean
+3. No entries at all → missing
 
-### Reasoning: entity_reference_autocomplete + #ajax fragility
+### Simple bundles: silent-create missing with defaults
 
-True Behavior C — auto-update on every roster change — would require attaching `#ajax` to each child autocomplete element of `field_those_on_crew`'s widget, typically via `#after_build` walking children and adding `'event' => 'autocompleteclose'`. This pattern works in some Drupal core/contrib combinations but is fragile in practice:
+`complete`, `clean_up_crew`, `fertilizing_crew`, `lawn_mowing` (both paths), `spray_crew` — single-block work, whole crew works the same window. Missing entries silent-create with computed defaults:
 
-- HTML5 autocomplete + Drupal AJAX is sensitive to JS timing and browser implementations
-- Autocomplete-close events don't always fire reliably across Drupal core versions
-- Multi-value fields with "Add another item" buttons add complexity around when to fire AJAX
-- Layout/region wrappers can interfere with AJAX wrapper targeting
+- `start_time` = earliest existing clock-in on this WO (any teammate, closed or open). Falls back to WO `created` timestamp when no other entries exist. This anchors newly-created entries to the rest of the crew's day rather than fabricating an arbitrary number.
+- `end_time` = now (form save time)
+- Audit note: `[Created by {signer} at sign-off, MM/DD/YYYY h:i AM/PM]`
 
-### Safety: validate handler always re-categorizes at submit
+The build helper renders a preview: *"New clock-in entries will be created when you save: Mike. Times are estimated; edit the time clock entries afterward if any need adjustment."* — accurate disclosure that the times are inferred, not measured.
 
-Regardless of whether the user clicked Refresh after editing the roster, the form's validate handler always re-runs `_wo_sign_off_categorize_roster()` against the current submitted roster. If the categorization produces orphan or missing entries that weren't in the rendered fieldset (because the user added someone after the last refresh), the validate handler emits a clear error directing the user to click Refresh.
+Foreman accepts the default times by clicking Save once. To adjust times, edit the wo_time_clock entry afterward via standalone form.
 
-This means the worst-case UX from a user not clicking Refresh is: form submit → friendly error pointing at the Refresh button → click → page reflects updated reconciliation state → submit again.
+### Complex bundles: per-row UI for missing
 
-### Upgrade path
+`irrigation_crew`, `landscape_crew` — multi-cycle work, teammates work different windows on the same WO. A single default time would be wrong for half the crew, so the form requires explicit per-person start/end times for missing entries. The build helper renders one fieldset per missing roster member with empty `start_time` and `end_time` datetime inputs (no defaults — foreman must enter actual times).
 
-If user feedback indicates the Refresh-button friction is meaningful, the upgrade path is to add a single `#after_build` callback on the `field_those_on_crew` widget that walks each child autocomplete element and attaches `#ajax` with `event => 'autocompleteclose'`. The validate handler stays as the safety net. The Refresh button can stay or be removed depending on preference.
+The reconciliation validate handler enforces:
+- `start_time` and `end_time` both required
+- Neither in the future (5-minute grace, configurable via `WO_TOTAL_TIME_FUTURE_GRACE_MINUTES`)
+- `end_time >= start_time`
 
-Defer this upgrade until field usage data shows the friction is real — premature complexity here is more expensive than the click.
+If validation passes, the submit handler creates entries from the row data exactly as entered.
+
+### Refresh button — complex bundles only
+
+The form alter injects a "Refresh reconciliation list" button on complex bundles, **always visible** (not conditioned on rows existing). When the foreman edits the roster after page load, clicking Refresh triggers an AJAX round-trip that rebuilds the wrapper with rows for any newly-added missing crew. Single save.
+
+Implementation note: the button is nested INSIDE the wrapper container (`$form['signoff_reconciliation']['refresh']`) rather than as a top-level form element. Top-level placement with `#group => 'content'` works for `#type=container` (the wrapper itself) but does NOT route `#type=button` into the field_layout content region — buttons end up at the bottom of the form regardless of weight. As a child of the wrapper the button inherits the wrapper's correct position.
+
+The wrapper anchors to `field_how_many_trucks_taken`'s weight on wo_complete_info forms (`anchor_weight - 0.1`) so the reconciliation block sits directly above that field. Falls back to `roster_weight + 0.2` for forms without that anchor field (e.g., wo_tasks_list:lawn_mowing — but that path is simple, so reconciliation has no rows anyway).
+
+### Two-save fallback (complex bundles only)
+
+If a foreman on a complex bundle adds crew without clicking Refresh and submits, the validate handler detects missing-without-rows and triggers `$form_state->setRebuild(TRUE)` with a friendly messenger warning: *"Crew roster updated. Enter start and end times for the new entries below, then save again."* Page re-renders with rows for the new uids; foreman fills in times and saves again.
+
+This is the only path that can require a second save. Foremen who click Refresh after editing the roster avoid it entirely. Simple bundles never trigger this path because they have no rows.
 
 ## Lawn Mowing Path (Phase 2c)
 
 The lawn mowing sign-off flow runs through `wo_tasks_list:lawn_mowing` rather than `wo_complete_info`. The foreman opens the wo_tasks_list edit form, fills out tasks, populates `field_mowing_who_on_site`, and toggles `field_completed = TRUE` (which gets saved as the falsy "field_completed = FALSE" trigger condition that fires the wo_lawn_mowing cascade). Phase 2c intercepts at this same form before the cascade fires.
+
+Lawn_mowing is classified **simple** — single-block crew work — so it uses the silent-close + silent-create defaults flow described above. No per-row UI, no Refresh button, no two-save dance.
 
 ### Cascade ordering — critical invariant
 
@@ -164,12 +193,6 @@ Long-standing bug closed by Phase 2c: an empty `field_mowing_who_on_site` makes 
 
 - **Form-layer:** `_wo_sign_off_assert_mowing_roster_populated()` is prepended to `$form['#validate']` and runs FIRST (before the reconciliation validate). If `field_mowing_who_on_site` has no entries, the form returns an error: *"Please indicate who was on the crew before completing this mow."* Reconciliation work doesn't happen for empty rosters.
 - **Defense-in-depth presave:** `wo_sign_off_wo_tasks_list_presave()` also throws `EntityStorageException` if `field_mowing_who_on_site` is empty when `field_completed` is being set falsy. Catches programmatic / REST / VBO writes that bypass the form.
-
-### Behavior B (no Refresh button)
-
-Per Phase 2c design decision: the lawn_mowing form uses Behavior B — initial render only, no AJAX rebuild, no Refresh button. Field tablet usage means AJAX is unreliable. The validate handler always re-categorizes at submit, so roster edits between initial render and submit are caught at submit time (with an error directing the user to reload the page).
-
-This contrasts with the Phase 2b wo_complete_info path, which uses Behavior C (explicit Refresh button + AJAX rebuild) since office/desktop usage tolerates AJAX round-trips well.
 
 ### Audit fields use the `_tasks` variants
 
@@ -248,5 +271,6 @@ Plus updates to `core.entity_form_display.wo_time_clock.entry.default.yml` (4 au
 - Phase 2b-fix: audit field population on new wo_complete_info entities
 - Phase 2c: wo_tasks_list:lawn_mowing form alter + reconciliation + hard validation on field_mowing_who_on_site + presave guard
 - Phase 2d: wo_timer_flag_update silent-no-op logging (separate module — see `__BOS_AI/Modules/wo_timer_flag_update.md`)
+- **Phase 2 simplification (2026-05-03):** silent close orphans across all bundles; per-bundle missing handling (silent-create defaults for simple bundles, per-row UI for complex). Categorization fixed for multi-cycle WOs (open-before-closed; close ALL open entries). Refresh button nested in wrapper for correct field_layout positioning. Apply-to-all and per-orphan UI removed.
 
-Updated: 2026-05-02 (Phase 2a)
+Updated: 2026-05-03 (Phase 2 simplification)

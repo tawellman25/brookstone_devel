@@ -355,12 +355,22 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
   // Wrapper for AJAX rebuild target (used by wo_complete_info path
   // only; wo_tasks_list path doesn't trigger AJAX rebuilds but the
   // wrapper is harmless).
+  //
+  // #group => 'content' tells field_layout to route this element
+  // into the layout's `content` region. field_layout's buildForm
+  // (FieldLayoutBuilder.php) sets the same #group on every field
+  // it places into a region, then Drupal core's processGroup /
+  // preRenderGroup render handlers collect all elements with the
+  // matching #group into the region's container. Without #group,
+  // the wrapper renders OUTSIDE the layout (after all in-region
+  // fields, regardless of #weight).
   $wrapper_id = 'signoff-reconciliation-wrapper';
   $form['signoff_reconciliation'] = [
     '#type' => 'container',
     '#attributes' => ['id' => $wrapper_id],
     '#weight' => $wrapper_weight,
     '#tree' => TRUE,
+    '#group' => 'content',
   ];
 
   _wo_sign_off_build_reconciliation_fieldset($form, $form_state, $entity);
@@ -377,6 +387,7 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
       '#type' => 'button',
       '#value' => t('Refresh reconciliation list'),
       '#weight' => $refresh_weight,
+      '#group' => 'content',
       '#limit_validation_errors' => [],
       '#ajax' => [
         'callback' => '_wo_sign_off_reconciliation_ajax_rebuild',

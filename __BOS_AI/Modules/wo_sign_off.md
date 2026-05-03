@@ -99,9 +99,17 @@ The reconciliation fieldset's contents depend on the current roster. Three behav
 
 The Phase 2 spec called for **Behavior C** on the wo_complete_info path (office/desktop usage; AJAX round-trips are fine). Implementation pivoted to a **Refresh-button hybrid** rather than full auto-AJAX.
 
-### Decision: explicit "Refresh reconciliation list" button
+### Decision: explicit "Refresh reconciliation list" button — conditional visibility
 
-The form alter injects a "Refresh reconciliation list" button adjacent to the reconciliation fieldset wrapper. Clicking it triggers an AJAX round-trip that re-builds the fieldset based on the current roster in form state. This is reliable, easy to reason about, and works across browsers and Drupal versions.
+The form alter injects a "Refresh reconciliation list" button adjacent to the reconciliation fieldset wrapper, but **only when the wrapper has actionable rows** (orphan or missing crew members). When the categorization is "all clean" (every roster member has a complete time entry) or "empty roster," the button is hidden — it would serve no purpose and only add visual clutter.
+
+Clicking the button triggers an AJAX round-trip that re-builds the fieldset based on the current roster in form state. This is reliable, easy to reason about, and works across browsers and Drupal versions. If the user edits the roster after the page loads on a "clean" form (where Refresh isn't visible), the validate handler at submit time still re-categorizes and surfaces any new orphans/missing entries — defense in depth covers the no-button case.
+
+### Position: immediately after the roster field
+
+The reconciliation block (Refresh button + wrapper) renders with weights set just above the roster field's weight: `roster_weight + 0.1` for the Refresh button and `roster_weight + 0.2` for the wrapper. This places reconciliation in the form's read order between the roster ("who was on the crew") and the rest of the form ("how many trucks, when completed, who signed off"), keeping reconciliation visually adjacent to the roster the user just edited.
+
+The roster field's weight is read dynamically per entity_type/bundle from the form display config, since `field_those_on_crew` (wo_complete_info, weight 0) and `field_mowing_who_on_site` (wo_tasks_list:lawn_mowing, weight 12) sit at very different positions on their respective forms.
 
 ### Reasoning: entity_reference_autocomplete + #ajax fragility
 

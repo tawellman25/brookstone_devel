@@ -415,9 +415,13 @@ function _wo_total_time_user_can_bypass_lock(): bool {
 }
 
 /**
- * Whether the form being altered targets a wo_time_clock entity.
+ * Whether the form being altered targets a wo_time_clock entity AND
+ * exposes the start/end time fields as editable form elements.
  *
- * @return bool
+ * The element check excludes confirmation forms (delete, etc.) where
+ * the long-shift checkbox and validate handler have nothing to act
+ * on. Without it, the checkbox renders on the delete confirm dialog,
+ * which is just visual noise (UI bug surfaced 2026-05-03).
  */
 function _wo_total_time_form_targets_time_clock(array $form, FormStateInterface $form_state): bool {
   $form_object = $form_state->getFormObject();
@@ -425,7 +429,10 @@ function _wo_total_time_form_targets_time_clock(array $form, FormStateInterface 
     return FALSE;
   }
   $entity = $form_object->getEntity();
-  return $entity instanceof EntityInterface && $entity->getEntityTypeId() === 'wo_time_clock';
+  if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'wo_time_clock') {
+    return FALSE;
+  }
+  return isset($form['field_start_time']) && isset($form['field_end_time']);
 }
 
 /**

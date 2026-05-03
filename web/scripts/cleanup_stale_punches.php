@@ -60,7 +60,6 @@ if (!$adminUser->hasPermission('administer eck entities')) {
 $accountSwitcher->switchTo($adminUser);
 
 // Anything below MUST run inside try/finally so we always switch back.
-$exitCode = 0;
 try {
 
 // ─── Header ───────────────────────────────────────────────────────────────
@@ -307,7 +306,9 @@ echo "\n=== Done ===\n";
 } finally {
   $accountSwitcher->switchBack();
 }
-exit($exitCode);
+// Use return rather than exit() — drush php:script expects normal control
+// flow, exit() trips its abnormal-termination path even on exit(0).
+return;
 
 /**
  * Helper — render UTC stored datetime as MM/DD/YYYY h:i AM/PM in site TZ.

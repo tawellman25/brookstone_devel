@@ -86,7 +86,7 @@ These IDs are referenced directly in `wo_*` module hook guards. If the status ta
 | `wo_grub_prevention` | `grub_prevention` | Reads/writes `property_spraying_info:grub_prevention` |
 | `wo_in_house_tasks` | `in_house_tasks` | |
 | `wo_landscaping` | `landscaping` | |
-| `wo_lawn_mowing` | `lawn_mowing` | Reads/writes `property_lawn_maintenance` |
+| `wo_lawn_mowing` | `lawn_mowing` | Reads/writes `property_lawn_maintenance`. **Phase 2c interaction:** `wo_sign_off` intercepts `wo_tasks_list:lawn_mowing` form-layer sign-off BEFORE the `wo_lawn_mowing_wo_tasks_list_update` cascade fires. Reconciliation handles orphan/missing time entries before the cascade unflag would clobber them. The cascade's unflag is also non-destructive against pre-closed entries per the `wo_timer_flag_update` defensive check (commit `92c9484f`). See `__BOS_AI/Modules/wo_sign_off.md` "Lawn Mowing Path (Phase 2c)" for full detail. |
 | `wo_misc_services` | `misc_services` | |
 | `wo_pinion_pine_ips_beetle` | `pinion_pine_ips_beetle` | Reads/writes `property_spraying_info:ips_beetle` |
 | `wo_pre_emergent` | `pre_emergent` | Reads/writes `property_spraying_info:pre_emergent` |

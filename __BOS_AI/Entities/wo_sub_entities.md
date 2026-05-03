@@ -390,6 +390,20 @@ Storage: ECK
 - `field_measured_sq_ft` on aerating/dethatching feeds into billing calculations via `wo_aerating` / `wo_dethatching` modules.
 - `field_driveways_plowed` references `property` (bundle: `included_address`), not `properties`.
 
+## Phase 2c sign-off interception (lawn_mowing only)
+
+`wo_sign_off` intercepts the `wo_tasks_list:lawn_mowing` form layer at sign-off time (commit `Phase 2c`). When the foreman submits the form with `field_completed = FALSE` (the cascade trigger), these guards run before the wo_lawn_mowing cascade fires:
+
+- **Hard validation:** `field_mowing_who_on_site` must be populated, or the form rejects with "Please indicate who was on the crew before completing this mow."
+- **Reconciliation:** for each crew member in `field_mowing_who_on_site`, the system verifies a complete `wo_time_clock` entry exists on the parent WO. Orphan or missing entries surface in an injected reconciliation fieldset where the foreman supplies end_time (and start_time for missing entries). On submit, the orphan is closed (or deleted if marked as a mistake) and missing entries are created — all before the wo_lawn_mowing cascade fires the work_order_timer flag delete.
+- **Audit fields:** the `wo_time_clock` entries touched during reconciliation get `field_closed_signoff_tasks` or `field_created_signoff_tasks` populated to reference the parent `wo_tasks_list:lawn_mowing` entity.
+
+Defense-in-depth presave guard catches programmatic / REST / VBO writes that bypass the form layer.
+
+`wo_tasks_list:special_mowing` is structurally similar but excluded from Phase 2c (deferred per Phase 2 diagnostic — 8 entries; structural divergence from wo_lawn_mowing's cascade pattern).
+
+See `__BOS_AI/Modules/wo_sign_off.md` "Lawn Mowing Path (Phase 2c)" for full implementation detail.
+
 ## Deletion / Archival
 - Do not delete from completed WOs.
 

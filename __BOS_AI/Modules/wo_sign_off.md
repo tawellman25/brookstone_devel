@@ -124,6 +124,58 @@ If user feedback indicates the Refresh-button friction is meaningful, the upgrad
 
 Defer this upgrade until field usage data shows the friction is real — premature complexity here is more expensive than the click.
 
+## Lawn Mowing Path (Phase 2c)
+
+The lawn mowing sign-off flow runs through `wo_tasks_list:lawn_mowing` rather than `wo_complete_info`. The foreman opens the wo_tasks_list edit form, fills out tasks, populates `field_mowing_who_on_site`, and toggles `field_completed = TRUE` (which gets saved as the falsy "field_completed = FALSE" trigger condition that fires the wo_lawn_mowing cascade). Phase 2c intercepts at this same form before the cascade fires.
+
+### Cascade ordering — critical invariant
+
+The `wo_lawn_mowing` cascade (`hook_ENTITY_TYPE_update` on `wo_tasks_list`) does the following in order on `field_completed` becoming falsy:
+
+1. Unflag `work_order_timer` for the foreman (writes `time()` to the open `wo_time_clock`'s `field_end_time` via `wo_timer_flag_update_flagging_delete`)
+2. Set WO status to 1097 (Complete)
+3. Create `wo_complete_info:lawn_mowing`
+4. Create `wo_status_updates` entry
+5. Set `wo_tasks_list.field_completed = TRUE`
+
+Phase 2c reconciliation must run **before** step 1, otherwise the foreman's open clock-in gets auto-closed by the unflag with `time()` — which would clobber any reconciliation-supplied end_time on the foreman's entry.
+
+The reconciliation submit handler is prepended to `$form['actions']['submit']['#submit']`, so it runs BEFORE the entity save commits. The cascade fires in `hook_ENTITY_TYPE_update` (after save), so reconciliation is guaranteed to be complete when the cascade begins.
+
+### Dependency on `wo_timer_flag_update` defensive skip (commit `92c9484f`)
+
+Even with reconciliation running before the cascade, the cascade's flag delete still fires. `wo_timer_flag_update_flagging_delete` would have unconditionally overwritten `field_end_time` with `time()` (clobbering the reconciliation value) and called `appendItem()` on the single-value `field_notes` field (silently corrupting the audit prefix).
+
+Commit `92c9484f` adds a defensive check: if `field_end_time` is already populated, the hook skips both the end_time write AND the field_notes append. The flag deletion itself still completes; only the wo_time_clock mutation is conditional.
+
+This means Phase 2c's foreman-reconciliation end_time and audit prefix survive the cascade cleanly. **Phase 2c depends on commit `92c9484f` being deployed** — without it, the foreman's reconciliation values would be silently overwritten.
+
+### Hard validation on `field_mowing_who_on_site`
+
+Long-standing bug closed by Phase 2c: an empty `field_mowing_who_on_site` makes the wo_lawn_mowing billing math collapse to zero (`men_on_site = 0` → `totalTime = 0`). Phase 2c adds two layers of enforcement:
+
+- **Form-layer:** `_wo_sign_off_assert_mowing_roster_populated()` is prepended to `$form['#validate']` and runs FIRST (before the reconciliation validate). If `field_mowing_who_on_site` has no entries, the form returns an error: *"Please indicate who was on the crew before completing this mow."* Reconciliation work doesn't happen for empty rosters.
+- **Defense-in-depth presave:** `wo_sign_off_wo_tasks_list_presave()` also throws `EntityStorageException` if `field_mowing_who_on_site` is empty when `field_completed` is being set falsy. Catches programmatic / REST / VBO writes that bypass the form.
+
+### Behavior B (no Refresh button)
+
+Per Phase 2c design decision: the lawn_mowing form uses Behavior B — initial render only, no AJAX rebuild, no Refresh button. Field tablet usage means AJAX is unreliable. The validate handler always re-categorizes at submit, so roster edits between initial render and submit are caught at submit time (with an error directing the user to reload the page).
+
+This contrasts with the Phase 2b wo_complete_info path, which uses Behavior C (explicit Refresh button + AJAX rebuild) since office/desktop usage tolerates AJAX round-trips well.
+
+### Audit fields use the `_tasks` variants
+
+`field_closed_signoff_tasks` and `field_created_signoff_tasks` (rather than `_complete` variants) — same Phase 2a infrastructure, different target reference. No stash-and-replay needed (unlike Phase 2b-fix on new wo_complete_info) because `wo_tasks_list:lawn_mowing` entities are always existing edits during sign-off — the WOLawnMowingTaskController creates them when the workflow starts; the foreman edits them later.
+
+### Defense-in-depth presave guard
+
+`wo_sign_off_wo_tasks_list_presave()` (`hook_ENTITY_TYPE_presave` for wo_tasks_list) fires only when:
+- bundle is `lawn_mowing`
+- `field_completed` is being set falsy (the cascade trigger condition)
+- `_signoff_reconciliation_in_progress` is NOT set on the entity
+
+Catches programmatic writes that bypass the form layer. Same `_wo_sign_off_assert_roster_complete()` helper as the Phase 2b guard — that helper is polymorphic across both entity types via the WoCrewRosterService.
+
 ## Existing presave / update / delete behavior (pre-Phase 2)
 
 ### `hook_entity_presave` for wo_complete_info
@@ -175,9 +227,10 @@ Plus updates to `core.entity_form_display.wo_time_clock.entry.default.yml` (4 au
 ## Status
 
 - Pre-Phase 2: existing wo_complete_info presave/update/delete behavior
-- Phase 2a (this commit): WoCrewRosterService + four audit fields, no behavioral change
-- Phase 2b (next): wo_complete_info form alter + reconciliation
-- Phase 2c (after): wo_tasks_list:lawn_mowing form alter + reconciliation
-- Phase 2d (cleanup): wo_timer_flag_update silent-no-op logging
+- Phase 2a: WoCrewRosterService + four audit fields, no behavioral change
+- Phase 2b: wo_complete_info form alter + reconciliation + presave guard
+- Phase 2b-fix: audit field population on new wo_complete_info entities
+- Phase 2c: wo_tasks_list:lawn_mowing form alter + reconciliation + hard validation on field_mowing_who_on_site + presave guard
+- Phase 2d (planned): wo_timer_flag_update silent-no-op logging (separate small commit)
 
 Updated: 2026-05-02 (Phase 2a)

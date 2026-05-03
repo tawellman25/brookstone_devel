@@ -301,16 +301,26 @@ function get_trip_fee_for_property($propertyId) {
 /**
  * Implements hook_form_alter().
  *
- * Phase 2b: injects a "Time Entry Reconciliation" fieldset on
- * wo_complete_info forms (six in-scope bundles) when any roster
- * member from field_those_on_crew has an orphaned (open) or missing
+ * Injects a "Time Entry Reconciliation" fieldset on Phase 2 sign-off
+ * forms when any roster member has an orphaned or missing
  * wo_time_clock entry on the parent WO.
  *
- * Behavior C — initial render reflects current form state. A
- * "Refresh reconciliation" button re-renders the wrapper without
- * submitting. Validate handler re-categorizes at submit time as
- * defense-in-depth in case the user changed roster after the last
- * refresh.
+ * Two paths:
+ *
+ *   - Phase 2b: wo_complete_info forms (six in-scope bundles), roster
+ *     from field_those_on_crew. Behavior C — initial render reflects
+ *     current form state, plus an explicit "Refresh reconciliation"
+ *     button that re-renders the wrapper without submitting.
+ *
+ *   - Phase 2c: wo_tasks_list:lawn_mowing form, roster from
+ *     field_mowing_who_on_site. Behavior B — initial render only, no
+ *     AJAX rebuild, no Refresh button. Field-tablet usage; AJAX
+ *     round-trips are unreliable. Plus a hard-validation handler that
+ *     requires field_mowing_who_on_site to be populated before any
+ *     save.
+ *
+ * The validate handler re-categorizes at submit time in both paths so
+ * roster edits between initial render and submit are caught.
  */
 function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
   $form_object = $form_state->getFormObject();
@@ -318,16 +328,22 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
     return;
   }
   $entity = $form_object->getEntity();
-  if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'wo_complete_info') {
+  if (!$entity instanceof EntityInterface) {
+    return;
+  }
+  $entity_type = $entity->getEntityTypeId();
+  if ($entity_type !== 'wo_complete_info' && $entity_type !== 'wo_tasks_list') {
     return;
   }
   /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
   $svc = \Drupal::service('wo_sign_off.crew_roster');
-  if (!$svc->isInScope('wo_complete_info', $entity->bundle())) {
+  if (!$svc->isInScope($entity_type, $entity->bundle())) {
     return;
   }
 
-  // Wrapper for AJAX rebuild target.
+  // Wrapper for AJAX rebuild target (used by wo_complete_info path
+  // only; wo_tasks_list path doesn't trigger AJAX rebuilds but the
+  // wrapper is harmless).
   $wrapper_id = 'signoff-reconciliation-wrapper';
   $form['signoff_reconciliation'] = [
     '#type' => 'container',
@@ -336,35 +352,164 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
     '#tree' => TRUE,
   ];
 
-  // Add a refresh button outside the wrapper but adjacent — pressing it
-  // re-evaluates roster from form state and re-renders the wrapper.
-  $form['signoff_reconciliation_refresh'] = [
-    '#type' => 'button',
-    '#value' => t('Refresh reconciliation list'),
-    '#weight' => 99,
-    '#limit_validation_errors' => [],
-    '#ajax' => [
-      'callback' => '_wo_sign_off_reconciliation_ajax_rebuild',
-      'wrapper' => $wrapper_id,
-      'effect' => 'fade',
-    ],
-  ];
+  if ($entity_type === 'wo_complete_info') {
+    // Refresh button — Behavior C support.
+    $form['signoff_reconciliation_refresh'] = [
+      '#type' => 'button',
+      '#value' => t('Refresh reconciliation list'),
+      '#weight' => 99,
+      '#limit_validation_errors' => [],
+      '#ajax' => [
+        'callback' => '_wo_sign_off_reconciliation_ajax_rebuild',
+        'wrapper' => $wrapper_id,
+        'effect' => 'fade',
+      ],
+    ];
+  }
+  // For wo_tasks_list:lawn_mowing — no Refresh button (Behavior B).
+  // Roster edits between initial render and submit are caught by the
+  // validate handler at submit time.
 
   _wo_sign_off_build_reconciliation_fieldset($form, $form_state, $entity);
 
-  // Append validate + submit handlers. Validate is form-level so it
-  // runs alongside Drupal's field validation. Submit is prepended to
-  // the actions submit chain so reconciliation runs BEFORE the entity
-  // save (which fires wo_sign_off_entity_presave).
+  // Append validate + submit handlers. For the lawn_mowing path the
+  // hard-validation on field_mowing_who_on_site goes FIRST so an
+  // empty roster blocks before any reconciliation work.
+  if ($entity_type === 'wo_tasks_list' && $entity->bundle() === 'lawn_mowing') {
+    array_unshift($form['#validate'], '_wo_sign_off_assert_mowing_roster_populated');
+  }
   $form['#validate'][] = '_wo_sign_off_reconciliation_validate';
   if (isset($form['actions']['submit']['#submit'])) {
     array_unshift($form['actions']['submit']['#submit'], '_wo_sign_off_reconciliation_submit');
   }
   else {
-    // Fallback: form-level submit. ECK forms typically have actions.submit
-    // but defensive coding for variants.
     array_unshift($form['#submit'], '_wo_sign_off_reconciliation_submit');
   }
+}
+
+/**
+ * Hard-validation handler for wo_tasks_list:lawn_mowing forms (Phase 2c).
+ *
+ * field_mowing_who_on_site must be populated before submit. An empty
+ * roster makes the wo_lawn_mowing billing math collapse to zero
+ * (men_on_site = 0 → totalTime = 0) — a long-standing bug we close
+ * here as part of Phase 2c.
+ *
+ * Inserted at the head of $form['#validate'] so it runs BEFORE the
+ * reconciliation validate handler. If this fires, no further
+ * reconciliation work happens.
+ */
+function _wo_sign_off_assert_mowing_roster_populated(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof EntityFormInterface) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if ($entity->getEntityTypeId() !== 'wo_tasks_list' || $entity->bundle() !== 'lawn_mowing') {
+    return;
+  }
+  $values = $form_state->getValues();
+  $items = $values['field_mowing_who_on_site'] ?? [];
+  $populated = FALSE;
+  foreach ($items as $item) {
+    if (is_array($item) && !empty($item['target_id'])) {
+      $populated = TRUE;
+      break;
+    }
+    if (is_numeric($item) && (int) $item > 0) {
+      $populated = TRUE;
+      break;
+    }
+  }
+  if (!$populated) {
+    $form_state->setErrorByName(
+      'field_mowing_who_on_site',
+      t('Please indicate who was on the crew before completing this mow.')
+    );
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for wo_tasks_list (Phase 2c).
+ *
+ * Defense-in-depth guard for the lawn_mowing bundle, mirroring the
+ * Phase 2b guard at the top of wo_sign_off_entity_presave but for the
+ * mowing path. Catches programmatic / REST / VBO writes that bypass
+ * the form-layer reconciliation.
+ *
+ * Triggers only when field_completed is being set falsy (the
+ * wo_lawn_mowing cascade trigger condition), bundle is lawn_mowing,
+ * and _signoff_reconciliation_in_progress is not set.
+ *
+ * Throws \Drupal\Core\Entity\EntityStorageException when:
+ *   - field_mowing_who_on_site is empty (hard validation)
+ *   - any roster member lacks a complete wo_time_clock entry
+ */
+function wo_sign_off_wo_tasks_list_presave(EntityInterface $entity): void {
+  if ($entity->bundle() !== 'lawn_mowing') {
+    return;
+  }
+  // Only fires when field_completed is being set falsy (cascade trigger).
+  if (!$entity->hasField('field_completed')
+      || $entity->get('field_completed')->isEmpty()
+      || $entity->get('field_completed')->value) {
+    return;
+  }
+  // Skip if reconciliation handler is mid-flight.
+  if (!empty($entity->_signoff_reconciliation_in_progress)) {
+    return;
+  }
+
+  // Hard validation: roster must be populated.
+  if (!$entity->hasField('field_mowing_who_on_site') || $entity->get('field_mowing_who_on_site')->isEmpty()) {
+    throw new EntityStorageException(
+      'wo_tasks_list:lawn_mowing cannot be completed: field_mowing_who_on_site is empty. '
+      . 'Crew roster is required before completion.'
+    );
+  }
+
+  // Defense-in-depth: assert all roster members have complete entries.
+  _wo_sign_off_assert_roster_complete($entity);
+}
+
+/**
+ * Roster field name for a sign-off entity type.
+ *
+ * Internal helper paralleling WoCrewRosterService::rosterFieldFor() —
+ * the service's version is private; this one is exposed for module
+ * code that needs the field name without going through the service.
+ *
+ * @return string
+ */
+function _wo_sign_off_roster_field_for(string $entity_type): string {
+  return match ($entity_type) {
+    'wo_complete_info' => 'field_those_on_crew',
+    'wo_tasks_list' => 'field_mowing_who_on_site',
+    default => '',
+  };
+}
+
+/**
+ * Audit field name for a sign-off entity type and direction.
+ *
+ * @param string $entity_type
+ *   'wo_complete_info' or 'wo_tasks_list'.
+ * @param string $direction
+ *   'closed' or 'created'.
+ *
+ * @return string
+ *   Field machine name, or empty string if out of scope.
+ */
+function _wo_sign_off_audit_field_for(string $entity_type, string $direction): string {
+  if ($direction !== 'closed' && $direction !== 'created') {
+    return '';
+  }
+  $suffix = $entity_type === 'wo_complete_info' ? 'complete'
+    : ($entity_type === 'wo_tasks_list' ? 'tasks' : '');
+  if ($suffix === '') {
+    return '';
+  }
+  return "field_{$direction}_signoff_{$suffix}";
 }
 
 /**
@@ -395,10 +540,12 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
   // Roster source priority: form state values (AJAX-aware), then the
   // entity's current field values (covers initial render of both new
   // and existing entities, where form state hasn't been populated yet).
+  $entity_type = $entity->getEntityTypeId();
+  $roster_field = _wo_sign_off_roster_field_for($entity_type);
   $values = $form_state->getValues();
-  $roster = $svc->normalizeRosterFromFormState($values, 'wo_complete_info', $entity->bundle());
-  if (empty($roster) && $entity->hasField('field_those_on_crew') && !$entity->get('field_those_on_crew')->isEmpty()) {
-    foreach ($entity->get('field_those_on_crew') as $item) {
+  $roster = $svc->normalizeRosterFromFormState($values, $entity_type, $entity->bundle());
+  if (empty($roster) && $entity->hasField($roster_field) && !$entity->get($roster_field)->isEmpty()) {
+    foreach ($entity->get($roster_field) as $item) {
       if (!empty($item->target_id)) {
         $roster[] = (int) $item->target_id;
       }
@@ -410,11 +557,19 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
     ? (int) $entity->get('field_work_order')->target_id
     : 0;
 
-  // Empty roster — nothing to reconcile (cardinality on field_those_on_crew
-  // is multi-value but not required, so empty is allowed).
+  // Empty roster — nothing to reconcile.
+  // For wo_complete_info: cardinality on field_those_on_crew is multi-
+  // value but not required, so empty is allowed; we just don't render
+  // anything actionable. For wo_tasks_list:lawn_mowing: empty roster
+  // is blocked separately by the hard-validation handler — we simply
+  // render nothing here too. Empty-state messaging differs slightly to
+  // reflect the absence of the Refresh button on the mowing path.
   if (empty($roster) || $wo_id <= 0) {
+    $msg = $entity_type === 'wo_complete_info'
+      ? t('No crew members assigned yet — reconciliation will appear once you add crew above and click "Refresh reconciliation list".')
+      : t('No crew members assigned yet — reconciliation will appear once the crew roster above is populated.');
     $form['signoff_reconciliation']['empty_state'] = [
-      '#markup' => '<p><em>' . t('No crew members assigned yet — reconciliation will appear once you add crew above and click "Refresh reconciliation list".') . '</em></p>',
+      '#markup' => '<p><em>' . $msg . '</em></p>',
     ];
     return;
   }
@@ -588,17 +743,18 @@ function _wo_sign_off_reconciliation_validate(array &$form, FormStateInterface $
     return;
   }
   $entity = $form_object->getEntity();
-  if ($entity->getEntityTypeId() !== 'wo_complete_info') {
+  $entity_type = $entity->getEntityTypeId();
+  if ($entity_type !== 'wo_complete_info' && $entity_type !== 'wo_tasks_list') {
     return;
   }
   /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
   $svc = \Drupal::service('wo_sign_off.crew_roster');
-  if (!$svc->isInScope('wo_complete_info', $entity->bundle())) {
+  if (!$svc->isInScope($entity_type, $entity->bundle())) {
     return;
   }
 
   $values = $form_state->getValues();
-  $roster = $svc->normalizeRosterFromFormState($values, 'wo_complete_info', $entity->bundle());
+  $roster = $svc->normalizeRosterFromFormState($values, $entity_type, $entity->bundle());
   $wo_id = (int) ($values['field_work_order'][0]['target_id'] ?? $entity->get('field_work_order')->target_id ?? 0);
 
   if (empty($roster) || $wo_id <= 0) {
@@ -623,12 +779,17 @@ function _wo_sign_off_reconciliation_validate(array &$form, FormStateInterface $
     $row = $values['signoff_reconciliation']['rows'][$uid] ?? NULL;
     if ($row === NULL) {
       // The user submitted but the row wasn't rendered (likely because
-      // they added someone to the roster after the last refresh). Force
-      // a generic error pointing at the refresh button.
-      $form_state->setErrorByName(
-        'signoff_reconciliation_refresh',
-        t('Crew roster has changed since the reconciliation list was last built. Click "Refresh reconciliation list" to surface the new entries.')
-      );
+      // the roster changed between initial render and submit). For
+      // wo_complete_info, point at the Refresh button. For
+      // wo_tasks_list:lawn_mowing (no Refresh button — Behavior B per
+      // Phase 2c), instruct the user to reload.
+      $error_msg = $entity_type === 'wo_complete_info'
+        ? t('Crew roster has changed since the reconciliation list was last built. Click "Refresh reconciliation list" to surface the new entries.')
+        : t('Crew roster has changed since the page loaded. Reload the page to refresh the reconciliation list.');
+      $error_target = $entity_type === 'wo_complete_info'
+        ? 'signoff_reconciliation_refresh'
+        : _wo_sign_off_roster_field_for($entity_type);
+      $form_state->setErrorByName($error_target, $error_msg);
       return;
     }
 
@@ -716,17 +877,18 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
     return;
   }
   $entity = $form_object->getEntity();
-  if ($entity->getEntityTypeId() !== 'wo_complete_info') {
+  $entity_type = $entity->getEntityTypeId();
+  if ($entity_type !== 'wo_complete_info' && $entity_type !== 'wo_tasks_list') {
     return;
   }
   /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
   $svc = \Drupal::service('wo_sign_off.crew_roster');
-  if (!$svc->isInScope('wo_complete_info', $entity->bundle())) {
+  if (!$svc->isInScope($entity_type, $entity->bundle())) {
     return;
   }
 
   $values = $form_state->getValues();
-  $roster = $svc->normalizeRosterFromFormState($values, 'wo_complete_info', $entity->bundle());
+  $roster = $svc->normalizeRosterFromFormState($values, $entity_type, $entity->bundle());
   $wo_id = (int) ($values['field_work_order'][0]['target_id'] ?? $entity->get('field_work_order')->target_id ?? 0);
   if (empty($roster) || $wo_id <= 0) {
     // No reconciliation work to do; let entity save proceed normally.
@@ -740,7 +902,8 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
   }
 
   // Determine signer for audit. Prefer field_signed_off_by on the
-  // wo_complete_info entity; fall back to current user.
+  // sign-off entity (both wo_complete_info and wo_tasks_list:lawn_mowing
+  // have this field); fall back to current user.
   $signer_uid = (int) ($values['field_signed_off_by'][0]['target_id'] ?? 0);
   if ($signer_uid <= 0) {
     $signer_uid = (int) \Drupal::currentUser()->id();
@@ -753,13 +916,17 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
   $apply_end = $values['signoff_reconciliation']['apply_to_all']['end_time'] ?? NULL;
   $apply_note = trim((string) ($values['signoff_reconciliation']['apply_to_all']['note'] ?? ''));
 
-  // For EXISTING wo_complete_info entities, the entity already has an
-  // ID — set the audit field inline. For NEW entities, the ID is NULL
-  // here (assigned during the entity save that follows). We stash the
-  // touched wo_time_clock IDs onto the parent and a post-save
-  // hook_entity_insert (Phase 2b-fix) does a second pass to populate
-  // the audit field once the parent ID exists.
+  // For EXISTING entities, $entity->id() is already populated — set
+  // the audit field inline. For NEW wo_complete_info entities, the ID
+  // isn't assigned until the entity save that follows; we stash the
+  // touched wo_time_clock IDs onto the parent and the wo_complete_info
+  // hook_entity_insert (Phase 2b-fix) does a second pass.
+  // wo_tasks_list:lawn_mowing entities are always existing during
+  // sign-off (created earlier by the WOLawnMowingTaskController workflow
+  // start) — no stash needed for that path.
   $parent_id = $entity->isNew() ? NULL : (int) $entity->id();
+  $audit_closed_field = _wo_sign_off_audit_field_for($entity_type, 'closed');
+  $audit_created_field = _wo_sign_off_audit_field_for($entity_type, 'created');
   $reconciled_closed_ids = [];
   $reconciled_created_ids = [];
 
@@ -803,7 +970,7 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
       $orphan->set('field_end_time', $end_time->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s'));
       $orphan->set('field_notes', $combined_note);
       if ($parent_id !== NULL) {
-        $orphan->set('field_closed_signoff_complete', $parent_id);
+        $orphan->set($audit_closed_field, $parent_id);
       }
       $orphan->_signoff_reconciliation = TRUE;
       try {
@@ -841,7 +1008,7 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
       'field_notes' => $combined_note,
     ]);
     if ($parent_id !== NULL) {
-      $new->set('field_created_signoff_complete', $parent_id);
+      $new->set($audit_created_field, $parent_id);
     }
     $new->_signoff_reconciliation = TRUE;
     try {
@@ -863,8 +1030,10 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
   // Phase 2b-fix: stash IDs for new entities so wo_sign_off_entity_insert
   // can populate the audit reference fields once the parent has an ID.
   // Existing entities had their audit fields set inline above
-  // (parent_id was non-NULL).
-  if ($entity->isNew()) {
+  // (parent_id was non-NULL). wo_tasks_list:lawn_mowing entities are
+  // always existing during sign-off, so this branch is effectively
+  // wo_complete_info-only.
+  if ($entity->isNew() && $entity_type === 'wo_complete_info') {
     if (!empty($reconciled_closed_ids)) {
       $entity->_reconciled_closed_ids = $reconciled_closed_ids;
     }
@@ -966,7 +1135,11 @@ function wo_sign_off_entity_insert(EntityInterface $entity) {
 function _wo_sign_off_assert_roster_complete(EntityInterface $entity): void {
   /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
   $svc = \Drupal::service('wo_sign_off.crew_roster');
-  if (!$svc->isInScope('wo_complete_info', $entity->bundle())) {
+  $entity_type = $entity->getEntityTypeId();
+  if ($entity_type !== 'wo_complete_info' && $entity_type !== 'wo_tasks_list') {
+    return;
+  }
+  if (!$svc->isInScope($entity_type, $entity->bundle())) {
     return;
   }
 
@@ -977,9 +1150,10 @@ function _wo_sign_off_assert_roster_complete(EntityInterface $entity): void {
     return;
   }
 
+  $roster_field = _wo_sign_off_roster_field_for($entity_type);
   $roster = [];
-  if ($entity->hasField('field_those_on_crew') && !$entity->get('field_those_on_crew')->isEmpty()) {
-    foreach ($entity->get('field_those_on_crew') as $item) {
+  if ($entity->hasField($roster_field) && !$entity->get($roster_field)->isEmpty()) {
+    foreach ($entity->get($roster_field) as $item) {
       if (!empty($item->target_id)) {
         $roster[] = (int) $item->target_id;
       }

@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **For process discipline and engineering norms when working with Claude on BOS, read [`__BOS_AI/Governance/working_with_claude.md`](__BOS_AI/Governance/working_with_claude.md).** Pause-and-verify pattern, targeted commits, end-to-end verification, recovery-point pushes — required reading before non-trivial work. The companion docs [`drupal_bos_gotchas.md`](__BOS_AI/Governance/drupal_bos_gotchas.md) and [`architectural_patterns.md`](__BOS_AI/Governance/architectural_patterns.md) cover Drupal/BOS-specific traps and reusable patterns. [`deferred_work.md`](__BOS_AI/Governance/deferred_work.md) tracks surfaced-but-deferred items.
+
 ## Project Identity
 
 This is **BOS** (Brookstone Operating System) — the internal operations platform for Brookstone Outdoors LLC, built on Drupal 10 (Drupal 11 compatible). BOS centralizes operational, client, property, and work order data. It is **not** an ERP in user-facing language.

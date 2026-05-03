@@ -17,7 +17,7 @@ BOS may integrate with accounting systems (e.g., QuickBooks), but does not repla
 |---|---|
 | `Entities/` | Entity type specifications: fields, bundles, relationships, invariants |
 | `Modules/` | Custom module architecture: hooks, services, business logic |
-| `Governance/` | Design charters, authority models, bundle specifications |
+| `Governance/` | Design charters, cross-cutting references, and process governance |
 | `Rules/` | Business rules: pricing, costing, identity |
 | `Prompts/` | AI interaction guides and prompt templates |
 | `Mappings/` | Field label mappings and cross-references |

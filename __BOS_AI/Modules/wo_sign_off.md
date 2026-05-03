@@ -224,6 +224,14 @@ Plus updates to `core.entity_form_display.wo_time_clock.entry.default.yml` (4 au
 
 ---
 
+## Deferred items
+
+- **Phase 2c lawn_mowing form Behavior C upgrade path.** Currently uses Behavior B (no Refresh button on the mowing form). If field-tablet usage data shows the no-auto-update friction is operationally meaningful, the upgrade is `#after_build` with `#ajax` on `autocompleteclose` event for the `field_mowing_who_on_site` widget. Defer until usage warrants. See [deferred_work.md item 6](../Governance/deferred_work.md#6-phase-2c-lawn_mowing-form--behavior-c-upgrade-path).
+- **`snow_removal` sign-off architecture.** `wo_complete_info:snow_removal` is explicitly excluded from Phase 2 reconciliation (deferred to fall 2026). See [deferred_work.md item 7](../Governance/deferred_work.md#7-snow_removal-sign-off-architecture).
+- **`special_mowing` reconciliation.** `wo_tasks_list:special_mowing` excluded from Phase 2c per the diagnostic heuristic (8 entries, structurally divergent cascade). Revisit fall 2026 if usage grows. See [deferred_work.md item 8](../Governance/deferred_work.md#8-special_mowing-reconciliation).
+
+---
+
 ## Status
 
 - Pre-Phase 2: existing wo_complete_info presave/update/delete behavior

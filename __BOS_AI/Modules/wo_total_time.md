@@ -128,6 +128,10 @@ This deliberately uses an independent injection rather than going through `bos_t
 
 ---
 
+## Deferred items
+
+- **Logger notice change-log discrepancy.** [`CLAUDE.md` Change Log](../../CLAUDE.md#change-log) entry dated 2026-03-12 says debug logging was removed from this module, but the actual code still has `\Drupal::logger('wo_total_time')->notice()` calls in the manual-entry ownership-reassignment block. Either the cleanup was reverted or the change-log was wrong. See [deferred_work.md item 3](../Governance/deferred_work.md#3-wo_total_time-logger-notice-change-log-discrepancy).
+
 ## Status
 
 Updated: 2026-05-02 (Phase 1 — wo_time_clock data integrity guards)

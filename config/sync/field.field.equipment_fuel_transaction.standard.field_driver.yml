@@ -1,0 +1,28 @@
+uuid: 604e239e-1752-4e77-a6cd-9d84fdbcd4fa
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_fuel_transaction.standard
+    - field.storage.equipment_fuel_transaction.field_driver
+id: equipment_fuel_transaction.standard.field_driver
+field_name: field_driver
+entity_type: equipment_fuel_transaction
+bundle: standard
+label: 'Driver'
+description: 'BOS user (teammate) resolved from WEX Driver Prompt ID via teammate_profile.field_wex_driver_prompt_id at import time.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    include_anonymous: true
+    filter:
+      type: _none
+    target_bundles: null
+    sort:
+      field: _none
+    auto_create: false
+field_type: entity_reference

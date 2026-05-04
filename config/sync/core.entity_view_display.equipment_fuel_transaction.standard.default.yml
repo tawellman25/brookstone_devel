@@ -1,0 +1,219 @@
+uuid: 706a0b34-ee33-43a7-a234-79bb7f0185f6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_fuel_transaction.standard
+    - field.field.equipment_fuel_transaction.standard.field_adjusted_odometer
+    - field.field.equipment_fuel_transaction.standard.field_card_number_masked
+    - field.field.equipment_fuel_transaction.standard.field_current_odometer
+    - field.field.equipment_fuel_transaction.standard.field_distance_driven
+    - field.field.equipment_fuel_transaction.standard.field_driver
+    - field.field.equipment_fuel_transaction.standard.field_driver_department_snapshot
+    - field.field.equipment_fuel_transaction.standard.field_driver_first_name_raw
+    - field.field.equipment_fuel_transaction.standard.field_driver_last_name_raw
+    - field.field.equipment_fuel_transaction.standard.field_driver_prompt_id_raw
+    - field.field.equipment_fuel_transaction.standard.field_equipment
+    - field.field.equipment_fuel_transaction.standard.field_fuel_economy
+    - field.field.equipment_fuel_transaction.standard.field_match_status
+    - field.field.equipment_fuel_transaction.standard.field_merchant_brand
+    - field.field.equipment_fuel_transaction.standard.field_merchant_city
+    - field.field.equipment_fuel_transaction.standard.field_merchant_name
+    - field.field.equipment_fuel_transaction.standard.field_merchant_postal_code
+    - field.field.equipment_fuel_transaction.standard.field_merchant_state
+    - field.field.equipment_fuel_transaction.standard.field_net_cost
+    - field.field.equipment_fuel_transaction.standard.field_posted_date
+    - field.field.equipment_fuel_transaction.standard.field_previous_odometer
+    - field.field.equipment_fuel_transaction.standard.field_product_class
+    - field.field.equipment_fuel_transaction.standard.field_product_code
+    - field.field.equipment_fuel_transaction.standard.field_product_description
+    - field.field.equipment_fuel_transaction.standard.field_total_fuel_cost
+    - field.field.equipment_fuel_transaction.standard.field_transaction_date
+    - field.field.equipment_fuel_transaction.standard.field_unit_cost
+    - field.field.equipment_fuel_transaction.standard.field_units
+    - field.field.equipment_fuel_transaction.standard.field_vehicle_asset_id_raw
+    - field.field.equipment_fuel_transaction.standard.field_vin_raw
+    - field.field.equipment_fuel_transaction.standard.field_wex_transaction_id
+  module:
+    - datetime
+    - options
+id: equipment_fuel_transaction.standard.default
+targetEntityType: equipment_fuel_transaction
+bundle: standard
+mode: default
+content:
+  field_adjusted_odometer:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ','
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 31
+    region: content
+  field_card_number_masked:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 50
+    region: content
+  field_current_odometer:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ','
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 30
+    region: content
+  field_distance_driven:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ','
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 32
+    region: content
+  field_driver:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_equipment:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_fuel_economy:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ','
+      decimal_separator: '.'
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 33
+    region: content
+  field_match_status:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_merchant_city:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 41
+    region: content
+  field_merchant_name:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 40
+    region: content
+  field_merchant_state:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 42
+    region: content
+  field_net_cost:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ','
+      decimal_separator: '.'
+      scale: 4
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 24
+    region: content
+  field_product_description:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 20
+    region: content
+  field_total_fuel_cost:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ','
+      decimal_separator: '.'
+      scale: 4
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 23
+    region: content
+  field_transaction_date:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_unit_cost:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ','
+      decimal_separator: '.'
+      scale: 4
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 22
+    region: content
+  field_units:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ','
+      decimal_separator: '.'
+      scale: 4
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 21
+    region: content
+  field_wex_transaction_id:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 51
+    region: content
+hidden:
+  field_driver_department_snapshot: true
+  field_driver_first_name_raw: true
+  field_driver_last_name_raw: true
+  field_driver_prompt_id_raw: true
+  field_merchant_brand: true
+  field_merchant_postal_code: true
+  field_posted_date: true
+  field_previous_odometer: true
+  field_product_class: true
+  field_product_code: true
+  field_vehicle_asset_id_raw: true
+  field_vin_raw: true

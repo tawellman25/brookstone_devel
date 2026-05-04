@@ -1,0 +1,67 @@
+<?php
+
+/**
+ * @file
+ * BOS WEX Import — fleet card transaction ingest + management.
+ *
+ * Currently provides only the uniqueness validation hook for the
+ * equipment_fuel_transaction entity. CSV upload + import logic, vehicle
+ * mileage update service, and admin review-queue UI will be added in
+ * subsequent phases.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageException;
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * Validates equipment_fuel_transaction.field_wex_transaction_id:
+ * - Required (must be present)
+ * - Unique across all equipment_fuel_transaction entities
+ *
+ * Throws EntityStorageException to abort the save with a clear message
+ * if either rule fails. Catches form submits, REST writes, programmatic
+ * writes, and import paths uniformly.
+ */
+function bos_wex_import_entity_presave(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'equipment_fuel_transaction') {
+    return;
+  }
+
+  $value = '';
+  if ($entity->hasField('field_wex_transaction_id') && !$entity->get('field_wex_transaction_id')->isEmpty()) {
+    $value = trim((string) $entity->get('field_wex_transaction_id')->value);
+  }
+
+  if ($value === '') {
+    \Drupal::logger('bos_wex_import')->warning(
+      'Rejected save of equipment_fuel_transaction @id — field_wex_transaction_id is empty.',
+      ['@id' => $entity->id() ?? '(new)']
+    );
+    throw new EntityStorageException('WEX Transaction ID is required.');
+  }
+
+  // Uniqueness check — find another entity with the same value.
+  $storage = \Drupal::entityTypeManager()->getStorage('equipment_fuel_transaction');
+  $query = $storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_wex_transaction_id', $value)
+    ->range(0, 5);
+  if (!$entity->isNew() && $entity->id()) {
+    $query->condition('id', (int) $entity->id(), '<>');
+  }
+  $hits = $query->execute();
+  if (!empty($hits)) {
+    $existingId = (int) reset($hits);
+    \Drupal::logger('bos_wex_import')->warning(
+      'Rejected duplicate WEX Transaction ID @v on equipment_fuel_transaction @id (existing: @existing).',
+      ['@v' => $value, '@id' => $entity->id() ?? '(new)', '@existing' => $existingId]
+    );
+    throw new EntityStorageException(sprintf(
+      'WEX Transaction ID %s already exists (entity ID: %d). Re-importing will create duplicates.',
+      $value,
+      $existingId
+    ));
+  }
+}

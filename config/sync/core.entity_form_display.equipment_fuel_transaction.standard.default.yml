@@ -1,0 +1,391 @@
+uuid: c9a13e93-0746-471d-a503-27c0c1d29c97
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_fuel_transaction.standard
+    - field.field.equipment_fuel_transaction.standard.field_adjusted_odometer
+    - field.field.equipment_fuel_transaction.standard.field_card_number_masked
+    - field.field.equipment_fuel_transaction.standard.field_current_odometer
+    - field.field.equipment_fuel_transaction.standard.field_distance_driven
+    - field.field.equipment_fuel_transaction.standard.field_driver
+    - field.field.equipment_fuel_transaction.standard.field_driver_department_snapshot
+    - field.field.equipment_fuel_transaction.standard.field_driver_first_name_raw
+    - field.field.equipment_fuel_transaction.standard.field_driver_last_name_raw
+    - field.field.equipment_fuel_transaction.standard.field_driver_prompt_id_raw
+    - field.field.equipment_fuel_transaction.standard.field_equipment
+    - field.field.equipment_fuel_transaction.standard.field_fuel_economy
+    - field.field.equipment_fuel_transaction.standard.field_match_status
+    - field.field.equipment_fuel_transaction.standard.field_merchant_brand
+    - field.field.equipment_fuel_transaction.standard.field_merchant_city
+    - field.field.equipment_fuel_transaction.standard.field_merchant_name
+    - field.field.equipment_fuel_transaction.standard.field_merchant_postal_code
+    - field.field.equipment_fuel_transaction.standard.field_merchant_state
+    - field.field.equipment_fuel_transaction.standard.field_net_cost
+    - field.field.equipment_fuel_transaction.standard.field_posted_date
+    - field.field.equipment_fuel_transaction.standard.field_previous_odometer
+    - field.field.equipment_fuel_transaction.standard.field_product_class
+    - field.field.equipment_fuel_transaction.standard.field_product_code
+    - field.field.equipment_fuel_transaction.standard.field_product_description
+    - field.field.equipment_fuel_transaction.standard.field_total_fuel_cost
+    - field.field.equipment_fuel_transaction.standard.field_transaction_date
+    - field.field.equipment_fuel_transaction.standard.field_unit_cost
+    - field.field.equipment_fuel_transaction.standard.field_units
+    - field.field.equipment_fuel_transaction.standard.field_vehicle_asset_id_raw
+    - field.field.equipment_fuel_transaction.standard.field_vin_raw
+    - field.field.equipment_fuel_transaction.standard.field_wex_transaction_id
+  module:
+    - datetime
+    - field_group
+    - options
+third_party_settings:
+  field_group:
+    group_match_resolution:
+      children:
+        - field_equipment
+        - field_driver
+        - field_match_status
+      label: Resolution
+      region: content
+      parent_name: ''
+      weight: 1
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+        required_fields: true
+    group_transaction_core:
+      children:
+        - field_wex_transaction_id
+        - field_transaction_date
+        - field_posted_date
+        - field_card_number_masked
+      label: Transaction
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+        required_fields: true
+    group_product_cost:
+      children:
+        - field_product_code
+        - field_product_class
+        - field_product_description
+        - field_units
+        - field_unit_cost
+        - field_total_fuel_cost
+        - field_net_cost
+      label: 'Product & Cost'
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+        required_fields: true
+    group_telemetry:
+      children:
+        - field_current_odometer
+        - field_adjusted_odometer
+        - field_previous_odometer
+        - field_distance_driven
+        - field_fuel_economy
+      label: 'Vehicle Telemetry'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+        required_fields: true
+    group_merchant:
+      children:
+        - field_merchant_name
+        - field_merchant_brand
+        - field_merchant_city
+        - field_merchant_state
+        - field_merchant_postal_code
+      label: Merchant
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_audit_raw:
+      children:
+        - field_vehicle_asset_id_raw
+        - field_vin_raw
+        - field_driver_prompt_id_raw
+        - field_driver_first_name_raw
+        - field_driver_last_name_raw
+        - field_driver_department_snapshot
+      label: 'WEX Source Data (Audit)'
+      region: content
+      parent_name: ''
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+id: equipment_fuel_transaction.standard.default
+targetEntityType: equipment_fuel_transaction
+bundle: standard
+mode: default
+content:
+  field_adjusted_odometer:
+    type: number
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_card_number_masked:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 16
+      placeholder: ''
+    third_party_settings: {  }
+  field_current_odometer:
+    type: number
+    weight: 1
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_distance_driven:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_driver:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_driver_department_snapshot:
+    type: string_textfield
+    weight: 6
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_driver_first_name_raw:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_driver_last_name_raw:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_driver_prompt_id_raw:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 6
+      placeholder: ''
+    third_party_settings: {  }
+  field_equipment:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_fuel_economy:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_match_status:
+    type: options_select
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_merchant_brand:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_merchant_city:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_merchant_name:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_merchant_postal_code:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 16
+      placeholder: ''
+    third_party_settings: {  }
+  field_merchant_state:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 4
+      placeholder: ''
+    third_party_settings: {  }
+  field_net_cost:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_posted_date:
+    type: datetime_default
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_previous_odometer:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_product_class:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 32
+      placeholder: ''
+    third_party_settings: {  }
+  field_product_code:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 16
+      placeholder: ''
+    third_party_settings: {  }
+  field_product_description:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_total_fuel_cost:
+    type: number
+    weight: 6
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_transaction_date:
+    type: datetime_default
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_unit_cost:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_units:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_vehicle_asset_id_raw:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 32
+      placeholder: ''
+    third_party_settings: {  }
+  field_vin_raw:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 32
+      placeholder: ''
+    third_party_settings: {  }
+  field_wex_transaction_id:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 32
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }

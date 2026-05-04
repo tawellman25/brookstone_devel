@@ -10,6 +10,7 @@ dependencies:
     - field.field.equipment.vehicles.field_comments
     - field.field.equipment.vehicles.field_condition_score
     - field.field.equipment.vehicles.field_current_mileage
+    - field.field.equipment.vehicles.field_current_mileage_updated_on
     - field.field.equipment.vehicles.field_date_purchased
     - field.field.equipment.vehicles.field_date_sold
     - field.field.equipment.vehicles.field_depriciated_value
@@ -164,6 +165,24 @@ content:
     third_party_settings: {  }
     weight: 16
     region: content
+  field_current_mileage:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ','
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_current_mileage_updated_on:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 12
+    region: content
   field_documents:
     type: file_default
     label: above
@@ -316,7 +335,6 @@ hidden:
   field_breakdown_risk_score: true
   field_comments: true
   field_condition_score: true
-  field_current_mileage: true
   field_date_purchased: true
   field_date_sold: true
   field_depriciated_value: true

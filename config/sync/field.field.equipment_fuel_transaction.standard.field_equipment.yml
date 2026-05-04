@@ -1,0 +1,27 @@
+uuid: 82a4cec7-0a80-4b7c-87b2-8016654267a2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_fuel_transaction.standard
+    - field.storage.equipment_fuel_transaction.field_equipment
+id: equipment_fuel_transaction.standard.field_equipment
+field_name: field_equipment
+entity_type: equipment_fuel_transaction
+bundle: standard
+label: 'Vehicle'
+description: 'BOS equipment record (vehicles bundle) resolved from WEX vehicle identifier at import time.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:equipment'
+  handler_settings:
+    target_bundles:
+      vehicles: vehicles
+    sort:
+      field: _none
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

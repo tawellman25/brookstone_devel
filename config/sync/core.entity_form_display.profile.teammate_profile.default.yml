@@ -25,6 +25,7 @@ dependencies:
     - field.field.profile.teammate_profile.field_spouse_birthday
     - field.field.profile.teammate_profile.field_spouse_name
     - field.field.profile.teammate_profile.field_teammate_bio
+    - field.field.profile.teammate_profile.field_wex_driver_prompt_id
     - profile.type.teammate_profile
   module:
     - conditional_fields
@@ -84,6 +85,22 @@ third_party_settings:
         id: ''
         label_as_html: false
         open: true
+        description: ''
+        required_fields: true
+    group_external_system_identifiers:
+      children:
+        - field_wex_driver_prompt_id
+      label: 'External System Identifiers'
+      region: content
+      parent_name: ''
+      weight: 13
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
         description: ''
         required_fields: true
 id: profile.teammate_profile.default
@@ -312,6 +329,14 @@ content:
     settings:
       rows: 10
       placeholder: 'Please enter a Public Viewable bio description of this teammate'
+    third_party_settings: {  }
+  field_wex_driver_prompt_id:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 6
+      placeholder: '0625'
     third_party_settings: {  }
   path:
     type: path

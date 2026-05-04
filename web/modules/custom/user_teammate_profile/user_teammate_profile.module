@@ -1,6 +1,24 @@
 <?php
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageException;
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * Validates and normalizes field_wex_driver_prompt_id on teammate_profile
+ * before save. Pads short numeric input to 4 digits, rejects non-numeric
+ * or too-long input, enforces uniqueness across teammate_profile entities.
+ *
+ * Runs before the entity save commits — throws EntityStorageException on
+ * validation failure to abort the save with a clear message.
+ */
+function user_teammate_profile_entity_presave(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'profile' || $entity->bundle() !== 'teammate_profile') {
+    return;
+  }
+  user_teammate_profile_validate_wex_driver_prompt_id($entity);
+}
 
 /**
  * Implements hook_entity_insert().
@@ -14,6 +32,90 @@ function user_teammate_profile_entity_insert(EntityInterface $entity): void {
  */
 function user_teammate_profile_entity_update(EntityInterface $entity): void {
   user_teammate_profile_sync($entity);
+}
+
+/**
+ * Validate + normalize field_wex_driver_prompt_id.
+ *
+ * Rules:
+ * - Empty → allowed (field is optional).
+ * - Non-numeric chars → reject.
+ * - Length > 4 → reject.
+ * - 1-4 numeric chars → auto-pad to 4 with leading zeros, then save.
+ * - Already-assigned value on a different teammate_profile → reject.
+ *
+ * @throws \Drupal\Core\Entity\EntityStorageException
+ *   When the value is non-numeric, too long, or already assigned to
+ *   another teammate.
+ */
+function user_teammate_profile_validate_wex_driver_prompt_id(EntityInterface $entity): void {
+  if (!$entity->hasField('field_wex_driver_prompt_id')) {
+    return;
+  }
+  $field = $entity->get('field_wex_driver_prompt_id');
+  if ($field->isEmpty()) {
+    return;
+  }
+
+  $raw = trim((string) $field->value);
+  if ($raw === '') {
+    // Whitespace-only — clear and allow save.
+    $entity->set('field_wex_driver_prompt_id', NULL);
+    return;
+  }
+
+  // Format check: only digits 0-9.
+  if (!preg_match('/^[0-9]+$/', $raw)) {
+    \Drupal::logger('user_teammate_profile')->warning(
+      'Rejected non-numeric WEX Driver Prompt ID "@v" on profile @id.',
+      ['@v' => $raw, '@id' => $entity->id() ?? '(new)']
+    );
+    throw new EntityStorageException('WEX Driver Prompt ID must contain only digits 0-9.');
+  }
+
+  // Length check.
+  if (strlen($raw) > 4) {
+    \Drupal::logger('user_teammate_profile')->warning(
+      'Rejected over-length WEX Driver Prompt ID "@v" on profile @id.',
+      ['@v' => $raw, '@id' => $entity->id() ?? '(new)']
+    );
+    throw new EntityStorageException('WEX Driver Prompt ID must be 4 digits or fewer.');
+  }
+
+  // Auto-pad to canonical 4-character form.
+  $padded = str_pad($raw, 4, '0', STR_PAD_LEFT);
+  if ($padded !== $raw) {
+    $entity->set('field_wex_driver_prompt_id', $padded);
+  }
+
+  // Uniqueness check — query existing teammate_profile entities.
+  $storage = \Drupal::entityTypeManager()->getStorage('profile');
+  $query = $storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'teammate_profile')
+    ->condition('field_wex_driver_prompt_id', $padded)
+    ->range(0, 5);
+  if (!$entity->isNew() && $entity->id()) {
+    $query->condition('profile_id', (int) $entity->id(), '<>');
+  }
+  $hits = $query->execute();
+  if (!empty($hits)) {
+    $other = $storage->load(reset($hits));
+    $otherName = '(unknown)';
+    if ($other) {
+      $owner = $other->getOwner();
+      $otherName = $owner ? $owner->getDisplayName() : '(profile #' . $other->id() . ')';
+    }
+    \Drupal::logger('user_teammate_profile')->warning(
+      'Rejected duplicate WEX Driver Prompt ID @v on profile @id (already assigned to @name).',
+      ['@v' => $padded, '@id' => $entity->id() ?? '(new)', '@name' => $otherName]
+    );
+    throw new EntityStorageException(sprintf(
+      'WEX Driver Prompt ID %s is already assigned to another teammate (%s).',
+      $padded,
+      $otherName
+    ));
+  }
 }
 
 /**

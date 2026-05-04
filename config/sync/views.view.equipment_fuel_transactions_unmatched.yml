@@ -1,0 +1,359 @@
+uuid: 1a8b4ba9-e3a1-4691-9396-d28dc09884c8
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.equipment_fuel_transaction.field_driver_first_name_raw
+    - field.storage.equipment_fuel_transaction.field_driver_last_name_raw
+    - field.storage.equipment_fuel_transaction.field_driver_prompt_id_raw
+    - field.storage.equipment_fuel_transaction.field_match_status
+    - field.storage.equipment_fuel_transaction.field_total_fuel_cost
+    - field.storage.equipment_fuel_transaction.field_transaction_date
+    - field.storage.equipment_fuel_transaction.field_vehicle_asset_id_raw
+    - field.storage.equipment_fuel_transaction.field_vin_raw
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.supervisor
+  module:
+    - datetime
+    - eck
+    - options
+    - user
+id: equipment_fuel_transactions_unmatched
+label: 'Equipment Fuel Transactions — Review Queue'
+module: views
+description: 'Fuel transactions where driver and/or vehicle resolution failed during import. Manually resolve each entry.'
+tag: ''
+base_table: equipment_fuel_transaction_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'Fuel Transaction Review Queue'
+      fields:
+        field_match_status:
+          id: field_match_status
+          table: equipment_fuel_transaction__field_match_status
+          field: field_match_status
+          plugin_id: field
+          label: Issue
+          type: list_default
+          settings: {  }
+        field_transaction_date:
+          id: field_transaction_date
+          table: equipment_fuel_transaction__field_transaction_date
+          field: field_transaction_date
+          plugin_id: field
+          label: Date
+          type: datetime_default
+          settings:
+            timezone_override: ''
+            format_type: medium
+        field_vehicle_asset_id_raw:
+          id: field_vehicle_asset_id_raw
+          table: equipment_fuel_transaction__field_vehicle_asset_id_raw
+          field: field_vehicle_asset_id_raw
+          plugin_id: field
+          label: 'WEX Vehicle ID'
+          type: string
+          settings:
+            link_to_entity: false
+        field_vin_raw:
+          id: field_vin_raw
+          table: equipment_fuel_transaction__field_vin_raw
+          field: field_vin_raw
+          plugin_id: field
+          label: VIN
+          type: string
+          settings:
+            link_to_entity: false
+        field_driver_prompt_id_raw:
+          id: field_driver_prompt_id_raw
+          table: equipment_fuel_transaction__field_driver_prompt_id_raw
+          field: field_driver_prompt_id_raw
+          plugin_id: field
+          label: 'Driver Prompt ID'
+          type: string
+          settings:
+            link_to_entity: false
+        field_driver_first_name_raw:
+          id: field_driver_first_name_raw
+          table: equipment_fuel_transaction__field_driver_first_name_raw
+          field: field_driver_first_name_raw
+          plugin_id: field
+          label: 'First Name'
+          type: string
+          settings:
+            link_to_entity: false
+        field_driver_last_name_raw:
+          id: field_driver_last_name_raw
+          table: equipment_fuel_transaction__field_driver_last_name_raw
+          field: field_driver_last_name_raw
+          plugin_id: field
+          label: 'Last Name'
+          type: string
+          settings:
+            link_to_entity: false
+        field_total_fuel_cost:
+          id: field_total_fuel_cost
+          table: equipment_fuel_transaction__field_total_fuel_cost
+          field: field_total_fuel_cost
+          plugin_id: field
+          label: Cost
+          type: number_decimal
+          settings:
+            thousand_separator: ','
+            decimal_separator: '.'
+            scale: 2
+            prefix_suffix: true
+            prefix: '$'
+        operations:
+          id: operations
+          table: equipment_fuel_transaction
+          field: operations
+          entity_type: equipment_fuel_transaction
+          plugin_id: entity_operations
+          label: Operations
+          destination: true
+      pager:
+        type: full
+        options:
+          pagination_heading_level: h4
+          items_per_page: 50
+          offset: 0
+          tags:
+            previous: '‹ Previous'
+            next: 'Next ›'
+            first: '« First'
+            last: 'Last »'
+          expose:
+            items_per_page: false
+            items_per_page_label: 'Items per page'
+            items_per_page_options: '25, 50, 100'
+            items_per_page_options_all: false
+            items_per_page_options_all_label: '- All -'
+            offset: false
+            offset_label: Offset
+          quantity: 9
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            administration: administration
+            supervisor: supervisor
+      cache:
+        type: tag
+        options: {  }
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: false
+          content:
+            value: '<p>These fuel transactions could not be automatically linked to a vehicle and/or driver during import. Click <em>Edit</em> on each row to manually assign the correct entity reference. Once resolved, set Match Status to <strong>Manually Resolved</strong>.</p>'
+            format: full_html
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: 'No unmatched transactions. All imports resolved cleanly.'
+            format: plain_text
+      sorts:
+        field_transaction_date:
+          id: field_transaction_date
+          table: equipment_fuel_transaction__field_transaction_date
+          field: field_transaction_date
+          plugin_id: datetime
+          order: DESC
+      filters:
+        status:
+          id: status
+          table: equipment_fuel_transaction_field_data
+          field: status
+          entity_type: equipment_fuel_transaction
+          entity_field: status
+          plugin_id: boolean
+          value: '1'
+          group: 1
+        field_match_status_value:
+          id: field_match_status_value
+          table: equipment_fuel_transaction__field_match_status
+          field: field_match_status_value
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: list_field
+          operator: or
+          value:
+            unmatched_driver: unmatched_driver
+            unmatched_vehicle: unmatched_vehicle
+            unmatched_both: unmatched_both
+          group: 1
+          exposed: false
+          expose:
+            operator_id: ''
+            label: ''
+            description: ''
+            use_operator: false
+            operator: ''
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: ''
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            reduce: false
+          is_grouped: false
+          group_info:
+            label: ''
+            description: ''
+            identifier: ''
+            optional: true
+            widget: select
+            multiple: false
+            remember: false
+            default_group: All
+            default_group_multiple: {  }
+            group_items: {  }
+      style:
+        type: table
+        options:
+          columns:
+            field_match_status: field_match_status
+            field_transaction_date: field_transaction_date
+            field_vehicle_asset_id_raw: field_vehicle_asset_id_raw
+            field_vin_raw: field_vin_raw
+            field_driver_prompt_id_raw: field_driver_prompt_id_raw
+            field_driver_first_name_raw: field_driver_first_name_raw
+            field_driver_last_name_raw: field_driver_last_name_raw
+            field_total_fuel_cost: field_total_fuel_cost
+            operations: operations
+          default: field_transaction_date
+          info:
+            field_match_status:
+              sortable: true
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_transaction_date:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_vehicle_asset_id_raw:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: true
+              responsive: ''
+            field_vin_raw:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: true
+              responsive: ''
+            field_driver_prompt_id_raw:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: true
+              responsive: ''
+            field_driver_first_name_raw:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: true
+              responsive: ''
+            field_driver_last_name_raw:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: true
+              responsive: ''
+            field_total_fuel_cost:
+              sortable: false
+              align: 'views-align-right'
+              separator: ''
+              empty_column: true
+              responsive: ''
+            operations:
+              sortable: false
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+      row:
+        type: fields
+      query:
+        type: views_query
+        options: {  }
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.equipment_fuel_transaction.field_driver_first_name_raw'
+        - 'config:field.storage.equipment_fuel_transaction.field_driver_last_name_raw'
+        - 'config:field.storage.equipment_fuel_transaction.field_driver_prompt_id_raw'
+        - 'config:field.storage.equipment_fuel_transaction.field_match_status'
+        - 'config:field.storage.equipment_fuel_transaction.field_total_fuel_cost'
+        - 'config:field.storage.equipment_fuel_transaction.field_transaction_date'
+        - 'config:field.storage.equipment_fuel_transaction.field_vehicle_asset_id_raw'
+        - 'config:field.storage.equipment_fuel_transaction.field_vin_raw'
+  page_1:
+    id: page_1
+    display_title: 'Unmatched Review Queue'
+    display_plugin: page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/operations/equipment/fuel-transactions/unmatched
+      menu:
+        type: normal
+        title: 'Review Queue'
+        description: 'Fuel transactions needing manual resolution.'
+        weight: 5
+        expanded: false
+        menu_name: admin
+        parent: 'views_view:views.equipment_fuel_transactions_admin.page_1'
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.equipment_fuel_transaction.field_driver_first_name_raw'
+        - 'config:field.storage.equipment_fuel_transaction.field_driver_last_name_raw'
+        - 'config:field.storage.equipment_fuel_transaction.field_driver_prompt_id_raw'
+        - 'config:field.storage.equipment_fuel_transaction.field_match_status'
+        - 'config:field.storage.equipment_fuel_transaction.field_total_fuel_cost'
+        - 'config:field.storage.equipment_fuel_transaction.field_transaction_date'
+        - 'config:field.storage.equipment_fuel_transaction.field_vehicle_asset_id_raw'
+        - 'config:field.storage.equipment_fuel_transaction.field_vin_raw'

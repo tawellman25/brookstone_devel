@@ -1,0 +1,8 @@
+services:
+  bos_wex_import.import_service:
+    class: Drupal\bos_wex_import\Service\WexFuelImportService
+    arguments:
+      - '@entity_type.manager'
+      - '@logger.factory'
+      - '@datetime.time'
+      - '@file_system'

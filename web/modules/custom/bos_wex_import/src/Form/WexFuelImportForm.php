@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\bos_wex_import\Form;
 
-use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Upload form for WEX fuel transaction CSV/XLSX exports.
@@ -19,20 +17,16 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   3. Builds a batch of one operation per row
  *   4. Hands off to Batch API; finished callback emits the summary
  *      and redirects to the master list.
+ *
+ * Services resolved via \Drupal::service() rather than constructor DI:
+ * Drupal serializes form objects across request stages (managed_file
+ * upload → submit), and constructor-promoted readonly properties
+ * don't survive __wakeup. DependencySerializationTrait (used by
+ * FormBase) handles traditional service properties via $_serviceIds
+ * tracking, but not promoted readonly properties. Using lazy lookup
+ * here is the simplest fix for the form's two methods that need them.
  */
 final class WexFuelImportForm extends FormBase {
-
-  public function __construct(
-    private readonly \Drupal\bos_wex_import\Service\WexFuelImportService $importService,
-    private readonly FileSystemInterface $fileSystem,
-  ) {}
-
-  public static function create(ContainerInterface $container): self {
-    return new self(
-      $container->get('bos_wex_import.import_service'),
-      $container->get('file_system'),
-    );
-  }
 
   public function getFormId(): string {
     return 'bos_wex_import_upload_form';
@@ -90,14 +84,16 @@ final class WexFuelImportForm extends FormBase {
       $form_state->setErrorByName('import_file', $this->t('Uploaded file could not be loaded.'));
       return;
     }
-    $real = $this->fileSystem->realpath($file->getFileUri());
+    $real = \Drupal::service('file_system')->realpath($file->getFileUri());
     if (!$real || !is_readable($real)) {
       $form_state->setErrorByName('import_file', $this->t('Uploaded file is not readable.'));
       return;
     }
 
+    /** @var \Drupal\bos_wex_import\Service\WexFuelImportService $importService */
+    $importService = \Drupal::service('bos_wex_import.import_service');
     try {
-      $rows = $this->importService->parseFile($real);
+      $rows = $importService->parseFile($real);
     }
     catch (\InvalidArgumentException $e) {
       $form_state->setErrorByName('import_file', $this->t('Parse error: @msg', ['@msg' => $e->getMessage()]));
@@ -110,7 +106,7 @@ final class WexFuelImportForm extends FormBase {
     }
 
     $headers = array_keys($rows[0]);
-    $missing = $this->importService->validateHeaders($headers);
+    $missing = $importService->validateHeaders($headers);
     if (!empty($missing)) {
       \Drupal::messenger()->addError($this->t(
         'Required column(s) missing from upload: @cols. Aborting import.',

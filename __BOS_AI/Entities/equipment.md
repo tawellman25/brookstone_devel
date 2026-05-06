@@ -323,6 +323,7 @@ Key fields:
 
 #### Fleet Management Fields (added April 2026)
 - field_current_mileage (integer) — Current Mileage
+- field_current_mileage_updated_on (datetime) — Mileage Last Updated
 - field_condition_score (integer) — Condition Score (1-10)
 - field_engine_health (list_string) — good, monitor, at_risk, failing
 - field_transmission_health (list_string) — good, monitor, at_risk, failing
@@ -345,16 +346,33 @@ the model.
 Invariants:
 - field_vehicle_number must be unique and stable.
 - If field_inspection_required is TRUE, field_last_inspection_date must be maintained.
+- field_current_mileage_updated_on is automatically maintained by
+  `bos_wex_import.import_service` when an imported WEX transaction's
+  odometer reading updates field_current_mileage. The timestamp records
+  the WEX transaction's `field_transaction_date` (when fuel was actually
+  pumped), NOT the time the BOS save occurred. Lower-than-current
+  odometer reads are logged as warnings and do NOT update either field —
+  this protects mileage history against bad pump entries.
+- field_current_mileage_updated_on is hidden on the form display
+  (operational read-only data, not user-editable via the standard
+  vehicle edit form) and visible on the default view display alongside
+  field_current_mileage.
 
 #### Related Fleet Entities
 - `equipment_inspection` — inspection records (via field_equipment)
 - `equipment_defect` — actionable defect tracking (via field_equipment)
 - `equipment_maintenance_event` — service/repair records (via field_equipment)
+- `equipment_fuel_transaction` — WEX fuel transaction records (via field_equipment)
 
-EVA views show inspection history, defect history, and maintenance
-history on all equipment entity pages.
+EVA views show inspection history, defect history, maintenance
+history, and fuel transaction history on all equipment entity pages.
 
-See: `equipment_inspection.md`, `equipment_defect.md`, `equipment_maintenance_event.md`
+See: `equipment_inspection.md`, `equipment_defect.md`, `equipment_maintenance_event.md`, `equipment_fuel_transaction.md`
+
+The fuel-transaction relationship is one-way for mileage: the import
+service is the only writer of `field_current_mileage` /
+`field_current_mileage_updated_on`. See `__BOS_AI/Modules/bos_wex_import.md`
+for the import logic.
 
 ---
 

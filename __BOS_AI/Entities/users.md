@@ -157,6 +157,29 @@ QuickBooks:
 - field_qb_account_number | string | QuickBooks Account Number
 - field_qb_list_id | string | QuickBooks List ID
 
+External System Identifiers:
+- field_wex_driver_prompt_id | string (varchar 4) | WEX Driver Prompt ID
+
+The 4-digit Driver Prompt ID (PIN) entered at the fuel pump in WEX. Used to match WEX fuel transactions to a teammate during import. Optional. Stored as 4-character zero-padded string (e.g., `0625`, not `625`). Validation enforced in the `user_teammate_profile` module's `hook_entity_presave`:
+
+- Numeric only — non-digit values rejected with `EntityStorageException`
+- Maximum 4 digits — over-length values rejected
+- 1–4 digit input is auto-padded to 4 chars on save (`625` → `0625`)
+- Unique across all teammate_profile records — error message names the conflicting teammate
+- Watchdog warning logged on every rejection (channel: `user_teammate_profile`)
+
+Form display group: `group_external_system_identifiers` (label "External System Identifiers"), weight 13, collapsible/collapsed by default. Sits as a separate group from the existing `group_office_administation` (which still holds the QuickBooks fields). The QB fields were intentionally NOT moved into the new group — that cleanup is deferred. New external-system identifiers (future WEX-style integrations) should be added to `group_external_system_identifiers` rather than `group_office_administation`.
+
+View display:
+- `default` — visible (terminal pair, weight after the QB fields)
+- `teammate_internal` — hidden (matches the QB fields' treatment on the crew-facing view mode)
+
+Indexed: `wex_prompt_id_idx` on the value column for fast lookup performance during fuel-import driver resolution.
+
+Maintained by:
+- `user_teammate_profile` module (validation hook, see above)
+- `bos_wex_import` module (reads via `WexFuelImportService::resolveDriver()` to match WEX transactions to BOS users)
+
 ---
 
 ## Deletion / Archival
@@ -190,6 +213,7 @@ Users must support reporting by:
 - User is the account/permissions hub; Profile is the identity/business details layer.
 - Work Orders, Contracts, and Properties must not depend on mutable user-facing names.
 - Account governance flags must be enforced by scheduling and billing workflows.
+- `teammate_profile.field_wex_driver_prompt_id` is always 4-character zero-padded and unique across all teammate_profile records when populated. Validation is enforced at presave by `user_teammate_profile`; the import service relies on this canonical form for exact-match lookup.
 
 ## Roles & Permissions
 

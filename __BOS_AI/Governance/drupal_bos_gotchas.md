@@ -67,6 +67,135 @@ Then `drush cr`.
 
 **Surfaced during Phase 2a recovery, commit `d58b9a7f`.**
 
+### `drush en` followed by `drush cim` re-disables the module
+
+`drush en bos_wex_import -y` enables a module in active config but does not modify the sync directory. The next `drush cim` reads `config/sync/core.extension.yml` as the source of truth, finds the module absent from the enabled list, and disables it.
+
+Symptom: module installs cleanly via `drush en`, works during the same session, then mysteriously becomes disabled after the next cim cycle (e.g., from a separate config change).
+
+Fix: after `drush en`, immediately update `config/sync/core.extension.yml` to include the new module — then commit both the module files AND the core.extension.yml change in the same commit. Subsequent cim cycles preserve the enabled state.
+
+```yaml
+# core.extension.yml fragment after enabling bos_wex_import:
+module:
+  ...
+  bos_user_time_clock_mapping: 0
+  bos_wex_import: 0      # ← added
+  breakpoint: 0
+```
+
+**Surfaced during bos_wex_import enablement, May 2026.** Module disappeared between Phase 12 verification and the smoke test that followed, traced to an intervening cim that didn't include the module in sync.
+
+### ECK + pathauto: enabled_entity_types registration is mandatory
+
+ECK entities don't get a `path` base field automatically. Pathauto's `EntityAliasTypeDeriver` requires entity types to have a `path` base field, AND that field is added by `pathauto_entity_base_field_info()` only when the entity type is listed in `pathauto.settings.yml → enabled_entity_types`.
+
+Symptoms when this is missed:
+- `pathauto.pattern.{entity}.yml` is imported and looks valid
+- `\Drupal::entityTypeManager()->getStorage('pathauto_pattern')->load('{entity}')` returns the pattern with status TRUE
+- Token replacement on the pattern returns the correct path string when called manually
+- BUT no alias gets generated when entities save — `pathauto.generator->updateEntityAlias()` returns NULL silently
+- AND `\Drupal::service('plugin.manager.alias_type')->getDefinitions()` does NOT contain `canonical_entities:{entity}`
+
+Fix: add the new entity type ID to `pathauto.settings.yml`:
+
+```yaml
+enabled_entity_types:
+  - profile
+  - user
+  - equipment
+  - equipment_check_in_out
+  - equipment_fuel_transaction   # ← new entry
+  ...
+```
+
+Then cim. The path base field gets attached, the alias type plugin appears in the deriver, and pattern matching starts working.
+
+Existing BOS reference: only 3 of the 5+ ECK child entities of `equipment` are pathauto-registered (`equipment`, `equipment_check_in_out`, `equipment_status_update`). `equipment_inspection`, `equipment_defect`, `equipment_maintenance_event` are NOT registered and therefore generate canonical (`/equipment_inspection/{id}`) URLs only — that's an existing accepted state, not a bug.
+
+**Surfaced during equipment_fuel_transaction build, May 2026.** Cost about 30 minutes of debugging because all the diagnostic surfaces lied: pattern was loaded, route was registered, token replacement worked. The plugin manager's silent omission was the giveaway.
+
+### list_string field storage must use `module: options`, not `module: core`
+
+When generating field storage YAMLs programmatically, easy to default `module: core` for all field types. For `list_string` fields specifically, this breaks Views integration silently:
+
+- `module: core` → `getTypeProvider()` returns `core` → Drupal looks for `core_field_views_data()` (doesn't exist) → falls back to default views_data → filter handler is `string`
+- `module: options` → `getTypeProvider()` returns `options` → `options_field_views_data()` fires → filter handler is upgraded to `list_field`
+
+Symptom: a Views filter configured with `plugin_id: list_field` and a non-empty `value` array silently doesn't filter at all. The filter handler that ends up wired is `string` (or `views_autocomplete_filters`-extended string in BOS), which doesn't accept array values for `or`/`and` operators in non-exposed mode.
+
+Fix: ensure list_string field storage YAML has:
+
+```yaml
+module: options
+```
+
+…not `module: core`. Same applies to `list_integer` and `list_float`.
+
+Diagnostic: query `\Drupal::service('views.views_data')->get('TABLE_NAME')` for the field's `_value` column. If `filter.id` is `string` instead of `list_field`, the field storage's `module` key is wrong.
+
+**Surfaced during equipment_fuel_transaction Views build, commit `5120b90f`.** Diagnosis took ~6 cycles before tracing back to the field storage YAML — the symptom was "filter not in WHERE clause" but the root cause was 4 layers deep.
+
+### Drupal local tasks need at least 2 entries on a base_route
+
+A single local task definition pointing at a `base_route` does NOT render a tab bar. Drupal core's local task block silently suppresses the UI when only one task exists for the base route — the assumption being "if there's just one tab, why show tabs?"
+
+Fix: when adding a tab to an existing page (typically a Views page), define BOTH the new tab AND a "default" task pointing back at the base route itself:
+
+```yaml
+mymodule.master_list:
+  title: 'Master List'
+  route_name: view.my_view.page_1
+  base_route: view.my_view.page_1
+  weight: 0
+
+mymodule.import:
+  title: 'Import'
+  route_name: mymodule.import_form
+  base_route: view.my_view.page_1
+  weight: 10
+```
+
+Both must be present; without the master_list "default tab", the tab bar doesn't appear at all.
+
+**Surfaced during bos_wex_import build, May 2026.** Verified via `\Drupal::service('plugin.manager.menu.local_task')->getLocalTasksForRoute(...)` — single-tab returned 0 tasks, two-tab returned both.
+
+### FormBase + constructor-promoted readonly properties don't survive form serialization
+
+Drupal serializes form objects in `form_state` across request stages — most commonly between `managed_file` upload and form submit. When deserialized, services injected via PHP 8 constructor-promoted readonly properties remain uninitialized:
+
+```
+TypeError: Typed property must not be accessed before initialization
+```
+
+The cause: `FormBase` uses `DependencySerializationTrait`, which tracks service properties via a `$_serviceIds` array populated during `__sleep()`. Constructor-promoted promoted properties are NOT visible to that tracking mechanism, so `__wakeup()` doesn't restore them — and the constructor isn't re-invoked when unserializing.
+
+Fix options for `FormBase` children that need services:
+
+1. **Lazy `\Drupal::service()` calls** inside form methods (simplest):
+
+   ```php
+   public function submitForm(array &$form, FormStateInterface $form_state): void {
+     $importService = \Drupal::service('bos_wex_import.import_service');
+     // ...
+   }
+   ```
+
+2. **Traditional protected properties + `create()` factory** (DependencySerializationTrait handles them automatically):
+
+   ```php
+   protected ImportService $importService;
+   public static function create(ContainerInterface $container): self {
+     $form = new self();
+     $form->importService = $container->get('bos_wex_import.import_service');
+     return $form;
+   }
+   ```
+
+DO NOT use constructor-promoted properties for service dependencies on `FormBase` children. Works for `ControllerBase` (controllers aren't serialized) but breaks across the buildForm → submitForm boundary on forms.
+
+**Surfaced during bos_wex_import field test, commit `114afa70`.** First import attempt crashed mid-submit; the constructor had run on initial form build but the form was reconstructed via `__wakeup` during the file-upload AJAX cycle.
+
 ---
 
 ## UUID drift between environments

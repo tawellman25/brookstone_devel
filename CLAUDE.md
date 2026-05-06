@@ -370,10 +370,11 @@ Link entity between `material` and `supplier`. Enforced by `material_supplier` m
 - `equipment_check_in_out` — bundle: `check_in`
 - `equipment_status_update` — bundle: `update`
 
-#### Equipment inspection/defect/maintenance entities
+#### Equipment inspection/defect/maintenance/fuel entities
 - `equipment_inspection` — 6 bundles: `vehicles`, `trailers`, `heavy_equipment`, `mowers`, `sprayers`, `standard` (bundle-specific checklists)
 - `equipment_defect` — bundle: `standard` (15 fields — actionable defect tracking, targets all equipment)
 - `equipment_maintenance_event` — bundle: `standard` (15 fields — service/repair records, targets all equipment)
+- `equipment_fuel_transaction` — bundle: `standard` (30 fields — WEX fuel card transaction records; targets vehicles bundle only via field_equipment; idempotent re-imports keyed on field_wex_transaction_id)
 
 #### Time/scheduling entities
 - `scheduling` — bundle: `work_order`
@@ -389,7 +390,7 @@ Link entity between `material` and `supplier`. Enforced by `material_supplier` m
 
 **`profile`** (Profile module) — 1:1 with user
 - `customer_profile`: `field_client_status`, `field_payment_terms`, `field_invoice_delivery_method`, `field_portal_allowed`, `field_billing_allowed`, `field_tax_status`, `field_primary_contact_ref`, `field_contacts`, `field_quickbooks_notes`, `field_qb_list_id`
-- `teammate_profile`: `field_job_title`, `field_assigned_crew`, `field_emergency_contacts`, `field_qb_account_number`
+- `teammate_profile`: `field_job_title`, `field_assigned_crew`, `field_emergency_contacts`, `field_qb_account_number`, `field_wex_driver_prompt_id` (4-char zero-padded; unique; anchors WEX fuel-import driver resolution)
 
 **`taxonomy`** — key vocabularies:
 - `services` — `field_work_order_service` (bool), `field_service_bundle` (WO bundle machine name)
@@ -461,6 +462,7 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 | `equipment_actions` | VBO actions for equipment entities |
 | `equipment_status_updates` | Propagates equipment status update entity changes to Equipment entity |
 | `equipment_inspection_workflow` | Equipment automation: defect auto-creation on inspection approval (18 rules), maintenance event defect closure, equipment status sync on out-of-service |
+| `bos_wex_import` | WEX fleet card transaction import: admin upload form (CSV/XLSX) at `/admin/operations/equipment/fuel-transactions/import`, batch parser, driver resolution (via `teammate_profile.field_wex_driver_prompt_id`), vehicle resolution (via `equipment.vehicles.field_vehicle_number`), match-status flagging, vehicle mileage auto-update on higher-than-current odometer reads, `field_wex_transaction_id` uniqueness presave hook for idempotent re-imports. Permission: `import wex fuel transactions`. |
 
 ### Property modules
 | Module | Purpose |

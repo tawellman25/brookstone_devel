@@ -131,7 +131,6 @@ function wo_sign_off_entity_presave(EntityInterface $entity) {
     'in_house_tasks', 'christmas_decorations', 'misc_services'
   ];
   if (!in_array($work_order->bundle(), $excludedBundles)) {
-    $totalMen = $entity->get('field_those_on_crew')->count() ?: 0;
     $timeSpent = 0;
 
     $woTimeClockEntities = \Drupal::entityTypeManager()
@@ -146,7 +145,10 @@ function wo_sign_off_entity_presave(EntityInterface $entity) {
     }
 
     if ($work_order->hasField('field_total_time')) {
-      $work_order->set('field_total_time', $timeSpent * $totalMen);
+      // Sum already represents total man-hours: Phase 2c reconciliation
+      // creates one wo_time_clock entry per crew member, so each crew
+      // member's hours are counted exactly once. No crew-count multiplier.
+      $work_order->set('field_total_time', $timeSpent);
     }
   }
 

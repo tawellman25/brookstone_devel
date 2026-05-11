@@ -193,7 +193,11 @@ function wo_lawn_mowing_entity_presave(EntityInterface $entity) {
           $otherMinutes = $taskData['trash_minutes'];
           $menTotal = $taskData['men_on_site'];
           $partialMow = $taskData['partial_mow'];
-          $totalTime = $timeSpent * $menTotal;
+          // Sum already represents total man-hours: Phase 2c reconciliation
+          // creates one wo_time_clock entry per crew member, so each crew
+          // member's hours are counted exactly once. $menTotal is retained
+          // only to populate field_number_men_on_crew below.
+          $totalTime = $timeSpent;
           
           // Convert minutes to hours.
           $edgingTime = $edgingMinutes / 60;

@@ -81,3 +81,56 @@ function wo_shared_entity_insert(EntityInterface $entity) {
     ]
   );
 }
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for work_order entities.
+ *
+ * Recalculates field_total_time = sum(wo_time_clock.field_total_time)
+ * for the WO's closed clock entries, but only while the WO is in
+ * Complete status (1097):
+ *   - Pre-completion WOs are skipped — clock data is mid-flight and a
+ *     partial total would mislead.
+ *   - Invoiced (1281), Paid (1504), Canceled (1098), and Warrantied
+ *     (1283) are skipped implicitly because they're not Complete — the
+ *     captured-at-billing-time value is preserved once the WO leaves
+ *     the Complete state.
+ *
+ * Pairs with wo_total_time's _wo_total_time_trigger_wo_recalc(): that
+ * helper saves the parent WO whenever a wo_time_clock entry is
+ * inserted/updated, which then flows through this hook to refresh the
+ * roll-up. The combined chain means editing a clock entry on a
+ * Complete WO will produce a refreshed total without anyone needing
+ * to manually re-save the WO.
+ *
+ * For lawn_mowing WOs, wo_lawn_mowing also recalculates field_total_time
+ * (alongside field_labor_total and other bundle-specific derived
+ * fields). Both produce the same value here — sum of clock entries, no
+ * multiplier — so the redundancy is idempotent.
+ */
+function wo_shared_work_order_presave(EntityInterface $entity) {
+  if ($entity->isNew()) {
+    return;
+  }
+  if (!$entity->hasField('field_total_time')) {
+    return;
+  }
+  $status = (int) ($entity->get('field_status')->target_id ?? 0);
+  if ($status !== 1097) {
+    return;
+  }
+
+  $tcIds = \Drupal::entityQuery('wo_time_clock')
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $entity->id())
+    ->condition('field_end_time', NULL, 'IS NOT NULL')
+    ->execute();
+
+  $sum = 0.0;
+  if ($tcIds) {
+    foreach (\Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadMultiple($tcIds) as $tc) {
+      $sum += (float) ($tc->get('field_total_time')->value ?? 0);
+    }
+  }
+
+  $entity->set('field_total_time', round($sum, 2));
+}

@@ -833,6 +833,42 @@ function _wo_sign_off_compute_missing_start_default(int $wo_id, string $now_utc)
 }
 
 /**
+ * Compute the default end_time (UTC ISO string) for silent-create
+ * missing entries on simple bundles. Uses the latest existing
+ * wo_time_clock end_time on the WO so newly created entries align
+ * with when the crew actually left the site — matches the implicit
+ * "simple bundle = whole crew worked the same shift" assumption.
+ *
+ * Falls back to $now_utc only when nobody has clocked out yet (the
+ * degenerate case where the signer is creating every crew member's
+ * entry from scratch). In that case there is no on-WO reference for
+ * what "end" should mean, and the legacy behavior is preserved.
+ *
+ * Pre-fix behavior was always $now_utc, which produced multi-day
+ * shift durations any time sign-off happened later than the crew's
+ * actual leave time (see WO 49497 — Greg Kouri's 26.36 hr entry
+ * created at sign-off the day after the work occurred).
+ */
+function _wo_sign_off_compute_missing_end_default(int $wo_id, string $now_utc): string {
+  $tc_storage = \Drupal::entityTypeManager()->getStorage('wo_time_clock');
+  $latest_ids = $tc_storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $wo_id)
+    ->exists('field_end_time')
+    ->sort('field_end_time', 'DESC')
+    ->range(0, 1)
+    ->execute();
+  if (!empty($latest_ids)) {
+    $tc = $tc_storage->load(reset($latest_ids));
+    $val = $tc->get('field_end_time')->value;
+    if (!empty($val)) {
+      return $val;
+    }
+  }
+  return $now_utc;
+}
+
+/**
  * Form validate handler for the reconciliation fieldset.
  *
  * Simple bundles (lawn, spray, fertilizing, cleanup) silent-create
@@ -1053,6 +1089,9 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
     $start_default_utc = $is_complex
       ? NULL
       : _wo_sign_off_compute_missing_start_default($wo_id, $now_utc);
+    $end_default_utc = $is_complex
+      ? NULL
+      : _wo_sign_off_compute_missing_end_default($wo_id, $now_utc);
 
     foreach ($missing as $uid => $info) {
       if ($is_complex) {
@@ -1074,7 +1113,7 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
       }
       else {
         $start_utc = $start_default_utc;
-        $end_utc = $now_utc;
+        $end_utc = $end_default_utc;
         $audit_note = "[Created by {$signer_name} at sign-off, {$now_label}]";
       }
 

@@ -1002,6 +1002,29 @@ function _wo_sign_off_reconciliation_validate(array &$form, FormStateInterface $
 
   // Validate ORPHAN rows (applies to all bundles).
   if (!empty($orphans)) {
+    // If any orphan row is missing from the submitted form values,
+    // the orphan section wasn't rendered at form-build time — most
+    // commonly because the roster field was empty when the form was
+    // first loaded and the crew populated it within the same
+    // submission (typical mowing tasks-list flow: roster + tasks +
+    // save in one shot). Rebuild instead of error-out so the orphan
+    // section renders with prefilled end_times the crew can confirm.
+    $needs_orphan_rebuild = FALSE;
+    foreach ($orphans as $uid => $info) {
+      foreach ($info['orphan_entities'] as $orphan) {
+        $tc_id = (int) $orphan->id();
+        if (!isset($values['signoff_reconciliation']['orphans'][$tc_id])) {
+          $needs_orphan_rebuild = TRUE;
+          break 2;
+        }
+      }
+    }
+    if ($needs_orphan_rebuild) {
+      \Drupal::messenger()->addWarning(t('Crew roster updated. Confirm end times for the forgotten clock-outs that just appeared below, then save again.'));
+      $form_state->setRebuild(TRUE);
+      return;
+    }
+
     foreach ($orphans as $uid => $info) {
       foreach ($info['orphan_entities'] as $orphan) {
         $tc_id = (int) $orphan->id();

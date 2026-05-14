@@ -1,6 +1,7 @@
 <?php
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageException;
 
 /**
  * Maps WO bundles to their property_spraying_info bundle equivalent.
@@ -108,6 +109,10 @@ function wo_shared_entity_insert(EntityInterface $entity) {
  * multiplier — so the redundancy is idempotent.
  */
 function wo_shared_work_order_presave(EntityInterface $entity) {
+  // Guard runs before the recalc: an invalid status transition halts
+  // the save via EntityStorageException before any totals are touched.
+  _wo_shared_assert_invoiced_transition_valid($entity);
+
   if ($entity->isNew()) {
     return;
   }
@@ -133,4 +138,85 @@ function wo_shared_work_order_presave(EntityInterface $entity) {
   }
 
   $entity->set('field_total_time', round($sum, 2));
+}
+
+/**
+ * Block any work_order save that transitions field_status to Invoiced
+ * (1281) without the prior status having been Complete (1097).
+ *
+ * Catches the recurring "office invoices before crew signs off" mistake
+ * — the orphan clock entry and incomplete wo_tasks_list left behind by
+ * a premature Invoiced transition blocks the crew from creating new
+ * mowing WOs (see WO 49892 — three crew members stuck on 2026-05-13).
+ *
+ * Allowed transitions:
+ *   - any status -> any non-Invoiced status (1281)
+ *   - Complete (1097) -> Invoiced (1281)             (normal billing flow)
+ *   - Invoiced (1281) -> Invoiced (1281)             (no-op resave)
+ *
+ * Blocked:
+ *   - In Progress / Open / any non-Complete status -> Invoiced
+ *   - New entity inserted directly with status = Invoiced
+ *
+ * Bypass for scripts and migrations: set
+ *   $work_order->_skip_invoiced_guard = TRUE;
+ * before saving. The UI flow has no path to this flag, so office staff
+ * cannot bypass through the form. The flag is documented inline so
+ * future maintainers can find it.
+ *
+ * Throws EntityStorageException with a message that names the WO and
+ * explains the required next step.
+ */
+function _wo_shared_assert_invoiced_transition_valid(EntityInterface $entity): void {
+  // 1281 = Invoiced, 1097 = Complete (BOS status taxonomy term IDs).
+  $INVOICED = 1281;
+  $COMPLETE = 1097;
+
+  if (!empty($entity->_skip_invoiced_guard)) {
+    return;
+  }
+  if (!$entity->hasField('field_status')) {
+    return;
+  }
+  $new_status = (int) ($entity->get('field_status')->target_id ?? 0);
+  if ($new_status !== $INVOICED) {
+    return;
+  }
+
+  if ($entity->isNew()) {
+    $prior_status = 0;
+  }
+  else {
+    /** @var \Drupal\Core\Entity\ContentEntityInterface|null $original */
+    $original = $entity->original ?? NULL;
+    if (!$original instanceof EntityInterface) {
+      // Original not available — can't compare. Better to allow than
+      // to block legitimate operations that don't carry $entity->original
+      // (e.g. some programmatic paths). Logged so we can spot it.
+      \Drupal::logger('wo_shared')->warning(
+        'Invoiced-transition guard: $entity->original not present on save for WO @id. Allowing save.',
+        ['@id' => $entity->id() ?: '(new)']
+      );
+      return;
+    }
+    $prior_status = (int) ($original->get('field_status')->target_id ?? 0);
+  }
+
+  if ($prior_status === $INVOICED) {
+    return;
+  }
+  if ($prior_status === $COMPLETE) {
+    return;
+  }
+
+  $wo_label = $entity->hasField('field_work_order_id') && !$entity->get('field_work_order_id')->isEmpty()
+    ? '#' . $entity->get('field_work_order_id')->value
+    : '#' . ($entity->id() ?: '(new)');
+
+  throw new EntityStorageException(
+    "Cannot mark WO $wo_label as Invoiced: the work order must be Complete first. "
+    . "The crew has not signed off — wait for them to finish, or contact them to complete the sign-off, "
+    . "before flipping the status to Invoiced. "
+    . "(Current status term ID: $prior_status; required: $COMPLETE Complete.)"
+  );
 }

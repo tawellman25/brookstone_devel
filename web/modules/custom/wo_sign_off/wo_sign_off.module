@@ -678,56 +678,69 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
     return $u ? $u->getDisplayName() : 'User ID ' . $uid;
   };
 
-  // ORPHAN rows — render per-entry fieldsets so the foreman confirms
-  // each end_time before saving. Universal across bundles: a forgotten
-  // clock-out belongs to the person who clocked in, and only they know
-  // when they actually left. Pre-fix behavior was to silently close
-  // with end_time = now, which produced absurd shifts any time sign-off
-  // happened later than the actual end (see WO 49723 — Herbert Munoz's
-  // 18.62 hr entry, sign-off the morning after).
+  // ORPHAN rows — UX splits by form type:
+  //
+  //   wo_tasks_list (mowing tasks-list path): the foreman fills the
+  //     tasks form right after finishing the job — Save IS the
+  //     clock-out event. No second form; the orphan close uses
+  //     end_time = now silently. Render a short summary so the
+  //     foreman knows what will happen.
+  //
+  //   wo_complete_info (sign-off form for spray, fertilizing,
+  //     cleanup, sprinkler, landscape): per-entry datetime widget
+  //     so the foreman can correct delayed-signoff scenarios (the
+  //     WO 49723 / 49497 pattern).
   if (!empty($orphans)) {
-    $form['signoff_reconciliation']['orphans_title'] = [
-      '#markup' => '<h3>' . t('Confirm end times for forgotten clock-outs') . '</h3>',
-    ];
-    $form['signoff_reconciliation']['orphans_help'] = [
-      '#markup' => '<p>' . t('These clock-ins are still open. Confirm or adjust each end time before saving. Prefilled values are estimates — please verify.') . '</p>',
-    ];
-    $form['signoff_reconciliation']['orphans'] = [
-      '#type' => 'container',
-      '#tree' => TRUE,
-    ];
-    foreach ($orphans as $uid => $info) {
-      foreach ($info['orphan_entities'] as $orphan) {
-        $tc_id = (int) $orphan->id();
-        $start_iso = $orphan->get('field_start_time')->value ?? NULL;
-        if (empty($start_iso)) {
-          continue;
-        }
-        $start_dt = new DrupalDateTime($start_iso, 'UTC');
-        $start_dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
-        $prefill_dt = _wo_sign_off_compute_orphan_end_prefill($wo_id, $start_dt);
+    if ($entity_type === 'wo_tasks_list') {
+      $orphan_names = array_map($name, array_keys($orphans));
+      $form['signoff_reconciliation']['orphan_preview'] = [
+        '#markup' => '<p><em>' . t('Open clock-ins will be closed when you save: @names.', ['@names' => implode(', ', $orphan_names)]) . '</em></p>',
+      ];
+    }
+    else {
+      $form['signoff_reconciliation']['orphans_title'] = [
+        '#markup' => '<h3>' . t('Confirm end times for forgotten clock-outs') . '</h3>',
+      ];
+      $form['signoff_reconciliation']['orphans_help'] = [
+        '#markup' => '<p>' . t('These clock-ins are still open. Confirm or adjust each end time before saving. Prefilled values are estimates — please verify.') . '</p>',
+      ];
+      $form['signoff_reconciliation']['orphans'] = [
+        '#type' => 'container',
+        '#tree' => TRUE,
+      ];
+      foreach ($orphans as $uid => $info) {
+        foreach ($info['orphan_entities'] as $orphan) {
+          $tc_id = (int) $orphan->id();
+          $start_iso = $orphan->get('field_start_time')->value ?? NULL;
+          if (empty($start_iso)) {
+            continue;
+          }
+          $start_dt = new DrupalDateTime($start_iso, 'UTC');
+          $start_dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+          $prefill_dt = _wo_sign_off_compute_orphan_end_prefill($wo_id, $start_dt);
 
-        $form['signoff_reconciliation']['orphans'][$tc_id] = [
-          '#type' => 'fieldset',
-          '#title' => t('@name — started @start (entry #@id)', [
-            '@name' => $name((int) $uid),
-            '@start' => $start_dt->format('m/d/Y g:i A'),
-            '@id' => $tc_id,
-          ]),
-          '#tree' => TRUE,
-          'end_time' => [
-            '#type' => 'datetime',
-            '#title' => t('End time'),
-            '#description' => t('When did this teammate actually finish? Required.'),
-            '#default_value' => $prefill_dt,
-            '#required' => TRUE,
-          ],
-          'notes' => [
-            '#type' => 'textfield',
-            '#title' => t('Note (optional)'),
-            '#size' => 60,
-          ],
-        ];
+          $form['signoff_reconciliation']['orphans'][$tc_id] = [
+            '#type' => 'fieldset',
+            '#title' => t('@name — started @start (entry #@id)', [
+              '@name' => $name((int) $uid),
+              '@start' => $start_dt->format('m/d/Y g:i A'),
+              '@id' => $tc_id,
+            ]),
+            '#tree' => TRUE,
+            'end_time' => [
+              '#type' => 'datetime',
+              '#title' => t('End time'),
+              '#description' => t('When did this teammate actually finish? Required.'),
+              '#default_value' => $prefill_dt,
+              '#required' => TRUE,
+            ],
+            'notes' => [
+              '#type' => 'textfield',
+              '#title' => t('Note (optional)'),
+              '#size' => 60,
+            ],
+          ];
+        }
       }
     }
   }
@@ -1000,15 +1013,10 @@ function _wo_sign_off_reconciliation_validate(array &$form, FormStateInterface $
   $now = \Drupal::time()->getRequestTime();
   $grace = (defined('WO_TOTAL_TIME_FUTURE_GRACE_MINUTES') ? WO_TOTAL_TIME_FUTURE_GRACE_MINUTES : 5) * 60;
 
-  // Validate ORPHAN rows (applies to all bundles).
-  if (!empty($orphans)) {
-    // If any orphan row is missing from the submitted form values,
-    // the orphan section wasn't rendered at form-build time — most
-    // commonly because the roster field was empty when the form was
-    // first loaded and the crew populated it within the same
-    // submission (typical mowing tasks-list flow: roster + tasks +
-    // save in one shot). Rebuild instead of error-out so the orphan
-    // section renders with prefilled end_times the crew can confirm.
+  // Validate ORPHAN rows — only on wo_complete_info (Sign-Off form).
+  // wo_tasks_list (Task List form) closes orphans silently at save
+  // time with end = now, so there are no rows to validate.
+  if (!empty($orphans) && $entity_type !== 'wo_tasks_list') {
     $needs_orphan_rebuild = FALSE;
     foreach ($orphans as $uid => $info) {
       foreach ($info['orphan_entities'] as $orphan) {
@@ -1194,35 +1202,44 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
   $closed_names = [];
   $created_names = [];
 
-  // ORPHANS — close with the foreman-entered end_time from the form's
-  // per-entry orphan rows. ALL open entries for this uid get closed
-  // (multiple in/out cycles on sprinkler/landscape WOs may leave more
-  // than one open if the teammate forgot multiple clock-outs).
-  // Validation guarantees each orphan row has a real DrupalDateTime
-  // for end_time before we reach this point.
+  // ORPHANS — close open clock-ins.
+  //
+  // wo_tasks_list (Task List form): silent close with end_time = now.
+  // The foreman is clocking out by saving this form; no second
+  // confirmation step is wanted.
+  //
+  // wo_complete_info (Sign-Off form): foreman-entered end_time from
+  // the per-row datetime widget. Validation guarantees a real
+  // DrupalDateTime is present.
   foreach ($orphans as $uid => $info) {
     $u = $user_storage->load($uid);
     $u_name = $u ? $u->getDisplayName() : 'User ID ' . $uid;
     $closed_count = 0;
     foreach ($info['orphan_entities'] as $orphan) {
       $tc_id = (int) $orphan->id();
-      $row = $values['signoff_reconciliation']['orphans'][$tc_id] ?? [];
-      $end_dt = $row['end_time'] ?? NULL;
-      if (!$end_dt instanceof DrupalDateTime) {
-        // Defensive: validation should have caught this. Fall back to
-        // $now_utc rather than crash, but log loudly.
-        \Drupal::logger('wo_sign_off')->warning(
-          'Reconciliation: orphan row for entry @id on WO @wo had no end_time at save — falling back to now.',
-          ['@id' => $tc_id, '@wo' => $wo_id]
-        );
+      if ($entity_type === 'wo_tasks_list') {
         $end_utc = $now_utc;
+        $audit_note = "[Closed by {$signer_name} at sign-off, {$now_label}]";
       }
       else {
-        $end_utc = $end_dt->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s');
+        $row = $values['signoff_reconciliation']['orphans'][$tc_id] ?? [];
+        $end_dt = $row['end_time'] ?? NULL;
+        if (!$end_dt instanceof DrupalDateTime) {
+          // Defensive: validation should have caught this. Fall back
+          // to $now_utc rather than crash, but log loudly.
+          \Drupal::logger('wo_sign_off')->warning(
+            'Reconciliation: orphan row for entry @id on WO @wo had no end_time at save — falling back to now.',
+            ['@id' => $tc_id, '@wo' => $wo_id]
+          );
+          $end_utc = $now_utc;
+        }
+        else {
+          $end_utc = $end_dt->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s');
+        }
+        $row_note = trim((string) ($row['notes'] ?? ''));
+        $audit_prefix = "[Closed by {$signer_name} at sign-off, {$now_label}; end time entered by foreman]";
+        $audit_note = trim($audit_prefix . ' ' . $row_note);
       }
-      $row_note = trim((string) ($row['notes'] ?? ''));
-      $audit_prefix = "[Closed by {$signer_name} at sign-off, {$now_label}; end time entered by foreman]";
-      $audit_note = trim($audit_prefix . ' ' . $row_note);
       $orphan->set('field_end_time', $end_utc);
       $orphan->set('field_notes', $audit_note);
       if ($parent_id !== NULL) {

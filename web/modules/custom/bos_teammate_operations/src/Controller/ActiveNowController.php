@@ -112,7 +112,7 @@ final class ActiveNowController extends ControllerBase implements ContainerInjec
     // Sort by clock-in time DESC (most recently clocked in first).
     usort($rows, fn($a, $b) => strcmp($b['start_iso'], $a['start_iso']));
 
-    $headers = ['Teammate', 'Department', 'Work Order', 'Clocked In At', 'Duration', 'Status'];
+    $headers = ['Teammate', 'Work Order', 'Clocked In At', 'Duration', 'Status'];
     if ($groupBy) {
       $html .= $this->renderGroupedTable($rows, $headers, fn($row) => $this->renderClockedInRow($row));
     }
@@ -185,7 +185,6 @@ final class ActiveNowController extends ControllerBase implements ContainerInjec
     $statusDot = '<span class="bos-status-dot bos-status-' . $status . '" aria-label="' . htmlspecialchars($status) . '"></span>';
     return '<tr>'
       . '<td>' . $teammateLink . '</td>'
-      . '<td>' . htmlspecialchars($row['dept_label']) . '</td>'
       . '<td>' . $row['wo_html'] . '</td>'
       . '<td>' . htmlspecialchars($clockedAt) . '</td>'
       . '<td>' . $statusDot . htmlspecialchars($duration) . '</td>'
@@ -209,7 +208,7 @@ final class ActiveNowController extends ControllerBase implements ContainerInjec
     // Sort by last_activity DESC.
     usort($rows, fn($a, $b) => $b['last_activity_ts'] <=> $a['last_activity_ts']);
 
-    $headers = ['Teammate', 'Department', 'WOs Touched Today', 'Total Closed Hrs', 'Currently On', 'Last Activity'];
+    $headers = ['Teammate', 'WOs Touched Today', 'Total Closed Hrs', 'Currently On', 'Last Activity'];
     if ($groupBy) {
       $html .= $this->renderGroupedTable($rows, $headers, fn($row) => $this->renderTodayActivityRow($row));
     }
@@ -334,7 +333,6 @@ final class ActiveNowController extends ControllerBase implements ContainerInjec
     $lastTime = $row['last_activity_ts'] > 0 ? $this->formatTimeUs($row['last_activity_ts']) : '—';
     return '<tr>'
       . '<td>' . $teammateLink . '</td>'
-      . '<td>' . htmlspecialchars($row['dept_label']) . '</td>'
       . '<td class="bos-numeric">' . $woCount . '</td>'
       . '<td class="bos-numeric">' . $closedHrs . '</td>'
       . '<td class="bos-currently-on-cell">' . $row['currently_on_html'] . '</td>'

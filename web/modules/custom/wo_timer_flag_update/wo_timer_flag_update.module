@@ -84,13 +84,11 @@ function wo_timer_flag_update_flagging_delete(FlaggingInterface $flagging) {
         if ($wo_time_clock->get('field_end_time')->isEmpty()) {
           $wo_time_clock->set('field_end_time', DrupalDateTime::createFromTimestamp(time(), new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s'));
 
-          // Append rather than overwrite — field_notes is single-value
-          // (cardinality 1), so appendItem() does not append correctly.
-          // Concatenate with a newline and trim to handle the
-          // empty-prefix case cleanly.
-          $existing_notes = $wo_time_clock->get('field_notes')->value ?? '';
-          $appended_notes = trim($existing_notes . "\n" . 'End Time entered by system');
-          $wo_time_clock->set('field_notes', $appended_notes);
+          // field_notes is multi-value (cardinality -1). Append a new
+          // item so the two system notes render as two separate
+          // entries in the form widget rather than being concatenated
+          // into one varchar(255) line where the "\n" is invisible.
+          $wo_time_clock->get('field_notes')->appendItem('End Time entered by system');
 
           // Save the updated entity.
           $wo_time_clock->save();

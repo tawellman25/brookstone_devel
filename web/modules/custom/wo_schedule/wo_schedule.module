@@ -56,12 +56,24 @@ function wo_schedule_entity_presave(EntityInterface $entity) {
  * Nothing changed -> nothing stashed (no-op resaves stay quiet).
  */
 function _wo_schedule_capture_change_note(EntityInterface $entity): void {
-  $fmt = function ($iso) {
+  // Date-only label. Stored values are UTC; an all-day schedule is
+  // saved as midnight→23:59:59 Denver (06:00 UTC → 05:59:59 UTC next
+  // day), which read as a misleading ~24h "6:00 AM – 5:59 AM" span.
+  // Convert UTC → America/Denver and format the date only, so a
+  // single-day schedule shows one clean date and a genuine multi-day
+  // range shows "start – end".
+  $fmtDate = function ($iso) {
     if (empty($iso)) {
       return '(none)';
     }
-    $ts = strtotime($iso);
-    return $ts ? date('m/d/Y g:i A', $ts) : $iso;
+    try {
+      $dt = new DrupalDateTime($iso, new \DateTimeZone('UTC'));
+      $dt->setTimezone(new \DateTimeZone('America/Denver'));
+      return $dt->format('m/d/Y');
+    }
+    catch (\Exception $e) {
+      return $iso;
+    }
   };
   $name = function ($uid) {
     if (!$uid) {
@@ -70,11 +82,13 @@ function _wo_schedule_capture_change_note(EntityInterface $entity): void {
     $u = User::load($uid);
     return $u ? $u->getDisplayName() : "uid {$uid}";
   };
-  $dateLabel = function ($start, $end) use ($fmt) {
+  $dateLabel = function ($start, $end) use ($fmtDate) {
     if (empty($start)) {
       return '(none)';
     }
-    return $fmt($start) . (!empty($end) && $end !== $start ? ' – ' . $fmt($end) : '');
+    $s = $fmtDate($start);
+    $e = !empty($end) ? $fmtDate($end) : $s;
+    return ($s === $e) ? $s : ($s . ' – ' . $e);
   };
 
   $newStart = $entity->get('field_scheduled_date_and_time')->value ?? NULL;

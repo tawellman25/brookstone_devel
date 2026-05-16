@@ -630,27 +630,37 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
   $entity_type = $entity->getEntityTypeId();
   $roster_field = _wo_sign_off_roster_field_for($entity_type);
   $values = $form_state->getValues();
-  $roster = $svc->normalizeRosterFromFormState($values, $entity_type, $entity->bundle());
-  if (empty($roster) && $entity->hasField($roster_field) && !$entity->get($roster_field)->isEmpty()) {
-    foreach ($entity->get($roster_field) as $item) {
-      if (!empty($item->target_id)) {
-        $roster[] = (int) $item->target_id;
-      }
-    }
-    $roster = array_values(array_unique($roster));
-  }
 
-  // WO id resolution mirrors the roster: form state first (covers the
-  // Add form + AJAX/rebuild, where field_work_order lives in form
-  // state and is NOT yet on a new entity), then the entity. Without
-  // the form-state read, a brand-new wo_complete_info on the Add form
-  // always resolved $wo_id = 0 and the reconciliation collapsed to
-  // the empty-state message — the per-row time fields never rendered
-  // even with crew checked. Matches what the validate/submit handlers
-  // already do.
-  $wo_id = (int) ($values['field_work_order'][0]['target_id'] ?? 0);
-  if ($wo_id <= 0 && $entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty()) {
-    $wo_id = (int) $entity->get('field_work_order')->target_id;
+  // Stashed context wins. The validate handler resolves wo_id +
+  // roster reliably (it runs after the form is processed, so
+  // getValues() is fully populated) and stores them in form state
+  // before triggering a rebuild. On that rebuild this builder runs
+  // at form-BUILD time, where $form_state->getValues() is NOT yet
+  // repopulated — so re-deriving here failed and the per-row time
+  // fields never rendered on the Add form. Reading the stash makes
+  // the rebuild deterministic instead of dependent on build-time
+  // value availability.
+  $ctx = $form_state->get('_wo_signoff_ctx');
+  if (is_array($ctx) && !empty($ctx['wo_id']) && !empty($ctx['roster'])) {
+    $wo_id = (int) $ctx['wo_id'];
+    $roster = array_values(array_unique(array_map('intval', $ctx['roster'])));
+  }
+  else {
+    $roster = $svc->normalizeRosterFromFormState($values, $entity_type, $entity->bundle());
+    if (empty($roster) && $entity->hasField($roster_field) && !$entity->get($roster_field)->isEmpty()) {
+      foreach ($entity->get($roster_field) as $item) {
+        if (!empty($item->target_id)) {
+          $roster[] = (int) $item->target_id;
+        }
+      }
+      $roster = array_values(array_unique($roster));
+    }
+
+    // WO id: form state first (Add form / AJAX), then the entity.
+    $wo_id = (int) ($values['field_work_order'][0]['target_id'] ?? 0);
+    if ($wo_id <= 0 && $entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty()) {
+      $wo_id = (int) $entity->get('field_work_order')->target_id;
+    }
   }
 
   // Empty roster — nothing to reconcile.
@@ -1012,8 +1022,17 @@ function _wo_sign_off_reconciliation_validate(array &$form, FormStateInterface $
   $roster = $svc->normalizeRosterFromFormState($values, $entity_type, $entity->bundle());
   $wo_id = (int) ($values['field_work_order'][0]['target_id'] ?? $entity->get('field_work_order')->target_id ?? 0);
   if (empty($roster) || $wo_id <= 0) {
+    // No valid context — clear any stale stash so a rebuild doesn't
+    // resurrect rows for a roster the user just emptied.
+    $form_state->set('_wo_signoff_ctx', NULL);
     return;
   }
+
+  // Stash the reliably-resolved context so the fieldset builder can
+  // render the per-row time fields on the rebuild this handler may
+  // trigger below. At rebuild build-time getValues() is not yet
+  // repopulated, so the builder cannot re-derive these itself.
+  $form_state->set('_wo_signoff_ctx', ['wo_id' => $wo_id, 'roster' => $roster]);
 
   $categorized = _wo_sign_off_categorize_roster($wo_id, $roster);
   $orphans = array_filter($categorized, fn($r) => $r['status'] === 'orphan');

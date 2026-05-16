@@ -640,9 +640,18 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
     $roster = array_values(array_unique($roster));
   }
 
-  $wo_id = ($entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty())
-    ? (int) $entity->get('field_work_order')->target_id
-    : 0;
+  // WO id resolution mirrors the roster: form state first (covers the
+  // Add form + AJAX/rebuild, where field_work_order lives in form
+  // state and is NOT yet on a new entity), then the entity. Without
+  // the form-state read, a brand-new wo_complete_info on the Add form
+  // always resolved $wo_id = 0 and the reconciliation collapsed to
+  // the empty-state message — the per-row time fields never rendered
+  // even with crew checked. Matches what the validate/submit handlers
+  // already do.
+  $wo_id = (int) ($values['field_work_order'][0]['target_id'] ?? 0);
+  if ($wo_id <= 0 && $entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty()) {
+    $wo_id = (int) $entity->get('field_work_order')->target_id;
+  }
 
   // Empty roster — nothing to reconcile.
   // For wo_complete_info: cardinality on field_those_on_crew is multi-

@@ -90,8 +90,30 @@ function wo_timer_flag_update_flagging_delete(FlaggingInterface $flagging) {
           // into one varchar(255) line where the "\n" is invisible.
           $wo_time_clock->get('field_notes')->appendItem('End Time entered by system');
 
-          // Save the updated entity.
-          $wo_time_clock->save();
+          // Save the updated entity. The single-entry cap guard
+          // (_wo_total_time_validate_time_clock_entry) rejects an
+          // end=now close that would exceed the bundle's cap. The
+          // smart Clock-Out button routes interactive over-cap
+          // clock-outs to the edit form before they ever reach here,
+          // so this should only throw on a *programmatic* unflag
+          // (wo_lawn_mowing / wo_snow_removal task completion) of an
+          // over-cap entry. Don't let that fatal the flag delete —
+          // log it and leave the entry open for correction; the
+          // smart button / AnomalyDetection will surface it.
+          try {
+            $wo_time_clock->save();
+          }
+          catch (\Drupal\Core\Entity\EntityStorageException $e) {
+            \Drupal::logger('wo_timer_flag_update')->warning(
+              'Clock-out for wo_time_clock @id (WO @wo) rejected by the single-entry cap guard on a programmatic unflag. '
+              . 'Entry left OPEN for correction. Message: @msg',
+              [
+                '@id' => $wo_time_clock->id(),
+                '@wo' => $flagging->getFlaggable() ? $flagging->getFlaggable()->id() : 'unknown',
+                '@msg' => $e->getMessage(),
+              ]
+            );
+          }
         }
       }
       else {
@@ -181,6 +203,97 @@ function wo_timer_flag_update_preprocess_flag(&$variables) {
     // Attach the custom CSS library.
     $variables['#attached']['library'][] = 'wo_timer_flag_update/flag-timer';
 
+    // Smart Clock-Out: if the open entry has already been running
+    // longer than the bundle's single-entry cap, the one-tap unflag
+    // would stamp end=now and be rejected by the cap guard. Instead,
+    // point the Clock-Out link at the entry's edit form so the
+    // teammate confirms the real end time (or checks the override).
+    // Saving there closes the entry; wo_timer_flag_update_wo_time_clock_update
+    // then removes the timer flag (flag-off-on-close invariant).
+    // Only the over-cap case diverts — normal clock-outs (≈96% of
+    // entries, well under the cap) keep the one-tap behavior.
+    if ($is_flagged && $entity && $entity->getEntityTypeId() === 'work_order') {
+      $flagging = $flag_service->getFlagging($flag, $entity, $current_user);
+      if ($flagging
+          && $flagging->hasField('field_wo_timer_entered')
+          && !$flagging->get('field_wo_timer_entered')->isEmpty()) {
+        $tc_id = $flagging->get('field_wo_timer_entered')->target_id;
+        $tc = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->load($tc_id);
+        if ($tc
+            && $tc->hasField('field_start_time')
+            && !$tc->get('field_start_time')->isEmpty()
+            && $tc->get('field_end_time')->isEmpty()) {
+          $start_ts = strtotime((string) $tc->get('field_start_time')->value . 'Z');
+          if ($start_ts) {
+            $elapsed_hours = (\Drupal::time()->getRequestTime() - $start_ts) / 3600;
+            $cap = function_exists('_wo_total_time_get_max_entry_hours')
+              ? _wo_total_time_get_max_entry_hours($entity->bundle())
+              : 4.0;
+            if ($elapsed_hours > $cap) {
+              $dest = \Drupal::request()->getRequestUri();
+              $url = \Drupal\Core\Url::fromRoute(
+                'entity.wo_time_clock.edit_form',
+                ['wo_time_clock' => $tc_id],
+                ['query' => ['destination' => $dest]]
+              );
+              $variables['attributes']['href'] = $url->toString();
+              $review_text = 'Clock Out — confirm time';
+              $variables['title'] = $review_text;
+              $variables['link_text_raw'] = $review_text;
+              $variables['link_text'] = [
+                '#type' => 'inline_template',
+                '#template' => '<span class="visually-hidden">{{ t }}</span><span class="flag-timer-icon flag-state-flagged flag-timer-review" aria-hidden="true"></span>',
+                '#context' => ['t' => $review_text],
+              ];
+              $variables['attributes']['class'][] = 'flag-timer-review';
+            }
+          }
+        }
+      }
+    }
+
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for wo_time_clock entities.
+ *
+ * Flag-off-on-close invariant: when an entry's field_end_time
+ * transitions from empty to set (by ANY path — the edit form the
+ * smart Clock-Out button routes to, sign-off reconciliation, manual
+ * correction), remove any work_order_timer flagging that points at
+ * this entry. This makes "entry closed ⇒ clocked out" true
+ * regardless of how the close happened.
+ *
+ * No loop / no double-stamp: unflag() fires
+ * wo_timer_flag_update_flagging_delete(), whose existing guard skips
+ * when field_end_time is already populated (which it now is).
+ */
+function wo_timer_flag_update_wo_time_clock_update(\Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'wo_time_clock' || $entity->bundle() !== 'entry') {
+    return;
+  }
+  $original = $entity->original ?? NULL;
+  $was_open = $original ? $original->get('field_end_time')->isEmpty() : TRUE;
+  $now_closed = !$entity->get('field_end_time')->isEmpty();
+  if (!$was_open || !$now_closed) {
+    return;
+  }
+
+  $flaggings = \Drupal::entityTypeManager()->getStorage('flagging')->loadByProperties([
+    'flag_id' => 'work_order_timer',
+    'field_wo_timer_entered' => $entity->id(),
+  ]);
+  if (empty($flaggings)) {
+    return;
+  }
+  $flag_service = \Drupal::service('flag');
+  foreach ($flaggings as $flagging) {
+    $flag = $flagging->getFlag();
+    $flaggable = $flagging->getFlaggable();
+    if ($flag && $flaggable) {
+      $flag_service->unflag($flag, $flaggable, $flagging->getOwner());
+    }
   }
 }
 

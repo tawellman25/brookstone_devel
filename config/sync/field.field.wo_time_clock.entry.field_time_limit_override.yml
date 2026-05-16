@@ -1,0 +1,21 @@
+uuid: a810dd0e-6eed-46bd-a40e-5e98896058c6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_time_clock.entry
+    - field.storage.wo_time_clock.field_time_limit_override
+id: wo_time_clock.entry.field_time_limit_override
+field_name: field_time_limit_override
+entity_type: wo_time_clock
+bundle: entry
+label: 'This long entry is correct (override time limit)'
+description: 'Check only if this clock entry is genuinely longer than the single-entry cap for its work order. Checking this records an audit note on the entry and allows it to save.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  on_label: 'Yes — confirmed correct'
+  off_label: 'No'
+field_type: boolean

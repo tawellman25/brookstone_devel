@@ -1,0 +1,25 @@
+uuid: 08039cbf-d9cb-4757-ade2-d312820afe13
+langcode: en
+status: true
+dependencies:
+  config:
+    - config_pages.type.business_setting
+    - field.storage.config_pages.field_max_entry_hours
+id: config_pages.business_setting.field_max_entry_hours
+field_name: field_max_entry_hours
+entity_type: config_pages
+bundle: business_setting
+label: 'Max Single Clock Entry (hours) — standard'
+description: 'A single wo_time_clock entry (one clock-in to clock-out) longer than this is rejected unless the teammate explicitly checks the override box on the entry. Applies to every work_order bundle EXCEPT the long-job bundles (landscaping, sprinkler_repair, sprinkler_installation), which use the long-job value below. Default 4.00.'
+required: false
+translatable: false
+default_value:
+  -
+    value: '4.00'
+default_value_callback: ''
+settings:
+  min: null
+  max: null
+  prefix: ''
+  suffix: ' hrs'
+field_type: decimal

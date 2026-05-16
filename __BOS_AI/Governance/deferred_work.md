@@ -265,6 +265,18 @@ A shorter version of [working_with_claude.md](working_with_claude.md) tailored f
 
 ---
 
+### 16. Automatic lunch / break deduction on long clock sessions
+
+Surfaced 2026-05-16 during the wo_time_clock single-entry cap work (the per-bundle 4hr / 14hr-long-job cap with override checkbox).
+
+The root behavioral problem: crews on long jobs (landscaping, sprinkler repair/install) don't reliably clock out for lunch and breaks — and there's legitimate pushback on expecting them to remember mid-job. The single-entry cap mitigates the *runaway* (forgot-overnight) case but doesn't address the everyday reality that a real 9-hour landscaping session almost certainly contains an unpaid ~30–60 min lunch that's currently being captured as worked time.
+
+Desired: a rule that deducts a configurable lunch/break period from a single clock session once it exceeds some duration, in a way that's defensible for payroll and billing — e.g., "any single entry over N hours has M minutes auto-deducted, with the deduction visibly noted on the entry." Needs business-rule definition (threshold, deduction amount, whether it's per-bundle, how it interacts with the cap/override, and whether the deduction is shown as a separate adjustment vs. baked into total_time) before any implementation.
+
+Explicitly scoped OUT of the cap work — separate initiative, separate decision.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

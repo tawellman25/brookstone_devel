@@ -20,6 +20,34 @@ const WO_TOTAL_TIME_FUTURE_GRACE_MINUTES = 5;
 const WO_TOTAL_TIME_DEFAULT_LONG_SHIFT_HOURS = 16.0;
 
 /**
+ * Default single-entry caps in hours, used as fallback when the
+ * business_setting fields are unavailable/empty. Live values should
+ * come from business_setting.field_max_entry_hours /
+ * field_max_entry_hours_long — see _wo_total_time_get_max_entry_hours().
+ *
+ * A single wo_time_clock entry (one clock-in to clock-out) exceeding
+ * the applicable cap is rejected at presave unless
+ * field_time_limit_override is checked (or an admin/sign-off bypass
+ * applies). No legitimate single continuous session on one WO runs
+ * this long — a real long day is multiple WOs and/or breaks (which
+ * are separate clock-in/out cycles = separate entries).
+ */
+const WO_TOTAL_TIME_DEFAULT_MAX_ENTRY_HOURS = 4.0;
+const WO_TOTAL_TIME_DEFAULT_MAX_ENTRY_HOURS_LONG = 14.0;
+
+/**
+ * work_order bundles where genuinely long single sessions occur, so
+ * they use the elevated cap (field_max_entry_hours_long) instead of
+ * the standard one. Hardcoded by design — same pattern as the
+ * $excludedBundles / COMPLEX_BUNDLES lists elsewhere.
+ */
+const WO_TOTAL_TIME_LONG_JOB_BUNDLES = [
+  'landscaping',
+  'sprinkler_repair',
+  'sprinkler_installation',
+];
+
+/**
  * Implements hook_entity_presave().
  *
  * Two responsibilities, in order:
@@ -128,6 +156,56 @@ function wo_total_time_entity_update(EntityInterface $entity) {
  */
 function wo_total_time_entity_insert(EntityInterface $entity) {
   _wo_total_time_trigger_wo_recalc($entity);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for work_order entities.
+ *
+ * Recalculates field_total_time = sum(wo_time_clock.field_total_time)
+ * for the WO's closed clock entries. Gates on Complete status (1097)
+ * only:
+ *   - Pre-completion WOs are skipped — clock data is mid-flight and a
+ *     partial total would mislead anyone reading the WO.
+ *   - Invoiced (1281), Paid (1504), Canceled (1098), and Warrantied
+ *     (1283) are all skipped implicitly because they're not Complete —
+ *     once a WO leaves the Complete state, the captured-at-billing-time
+ *     value is preserved.
+ *
+ * For lawn_mowing WOs, wo_lawn_mowing also recalculates field_total_time
+ * on save (along with field_labor_total and other bundle-specific
+ * derived fields). Both produce the same value here — sum of clock
+ * entries, no multiplier — so the redundancy is idempotent.
+ *
+ * Combined with the existing wo_time_clock insert/update hooks that
+ * trigger a parent WO save, this completes the chain: editing a clock
+ * entry on a Complete WO will now flow through to a refreshed total.
+ */
+function wo_total_time_work_order_presave(EntityInterface $entity) {
+  if ($entity->isNew()) {
+    return;
+  }
+  if (!$entity->hasField('field_total_time')) {
+    return;
+  }
+  $status = (int) ($entity->get('field_status')->target_id ?? 0);
+  if ($status !== 1097) {
+    return;
+  }
+
+  $tcIds = \Drupal::entityQuery('wo_time_clock')
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $entity->id())
+    ->condition('field_end_time', NULL, 'IS NOT NULL')
+    ->execute();
+
+  $sum = 0.0;
+  if ($tcIds) {
+    foreach (\Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadMultiple($tcIds) as $tc) {
+      $sum += (float) ($tc->get('field_total_time')->value ?? 0);
+    }
+  }
+
+  $entity->set('field_total_time', round($sum, 2));
 }
 
 /**
@@ -325,6 +403,60 @@ function _wo_total_time_validate_time_clock_entry(EntityInterface $entity): void
       'Time entry cannot be created or modified: parent Work Order is Canceled.'
     );
   }
+
+  // Guard 6 — single-entry duration cap. A single clock-in to
+  // clock-out longer than the bundle's cap is rejected unless the
+  // teammate explicitly checks field_time_limit_override (or an admin
+  // bypass applies). Deliberately does NOT honor $is_signoff: the
+  // Task List silent-close path sets that flag and is exactly the
+  // path that produced the WO 49723 / Tanner-style runaway entries —
+  // it must be subject to the cap so the close routes to correction
+  // instead of silently stamping an 18-hour shift.
+  if ($start !== NULL && $end !== NULL) {
+    $duration_hours = ($end - $start) / 3600;
+    $cap = _wo_total_time_get_max_entry_hours($wo->bundle());
+    $override = $entity->hasField('field_time_limit_override')
+      && !$entity->get('field_time_limit_override')->isEmpty()
+      && (bool) $entity->get('field_time_limit_override')->value;
+
+    if ($duration_hours > $cap && !$override && !$is_admin) {
+      throw new EntityStorageException(sprintf(
+        'Time entry rejected: this single clock entry is %s hours, over the %s-hour limit for %s work. '
+        . 'A real long day is multiple work orders and/or breaks (separate clock-ins). '
+        . 'If this entry truly is correct, check "This long entry is correct" on the entry to confirm.',
+        number_format($duration_hours, 2),
+        number_format($cap, 2),
+        $wo->bundle()
+      ));
+    }
+
+    // Override accepted (or admin) and over cap — stamp an audit note
+    // so the deliberate override is traceable. Idempotent: skip if an
+    // override note is already present (re-saves shouldn't stack notes).
+    if ($duration_hours > $cap && ($override || $is_admin) && $entity->hasField('field_notes')) {
+      $already = FALSE;
+      foreach ($entity->get('field_notes')->getValue() as $item) {
+        if (isset($item['value']) && stripos($item['value'], '[Time limit override') === 0) {
+          $already = TRUE;
+          break;
+        }
+      }
+      if (!$already) {
+        $uid = (int) \Drupal::currentUser()->id();
+        $uname = \Drupal::currentUser()->getDisplayName();
+        $note = sprintf(
+          '[Time limit override: %sh entry exceeds %sh cap for %s — confirmed by %s (uid %d) on %s]',
+          number_format($duration_hours, 2),
+          number_format($cap, 2),
+          $wo->bundle(),
+          $uname,
+          $uid,
+          date('m/d/Y g:i A', \Drupal::time()->getRequestTime())
+        );
+        $entity->get('field_notes')->appendItem($note);
+      }
+    }
+  }
 }
 
 /**
@@ -400,6 +532,37 @@ function _wo_total_time_get_long_shift_hours(): float {
 }
 
 /**
+ * Resolve the single-entry hour cap for a given work_order bundle.
+ *
+ * Long-job bundles (landscaping, sprinkler_repair,
+ * sprinkler_installation) use field_max_entry_hours_long; everything
+ * else uses field_max_entry_hours. Each falls back to its code-default
+ * constant when the business_setting field is missing/empty/non-numeric.
+ *
+ * @param string $wo_bundle
+ *   The parent work_order bundle machine name.
+ *
+ * @return float
+ *   The cap in hours.
+ */
+function _wo_total_time_get_max_entry_hours(string $wo_bundle): float {
+  $is_long = in_array($wo_bundle, WO_TOTAL_TIME_LONG_JOB_BUNDLES, TRUE);
+  $field = $is_long ? 'field_max_entry_hours_long' : 'field_max_entry_hours';
+  $default = $is_long
+    ? WO_TOTAL_TIME_DEFAULT_MAX_ENTRY_HOURS_LONG
+    : WO_TOTAL_TIME_DEFAULT_MAX_ENTRY_HOURS;
+
+  /** @var \Drupal\config_pages\ConfigPagesLoaderServiceInterface $loader */
+  $loader = \Drupal::service('config_pages.loader');
+  $cfg = $loader->load('business_setting');
+  if (!$cfg || !$cfg->hasField($field) || $cfg->get($field)->isEmpty()) {
+    return $default;
+  }
+  $value = $cfg->get($field)->value;
+  return is_numeric($value) ? (float) $value : $default;
+}
+
+/**
  * Whether the current user can bypass the wo_time_clock lock guards
  * (parent WO Invoiced/Paid/Canceled). Returns TRUE for site_admin and
  * administrator roles; FALSE for everyone else.
@@ -454,4 +617,48 @@ function _wo_total_time_form_value_to_timestamp(FormStateInterface $form_state, 
     return $ts !== FALSE ? $ts : NULL;
   }
   return NULL;
+}
+
+/**
+ * Implements hook_preprocess_views_view_field().
+ *
+ * Office billing safety net: on the admin_billing view
+ * (/admin/office/work-orders/billing), if a WO's field_total_time
+ * exceeds the long-shift threshold (business_setting.field_long_shift_hours,
+ * default 16hr — the same line AnomalyDetectionService uses), wrap the
+ * Hours cell in a red, bold, ⚠-prefixed badge so office staff can't
+ * skim past an implausible labor figure before invoicing.
+ *
+ * Detection-only: does not block invoicing, does not change the value.
+ * Pairs with the single-entry cap (which prevents most runaway
+ * entries at the source) — this catches anything that still slips
+ * through (e.g. a WO whose total is inflated by multiple bad entries).
+ */
+function wo_total_time_preprocess_views_view_field(array &$variables): void {
+  $view = $variables['view'] ?? NULL;
+  $field = $variables['field'] ?? NULL;
+  if (!$view || !$field) {
+    return;
+  }
+  if ($view->id() !== 'admin_billing' || $field->field !== 'field_total_time') {
+    return;
+  }
+  $row = $variables['row'] ?? NULL;
+  $entity = ($row && isset($row->_entity)) ? $row->_entity : NULL;
+  if (!$entity || !$entity->hasField('field_total_time') || $entity->get('field_total_time')->isEmpty()) {
+    return;
+  }
+  $hours = (float) $entity->get('field_total_time')->value;
+  $threshold = _wo_total_time_get_long_shift_hours();
+  if ($hours <= $threshold) {
+    return;
+  }
+
+  $original = $variables['output'] ?? '';
+  $variables['output'] = \Drupal\Core\Render\Markup::create(
+    '<span style="display:inline-block;background:#c0392b;color:#fff;font-weight:bold;'
+    . 'padding:3px 6px;border-radius:3px;" '
+    . 'title="Labor hours exceed the ' . (int) $threshold . '-hour review threshold — verify before invoicing">'
+    . '&#9888; ' . $original . '</span>'
+  );
 }

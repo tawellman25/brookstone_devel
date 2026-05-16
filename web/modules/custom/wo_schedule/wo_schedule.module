@@ -12,30 +12,120 @@ function wo_schedule_entity_presave(EntityInterface $entity) {
   if ($entity->getEntityTypeId() !== 'scheduling' || $entity->bundle() !== 'work_order') {
     return;
   }
-  if ($entity->get('field_date')->isEmpty()) {
+
+  // Smart Date -> Date Range sync (only when field_date is present).
+  if (!$entity->get('field_date')->isEmpty()) {
+    $smart_date = $entity->get('field_date')->first();
+    $start_value = $smart_date->value; // Unix timestamp (UTC).
+    $end_value = $smart_date->end_value ?: $start_value;
+    $is_all_day = ($smart_date->duration == 0 || $smart_date->duration == 1439);
+
+    $start = new DrupalDateTime('@' . $start_value, new \DateTimeZone('UTC'));
+    if ($is_all_day) {
+      $start->setTimezone(new \DateTimeZone('America/Denver'))->setTime(0, 0, 0);
+      $end = (clone $start)->setTime(23, 59, 59);
+      $start->setTimezone(new \DateTimeZone('UTC'));
+      $end->setTimezone(new \DateTimeZone('UTC'));
+    }
+    else {
+      $end = new DrupalDateTime('@' . $end_value, new \DateTimeZone('UTC'));
+    }
+
+    $entity->set('field_scheduled_date_and_time', [
+      'value' => $start->format('Y-m-d\TH:i:s'),
+      'end_value' => $end->format('Y-m-d\TH:i:s'),
+    ]);
+  }
+
+  // Capture the schedule-change WO note. Runs AFTER the smart-date
+  // sync above so the "new" date compared is the final stored value.
+  // $entity->original is not populated on update in this Drupal
+  // version, so old values come from loadUnchanged() (presave still
+  // sees the pre-write DB row). The composed note text is stashed on
+  // the entity and written post-save by the insert/update hooks.
+  _wo_schedule_capture_change_note($entity);
+}
+
+/**
+ * Build the schedule-change note text (if anything tracked changed)
+ * and stash it on the entity for the post-save writer.
+ *
+ * Tracked: field_scheduled_date_and_time, field_assigned_to,
+ * field_scheduling_note. Insert -> a snapshot of populated values.
+ * Update -> only the fields that actually changed, old -> new.
+ * Nothing changed -> nothing stashed (no-op resaves stay quiet).
+ */
+function _wo_schedule_capture_change_note(EntityInterface $entity): void {
+  $fmt = function ($iso) {
+    if (empty($iso)) {
+      return '(none)';
+    }
+    $ts = strtotime($iso);
+    return $ts ? date('m/d/Y g:i A', $ts) : $iso;
+  };
+  $name = function ($uid) {
+    if (!$uid) {
+      return '(unassigned)';
+    }
+    $u = User::load($uid);
+    return $u ? $u->getDisplayName() : "uid {$uid}";
+  };
+  $dateLabel = function ($start, $end) use ($fmt) {
+    if (empty($start)) {
+      return '(none)';
+    }
+    return $fmt($start) . (!empty($end) && $end !== $start ? ' – ' . $fmt($end) : '');
+  };
+
+  $newStart = $entity->get('field_scheduled_date_and_time')->value ?? NULL;
+  $newEnd = $entity->get('field_scheduled_date_and_time')->end_value ?? NULL;
+  $newAssigned = $entity->get('field_assigned_to')->target_id ?? NULL;
+  $newNote = trim((string) ($entity->get('field_scheduling_note')->value ?? ''));
+
+  $actor = \Drupal::currentUser()->getDisplayName();
+  $stamp = date('m/d/Y g:i A', \Drupal::time()->getRequestTime());
+  $parts = [];
+
+  if ($entity->isNew()) {
+    if (!empty($newStart)) {
+      $parts[] = 'Date: ' . $dateLabel($newStart, $newEnd);
+    }
+    if (!empty($newAssigned)) {
+      $parts[] = 'Assigned: ' . $name($newAssigned);
+    }
+    if ($newNote !== '') {
+      $parts[] = 'Schedule note: "' . $newNote . '"';
+    }
+    if (empty($parts)) {
+      return;
+    }
+    $entity->_wo_schedule_change_note = "Scheduled by {$actor}, {$stamp} — " . implode('; ', $parts);
     return;
   }
 
-  $smart_date = $entity->get('field_date')->first();
-  $start_value = $smart_date->value; // Unix timestamp (UTC).
-  $end_value = $smart_date->end_value ?: $start_value;
-  $is_all_day = ($smart_date->duration == 0 || $smart_date->duration == 1439);
-
-  $start = new DrupalDateTime('@' . $start_value, new \DateTimeZone('UTC'));
-  if ($is_all_day) {
-    $start->setTimezone(new \DateTimeZone('America/Denver'))->setTime(0, 0, 0);
-    $end = (clone $start)->setTime(23, 59, 59);
-    $start->setTimezone(new \DateTimeZone('UTC'));
-    $end->setTimezone(new \DateTimeZone('UTC'));
+  $old = \Drupal::entityTypeManager()->getStorage('scheduling')->loadUnchanged($entity->id());
+  if (!$old instanceof EntityInterface) {
+    return;
   }
-  else {
-    $end = new DrupalDateTime('@' . $end_value, new \DateTimeZone('UTC'));
-  }
+  $oldStart = $old->get('field_scheduled_date_and_time')->value ?? NULL;
+  $oldEnd = $old->get('field_scheduled_date_and_time')->end_value ?? NULL;
+  $oldAssigned = $old->get('field_assigned_to')->target_id ?? NULL;
+  $oldNote = trim((string) ($old->get('field_scheduling_note')->value ?? ''));
 
-  $entity->set('field_scheduled_date_and_time', [
-    'value' => $start->format('Y-m-d\TH:i:s'),
-    'end_value' => $end->format('Y-m-d\TH:i:s'),
-  ]);
+  if ($oldStart !== $newStart || $oldEnd !== $newEnd) {
+    $parts[] = 'Date: ' . $dateLabel($oldStart, $oldEnd) . ' → ' . $dateLabel($newStart, $newEnd);
+  }
+  if ((string) $oldAssigned !== (string) $newAssigned) {
+    $parts[] = 'Assigned: ' . $name($oldAssigned) . ' → ' . $name($newAssigned);
+  }
+  if ($oldNote !== $newNote) {
+    $parts[] = 'Schedule note: "' . ($oldNote !== '' ? $oldNote : '(empty)')
+      . '" → "' . ($newNote !== '' ? $newNote : '(empty)') . '"';
+  }
+  if (empty($parts)) {
+    return;
+  }
+  $entity->_wo_schedule_change_note = "Schedule changed by {$actor}, {$stamp} — " . implode('; ', $parts);
 }
 
 /**
@@ -48,6 +138,7 @@ function wo_schedule_entity_insert(EntityInterface $entity) {
     ]);
     _wo_schedule_handle_status_update($entity, TRUE);
     _wo_schedule_send_email_on_assignment($entity);
+    _wo_schedule_log_schedule_change_note($entity, TRUE);
   }
 }
 
@@ -61,6 +152,57 @@ function wo_schedule_entity_update(EntityInterface $entity) {
     ]);
     _wo_schedule_handle_status_update($entity, FALSE);
     _wo_schedule_send_email_on_assignment($entity);
+    _wo_schedule_log_schedule_change_note($entity, FALSE);
+  }
+}
+
+/**
+ * Post-save writer: persist the schedule-change note that
+ * _wo_schedule_capture_change_note() composed during presave.
+ *
+ * The text is stashed on $entity->_wo_schedule_change_note in
+ * presave (where old values are reliably available via
+ * loadUnchanged, since $entity->original is not populated on
+ * update in this Drupal version). Writing here, post-save, means
+ * the note is only created if the scheduling save actually
+ * succeeded.
+ *
+ * Writes to wo_notes:note. field_note_text is text_long (no length
+ * limit) so a long misused work-note in field_scheduling_note
+ * copies over intact — deliberate: crews have been putting
+ * job-notes in the schedule note, and this lands them on the WO's
+ * permanent record where they belong.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The saved scheduling entity.
+ * @param bool $isNew
+ *   Unused (kept for call-site symmetry); insert vs update is
+ *   already baked into the stashed text.
+ */
+function _wo_schedule_log_schedule_change_note(EntityInterface $entity, bool $isNew): void {
+  if (empty($entity->_wo_schedule_change_note)) {
+    return;
+  }
+  $text = $entity->_wo_schedule_change_note;
+  $wo_ref = $entity->get('field_work_order')->getValue();
+  $wo_id = !empty($wo_ref[0]['target_id']) ? $wo_ref[0]['target_id'] : NULL;
+  if (!$wo_id) {
+    return;
+  }
+  try {
+    \Drupal::entityTypeManager()->getStorage('wo_notes')->create([
+      'type' => 'note',
+      'field_note_text' => $text,
+      'field_work_order' => $wo_id,
+      'uid' => \Drupal::currentUser()->id(),
+      'created' => \Drupal::time()->getRequestTime(),
+    ])->save();
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('wo_schedule')->error(
+      'Failed to write schedule-change WO note for WO @wo: @msg',
+      ['@wo' => $wo_id, '@msg' => $e->getMessage()]
+    );
   }
 }
 

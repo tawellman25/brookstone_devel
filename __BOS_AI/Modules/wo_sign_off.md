@@ -263,6 +263,43 @@ Plus updates to `core.entity_form_display.wo_time_clock.entry.default.yml` (4 au
 
 ---
 
+## 2026-05-16 revisions
+
+**Crew-count multiplier removed.** `field_total_time = $timeSpent *
+$totalMen` at `wo_sign_off.module:149` (and the equivalent in
+`wo_lawn_mowing.module`) is gone — now just `$timeSpent`. Phase 2c
+reconciliation creates one `wo_time_clock` entry per crew member, so
+the sum already equals total man-hours; the multiplier double-counted.
+`wo_estimate.module`'s identical-shape multiplier was left alone (dead
+bundle). 62 already-affected WOs backfilled on live (Pattern-B / TC≥2;
+Pattern-A single-entry WOs intentionally left — their value reflected
+the original intended approximation).
+
+**Orphan handling now splits by form type:**
+- **wo_complete_info (Sign-Off form):** per-entry editable end_time
+  fieldset — the foreman confirms/corrects each forgotten clock-out.
+  Prefill: latest existing end on the WO if after the orphan's start,
+  else start + 1 hr.
+- **wo_tasks_list (Task List form, mowing):** silent close at
+  `end = now` — the foreman's Save *is* the clock-out; no second
+  form. (Reverted from the prompt per Todd's call; the single-entry
+  cap in `wo_total_time` is the backstop for the forgot-overnight
+  case there.)
+
+**Invoiced-transition guard moved out.** "Cannot mark Invoiced unless
+prior status was Complete" lives in `wo_shared` (`wo_shared.md`), not
+here.
+
+**Add-form reconciliation fix.** The per-row time fields never
+rendered on the *Add* wo_complete_info form (new entity → no
+`field_work_order`/roster on entity; `getValues()` empty at rebuild
+build-time). Fixed by stashing the validate-handler-resolved
+`{wo_id, roster}` in `$form_state` (`_wo_signoff_ctx`) and reading it
+in the fieldset builder. See the form-rebuild gotcha in
+`drupal_bos_gotchas.md`. Commits `3e3ba64b`, `235707d9`.
+
+---
+
 ## Status
 
 - Pre-Phase 2: existing wo_complete_info presave/update/delete behavior
@@ -272,5 +309,6 @@ Plus updates to `core.entity_form_display.wo_time_clock.entry.default.yml` (4 au
 - Phase 2c: wo_tasks_list:lawn_mowing form alter + reconciliation + hard validation on field_mowing_who_on_site + presave guard
 - Phase 2d: wo_timer_flag_update silent-no-op logging (separate module — see `__BOS_AI/Modules/wo_timer_flag_update.md`)
 - **Phase 2 simplification (2026-05-03):** silent close orphans across all bundles; per-bundle missing handling (silent-create defaults for simple bundles, per-row UI for complex). Categorization fixed for multi-cycle WOs (open-before-closed; close ALL open entries). Refresh button nested in wrapper for correct field_layout positioning. Apply-to-all and per-orphan UI removed.
+- **2026-05-16:** multiplier removed; orphan handling split by form type (wo_complete_info per-row prompt vs wo_tasks_list silent); Invoiced guard moved to wo_shared; Add-form reconciliation fixed via form-state stash. See "2026-05-16 revisions" above.
 
-Updated: 2026-05-03 (Phase 2 simplification)
+Updated: 2026-05-16

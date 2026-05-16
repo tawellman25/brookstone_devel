@@ -108,7 +108,37 @@ would be excluded from spray route views even if they had valid WOs.
 
 ---
 
+## work_order presave (added 2026-05)
+
+`wo_shared_work_order_presave()` does two cross-cutting things on
+every work_order save:
+
+1. **Recalc `field_total_time` while Complete.** When
+   `field_status == 1097` (Complete), set `field_total_time` to the
+   sum of the WO's closed `wo_time_clock` entries. Skipped for any
+   other status (pre-completion data is mid-flight; Invoiced/Paid/
+   Canceled/Warrantied preserve the captured-at-billing value).
+   Completes the previously-orphaned chain where
+   `wo_total_time`'s `_wo_total_time_trigger_wo_recalc()` saved the
+   parent WO on clock-entry change but nothing actually recalced for
+   non-mowing bundles. For `lawn_mowing`, `wo_lawn_mowing` also
+   recalcs — both produce the same value (idempotent).
+
+2. **Invoiced-transition guard**
+   (`_wo_shared_assert_invoiced_transition_valid`). Blocks any save
+   that sets `field_status` to Invoiced (1281) unless the prior
+   status was Complete (1097) or Invoiced (no-op resave). Throws
+   `EntityStorageException` with an office-facing message. Catches
+   the recurring "office invoices before crew signs off" mistake
+   that left orphan clock entries + incomplete tasks lists blocking
+   crews from creating new mowing WOs (WO 49892 et al., 2026-05-13).
+   Bypass for scripts/migrations: `$wo->_skip_invoiced_guard = TRUE;`
+   — no UI path sets it, so office staff cannot bypass via the form.
+
+---
+
 ## Status
 
+Updated: 2026-05-16 (work_order presave: total_time recalc + Invoiced guard)
 Created: March 2026
 Live backfill counts: 37 records (March 2026 season)

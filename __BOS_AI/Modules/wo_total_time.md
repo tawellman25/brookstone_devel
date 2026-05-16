@@ -140,11 +140,58 @@ This deliberately uses an independent injection rather than going through `bos_t
 
 ---
 
+## Single-entry duration cap (Guard 6) — 2026-05-16
+
+`_wo_total_time_validate_time_clock_entry` gained **Guard 6**: a single
+`wo_time_clock` entry (one clock-in → clock-out) whose duration exceeds
+the per-bundle cap is rejected unless `field_time_limit_override` is
+checked (or an admin bypass applies). Rationale: no legitimate
+continuous session on one WO runs that long — a real long day is
+multiple WOs and/or breaks, which are separate clock-in/out cycles =
+separate entries.
+
+- Caps live on `business_setting`: `field_max_entry_hours` (default
+  **4**, standard bundles) and `field_max_entry_hours_long` (default
+  **14**, long-job bundles). Resolver: `_wo_total_time_get_max_entry_hours($wo_bundle)`,
+  with code-default constants when the config field is empty.
+- Long-job bundles (hardcoded `WO_TOTAL_TIME_LONG_JOB_BUNDLES`):
+  `landscaping`, `sprinkler_repair`, `sprinkler_installation`.
+- Deliberately does **not** honor the `_signoff_reconciliation`
+  bypass — the Task List silent-close path must be subject to the cap
+  (that path produced the WO 49723 / Tanner-style runaway entries).
+- When the override is accepted (or admin), an idempotent
+  `[Time limit override: …]` audit note is appended to `field_notes`.
+- Field-instance creation hit the cim silent-skip bug; created via the
+  direct entity-API workaround with per-environment UUIDs (sync YAMLs
+  carry local UUIDs, live carries its own — see the UUID-drift gotcha).
+
+### Billing red-alert preprocess
+
+`wo_total_time_preprocess_views_view_field()` on the `admin_billing`
+view (`/admin/office/work-orders/billing`): when a WO's
+`field_total_time` exceeds the long-shift threshold
+(`field_long_shift_hours`, 16) the Hours cell renders as a red ⚠
+badge. Detection-only, non-blocking — a visibility net so office
+staff can't skim past an implausible labor figure before invoicing.
+
+### Crew-count multiplier removed
+
+The pre-2026-05 `field_total_time = sum × crew_count` multiplier was
+removed from `wo_sign_off.module:149` and `wo_lawn_mowing.module`
+(see `wo_sign_off.md`). Phase 2c reconciliation creates one
+`wo_time_clock` entry per crew member, so the sum already represents
+total man-hours; the multiplier double-counted. 62 affected WOs
+backfilled on live (Pattern-B / TC≥2 only).
+
+---
+
 ## Deferred items
 
 - **Logger notice change-log discrepancy.** [`CLAUDE.md` Change Log](../../CLAUDE.md#change-log) entry dated 2026-03-12 says debug logging was removed from this module, but the actual code still has `\Drupal::logger('wo_total_time')->notice()` calls in the manual-entry ownership-reassignment block. Either the cleanup was reverted or the change-log was wrong. See [deferred_work.md item 3](../Governance/deferred_work.md#3-wo_total_time-logger-notice-change-log-discrepancy).
+- **Auto lunch/break deduction** — see [deferred_work.md item 16](../Governance/deferred_work.md). The single-entry cap mitigates runaway entries but doesn't address legitimate long sessions that should have an unpaid lunch deducted.
 
 ## Status
 
-Updated: 2026-05-02 (Phase 1 — wo_time_clock data integrity guards)
+Updated: 2026-05-16 (single-entry cap + override + billing red-alert; multiplier removal)
+Prior: 2026-05-02 (Phase 1 — wo_time_clock data integrity guards)
 Prior milestone: March 2026 (WO billing recalc trigger on time clock save)

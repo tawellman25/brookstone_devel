@@ -316,5 +316,42 @@ hardcoded 'America/Denver'. This reads Drupal's system.date config.
 All-day event dates are converted in PHP from Unix timestamps using the
 site timezone, bypassing FROM_UNIXTIME server-timezone dependency.
 
-Updated: April 2026
+## 2026-05-16 changes (wo_schedule module)
+
+**All Day is the default for new schedules.** The `field_date` Smart
+Date widget's `default_duration` is set to **1439** (all-day) with a
+`1439|All day` increment option. But that alone does NOT tick the
+widget's "All day" checkbox — Smart Date's JS (`setAllDay()`) only
+checks the box when the rendered start/end time inputs are exactly
+`00:00:00` / `23:59:00`. So `wo_schedule_entity_prepare_form()` seeds
+a NEW `scheduling:work_order` form to today, 00:00–23:59
+America/Denver, duration 1439, which makes the widget render the
+midnight/23:59 inputs and the JS check the box. Begin/end times are
+fully preserved — unchecking All Day reveals the normal time pickers.
+The field's own default (`default_date_type: now`, dur 15) is
+auto-applied at create, so `field_date` is never "empty" — the hook
+deliberately overrides it. Guards: only the entity *form*, only new
+entities (programmatic creators — bos_scheduling, admin_calendar,
+contract enrichers — never hit a form, so they're untouched).
+
+**Schedule changes auto-log a WO note.** `wo_schedule` records a
+`wo_notes:note` on the parent WO whenever a scheduling entity is
+created or any of `field_scheduled_date_and_time`, `field_assigned_to`,
+or `field_scheduling_note` changes. Insert → a snapshot; update →
+only the changed fields as old → new; no-op resaves produce nothing.
+`field_scheduling_note` is tracked deliberately: crews misuse it for
+job-notes, and mirroring it onto the WO note (text_long, no length
+limit) puts that content on the WO's permanent record. Old values
+are captured in **presave via `loadUnchanged()`** — `$entity->original`
+is not populated on update in this Drupal version (see
+`drupal_bos_gotchas.md`), which also means this module's existing
+`_wo_schedule_handle_status_update` original-based reschedule/reassign
+status branches are **latently non-firing** (not yet fixed). The
+note's Date renders date-only (UTC→Denver) so an all-day schedule
+shows one clean date, not the misleading "6:00 AM – 5:59 AM" span.
+
+Commits: `119a5993`, `642595ef`, `59c16c2c`, `4f438b5a`.
+
+Updated: 2026-05-16
+Prior: April 2026
 

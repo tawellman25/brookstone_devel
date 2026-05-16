@@ -704,4 +704,13 @@ Key rules:
 
 ## Change Log
 
+- **2026-05-16** — Labor/time/scheduling hardening (see `__BOS_AI/Modules/wo_total_time.md`, `wo_sign_off.md`, `wo_shared.md`, `wo_timer_flag_update.md`, `Entities/scheduling.md`, `Governance/drupal_bos_gotchas.md`):
+  - Removed the `field_total_time = sum × crew_count` multiplier (`wo_sign_off`, `wo_lawn_mowing`); 62 affected WOs backfilled on live (Pattern-B only).
+  - `wo_shared` work_order presave: recalc `field_total_time` while Complete; **block Invoiced transition without prior Complete** (bypass: `$wo->_skip_invoiced_guard`).
+  - Single-entry duration cap (`wo_total_time` Guard 6): per-bundle `business_setting.field_max_entry_hours` (4) / `field_max_entry_hours_long` (14, for landscaping/sprinkler_repair/sprinkler_installation) + `wo_time_clock.field_time_limit_override` checkbox + idempotent audit note. Smart Clock-Out button routes over-cap clock-outs to the edit form; flag-off-on-close invariant; billing red-alert preprocess on `admin_billing`.
+  - `wo_timer_flag_update`: clock-out notes now multi-value `appendItem` (two rows, not concatenated).
+  - `wo_schedule`: every schedule create/change auto-logs a WO note (date/crew/scheduling-note, old→new); date rendered date-only. New schedules default to **today / All Day** via `hook_entity_prepare_form` (Smart Date `default_duration` 1439 alone doesn't tick the box).
+  - Sign-off reconciliation: orphan handling split by form type (wo_complete_info per-row prompt; wo_tasks_list silent `end=now`). Add-form per-row fields fixed via `_wo_signoff_ctx` form-state stash.
+  - New gotchas documented: `$entity->original` not populated on update (use `loadUnchanged()` in presave); `getValues()` empty at form-build-time on rebuild (stash from validate handler).
+  - Deferred: auto lunch/break deduction (`Governance/deferred_work.md` #16).
 - **2026-03-12** — Removed debug logging from `wo_total_time` (Presave Debug, Not updating UID notices) and `wo_timer_flag_update` (Flag state notice). Updated `teammate_pre_emergent_wos` view config.

@@ -419,6 +419,28 @@ When you delete a field via `drush cim`, Drupal's entity field manager may conti
 
 ---
 
+## `$entity->original` is not populated on update in this Drupal version
+
+During `hook_entity_update` / `hook_ENTITY_TYPE_update` on this build, `$entity->original` is **NOT set** and there is **no `$entity->getOriginal()` method** (verified 2026-05-16 on the `scheduling` entity: `property_exists($entity, 'original')` → `false`, `method_exists($entity, 'getOriginal')` → `false`, `$entity->original` → `NULL`).
+
+Implication: any change-detection code that reads `$entity->original` to compare old vs new field values **silently never fires its old-vs-new branch**. `wo_schedule`'s status-transition logic (`_wo_schedule_handle_status_update`, the `$changedDate` / `$origAssigned` branches) uses this pattern and is therefore latently broken — its reschedule/reassign status branches don't run. Not yet fixed (needs its own diagnostic); flagged so it isn't mistaken for a regression.
+
+**Correct pattern when you need pre-save values:** capture them in **presave** via `\Drupal::entityTypeManager()->getStorage($type)->loadUnchanged($entity->id())` (presave still sees the pre-write DB row), compare to the in-memory `$entity`, stash what you need on the entity for the post-save hook. Used by `wo_schedule`'s schedule-change WO-note logging.
+
+**Surfaced 2026-05-16 building the schedule-change WO note (commit `59c16c2c`).**
+
+## Form rebuild: `getValues()` is empty at build-time
+
+When a validate/submit handler calls `$form_state->setRebuild(TRUE)`, the form is reconstructed (form_alter, `#process`, element builders all run again) **before** the rebuilt form is re-processed. At that build-time point `$form_state->getValues()` is **not yet repopulated**. Code that builds form structure conditionally on submitted values sees nothing on the rebuild — even though the same values were fully available to the validate handler that triggered the rebuild.
+
+This bit the `wo_sign_off` reconciliation fieldset repeatedly: per-row time fields were built in form_alter from `getValues()`, so on the Add wo_complete_info form they never rendered after Save (three fix attempts chased the wo_id/roster *source* before the *timing* was identified as the real cause).
+
+**Pattern that works:** resolve the data in the **validate handler** (runs post-process, `getValues()` fully populated), `$form_state->set('_some_ctx', [...])` it, and have the build-time code read that stash first, falling back to value/entity derivation only when there's no stash (initial GET). Clear the stash when inputs become invalid so a rebuild can't resurrect stale structure. Implemented in `_wo_sign_off_reconciliation_validate` / `_wo_sign_off_build_reconciliation_fieldset`. `getUserInput()` is the other build-time source but its raw nested-by-`#parents` structure is fragile — prefer the validate-handler stash.
+
+**Surfaced 2026-05-16 fixing the Add-form sign-off reconciliation (commits `3e3ba64b`, `235707d9`).**
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

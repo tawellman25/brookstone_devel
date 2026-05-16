@@ -68,10 +68,39 @@ web/modules/custom/wo_timer_flag_update/
 
 No service classes. All logic lives in the .module hook implementations.
 
+## 2026-05 additions
+
+- **Two-row notes (`99562f10`).** `field_notes` is multi-value
+  (cardinality -1, not 1 as an old comment claimed). The clock-out
+  note is now `appendItem('End Time entered by system')` instead of
+  concatenating with `\n` into the first value (a varchar(255)
+  string field renders the newline invisibly, producing
+  "Start time entered through systemEnd Time entered by system" on
+  one line). Legacy concatenated entries left as-is.
+- **Smart Clock-Out button (`4f438b5a` area).** `preprocess_flag`
+  rewrites the over-cap clock-out link to the `wo_time_clock` edit
+  form (`link_type: reload`, plain href — no AJAX to fight). When the
+  open entry already exceeds the bundle cap
+  (`_wo_total_time_get_max_entry_hours`), a one-tap `end = now`
+  close would be rejected by the cap guard; routing to the edit form
+  lets the teammate confirm the real end time or check the override.
+  Under-cap clock-outs keep one-tap behavior (~96% of cases).
+- **Flag-off-on-close invariant.** `wo_timer_flag_update_wo_time_clock_update`
+  removes the `work_order_timer` flag when an entry's `field_end_time`
+  goes empty→set by any path (edit form, sign-off, manual). Makes
+  "entry closed ⇒ clocked out" true regardless of how it closed. No
+  loop: `flagging_delete`'s existing guard skips already-closed
+  entries.
+- **Defensive `flagging_delete`.** The `end = now` save is wrapped in
+  try/catch so a programmatic unflag (task-completion) of an over-cap
+  entry logs + leaves the entry open instead of fataling the flag
+  delete.
+
 ## Status
 
 - Pre-Phase-2 (`e23a1153`): explicit NULL end_time on clock-in insert
 - Pre-Phase-2c (`92c9484f`): defensive skip on pre-closed entries + correct field_notes append
 - Phase 2d (`ae59a12c`): silent-no-op visibility logging on clock-out
+- 2026-05-16: two-row notes, smart clock-out button, flag-off-on-close, defensive flagging_delete (see above)
 
-Updated: 2026-05-02
+Updated: 2026-05-16

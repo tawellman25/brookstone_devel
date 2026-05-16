@@ -282,8 +282,18 @@ Out of scope and explicitly NOT yet implemented:
   it on the user-add form (no roles assigned yet). No effect when the
   user has `teammates`.
 
+## Single-entry cap is on `wo_time_clock`, NOT this entity
+
+The 2026-05-16 single-entry duration cap (per-bundle 4hr/14hr +
+`field_time_limit_override` + audit note) and the
+`field_time_limit_override` field live on **`wo_time_clock`**, not
+`time_clock_entry`. This entity is unaffected — don't conflate the
+two. See `wo_total_time.md` (Guard 6).
+
 ## See Also
 
-* `wo_time_clock` (the WO-specific labor entity that drives billing).
-* `wo_total_time` (the module that computes hours and triggers WO recalc
-  on `wo_time_clock` saves — does not touch `time_clock_entry`).
+* `wo_time_clock` (the WO-specific labor entity that drives billing;
+  carries the single-entry cap + `field_time_limit_override`).
+* `wo_total_time` (the module that computes hours, enforces the cap,
+  and triggers WO recalc on `wo_time_clock` saves — does not touch
+  `time_clock_entry`).

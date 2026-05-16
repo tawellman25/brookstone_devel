@@ -4,6 +4,68 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\user\Entity\User;
 use Drupal\Core\Url;
 use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_entity_prepare_form().
+ *
+ * Default a brand-new scheduling:work_order form to TODAY, ALL DAY.
+ *
+ * The Smart Date widget's JS only ticks its "All day" checkbox when
+ * the rendered start/end time inputs are exactly 00:00:00 / 23:59:00
+ * (setAllDay() in smart_date.js). Setting the form display's
+ * default_duration to 1439 makes the duration default to all-day but
+ * does NOT produce those midnight times on a blank Add form, so the
+ * box stayed unchecked. Seeding field_date here — today, 00:00 to
+ * 23:59 America/Denver, duration 1439 — makes the widget render the
+ * midnight/23:59 inputs, so the JS checks the box.
+ *
+ * Begin/end times are fully preserved: this only sets the *default*.
+ * Unchecking All Day reveals the normal time pickers exactly as
+ * before; the user changes the day (and times, if a real appointment)
+ * as needed.
+ *
+ * The field_date field has its own default value (default_date_type
+ * 'now', default_duration 15) which Drupal auto-applies at entity
+ * create — so field_date is never actually "empty" here. We
+ * deliberately override that now/15 default with today/all-day.
+ * Smart Date's field default parses default_date in UTC, which makes
+ * "midnight in America/Denver" impossible to express reliably as
+ * config (DST-shifting offset) — hence doing it here in code.
+ *
+ * Guards:
+ *  - Only the scheduling:work_order entity form.
+ *  - Only NEW entities (never touches an existing schedule). On AJAX
+ *    / validation rebuilds the entity is reused from form state and
+ *    this hook does not re-fire, so a user's edited date persists.
+ *  - All programmatic creators (bos_scheduling, admin_calendar,
+ *    contract enrichers) build entities directly and never hit an
+ *    entity form, so this hook never fires for them — their explicit
+ *    field_date values are untouched.
+ */
+function wo_schedule_entity_prepare_form(EntityInterface $entity, $operation, FormStateInterface $form_state) {
+  if ($entity->getEntityTypeId() !== 'scheduling' || $entity->bundle() !== 'work_order') {
+    return;
+  }
+  if (!$entity->isNew()) {
+    return;
+  }
+  if (!$entity->hasField('field_date')) {
+    return;
+  }
+
+  $tz = new \DateTimeZone('America/Denver');
+  $start = new DrupalDateTime('now', $tz);
+  $start->setTime(0, 0, 0);
+  $end = clone $start;
+  $end->setTime(23, 59, 0);
+
+  $entity->set('field_date', [
+    'value' => $start->getTimestamp(),
+    'end_value' => $end->getTimestamp(),
+    'duration' => 1439,
+  ]);
+}
 
 /**
  * Sync Smart Date -> Date Range as UTC (display America/Denver).

@@ -667,9 +667,19 @@ function wo_total_time_preprocess_views_view_field(array &$variables): void {
   }
 
   if ($field->field === 'field_current_turf_sq_footage') {
-    // Treat empty OR 0 as "not entered" — flag yellow.
-    $sqft = ($entity->hasField('field_current_turf_sq_footage')
-      && !$entity->get('field_current_turf_sq_footage')->isEmpty())
+    // Only flag bundles that actually carry this field — i.e. the
+    // turf-service WOs where a sq ft is genuinely expected
+    // (fertilizing, aerating, dethatching, grub_prevention,
+    // lawn_mowing, pre_emergent, special_mowing, estimate). Repair,
+    // sprinkler, snow, landscaping etc. don't have the field at all,
+    // so a blank Sq. Ft. there is normal — not a missing-data flag.
+    // Gating on hasField() is self-maintaining if the field's bundle
+    // assignment changes later.
+    if (!$entity->hasField('field_current_turf_sq_footage')) {
+      return;
+    }
+    // Field exists on this bundle → empty OR 0 means "not entered".
+    $sqft = !$entity->get('field_current_turf_sq_footage')->isEmpty()
       ? (float) $entity->get('field_current_turf_sq_footage')->value
       : 0.0;
     if ($sqft > 0) {

@@ -622,43 +622,66 @@ function _wo_total_time_form_value_to_timestamp(FormStateInterface $form_state, 
 /**
  * Implements hook_preprocess_views_view_field().
  *
- * Office billing safety net: on the admin_billing view
- * (/admin/office/work-orders/billing), if a WO's field_total_time
- * exceeds the long-shift threshold (business_setting.field_long_shift_hours,
- * default 16hr — the same line AnomalyDetectionService uses), wrap the
- * Hours cell in a red, bold, ⚠-prefixed badge so office staff can't
- * skim past an implausible labor figure before invoicing.
+ * Office billing safety net on the admin_billing view
+ * (/admin/office/work-orders/billing). Detection-only — never blocks
+ * invoicing or changes a value, just makes a figure impossible to
+ * skim past:
  *
- * Detection-only: does not block invoicing, does not change the value.
- * Pairs with the single-entry cap (which prevents most runaway
- * entries at the source) — this catches anything that still slips
- * through (e.g. a WO whose total is inflated by multiple bad entries).
+ *  - Hours (field_total_time): RED ⚠ badge when it exceeds the
+ *    long-shift threshold (business_setting.field_long_shift_hours,
+ *    default 16 — the line AnomalyDetectionService uses). Pairs with
+ *    the single-entry cap; catches anything that still slips through.
+ *  - Sq. Ft. (field_current_turf_sq_footage): YELLOW box when it is
+ *    0 / blank — no sq ft was entered, which the office should chase
+ *    down (ask the crew / enter it) before invoicing.
  */
 function wo_total_time_preprocess_views_view_field(array &$variables): void {
   $view = $variables['view'] ?? NULL;
   $field = $variables['field'] ?? NULL;
-  if (!$view || !$field) {
-    return;
-  }
-  if ($view->id() !== 'admin_billing' || $field->field !== 'field_total_time') {
+  if (!$view || !$field || $view->id() !== 'admin_billing') {
     return;
   }
   $row = $variables['row'] ?? NULL;
   $entity = ($row && isset($row->_entity)) ? $row->_entity : NULL;
-  if (!$entity || !$entity->hasField('field_total_time') || $entity->get('field_total_time')->isEmpty()) {
-    return;
-  }
-  $hours = (float) $entity->get('field_total_time')->value;
-  $threshold = _wo_total_time_get_long_shift_hours();
-  if ($hours <= $threshold) {
+  if (!$entity) {
     return;
   }
 
-  $original = $variables['output'] ?? '';
-  $variables['output'] = \Drupal\Core\Render\Markup::create(
-    '<span style="display:inline-block;background:#c0392b;color:#fff;font-weight:bold;'
-    . 'padding:3px 6px;border-radius:3px;" '
-    . 'title="Labor hours exceed the ' . (int) $threshold . '-hour review threshold — verify before invoicing">'
-    . '&#9888; ' . $original . '</span>'
-  );
+  if ($field->field === 'field_total_time') {
+    if (!$entity->hasField('field_total_time') || $entity->get('field_total_time')->isEmpty()) {
+      return;
+    }
+    $hours = (float) $entity->get('field_total_time')->value;
+    $threshold = _wo_total_time_get_long_shift_hours();
+    if ($hours <= $threshold) {
+      return;
+    }
+    $original = $variables['output'] ?? '';
+    $variables['output'] = \Drupal\Core\Render\Markup::create(
+      '<span style="display:inline-block;background:#c0392b;color:#fff;font-weight:bold;'
+      . 'padding:3px 6px;border-radius:3px;" '
+      . 'title="Labor hours exceed the ' . (int) $threshold . '-hour review threshold — verify before invoicing">'
+      . '&#9888; ' . $original . '</span>'
+    );
+    return;
+  }
+
+  if ($field->field === 'field_current_turf_sq_footage') {
+    // Treat empty OR 0 as "not entered" — flag yellow.
+    $sqft = ($entity->hasField('field_current_turf_sq_footage')
+      && !$entity->get('field_current_turf_sq_footage')->isEmpty())
+      ? (float) $entity->get('field_current_turf_sq_footage')->value
+      : 0.0;
+    if ($sqft > 0) {
+      return;
+    }
+    $original = $variables['output'] ?? '';
+    $variables['output'] = \Drupal\Core\Render\Markup::create(
+      '<span style="display:inline-block;background:#f1c40f;color:#000;font-weight:bold;'
+      . 'padding:3px 6px;border-radius:3px;border:1px solid #b8920b;" '
+      . 'title="No square footage on file — confirm with the crew and enter it before invoicing">'
+      . ($original !== '' ? $original : '0') . '</span>'
+    );
+    return;
+  }
 }

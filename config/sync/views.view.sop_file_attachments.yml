@@ -5,6 +5,7 @@ dependencies:
   config:
     - field.storage.media.field_media_file_1
     - field.storage.media.field_media_image_2
+    - filter.format.full_html
     - image.style.max_650x650
     - media.type.sop_file_attachment
     - media.type.sop_images
@@ -256,7 +257,20 @@ display:
       cache:
         type: tag
         options: {  }
-      empty: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: true
+          content:
+            value: '<a class="button button--primary" href="/media/add/sop_file_attachment?edit[field_sop][widget][0][target_id]={{ raw_arguments.field_sop_target_id }}&amp;destination=/sop/{{ raw_arguments.field_sop_target_id }}">+ Add a Document to this SOP</a>'
+            format: full_html
+          tokenize: true
       sorts:
         created:
           id: created
@@ -382,7 +396,20 @@ display:
           query_tags: {  }
       relationships: {  }
       header: {  }
-      footer: {  }
+      footer:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: false
+          content:
+            value: '<a class="button button--primary" href="/media/add/sop_file_attachment?edit[field_sop][widget][0][target_id]={{ raw_arguments.field_sop_target_id }}&amp;destination=/sop/{{ raw_arguments.field_sop_target_id }}">+ Add Another Document</a>'
+            format: full_html
+          tokenize: true
       display_extenders: {  }
     cache_metadata:
       max-age: -1
@@ -415,3 +442,4 @@ display:
       tags:
         - 'config:field.storage.media.field_media_file_1'
         - 'config:field.storage.media.field_media_image_2'
+

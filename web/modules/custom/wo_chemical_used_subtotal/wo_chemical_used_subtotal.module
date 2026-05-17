@@ -1,8 +1,44 @@
 <?php
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityFormInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\config_pages\ConfigPagesLoaderInterface;
 use Drupal\eck\EckEntityInterface;
+
+/**
+ * Implements hook_form_alter().
+ *
+ * On the wo_chemicals_used:fertilizers entity form, hide
+ * "New Sq Ft of Lawn" until "Did Sq Ft of Lawn Change?" is checked.
+ *
+ * Prevents the failure mode where a crew member types a New Sq Ft
+ * value but leaves the checkbox unchecked: the subtotal presave and
+ * the property-page sync (bos_property_sync) both gate on that
+ * checkbox, so an unchecked-but-filled value silently goes nowhere
+ * (see WO 49871 — 10,401 entered, box unchecked, value lost). Form
+ * API #states is used rather than the conditional_fields module:
+ * native, no config entity, works on the standard ECK add/edit form.
+ */
+function wo_chemical_used_subtotal_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof EntityFormInterface) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if (!$entity instanceof EntityInterface
+    || $entity->getEntityTypeId() !== 'wo_chemicals_used'
+    || $entity->bundle() !== 'fertilizers') {
+    return;
+  }
+  if (!isset($form['field_new_sq_ft_of_lawn'], $form['field_did_sq_ft_of_lawn_change'])) {
+    return;
+  }
+
+  $form['field_new_sq_ft_of_lawn']['#states']['visible'] = [
+    ':input[name="field_did_sq_ft_of_lawn_change[value]"]' => ['checked' => TRUE],
+  ];
+}
 
 /**
  * Implements hook_entity_presave().

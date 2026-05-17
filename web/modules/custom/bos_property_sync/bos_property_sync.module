@@ -2,17 +2,22 @@
 
 /**
  * @file
- * Syncs measured sq ft from wo_tasks_list tasks to property_landscape_details.
+ * Syncs measured sq ft to property_landscape_details:current.
+ *
+ * Two sources, same upsert behavior:
+ *  - wo_tasks_list:dethatching / :aerating  -> field_measured_sq_ft
+ *  - wo_chemicals_used:fertilizers          -> field_new_sq_ft_of_lawn
+ *    (only when field_did_sq_ft_of_lawn_change is checked)
  */
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\eck\Entity\EckEntity;
 
 /**
  * Implements hook_entity_insert().
  */
 function bos_property_sync_entity_insert(EntityInterface $entity) {
   bos_property_sync_handle_task_save($entity);
+  bos_property_sync_handle_fertilizer_save($entity);
 }
 
 /**
@@ -20,47 +25,95 @@ function bos_property_sync_entity_insert(EntityInterface $entity) {
  */
 function bos_property_sync_entity_update(EntityInterface $entity) {
   bos_property_sync_handle_task_save($entity);
+  bos_property_sync_handle_fertilizer_save($entity);
 }
 
 /**
- * Core sync logic — fires on insert and update of wo_tasks_list tasks.
+ * Sync from wo_tasks_list:dethatching / :aerating measured sq ft.
  */
 function bos_property_sync_handle_task_save(EntityInterface $entity) {
-  // Only act on the two target bundles.
   if ($entity->getEntityTypeId() !== 'wo_tasks_list') {
     return;
   }
   if (!in_array($entity->bundle(), ['dethatching', 'aerating'])) {
     return;
   }
-
-  // Must have a measured sq ft value.
   if ($entity->get('field_measured_sq_ft')->isEmpty()) {
     return;
   }
-
   $measured_sq_ft = (float) $entity->get('field_measured_sq_ft')->value;
 
-  // Load the parent Work Order via field_work_order.
   if ($entity->get('field_work_order')->isEmpty()) {
     return;
   }
   $work_order = $entity->get('field_work_order')->entity;
-  if (!$work_order) {
-    return;
-  }
-
-  // Load the Property via field_property on the Work Order.
-  if ($work_order->get('field_property')->isEmpty()) {
+  if (!$work_order || $work_order->get('field_property')->isEmpty()) {
     return;
   }
   $property = $work_order->get('field_property')->entity;
   if (!$property) {
     return;
   }
-  $property_id = $property->id();
 
-  // Find existing property_landscape_details for this property.
+  _bos_property_sync_upsert_turf((int) $property->id(), $measured_sq_ft, $work_order);
+}
+
+/**
+ * Sync from wo_chemicals_used:fertilizers New Sq Ft of Lawn.
+ *
+ * Gated on field_did_sq_ft_of_lawn_change being checked — consistent
+ * with wo_chemical_used_subtotal, which only reads the new sq ft when
+ * that box is on. (The form also hides the New Sq Ft field until the
+ * box is checked, so an unchecked-but-filled value should not occur
+ * going forward — but this guard is the authoritative one.)
+ */
+function bos_property_sync_handle_fertilizer_save(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'wo_chemicals_used' || $entity->bundle() !== 'fertilizers') {
+    return;
+  }
+  $changed = $entity->hasField('field_did_sq_ft_of_lawn_change')
+    && !$entity->get('field_did_sq_ft_of_lawn_change')->isEmpty()
+    && (int) $entity->get('field_did_sq_ft_of_lawn_change')->value === 1;
+  if (!$changed) {
+    return;
+  }
+  if (!$entity->hasField('field_new_sq_ft_of_lawn') || $entity->get('field_new_sq_ft_of_lawn')->isEmpty()) {
+    return;
+  }
+  $new_sq_ft = (float) $entity->get('field_new_sq_ft_of_lawn')->value;
+  if ($new_sq_ft <= 0) {
+    return;
+  }
+
+  if ($entity->get('field_work_order')->isEmpty()) {
+    return;
+  }
+  $work_order = $entity->get('field_work_order')->entity;
+  if (!$work_order || $work_order->get('field_property')->isEmpty()) {
+    return;
+  }
+  $property = $work_order->get('field_property')->entity;
+  if (!$property) {
+    return;
+  }
+
+  _bos_property_sync_upsert_turf((int) $property->id(), $new_sq_ft, $work_order);
+}
+
+/**
+ * Upsert field_turf_sq_footage on property_landscape_details:current.
+ *
+ *  - No record           -> create one with the value.
+ *  - Record, blank value  -> write the value.
+ *  - Record, same value   -> no-op.
+ *  - Record, different    -> do NOT overwrite; append a conflict
+ *    note to the Work Order's field_billing_notes for office review.
+ *
+ * Identical behavior for both the task and fertilizer sources so the
+ * property page stays a single source of truth without silently
+ * clobbering an existing measured value.
+ */
+function _bos_property_sync_upsert_turf(int $property_id, float $value, EntityInterface $work_order) {
   $storage = \Drupal::entityTypeManager()->getStorage('property_landscape_details');
   $existing = $storage->loadByProperties([
     'field_property' => $property_id,
@@ -74,30 +127,22 @@ function bos_property_sync_handle_task_save(EntityInterface $entity) {
       : NULL;
 
     if ($existing_sq_ft === NULL) {
-      // Blank — write it.
-      $landscape->set('field_turf_sq_footage', $measured_sq_ft);
+      $landscape->set('field_turf_sq_footage', $value);
       $landscape->save();
     }
-    elseif ($existing_sq_ft !== $measured_sq_ft) {
-      // Conflict — notify office staff via billing notes on the Work Order.
-      bos_property_sync_append_billing_note(
-        $work_order,
-        $measured_sq_ft,
-        $existing_sq_ft
-      );
+    elseif ($existing_sq_ft !== $value) {
+      bos_property_sync_append_billing_note($work_order, $value, $existing_sq_ft);
     }
-    // If equal, nothing to do.
+    // Equal — nothing to do.
   }
   else {
-    // No property_landscape_details exists — create one.
-    $landscape = $storage->create([
+    $storage->create([
       'type' => 'current',
       'title' => 'Landscape Details',
       'field_property' => $property_id,
-      'field_turf_sq_footage' => $measured_sq_ft,
+      'field_turf_sq_footage' => $value,
       'status' => 1,
-    ]);
-    $landscape->save();
+    ])->save();
   }
 }
 
@@ -112,7 +157,7 @@ function bos_property_sync_append_billing_note(EntityInterface $work_order, floa
   );
 
   $conflict_note = sprintf(
-    '[SQ FT MISMATCH %s] Task measured: %s sq ft — Property on file: %s sq ft. Office review required.',
+    '[SQ FT MISMATCH %s] New value: %s sq ft — Property on file: %s sq ft. Office review required.',
     $timestamp,
     number_format($measured, 0),
     number_format($existing, 0)

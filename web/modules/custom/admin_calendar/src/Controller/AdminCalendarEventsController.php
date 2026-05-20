@@ -112,7 +112,13 @@ class AdminCalendarEventsController extends ControllerBase {
     }
 
     $events = $this->buildEvents($start, $end, $department_filter, $teammate_filter, $firm_only, $statuses);
-    return new JsonResponse($events);
+    // Defensive: substitute U+FFFD for any stray invalid UTF-8 byte so a
+    // single bad row can never blank the entire calendar by failing
+    // json_encode for the whole response.
+    $response = new JsonResponse();
+    $response->setEncodingOptions($response->getEncodingOptions() | JSON_INVALID_UTF8_SUBSTITUTE);
+    $response->setData($events);
+    return $response;
   }
 
   /**
@@ -359,9 +365,12 @@ class AdminCalendarEventsController extends ControllerBase {
       }
 
       // Property nickname truncated to 22 chars.
+      // mb_* required: byte-based substr/strlen can cut a multi-byte char
+      // (en-dash, em-dash, accented letter) mid-sequence and produce
+      // invalid UTF-8 that breaks json_encode for the entire response.
       $property_full = trim($row->property_nickname ?? '') ?: 'Unknown Property';
-      $property_short = strlen($property_full) > 22
-        ? substr($property_full, 0, 21) . '…'
+      $property_short = mb_strlen($property_full) > 22
+        ? mb_substr($property_full, 0, 21) . '…'
         : $property_full;
 
       // Service abbreviation from SOP code; normalize to uppercase.

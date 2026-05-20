@@ -355,3 +355,10 @@ Commits: `119a5993`, `642595ef`, `59c16c2c`, `4f438b5a`.
 Updated: 2026-05-16
 Prior: April 2026
 
+## 2026-05-20 fix (admin_calendar)
+
+**UTF-8 truncation in the events feed blanked the calendar.** `/teammates/calendar/events` was returning HTTP 500 / empty because `AdminCalendarEventsController` used byte-based `substr` to shorten property nicknames to 22 chars. When the cut fell inside a multi-byte character (en-dash in "Ambulance District – Eckert"), the orphan bytes failed `json_encode`, and `JsonResponse` threw — taking down the entire 149-event response over a single bad row. Fix: `mb_strlen` / `mb_substr` for the truncation, plus `JSON_INVALID_UTF8_SUBSTITUTE` on the response as a defensive guard. Diagnostic kept at `web/scripts/diag_calendar_events.php`. See `Governance/drupal_bos_gotchas.md` for the cross-cutting pattern.
+
+Commit: `366c9014`.
+
+Updated: 2026-05-20

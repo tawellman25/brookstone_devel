@@ -439,6 +439,16 @@ This bit the `wo_sign_off` reconciliation fieldset repeatedly: per-row time fiel
 
 **Surfaced 2026-05-16 fixing the Add-form sign-off reconciliation (commits `3e3ba64b`, `235707d9`).**
 
+## Byte-based `substr` on user-entered strings breaks `json_encode` for the whole response
+
+`strlen()` and `substr()` count bytes, not characters. When PHP code truncates user-entered text (property nicknames, names, notes) at a byte offset that falls **inside** a multi-byte UTF-8 character (`–` en-dash, `—` em-dash, `ñ`, `é`, `…`), the result contains an orphaned partial sequence. `json_encode` then **rejects the entire array** as malformed UTF-8 (`json_last_error_msg()` → "Malformed UTF-8 characters, possibly incorrectly encoded") and Symfony's `JsonResponse` throws on construction. One bad row blanks the whole feed.
+
+Hit 2026-05-20 in `AdminCalendarEventsController`: property-nickname truncation `substr($name, 0, 21) . '…'` cut into the middle of "Ambulance District – Eckert"'s en-dash (U+2013, 3 bytes spanning offsets 19–21), producing orphan `e2 80` followed by `…` → `e2 80 e2 80 a6`. That single row took down `/teammates/calendar/events` for the entire dispatch team — 149 valid events, all invisible.
+
+**Correct pattern:** use `mb_strlen()` / `mb_substr()` whenever truncating any string that could contain non-ASCII characters (any free-text user-entered field). Belt-and-braces for endpoints emitting JSON over user-entered content: also set `JSON_INVALID_UTF8_SUBSTITUTE` on the `JsonResponse` so any future stray invalid byte is silently replaced with `U+FFFD` in that one field rather than killing the entire response.
+
+**Surfaced 2026-05-20 fixing the empty dispatch calendar (commit `366c9014`).**
+
 ---
 
 ## Status

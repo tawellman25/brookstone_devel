@@ -704,6 +704,7 @@ Key rules:
 
 ## Change Log
 
+- **2026-05-20** — `admin_calendar` calendar feed UTF-8 fix (commit `366c9014`): byte-based `substr` truncating multi-byte property nicknames (en-dash in "Ambulance District – Eckert") produced invalid UTF-8 → `json_encode` rejected the entire events array → `JsonResponse` threw → empty dispatch calendar (149 valid events, all invisible). Fix uses `mb_strlen` / `mb_substr` plus `JSON_INVALID_UTF8_SUBSTITUTE` defensive flag on the response. See `__BOS_AI/Governance/drupal_bos_gotchas.md` (new gotcha) and `__BOS_AI/Entities/scheduling.md`.
 - **2026-05-16** — Labor/time/scheduling hardening (see `__BOS_AI/Modules/wo_total_time.md`, `wo_sign_off.md`, `wo_shared.md`, `wo_timer_flag_update.md`, `Entities/scheduling.md`, `Governance/drupal_bos_gotchas.md`):
   - Removed the `field_total_time = sum × crew_count` multiplier (`wo_sign_off`, `wo_lawn_mowing`); 62 affected WOs backfilled on live (Pattern-B only).
   - `wo_shared` work_order presave: recalc `field_total_time` while Complete; **block Invoiced transition without prior Complete** (bypass: `$wo->_skip_invoiced_guard`).

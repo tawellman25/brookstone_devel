@@ -203,6 +203,12 @@ class CreateAndScheduleSprinklerCheckUpWorkOrdersAction extends ViewsBulkOperati
       ],
     ]);
     $work_order->save();
+    // AEL pattern for sprinkler_check_up uses [work_order:id], not
+    // assigned during presave on insert — first save writes the AEL
+    // placeholder. Clear and save again so AEL regenerates the title
+    // with the now-known id. See drupal_bos_gotchas.md.
+    $work_order->set('title', '');
+    $work_order->save();
 
     // Increment $work_orders_created once after work order is created
     $work_orders_created++;

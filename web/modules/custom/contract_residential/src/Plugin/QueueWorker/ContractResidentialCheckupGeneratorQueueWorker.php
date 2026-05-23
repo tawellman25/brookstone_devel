@@ -578,6 +578,12 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
     ]);
 
     $wo->save();
+    // AEL pattern for sprinkler_check_up uses [work_order:id], not
+    // assigned during presave on insert — first save writes the AEL
+    // placeholder. Clear and save again so AEL regenerates the title
+    // with the now-known id. See drupal_bos_gotchas.md.
+    $wo->set('title', '');
+    $wo->save();
     return (int) $wo->id();
   }
 

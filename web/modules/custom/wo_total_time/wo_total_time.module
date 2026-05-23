@@ -224,18 +224,29 @@ function wo_total_time_form_alter(array &$form, FormStateInterface $form_state, 
     return;
   }
 
-  // Always render the long-shift confirmation checkbox. It only matters
-  // on a re-submit after the soft >threshold validate handler triggers,
-  // so the description tells the user when to interact with it.
-  $form['long_shift_confirmed'] = [
-    '#type' => 'checkbox',
-    '#title' => t('Yes, this long shift is correct'),
-    '#description' => t("Only check this box if you are intentionally entering a shift over @h hours. Otherwise the entry will be rejected as a likely AM/PM error.", [
-      '@h' => rtrim(rtrim(number_format(_wo_total_time_get_long_shift_hours(), 1), '0'), '.'),
-    ]),
-    '#default_value' => 0,
-    '#weight' => 100,
-  ];
+  // Consolidation: the persistent field_time_limit_override checkbox
+  // (Guard 6 / per-bundle 4-or-14hr cap, records an audit note) covers
+  // the same user intent as this form-only AM/PM safety confirm. When
+  // it is present on the form, suppress the duplicate checkbox so the
+  // user sees only one "yes this is intentional" control. The validator
+  // accepts either as confirmation of the long-shift case.
+  if (!isset($form['field_time_limit_override'])) {
+    // Fallback only — every wo_time_clock entry carries
+    // field_time_limit_override, so this branch is reached only if a
+    // future form display omits the field. Weight 50 puts the checkbox
+    // just above the actions container (default #weight 100), so the
+    // confirm and the Save button are visually adjacent rather than
+    // the checkbox sitting orphaned below the buttons.
+    $form['long_shift_confirmed'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Yes, this long shift is correct'),
+      '#description' => t("Only check this box if you are intentionally entering a shift over @h hours. Otherwise the entry will be rejected as a likely AM/PM error.", [
+        '@h' => rtrim(rtrim(number_format(_wo_total_time_get_long_shift_hours(), 1), '0'), '.'),
+      ]),
+      '#default_value' => 0,
+      '#weight' => 50,
+    ];
+  }
 
   $form['#validate'][] = '_wo_total_time_form_validate';
 }
@@ -286,17 +297,30 @@ function _wo_total_time_form_validate(array &$form, FormStateInterface $form_sta
   // Soft >long-shift-hours confirmation. Only triggered when start and
   // end are both set and produce a positive duration — the other guards
   // already covered the bad-data cases.
+  //
+  // Confirmation can come from either checkbox: the persistent
+  // field_time_limit_override (Guard 6 / per-bundle cap, also records
+  // an audit note) when present, or the form-only long_shift_confirmed
+  // fallback. One tick of either satisfies this validator.
   if ($start !== NULL && $end !== NULL && $end >= $start) {
     $hours = ($end - $start) / 3600;
     $threshold = _wo_total_time_get_long_shift_hours();
     if ($hours > $threshold) {
-      $confirmed = $form_state->getValue('long_shift_confirmed');
-      if (empty($confirmed)) {
+      $tlo = $form_state->getValue(['field_time_limit_override', 0, 'value']);
+      $confirmed = !empty($form_state->getValue('long_shift_confirmed'))
+        || !empty($tlo);
+      if (!$confirmed) {
+        $has_persistent = isset($form['field_time_limit_override']);
+        $error_target = $has_persistent ? 'field_time_limit_override' : 'long_shift_confirmed';
+        $box_label    = $has_persistent
+          ? t('This long entry is correct (override time limit)')
+          : t('Yes, this long shift is correct');
         $form_state->setErrorByName(
-          'long_shift_confirmed',
-          t('This entry is @h hours, which is over the @t-hour threshold and likely an AM/PM error. If this entry is correct (e.g., a real long shift), check the "Yes, this long shift is correct" box below and re-submit.', [
+          $error_target,
+          t('This entry is @h hours, which is over the @t-hour threshold and likely an AM/PM error. If this entry is correct (e.g., a real long shift), check the "@box" box and re-submit.', [
             '@h' => number_format($hours, 1),
             '@t' => rtrim(rtrim(number_format($threshold, 1), '0'), '.'),
+            '@box' => $box_label,
           ])
         );
       }

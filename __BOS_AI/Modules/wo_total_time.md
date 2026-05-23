@@ -86,13 +86,15 @@ Two responsibilities:
 
 ### Long-shift confirmation checkbox
 
-Always rendered (weight 100). Description text explains the user only needs to interact with it when they get the long-shift error. Default unchecked.
+**Consolidated with the persistent `field_time_limit_override` checkbox (2026-05-23).** When `field_time_limit_override` is present on the form — which is every `wo_time_clock` entry under the normal form display — the form-only `long_shift_confirmed` is **not added**, so the user sees only one "yes this is intentional" control instead of two near-duplicates. The validator accepts a tick of either checkbox as confirming the long-shift case.
+
+Fallback: if `field_time_limit_override` is *not* on the form (theoretical edge case — no current form display omits it), `long_shift_confirmed` is rendered at `#weight 50` so it lands just above the form's Save/Delete actions (default `#weight 100`) rather than orphaned below them.
 
 ### `_wo_total_time_form_validate` handler
 
 Custom validate handler appended to `$form['#validate']`. Mirrors presave guards 1–3 (end<start, future start, future end) as friendly inline `setErrorByName()` errors before submit completes — better UX than a hard exception. Then enforces the soft >threshold confirmation requirement.
 
-If the would-be duration is over `field_long_shift_hours` AND `long_shift_confirmed` is unchecked, the user gets an error directing them to check the confirmation box and re-submit. The presave layer has no >threshold guard, so a confirmed long shift saves through.
+If the would-be duration is over `field_long_shift_hours` AND **neither** `field_time_limit_override` nor (in the fallback) `long_shift_confirmed` is checked, the user gets an error directing them to check the appropriate box and re-submit. The error is routed to whichever checkbox is actually on the form, and the message names that checkbox by its on-screen label. The presave layer has no >threshold guard, so a confirmed long shift saves through.
 
 The presave-layer guards still backstop the form layer (defense in depth) — a malformed form submission, REST write, or import bypassing the form layer will still be rejected at presave.
 

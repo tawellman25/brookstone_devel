@@ -449,6 +449,29 @@ Hit 2026-05-20 in `AdminCalendarEventsController`: property-nickname truncation 
 
 **Surfaced 2026-05-20 fixing the empty dispatch calendar (commit `366c9014`).**
 
+## `auto_entitylabel` + `[entity:id]` token + single `->save()` on insert = stuck placeholder
+
+If an AEL pattern uses `[work_order:id]` (or any `[entity:id]` token), the token evaluates to **empty during `hook_entity_presave` on insert** — the ID isn't assigned until the entity is committed. AEL detects the empty resolution and writes its sentinel placeholder `%AutoEntityLabel: <entity-uuid>%` into the title, expecting a follow-up save to heal it.
+
+For form-created entities AEL's own machinery triggers a re-save and the placeholder gets replaced. For **programmatic** creation with a single `$entity->save()`, no follow-up save fires and the placeholder sticks **permanently**. Pathauto then generates a URL alias from that placeholder string (`autoentitylabel-<uuid>` in the slug), so the affected entities have both broken titles and broken URLs.
+
+Compounding factor: AEL's `status: 2` (OPTIONAL) only sets the title when it is **empty**. A plain `->save()` on a stuck entity does **not** heal the title because AEL sees a non-empty value and skips. Heal mechanic: `$entity->set('title', '')` + `->save()`.
+
+Hit 2026-05-23 across 30 `sprinkler_check_up` WOs created by the `contract_residential` check-up generator. Both the queue worker (`ContractResidentialCheckupGeneratorQueueWorker::createWorkOrder`) and the action (`CreateAndScheduleSprinklerCheckUpWorkOrdersAction::createAndScheduleWorkOrder`) called `$wo->save()` exactly once per WO.
+
+**Correct pattern for any programmatic creator whose entity has an `[entity:id]`-bearing AEL pattern:** save twice, clearing the title between saves —
+
+```php
+$wo = $storage->create([...]);
+$wo->save();
+$wo->set('title', '');
+$wo->save();
+```
+
+The cleared title is the cue AEL needs to re-evaluate its pattern with the now-known ID. Backfill mechanic for already-broken rows is the same: load, clear title, save.
+
+**Surfaced 2026-05-23 fixing 30 broken check-up WOs (commit `cabb8a6e`; backfill at `web/scripts/backfill_broken_checkup_titles.php`).**
+
 ---
 
 ## Status

@@ -5,7 +5,6 @@ dependencies:
   config:
     - field.storage.media.field_media_file_1
     - field.storage.media.field_media_image_2
-    - filter.format.full_html
     - image.style.max_650x650
     - media.type.sop_file_attachment
     - media.type.sop_images
@@ -51,18 +50,36 @@ display:
           exclude: false
           alter:
             alter_text: false
+            text: ''
             make_link: false
+            path: ''
             absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
             word_boundary: false
             ellipsis: false
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
             strip_tags: false
             trim: false
+            preserve_tags: ''
             html: false
           element_type: ''
           element_class: ''
           element_label_type: ''
           element_label_class: ''
-          element_label_colon: true
+          element_label_colon: false
           element_wrapper_type: ''
           element_wrapper_class: ''
           element_default_classes: true
@@ -73,7 +90,7 @@ display:
           click_sort_column: value
           type: string
           settings:
-            link_to_entity: true
+            link_to_entity: false
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -136,7 +153,7 @@ display:
           click_sort_column: target_id
           type: file_default
           settings:
-            use_description_as_link_text: true
+            use_description_as_link_text: false
           group_column: ''
           group_columns: {  }
           group_rows: true
@@ -216,6 +233,59 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        edit_media:
+          id: edit_media
+          table: media
+          field: edit_media
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: media
+          plugin_id: entity_link_edit
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            text: ''
+            make_link: false
+            path: ''
+            absolute: false
+            external: false
+            replace_spaces: false
+            path_case: none
+            trim_whitespace: false
+            alt: ''
+            rel: ''
+            link_class: ''
+            prefix: ''
+            suffix: ''
+            target: ''
+            nl2br: false
+            max_length: 0
+            word_boundary: true
+            ellipsis: true
+            more_link: false
+            more_link_text: ''
+            more_link_path: ''
+            strip_tags: false
+            trim: false
+            preserve_tags: ''
+            html: false
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          text: Edit
+          output_url_as_text: false
+          absolute: false
       pager:
         type: mini
         options:
@@ -268,7 +338,7 @@ display:
           plugin_id: text
           empty: true
           content:
-            value: '<a class="button button--primary" href="/media/add/sop_file_attachment?edit[field_sop][widget][0][target_id]={{ raw_arguments.field_sop_target_id }}&amp;destination=/sop/{{ raw_arguments.field_sop_target_id }}">+ Add a Document to this SOP</a>'
+            value: '<a class="button button--primary" href="/media/add/sop_file_attachment?edit[field_sop][widget][0][target_id]={{ raw_arguments.field_sop_target_id }}&amp;destination=/sop/{{ raw_arguments.field_sop_target_id }}">+ Add a Document to this SOP</a><a class="button button--primary" href="/media/add/sop_images?edit[field_sop][widget][0][target_id]={{ raw_arguments.field_sop_target_id }}&amp;destination=/sop/{{ raw_arguments.field_sop_target_id }}">+ Add Image</a>'
             format: full_html
           tokenize: true
       sorts:
@@ -369,16 +439,44 @@ display:
             default_group_multiple: {  }
             group_items: {  }
       style:
-        type: grid
+        type: table
         options:
           grouping: {  }
-          columns: 4
-          automatic_width: true
-          alignment: horizontal
-          row_class_custom: ''
-          row_class_default: true
-          col_class_custom: ''
-          col_class_default: true
+          row_class: ''
+          default_row_class: true
+          columns:
+            name: name
+            field_media_file_1: field_media_file_1
+            field_media_image_2: field_media_image_2
+          default: '-1'
+          info:
+            name:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_media_file_1:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_media_image_2:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          override: true
+          sticky: false
+          summary: ''
+          empty_table: false
+          caption: ''
+          description: ''
       row:
         type: fields
         options:
@@ -407,7 +505,7 @@ display:
           plugin_id: text
           empty: false
           content:
-            value: '<a class="button button--primary" href="/media/add/sop_file_attachment?edit[field_sop][widget][0][target_id]={{ raw_arguments.field_sop_target_id }}&amp;destination=/sop/{{ raw_arguments.field_sop_target_id }}">+ Add Another Document</a>'
+            value: '<a class="button button--primary" href="/media/add/sop_file_attachment?edit[field_sop][widget][0][target_id]={{ raw_arguments.field_sop_target_id }}&amp;destination=/sop/{{ raw_arguments.field_sop_target_id }}">+ Add Another Document</a><a class="button button--primary" href="/media/add/sop_images?edit[field_sop][widget][0][target_id]={{ raw_arguments.field_sop_target_id }}&amp;destination=/sop/{{ raw_arguments.field_sop_target_id }}">+ Add Image</a>'
             format: full_html
           tokenize: true
       display_extenders: {  }

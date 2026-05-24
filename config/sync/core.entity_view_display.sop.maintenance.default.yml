@@ -12,6 +12,7 @@ dependencies:
     - field.field.sop.maintenance.field_service
     - field.field.sop.maintenance.field_sop__kpis
     - field.field.sop.maintenance.field_sop_code
+    - field.field.sop.maintenance.field_sop_image
     - field.field.sop.maintenance.field_sop_last_reviewed
     - field.field.sop.maintenance.field_sop_owner
     - field.field.sop.maintenance.field_sop_purpose
@@ -22,50 +23,44 @@ dependencies:
     - field.field.sop.maintenance.field_sop_tools_and_resources
     - field.field.sop.maintenance.field_sop_version
   module:
-    - colorbox
     - datetime
     - field_group
+    - image
     - options
     - text
+    - user
 third_party_settings:
   field_group:
     group_attachments:
       children:
+        - field_sop_image
         - sop_file_attachments_entity_view_1
       label: Attachments
-      parent_name: ''
-      region: content
-      weight: 5
-      format_type: details
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        label_as_html: false
-        open: false
-        description: ''
-        required_fields: false
-    group_tools_and_resources:
-      children:
-        - field_sop_tools_and_resources
-        - field_materials_involved
-      label: 'Tools and Resources'
       parent_name: ''
       region: content
       weight: 7
       format_type: details
       format_settings:
         classes: ''
-        show_empty_fields: false
+        show_empty_fields: true
         id: ''
         label_as_html: false
         open: true
         description: ''
         required_fields: false
-    group_key_performance_indicators:
+    group_creation_details:
       children:
-        - field_sop__kpis
-      label: 'Key Performance Indicators'
+        - field_sop_owner
+        - field_sop_status
+        - field_parent_sop
+        - field_sop_code
+        - field_sop_version
+        - field_sop_last_reviewed
+        - uid
+        - created
+        - changed
+        - group_edit_log
+      label: 'Creation Details'
       parent_name: ''
       region: content
       weight: 8
@@ -75,22 +70,29 @@ third_party_settings:
         show_empty_fields: false
         id: ''
         label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_edit_log:
+      children:
+        - sop_log_entries_entity_view_1
+      label: 'Edit Log'
+      parent_name: group_creation_details
+      region: content
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
         open: true
         description: ''
         required_fields: false
-    group_office_admin:
+    group_related_sops:
       children:
-        - field_sop_code
-        - field_parent_sop
-        - field_sop_version
-        - field_sop_status
-        - field_service
-        - field_sop_owner
-        - field_sop_last_reviewed
-        - uid
-        - created
-        - changed
-      label: 'Office Admin'
+        - field_related_sops
+      label: 'Related SOPs'
       parent_name: ''
       region: content
       weight: 9
@@ -152,7 +154,7 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 1
+    weight: 12
     region: content
   field_parent_sop:
     type: entity_reference_label
@@ -160,7 +162,7 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 1
+    weight: 3
     region: content
   field_prerequisites:
     type: string
@@ -168,18 +170,15 @@ content:
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 3
+    weight: 2
     region: content
   field_related_sops:
-    type: colorbox_view_modes
-    label: above
+    type: entity_reference_label
+    label: hidden
     settings:
-      colorbox_view_mode: ''
-      colorbox_modal_view_mode: ''
-      colorbox_gallery: post
-      colorbox_gallery_custom: ''
+      link: true
     third_party_settings: {  }
-    weight: 6
+    weight: 10
     region: content
   field_service:
     type: entity_reference_label
@@ -187,26 +186,37 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 4
+    weight: 12
     region: content
   field_sop__kpis:
     type: text_default
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 0
+    weight: 6
     region: content
   field_sop_code:
     type: string
-    label: above
+    label: hidden
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 0
+    weight: 4
+    region: content
+  field_sop_image:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 12
     region: content
   field_sop_last_reviewed:
     type: datetime_default
-    label: above
+    label: inline
     settings:
       timezone_override: ''
       format_type: medium
@@ -215,11 +225,11 @@ content:
     region: content
   field_sop_owner:
     type: entity_reference_label
-    label: above
+    label: inline
     settings:
       link: true
     third_party_settings: {  }
-    weight: 5
+    weight: 1
     region: content
   field_sop_purpose:
     type: text_default
@@ -233,7 +243,7 @@ content:
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 2
+    weight: 3
     region: content
   field_sop_scope:
     type: text_default
@@ -244,10 +254,10 @@ content:
     region: content
   field_sop_status:
     type: list_default
-    label: above
+    label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 3
+    weight: 2
     region: content
   field_sop_steps:
     type: text_default
@@ -261,29 +271,35 @@ content:
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 0
+    weight: 5
     region: content
   field_sop_version:
     type: string
-    label: above
+    label: inline
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 2
+    weight: 5
     region: content
   sop_file_attachments_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 1
+    weight: 13
+    region: content
+  sop_log_entries_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
     region: content
   uid:
-    type: entity_reference_label
+    type: author
     label: hidden
-    settings:
-      link: true
+    settings: {  }
     third_party_settings: {  }
     weight: 7
     region: content
 hidden:
   field_name: true
+  field_sop_image: true
   title: true
+

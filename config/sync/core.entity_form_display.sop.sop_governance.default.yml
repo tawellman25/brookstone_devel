@@ -11,6 +11,7 @@ dependencies:
     - field.field.sop.sop_governance.field_service
     - field.field.sop.sop_governance.field_sop__kpis
     - field.field.sop.sop_governance.field_sop_code
+    - field.field.sop.sop_governance.field_sop_image
     - field.field.sop.sop_governance.field_sop_last_reviewed
     - field.field.sop.sop_governance.field_sop_owner
     - field.field.sop.sop_governance.field_sop_purpose
@@ -19,11 +20,12 @@ dependencies:
     - field.field.sop.sop_governance.field_sop_status
     - field.field.sop.sop_governance.field_sop_steps
     - field.field.sop.sop_governance.field_sop_version
+    - image.style.thumbnail
   module:
-    - allowed_formats
     - datetime
     - field_group
     - field_layout
+    - image
     - layout_discovery
     - path
     - text
@@ -35,7 +37,7 @@ third_party_settings:
   field_group:
     group_office_admin:
       children:
-        - group_teammate_manual
+        - group_employee_manual
         - group_entered_info
         - group_url_info
       label: 'Office Admin'
@@ -50,27 +52,27 @@ third_party_settings:
         label_as_html: false
         direction: vertical
         width_breakpoint: 640
-    group_entered_info:
-      children:
-        - created
-        - uid
-      label: 'Entered Info'
-      region: content
-      parent_name: group_office_admin
-      weight: 2
-      format_type: tab
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        label_as_html: false
-        formatter: closed
-        description: ''
-        required_fields: true
     group_url_info:
       children:
         - path
-      label: 'URL Info'
+      label: ' URL Info'
+      region: content
+      parent_name: group_office_admin
+      weight: 4
+      format_type: tab
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        formatter: open
+        description: ''
+        required_fields: true
+    group_entered_info:
+      children:
+        - uid
+        - created
+      label: ' Entered Info'
       region: content
       parent_name: group_office_admin
       weight: 3
@@ -83,12 +85,11 @@ third_party_settings:
         formatter: closed
         description: ''
         required_fields: true
-    group_teammate_manual:
+    group_employee_manual:
       children:
         - field_parent_sop
         - field_sop_status
         - field_sop_version
-        - field_service
         - field_sop_owner
         - field_sop_last_reviewed
       label: 'Teammate Manual'
@@ -101,9 +102,10 @@ third_party_settings:
         show_empty_fields: false
         id: ''
         label_as_html: false
-        formatter: open
+        formatter: closed
         description: ''
         required_fields: true
+        open: true
 id: sop.sop_governance.default
 targetEntityType: sop
 bundle: sop_governance
@@ -111,7 +113,7 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 10
+    weight: 6
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -125,7 +127,7 @@ content:
     third_party_settings: {  }
   field_parent_sop:
     type: entity_reference_autocomplete
-    weight: 1
+    weight: 7
     region: content
     settings:
       match_operator: CONTAINS
@@ -135,7 +137,7 @@ content:
     third_party_settings: {  }
   field_prerequisites:
     type: string_textfield
-    weight: 6
+    weight: 5
     region: content
     settings:
       size: 60
@@ -143,7 +145,7 @@ content:
     third_party_settings: {  }
   field_related_sops:
     type: entity_reference_autocomplete
-    weight: 9
+    weight: 10
     region: content
     settings:
       match_operator: CONTAINS
@@ -153,7 +155,7 @@ content:
     third_party_settings: {  }
   field_service:
     type: entity_reference_autocomplete
-    weight: 4
+    weight: 12
     region: content
     settings:
       match_operator: CONTAINS
@@ -177,15 +179,23 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_sop_image:
+    type: image_image
+    weight: 9
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
   field_sop_last_reviewed:
     type: datetime_default
-    weight: 6
+    weight: 11
     region: content
     settings: {  }
     third_party_settings: {  }
   field_sop_owner:
     type: entity_reference_autocomplete
-    weight: 5
+    weight: 10
     region: content
     settings:
       match_operator: CONTAINS
@@ -203,7 +213,7 @@ content:
     third_party_settings: {  }
   field_sop_responsibilities:
     type: text_textarea
-    weight: 5
+    weight: 4
     region: content
     settings:
       rows: 5
@@ -211,7 +221,7 @@ content:
     third_party_settings: {  }
   field_sop_scope:
     type: text_textarea
-    weight: 4
+    weight: 3
     region: content
     settings:
       rows: 5
@@ -219,13 +229,13 @@ content:
     third_party_settings: {  }
   field_sop_status:
     type: options_select
-    weight: 2
+    weight: 8
     region: content
     settings: {  }
     third_party_settings: {  }
   field_sop_steps:
     type: text_textarea
-    weight: 7
+    weight: 6
     region: content
     settings:
       rows: 15
@@ -236,7 +246,7 @@ content:
         hide_guidelines: '1'
   field_sop_version:
     type: string_textfield
-    weight: 3
+    weight: 9
     region: content
     settings:
       size: 60
@@ -244,13 +254,13 @@ content:
     third_party_settings: {  }
   path:
     type: path
-    weight: 2
+    weight: 3
     region: content
     settings: {  }
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 11
+    weight: 5
     region: content
     settings:
       match_operator: CONTAINS
@@ -259,4 +269,6 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
+  field_sop_image: true
   title: true
+

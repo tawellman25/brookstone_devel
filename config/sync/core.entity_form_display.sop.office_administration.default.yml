@@ -10,6 +10,7 @@ dependencies:
     - field.field.sop.office_administration.field_related_sops
     - field.field.sop.office_administration.field_sop__kpis
     - field.field.sop.office_administration.field_sop_code
+    - field.field.sop.office_administration.field_sop_image
     - field.field.sop.office_administration.field_sop_last_reviewed
     - field.field.sop.office_administration.field_sop_owner
     - field.field.sop.office_administration.field_sop_purpose
@@ -19,10 +20,12 @@ dependencies:
     - field.field.sop.office_administration.field_sop_steps
     - field.field.sop.office_administration.field_sop_tools_and_resources
     - field.field.sop.office_administration.field_sop_version
+    - image.style.thumbnail
   module:
     - datetime
     - field_group
     - field_layout
+    - image
     - layout_discovery
     - path
     - text
@@ -40,7 +43,7 @@ third_party_settings:
       label: 'Office Admin'
       region: content
       parent_name: ''
-      weight: 10
+      weight: 11
       format_type: tabs
       format_settings:
         classes: ''
@@ -142,7 +145,7 @@ content:
     third_party_settings: {  }
   field_related_sops:
     type: entity_reference_autocomplete
-    weight: 9
+    weight: 10
     region: content
     settings:
       match_operator: CONTAINS
@@ -165,6 +168,14 @@ content:
     settings:
       size: 60
       placeholder: ''
+    third_party_settings: {  }
+  field_sop_image:
+    type: image_image
+    weight: 9
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
     third_party_settings: {  }
   field_sop_last_reviewed:
     type: datetime_default
@@ -257,3 +268,4 @@ content:
     third_party_settings: {  }
 hidden:
   title: true
+

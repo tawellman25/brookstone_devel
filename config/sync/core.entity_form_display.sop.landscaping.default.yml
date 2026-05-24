@@ -12,6 +12,7 @@ dependencies:
     - field.field.sop.landscaping.field_service
     - field.field.sop.landscaping.field_sop__kpis
     - field.field.sop.landscaping.field_sop_code
+    - field.field.sop.landscaping.field_sop_image
     - field.field.sop.landscaping.field_sop_last_reviewed
     - field.field.sop.landscaping.field_sop_owner
     - field.field.sop.landscaping.field_sop_purpose
@@ -21,10 +22,12 @@ dependencies:
     - field.field.sop.landscaping.field_sop_steps
     - field.field.sop.landscaping.field_sop_tools_and_resources
     - field.field.sop.landscaping.field_sop_version
+    - image.style.thumbnail
   module:
     - datetime
     - field_group
     - field_layout
+    - image
     - layout_discovery
     - path
     - text
@@ -34,31 +37,9 @@ third_party_settings:
     settings:
       label: ''
   field_group:
-    group_teammate_manual:
-      children:
-        - field_parent_sop
-        - field_sop_version
-        - field_sop_status
-        - field_service
-        - field_sop_owner
-        - field_sop_last_reviewed
-      label: 'Teammate Manual'
-      region: content
-      parent_name: group_office_admin
-      weight: 9
-      format_type: tab
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        label_as_html: false
-        formatter: closed
-        description: ''
-        required_fields: true
-        open: false
     group_office_admin:
       children:
-        - group_teammate_manual
+        - group_employee_manual
         - group_entered_info
         - group_url_info
       label: 'Office Admin'
@@ -71,36 +52,32 @@ third_party_settings:
         show_empty_fields: false
         id: ''
         label_as_html: false
-        description: ''
-        required_fields: true
         direction: vertical
         width_breakpoint: 640
-        open: false
-    group_entered_info:
-      children:
-        - created
-        - uid
-      label: 'Entered Info'
-      region: content
-      parent_name: group_office_admin
-      weight: 10
-      format_type: tab
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        label_as_html: false
-        formatter: closed
-        description: ''
-        required_fields: true
-        open: false
     group_url_info:
       children:
         - path
       label: ' URL Info'
       region: content
       parent_name: group_office_admin
-      weight: 11
+      weight: 4
+      format_type: tab
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        label_as_html: false
+        formatter: open
+        description: ''
+        required_fields: true
+    group_entered_info:
+      children:
+        - uid
+        - created
+      label: ' Entered Info'
+      region: content
+      parent_name: group_office_admin
+      weight: 3
       format_type: tab
       format_settings:
         classes: ''
@@ -110,7 +87,27 @@ third_party_settings:
         formatter: closed
         description: ''
         required_fields: true
-        open: false
+    group_employee_manual:
+      children:
+        - field_parent_sop
+        - field_sop_status
+        - field_sop_version
+        - field_sop_owner
+        - field_sop_last_reviewed
+      label: 'Teammate Manual'
+      region: content
+      parent_name: group_office_admin
+      weight: 1
+      format_type: tab
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        formatter: closed
+        description: ''
+        required_fields: true
+        open: true
 id: sop.landscaping.default
 targetEntityType: sop
 bundle: landscaping
@@ -118,13 +115,13 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 10
+    weight: 6
     region: content
     settings: {  }
     third_party_settings: {  }
   field_materials_involved:
     type: entity_reference_autocomplete
-    weight: 8
+    weight: 12
     region: content
     settings:
       match_operator: CONTAINS
@@ -142,7 +139,7 @@ content:
     third_party_settings: {  }
   field_parent_sop:
     type: entity_reference_autocomplete
-    weight: 3
+    weight: 7
     region: content
     settings:
       match_operator: CONTAINS
@@ -164,13 +161,13 @@ content:
     region: content
     settings:
       match_operator: CONTAINS
-      match_limit: 20
-      size: 60
+      match_limit: 10
+      size: 20
       placeholder: ''
     third_party_settings: {  }
   field_service:
     type: entity_reference_autocomplete
-    weight: 6
+    weight: 12
     region: content
     settings:
       match_operator: CONTAINS
@@ -180,7 +177,7 @@ content:
     third_party_settings: {  }
   field_sop__kpis:
     type: text_textarea
-    weight: 9
+    weight: 8
     region: content
     settings:
       rows: 5
@@ -194,15 +191,23 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_sop_image:
+    type: image_image
+    weight: 9
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
   field_sop_last_reviewed:
     type: datetime_default
-    weight: 8
+    weight: 11
     region: content
     settings: {  }
     third_party_settings: {  }
   field_sop_owner:
     type: entity_reference_autocomplete
-    weight: 7
+    weight: 10
     region: content
     settings:
       match_operator: CONTAINS
@@ -236,7 +241,7 @@ content:
     third_party_settings: {  }
   field_sop_status:
     type: options_select
-    weight: 5
+    weight: 8
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -261,7 +266,7 @@ content:
     third_party_settings: {  }
   field_sop_version:
     type: string_textfield
-    weight: 4
+    weight: 9
     region: content
     settings:
       size: 60
@@ -269,13 +274,13 @@ content:
     third_party_settings: {  }
   path:
     type: path
-    weight: 6
+    weight: 3
     region: content
     settings: {  }
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 11
+    weight: 5
     region: content
     settings:
       match_operator: CONTAINS
@@ -284,4 +289,6 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
+  field_sop_image: true
   title: true
+

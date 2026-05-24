@@ -10,6 +10,7 @@ dependencies:
     - field.field.sop.office_administration.field_related_sops
     - field.field.sop.office_administration.field_sop__kpis
     - field.field.sop.office_administration.field_sop_code
+    - field.field.sop.office_administration.field_sop_image
     - field.field.sop.office_administration.field_sop_last_reviewed
     - field.field.sop.office_administration.field_sop_owner
     - field.field.sop.office_administration.field_sop_purpose
@@ -22,6 +23,7 @@ dependencies:
   module:
     - datetime
     - field_group
+    - image
     - options
     - text
     - user
@@ -29,6 +31,7 @@ third_party_settings:
   field_group:
     group_attachments:
       children:
+        - field_sop_image
         - sop_file_attachments_entity_view_1
       label: Attachments
       parent_name: ''
@@ -54,10 +57,43 @@ third_party_settings:
         - uid
         - created
         - changed
+        - group_edit_log
       label: 'Creation Details'
       parent_name: ''
       region: content
       weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_edit_log:
+      children:
+        - sop_log_entries_entity_view_1
+      label: 'Edit Log'
+      parent_name: group_creation_details
+      region: content
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: true
+        description: ''
+        required_fields: false
+    group_related_sops:
+      children:
+        - field_related_sops
+      label: 'Related SOPs'
+      parent_name: ''
+      region: content
+      weight: 9
       format_type: details
       format_settings:
         classes: ''
@@ -124,15 +160,15 @@ content:
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 3
+    weight: 2
     region: content
   field_related_sops:
     type: entity_reference_label
-    label: above
+    label: hidden
     settings:
       link: true
     third_party_settings: {  }
-    weight: 20
+    weight: 10
     region: content
   field_sop__kpis:
     type: text_default
@@ -148,6 +184,17 @@ content:
       link_to_entity: false
     third_party_settings: {  }
     weight: 4
+    region: content
+  field_sop_image:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 12
     region: content
   field_sop_last_reviewed:
     type: datetime_default
@@ -171,7 +218,7 @@ content:
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 1
+    weight: 0
     region: content
   field_sop_responsibilities:
     type: text_default
@@ -185,7 +232,7 @@ content:
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 2
+    weight: 1
     region: content
   field_sop_status:
     type: list_default
@@ -219,7 +266,12 @@ content:
   sop_file_attachments_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 11
+    weight: 13
+    region: content
+  sop_log_entries_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
     region: content
   uid:
     type: author
@@ -231,3 +283,4 @@ content:
 hidden:
   field_name: true
   title: true
+

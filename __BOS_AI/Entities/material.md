@@ -47,6 +47,7 @@ trees | Trees
 xmas | Christmas Lights
 mulch | Mulch
 backflow | Backflow
+bulk_material | Bulk Material  *(added 2026-05-24 — non-decorative bulk: topsoil, fill dirt, compost, lime, gypsum, sulfur, non-decorative sand/gravel, soil amendments. See [material_bulk_material.md](material_bulk_material.md).)*
 
 ---
 
@@ -258,6 +259,13 @@ Cloned from irrigation bundle. Backflow prevention devices:
 - Shares irrigation field set (common hardware/parts pattern)
 - Created to separate Febco backflow items from general irrigation materials
 - 52 Febco items moved from irrigation → backflow via `dev_scripts/move_backflow_materials.php`
+
+### bulk_material (Bulk Material)
+**Added 2026-05-24.** Cloned from `decorative_rock`'s field profile. Holds non-decorative bulk materials sold by the cubic yard or ton:
+- Same 22 shared fields as `decorative_rock` (bulk pricing shape: `field_est_wt_per_yard`, `field_yard_per_ton`, `field_unit_of_measure`, etc.)
+- `field_rock_type` replaced by `field_bulk_material_type` → new `bulk_material_types` vocabulary (15 seed terms: Topsoil, Fill Dirt, Compost, Lime, Sulfur, Gypsum, Sand, Gravel, Decomposed Granite, etc., plus Other / Soil Amendment (Other) pinned to bottom)
+- **No entries migrated from `decorative_rock`** as part of bundle creation — that's a deferred decision
+- See [material_bulk_material.md](material_bulk_material.md) for full field list, vocabulary details, and permissions
 
 ---
 

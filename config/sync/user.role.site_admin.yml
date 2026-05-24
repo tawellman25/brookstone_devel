@@ -3,6 +3,15 @@ langcode: en
 status: true
 dependencies:
   config:
+    - block_content.type.basic
+    - comment.type.comment
+    - comment.type.comment_forum
+    - comment.type.employment_note_comments
+    - comment.type.equipment_comments
+    - comment.type.work_order_notes
+    - config_pages.type.business_setting
+    - core.entity_form_display.user.user.default
+    - core.entity_form_display.user.user.register
     - eck.eck_type.address.contact_address
     - eck.eck_type.address.profile_mailing_addresses
     - eck.eck_type.chemical.fertilizer
@@ -139,6 +148,7 @@ dependencies:
     - eck.eck_type.manufacturer.manufacturer
     - eck.eck_type.material.annuals
     - eck.eck_type.material.brass
+    - eck.eck_type.material.bulk_material
     - eck.eck_type.material.copper
     - eck.eck_type.material.decorative_rock
     - eck.eck_type.material.electric
@@ -280,6 +290,7 @@ dependencies:
     - filter.format.full_ai_html
     - filter.format.full_html
     - filter.format.restricted_html
+    - flag.flag.work_order_timer
     - media.type.audio
     - media.type.document
     - media.type.image
@@ -287,10 +298,14 @@ dependencies:
     - media.type.video
     - media.type.wo_files
     - media.type.wo_images
+    - media.type.wo_videos
     - node.type.article
     - node.type.forum
     - node.type.help_manual
     - node.type.page
+    - paragraphs.paragraphs_type.type
+    - profile.type.customer_profile
+    - profile.type.teammate_profile
     - taxonomy.vocabulary.carrier
     - taxonomy.vocabulary.christmas_light_colors
     - taxonomy.vocabulary.christmas_light_types
@@ -302,10 +317,13 @@ dependencies:
     - taxonomy.vocabulary.equipment_status
     - taxonomy.vocabulary.equipment_types
     - taxonomy.vocabulary.forums
+    - taxonomy.vocabulary.growth_zone
     - taxonomy.vocabulary.irrigation_check_up_frequency
     - taxonomy.vocabulary.material_tags
     - taxonomy.vocabulary.material_types
     - taxonomy.vocabulary.mowing_frequency
+    - taxonomy.vocabulary.plant_characteristics
+    - taxonomy.vocabulary.rock_types
     - taxonomy.vocabulary.season
     - taxonomy.vocabulary.services
     - taxonomy.vocabulary.signal_words
@@ -344,6 +362,7 @@ dependencies:
     - eck_bundle_permissions
     - entity_browser
     - entity_reference_revisions
+    - estimate
     - feeds
     - feeds_log
     - feeds_tamper
@@ -372,8 +391,8 @@ dependencies:
     - taxonomy
     - toolbar
     - tour
-    - wo_material_price_sync
     - views_ui
+    - wo_material_price_sync
 id: site_admin
 label: 'Site Admin'
 weight: -7
@@ -921,6 +940,7 @@ permissions:
   - 'create material entities'
   - 'create material entities of bundle annuals'
   - 'create material entities of bundle brass'
+  - 'create material entities of bundle bulk_material'
   - 'create material entities of bundle copper'
   - 'create material entities of bundle decorative_rock'
   - 'create material entities of bundle electric'
@@ -1226,6 +1246,7 @@ permissions:
   - 'delete any manufacturer entities of bundle manufacturer'
   - 'delete any material entities'
   - 'delete any material entities of bundle brass'
+  - 'delete any material entities of bundle bulk_material'
   - 'delete any material entities of bundle copper'
   - 'delete any material entities of bundle decorative_rock'
   - 'delete any material entities of bundle electric'
@@ -1476,6 +1497,7 @@ permissions:
   - 'delete own material entities'
   - 'delete own material entities of bundle annuals'
   - 'delete own material entities of bundle brass'
+  - 'delete own material entities of bundle bulk_material'
   - 'delete own material entities of bundle copper'
   - 'delete own material entities of bundle decorative_rock'
   - 'delete own material entities of bundle electric'
@@ -1814,6 +1836,7 @@ permissions:
   - 'edit any material entities'
   - 'edit any material entities of bundle annuals'
   - 'edit any material entities of bundle brass'
+  - 'edit any material entities of bundle bulk_material'
   - 'edit any material entities of bundle copper'
   - 'edit any material entities of bundle decorative_rock'
   - 'edit any material entities of bundle electric'
@@ -2138,6 +2161,7 @@ permissions:
   - 'edit own material entities'
   - 'edit own material entities of bundle annuals'
   - 'edit own material entities of bundle brass'
+  - 'edit own material entities of bundle bulk_material'
   - 'edit own material entities of bundle copper'
   - 'edit own material entities of bundle decorative_rock'
   - 'edit own material entities of bundle electric'
@@ -2610,8 +2634,8 @@ permissions:
   - 'revert term revisions in equipment_types'
   - 'revert term revisions in material_tags'
   - 'revert term revisions in material_types'
-  - 'review material price changes'
   - 'revert term revisions in snow_plow_routes'
+  - 'review material price changes'
   - 'search content'
   - 'select account cancellation method'
   - 'skip CAPTCHA'
@@ -3111,6 +3135,7 @@ permissions:
   - 'view any material entities'
   - 'view any material entities of bundle annuals'
   - 'view any material entities of bundle brass'
+  - 'view any material entities of bundle bulk_material'
   - 'view any material entities of bundle copper'
   - 'view any material entities of bundle decorative_rock'
   - 'view any material entities of bundle electric'
@@ -3437,6 +3462,7 @@ permissions:
   - 'view own material entities'
   - 'view own material entities of bundle annuals'
   - 'view own material entities of bundle brass'
+  - 'view own material entities of bundle bulk_material'
   - 'view own material entities of bundle copper'
   - 'view own material entities of bundle decorative_rock'
   - 'view own material entities of bundle electric'
@@ -3593,3 +3619,4 @@ permissions:
   - 'view the administration theme'
   - 'view unpublished eck entities'
   - 'view user email addresses'
+

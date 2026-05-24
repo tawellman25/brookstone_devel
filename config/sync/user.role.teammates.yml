@@ -3,6 +3,9 @@ langcode: en
 status: true
 dependencies:
   config:
+    - comment.type.work_order_notes
+    - core.entity_form_display.user.user.default
+    - core.entity_form_display.user.user.register
     - eck.eck_type.address.contact_address
     - eck.eck_type.address.profile_mailing_addresses
     - eck.eck_type.chemical.fertilizer
@@ -49,6 +52,7 @@ dependencies:
     - eck.eck_type.county.county
     - eck.eck_type.crew_types.crew_types
     - eck.eck_type.department.details
+    - eck.eck_type.employment.notes
     - eck.eck_type.equipment.attachements
     - eck.eck_type.equipment.heavy_equipment
     - eck.eck_type.equipment.power_tools
@@ -93,6 +97,7 @@ dependencies:
     - eck.eck_type.manufacturer.manufacturer
     - eck.eck_type.material.annuals
     - eck.eck_type.material.brass
+    - eck.eck_type.material.bulk_material
     - eck.eck_type.material.copper
     - eck.eck_type.material.decorative_rock
     - eck.eck_type.material.electric
@@ -228,6 +233,7 @@ dependencies:
     - eck.eck_type.zipcodes.zipcode
     - filter.format.basic_html
     - filter.format.full_html
+    - flag.flag.work_order_timer
     - media.type.audio
     - media.type.document
     - media.type.image
@@ -235,12 +241,41 @@ dependencies:
     - media.type.video
     - media.type.wo_files
     - media.type.wo_images
+    - media.type.wo_videos
     - node.type.article
     - node.type.forum
     - node.type.help_manual
     - node.type.page
+    - paragraphs.paragraphs_type.type
+    - profile.type.customer_profile
+    - profile.type.teammate_profile
+    - taxonomy.vocabulary.carrier
+    - taxonomy.vocabulary.contract_status
     - taxonomy.vocabulary.crew_skills_and_certifications
+    - taxonomy.vocabulary.deer_protection
+    - taxonomy.vocabulary.dump_location
+    - taxonomy.vocabulary.emergence_types
+    - taxonomy.vocabulary.equipment_types
     - taxonomy.vocabulary.forums
+    - taxonomy.vocabulary.growth_zone
+    - taxonomy.vocabulary.material_types
+    - taxonomy.vocabulary.plant_characteristics
+    - taxonomy.vocabulary.rock_types
+    - taxonomy.vocabulary.season
+    - taxonomy.vocabulary.services
+    - taxonomy.vocabulary.snow_levels
+    - taxonomy.vocabulary.snow_plow_routes
+    - taxonomy.vocabulary.snow_plows
+    - taxonomy.vocabulary.spraying_locations
+    - taxonomy.vocabulary.spraying_methods
+    - taxonomy.vocabulary.spraying_soil_moisture_levels
+    - taxonomy.vocabulary.spraying_stages_of_weed_growth
+    - taxonomy.vocabulary.spraying_wind_speed
+    - taxonomy.vocabulary.supplier_types
+    - taxonomy.vocabulary.system_complexity
+    - taxonomy.vocabulary.weed_categories
+    - taxonomy.vocabulary.wind_direction
+    - taxonomy.vocabulary.wo_status
   module:
     - actions_permissions
     - captcha
@@ -420,6 +455,7 @@ permissions:
   - 'edit any lawn_and_garden_pests entities of bundle weed_types'
   - 'edit any material entities'
   - 'edit any material entities of bundle brass'
+  - 'edit any material entities of bundle bulk_material'
   - 'edit any material entities of bundle copper'
   - 'edit any material entities of bundle decorative_rock'
   - 'edit any material entities of bundle electric'
@@ -582,6 +618,7 @@ permissions:
   - 'edit own lawn_and_garden_pests entities of bundle weed_types'
   - 'edit own material entities'
   - 'edit own material entities of bundle brass'
+  - 'edit own material entities of bundle bulk_material'
   - 'edit own material entities of bundle copper'
   - 'edit own material entities of bundle decorative_rock'
   - 'edit own material entities of bundle electric'
@@ -1040,6 +1077,7 @@ permissions:
   - 'view any material entities'
   - 'view any material entities of bundle annuals'
   - 'view any material entities of bundle brass'
+  - 'view any material entities of bundle bulk_material'
   - 'view any material entities of bundle copper'
   - 'view any material entities of bundle decorative_rock'
   - 'view any material entities of bundle electric'
@@ -1264,3 +1302,4 @@ permissions:
   - 'view own wo_tasks_list entities of bundle lawn_mowing'
   - 'view own wo_time_clock entities of bundle entry'
   - 'view term revisions in crew_skills_and_certifications'
+

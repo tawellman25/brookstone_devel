@@ -1,0 +1,29 @@
+uuid: d1b0f989-5b23-4609-a830-5adc14d8a49c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.bulk_material
+    - field.storage.material.field_bulk_material_type
+    - taxonomy.vocabulary.bulk_material_types
+id: material.bulk_material.field_bulk_material_type
+field_name: field_bulk_material_type
+entity_type: material
+bundle: bulk_material
+label: 'Bulk Material Type'
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      bulk_material_types: bulk_material_types
+    sort:
+      field: _none
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference
+

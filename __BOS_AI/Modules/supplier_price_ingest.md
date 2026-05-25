@@ -5,7 +5,8 @@ Package: `Brookstone Outdoors`
 Status:
 - **Phase 3.1 shipped 2026-05-25** — data-model foundation only.
 - **Phase 3.2 shipped 2026-05-25** — parser service (`IngestParser`), supplier ingest config admin (form alter + JSON validation), batch upload form, presave validation hook.
-- **Phase 3.3 shipped 2026-05-25** — matcher service (`IngestMatcher`) with Tier 1 (manufacturer item #), Tier 2 (existing material_suppliers SKU), discontinued material retargeting, bundle policy enforcement, discovery routing, and supplier-do-not-use short-circuit. Parser auto-invokes matcher after parse. Tier 3 fuzzy matching still ahead in 3.4.
+- **Phase 3.3 shipped 2026-05-25** — matcher service (`IngestMatcher`) with Tier 1 (manufacturer item #), Tier 2 (existing material_suppliers SKU), discontinued material retargeting, bundle policy enforcement, discovery routing, and supplier-do-not-use short-circuit. Parser auto-invokes matcher after parse.
+- **Phase 3.4 shipped 2026-05-25** — Tier 3 fuzzy matching (`FuzzyScorer` + bundle inference + threshold routing) inserted between Tier 2 and discovery. 12-scenario verifier (`web/scripts/verify_supplier_price_ingest_fuzzy.php`) covers high/medium/low confidence routing, anti-signal handling, bundle inference correctness, excluded-bundle filtering, discontinued exclusion, and a 100-row × ~200-candidate performance pass (~2.5s in DDEV, vs the 30s budget).
 
 ---
 
@@ -402,12 +403,143 @@ Plus batch row-count rollups verified against actual row entity counts.
 
 ---
 
+## Phase 3.4 — Matcher Tier 3 (Fuzzy Matching)
+
+### Architecture
+
+`FuzzyScorer` is a stateless service (`supplier_price_ingest.fuzzy_scorer`) shared with `IngestMatcher`. The matcher's per-row decision tree now reads:
+
+1. Tier 1 — manufacturer item # exact match (Phase 3.3)
+2. Tier 2 — existing `material_suppliers` SKU match (Phase 3.3)
+3. **Tier 3 — bundle inference + multi-factor fuzzy scoring** (this phase)
+4. Discovery routing (Phase 3.3)
+
+Skipped buckets (`skipped_discontinued`, `skipped_excluded_bundle`, `skipped_do_not_use`) preserve their Phase 3.3 semantics.
+
+### Bundle Inference
+
+Pure-PHP keyword classifier on the row description, exposed as `IngestMatcher::inferCandidateBundles(string $description): array`. Keyword map is `const BUNDLE_KEYWORDS` on the matcher (static, shared across rows). Map covers 16 material bundles; entries are space-padded substring matches to support multi-word keywords like `"sch 40"`. Tie-broken by hit count DESC. Hard cap: 3 candidate bundles per row to avoid degenerate "every bundle is a hit" cases.
+
+After inference, supplier's `field_bundle_policy` filters the candidate bundles:
+
+- `excluded` → bundle removed from candidates
+- `matched_only` / `discovery` / `both` / *(unset → default matched_only)* → bundle retained as scoring target
+
+If every inferred bundle is excluded, the row gets `field_match_tier = 'skipped_excluded_bundle'` with a note naming the excluded bundles — *this is a definitive policy decision, not a discovery fall-through*. If no bundle matched at all (empty inference), the row falls to discovery with a note `"Tier 3: bundle inference returned no candidates."`.
+
+### Candidate Pool Query
+
+For each retained candidate bundle, the matcher queries active materials:
+
+- `type = $bundle`, sorted by `id DESC` (newest first; deterministic across calls)
+- Per-bundle cap: **200 materials**. If a bundle has more, a second query applies a `CONTAINS` pre-filter on the **largest non-stopword token (≥3 chars)** from the row description.
+- Total cap across all candidate bundles: **600 materials**. If exceeded, the matcher logs a warning, records a note on the row (`"candidate pool exceeded 600; routed to discovery"`), and lets discovery handle it.
+- Discontinued exclusion is enforced **in the scoring loop** (`isDiscontinued()` check before considering a candidate as the winner), **not in the query**. The query layer can't reliably filter `field_discontinued <> 1` because Drupal entity queries treat NULL field values as "not <> 1" and exclude rows that have never had the field set — collapsing the pool. Filtering at scoring time also catches any race between query and load.
+
+### Multi-Factor Scoring
+
+`FuzzyScorer::score(row, candidate)` returns a `ScoreBreakdown` DTO with `total` plus per-signal contributions. Signal weights (sum to 100 when all signals fire perfectly):
+
+| Signal | Max | Behavior |
+|---|---|---|
+| Description token similarity | 50 | Weighted Jaccard on normalized tokens, +10 substring bonus when the candidate's title appears verbatim within the row description. |
+| UOM match | 10 | +10 exact (post-alias-canonical), **−5 mismatch** anti-signal, 0 missing. |
+| Size match | 25 | Size tokens extracted from both descriptions via regex; +25 exact-set, +10 partial, **−10 set-disjoint** anti-signal, 0 missing on either side. |
+| Manufacturer name match | 15 | +15 exact (post-suffix-strip: Inc/Corp/Co/Industries/Mfg/etc.), +10 substring, 0 otherwise. |
+
+Missing signals contribute 0 — the scorer **does not rescale** when a signal can't be computed. A row with no UOM can only reach 90; rescaling to 100 would inflate weak matches and bias reviewers.
+
+Anti-signal contributions can push the raw sum negative, but the total is floored at 0.0 and capped at 100.0 before being written to `field_match_confidence`.
+
+#### Description Normalization
+
+Applied to both row and candidate description before tokenization (and before size extraction):
+
+1. Lowercase + collapse whitespace.
+2. Strip punctuation except `"`, `'`, `/`, `-`, `.`.
+3. `inch` / `inches` / `in` → `"`; `feet` / `ft` → `'`.
+4. Collapse spacing around fractions and size+unit (`3 /4` → `3/4`, `1/2 "` → `1/2"`).
+5. Decimal → fraction equivalence (`0.5` → `1/2`, plus 1/8 / 1/4 / 3/8 / 5/8 / 3/4 / 7/8).
+
+#### UOM Canonical Map
+
+Row UOM (lowercase: `each`/`case`/`box`/`bag`/`roll`) and material UOM (uppercase abbreviation: `EA`/`LF`/`M`/`C`/`TON`/...) are mapped to a common canonical key inside the scorer before comparison. Unmapped UOMs compare verbatim (so future additions still produce useful exact-match signal).
+
+### Threshold Routing
+
+Supplier's `supplier_ingest_config.field_fuzzy_threshold_high` (default 90.0) and `field_fuzzy_threshold_med` (default 70.0) loaded once per batch.
+
+- `total >= high` → `field_match_tier = 'tier_3_fuzzy_high'`, applied at commit.
+- `total >= med` → `field_match_tier = 'tier_3_fuzzy_med'`, surfaced for review.
+- `0 < total < med` → **fall to discovery** (not `tier_3_fuzzy_low`). Best candidate's id and score logged into `field_resolution_notes` as `"Tier 3 low-confidence (below X): best candidate #N <label>; Score Y.Z (...). Routed to discovery."` so reviewers see what *would have matched*. The `tier_3_fuzzy_low` machine name remains in the storage allowed_values for legacy/future use but is never assigned by the matcher as a terminal state.
+- `total == 0` → discovery, no candidate note.
+
+For high/medium hits, `field_resolution_notes` always carries the full breakdown: `"Tier 3 high-confidence match. Score 92.5 (desc 47/50, uom 10/10, size 25/25, mfr 10/15)."`. This is the audit string a reviewer reads to understand *why* the matcher chose what it chose.
+
+### MatchResult DTO Changes
+
+`MatchResult` gained `tier3High` and `tier3Med` counts. `tier1Ambiguous` stays distinct from `tier3Med` because the workflows differ: ambiguous matches surface multiple candidate IDs for review-then-pick; fuzzy_med matches surface one scored candidate with confidence. Batch rollup field `field_row_count_tier3_med` totals both (real fuzzy_med + tier 1 ambiguous + tier 2 defensive — all share the medium-confidence review queue). New rollup `field_row_count_tier3_high` records real fuzzy_high wins.
+
+`countRowsByTier` distinguishes the two buckets by `field_match_confidence`: when a row's tier is `tier_3_fuzzy_med` AND confidence equals `CONFIDENCE_TIER_AMBIGUOUS` (50), it counts as ambiguous; any other confidence value (i.e., a real score ≥70) counts as fuzzy_med.
+
+### Performance Budget
+
+Tier 3 is the expensive tier. Verifier's perf pass: 100 rows × 200-candidate pvc pool, full scoring loop, runs in ~2.5s in DDEV against a 30s budget. Live batches should land well within budget; if a future batch exceeds the budget, suspect a row whose largest-significant-token is so generic the pre-filter doesn't narrow the pool.
+
+### Files Added in Phase 3.4
+
+| File | Purpose |
+|---|---|
+| `src/Matching/FuzzyScorer.php` | Pluggable scoring component (description / uom / size / mfr) |
+| `src/Matching/ScoreBreakdown.php` | Per-candidate breakdown DTO, also formats the audit string |
+| `web/scripts/verify_supplier_price_ingest_fuzzy.php` | 12-scenario verifier + perf pass |
+
+### Files Modified in Phase 3.4
+
+| File | Change |
+|---|---|
+| `src/Service/IngestMatcher.php` | `tryTier3()` + `inferCandidateBundles()` + `queryFuzzyPool()` + `applyFuzzyMatch()` + threshold loading; `countRowsByTier` splits fuzzy_med from tier1_ambiguous by confidence |
+| `src/Service/MatchResult.php` | `tier3High` + `tier3Med` constructor params |
+| `supplier_price_ingest.services.yml` | `supplier_price_ingest.fuzzy_scorer` registration; injected into matcher |
+
+### Phase 3.4 Verification
+
+`web/scripts/verify_supplier_price_ingest_fuzzy.php` — 12 scenarios:
+
+1. Clean Tier 3 high-confidence hit (PASS)
+2. Medium-confidence (no mfr, no UOM → score 75) (PASS)
+3. Low-confidence rejection → discovery (PASS)
+4. Size mismatch anti-signal picks the matching-size candidate (PASS)
+5. UOM mismatch anti-signal reduces score from 100 → 85 (PASS)
+6. Bundle inference correctness (irrigation) (PASS)
+7. Multi-bundle inference (pvc + irrigation) (PASS)
+8. Empty inference → discovery with explanatory note (PASS)
+9. Excluded bundle → skipped_excluded_bundle (PASS)
+10. Candidate pool overflow — SKIP, verified by code inspection
+11. Discontinued exclusion from candidate pool (PASS)
+12. Score breakdown present in resolution notes (PASS)
+
+Plus performance: 100 rows × ~200 candidates → 2.53s elapsed (budget 30s) — PASS.
+
+**Trap encountered during verification:** Two compounded issues collapsed the test's PVC candidate pool intermittently. Documented for future debugging:
+
+1. **Query-side `field_discontinued <> 1` excludes NULL-value rows.** Drupal entity queries treat `<>` against a not-set field as exclusion (NULL <> 1 is NULL → falsy in SQL WHERE). Fresh fixtures that never wrote field_discontinued got filtered out. Moved discontinued filtering to the scoring loop (`isDiscontinued()` per candidate).
+2. **`range(0, 201)` without ORDER BY is non-deterministic.** With 666 real pvc materials in the DB, the storage returned different 201-row windows across calls within the same batch — my fixtures were sometimes in, sometimes out. Added `sort('id', 'DESC')` so newest materials win, which is also the right production behavior (recently-created SKUs are most likely current).
+3. **AEL on `material.irrigation`** uses pattern `[material:field_size] [material:field_name]`. Fixtures originally set `title` directly; AEL overrode it. Fixed by setting `field_size` + `field_name` on the irrigation fixture. Same family as the manufacturer / supplier AEL trap from Phase 3.3.
+
+### Bundle Keyword Map Tuning
+
+The bundle keyword map shipped close to the spec's suggested seed. One refinement from verification: dropped `'misc'` from the keyword map entirely. A `misc` bundle is reachable only when a supplier policy explicitly opts into it; inferring `misc` from row text would defeat the bundle-discrimination signal Tier 3 depends on. (`misc` is still a valid `material` bundle and can still appear in supplier policies — it just won't be inferred from row keywords.) Spec-suggested `'misc' => []` with empty keywords had the same effect; removing the line makes the omission explicit.
+
+---
+
 ## Status
 
 - **Phase 3.1** — shipped 2026-05-25 (commit `911c2221`).
 - **Phase 3.2** — shipped 2026-05-25 (commit `96571a39`).
-- **Phase 3.3** — shipped 2026-05-25 (commit on `feature/supplier-price-ingest`).
+- **Phase 3.3** — shipped 2026-05-25 (commit `05f77e05` on `feature/supplier-price-ingest`).
+- **Phase 3.4** — shipped 2026-05-25 on `feature/supplier-price-ingest`.
 
 Branch: `feature/supplier-price-ingest`.
 
-Next phase: 3.4 — Tier 3 fuzzy matching with confidence scoring and bundle inference from row description.
+Next phase: 3.5 — dry-run report rendering and approve/commit pipeline.

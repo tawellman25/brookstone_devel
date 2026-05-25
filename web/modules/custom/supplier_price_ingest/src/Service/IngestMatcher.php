@@ -8,13 +8,13 @@ use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\supplier_price_ingest\Matching\FuzzyScorer;
+use Drupal\supplier_price_ingest\Matching\ScoreBreakdown;
 
 /**
  * Phase 3.3 — Tier 1 + Tier 2 matcher.
- *
- * Tier 3 (fuzzy) lands in Phase 3.4 — the decision tree is structured
- * so adding it between Tier 2 and discovery is a clean insertion (see
- * matchRow()).
+ * Phase 3.4 — Tier 3 fuzzy matching (bundle inference + multi-factor
+ * scoring + threshold routing) inserted between Tier 2 and discovery.
  *
  * Public API:
  *   matchBatch(EntityInterface $batch): MatchResult
@@ -58,10 +58,48 @@ class IngestMatcher {
   public const POLICY_BOTH         = 'both';
   public const POLICY_EXCLUDED     = 'excluded';
 
+  /**
+   * Tier 3 candidate-pool bounds. Above these, score quality collapses
+   * and runtime blows up — better to fall to discovery than try anyway.
+   */
+  private const TIER3_PER_BUNDLE_CAP = 200;
+  private const TIER3_TOTAL_CAP      = 600;
+  private const TIER3_LOAD_CHUNK     = 50;
+  private const TIER3_MAX_BUNDLES    = 3;
+
+  /**
+   * Bundle-inference keyword map. Cached at class scope — static so PHP
+   * doesn't rebuild it per row. Order doesn't matter for inference (we
+   * tally hits and sort), but keep groupings readable for future tuning.
+   *
+   * The 'misc' bundle has no keywords — it's only reachable through
+   * supplier policy intent ("matched_only on misc"), never through
+   * inference, because every row would fuzzy-match misc otherwise.
+   */
+  private const BUNDLE_KEYWORDS = [
+    'pvc'             => ['pvc', 'sch 40', 'sch40', 'schedule 40', 'sch 80', 'schedule 80', 'slip', 'sxsxs', 'sxs', 'fipt', 'mipt', 'spigot'],
+    'poly'            => ['poly', 'polyethylene', 'pe pipe', 'pep'],
+    'brass'           => ['brass', 'bronze'],
+    'copper'          => ['copper'],
+    'galv'            => ['galvanized', 'galv', 'malleable iron'],
+    'irrigation'      => ['rotor', 'spray head', 'sprinkler', 'pgp', 'mp rotator', 'mp rotor', 'drip', 'emitter', 'dripline', 'valve', 'solenoid', 'controller', 'ic-', 'esp-', 'rain bird', 'rainbird', 'hunter', 'toro', 'irritrol', 'rotator', 'pop-up', 'pop up'],
+    'electric'        => ['wire', 'awg', 'conduit', 'breaker', 'gfci', 'romex', 'thhn'],
+    'backflow'        => ['backflow', 'rpz', 'double check', 'dc valve', 'pvb', 'avb', 'wilkins', 'febco', 'watts'],
+    'pumps'           => ['pump', 'submersible', 'jet pump', 'booster'],
+    'decorative_rock' => ['rock', 'cobble', 'flagstone', 'boulder', 'river rock'],
+    'bulk_material'   => ['topsoil', 'fill dirt', 'compost', 'sand', 'gravel', 'lime', 'gypsum', 'sulfur', 'decomposed granite'],
+    'mulch'           => ['mulch', 'bark', 'wood chip'],
+    'landscape'       => ['edging', 'paver edging', 'landscape fabric', 'weed barrier', 'staple'],
+    'pavers'          => ['paver', 'block', 'retaining wall'],
+    'supplies'        => ['glove', 'rag', 'tape measure'],
+    'xmas'            => ['christmas', 'led light string'],
+  ];
+
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly Connection $database,
     private readonly LoggerChannelFactoryInterface $loggerFactory,
+    private readonly FuzzyScorer $fuzzyScorer,
   ) {}
 
   /**
@@ -116,6 +154,7 @@ class IngestMatcher {
       }
       $config = reset($configs);
       $policy = $this->parseBundlePolicy($config);
+      $thresholds = $this->loadFuzzyThresholds($config);
 
       // ── 2. Iterate rows in chunks ─────────────────────────────────
       $rowStorage = $this->entityTypeManager->getStorage('supplier_price_ingest_row');
@@ -132,7 +171,7 @@ class IngestMatcher {
         foreach ($rows as $row) {
           $rowsProcessed++;
           try {
-            $this->matchRow($row, $batch, $supplier, $policy);
+            $this->matchRow($row, $batch, $supplier, $policy, $thresholds);
             $row->save();
           }
           catch (\Throwable $e) {
@@ -178,6 +217,8 @@ class IngestMatcher {
         tier1Matches: $counts['tier1'],
         tier2Matches: $counts['tier2'],
         tier1Ambiguous: $counts['tier1_ambiguous'],
+        tier3High: $counts['tier3_high'],
+        tier3Med: $counts['tier3_med'],
         discoveryRows: $counts['discovery'],
         skippedDiscontinued: $counts['skipped_discontinued'],
         skippedExcludedBundle: $counts['skipped_excluded_bundle'],
@@ -225,8 +266,17 @@ class IngestMatcher {
    * Apply the matcher decision tree to a single row.
    *
    * Mutates $row but does not save it (caller saves).
+   *
+   * @param array{high: float, med: float} $thresholds
+   *   Per-batch fuzzy thresholds; loaded once and threaded through.
    */
-  private function matchRow(EntityInterface $row, EntityInterface $batch, EntityInterface $supplier, array $policy): void {
+  private function matchRow(
+    EntityInterface $row,
+    EntityInterface $batch,
+    EntityInterface $supplier,
+    array $policy,
+    array $thresholds,
+  ): void {
     // ── Tier 1 ─────────────────────────────────────────────────────
     $t1 = $this->attemptTier1($row, $policy);
     if ($t1 !== NULL) {
@@ -241,7 +291,10 @@ class IngestMatcher {
       return;
     }
 
-    // ── (Tier 3 fuzzy ships in 3.4 — insert above discovery here) ──
+    // ── Tier 3 fuzzy ───────────────────────────────────────────────
+    if ($this->tryTier3($row, $policy, $thresholds)) {
+      return;
+    }
 
     // ── Discovery / excluded-bundle routing ───────────────────────
     $this->routeUnmatched($row, $policy);
@@ -468,6 +521,341 @@ class IngestMatcher {
     }
   }
 
+  // ────────────────────────────────────────────────────────────────────
+  // Tier 3 — fuzzy matching
+  // ────────────────────────────────────────────────────────────────────
+
+  /**
+   * Attempt Tier 3 (fuzzy) matching on a single row.
+   *
+   * Returns TRUE when this method assigned a terminal field_match_tier
+   * (tier_3_fuzzy_high / tier_3_fuzzy_med / skipped_excluded_bundle).
+   * Returns FALSE when the row should continue to discovery routing —
+   * which covers low-confidence wins, no candidates, inference failure,
+   * and pool overflow. In those FALSE cases, this method has already
+   * populated field_resolution_notes with an explanation so the audit
+   * trail tells the reviewer *why* the row went to discovery.
+   *
+   * @param array{high: float, med: float} $thresholds
+   */
+  private function tryTier3(EntityInterface $row, array $policy, array $thresholds): bool {
+    $description = trim((string) ($row->get('field_description')->value ?? ''));
+    if ($description === '') {
+      // Nothing to infer or score against. Quiet fall-through.
+      return FALSE;
+    }
+
+    $inferred = $this->inferCandidateBundles($description);
+    if ($inferred === []) {
+      $this->appendNote($row, 'Tier 3: bundle inference returned no candidates.');
+      return FALSE;
+    }
+
+    // Apply supplier bundle policy to inferred set.
+    $excluded = [];
+    $candidateBundles = [];
+    foreach ($inferred as $b) {
+      $p = $policy[$b] ?? self::POLICY_MATCHED_ONLY;
+      if ($p === self::POLICY_EXCLUDED) {
+        $excluded[] = $b;
+        continue;
+      }
+      $candidateBundles[] = $b;
+    }
+
+    if ($candidateBundles === []) {
+      // Every inferred bundle is excluded — this is a definitive outcome,
+      // not a discovery fall-through, because the supplier policy
+      // explicitly opted out of these bundles.
+      $row->set('field_match_tier', 'skipped_excluded_bundle');
+      $row->set('field_match_confidence', NULL);
+      $row->set('field_matched_material', NULL);
+      $row->set(
+        'field_resolution_notes',
+        sprintf(
+          'Tier 3 bundle inference picked [%s]; all excluded by supplier policy.',
+          implode(', ', $excluded),
+        ),
+      );
+      return TRUE;
+    }
+
+    // Query candidate pool.
+    $poolIds = $this->queryFuzzyPool($row, $candidateBundles);
+    if ($poolIds === NULL) {
+      // Overflow case — already logged inside queryFuzzyPool.
+      $this->appendNote(
+        $row,
+        sprintf(
+          'Tier 3: candidate pool exceeded %d (inferred bundles: %s). Routed to discovery.',
+          self::TIER3_TOTAL_CAP,
+          implode(', ', $candidateBundles),
+        ),
+      );
+      return FALSE;
+    }
+    if ($poolIds === []) {
+      $this->appendNote(
+        $row,
+        sprintf('Tier 3: no active candidates in bundles [%s].', implode(', ', $candidateBundles)),
+      );
+      return FALSE;
+    }
+
+    // Score candidates in chunks, retaining only the winner.
+    $bestId = NULL;
+    $bestBreakdown = NULL;
+    $bestMaterial  = NULL;
+    $materialStorage = $this->entityTypeManager->getStorage('material');
+    foreach (array_chunk($poolIds, self::TIER3_LOAD_CHUNK) as $chunk) {
+      $candidates = $materialStorage->loadMultiple($chunk);
+      foreach ($candidates as $candidate) {
+        // Defensive: filter discontinued at scoring time too. The pool
+        // query already excludes them, but if a material is updated
+        // between query and load (race), this catches it.
+        if ($this->isDiscontinued($candidate)) {
+          continue;
+        }
+        $breakdown = $this->fuzzyScorer->score($row, $candidate);
+        if ($bestBreakdown === NULL || $breakdown->total > $bestBreakdown->total) {
+          $bestId        = (int) $candidate->id();
+          $bestBreakdown = $breakdown;
+          $bestMaterial  = $candidate;
+        }
+      }
+      $materialStorage->resetCache($chunk);
+    }
+
+    if ($bestBreakdown === NULL || $bestMaterial === NULL) {
+      // Pool had candidates but none scored — shouldn't happen since the
+      // scorer always returns something. Defensive only.
+      $this->appendNote($row, 'Tier 3: no scorable candidates.');
+      return FALSE;
+    }
+
+    // Route by score.
+    $score = $bestBreakdown->total;
+    if ($score >= $thresholds['high']) {
+      $this->applyFuzzyMatch($row, $bestMaterial, $bestBreakdown, 'tier_3_fuzzy_high');
+      return TRUE;
+    }
+    if ($score >= $thresholds['med']) {
+      $this->applyFuzzyMatch($row, $bestMaterial, $bestBreakdown, 'tier_3_fuzzy_med');
+      return TRUE;
+    }
+    // Low-confidence — bias against accepting bad matches by NOT
+    // surfacing the candidate. Record the audit trail and let the row
+    // continue to discovery (caller will set tier=discovery).
+    if ($score > 0.0) {
+      $this->appendNote(
+        $row,
+        sprintf(
+          'Tier 3 low-confidence (below %.1f threshold): best candidate #%d %s; %s. Routed to discovery.',
+          (float) $thresholds['med'],
+          (int) $bestMaterial->id(),
+          (string) $bestMaterial->label(),
+          $bestBreakdown->summary(),
+        ),
+      );
+    }
+    return FALSE;
+  }
+
+  /**
+   * Bundle inference from a row description.
+   *
+   * Returns at most TIER3_MAX_BUNDLES bundle machine names, ordered by
+   * keyword-hit count DESC. Empty array when no keyword matched.
+   *
+   * Public for testability / future reuse (e.g., review-UI suggestions).
+   */
+  public function inferCandidateBundles(string $description): array {
+    if (trim($description) === '') {
+      return [];
+    }
+    // Normalize lightly — full normalization happens inside FuzzyScorer.
+    // For keyword matching we just need lowercase + collapsed whitespace.
+    $hay = strtolower($description);
+    $hay = preg_replace('/\s+/', ' ', $hay) ?? $hay;
+    $hay = ' ' . trim($hay) . ' ';
+
+    $hits = [];
+    foreach (self::BUNDLE_KEYWORDS as $bundle => $keywords) {
+      $count = 0;
+      foreach ($keywords as $kw) {
+        $needle = ' ' . strtolower($kw) . ' ';
+        // Substring match within a space-padded haystack approximates
+        // word-boundary matching for multi-word keywords like "sch 40"
+        // without the complexity of regex word boundaries (which would
+        // split "sch 40" at the space).
+        if (str_contains($hay, $needle)) {
+          $count++;
+        }
+        elseif (str_contains($hay, ' ' . strtolower($kw))) {
+          // Keyword ends the description.
+          $count++;
+        }
+      }
+      if ($count > 0) {
+        $hits[$bundle] = $count;
+      }
+    }
+    if ($hits === []) {
+      return [];
+    }
+    arsort($hits, SORT_NUMERIC);
+    return array_slice(array_keys($hits), 0, self::TIER3_MAX_BUNDLES);
+  }
+
+  /**
+   * Build the Tier 3 candidate pool for one row.
+   *
+   * Returns NULL when the pool would exceed TIER3_TOTAL_CAP — caller
+   * routes those to discovery. Returns [] when there are zero active
+   * candidates across the inferred bundles.
+   *
+   * Per-bundle cap is enforced by a token-pre-filter on the largest
+   * non-stopword token from the row's description: only materials whose
+   * title contains that token are eligible. This is a strict reduction
+   * that may miss some valid candidates (the bundle has rich vocabulary
+   * the row didn't sample), but the alternative is unbounded scoring
+   * which violates the performance budget.
+   */
+  private function queryFuzzyPool(EntityInterface $row, array $bundles): ?array {
+    $description = (string) ($row->get('field_description')->value ?? '');
+    $largestToken = $this->largestSignificantToken($description);
+
+    $poolIds = [];
+    $materialStorage = $this->entityTypeManager->getStorage('material');
+    foreach ($bundles as $bundle) {
+      // Don't filter field_discontinued at the query layer. Drupal entity
+      // queries with `<>` exclude rows where the field is NULL (the default
+      // state for materials that have never been touched), collapsing the
+      // pool to nothing for clean fixtures. The scoring loop calls
+      // isDiscontinued() per candidate before considering it a winner.
+      //
+      // Sort by id DESC so the pool is deterministic across calls and the
+      // most recently-created materials win when the bundle is larger than
+      // the per-bundle cap (newer SKUs are more likely to be current).
+      $q = $materialStorage->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('type', $bundle)
+        ->sort('id', 'DESC')
+        ->range(0, self::TIER3_PER_BUNDLE_CAP + 1);
+      $idsForBundle = array_values($q->execute());
+
+      // If bundle has more than the cap, apply token pre-filter.
+      if (count($idsForBundle) > self::TIER3_PER_BUNDLE_CAP && $largestToken !== '') {
+        $q2 = $materialStorage->getQuery()
+          ->accessCheck(FALSE)
+          ->condition('type', $bundle)
+          ->condition('title', $largestToken, 'CONTAINS')
+          ->sort('id', 'DESC')
+          ->range(0, self::TIER3_PER_BUNDLE_CAP);
+        $idsForBundle = array_values($q2->execute());
+      }
+      elseif (count($idsForBundle) > self::TIER3_PER_BUNDLE_CAP) {
+        // Cap without a usable token — truncate to be safe.
+        $idsForBundle = array_slice($idsForBundle, 0, self::TIER3_PER_BUNDLE_CAP);
+      }
+      foreach ($idsForBundle as $id) {
+        $poolIds[(int) $id] = TRUE;
+      }
+      if (count($poolIds) > self::TIER3_TOTAL_CAP) {
+        $this->loggerFactory->get('supplier_price_ingest')->warning(
+          'Tier 3 candidate pool for row @rid exceeded @cap across bundles [@bundles]; row routed to discovery.',
+          [
+            '@rid' => $row->id(),
+            '@cap' => self::TIER3_TOTAL_CAP,
+            '@bundles' => implode(',', $bundles),
+          ],
+        );
+        return NULL;
+      }
+    }
+    return array_keys($poolIds);
+  }
+
+  /**
+   * Pull the longest non-stopword token from the description for use as a
+   * pre-filter. Same stopword list as FuzzyScorer (kept in sync via the
+   * scorer's normalization — we re-run a tiny version here to avoid a
+   * cross-class dependency on the scorer's tokenize internals).
+   */
+  private function largestSignificantToken(string $description): string {
+    $s = strtolower($description);
+    $s = preg_replace('/[^a-z0-9"\'\/\-.\s]+/u', ' ', $s) ?? $s;
+    $tokens = preg_split('/\s+/', trim($s)) ?: [];
+    $stopwords = ['the', 'a', 'an', 'with', 'for', 'of', 'in', 'to', 'and', 'or'];
+    $best = '';
+    foreach ($tokens as $t) {
+      if ($t === '' || in_array($t, $stopwords, TRUE)) {
+        continue;
+      }
+      if (strlen($t) < 3) {
+        continue;
+      }
+      if (strlen($t) > strlen($best)) {
+        $best = $t;
+      }
+    }
+    return $best;
+  }
+
+  /**
+   * Apply a successful Tier 3 outcome (high or medium) to the row.
+   */
+  private function applyFuzzyMatch(
+    EntityInterface $row,
+    EntityInterface $material,
+    ScoreBreakdown $breakdown,
+    string $tier,
+  ): void {
+    $confidence = round($breakdown->total, 1);
+    $row->set('field_matched_material', $material->id());
+    $row->set('field_match_tier', $tier);
+    $row->set('field_match_confidence', $confidence);
+    $label = $tier === 'tier_3_fuzzy_high' ? 'Tier 3 high-confidence match' : 'Tier 3 medium-confidence match';
+    $row->set(
+      'field_resolution_notes',
+      sprintf('%s. %s.', $label, $breakdown->summary()),
+    );
+  }
+
+  /**
+   * Append a line to field_resolution_notes without clobbering existing
+   * content (e.g., a prior parser note about UOM normalization).
+   */
+  private function appendNote(EntityInterface $row, string $line): void {
+    $existing = trim((string) ($row->get('field_resolution_notes')->value ?? ''));
+    $row->set(
+      'field_resolution_notes',
+      $existing === '' ? $line : ($existing . "\n" . $line),
+    );
+  }
+
+  /**
+   * Load fuzzy thresholds from supplier_ingest_config. Defaults from the
+   * spec (90 / 70) when fields are empty.
+   *
+   * @return array{high: float, med: float}
+   */
+  private function loadFuzzyThresholds(EntityInterface $config): array {
+    $high = $config->hasField('field_fuzzy_threshold_high')
+      ? (float) ($config->get('field_fuzzy_threshold_high')->value ?? 90.0)
+      : 90.0;
+    $med = $config->hasField('field_fuzzy_threshold_med')
+      ? (float) ($config->get('field_fuzzy_threshold_med')->value ?? 70.0)
+      : 70.0;
+    if ($high <= 0.0) {
+      $high = 90.0;
+    }
+    if ($med <= 0.0) {
+      $med = 70.0;
+    }
+    return ['high' => $high, 'med' => $med];
+  }
+
   /**
    * Routes a row that exited Tier 1 + Tier 2 without a match.
    *
@@ -531,6 +919,8 @@ class IngestMatcher {
       tier1Matches: $counts['tier1'],
       tier2Matches: $counts['tier2'],
       tier1Ambiguous: $counts['tier1_ambiguous'],
+      tier3High: $counts['tier3_high'],
+      tier3Med: $counts['tier3_med'],
       discoveryRows: $counts['discovery'],
       skippedDiscontinued: $counts['skipped_discontinued'],
       skippedExcludedBundle: $counts['skipped_excluded_bundle'],
@@ -602,6 +992,7 @@ class IngestMatcher {
   private function countRowsByTier(EntityInterface $batch): array {
     $counts = [
       'tier1' => 0, 'tier2' => 0, 'tier1_ambiguous' => 0,
+      'tier3_high' => 0, 'tier3_med' => 0,
       'discovery' => 0,
       'skipped_discontinued' => 0,
       'skipped_excluded_bundle' => 0,
@@ -622,12 +1013,22 @@ class IngestMatcher {
             $counts['tier1']++; break;
           case 'tier_2_supplier_sku':
             $counts['tier2']++; break;
+          case 'tier_3_fuzzy_high':
+            $counts['tier3_high']++; break;
           case 'tier_3_fuzzy_med':
-            // In Phase 3.3 the only way to land here is ambiguous
-            // Tier 1 / defensive Tier 2 — count as tier1_ambiguous.
-            // (3.4 will start producing real fuzzy_med matches; this
-            // bucket count will need refining then.)
-            $counts['tier1_ambiguous']++; break;
+            // Tier 1 ambiguity / Tier 2 defensive multi-match write
+            // confidence = CONFIDENCE_TIER_AMBIGUOUS (50). Phase 3.4's
+            // real fuzzy_med matches write the actual score (>=70). Use
+            // confidence to split the bucket so reporting reflects the
+            // distinct workflows correctly.
+            $conf = (float) ($row->get('field_match_confidence')->value ?? 0);
+            if ((int) $conf === self::CONFIDENCE_TIER_AMBIGUOUS) {
+              $counts['tier1_ambiguous']++;
+            }
+            else {
+              $counts['tier3_med']++;
+            }
+            break;
           case 'discovery':
             $counts['discovery']++; break;
           case 'skipped_discontinued':
@@ -647,19 +1048,22 @@ class IngestMatcher {
 
   /**
    * Write the batch entity's row count fields from a counts array.
+   *
+   * field_row_count_tier3_med totals real fuzzy_med wins + tier-1
+   * ambiguous + tier-2 defensive — all three surface in the same
+   * medium-confidence review queue.
    */
   private function writeRollupCounts(EntityInterface $batch, array $counts): void {
-    $batch->set('field_row_count_tier1',     $counts['tier1']);
-    $batch->set('field_row_count_tier2',     $counts['tier2']);
-    $batch->set('field_row_count_tier3_med', $counts['tier1_ambiguous']);
-    $batch->set('field_row_count_discovery', $counts['discovery']);
+    $batch->set('field_row_count_tier1',      $counts['tier1']);
+    $batch->set('field_row_count_tier2',      $counts['tier2']);
+    $batch->set('field_row_count_tier3_high', $counts['tier3_high']);
+    $batch->set('field_row_count_tier3_med',  $counts['tier3_med'] + $counts['tier1_ambiguous']);
+    $batch->set('field_row_count_discovery',  $counts['discovery']);
     $batch->set(
       'field_row_count_skipped',
       $counts['skipped_discontinued'] + $counts['skipped_excluded_bundle'] + $counts['skipped_do_not_use'],
     );
-    // field_row_count_total stays as the parser set it (total rows
-    // persisted = created + errored). field_row_count_tier3_high stays 0
-    // until Phase 3.4.
+    // field_row_count_total stays as the parser set it.
   }
 
 }

@@ -51,8 +51,8 @@ All optional — some supplier feeds omit fields:
 | `tier_1_mfr` | Direct match on `(manufacturer, manufacturer_item_number)`. Confidence 100; or 95 after discontinued retargeting. | Phase 3.3 |
 | `tier_2_supplier_sku` | Direct match on existing `material_suppliers` `(supplier, supplier_item_number)`. Confidence 100; or 95 after discontinued retargeting. | Phase 3.3 |
 | `tier_3_fuzzy_high` | Fuzzy match above the high threshold; auto-apply at commit. | Phase 3.4 |
-| `tier_3_fuzzy_med` | Fuzzy match above the medium threshold → office review queue. **In Phase 3.3** this bucket is also where Tier 1 ambiguous matches (multiple BOS materials with the same `mfr+item#`) and the defensive Tier 2 multi-match case land — they share the same review surface. | Phase 3.3 + 3.4 |
-| `tier_3_fuzzy_low` | Fuzzy match below medium threshold → discovery queue (treated as discovery for routing purposes; the matcher does not auto-apply). | Phase 3.4 |
+| `tier_3_fuzzy_med` | Fuzzy match above the medium threshold → office review queue. **Phase 3.3** also routes Tier 1 ambiguous matches (multiple BOS materials with the same `mfr+item#`) and the defensive Tier 2 multi-match case to this bucket — they share the same review surface. **Phase 3.4** adds real fuzzy scoring as the third path into this bucket. `field_match_confidence` distinguishes them: 50 → ambiguous; 70–89 → real fuzzy_med. | Phase 3.3 + 3.4 |
+| `tier_3_fuzzy_low` | Reserved storage value, **not assigned by the matcher as a terminal state**. Phase 3.4's Tier 3 scoring writes the low-confidence candidate's id/label/score into `field_resolution_notes` for audit, then sets `field_match_tier = 'discovery'` to keep the row from biasing reviewers toward a bad match. The value stays in the storage allowed_values list so a future review-UI phase can use it for in-flight tagging without a schema migration. | Reserved |
 | `discovery` | No Tier 1 / Tier 2 match AND the supplier has at least one discovery-enabled bundle. Office reviewer routes manually. | Phase 3.3 |
 | `skipped_discontinued` | Matched a discontinued material with no `field_replaced_by`. `field_matched_material` is NULL — the discontinued one isn't the right answer, but there's no replacement to point at. Note prompts reviewer to consider setting `field_replaced_by` on the discontinued material if this row is a replacement candidate. | Phase 3.3 |
 | `skipped_do_not_use` | Supplier on the batch is marked `field_supplier_status = 'do_not_use'`. The matcher short-circuits — no rows in the batch are matched. | Phase 3.3 |
@@ -70,7 +70,7 @@ All optional — some supplier feeds omit fields:
 | 90–100 | Tier 3 high confidence — fuzzy match above high threshold, auto-apply at commit. | 3.4 |
 | 95 | Tier 1 or Tier 2 direct match retargeted through `material.field_replaced_by` (structural inference, slight discount from 100). The original (discontinued) material's ID is recorded in `field_resolution_notes`. | 3.3 |
 | 100 | Tier 1 or Tier 2 unambiguous direct match. | 3.3 |
-| 1–69 (non-zero, non-NULL) | Tier 3 low confidence — fuzzy match below the medium threshold. Routes to discovery alongside no-candidate rows. | 3.4 |
+| 1–69 (non-zero, non-NULL) | **Not written by the Phase 3.4 matcher.** Tier 3 low-confidence rows are routed to `discovery` with `confidence = 0`; the low-confidence candidate's id/label/score are preserved in `field_resolution_notes` instead. Range reserved for a future review-UI surface that may want to retain confidence values on tagged-but-not-matched rows. | Reserved |
 
 - `field_matched_material` (entity_reference → material, all bundles) — the BOS material this row maps to. NULL for `discovery` and the `skipped_*` / `error` tiers.
 - `field_existing_link` (entity_reference → material_suppliers, bundle: supplier) — the existing `material_suppliers` row for `(matched_material × batch's supplier)` if one already exists. NULL if a new link will be created at commit. Phase 3.3 sets this for Tier 2 matches.
@@ -86,7 +86,14 @@ All optional — some supplier feeds omit fields:
   - `marked_as_replacement` — row's source item was identified as a replacement for an existing (discontinued) material; populated `material.field_replaced_by`.
   - `rejected` — explicit reject; no catalog mutation.
   - `noop` — explicit no-op (e.g., price unchanged, nothing to do).
-- `field_resolution_notes` (text_long) — free-text reviewer notes.
+- `field_resolution_notes` (text_long) — free-text reviewer notes AND the matcher's audit trail. The matcher appends to this field (preserving any prior parser-written content) in these cases:
+  - **Tier 1 ambiguous / Tier 2 defensive multi-match:** lists candidate ids.
+  - **Discontinued retargeting (Phase 3.3):** records the original discontinued material id alongside the replacement id.
+  - **Skipped (discontinued / excluded bundle / do_not_use):** explains *why* the row wasn't matched.
+  - **Tier 3 high / medium hit (Phase 3.4):** writes the audit string `"Tier 3 {high,medium}-confidence match. Score 92.5 (desc 47/50, uom 10/10, size 25/25, mfr 10/15)."` — reviewers read the per-signal breakdown to understand why a candidate won.
+  - **Tier 3 low-confidence + falls to discovery (Phase 3.4):** `"Tier 3 low-confidence (below 70.0 threshold): best candidate #N <label>; Score X.Y (...). Routed to discovery."` — preserves what *would have matched* so a reviewer can adopt it manually if they agree.
+  - **Tier 3 bundle inference returned empty:** `"Tier 3: bundle inference returned no candidates."`.
+  - **Tier 3 pool overflow:** `"Tier 3: candidate pool exceeded N (inferred bundles: ...). Routed to discovery."`.
 - `field_resolved_by` (entity_reference → user) — reviewer.
 - `field_resolved_on` (datetime) — when resolved.
 

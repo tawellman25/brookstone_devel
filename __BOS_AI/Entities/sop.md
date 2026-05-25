@@ -226,6 +226,37 @@ Content rule:
 - Applies only to `training` bundle SOPs
 - Defines which positions the training SOP applies to
 
+### 19. `field_sop_image` — SOP Image (image)
+Added 2026-05-23 on **all 11 SOP bundles** as part of the form/view-display standardization.
+- Single image of the printed SOP for display alongside the structured fields
+- Uses `filefield_paths` settings: file_path `[sop:url:path]`, file_name `[sop:title].[extension]` — uploaded images land on disk under the SOP's URL path, named after the SOP title
+- Not part of required authored SOP content; purely visual reinforcement of the printed document
+
+---
+
+## SOP Attachments (file/document attachments)
+
+SOP attachments are stored as **media entities** of type `sop_file_attachment` (file source) and `sop_images` (image source), each referencing the SOP via `field_sop`. The bidirectional shape:
+
+- A SOP page renders attached files via the embedded `sop_file_attachments` EVA view (group "Attachments" on every bundle's view display).
+- Attachments are created at `/media/add/sop_file_attachment` (or `/media/add/sop_images`). Each carries a `field_sop` reference back to its parent SOP.
+- **Add Document buttons** are embedded in the EVA view's empty + footer regions — they prefill `field_sop` to the SOP being viewed via query params and set a `destination` back to the SOP, so attaching is one click with no manual SOP lookup.
+- `field_sop` target_bundles is open to **all 11 SOP bundles** on both `sop_file_attachment` and `sop_images` media types (was historically restricted to 2 bundles; opened 2026-05-23 so attachments work on every bundle).
+- Uploaded document files land at `[media:field_sop:entity:url:path]` on disk (mirrors the field_sop_image filefield_paths pattern — files live under the SOP's URL path, not in date buckets).
+
+These attachments are a parallel mechanism to `field_sop_image` (which is a single inline image on the SOP entity itself). Use the media-attachment workflow for any additional documents, supplementary PDFs, or visual references; use `field_sop_image` for the canonical printed-SOP image.
+
+---
+
+## Form + View Display Layout (Standardized 2026-05-23)
+
+All 11 SOP bundles share the **same form + view display layout**, modeled on `office_administration`:
+
+- **Form display** — 4-group tab skeleton: parent tabs container ("Office Admin"), with three child tabs ("Teammate Manual", "Entered Info", "URL Info"). Shared fields use the same weights across every bundle so `field_sop_purpose`, `field_sop_steps`, etc. land at the same position regardless of bundle. Bundle-specific fields (`field_required_positions` on training, `field_service` / `field_materials_involved` where present) get weight 12 — slotted after the standard fields without colliding with the office_admin weights.
+- **View display** — 4 field-groups: Attachments (embedded EVA), Creation Details (with nested Edit Log), Related SOPs.
+
+Propagation was done programmatically via `web/scripts/propagate_sop_layouts_from_office_admin.php` (kept for audit + re-run if a future bundle layout drifts). The script is idempotent and uses office_administration as the canonical template.
+
 ---
 
 ## Governance Reference

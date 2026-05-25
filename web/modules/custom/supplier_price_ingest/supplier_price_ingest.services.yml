@@ -23,3 +23,12 @@ services:
       - '@database'
       - '@logger.factory'
       - '@supplier_price_ingest.fuzzy_scorer'
+
+  # Phase 3.5 — STUB committer. Replaced by the real commit service in
+  # Phase 3.6. The approve form depends on this ID; swapping the
+  # implementation is mechanical (re-register under the same ID).
+  supplier_price_ingest.stub_committer:
+    class: Drupal\supplier_price_ingest\Service\StubCommitter
+    arguments:
+      - '@entity_type.manager'
+      - '@logger.factory'

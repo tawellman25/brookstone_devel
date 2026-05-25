@@ -315,9 +315,14 @@ class IngestMatcher {
       return NULL;
     }
     // Resolve manufacturer by case-insensitive label match.
+    // AEL enforces title uniqueness on manufacturer entities, but a Drush
+    // import that bypasses presave hooks could create duplicates. Explicit
+    // sort ensures reproducible Tier 1 matches across runs — see
+    // __BOS_AI/Reports/range_audit_2026-05-25.md.
     $mfrIds = $this->entityTypeManager->getStorage('manufacturer')->getQuery()
       ->accessCheck(FALSE)
       ->condition('title', $mfrName, '=')
+      ->sort('id', 'ASC')
       ->range(0, 1)
       ->execute();
     if (!$mfrIds) {

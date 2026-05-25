@@ -66,15 +66,25 @@ const SUPPLIER_PRICE_INGEST_BUNDLE_POLICY_VALUES = [
 
 /**
  * Implements hook_theme().
+ *
+ * Phase 3.5 — single theme hook for the batch detail / dry-run report.
+ * Replaces the Phase 3.2 placeholder theme hook
+ * (`supplier_price_ingest_batch_placeholder`). The placeholder template
+ * and BatchPlaceholderController class were removed in 3.5.
  */
 function supplier_price_ingest_theme(): array {
   return [
-    'supplier_price_ingest_batch_placeholder' => [
+    'supplier_price_ingest_batch_detail' => [
       'variables' => [
-        'batch' => [],
-        'rows' => [],
+        'header' => [],
+        'status' => '',
+        'actions' => [],
+        'report' => NULL,
+        'auto_refresh_seconds' => NULL,
+        'failure_report' => NULL,
+        'rejection_reason' => NULL,
       ],
-      'template' => 'supplier-price-ingest-batch-placeholder',
+      'template' => 'supplier-price-ingest-batch-detail',
     ],
   ];
 }

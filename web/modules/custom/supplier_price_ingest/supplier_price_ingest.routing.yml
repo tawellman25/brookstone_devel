@@ -18,8 +18,48 @@ supplier_price_ingest.upload:
 supplier_price_ingest.batch_view:
   path: '/admin/materials/supplier-ingest/batch/{supplier_price_ingest_batch}'
   defaults:
-    _controller: '\Drupal\supplier_price_ingest\Controller\BatchPlaceholderController::view'
-    _title_callback: '\Drupal\supplier_price_ingest\Controller\BatchPlaceholderController::title'
+    _controller: '\Drupal\supplier_price_ingest\Controller\BatchDetailController::view'
+    _title_callback: '\Drupal\supplier_price_ingest\Controller\BatchDetailController::title'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_batch:
+        type: 'entity:supplier_price_ingest_batch'
+
+# Phase 3.5 — approve / reject / export.
+supplier_price_ingest.batch_approve:
+  path: '/admin/materials/supplier-ingest/batch/{supplier_price_ingest_batch}/approve'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\ApproveBatchForm'
+    _title: 'Approve and Commit Batch'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_batch:
+        type: 'entity:supplier_price_ingest_batch'
+
+supplier_price_ingest.batch_reject:
+  path: '/admin/materials/supplier-ingest/batch/{supplier_price_ingest_batch}/reject'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\RejectBatchForm'
+    _title: 'Reject Batch'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_batch:
+        type: 'entity:supplier_price_ingest_batch'
+
+supplier_price_ingest.batch_export:
+  path: '/admin/materials/supplier-ingest/batch/{supplier_price_ingest_batch}/export.csv'
+  defaults:
+    _controller: '\Drupal\supplier_price_ingest\Controller\BatchExportController::export'
+    _title: 'Export Batch CSV'
   requirements:
     _permission: 'administer supplier price ingest'
   options:

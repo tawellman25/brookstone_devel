@@ -421,6 +421,83 @@ try {
   ];
   foreach ($checks8 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
   $results['step_8_dnu'] = !in_array(FALSE, $checks8, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 9: determinism — same input twice → identical outcomes ─
+  // Regression guard against the range()-without-sort() class of bug
+  // surfaced by Phase 3.4 verification (see range_audit_2026-05-25.md).
+  // Re-parse the same CSV against a fresh batch, run the matcher,
+  // compare every row's match_tier / match_confidence / matched_material
+  // against the first batch's outcome.
+  echo "\n=== Step 9: determinism — re-run produces identical outcomes ===\n";
+  $batch2 = $etm->getStorage('supplier_price_ingest_batch')->create([
+    'type' => 'batch',
+    'title' => 'TEST BATCH — determinism re-run',
+    'uid' => 1,
+    'field_supplier' => $testSupplier->id(),
+    'field_source_file' => $csvFile->id(),
+    'field_source_filename' => 'spi_test_matcher.csv',
+    'field_uploaded_by' => 1,
+    'field_uploaded_on' => date('Y-m-d\TH:i:s'),
+    'field_status' => 'pending_dry_run',
+  ]);
+  $batch2->save();
+  $cleanup['batches'][] = (int) $batch2->id();
+
+  $parser->parseUploadedFile($batch2);
+  $batch2 = $etm->getStorage('supplier_price_ingest_batch')->load($batch2->id());
+  $matcher->matchBatch($batch2);
+
+  $rows2 = $etm->getStorage('supplier_price_ingest_row')
+    ->loadByProperties(['field_batch' => $batch2->id()]);
+  foreach ($rows2 as $r) $cleanup['rows'][] = (int) $r->id();
+
+  // Build per-row keys (supplier_sku or mfr_item_number, whichever
+  // identifies the row) so we can compare batch1 vs batch2 row-by-row.
+  $keyFn = function ($r): string {
+    $sku = (string) ($r->get('field_supplier_sku')->value ?? '');
+    $mfr = (string) ($r->get('field_manufacturer_item_number')->value ?? '');
+    $desc = (string) ($r->get('field_description')->value ?? '');
+    return $sku !== '' ? "sku:$sku" : ($mfr !== '' ? "mfr:$mfr" : "desc:$desc");
+  };
+  $signature = function ($r): array {
+    return [
+      'tier'       => (string) ($r->get('field_match_tier')->value ?? ''),
+      'confidence' => (string) ($r->get('field_match_confidence')->value ?? ''),
+      'matched'   => (string) ($r->get('field_matched_material')->target_id ?? ''),
+    ];
+  };
+
+  $b1Signatures = [];
+  foreach ($rows as $r) $b1Signatures[$keyFn($r)] = $signature($r);
+  $b2Signatures = [];
+  foreach ($rows2 as $r) $b2Signatures[$keyFn($r)] = $signature($r);
+
+  $mismatches = [];
+  $compared = 0;
+  foreach ($b1Signatures as $key => $sig1) {
+    $sig2 = $b2Signatures[$key] ?? NULL;
+    if ($sig2 === NULL) {
+      $mismatches[] = "$key — missing in re-run";
+      continue;
+    }
+    $compared++;
+    if ($sig1 !== $sig2) {
+      $mismatches[] = sprintf(
+        '%s — run1=%s, run2=%s',
+        $key,
+        json_encode($sig1),
+        json_encode($sig2),
+      );
+    }
+  }
+  echo "  compared $compared rows; mismatches: " . count($mismatches) . "\n";
+  foreach ($mismatches as $m) echo "    $m\n";
+  $checks9 = [
+    'compared_at_least_5_rows' => $compared >= 5,
+    'no_mismatches'            => count($mismatches) === 0,
+  ];
+  foreach ($checks9 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step_9_determinism'] = !in_array(FALSE, $checks9, TRUE) ? 'PASS' : 'FAIL';
 }
 finally {
   echo "\n=== Cleanup ===\n";

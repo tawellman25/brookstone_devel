@@ -41,11 +41,29 @@ Children: `supplier_price_ingest_row` entities reference this batch via their `f
 - `field_status` (list_string) — current pipeline stage. Allowed values, in lifecycle order:
   - `pending_dry_run` — created at upload time; parsing has not begun. **Phase 3.2: also the status AFTER parse completes** — the parser does not advance the status, intentionally. Matcher (3.3) owns the `pending_dry_run → dry_run_complete` transition.
   - `dry_run_complete` — parse + match passes finished; reviewer can inspect the report. **Reachable as of Phase 3.3** — the matcher transitions the batch here at the end of a successful run (including the `do_not_use` supplier short-circuit, which produces an empty-result dry-run still routed through `dry_run_complete` so the office can see the outcome). Aggregate row counts (`field_row_count_tier1`, `field_row_count_tier2`, `field_row_count_tier3_med`, `field_row_count_discovery`, `field_row_count_skipped`) are populated by the matcher from the persisted row entities at this transition.
-  - `awaiting_approval` — reviewer has reviewed and queued for commit but not yet approved.
-  - `approved` — reviewer has approved; commit is scheduled.
-  - `committed` — pipeline has mutated `material_suppliers` and written `material_price_history` rows.
-  - `rejected` — reviewer rejected the batch; no catalog mutations occurred.
+  - `awaiting_approval` — reviewer clicked Approve; intermediate save inside the submit handler. **Phase 3.5: this state is persisted briefly inside `ApproveBatchForm::submitForm()` even though the stub commit is synchronous.** The intermediate persist exists so Phase 3.6's eventual async commit (queue worker / batch API) can park the batch here while it runs.
+  - `approved` — reviewer has approved; commit is in flight. **Phase 3.5: `field_committed_by` + `field_committed_on` are stamped at this transition.** The Phase 3.5 stub committer flips this to `committed` synchronously, so users rarely observe this state in 3.5. Phase 3.6's async commit will leave batches here for the duration of the catalog mutation.
+  - `committed` — pipeline has mutated `material_suppliers` and written `material_price_history` rows. **Phase 3.5: reachable via the STUB committer (no actual catalog mutations occur — see `__BOS_AI/Modules/supplier_price_ingest.md` Phase 3.5 section).** The committed-state batch view renders a STUB banner until Phase 3.6 ships the real commit.
+  - `rejected` — reviewer rejected the batch; no catalog mutations occurred. **Reachable as of Phase 3.5 via `RejectBatchForm`** from either `dry_run_complete` or `failed`. The reject handler stamps `field_committed_by` + `field_committed_on` (the field is reused for any "decision endpoint" — see field-naming note below). All child rows transition to `field_row_status = 'rejected'`; batch and rows are NOT deleted (audit).
   - `failed` — pipeline error during parse, match, or commit; details in `field_dry_run_report` or watchdog. **Reachable as of Phase 3.2** — the parser transitions to `failed` on any unrecoverable error (file unreadable, config missing, etc.) and stashes the error context into `field_dry_run_report` as JSON.
+
+**Lifecycle diagram** (every transition reachable as of Phase 3.5; arrows show the only legal moves):
+
+```
+            upload                parser+matcher          ApproveBatchForm        ApproveBatchForm + StubCommitter (3.5)
+                                                                                  ───────────────────────────────────────►
+(new) ─────────► pending_dry_run ─────────────► dry_run_complete ─────────► awaiting_approval ───────► approved ───────► committed
+                       │                              │                            │
+                       │ parse error                  │ RejectBatchForm            │  StubCommitter rejected on bad input
+                       ▼                              ▼                            │
+                    failed ◄──────────────────── rejected ◄───── failed         (would land in failed; not seen in 3.5)
+                       │
+                       │ RejectBatchForm (3.5: failed → rejected)
+                       ▼
+                    rejected
+```
+
+Phase 3.6 will replace the `approved → committed` synchronous arrow with `approved →(queue worker)→ committed`, but the lifecycle states themselves stay the same.
 
 ### Dry-run report
 
@@ -55,8 +73,8 @@ Children: `supplier_price_ingest_row` entities reference this batch via their `f
 
 ### Commit metadata
 
-- `field_committed_by` (entity_reference → user) — who approved + triggered commit.
-- `field_committed_on` (datetime) — when committed.
+- `field_committed_by` (entity_reference → user) — who approved + triggered commit. **Phase 3.5 also reuses this field for rejection** (whoever clicked Reject), so the semantically-accurate name is "who made the final decision". A future field rename to `field_decided_by` may happen if the dual-use becomes confusing; for now both Approve and Reject handlers write here.
+- `field_committed_on` (datetime) — when committed. **Phase 3.5: also written by the Reject handler** as the time of rejection, per the field-reuse note above.
 
 ### Aggregate row counts
 

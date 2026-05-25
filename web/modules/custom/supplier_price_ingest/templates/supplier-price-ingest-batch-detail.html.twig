@@ -1,0 +1,227 @@
+{#
+/**
+ * @file
+ * Phase 3.5 — supplier_price_ingest_batch dry-run report.
+ *
+ * Variables (set by BatchDetailController::view):
+ *   - header (array)
+ *   - status (string)
+ *   - actions (array — URLs + disabled flags)
+ *   - report (array; only on dry_run_complete / committed / rejected)
+ *   - auto_refresh_seconds (int; only on in-progress states)
+ *   - failure_report (string; only on failed)
+ *   - rejection_reason (string; only on rejected)
+ *
+ * Markup deliberately leans on Drupal admin defaults — no custom CSS
+ * beyond a few inline rules for the status badge and degraded notice.
+ */
+#}
+
+{% set status_label_map = {
+  'pending_dry_run': 'Pending Dry Run',
+  'dry_run_complete': 'Dry Run Complete',
+  'awaiting_approval': 'Awaiting Approval',
+  'approved': 'Approved',
+  'committed': 'Committed',
+  'rejected': 'Rejected',
+  'failed': 'Failed',
+} %}
+{% set status_color_map = {
+  'pending_dry_run': '#666',
+  'dry_run_complete': '#0074bd',
+  'awaiting_approval': '#a06b00',
+  'approved': '#4e8000',
+  'committed': '#2b7300',
+  'rejected': '#a02000',
+  'failed': '#a02000',
+} %}
+
+{% if auto_refresh_seconds is defined %}
+  {# Auto-refresh tag for in-progress states. #}
+  <noscript>
+    <meta http-equiv="refresh" content="{{ auto_refresh_seconds }}">
+  </noscript>
+{% endif %}
+
+<div class="supplier-price-ingest-batch-detail">
+
+  {# ── Section 1: header ─────────────────────────────────────────── #}
+  <h2>Batch #{{ header.id }} — {{ header.supplier_label }}</h2>
+  <p>
+    <strong>Status:</strong>
+    <span style="display:inline-block;padding:2px 8px;border-radius:4px;background:{{ status_color_map[status] ?? '#666' }};color:white;font-weight:600;">
+      {{ status_label_map[status] ?? status }}
+    </span>
+  </p>
+
+  <table class="responsive-enabled" style="margin-bottom:1.5em;">
+    <tbody>
+      <tr><th style="text-align:left;width:11em;">Source file</th><td>
+        {% if header.source_file_url %}<a href="{{ header.source_file_url }}">{{ header.source_filename }}</a>{% else %}{{ header.source_filename }}{% endif %}
+      </td></tr>
+      <tr><th style="text-align:left;">Uploaded by</th><td>{{ header.uploaded_by }}</td></tr>
+      <tr><th style="text-align:left;">Uploaded on</th><td>{{ header.uploaded_on }}</td></tr>
+      <tr><th style="text-align:left;">Total rows</th><td>{{ header.total_rows }}</td></tr>
+      {% if header.committed_by %}
+        <tr><th style="text-align:left;">Decided by</th><td>{{ header.committed_by }}</td></tr>
+        <tr><th style="text-align:left;">Decided on</th><td>{{ header.committed_on }}</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  {# ── In-progress states ────────────────────────────────────────── #}
+  {% if status in ['pending_dry_run', 'awaiting_approval', 'approved'] %}
+    <div class="messages messages--status" role="status">
+      {% if status == 'pending_dry_run' %}
+        <strong>Parsing in progress.</strong> The matcher will run once parsing is complete. This page auto-refreshes every {{ auto_refresh_seconds }} seconds.
+      {% elseif status == 'awaiting_approval' %}
+        <strong>Approval in progress.</strong> The batch is being committed. This page auto-refreshes every {{ auto_refresh_seconds }} seconds.
+      {% elseif status == 'approved' %}
+        <strong>Commit in progress.</strong> Catalog mutations are running. This page auto-refreshes every {{ auto_refresh_seconds }} seconds.
+      {% endif %}
+    </div>
+    <p><a href="">Refresh now</a></p>
+
+  {% elseif status == 'failed' %}
+    <div class="messages messages--error" role="alert">
+      <strong>Batch failed.</strong> See details below. The batch can be rejected to mark it closed; no catalog mutations occurred.
+    </div>
+    {% if failure_report %}
+      <h3>Failure details</h3>
+      <pre style="white-space:pre-wrap;background:#fafafa;border:1px solid #ccc;padding:0.75em;">{{ failure_report }}</pre>
+    {% endif %}
+
+  {% else %}
+    {# ── Sections 2–5 (rendered for dry_run_complete / committed / rejected) ── #}
+
+    {% if status == 'rejected' %}
+      <div class="messages messages--warning" role="alert">
+        <strong>This batch was rejected.</strong> No catalog changes were made. The match results below are preserved for audit.
+        {% if rejection_reason %}<br>{{ rejection_reason }}{% endif %}
+      </div>
+    {% elseif status == 'committed' %}
+      <div class="messages messages--status" role="status">
+        <strong>This batch is committed.</strong>
+        {# Phase 3.5 ships a STUB commit — no catalog mutations actually occurred yet. Make this fact visible to office staff who run the report before 3.6 ships. #}
+        <em>(Phase 3.5: commit logic is stubbed. Real catalog mutations land in Phase 3.6. The match decisions above were not applied to <code>material_suppliers</code> — see module governance doc.)</em>
+      </div>
+    {% endif %}
+
+    {# Section 2 — match summary #}
+    <h3>Match summary</h3>
+    {% set s = report.match_summary %}
+    <table class="responsive-enabled">
+      <thead>
+        <tr><th style="text-align:left;">Tier</th><th style="text-align:right;">Rows</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Tier 1 (manufacturer item #)</td><td style="text-align:right;">{{ s.tier1 }}</td><td>✓ will auto-apply</td></tr>
+        <tr><td>Tier 2 (supplier SKU)</td><td style="text-align:right;">{{ s.tier2 }}</td><td>✓ will auto-apply</td></tr>
+        <tr><td>Tier 3 high confidence</td><td style="text-align:right;">{{ s.tier3_high }}</td><td>✓ will auto-apply</td></tr>
+        <tr><td>Tier 3 medium (needs review)</td><td style="text-align:right;">{{ s.tier3_med }}</td><td>⚠ requires review before commit</td></tr>
+        <tr><td>&nbsp;&nbsp;Tier 1 ambiguous (subset of medium)</td><td style="text-align:right;">{{ s.tier1_ambiguous }}</td><td>⚠ requires review (multi-candidate)</td></tr>
+        <tr><td>Discovery (new items)</td><td style="text-align:right;">{{ s.discovery }}</td><td>⚠ routes to discovery queue</td></tr>
+        <tr><td>Skipped — discontinued</td><td style="text-align:right;">{{ s.skipped_disc }}</td><td>→ no action</td></tr>
+        <tr><td>Skipped — excluded bundle</td><td style="text-align:right;">{{ s.skipped_excl }}</td><td>→ no action</td></tr>
+        <tr><td>Skipped — supplier do_not_use</td><td style="text-align:right;">{{ s.skipped_dnu }}</td><td>→ no action</td></tr>
+        <tr><td>Errors</td><td style="text-align:right;">{{ s.errors }}</td><td>→ see error sample below</td></tr>
+        <tr style="font-weight:600;border-top:2px solid #999;"><td>Total</td><td style="text-align:right;">{{ s.total }}</td><td></td></tr>
+      </tbody>
+    </table>
+
+    {# Section 3 — price-change impact #}
+    <h3>Price change impact <small>(Tier 1 + Tier 2 + Tier 3-high only)</small></h3>
+    {% set p = report.price_impact %}
+    {% if p.degraded %}
+      <div class="messages messages--warning" role="alert">
+        <strong>Price impact computation exceeded the {{ p.elapsed }}s budget.</strong> The CSV export contains complete row-by-row impact data.
+      </div>
+    {% else %}
+      <table class="responsive-enabled">
+        <tbody>
+          <tr><th style="text-align:left;width:24em;">New supplier links to create</th><td>{{ p.new_links }}</td></tr>
+          <tr><th style="text-align:left;">Existing links to update</th><td>{{ p.existing_within_threshold + p.existing_exceeds_threshold }}</td></tr>
+          <tr><td style="padding-left:1.5em;">Within ±{{ p.threshold_pct }}% (will apply)</td><td>{{ p.existing_within_threshold }}</td></tr>
+          <tr><td style="padding-left:1.5em;">Exceeds ±{{ p.threshold_pct }}% (will queue in <a href="/admin/materials/price-review">price-review</a>)</td><td>{{ p.existing_exceeds_threshold }}</td></tr>
+        </tbody>
+      </table>
+    {% endif %}
+
+    {# Section 4 — sample rows per tier #}
+    <h3>Sample rows</h3>
+    {% for tier, rows in report.samples %}
+      {% if rows is not empty %}
+        <details style="margin-bottom:0.75em;">
+          <summary><strong>{{ tier }}</strong> — showing {{ rows|length }}</summary>
+          <table class="responsive-enabled" style="margin-top:0.5em;">
+            <thead>
+              <tr>
+                <th style="text-align:right;">Row</th>
+                <th style="text-align:left;">Description</th>
+                <th style="text-align:left;">SKU / Mfr #</th>
+                <th style="text-align:right;">Cost</th>
+                <th style="text-align:left;">Matched material</th>
+                <th style="text-align:left;">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+                <tr>
+                  <td style="text-align:right;">{{ r.row_number }}</td>
+                  <td>{{ r.description }}</td>
+                  <td>
+                    {% if r.supplier_sku %}<code>{{ r.supplier_sku }}</code>{% endif %}
+                    {% if r.mfr_item %}{% if r.supplier_sku %} / {% endif %}<code>{{ r.mfr_item }}</code>{% endif %}
+                  </td>
+                  <td style="text-align:right;">{{ r.unit_cost }}{% if r.cost_uom %} / {{ r.cost_uom }}{% endif %}</td>
+                  <td>
+                    {% if r.matched_material_id %}
+                      <a href="/material/{{ r.matched_material_id }}">{{ r.matched_material_title }}</a>
+                      {% if r.match_confidence %}<br><small>conf {{ r.match_confidence }}</small>{% endif %}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+                  <td><small>{{ r.resolution_notes }}</small></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </details>
+      {% endif %}
+    {% endfor %}
+
+    {# Section 5 — discovery breakdown by bundle #}
+    {% if report.discovery_breakdown is not empty %}
+      <h3>Discovery breakdown by inferred bundle</h3>
+      <table class="responsive-enabled">
+        <thead>
+          <tr><th style="text-align:left;">Bundle</th><th style="text-align:right;">Rows</th></tr>
+        </thead>
+        <tbody>
+          {% for bundle, count in report.discovery_breakdown %}
+            <tr><td><code>{{ bundle }}</code></td><td style="text-align:right;">{{ count }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+
+  {% endif %}
+
+  {# ── Action buttons (always rendered; disabled state controls availability) ── #}
+  <h3>Actions</h3>
+  <p>
+    {% if actions.approve_disabled %}
+      <button type="button" disabled style="opacity:0.5;">Approve and Commit</button>
+    {% else %}
+      <a class="button button--primary" href="{{ actions.approve_url }}">Approve and Commit</a>
+    {% endif %}
+    {% if actions.reject_disabled %}
+      <button type="button" disabled style="opacity:0.5;">Reject Batch</button>
+    {% else %}
+      <a class="button" href="{{ actions.reject_url }}">Reject Batch</a>
+    {% endif %}
+    <a class="button" href="{{ actions.export_url }}">Export Detailed Report (CSV)</a>
+  </p>
+
+</div>

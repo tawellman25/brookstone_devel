@@ -77,7 +77,13 @@ All optional — some supplier feeds omit fields:
 
 ### Resolution (set when an office-manager intervenes)
 
-- `field_row_status` (list_string) — `dry_run` / `committed` / `discovery_pending` / `discovery_resolved` / `rejected` / `error`.
+- `field_row_status` (list_string) — `dry_run` / `committed` / `discovery_pending` / `discovery_resolved` / `rejected` / `error`. Lifecycle:
+  - `dry_run` — initial state, set by the parser. Stays through Match.
+  - `committed` — set when the parent batch transitions to `committed`. **Phase 3.5: the stub committer stamps only auto-applying rows** (tier_1_mfr / tier_2_supplier_sku / tier_3_fuzzy_high). Tier 3 medium and discovery rows stay `dry_run` even after the batch is "committed" because they haven't yet been resolved by an office reviewer — they wait for the review-UI workflow (Phase 3.7).
+  - `discovery_pending` — set by the future discovery-queue UI (Phase 3.7) when an office reviewer adopts a discovery row for resolution.
+  - `discovery_resolved` — set by the discovery-queue UI when the reviewer has decided (created material, linked existing, marked replacement, etc.).
+  - `rejected` — **Phase 3.5: `RejectBatchForm` sets EVERY row in the batch to `rejected`** when the office reviewer rejects the whole batch. Future per-row reject (single-row reject from the review UI in Phase 3.7) will also use this value.
+  - `error` — parser couldn't process the row, or matcher threw an uncaught exception on it. Set by the parser (3.2) or matcher (3.3).
 - `field_resolution_action` (list_string) — what the resolver did:
   - `created_link` — new `material_suppliers` row was written.
   - `updated_link` — existing `material_suppliers` row was updated.

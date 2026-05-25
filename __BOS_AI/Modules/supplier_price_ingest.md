@@ -7,6 +7,7 @@ Status:
 - **Phase 3.2 shipped 2026-05-25** — parser service (`IngestParser`), supplier ingest config admin (form alter + JSON validation), batch upload form, presave validation hook.
 - **Phase 3.3 shipped 2026-05-25** — matcher service (`IngestMatcher`) with Tier 1 (manufacturer item #), Tier 2 (existing material_suppliers SKU), discontinued material retargeting, bundle policy enforcement, discovery routing, and supplier-do-not-use short-circuit. Parser auto-invokes matcher after parse.
 - **Phase 3.4 shipped 2026-05-25** — Tier 3 fuzzy matching (`FuzzyScorer` + bundle inference + threshold routing) inserted between Tier 2 and discovery. 12-scenario verifier (`web/scripts/verify_supplier_price_ingest_fuzzy.php`) covers high/medium/low confidence routing, anti-signal handling, bundle inference correctness, excluded-bundle filtering, discontinued exclusion, and a 100-row × ~200-candidate performance pass (~2.5s in DDEV, vs the 30s budget).
+- **Phase 3.5 shipped 2026-05-25** — dry-run report UI, approve/reject confirm forms, CSV export, stub committer, source filter on `views.view.material_price_review_queue`, Tier 1 sort fix from the range-audit. Commit logic is STILL stubbed (no `material_suppliers` / `material_price_history` mutations) — real commit lands in Phase 3.6.
 
 ---
 
@@ -533,13 +534,156 @@ The bundle keyword map shipped close to the spec's suggested seed. One refinemen
 
 ---
 
+## Phase 3.5 — Dry-Run Report UI + Approval Gate
+
+### Architecture
+
+Phase 3.5 turns the batch URL into the office-manager-facing decision surface. Same URL handles every batch status; the controller renders the right shell based on `field_status`. Approve and Reject are confirm forms; Approve triggers a **stub** commit (no catalog mutation) that flips the batch through the lifecycle to `committed` so the report's committed state can be rendered end-to-end before Phase 3.6 lands the real commit.
+
+The Phase 3.2 placeholder controller and template are deleted in this phase (`BatchPlaceholderController`, `supplier-price-ingest-batch-placeholder.html.twig`).
+
+### Batch detail controller — state-driven rendering
+
+`BatchDetailController::view($batch)` branches on `field_status`:
+
+| Status | What renders |
+|---|---|
+| `pending_dry_run` | "Parsing in progress" notice + 5s auto-refresh (`<noscript><meta http-equiv="refresh">`) |
+| `dry_run_complete` | Full report (sections 2–5 below) + action buttons enabled |
+| `awaiting_approval` | "Approval in progress" notice + auto-refresh |
+| `approved` | "Commit in progress" notice + auto-refresh. (3.5's stub committer flips this state to `committed` synchronously inside the approve handler, so users rarely see it; 3.6's real async commit will park batches here while running.) |
+| `committed` | Same layout as `dry_run_complete` plus a "STUB — no catalog mutations yet" notice on the committed banner. The notice goes away when 3.6 lands. |
+| `rejected` | Same layout, plus rejection banner + reason from `field_dry_run_report` if present |
+| `failed` | Error state with failure report from the matcher / parser |
+
+Page cache: `max-age: 0` because the rendered state depends on a status that can transition mid-request.
+
+### Dry-run report sections
+
+1. **Header** — batch ID, supplier, source file (linked), uploaded by/on, total rows, decided by/on if set.
+2. **Match summary** — row counts per tier from the batch's `field_row_count_*` fields. The Tier 1 ambiguous bucket is computed live as a sub-count: rows with `field_match_tier = 'tier_3_fuzzy_med'` AND `field_resolution_notes LIKE 'Tier 1 ambiguous%'`. The real Tier 3 medium count is the difference. Same surface for both, but the report shows them split so reviewers know which require multi-candidate disambiguation vs single fuzzy-score review.
+3. **Price change impact** — for every row tagged `tier_1_mfr / tier_2_supplier_sku / tier_3_fuzzy_high`, the controller looks up the existing `material_suppliers` row for `(matched_material, batch_supplier)` and bucketizes the price delta:
+   - No existing link → counts as "new link to create"
+   - Existing link, delta ≤ ±10% → "will auto-apply"
+   - Existing link, delta > ±10% → "will queue in `/admin/materials/price-review`"
+   - **Soft budget: 5 seconds.** If the loop exceeds that, the section renders a degraded "see CSV export" notice instead of incomplete numbers. The CSV export always has the full row-by-row data, so the budget is a UX speed-bump, not a correctness bound.
+4. **Sample rows per tier** — up to 10 each (Tier 1 / Tier 2 / Tier 3 high / Tier 3 medium / discovery / error), rendered in collapsible `<details>` blocks. Each row shows: row number, truncated description (60 chars, mb-safe), SKU/Mfr#, cost+UOM, matched material link, resolution-notes excerpt (truncated to 240 chars, mb-safe).
+5. **Discovery breakdown by inferred bundle** — re-runs `IngestMatcher::inferCandidateBundles()` over every discovery row to bucket by inferred target bundle. Bundles with empty inference land in an `(uninferred)` row.
+
+Action buttons render at the bottom: Approve and Commit (enabled only when status is `dry_run_complete`); Reject Batch (enabled for `dry_run_complete` or `failed`); Export Detailed Report (always enabled).
+
+### Approve flow
+
+Form: `ApproveBatchForm` (extends `ConfirmFormBase`).
+Route: `/admin/materials/supplier-ingest/batch/{batch}/approve`.
+
+Status transitions in the submit handler:
+
+1. `dry_run_complete` → `awaiting_approval` (intermediate save — a poll request mid-submit sees the in-flight status, not stale dry_run_complete).
+2. `awaiting_approval` → `approved` (saves `field_committed_by` + `field_committed_on` here).
+3. Stub committer invoked: stamps every auto-applying row's `field_row_status` to `committed`, transitions batch `approved` → `committed`.
+
+The two-hop pattern through `awaiting_approval` is intentional even though the stub is synchronous — Phase 3.6 will replace the stub with a real async commit (batch API / queue worker) that needs the intermediate state to be persisted before the worker dispatches.
+
+Validation rejects (with form error) any status other than `dry_run_complete`.
+
+### Reject flow
+
+Form: `RejectBatchForm` (extends `ConfirmFormBase`).
+Route: `/admin/materials/supplier-ingest/batch/{batch}/reject`.
+
+- Validation accepts `dry_run_complete` and `failed` (the latter lets office staff close out a failed batch cleanly).
+- Submit sets batch status to `rejected`, captures `field_committed_by` + `field_committed_on` (reusing the "committed" field for any decision endpoint — see note in `Entities/supplier_price_ingest_batch.md`).
+- All child rows updated to `field_row_status = 'rejected'`. Batch and rows are **NOT** deleted — they remain for audit.
+
+### CSV export
+
+Controller: `BatchExportController::export($batch)`.
+Route: `/admin/materials/supplier-ingest/batch/{batch}/export.csv`.
+
+Streamed response (`Symfony\Component\HttpFoundation\StreamedResponse`). Rows loaded in chunks of 200 with `loadMultiple` + `resetCache` so memory stays bounded regardless of batch size. Per-row `flush()` between chunks pushes data to the browser as it's generated.
+
+Filename pattern: `batch-{id}-{YYYY-MM-DD}.csv`. Column order:
+
+```
+row_number, match_tier, match_confidence, row_status, supplier_sku,
+manufacturer_item_number, manufacturer_name, description, unit_cost,
+cost_uom, pack_quantity, matched_material_id, matched_material_title,
+existing_link_id, resolution_notes
+```
+
+### Stub commit (`Drupal\supplier_price_ingest\Service\StubCommitter`)
+
+Service ID: `supplier_price_ingest.stub_committer`. Mirrors the eventual contract of the real commit service so Phase 3.6 can swap implementations under the same ID without touching the form. Per the Phase 3.5 spec:
+
+- Requires the batch to be in `approved` status (throws otherwise).
+- Marks every row whose `field_match_tier IN (tier_1_mfr, tier_2_supplier_sku, tier_3_fuzzy_high)` as `field_row_status = 'committed'`.
+- Transitions batch to `committed`.
+- Logs an INFO line: `"Batch N approved by user U. Phase 3.5 STUB COMMIT: ... no material_suppliers / material_price_history mutations occurred."` so an audit search for "STUB COMMIT" surfaces every batch that landed before 3.6 ships.
+
+**No catalog mutations** occur. The committed-state report includes a STUB banner so office staff aren't surprised when their approved batches don't actually update supplier pricing in the catalog.
+
+### Source filter on `/admin/materials/price-review`
+
+`views.view.material_price_review_queue.yml` gained an exposed `field_source_value` filter (multi-select). Default: unfiltered (all sources show). Once Phase 3.6 starts writing `feed_import_auto` / `feed_import_reviewed` entries to `material_price_history`, reviewers can narrow by source from the same view.
+
+### IngestMatcher Tier 1 sort fix
+
+`IngestMatcher::attemptTier1()` manufacturer lookup gained `->sort('id', 'ASC')` before its existing `->range(0, 1)`. Single audit-derived fix in scope for this phase; remaining range-audit findings stay open in `__BOS_AI/Reports/range_audit_2026-05-25.md`.
+
+### Files Added in Phase 3.5
+
+| File | Purpose |
+|---|---|
+| `src/Controller/BatchDetailController.php` | State-driven dry-run report controller |
+| `src/Controller/BatchExportController.php` | Streamed CSV export |
+| `src/Form/ApproveBatchForm.php` | Approve confirm form |
+| `src/Form/RejectBatchForm.php` | Reject confirm form |
+| `src/Service/StubCommitter.php` | Phase 3.5 stub commit (replaced in 3.6) |
+| `templates/supplier-price-ingest-batch-detail.html.twig` | Twig template for all 7 batch states |
+| `web/scripts/verify_supplier_price_ingest_p35_e2e.php` | One-off e2e sanity (parse→match→approve→stub-commit) |
+
+### Files Removed in Phase 3.5
+
+| File | Replaced by |
+|---|---|
+| `src/Controller/BatchPlaceholderController.php` | `BatchDetailController` |
+| `templates/supplier-price-ingest-batch-placeholder.html.twig` | `supplier-price-ingest-batch-detail.html.twig` |
+
+### Files Modified in Phase 3.5
+
+| File | Change |
+|---|---|
+| `src/Service/IngestMatcher.php` | Tier 1 manufacturer query gains `->sort('id', 'ASC')` |
+| `supplier_price_ingest.module` | `hook_theme()` registers the new template, drops the placeholder hook |
+| `supplier_price_ingest.routing.yml` | `batch_view` repointed to `BatchDetailController`; new routes for approve/reject/export |
+| `supplier_price_ingest.services.yml` | `supplier_price_ingest.stub_committer` registered |
+| `config/sync/views.view.material_price_review_queue.yml` | Exposed `field_source_value` filter added |
+| `web/scripts/verify_supplier_price_ingest_parser.php` | Step 10 promotes one batch to `dry_run_complete` via matcher, hits 4 new URLs + asserts content-type on CSV |
+| `web/scripts/verify_supplier_price_ingest_matcher.php` | Step 9: determinism — re-run matcher against same input, assert identical per-row outcomes |
+
+### Phase 3.5 verification
+
+- All three existing verify scripts PASS end-to-end:
+  - `verify_supplier_price_ingest_parser.php` — 10/10 steps (incl. 9 admin-URL smoke checks)
+  - `verify_supplier_price_ingest_matcher.php` — 3/3 steps (incl. new determinism step)
+  - `verify_supplier_price_ingest_fuzzy.php` — 12 scenarios + perf
+- One-off e2e (`verify_supplier_price_ingest_p35_e2e.php`) PASSES — parse → match → approve → stub commit reaches `committed` cleanly.
+
+### Forward dependency for SOP authoring (Phase 3.12)
+
+This is the phase where office-manager workflow goes user-facing: "review dry-run report → decide approve or reject → click button". An SOP for the Office Manager covering when to approve, when to reject, what the discovery queue means, and how to read the price-impact section becomes the natural Phase 3.12 SOP target. ⚠ SOP NEEDED — flagged here, authored in Phase 3.12.
+
+---
+
 ## Status
 
 - **Phase 3.1** — shipped 2026-05-25 (commit `911c2221`).
 - **Phase 3.2** — shipped 2026-05-25 (commit `96571a39`).
 - **Phase 3.3** — shipped 2026-05-25 (commit `05f77e05` on `feature/supplier-price-ingest`).
-- **Phase 3.4** — shipped 2026-05-25 on `feature/supplier-price-ingest`.
+- **Phase 3.4** — shipped 2026-05-25 (commit `c5782cfb` on `feature/supplier-price-ingest`).
+- **Phase 3.5** — shipped 2026-05-25 on `feature/supplier-price-ingest`.
 
 Branch: `feature/supplier-price-ingest`.
 
-Next phase: 3.5 — dry-run report rendering and approve/commit pipeline.
+Next phase: 3.6 — real commit pipeline (replaces stub committer with `material_suppliers` writes and `material_price_history` entries).

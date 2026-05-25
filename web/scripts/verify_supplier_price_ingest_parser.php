@@ -392,21 +392,56 @@ try {
   echo "\n=== Step 10: admin pages render cleanly (subrequest, uid 1) ===\n";
   \Drupal::currentUser()->setAccount(\Drupal\user\Entity\User::load(1));
   $httpKernel = \Drupal::service('http_kernel');
+
+  // Phase 3.5 — per-batch URLs need a real batch ID. Promote $batch1
+  // (parsed CSV from Step 5/6) to dry_run_complete by running the
+  // matcher on it, so the Approve form's validation can render the
+  // confirm prompt (Approve is gated to dry_run_complete batches).
+  $smokeBatchId = (int) $batch1->id();
+  try {
+    $smokeBatch = $etm->getStorage('supplier_price_ingest_batch')->load($smokeBatchId);
+    if ($smokeBatch && (string) $smokeBatch->get('field_status')->value === 'pending_dry_run') {
+      \Drupal::service('supplier_price_ingest.matcher')->matchBatch($smokeBatch);
+    }
+  }
+  catch (\Throwable $e) {
+    echo "  WARN — failed to promote batch1 for smoke test: " . $e->getMessage() . "\n";
+  }
+
   $pages = [
-    '/admin/materials/supplier-ingest/upload'        => 'Upload Catalog form',
-    '/admin/materials/supplier-ingest/configs'       => 'Supplier Configs list (Views)',
-    '/admin/materials/supplier-ingest/configs/add'   => 'Add Supplier Ingest Config',
-    '/admin/materials/supplier-ingest/batches/add'   => 'Add Supplier Price Ingest Batch (preemptive)',
-    '/admin/materials/supplier-ingest/rows/add'      => 'Add Supplier Price Ingest Row (preemptive)',
+    '/admin/materials/supplier-ingest/upload'        => ['label' => 'Upload Catalog form', 'expect_ct' => NULL],
+    '/admin/materials/supplier-ingest/configs'       => ['label' => 'Supplier Configs list (Views)', 'expect_ct' => NULL],
+    '/admin/materials/supplier-ingest/configs/add'   => ['label' => 'Add Supplier Ingest Config', 'expect_ct' => NULL],
+    '/admin/materials/supplier-ingest/batches/add'   => ['label' => 'Add Supplier Price Ingest Batch (preemptive)', 'expect_ct' => NULL],
+    '/admin/materials/supplier-ingest/rows/add'      => ['label' => 'Add Supplier Price Ingest Row (preemptive)', 'expect_ct' => NULL],
+    // Phase 3.5 — batch detail + approve/reject confirm forms + CSV export.
+    "/admin/materials/supplier-ingest/batch/$smokeBatchId"            => ['label' => 'Batch Detail (dry-run report)', 'expect_ct' => NULL],
+    "/admin/materials/supplier-ingest/batch/$smokeBatchId/approve"    => ['label' => 'Approve Batch confirm form', 'expect_ct' => NULL],
+    "/admin/materials/supplier-ingest/batch/$smokeBatchId/reject"     => ['label' => 'Reject Batch confirm form', 'expect_ct' => NULL],
+    "/admin/materials/supplier-ingest/batch/$smokeBatchId/export.csv" => ['label' => 'Batch CSV export', 'expect_ct' => 'text/csv'],
   ];
   $checks10 = [];
-  foreach ($pages as $path => $label) {
+  foreach ($pages as $path => $meta) {
+    $label = $meta['label'];
+    $expectCt = $meta['expect_ct'];
     try {
       $subRequest = \Symfony\Component\HttpFoundation\Request::create($path, 'GET');
       $response = $httpKernel->handle($subRequest, \Symfony\Component\HttpKernel\HttpKernelInterface::SUB_REQUEST);
       $code = $response->getStatusCode();
-      $checks10["$path → 200"] = ($code === 200);
-      echo sprintf("  %s — %s (HTTP %d)\n", $code === 200 ? 'PASS' : 'FAIL', $label, $code);
+      $ctOk = TRUE;
+      $ct = (string) $response->headers->get('Content-Type');
+      if ($expectCt !== NULL) {
+        $ctOk = str_contains($ct, $expectCt);
+      }
+      $pass = ($code === 200) && $ctOk;
+      $checks10["$path → 200"] = $pass;
+      echo sprintf(
+        "  %s — %s (HTTP %d%s)\n",
+        $pass ? 'PASS' : 'FAIL',
+        $label,
+        $code,
+        $expectCt !== NULL ? sprintf(', Content-Type: %s', $ct ?: '(none)') : '',
+      );
     }
     catch (\Throwable $e) {
       $checks10["$path → 200"] = FALSE;

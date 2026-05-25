@@ -472,6 +472,39 @@ The cleared title is the cue AEL needs to re-evaluate its pattern with the now-k
 
 **Surfaced 2026-05-23 fixing 30 broken check-up WOs (commit `cabb8a6e`; backfill at `web/scripts/backfill_broken_checkup_titles.php`).**
 
+## Entity query `range()` without `sort()` is non-deterministic
+
+Drupal entity queries with `->range(N, M)` but no `->sort(...)` may return different `N..N+M` slices across calls when the underlying result set exceeds the cap. MariaDB makes no ordering guarantee on `LIMIT/OFFSET` queries without an explicit `ORDER BY`, so the storage engine returns whichever rows are convenient at query time. The behavior is silent — no warning, no exception, just intermittent results.
+
+Failure modes seen / anticipated:
+
+- **Audit trail corruption.** A matcher / scoring routine picks a different "best candidate" each run for the same input. Test fixtures intermittently appear and disappear from the pool, masking the underlying non-determinism.
+- **Pagination drift.** A batch migration paged via `range(offset, batch_size)` returns overlapping windows across ticks — the same row appears in multiple batches, OR rows fall between batches and are silently skipped.
+- **Test flakiness.** Verification scripts that depend on "the first match" pass on one run and fail on the next; bisecting is fruitless because the code itself didn't change.
+
+The same caveat applies to `\Drupal\Core\Database\Query\Select::range()` — use `->orderBy(...)` there.
+
+**Rule:** ANY entity query that calls `->range(...)` MUST also call `->sort(...)`. ANY database-API select that calls `->range(...)` MUST also call `->orderBy(...)`.
+
+- For non-presentational queries (matching, dedupe, "find existing"), sort by `id()` ASC (canonical "first") or DESC (most recent), depending on the consumer's intent. `id` is free — the PK index is already there.
+- For admin-list / user-facing queries, sort by the natural display field (`created` DESC for activity logs, label ASC for browse lists, etc.).
+- For `range(0, 1)` queries used as boolean existence checks (`if (!empty($ids))`), the order is technically irrelevant but a defensive `->sort('id', 'ASC')` is recommended anyway — it keeps the rule memorable and protects future code that may re-use the result for more than just the bool.
+
+Discovered: Phase 3.4 fuzzy matcher candidate pool, 2026-05-25. The matcher's pool query for `material.pvc` (~666 rows in the live DB) called `range(0, 201)` with no sort and intermittently dropped freshly-created test fixtures from the result. The same pattern across the BOS custom-module surface was audited in `__BOS_AI/Reports/range_audit_2026-05-25.md` (gitignored snapshot); 1 HIGH and 16 MEDIUM sites surfaced for follow-up remediation.
+
+**Correct pattern:**
+
+```php
+$ids = $storage->getQuery()
+  ->accessCheck(FALSE)
+  ->condition(...)
+  ->sort('id', 'DESC')   // ← required when range() is used
+  ->range(0, $cap)
+  ->execute();
+```
+
+**Surfaced 2026-05-25 fixing the Phase 3.4 fuzzy-pool flake (commit `c5782cfb`); audit + rule documented same day.**
+
 ---
 
 ## Status

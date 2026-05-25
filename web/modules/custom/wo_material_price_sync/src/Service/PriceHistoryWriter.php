@@ -34,12 +34,19 @@ final class PriceHistoryWriter {
    * @param float|null  $old_cost             Prior unit cost; NULL for first/auto_created.
    * @param float       $new_cost             The cost being recorded.
    * @param float|null  $delta_percent        Computed delta percent; NULL when no baseline.
-   * @param string      $source               wo_entry|manual|invoice|auto_created
+   * @param string      $source               wo_entry|manual|invoice|auto_created|feed_import_auto|feed_import_reviewed
    * @param string      $status               applied|flagged_high|auto_created|approved|rejected|resolved
    * @param int|null    $wo_id                WO id when WO-driven; NULL otherwise.
    * @param string|null $invoice_number       Vendor invoice/receipt number; NULL when not provided.
    * @param string|null $supplier_item_number Vendor SKU snapshot at time of entry; NULL when not provided.
    * @param string|null $change_notes         Free-text context for the entry.
+   * @param int|null    $ingest_batch_id      supplier_price_ingest_batch id when feed-driven (Phase 3.6+); NULL otherwise.
+   *
+   * @return int|null
+   *   The created history-entry id on success, NULL on failure.
+   *   (Phase 3.6 widened from bool to id-or-null so callers can record
+   *   the audit-entry reference. Existing bool-truthy checks like
+   *   `if ($writer->write(...))` continue to work — NULL is falsy.)
    */
   public function write(
     int $material_id,
@@ -53,7 +60,8 @@ final class PriceHistoryWriter {
     ?string $invoice_number = NULL,
     ?string $supplier_item_number = NULL,
     ?string $change_notes = NULL,
-  ): bool {
+    ?int $ingest_batch_id = NULL,
+  ): ?int {
     try {
       $title = $this->buildTitle($material_id, $supplier_id, $delta_percent);
 
@@ -86,10 +94,13 @@ final class PriceHistoryWriter {
       if ($change_notes !== NULL && $change_notes !== '') {
         $values['field_change_notes'] = $change_notes;
       }
+      if ($ingest_batch_id !== NULL && $ingest_batch_id > 0) {
+        $values['field_ingest_batch'] = ['target_id' => $ingest_batch_id];
+      }
 
       $entry = $this->entityTypeManager->getStorage('material_price_history')->create($values);
       $entry->save();
-      return TRUE;
+      return (int) $entry->id();
     }
     catch (\Throwable $e) {
       \Drupal::logger('wo_material_price_sync')->error(
@@ -100,7 +111,7 @@ final class PriceHistoryWriter {
           '@msg' => $e->getMessage(),
         ]
       );
-      return FALSE;
+      return NULL;
     }
   }
 

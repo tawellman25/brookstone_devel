@@ -7,7 +7,8 @@ Status:
 - **Phase 3.2 shipped 2026-05-25** — parser service (`IngestParser`), supplier ingest config admin (form alter + JSON validation), batch upload form, presave validation hook.
 - **Phase 3.3 shipped 2026-05-25** — matcher service (`IngestMatcher`) with Tier 1 (manufacturer item #), Tier 2 (existing material_suppliers SKU), discontinued material retargeting, bundle policy enforcement, discovery routing, and supplier-do-not-use short-circuit. Parser auto-invokes matcher after parse.
 - **Phase 3.4 shipped 2026-05-25** — Tier 3 fuzzy matching (`FuzzyScorer` + bundle inference + threshold routing) inserted between Tier 2 and discovery. 12-scenario verifier (`web/scripts/verify_supplier_price_ingest_fuzzy.php`) covers high/medium/low confidence routing, anti-signal handling, bundle inference correctness, excluded-bundle filtering, discontinued exclusion, and a 100-row × ~200-candidate performance pass (~2.5s in DDEV, vs the 30s budget).
-- **Phase 3.5 shipped 2026-05-25** — dry-run report UI, approve/reject confirm forms, CSV export, stub committer, source filter on `views.view.material_price_review_queue`, Tier 1 sort fix from the range-audit. Commit logic is STILL stubbed (no `material_suppliers` / `material_price_history` mutations) — real commit lands in Phase 3.6.
+- **Phase 3.5 shipped 2026-05-25** — dry-run report UI, approve/reject confirm forms, CSV export, stub committer, source filter on `views.view.material_price_review_queue`, Tier 1 sort fix from the range-audit. Commit logic was stubbed pending Phase 3.6.
+- **Phase 3.6 shipped 2026-05-25** — real commit pipeline. `IngestCommitter` replaces the stub; per-row hand-off to `PriceSyncService::ingestRow()` (new unified mutation authority extending the existing WO-driven service). Approve form runs synchronously for small batches (<500 auto-applying rows) and via Drupal Batch API for large batches. Idempotent recovery on interrupted commits.
 
 ---
 
@@ -676,14 +677,146 @@ This is the phase where office-manager workflow goes user-facing: "review dry-ru
 
 ---
 
+## Phase 3.6 — Commit Phase + PriceSyncService Extension
+
+### Architecture
+
+`IngestCommitter` replaces Phase 3.5's stub. The commit phase has one job: walk the approved batch's auto-applying rows (`tier_1_mfr` / `tier_2_supplier_sku` / `tier_3_fuzzy_high`, status=`dry_run`) and hand each to `PriceSyncService::ingestRow()` — the unified mutation authority that ALSO services the existing WO-driven flow. Both feed-driven and WO-driven price changes write through the same decision tree, the same threshold (10%), and the same audit log surface.
+
+`PriceSyncService` is owned by the `wo_material_price_sync` module. Per the Phase 3.6 spec's "do not disturb the existing public API" constraint:
+
+- `process()`, `validate()`, and all private helpers are unchanged.
+- `ingestRow()` is a **new public method** added to the same class — no shared state with `process()`, no modification of existing decision-tree code, no behavioral side effects on the WO flow.
+- `PriceHistoryWriter::write()` gained an optional `$ingest_batch_id = NULL` named parameter (Phase 3.6) and a widened return type (`bool` → `?int`) so feed-driven callers can capture the audit-entry id. All existing callers pass via named arguments and discard the return — they continue to behave identically.
+
+### `PriceSyncService::ingestRow()` decision tree
+
+Mirror of `process()`:
+
+| Case | Outcome |
+|---|---|
+| No existing `(material, supplier)` link | `auto_created` — new row inserted with feed cost as first-known |
+| Existing link, no prior cost | `applied` — first cost recorded |
+| Existing link, delta < +10% (decrease or small increase) | `applied` — catalog updated; material's `field_cost_integer` recomputes via existing MAX-sync |
+| Existing link, delta ≥ +10% | `flagged_high` — catalog NOT updated; audit entry surfaces in `/admin/materials/price-review` |
+
+A 10%-exact increase is **flagged** (matches `process()`'s `>=` comparison). Always writes a `material_price_history.entry` with `field_source` ∈ `{feed_import_auto, feed_import_reviewed}` and `field_ingest_batch` populated. The catalog mutation and audit write run inside a single DB transaction via `Drupal\Core\Database\Connection::startTransaction()`.
+
+Returns `IngestRowResult` (readonly DTO). Status values: `applied`, `flagged_high`, `auto_created`, `error`. Never throws on per-row data issues — error rows return `status='error'` so the caller can keep processing the batch.
+
+### `IngestCommitter::commitBatch()`
+
+Public surface:
+
+```php
+public function commitBatch(EntityInterface $batch): CommitResult;
+public function commitOneRow(EntityInterface $batch, EntityInterface $supplier, EntityInterface $row): IngestRowResult;
+public function queryAutoApplyingRowIds(int $batchId): int[];
+public function finalizeBatch(EntityInterface $batch): void;
+```
+
+Three of those are public so the Batch API operation callback in `ApproveBatchForm` can drive the commit per-chunk while keeping the orchestration logic centralized.
+
+Per-row commit:
+1. Load matched material (error if deleted between match and commit).
+2. Build `row_data` from row fields (unit_cost, cost_uom, supplier_sku, etc.).
+3. Call `priceSync->ingestRow($material, $supplier, $row_data, 'feed_import_auto', $batchId)`.
+4. Stamp the ingest row's `field_row_status` (`committed` or `error`), `field_resolution_action` (`created_link` for `auto_created`, `updated_link` for `applied` / `flagged_high`), and append the outcome message to `field_resolution_notes` so the audit trail captures both matcher and committer notes.
+
+### Idempotent recovery
+
+Spec requirement: if `commitBatch()` is interrupted partway (server reboot, fatal error, timeout), re-invoking it picks up where it left off without double-applying.
+
+The mechanism is simple and inherent to the design: the auto-applying-row query filters on `field_row_status = 'dry_run'`. Already-committed rows are stamped `committed` row-by-row INSIDE the loop, so they're filtered out automatically on retry. The batch's own status transition to `committed` is the LAST step of `commitBatch()`, so an interrupted run leaves the batch in `approved` — a retry sees that and continues processing.
+
+Documented in the `IngestCommitter` class docblock.
+
+### Sync vs Batch API path in `ApproveBatchForm`
+
+| Auto-applying row count | Path |
+|---:|---|
+| < 500 | Synchronous — `submitForm()` calls `commitBatch()` directly, surfaces `CommitResult::summary()` as a status message. |
+| ≥ 500 | Drupal Batch API — operations of 50 rows each, finish callback calls `finalizeBatch()` and posts the summary. |
+
+Both paths produce identical state transitions. Batch API is purely for request-time / memory pressure on large batches.
+
+### Failure handling
+
+- **Per-row error** (matched material deleted, threshold misconfig, etc.) — `ingestRow()` returns `status='error'`, committer marks that row as `error` row status, loop continues, batch ends in `committed` with the errored row counted in `CommitResult::rowsErrored`.
+- **Batch-level fatal** (uncaught exception escaping `commitBatch()`) — Approve form catches, marks batch as `failed`, stashes JSON failure report into `field_dry_run_report`, surfaces error message to the user. Synchronous path only; Batch API path uses a similar mechanism inside `batchCommitFinished()`.
+
+### Phase 3.5's stub is gone
+
+`StubCommitter.php` deleted. Service ID re-keyed (`supplier_price_ingest.stub_committer` → `supplier_price_ingest.committer`). The Phase 3.5 one-off e2e verifier (`verify_supplier_price_ingest_p35_e2e.php`) is also deleted — superseded by the 9-scenario committer verifier.
+
+### Spec deviation: `field_supplier_status_override`
+
+The Phase 3.6 spec instructed setting `material_suppliers.field_supplier_status_override = 'applied'` on auto-created links. That field's allowed_values are `inherit | active | limited | do_not_use` — there is no `applied` value. The WO-driven `autoCreatePair()` doesn't set this field either (leaves it NULL, which means "inherit from supplier default"). Phase 3.6 mirrors the WO behavior — `field_supplier_status_override` is left unset on auto-created rows. Flagged in completion report.
+
+### Files Added in Phase 3.6
+
+| File | Purpose |
+|---|---|
+| `wo_material_price_sync/src/Service/IngestRowResult.php` | Per-row outcome DTO returned by `ingestRow()` |
+| `src/Service/IngestCommitter.php` | Batch-orchestration committer |
+| `src/Service/CommitResult.php` | Batch-level outcome DTO |
+| `web/scripts/verify_supplier_price_ingest_committer.php` | 9-scenario e2e committer verifier |
+| `web/scripts/verify_wo_driven_price_sync_regression.php` | WO-driven sync regression sanity (validates that Phase 3.6's additions don't break the existing flow) |
+
+### Files Removed in Phase 3.6
+
+| File | Replaced by |
+|---|---|
+| `src/Service/StubCommitter.php` | `IngestCommitter` |
+| `web/scripts/verify_supplier_price_ingest_p35_e2e.php` | committer verifier above |
+
+### Files Modified in Phase 3.6
+
+| File | Change |
+|---|---|
+| `wo_material_price_sync/src/Service/PriceSyncService.php` | Added `ingestRow()` public method + 4 private helpers (auto-create/first-cost/flag-high/apply); added `@database` injection for transaction wrapping. Existing methods + private helpers untouched. |
+| `wo_material_price_sync/src/Service/PriceHistoryWriter.php` | Added optional `$ingest_batch_id` parameter; widened return type `bool` → `?int` (existing callers discard return → backwards-compatible) |
+| `wo_material_price_sync/wo_material_price_sync.services.yml` | Added `@database` arg to `price_sync` service |
+| `src/Form/ApproveBatchForm.php` | Wired to `IngestCommitter`, sync vs Batch API path selection (threshold 500), failure-handling path |
+| `supplier_price_ingest.services.yml` | Replaced `stub_committer` registration with `committer` |
+| `__BOS_AI/Modules/supplier_price_ingest.md` | This section |
+| `__BOS_AI/Modules/wo_material_price_sync.md` | New section documenting the `ingestRow()` public API |
+| `__BOS_AI/Entities/material_price_history.md` | `field_ingest_batch` now populated live, not just in schema |
+| `__BOS_AI/Entities/supplier_price_ingest_batch.md` | `approved → committed` arrow is real now; partial-commit recovery documented |
+| `__BOS_AI/Entities/supplier_price_ingest_row.md` | `field_row_status` transitions on commit |
+
+### Phase 3.6 Verification
+
+- `verify_supplier_price_ingest_committer.php` — 9 scenarios + flagged-entry-in-review subcheck. All PASS:
+  1. Auto-create new `material_suppliers` link
+  2. Decrease price — applied
+  3. +7.5% increase — applied (within threshold)
+  4. +25% increase — flagged_high (catalog unchanged, audit entry created)
+  5. `material.field_cost_integer` recomputes via MAX-sync downstream
+  6. Idempotent recovery from interrupted commit
+  7. Error containment (matched material deleted between match and commit)
+  8. `feed_import_auto` entries present in DB (source filter on price-review view has data to filter)
+  9. Determinism across full pipeline (parse + match + commit twice → identical outcomes)
+- `verify_wo_driven_price_sync_regression.php` — WO-driven sync regression sanity. PASS.
+- All 4 standing verifiers (`parser`, `matcher`, `fuzzy`) — PASS, no regressions.
+
+### Trap encountered during verification
+
+The WO-driven `PriceSyncService::process()` short-circuits on the INSERT hook because `EntityInterface::isNew()` returns FALSE inside `hook_ENTITY_TYPE_insert` (the entity has just been persisted; its id is populated). The intended `isNew()` branch in `hasPriceChanged()` is never reached from the insert hook, and the fallback `$entity->original` check fails because `$entity->original` isn't set on inserts. **WO-driven sync only fires meaningfully on UPDATE hooks** — when crews edit existing line items, not when they create them.
+
+This is **pre-existing** Phase 2 behavior (the service has been in prod since April 2026). Phase 3.6 didn't introduce it and doesn't fix it. The regression test was rewritten to exercise the UPDATE path. Flagged as a "look at this before approving 3.7" item in the completion report — the office team should know whether the WO-driven sync is firing as expected on first-time-line creation in production.
+
+---
+
 ## Status
 
 - **Phase 3.1** — shipped 2026-05-25 (commit `911c2221`).
 - **Phase 3.2** — shipped 2026-05-25 (commit `96571a39`).
 - **Phase 3.3** — shipped 2026-05-25 (commit `05f77e05` on `feature/supplier-price-ingest`).
 - **Phase 3.4** — shipped 2026-05-25 (commit `c5782cfb` on `feature/supplier-price-ingest`).
-- **Phase 3.5** — shipped 2026-05-25 on `feature/supplier-price-ingest`.
+- **Phase 3.5** — shipped 2026-05-25 (commit `27a81558` on `feature/supplier-price-ingest`).
+- **Phase 3.6** — shipped 2026-05-25 on `feature/supplier-price-ingest`.
 
 Branch: `feature/supplier-price-ingest`.
 
-Next phase: 3.6 — real commit pipeline (replaces stub committer with `material_suppliers` writes and `material_price_history` entries).
+Next phase: 3.7 — review-queue UI for medium-confidence fuzzy matches, discovery rows, and batch manager dashboard.

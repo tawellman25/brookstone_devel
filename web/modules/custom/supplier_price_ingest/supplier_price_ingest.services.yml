@@ -24,11 +24,13 @@ services:
       - '@logger.factory'
       - '@supplier_price_ingest.fuzzy_scorer'
 
-  # Phase 3.5 — STUB committer. Replaced by the real commit service in
-  # Phase 3.6. The approve form depends on this ID; swapping the
-  # implementation is mechanical (re-register under the same ID).
-  supplier_price_ingest.stub_committer:
-    class: Drupal\supplier_price_ingest\Service\StubCommitter
+  # Phase 3.6 — real committer. Replaces Phase 3.5's StubCommitter
+  # under a new service id (the StubCommitter was always intended as a
+  # placeholder; no backwards-compat needed). Orchestrates per-row
+  # handoff to PriceSyncService::ingestRow().
+  supplier_price_ingest.committer:
+    class: Drupal\supplier_price_ingest\Service\IngestCommitter
     arguments:
       - '@entity_type.manager'
+      - '@wo_material_price_sync.price_sync'
       - '@logger.factory'

@@ -12,3 +12,6 @@ services:
       - '@datetime.time'
       - '@logger.factory'
       - '@wo_material_price_sync.history_writer'
+      # Phase 3.6 — needed by ingestRow() to wrap material_suppliers +
+      # material_price_history writes in a single DB transaction.
+      - '@database'

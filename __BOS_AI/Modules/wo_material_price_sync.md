@@ -64,10 +64,11 @@ Never touches:
 
 ### `wo_material_price_sync.price_sync` → `PriceSyncService`
 
-Holds the decision tree. Two public entry points:
+Holds the decision tree. Three public entry points:
 
 * `validate(EntityInterface, ConstraintViolationListInterface)` — called from `hook_entity_validate`. Pure validation, no side effects.
-* `process(EntityInterface)` — called from insert/update hooks. Performs the catalog mutation and writes history.
+* `process(EntityInterface)` — called from insert/update hooks. Performs the catalog mutation and writes history. **WO-driven entry point.**
+* `ingestRow(EntityInterface $material, EntityInterface $supplier, array $row_data, string $source, ?int $ingest_batch_id = NULL): IngestRowResult` — **feed-import entry point**, added in Phase 3.6 for `supplier_price_ingest`'s `IngestCommitter`. Applies the same decision tree as `process()` but with feed-source attribution and `field_ingest_batch` populated on the audit row. See dedicated section below.
 
 ### `wo_material_price_sync.history_writer` → `PriceHistoryWriter`
 
@@ -127,6 +128,75 @@ Locked in code; do not reorder without spec sign-off.
 ### Supplier SKU on the catalog row
 
 `maybeSetSupplierItemNumber()` only writes the SKU to the `material_suppliers` row when the row's existing SKU is **empty**. Manual office edits to a vendor SKU are never overwritten by WO entries. The history entry, by contrast, always snapshots whatever the crew typed (see history doc).
+
+---
+
+## `ingestRow()` — feed-import entry point (Phase 3.6)
+
+Phase 3.6 added a second public mutation entry point for the supplier-price-ingest pipeline. It exists so feed-driven price changes and WO-driven price changes both flow through the same decision tree (and write to the same audit-history surface that powers `/admin/materials/price-review`).
+
+```php
+public function ingestRow(
+  EntityInterface $material,
+  EntityInterface $supplier,
+  array $row_data,
+  string $source,
+  ?int $ingest_batch_id = NULL
+): IngestRowResult;
+```
+
+**Caller contract:**
+
+- `$material` and `$supplier` are the resolved entities (matcher has already done its work).
+- `$row_data` keys: `unit_cost` (required, numeric), `cost_uom`, `supplier_sku`, `manufacturer_item_number`, `manufacturer_name`, `pack_quantity`, `description`. Only `unit_cost` is hard-required.
+- `$source` MUST be `'feed_import_auto'` or `'feed_import_reviewed'`. Anything else throws `\InvalidArgumentException`. This method is the feed-import entry point only — WO-driven paths use `process()`, manual office paths use the price-review forms directly.
+- `$ingest_batch_id` populates `material_price_history.field_ingest_batch` for audit traceability. Optional defensively; `IngestCommitter` always passes it.
+
+**Behavior — mirrors `process()` decision tree exactly:**
+
+| Pre-state | Outcome |
+|---|---|
+| No `(material, supplier)` link | New row created, `IngestRowResult::status = 'auto_created'` |
+| Link exists, no prior cost | Cost recorded, `status = 'applied'` |
+| Link exists, delta < +THRESHOLD_PERCENT (10%) | Cost updated, `status = 'applied'` |
+| Link exists, delta ≥ +THRESHOLD_PERCENT | Catalog held, audit-only entry written, `status = 'flagged_high'` |
+| Per-row data issue (unit_cost missing, etc.) | `status = 'error'` returned (does NOT throw — caller decides whether to abort the batch) |
+
+The same `THRESHOLD_PERCENT = 10.0` constant from `process()` applies — `>= +10%` is flagged (so an exactly-10% increase is flagged, not applied).
+
+**Transactional integrity:** the `material_suppliers` write and the `material_price_history` write run inside a single DB transaction (`Drupal\Core\Database\Connection::startTransaction()`). If either fails, both roll back.
+
+**Side effect:** `material.field_cost_integer` recomputes via the existing `material.module` MAX-sync on `material_suppliers` save, just as it does for WO-driven applies. No new sync code needed.
+
+### `IngestRowResult` DTO
+
+Readonly value object returned by `ingestRow()`. Lives in the same module (`Drupal\wo_material_price_sync\Service\IngestRowResult`).
+
+```php
+final readonly class IngestRowResult {
+  public string $status;                   // 'applied' | 'flagged_high' | 'auto_created' | 'error'
+  public ?int $materialSuppliersId;        // The created/mutated link id; NULL on error before write
+  public ?int $materialPriceHistoryId;     // The audit entry id; NULL if write failed
+  public string $message;                  // Human-readable summary for logs / dry-run reporting
+  public ?float $deltaPercent = NULL;      // Computed delta for applied/flagged outcomes
+}
+```
+
+### `PriceHistoryWriter::write()` extension (Phase 3.6)
+
+The single writer for `material_price_history` entries gained an optional `$ingest_batch_id` parameter (positional with default NULL) and a widened return type (`bool` → `?int`). Existing callers — all in this file's `PriceSyncService` — pass arguments by name and discard the return; the change is backwards-compatible.
+
+**Source value behavior:** the writer accepts any of the storage's allowed `field_source` values. Feed-driven callers pass `'feed_import_auto'` or `'feed_import_reviewed'`; WO-driven callers continue to pass `'wo_entry'` / `'auto_created'`.
+
+### What's invariant across the two entry points
+
+- Same threshold (10%).
+- Same decision tree.
+- Same audit-history schema; one entry per outcome.
+- Same `material.field_cost_integer` MAX-sync downstream.
+- Same flagged-entries-surface-in-review-queue mechanism.
+
+This is the Phase 2 §3.7 "one review queue, two upstream sources" contract — fully realized as of Phase 3.6.
 
 ---
 

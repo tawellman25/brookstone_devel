@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\wo_material_price_sync\Service;
 
 use Drupal\Component\Datetime\TimeInterface;
+use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
@@ -53,6 +54,7 @@ final class PriceSyncService {
     private readonly TimeInterface $time,
     private readonly LoggerChannelFactoryInterface $loggerFactory,
     private readonly PriceHistoryWriter $historyWriter,
+    private readonly Connection $database,
   ) {}
 
   /**
@@ -165,6 +167,373 @@ final class PriceSyncService {
     }
 
     $this->applyChange($ms_row, $baseline, $entered_cost, $delta_pct, $invoice_number, $supplier_item_number, $wo_id);
+  }
+
+  // ── Phase 3.6 — feed-import entry point ─────────────────────────────
+
+  /**
+   * Apply one supplier-price-ingest row to the catalog.
+   *
+   * Phase 3.6 — unified mutation authority for feed-driven price
+   * changes. IngestCommitter calls this per auto-applying ingest row;
+   * downstream consumers (Phase 3.7 review UI, future
+   * `feed_import_reviewed` paths) call it once per approved review.
+   *
+   * The decision tree is identical to the WO-driven `process()`:
+   *
+   *   no existing (material, supplier) row    → auto_created
+   *   existing row, no prior cost              → applied (first cost)
+   *   existing row, delta < +THRESHOLD_PERCENT → applied
+   *   existing row, delta >= +THRESHOLD_PERCENT → flagged_high
+   *                                             (catalog held; audit only)
+   *
+   * The only differences from `process()`:
+   *   - source value: 'feed_import_auto' or 'feed_import_reviewed' (not 'wo_entry')
+   *   - field_ingest_batch populated on the audit row
+   *   - no WO id reference
+   *   - never throws on per-row data issues; returns IngestRowResult
+   *     with status='error' instead so caller can decide whether to abort.
+   *
+   * The whole catalog mutation + audit write runs inside a database
+   * transaction so the two writes are atomic.
+   *
+   * @param EntityInterface $material
+   *   The BOS material entity (already resolved by the matcher).
+   * @param EntityInterface $supplier
+   *   The supplier entity (the batch's supplier).
+   * @param array $row_data
+   *   Associative array. Required: 'unit_cost' (float), 'cost_uom' (string).
+   *   Optional: 'supplier_sku', 'manufacturer_item_number', 'manufacturer_name',
+   *   'pack_quantity', 'description'.
+   * @param string $source
+   *   Must be 'feed_import_auto' or 'feed_import_reviewed'. Throws on any
+   *   other value — this method is the feed-import entry point; WO-entry
+   *   paths use `process()` and manual paths use the price-review forms.
+   * @param int|null $ingest_batch_id
+   *   The supplier_price_ingest_batch id for audit traceability. Optional
+   *   for defensive future use; IngestCommitter always populates it.
+   *
+   * @throws \InvalidArgumentException
+   *   If $source is not one of the two feed-import values.
+   */
+  public function ingestRow(
+    EntityInterface $material,
+    EntityInterface $supplier,
+    array $row_data,
+    string $source,
+    ?int $ingest_batch_id = NULL,
+  ): IngestRowResult {
+    if (!in_array($source, ['feed_import_auto', 'feed_import_reviewed'], TRUE)) {
+      throw new \InvalidArgumentException(sprintf(
+        'PriceSyncService::ingestRow() $source must be "feed_import_auto" or "feed_import_reviewed"; got "%s".',
+        $source,
+      ));
+    }
+    if (!isset($row_data['unit_cost']) || !is_numeric($row_data['unit_cost'])) {
+      return new IngestRowResult(
+        status: 'error',
+        materialSuppliersId: NULL,
+        materialPriceHistoryId: NULL,
+        message: 'row_data.unit_cost is missing or not numeric',
+      );
+    }
+
+    $material_id = (int) $material->id();
+    $supplier_id = (int) $supplier->id();
+    $new_cost    = (float) $row_data['unit_cost'];
+    $supplier_sku = isset($row_data['supplier_sku'])
+      ? trim((string) $row_data['supplier_sku'])
+      : '';
+    if ($supplier_sku === '') {
+      $supplier_sku = NULL;
+    }
+
+    $transaction = $this->database->startTransaction();
+    try {
+      $ms_storage = $this->entityTypeManager->getStorage('material_suppliers');
+      // Audit derivative: range() must pair with sort() to stay
+      // deterministic when (material, supplier) uniqueness drifts.
+      $ms_ids = $ms_storage->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('field_material', $material_id)
+        ->condition('field_supplier', $supplier_id)
+        ->sort('id', 'ASC')
+        ->range(0, 1)
+        ->execute();
+
+      if (empty($ms_ids)) {
+        return $this->ingestAutoCreate($material_id, $supplier_id, $new_cost, $supplier_sku, $source, $ingest_batch_id);
+      }
+
+      $ms_row = $ms_storage->load(reset($ms_ids));
+      if (!$ms_row) {
+        // Query returned an id but load failed — fall through to error.
+        throw new \RuntimeException(sprintf('material_suppliers id %s returned by query but failed to load.', reset($ms_ids)));
+      }
+
+      $baseline = NULL;
+      if ($ms_row->hasField('field_supplier_unit_cost') && !$ms_row->get('field_supplier_unit_cost')->isEmpty()) {
+        $raw = $ms_row->get('field_supplier_unit_cost')->value;
+        if (is_numeric($raw)) {
+          $baseline = (float) $raw;
+        }
+      }
+
+      if ($baseline === NULL || $baseline <= 0.0) {
+        return $this->ingestFirstCost($ms_row, $new_cost, $supplier_sku, $source, $ingest_batch_id);
+      }
+
+      $delta_pct = (($new_cost - $baseline) / $baseline) * 100.0;
+
+      if ($delta_pct >= self::THRESHOLD_PERCENT) {
+        return $this->ingestFlagHigh($ms_row, $baseline, $new_cost, $delta_pct, $supplier_sku, $source, $ingest_batch_id);
+      }
+      return $this->ingestApply($ms_row, $baseline, $new_cost, $delta_pct, $supplier_sku, $source, $ingest_batch_id);
+    }
+    catch (\Throwable $e) {
+      // Roll back the transaction explicitly. Drupal's transaction
+      // would auto-rollback at destruct, but we want it scoped before
+      // we build the error result so the catalog state is consistent
+      // by the time the caller sees the IngestRowResult.
+      $transaction->rollBack();
+      $this->loggerFactory->get('wo_material_price_sync')->error(
+        'PriceSyncService::ingestRow() failed for material @m / supplier @s / batch @b: @cls @msg',
+        [
+          '@m'   => $material_id,
+          '@s'   => $supplier_id,
+          '@b'   => $ingest_batch_id ?? 'NULL',
+          '@cls' => get_class($e),
+          '@msg' => $e->getMessage(),
+        ],
+      );
+      return new IngestRowResult(
+        status: 'error',
+        materialSuppliersId: NULL,
+        materialPriceHistoryId: NULL,
+        message: get_class($e) . ': ' . $e->getMessage(),
+      );
+    }
+  }
+
+  /**
+   * No existing (material, supplier) row — create one with the feed
+   * cost as its first-known price. History status: auto_created.
+   */
+  private function ingestAutoCreate(
+    int $material_id,
+    int $supplier_id,
+    float $new_cost,
+    ?string $supplier_sku,
+    string $source,
+    ?int $ingest_batch_id,
+  ): IngestRowResult {
+    $today = date('Y-m-d', $this->time->getRequestTime());
+    $batchPart = $ingest_batch_id !== NULL ? "ingest batch #{$ingest_batch_id}" : 'ingest pipeline';
+    $price_notes = "Auto-created from {$batchPart} on {$today}";
+
+    $values = [
+      'type' => 'supplier',
+      'field_material' => ['target_id' => $material_id],
+      'field_supplier' => ['target_id' => $supplier_id],
+      'field_supplier_unit_cost' => $new_cost,
+      'field_price_effective_date' => $today,
+      'field_price_source' => 'invoice',
+      'field_price_notes' => $price_notes,
+    ];
+    if ($supplier_sku !== NULL) {
+      $values['field_supplier_item_number'] = $supplier_sku;
+    }
+    $row = $this->entityTypeManager->getStorage('material_suppliers')->create($values);
+    $row->save();
+    $ms_id = (int) $row->id();
+
+    $context = "New (material, supplier) pairing created by feed ingest "
+      . ($ingest_batch_id !== NULL ? "(batch #{$ingest_batch_id})." : '(no batch id).');
+
+    $history_id = $this->historyWriter->write(
+      material_id: $material_id,
+      supplier_id: $supplier_id,
+      old_cost: NULL,
+      new_cost: $new_cost,
+      delta_percent: NULL,
+      source: $source,
+      status: 'auto_created',
+      wo_id: NULL,
+      invoice_number: NULL,
+      supplier_item_number: $supplier_sku,
+      change_notes: $context,
+      ingest_batch_id: $ingest_batch_id,
+    );
+
+    return new IngestRowResult(
+      status: 'auto_created',
+      materialSuppliersId: $ms_id,
+      materialPriceHistoryId: $history_id,
+      message: $context,
+    );
+  }
+
+  /**
+   * Existing pair but no prior cost — record entered cost as the first
+   * known. History status: applied. Mirrors `firstCostRecorded()` for
+   * the WO-driven flow but with feed-source attribution.
+   */
+  private function ingestFirstCost(
+    EntityInterface $ms_row,
+    float $new_cost,
+    ?string $supplier_sku,
+    string $source,
+    ?int $ingest_batch_id,
+  ): IngestRowResult {
+    $today = date('Y-m-d', $this->time->getRequestTime());
+    $batchPart = $ingest_batch_id !== NULL ? "ingest batch #{$ingest_batch_id}" : 'ingest pipeline';
+
+    $existing_notes = '';
+    if ($ms_row->hasField('field_price_notes') && !$ms_row->get('field_price_notes')->isEmpty()) {
+      $existing_notes = trim((string) $ms_row->get('field_price_notes')->value);
+    }
+    $append = "First cost recorded from {$batchPart} on {$today}";
+    $combined_notes = $existing_notes !== '' ? $existing_notes . "\n" . $append : $append;
+
+    $ms_row->set('field_supplier_unit_cost', $new_cost);
+    $ms_row->set('field_price_effective_date', $today);
+    $ms_row->set('field_price_source', 'invoice');
+    $ms_row->set('field_price_notes', $combined_notes);
+    $this->maybeSetSupplierItemNumber($ms_row, $supplier_sku);
+    $ms_row->save();
+
+    $material_id = (int) $ms_row->get('field_material')->target_id;
+    $supplier_id = (int) $ms_row->get('field_supplier')->target_id;
+
+    $history_id = $this->historyWriter->write(
+      material_id: $material_id,
+      supplier_id: $supplier_id,
+      old_cost: NULL,
+      new_cost: $new_cost,
+      delta_percent: NULL,
+      source: $source,
+      status: 'applied',
+      wo_id: NULL,
+      invoice_number: NULL,
+      supplier_item_number: $supplier_sku,
+      change_notes: "First cost recorded for this pairing via feed ingest.",
+      ingest_batch_id: $ingest_batch_id,
+    );
+
+    return new IngestRowResult(
+      status: 'applied',
+      materialSuppliersId: (int) $ms_row->id(),
+      materialPriceHistoryId: $history_id,
+      message: "First cost {$new_cost} recorded.",
+    );
+  }
+
+  /**
+   * Increase exceeds +THRESHOLD_PERCENT — catalog held, audit-only
+   * history entry surfaces in the price-review queue. History status:
+   * flagged_high.
+   */
+  private function ingestFlagHigh(
+    EntityInterface $ms_row,
+    float $baseline,
+    float $new_cost,
+    float $delta_pct,
+    ?string $supplier_sku,
+    string $source,
+    ?int $ingest_batch_id,
+  ): IngestRowResult {
+    $delta_str = number_format($delta_pct, 1);
+    $threshold_str = number_format(self::THRESHOLD_PERCENT, 0);
+    $batchPart = $ingest_batch_id !== NULL ? "ingest batch #{$ingest_batch_id}" : 'ingest pipeline';
+
+    $notes = "Price increase of {$delta_str}% exceeds {$threshold_str}% threshold. Catalog NOT updated. Office Manager review required. Source: {$batchPart}.";
+
+    $material_id = (int) $ms_row->get('field_material')->target_id;
+    $supplier_id = (int) $ms_row->get('field_supplier')->target_id;
+
+    $history_id = $this->historyWriter->write(
+      material_id: $material_id,
+      supplier_id: $supplier_id,
+      old_cost: $baseline,
+      new_cost: $new_cost,
+      delta_percent: $delta_pct,
+      source: $source,
+      status: 'flagged_high',
+      wo_id: NULL,
+      invoice_number: NULL,
+      supplier_item_number: $supplier_sku,
+      change_notes: $notes,
+      ingest_batch_id: $ingest_batch_id,
+    );
+
+    return new IngestRowResult(
+      status: 'flagged_high',
+      materialSuppliersId: (int) $ms_row->id(),
+      materialPriceHistoryId: $history_id,
+      message: "Flagged: +{$delta_str}% exceeds {$threshold_str}% threshold.",
+      deltaPercent: round($delta_pct, 2),
+    );
+  }
+
+  /**
+   * Within threshold or any decrease — apply the price change to the
+   * catalog (which triggers material.module's MAX-sync). History
+   * status: applied.
+   */
+  private function ingestApply(
+    EntityInterface $ms_row,
+    float $baseline,
+    float $new_cost,
+    float $delta_pct,
+    ?string $supplier_sku,
+    string $source,
+    ?int $ingest_batch_id,
+  ): IngestRowResult {
+    $today = date('Y-m-d', $this->time->getRequestTime());
+    $batchPart = $ingest_batch_id !== NULL ? "ingest batch #{$ingest_batch_id}" : 'ingest pipeline';
+
+    $existing_notes = '';
+    if ($ms_row->hasField('field_price_notes') && !$ms_row->get('field_price_notes')->isEmpty()) {
+      $existing_notes = trim((string) $ms_row->get('field_price_notes')->value);
+    }
+    $append = "Updated from {$batchPart} on {$today}";
+    $combined_notes = $existing_notes !== '' ? $existing_notes . "\n" . $append : $append;
+
+    $ms_row->set('field_supplier_unit_cost', $new_cost);
+    $ms_row->set('field_price_effective_date', $today);
+    $ms_row->set('field_price_source', 'invoice');
+    $ms_row->set('field_price_notes', $combined_notes);
+    $this->maybeSetSupplierItemNumber($ms_row, $supplier_sku);
+    $ms_row->save();
+
+    $material_id = (int) $ms_row->get('field_material')->target_id;
+    $supplier_id = (int) $ms_row->get('field_supplier')->target_id;
+
+    $delta_str = number_format($delta_pct, 1);
+    $notes = "Catalog updated to {$new_cost} ({$delta_str}% delta) via feed ingest.";
+
+    $history_id = $this->historyWriter->write(
+      material_id: $material_id,
+      supplier_id: $supplier_id,
+      old_cost: $baseline,
+      new_cost: $new_cost,
+      delta_percent: $delta_pct,
+      source: $source,
+      status: 'applied',
+      wo_id: NULL,
+      invoice_number: NULL,
+      supplier_item_number: $supplier_sku,
+      change_notes: $notes,
+      ingest_batch_id: $ingest_batch_id,
+    );
+
+    return new IngestRowResult(
+      status: 'applied',
+      materialSuppliersId: (int) $ms_row->id(),
+      materialPriceHistoryId: $history_id,
+      message: "Applied: {$baseline} → {$new_cost} ({$delta_str}%)",
+      deltaPercent: round($delta_pct, 2),
+    );
   }
 
   // ── Skip / change-detection helpers ─────────────────────────────────

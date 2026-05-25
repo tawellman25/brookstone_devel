@@ -65,7 +65,7 @@ This entity exists so the office can answer:
 | `field_review_notes`              | string_long                       | Office Manager's notes from the approve/reject decision. NULL until reviewed.                                          |
 | `field_reviewed_by`               | entity_reference → user           | The Office Manager (or admin) who decided. NULL until reviewed.                                                        |
 | `field_reviewed_on`               | datetime                          | When the review was performed. NULL until reviewed.                                                                    |
-| `field_ingest_batch`              | entity_reference → supplier_price_ingest_batch | **Added 2026-05-25 (Phase 3.1).** Set when this entry originated from a supplier price ingest. Links to the batch that produced it. NULL for all non-ingest sources. Form-display placement: inside the existing "Source / Origin" fieldset group, immediately after `field_wo_reference`. View display: visible as inline reference label. |
+| `field_ingest_batch`              | entity_reference → supplier_price_ingest_batch | **Added 2026-05-25 (Phase 3.1).** Set when this entry originated from a supplier price ingest. Links to the batch that produced it. NULL for all non-ingest sources. Form-display placement: inside the existing "Source / Origin" fieldset group, immediately after `field_wo_reference`. View display: visible as inline reference label. **Live as of Phase 3.6** — `IngestCommitter` → `PriceSyncService::ingestRow()` → `PriceHistoryWriter::write($..., ingest_batch_id: $batch_id)` populates this on every feed-driven entry. |
 
 ### `field_source` Allowed Values
 

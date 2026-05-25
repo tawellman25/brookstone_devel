@@ -32,7 +32,17 @@ $view->set('label', 'Supplier Ingest Configs');
 $view->set('module', 'views');
 $view->set('description', 'Admin list of supplier_ingest_config entities — per-supplier ingest configurations.');
 $view->set('tag', 'supplier_price_ingest');
-$view->set('base_table', 'supplier_ingest_config');
+// IMPORTANT: base_table must be the `_field_data` table, not the bare
+// entity table. ECK / standard Drupal content-entity storage puts the
+// base fields (id, title, created, changed, status, etc.) on the
+// `{entity}_field_data` table. The bare entity table only carries
+// (id, type, uuid, langcode) and operations / entity_browser meta-
+// fields. Pointing a view at the bare entity table means Views can't
+// resolve title / changed / created / configured fields and renders
+// SQL like ORDER BY "unknown" DESC → fatal.
+// Same pattern used by views.view.materials (base_table:
+// material_field_data) and every other working BOS ECK view.
+$view->set('base_table', 'supplier_ingest_config_field_data');
 $view->set('base_field', 'id');
 
 $display = [
@@ -96,7 +106,9 @@ $display = [
         ],
         'changed' => [
           'id' => 'changed',
-          'table' => 'supplier_ingest_config',
+          // 'changed' lives on the _field_data table along with the
+          // other base fields. See base_table comment above.
+          'table' => 'supplier_ingest_config_field_data',
           'field' => 'changed',
           'relationship' => 'none',
           'plugin_id' => 'field',
@@ -106,6 +118,8 @@ $display = [
         ],
         'operations' => [
           'id' => 'operations',
+          // 'operations' is a Views meta-field on the bare entity table
+          // (not on _field_data) — that one stays as-is.
           'table' => 'supplier_ingest_config',
           'field' => 'operations',
           'relationship' => 'none',
@@ -117,7 +131,7 @@ $display = [
       'sorts' => [
         'changed' => [
           'id' => 'changed',
-          'table' => 'supplier_ingest_config',
+          'table' => 'supplier_ingest_config_field_data',
           'field' => 'changed',
           'relationship' => 'none',
           'plugin_id' => 'date',

@@ -11,6 +11,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\file\FileRepositoryInterface;
+use Drupal\supplier_price_ingest\Service\IngestMatcher;
 use Drupal\supplier_price_ingest\Service\IngestParser;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -30,6 +31,7 @@ class BatchUploadForm extends FormBase {
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly FileRepositoryInterface $fileRepository,
     private readonly IngestParser $parser,
+    private readonly IngestMatcher $matcher,
     private readonly AccountInterface $currentUser,
   ) {}
 
@@ -38,6 +40,7 @@ class BatchUploadForm extends FormBase {
       $container->get('entity_type.manager'),
       $container->get('file.repository'),
       $container->get('supplier_price_ingest.parser'),
+      $container->get('supplier_price_ingest.matcher'),
       $container->get('current_user'),
     );
   }
@@ -151,12 +154,12 @@ class BatchUploadForm extends FormBase {
     }
 
     if ($rowCount <= IngestParser::SYNCHRONOUS_PARSE_THRESHOLD) {
-      // Small file — parse inline.
+      // Small file — parse + match inline.
       try {
-        $result = $this->parser->parseUploadedFile($batch);
+        $parseResult = $this->parser->parseUploadedFile($batch);
         $this->messenger()->addStatus($this->t(
           'Batch @bid parsed: @summary',
-          ['@bid' => $batch->id(), '@summary' => $result->summary()],
+          ['@bid' => $batch->id(), '@summary' => $parseResult->summary()],
         ));
       }
       catch (\Throwable $e) {
@@ -164,20 +167,44 @@ class BatchUploadForm extends FormBase {
           'Parse failed: @msg. Batch status is now "failed" — see batch detail.',
           ['@msg' => $e->getMessage()],
         ));
+        $form_state->setRedirect('supplier_price_ingest.batch_view', ['supplier_price_ingest_batch' => $batch->id()]);
+        return;
+      }
+      // Reload the batch fresh — parser may have changed status / counts.
+      $batch = $this->entityTypeManager->getStorage('supplier_price_ingest_batch')->load($batch->id());
+      if ((string) ($batch->get('field_status')->value ?? '') === 'pending_dry_run') {
+        // Parse succeeded; run matcher.
+        try {
+          $matchResult = $this->matcher->matchBatch($batch);
+          $this->messenger()->addStatus($this->t(
+            'Batch @bid matched: @summary',
+            ['@bid' => $batch->id(), '@summary' => $matchResult->summary()],
+          ));
+        }
+        catch (\Throwable $e) {
+          $this->messenger()->addError($this->t(
+            'Match failed: @msg. Batch status is now "failed" — see batch detail.',
+            ['@msg' => $e->getMessage()],
+          ));
+        }
       }
       $form_state->setRedirect('supplier_price_ingest.batch_view', ['supplier_price_ingest_batch' => $batch->id()]);
       return;
     }
 
-    // Large file — Batch API. The parser handles any count; we just
-    // wrap the call so Drupal shows a progress bar.
+    // Large file — Batch API. Parse + match in sequence. Each is its
+    // own operation so progress reflects the current stage.
     $builder = (new BatchBuilder())
-      ->setTitle($this->t('Parsing @count rows from @file', [
+      ->setTitle($this->t('Processing @count rows from @file', [
         '@count' => $rowCount,
         '@file' => $file->getFilename(),
       ]))
       ->addOperation(
         [self::class, 'batchParseOperation'],
+        [(int) $batch->id()],
+      )
+      ->addOperation(
+        [self::class, 'batchMatchOperation'],
         [(int) $batch->id()],
       )
       ->setFinishCallback([self::class, 'batchFinishCallback']);
@@ -186,27 +213,63 @@ class BatchUploadForm extends FormBase {
   }
 
   /**
-   * Batch API operation — runs the parse in a single step.
+   * Batch API operation — parse stage.
    *
    * The parser handles any row count internally without needing the
    * batch system to chunk it; we use Batch API here primarily to give
    * the user a progress page during long parses, not to actually slice
-   * the work. If parses get genuinely slow (>30s), we'll chunk in 3.3+.
+   * the work. If parses get genuinely slow (>30s), we'll chunk later.
    */
   public static function batchParseOperation(int $batchId, array &$context): void {
     $batch = \Drupal::entityTypeManager()->getStorage('supplier_price_ingest_batch')->load($batchId);
     if (!$batch) {
-      $context['results']['error'] = "Batch entity $batchId not loadable.";
+      $context['results']['parse_error'] = "Batch entity $batchId not loadable.";
+      $context['results']['batch_id'] = $batchId;
+      $context['finished'] = 1;
       return;
     }
     try {
       $result = \Drupal::service('supplier_price_ingest.parser')->parseUploadedFile($batch);
-      $context['results']['summary'] = $result->summary();
+      $context['results']['parse_summary'] = $result->summary();
       $context['results']['batch_id'] = $batchId;
     }
     catch (\Throwable $e) {
-      $context['results']['error'] = $e->getMessage();
+      $context['results']['parse_error'] = $e->getMessage();
       $context['results']['batch_id'] = $batchId;
+    }
+    $context['finished'] = 1;
+  }
+
+  /**
+   * Batch API operation — match stage. Runs after parse.
+   *
+   * Defensively re-loads the batch (parser may have set status='failed')
+   * and skips if so.
+   */
+  public static function batchMatchOperation(int $batchId, array &$context): void {
+    // If parse stage errored, don't run matcher.
+    if (!empty($context['results']['parse_error'])) {
+      $context['finished'] = 1;
+      return;
+    }
+    $batch = \Drupal::entityTypeManager()->getStorage('supplier_price_ingest_batch')->load($batchId);
+    if (!$batch) {
+      $context['results']['match_error'] = "Batch entity $batchId not loadable after parse.";
+      $context['finished'] = 1;
+      return;
+    }
+    $status = (string) ($batch->get('field_status')->value ?? '');
+    if ($status !== 'pending_dry_run') {
+      $context['results']['match_error'] = "Batch $batchId status is '$status'; matcher only runs on 'pending_dry_run'.";
+      $context['finished'] = 1;
+      return;
+    }
+    try {
+      $result = \Drupal::service('supplier_price_ingest.matcher')->matchBatch($batch);
+      $context['results']['match_summary'] = $result->summary();
+    }
+    catch (\Throwable $e) {
+      $context['results']['match_error'] = $e->getMessage();
     }
     $context['finished'] = 1;
   }
@@ -220,15 +283,20 @@ class BatchUploadForm extends FormBase {
       $messenger->addError(t('Batch run did not complete.'));
       return;
     }
-    if (isset($results['error'])) {
-      $messenger->addError(t('Parse failed: @msg', ['@msg' => $results['error']]));
+    $bid = $results['batch_id'] ?? '?';
+    if (isset($results['parse_error'])) {
+      $messenger->addError(t('Batch @bid parse failed: @msg', ['@bid' => $bid, '@msg' => $results['parse_error']]));
       return;
     }
-    if (isset($results['summary'])) {
-      $messenger->addStatus(t('Batch @bid parsed: @summary', [
-        '@bid' => $results['batch_id'] ?? '?',
-        '@summary' => $results['summary'],
-      ]));
+    if (isset($results['parse_summary'])) {
+      $messenger->addStatus(t('Batch @bid parsed: @summary', ['@bid' => $bid, '@summary' => $results['parse_summary']]));
+    }
+    if (isset($results['match_error'])) {
+      $messenger->addError(t('Batch @bid match failed: @msg', ['@bid' => $bid, '@msg' => $results['match_error']]));
+      return;
+    }
+    if (isset($results['match_summary'])) {
+      $messenger->addStatus(t('Batch @bid matched: @summary', ['@bid' => $bid, '@summary' => $results['match_summary']]));
     }
   }
 

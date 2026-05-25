@@ -4,7 +4,8 @@ Machine name: `supplier_price_ingest`
 Package: `Brookstone Outdoors`
 Status:
 - **Phase 3.1 shipped 2026-05-25** — data-model foundation only.
-- **Phase 3.2 shipped 2026-05-25** — parser service (`IngestParser`), supplier ingest config admin (form alter + JSON validation), batch upload form, presave validation hook. Matching, dry-run UI, and commit pipeline still ahead.
+- **Phase 3.2 shipped 2026-05-25** — parser service (`IngestParser`), supplier ingest config admin (form alter + JSON validation), batch upload form, presave validation hook.
+- **Phase 3.3 shipped 2026-05-25** — matcher service (`IngestMatcher`) with Tier 1 (manufacturer item #), Tier 2 (existing material_suppliers SKU), discontinued material retargeting, bundle policy enforcement, discovery routing, and supplier-do-not-use short-circuit. Parser auto-invokes matcher after parse. Tier 3 fuzzy matching still ahead in 3.4.
 
 ---
 
@@ -261,11 +262,152 @@ Script is kept at `web/scripts/verify_supplier_price_ingest_parser.php` as a sib
 
 ---
 
+## Phase 3.3 — Matcher Service (Tiers 1 + 2)
+
+### `IngestMatcher` service
+
+Class: `Drupal\supplier_price_ingest\Service\IngestMatcher`
+Service ID: `supplier_price_ingest.matcher`
+DI: `entity_type.manager`, `database`, `logger.factory`
+
+Public API:
+
+```php
+public function matchBatch(EntityInterface $batch): MatchResult;
+```
+
+Preconditions:
+- Batch must be in status `pending_dry_run`. Other statuses are rejected with a clear exception. Re-matching an already-matched batch is a separate admin operation (deferred to a later phase).
+
+Behavior:
+
+1. Load the batch's supplier. If supplier carries `field_supplier_status = 'do_not_use'`, **short-circuit**: tag every row as `skipped_do_not_use`, transition batch → `dry_run_complete`, return early. No matching attempted.
+2. Load `supplier_ingest_config` for the supplier (errors if missing). Memoize the parsed bundle-policy JSON per batch.
+3. Stream rows in chunks of 100, only processing those where `field_match_tier IS NULL` (parser-errored rows already have `tier='error'`).
+4. Apply the decision tree (below). Per-row exceptions are caught, the row is tagged `error`, and the batch continues.
+5. After all rows processed, recompute batch row-count rollups by querying the persisted rows (single source of truth).
+6. Transition batch `pending_dry_run` → `dry_run_complete`.
+7. Return `MatchResult` DTO.
+
+On unrecoverable failure (missing config, etc.), batch transitions to `failed` and the exception is re-thrown. The placeholder batch view surfaces the failure.
+
+### Decision tree
+
+For each row, in order:
+
+**Tier 1 — Manufacturer Item Number**
+- Precondition: `field_manufacturer_name` AND `field_manufacturer_item_number` both non-empty.
+- Resolve manufacturer entity by title match (relies on DB `_ci` collation for case-insensitive). If no manufacturer entity exists for the row's brand string → fall through to Tier 2 (the brand just isn't in BOS yet).
+- Query `material` entities by `field_manufacturer = <mfr> AND field_manufacturer_item_number = <item#>`. **No bundle-exclusion pre-filter** — the match must be visible to `applyMatch()` so the `skipped_excluded_bundle` route can fire correctly.
+- Outcomes:
+  - **Exactly one match** → direct hit. Apply discontinued handling + bundle policy. Final disposition: `tier_1_mfr` (confidence 100) or `skipped_discontinued` / `skipped_excluded_bundle` per gates.
+  - **Multiple matches** → ambiguous. Pick lowest-id material as reference. `field_match_tier = 'tier_3_fuzzy_med'`, confidence 50, note lists all candidate IDs.
+  - **Zero matches** → fall through to Tier 2.
+
+**Tier 2 — Existing material_suppliers SKU**
+- Precondition: `field_supplier_sku` non-empty.
+- Query `material_suppliers` by `field_supplier = <batch supplier> AND field_supplier_item_number = <row sku>`.
+- Outcomes:
+  - **Exactly one match** → direct hit. Set `field_existing_link`. Apply discontinued handling + bundle policy. Final disposition: `tier_2_supplier_sku` (confidence 100) or `skipped_discontinued` / `skipped_excluded_bundle` per gates.
+  - **Multiple matches** → "defensive" outcome — violates the `(material × supplier)` uniqueness convention. Treat as ambiguous: `tier_3_fuzzy_med`, confidence 50, WARNING logged for investigation.
+  - **Zero matches** → discovery routing.
+
+**Tier 3 fuzzy — DEFERRED to Phase 3.4**
+- The decision tree is structured so 3.4 inserts cleanly between Tier 2 and discovery routing.
+
+**Discovery routing (when no Tier 1 / Tier 2 match)**
+- Scan supplier's bundle policy values. If any bundle has policy `discovery` or `both` → `field_match_tier = 'discovery'`, confidence 0. Reviewer routes manually.
+- If ALL bundles are `matched_only` or `excluded` → `field_match_tier = 'skipped_excluded_bundle'`, no matched material, note explains the supplier's policy excludes discovery. (This avoids creating noise for suppliers like Denver Brass that aren't supposed to introduce new materials.)
+
+### Discontinued material handling
+
+Applied within Tier 1 / Tier 2 after a direct match is found:
+
+| Material state | Outcome |
+|---|---|
+| `field_discontinued` false / unset | Match stands. Confidence 100. |
+| Discontinued, `field_replaced_by` set | **Retarget** to replacement. `field_matched_material` = replacement id. Confidence **95** (structural inference discount). Note records both ids. Tier stays `tier_1_mfr` / `tier_2_supplier_sku`. Bundle policy then re-checked against the replacement's bundle. |
+| Discontinued, no replacement | **Orphan rejection.** `field_match_tier = 'skipped_discontinued'`, no matched material, note explains and prompts the reviewer to consider setting `field_replaced_by` on the discontinued material. Row appears in the discovery queue for human routing. |
+
+`field_replaced_by` resolution is single-hop with self-reference guard. We don't chase chains because the field's semantic is "current replacement," not "next link in a chain."
+
+### Bundle policy enforcement
+
+Applied after match + discontinued handling. Read `policy[<final_material.bundle>]`, default `matched_only`:
+
+| Policy | Outcome |
+|---|---|
+| `matched_only` / `discovery` / `both` | Match stands. |
+| `excluded` | `field_match_tier = 'skipped_excluded_bundle'`, no matched material, note records the exclusion. |
+
+The `excluded` outcome is the gate that lets an irrigation-only supplier ship a few landscape rows without those rows landing in the catalog.
+
+### MatchResult value object
+
+Class: `Drupal\supplier_price_ingest\Service\MatchResult`
+
+Fields: `rowsProcessed`, `tier1Matches`, `tier2Matches`, `tier1Ambiguous`, `discoveryRows`, `skippedDiscontinued`, `skippedExcludedBundle`, `skippedDoNotUse`, `errors`, `matchErrors[]`.
+
+`summary(): string` — one-line for logging.
+
+### Auto-invocation wiring
+
+`BatchUploadForm` runs parser → matcher as a chain:
+
+- **Synchronous (≤500 rows):** parser submit handler runs inline; on success the matcher runs immediately after. Either failure transitions the batch to `failed` and the form layer surfaces an error.
+- **Batch API (>500 rows):** two BatchBuilder operations are registered — `batchParseOperation` then `batchMatchOperation`. The match operation defensively checks that parse didn't error and that batch status is still `pending_dry_run` before running.
+
+### Phase 3.3 parser correction (UOM strictness)
+
+The Phase 3.2 review noted that the parser silently fell back to the default UOM for ANY unmapped source UOM string, masking real data problems (a "gallon" UOM mapped to "each"). Phase 3.3 changes the behavior:
+
+- **Empty / whitespace source UOM** → fall back to `field_default_cost_uom` (unchanged).
+- **Non-empty unmapped UOM** → row marked `field_match_tier = 'error'` with `field_resolution_notes`: `"Unrecognized UOM in source: '<original>'. Expected one of: each, case, box, bag, roll."`
+
+Mystery UOMs now surface in the dry-run report so the office can decide: expand `allowed_values`, fix the supplier's column mapping, or treat the source row as data error.
+
+### Files added in Phase 3.3
+
+| File | Purpose |
+|---|---|
+| `src/Service/IngestMatcher.php` | Matcher service |
+| `src/Service/MatchResult.php` | Matcher result DTO |
+| `web/scripts/verify_supplier_price_ingest_matcher.php` | 8-step verification with full fixtures |
+
+### Files modified in Phase 3.3
+
+- `src/Service/IngestParser.php` — UOM strictness fix (small change, two-line note added explaining the behavior change).
+- `src/Form/BatchUploadForm.php` — wired matcher into the sync + Batch API paths; added `batchMatchOperation` and adjusted finish callback to report both parse + match summaries.
+- `supplier_price_ingest.services.yml` — registered `supplier_price_ingest.matcher`.
+- `web/scripts/verify_supplier_price_ingest_parser.php` — Step 7 expectation updated for UOM strictness, new Step 9 covers the strict-error path.
+
+### Phase 3.3 verification
+
+`web/scripts/verify_supplier_price_ingest_matcher.php` exercises all eight paths from the spec:
+
+| # | Scenario | Result |
+|---:|---|---|
+| 1 | Clean Tier 1 (2 rows) | **PASS** — tier_1_mfr, confidence 100, correct material |
+| 2 | Tier 1 → discontinued WITH `field_replaced_by` | **PASS** — retargeted, confidence 95, note records both ids |
+| 3 | Tier 1 → discontinued WITHOUT replacement | **PASS** — skipped_discontinued, no matched material, note prompts review |
+| 4 | Tier 1 ambiguous (2 materials same mfr+item#) | **PASS** — tier_3_fuzzy_med, confidence 50, picks lowest id, note lists candidates |
+| 5 | Tier 2 hit (no Tier 1 candidate) | **PASS** — tier_2_supplier_sku, confidence 100, field_existing_link set |
+| 6 | Discovery routing (2 rows) | **PASS** — discovery, confidence 0 |
+| 7 | Excluded bundle (Tier 2 match against plants material) | **PASS** — skipped_excluded_bundle, no matched material |
+| 8 | Supplier `do_not_use` short-circuit | **PASS** — all rows skipped_do_not_use, batch → dry_run_complete |
+
+Plus batch row-count rollups verified against actual row entity counts.
+
+**Trap encountered during verification:** AEL on `manufacturer` and `supplier` entities overrides `title` with `[manufacturer:field_name]` / `[supplier:field_supplier_name]`. Test fixtures originally set `title` directly, which AEL nuked to empty string, making the manufacturer un-queryable by title. Fixed by setting `field_name` / `field_supplier_name` in the fixtures (so AEL has a value to interpolate). Same family as the sprinkler_check_up AEL trap from the broader codebase.
+
+---
+
 ## Status
 
 - **Phase 3.1** — shipped 2026-05-25 (commit `911c2221`).
-- **Phase 3.2** — shipped 2026-05-25 (commit on `feature/supplier-price-ingest`).
+- **Phase 3.2** — shipped 2026-05-25 (commit `96571a39`).
+- **Phase 3.3** — shipped 2026-05-25 (commit on `feature/supplier-price-ingest`).
 
 Branch: `feature/supplier-price-ingest`.
 
-Next phase: 3.3 — Matching service. Tier 1 (manufacturer item #), Tier 2 (existing supplier SKU), Tier 3 (fuzzy with confidence scoring + bundle inference), discovery routing per bundle policy. Status transition `pending_dry_run` → `dry_run_complete` happens at the end of the matcher's run.
+Next phase: 3.4 — Tier 3 fuzzy matching with confidence scoring and bundle inference from row description.

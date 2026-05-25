@@ -269,19 +269,22 @@ try {
     $rows2 = $etm->getStorage('supplier_price_ingest_row')->loadByProperties(['field_batch' => $batch2->id()]);
     foreach ($rows2 as $r) $cleanup['rows'][] = (int) $r->id();
     $erroredEntities = array_filter($rows2, fn($r) => ($r->get('field_match_tier')->value ?? '') === 'error');
-    // Expected behavior:
-    //   - SKU-100 valid → created
-    //   - empty SKU/no-price row → skipped (no identifier AND no cost)
-    //   - SKU-101 bad price "not-a-number" → row entity created, marked errored
-    //   - SKU-102 "gallon" UOM → falls back to default_cost_uom='each' (NOT errored)
-    //   - SKU-103 valid → created
-    // So: 3 rows created (1 errored), 1 skipped.
+    // Expected behavior (Phase 3.3 UOM strictness):
+    //   - SKU-100 valid → created (clean)
+    //   - empty SKU/no-price row → skipped (no entity created)
+    //   - SKU-101 bad price → errored (entity created, field_match_tier='error')
+    //   - SKU-102 "gallon" UOM (non-empty, unmapped) → errored. Phase 3.3
+    //     changed this from silent fall-back to strict-error so unrecognized
+    //     UOMs surface for human review.
+    //   - SKU-103 valid → created (clean)
+    // ParseResult: created and errored are mutually exclusive return
+    // statuses. So: 2 created, 2 errored, 1 skipped. Total entities = 4.
     $checks7 = [
       'no_crash' => TRUE,
-      'created_3' => $result2->rowsCreated === 3,
+      'created_2' => $result2->rowsCreated === 2,
       'skipped_1' => $result2->rowsSkipped === 1,
-      'errored_1' => $result2->rowsErrored === 1,
-      'errored_rows_marked' => count($erroredEntities) === 1,
+      'errored_2' => $result2->rowsErrored === 2,
+      'errored_rows_marked_2' => count($erroredEntities) === 2,
     ];
     foreach ($checks7 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
     $results['step7_broken_csv'] = !in_array(FALSE, $checks7, TRUE) ? 'PASS' : 'FAIL';
@@ -333,6 +336,53 @@ try {
   ];
   foreach ($checks8 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
   $results['step8_xlsx'] = !in_array(FALSE, $checks8, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 9: unmapped UOM error contains original value + allowed list ──
+  echo "\n=== Step 9: non-empty unmapped UOM errors with helpful note ===\n";
+  $uomCsv = "Item Number,Mfr Part #,Brand,Description,Price,UOM,Pack Qty\n"
+          . "SKU-200,TEST-200,TestMfr,Has weird UOM,5.00,FurlongPerFortnight,1\n"
+          . "SKU-201,TEST-201,TestMfr,Empty UOM falls back to default,7.00,,1\n";
+  $uomFile = $fileRepo->writeData($uomCsv, 'public://supplier_ingest/spi_test_uom_strict.csv', FileSystemInterface::EXISTS_REPLACE);
+  $uomFile->setPermanent();
+  $uomFile->save();
+  $cleanup['files'][] = (int) $uomFile->id();
+
+  $batch4 = $etm->getStorage('supplier_price_ingest_batch')->create([
+    'type' => 'batch',
+    'title' => 'TEST BATCH — UOM strict',
+    'uid' => 1,
+    'field_supplier' => $supplierId,
+    'field_source_file' => $uomFile->id(),
+    'field_source_filename' => 'spi_test_uom_strict.csv',
+    'field_uploaded_by' => 1,
+    'field_uploaded_on' => date('Y-m-d\TH:i:s'),
+    'field_status' => 'pending_dry_run',
+  ]);
+  $batch4->save();
+  $cleanup['batches'][] = (int) $batch4->id();
+
+  $result4 = $parser->parseUploadedFile($batch4);
+  echo "  parser: " . $result4->summary() . "\n";
+  $rows4 = $etm->getStorage('supplier_price_ingest_row')->loadByProperties(['field_batch' => $batch4->id()]);
+  foreach ($rows4 as $r) $cleanup['rows'][] = (int) $r->id();
+
+  // Locate the FurlongPerFortnight row and verify the note.
+  $weirdRow = NULL;
+  $emptyRow = NULL;
+  foreach ($rows4 as $r) {
+    if ($r->get('field_supplier_sku')->value === 'SKU-200') $weirdRow = $r;
+    if ($r->get('field_supplier_sku')->value === 'SKU-201') $emptyRow = $r;
+  }
+  $note = $weirdRow ? (string) $weirdRow->get('field_resolution_notes')->value : '';
+  $checks9 = [
+    'weird_row_errored' => $weirdRow && ($weirdRow->get('field_match_tier')->value === 'error'),
+    'note_has_original_value' => str_contains($note, 'FurlongPerFortnight'),
+    'note_has_allowed_list' => str_contains($note, 'each') && str_contains($note, 'roll'),
+    'empty_uom_fell_back_to_default' => $emptyRow && ($emptyRow->get('field_cost_uom')->value === 'each'),
+    'empty_uom_not_errored' => $emptyRow && ($emptyRow->get('field_match_tier')->value !== 'error'),
+  ];
+  foreach ($checks9 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step9_unmapped_uom_errors'] = !in_array(FALSE, $checks9, TRUE) ? 'PASS' : 'FAIL';
 }
 finally {
   // Cleanup

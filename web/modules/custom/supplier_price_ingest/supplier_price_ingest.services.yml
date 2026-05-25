@@ -1,5 +1,6 @@
 # Phase 3.2 — IngestParser service.
-# Matcher, dry-run reporter, commit pipeline services land in 3.3+.
+# Phase 3.3 — IngestMatcher service (Tiers 1 + 2 + discovery routing).
+# Dry-run reporter (3.5), commit pipeline (3.6) services still ahead.
 
 services:
   supplier_price_ingest.parser:
@@ -9,3 +10,10 @@ services:
       - '@file.repository'
       - '@logger.factory'
       - '@current_user'
+
+  supplier_price_ingest.matcher:
+    class: Drupal\supplier_price_ingest\Service\IngestMatcher
+    arguments:
+      - '@entity_type.manager'
+      - '@database'
+      - '@logger.factory'

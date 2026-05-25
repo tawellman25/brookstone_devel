@@ -42,27 +42,38 @@ All optional — some supplier feeds omit fields:
 - `field_cost_uom` (list_string) — `each` / `case` / `box` / `bag` / `roll`. Mirrors `material_suppliers.field_cost_unit_of_measure` allowed values.
 - `field_pack_quantity` (integer) — pack qty when present.
 
-### Match result (populated by the matcher service, Phase 3.2)
+### Match result (populated by the matcher service)
 
-- `field_match_tier` (list_string) — what tier matched (or skipped):
-  - `tier_1_mfr` — matched on manufacturer item number.
-  - `tier_2_supplier_sku` — matched on existing supplier SKU.
-  - `tier_3_fuzzy_high` — fuzzy match above the high threshold (auto-apply).
-  - `tier_3_fuzzy_med` — fuzzy match above the medium threshold (review queue).
-  - `tier_3_fuzzy_low` — fuzzy match below the medium threshold (discovery queue).
-  - `discovery` — no match found.
-  - `skipped_discontinued` — matched but target material is discontinued.
-  - `skipped_do_not_use` — matched but target supplier-link is marked do-not-use.
-  - `skipped_excluded_bundle` — bundle policy in `supplier_ingest_config.field_bundle_policy` excludes this bundle.
-  - `error` — row failed to parse cleanly OR the matcher threw an exception on this row; see `field_resolution_notes` for the reason. **As of Phase 3.2** the parser produces this tier when:
-    - the cost cell isn't a valid decimal after stripping `$`, commas, and whitespace,
-    - the cost UOM isn't in the allowed-values list AND `supplier_ingest_config.field_default_cost_uom` is empty or unmapped,
-    - JSON encoding of the raw row fails (very rare — invalid UTF-8 that even `JSON_INVALID_UTF8_SUBSTITUTE` can't fix), or
-    - any uncaught throw during the row's save call.
-  Rows with `match_tier='error'` ARE persisted (the audit trail is the point), but the matcher (3.3) and commit pipeline (3.6) skip them. Resolution notes describe the failure mode.
-- `field_match_confidence` (decimal 5,2) — 0.00 – 100.00. Always populated for fuzzy tiers; populated as 100.00 for tier_1 / tier_2.
+- `field_match_tier` (list_string) — terminal disposition of the row after all matchers run. Each value is produced by a specific phase:
+
+| Value | Meaning | Produced by |
+|---|---|---|
+| `tier_1_mfr` | Direct match on `(manufacturer, manufacturer_item_number)`. Confidence 100; or 95 after discontinued retargeting. | Phase 3.3 |
+| `tier_2_supplier_sku` | Direct match on existing `material_suppliers` `(supplier, supplier_item_number)`. Confidence 100; or 95 after discontinued retargeting. | Phase 3.3 |
+| `tier_3_fuzzy_high` | Fuzzy match above the high threshold; auto-apply at commit. | Phase 3.4 |
+| `tier_3_fuzzy_med` | Fuzzy match above the medium threshold → office review queue. **In Phase 3.3** this bucket is also where Tier 1 ambiguous matches (multiple BOS materials with the same `mfr+item#`) and the defensive Tier 2 multi-match case land — they share the same review surface. | Phase 3.3 + 3.4 |
+| `tier_3_fuzzy_low` | Fuzzy match below medium threshold → discovery queue (treated as discovery for routing purposes; the matcher does not auto-apply). | Phase 3.4 |
+| `discovery` | No Tier 1 / Tier 2 match AND the supplier has at least one discovery-enabled bundle. Office reviewer routes manually. | Phase 3.3 |
+| `skipped_discontinued` | Matched a discontinued material with no `field_replaced_by`. `field_matched_material` is NULL — the discontinued one isn't the right answer, but there's no replacement to point at. Note prompts reviewer to consider setting `field_replaced_by` on the discontinued material if this row is a replacement candidate. | Phase 3.3 |
+| `skipped_do_not_use` | Supplier on the batch is marked `field_supplier_status = 'do_not_use'`. The matcher short-circuits — no rows in the batch are matched. | Phase 3.3 |
+| `skipped_excluded_bundle` | Either (a) the matched material's bundle has policy `excluded` for this supplier, or (b) no Tier 1 / Tier 2 match AND the supplier has zero discovery-enabled bundles so unmatched rows can't be routed to discovery. | Phase 3.3 |
+| `error` | Row failed to parse cleanly OR the matcher threw an uncaught exception on this row. See `field_resolution_notes` for the reason. Parser produces this for: cost not a valid decimal after `$/,/space` stripping; non-empty UOM not in allowed_values (Phase 3.3 strictness — UOM is no longer silently defaulted); JSON encode failure on raw row data; uncaught throw during row save. Rows with `match_tier='error'` ARE persisted for audit but the matcher (3.3) and commit (3.6) skip them. | Phase 3.2 (parser) + Phase 3.3 (matcher) |
+
+#### `field_match_confidence` convention (decimal 5,2)
+
+| Value | Meaning | Phase |
+|---:|---|---|
+| NULL | No match attempted (parser-errored rows; rows pending match). | 3.2 / 3.3 |
+| 0 | Discovery — no candidate found, awaiting human routing. | 3.3 |
+| 50 | Tier 1 ambiguous OR Tier 2 defensive multi-match — routed to `tier_3_fuzzy_med` for human resolution. Confidence reflects "we found candidates but can't pick one." | 3.3 |
+| 70–89 | Tier 3 medium confidence — fuzzy match above medium threshold but below high. Routes to office review. | 3.4 |
+| 90–100 | Tier 3 high confidence — fuzzy match above high threshold, auto-apply at commit. | 3.4 |
+| 95 | Tier 1 or Tier 2 direct match retargeted through `material.field_replaced_by` (structural inference, slight discount from 100). The original (discontinued) material's ID is recorded in `field_resolution_notes`. | 3.3 |
+| 100 | Tier 1 or Tier 2 unambiguous direct match. | 3.3 |
+| 1–69 (non-zero, non-NULL) | Tier 3 low confidence — fuzzy match below the medium threshold. Routes to discovery alongside no-candidate rows. | 3.4 |
+
 - `field_matched_material` (entity_reference → material, all bundles) — the BOS material this row maps to. NULL for `discovery` and the `skipped_*` / `error` tiers.
-- `field_existing_link` (entity_reference → material_suppliers, bundle: supplier) — the existing `material_suppliers` row for `(matched_material × batch's supplier)` if one already exists. NULL if a new link will be created at commit.
+- `field_existing_link` (entity_reference → material_suppliers, bundle: supplier) — the existing `material_suppliers` row for `(matched_material × batch's supplier)` if one already exists. NULL if a new link will be created at commit. Phase 3.3 sets this for Tier 2 matches.
 
 ### Resolution (set when an office-manager intervenes)
 

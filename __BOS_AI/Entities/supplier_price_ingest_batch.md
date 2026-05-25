@@ -40,7 +40,7 @@ Children: `supplier_price_ingest_row` entities reference this batch via their `f
 
 - `field_status` (list_string) — current pipeline stage. Allowed values, in lifecycle order:
   - `pending_dry_run` — created at upload time; parsing has not begun. **Phase 3.2: also the status AFTER parse completes** — the parser does not advance the status, intentionally. Matcher (3.3) owns the `pending_dry_run → dry_run_complete` transition.
-  - `dry_run_complete` — parse + match passes finished; reviewer can inspect the report. **Not yet reachable as of Phase 3.2** — lands when matcher ships in 3.3.
+  - `dry_run_complete` — parse + match passes finished; reviewer can inspect the report. **Reachable as of Phase 3.3** — the matcher transitions the batch here at the end of a successful run (including the `do_not_use` supplier short-circuit, which produces an empty-result dry-run still routed through `dry_run_complete` so the office can see the outcome). Aggregate row counts (`field_row_count_tier1`, `field_row_count_tier2`, `field_row_count_tier3_med`, `field_row_count_discovery`, `field_row_count_skipped`) are populated by the matcher from the persisted row entities at this transition.
   - `awaiting_approval` — reviewer has reviewed and queued for commit but not yet approved.
   - `approved` — reviewer has approved; commit is scheduled.
   - `committed` — pipeline has mutated `material_suppliers` and written `material_price_history` rows.

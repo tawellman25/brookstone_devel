@@ -519,22 +519,36 @@ class IngestParser {
         $unitCostValue = $normalizedCost;
       }
 
-      // UOM normalization with default fallback.
+      // UOM normalization.
+      // Rule (Phase 3.3 refinement from 3.2 review):
+      //   * empty / whitespace source UOM → fall back to default_cost_uom
+      //   * non-empty source UOM that doesn't match allowed_values →
+      //     ERROR the row, capturing the original (untrimmed) value
+      //     so the reviewer can decide whether to expand allowed_values
+      //     or treat as data error. Falling back silently was masking
+      //     real data problems (e.g. "gallon" mapped to "each").
       $uomValue = NULL;
-      if (isset($mapped['field_cost_uom'])) {
-        $candidate = strtolower(trim((string) $mapped['field_cost_uom']));
+      $rawUom = $mapped['field_cost_uom'] ?? NULL;
+      $trimmedUom = ($rawUom === NULL) ? '' : trim((string) $rawUom);
+      if ($trimmedUom === '') {
+        // Empty in source — default fallback.
+        if ($defaultUom !== '' && $this->isAllowedUom($defaultUom)) {
+          $uomValue = $defaultUom;
+        }
+      }
+      else {
+        $candidate = strtolower($trimmedUom);
         if ($this->isAllowedUom($candidate)) {
           $uomValue = $candidate;
         }
-        elseif ($defaultUom !== '' && $this->isAllowedUom($defaultUom)) {
-          $uomValue = $defaultUom;
+        else {
+          $allowed = $this->allowedUoms();
+          $errorMessages[] = sprintf(
+            "Unrecognized UOM in source: '%s'. Expected one of: %s.",
+            (string) $rawUom,
+            implode(', ', $allowed),
+          );
         }
-        elseif ($candidate !== '') {
-          $errorMessages[] = "cost UOM '$candidate' is not in allowed values and no default_cost_uom is set";
-        }
-      }
-      elseif ($defaultUom !== '' && $this->isAllowedUom($defaultUom)) {
-        $uomValue = $defaultUom;
       }
 
       // Pack quantity coercion.
@@ -619,12 +633,19 @@ class IngestParser {
    * Check a UOM value against the storage's allowed_values list.
    */
   private function isAllowedUom(string $value): bool {
+    return in_array($value, $this->allowedUoms(), TRUE);
+  }
+
+  /**
+   * Returns the cached list of allowed UOM machine-name values.
+   */
+  private function allowedUoms(): array {
     static $allowed = NULL;
     if ($allowed === NULL) {
       $storage = \Drupal\field\Entity\FieldStorageConfig::loadByName('supplier_price_ingest_row', 'field_cost_uom');
       $allowed = $storage ? array_keys($storage->getSetting('allowed_values') ?? []) : [];
     }
-    return in_array($value, $allowed, TRUE);
+    return $allowed;
   }
 
 }

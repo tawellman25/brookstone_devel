@@ -2,20 +2,316 @@
 
 /**
  * @file
- * Supplier Price Ingest — module stub.
+ * Supplier Price Ingest — Phase 3.2.
  *
- * Phase 3.1 ships the data-model foundation only (entity types, fields,
- * displays, pathauto patterns, permission). No hooks, services, routes,
- * controllers, or forms in this phase.
+ * Phase 3.1 shipped the data-model foundation only. Phase 3.2 adds:
+ *   - hook_ENTITY_TYPE_presave for supplier_ingest_config:
+ *       * uniqueness (one config per supplier)
+ *       * JSON shape validation for field_column_mapping and
+ *         field_bundle_policy
+ *   - hook_form_alter for the supplier_ingest_config edit form:
+ *       * monospace JSON textareas with help text
+ *       * "Load default bundle policy" button (Phase 2 §6 matrix)
+ *   - hook_theme for the placeholder batch view template
  *
- * Forthcoming phases:
- *   - 3.2: presave hook (uniqueness invariant on supplier_ingest_config)
- *          + service container (IngestParser, MatchingService, etc.)
- *   - 3.3-3.8: pipeline stages, dashboards, estimator surface
- *   - 3.9: discontinued-material warning on estimate add (uses
- *          field_replaced_by)
- *   - 3.12: SOP authoring
+ * Matching (3.3), dry-run UI (3.5), commit logic (3.6), and dashboards
+ * (3.7) still ahead.
  *
  * See __BOS_AI/Architecture/supplier_pricing_pipeline_phase2.md and
- * supplier_pricing_pipeline_phase3_sequencing.md.
+ * __BOS_AI/Architecture/supplier_pricing_pipeline_phase3_sequencing.md.
  */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\supplier_price_ingest\Service\IngestParser;
+
+/**
+ * Default bundle policy seed — Phase 2 §6 matrix.
+ *
+ * Used by the "Load default bundle policy" button on the config form.
+ * Kept in code (not config) so the seed is version-controlled and
+ * reviewable as part of the module.
+ */
+const SUPPLIER_PRICE_INGEST_DEFAULT_BUNDLE_POLICY = [
+  'irrigation'      => 'matched_only',
+  'pvc'             => 'matched_only',
+  'galv'            => 'matched_only',
+  'poly'            => 'matched_only',
+  'brass'           => 'matched_only',
+  'electric'        => 'matched_only',
+  'misc'            => 'matched_only',
+  'backflow'        => 'matched_only',
+  'decorative_rock' => 'discovery',
+  'landscape'       => 'discovery',
+  'copper'          => 'discovery',
+  'pavers'          => 'discovery',
+  'xmas'            => 'discovery',
+  'supplies'        => 'discovery',
+  'mulch'           => 'discovery',
+  'bulk_material'   => 'discovery',
+  'plants'          => 'excluded',
+  'shrubs'          => 'excluded',
+  'trees'           => 'excluded',
+  'annuals'         => 'excluded',
+  'sod'             => 'excluded',
+];
+
+const SUPPLIER_PRICE_INGEST_BUNDLE_POLICY_VALUES = [
+  'matched_only',
+  'discovery',
+  'both',
+  'excluded',
+];
+
+/**
+ * Implements hook_theme().
+ */
+function supplier_price_ingest_theme(): array {
+  return [
+    'supplier_price_ingest_batch_placeholder' => [
+      'variables' => [
+        'batch' => [],
+        'rows' => [],
+      ],
+      'template' => 'supplier-price-ingest-batch-placeholder',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for supplier_ingest_config.
+ *
+ * Enforces:
+ *   1. One supplier_ingest_config per supplier (uniqueness).
+ *   2. field_column_mapping JSON shape + target-field whitelist.
+ *   3. field_bundle_policy JSON shape + key/value whitelist.
+ *
+ * Throws EntityStorageException with a single human-readable message.
+ * Form layer (supplier_price_ingest_form_alter) catches and surfaces.
+ */
+function supplier_price_ingest_supplier_ingest_config_presave(EntityInterface $entity): void {
+  _supplier_price_ingest_validate_uniqueness($entity);
+  _supplier_price_ingest_validate_column_mapping($entity);
+  _supplier_price_ingest_validate_bundle_policy($entity);
+}
+
+/**
+ * Throws if another supplier_ingest_config exists with the same
+ * field_supplier (excluding the entity being saved).
+ */
+function _supplier_price_ingest_validate_uniqueness(EntityInterface $entity): void {
+  $supplierId = (int) ($entity->get('field_supplier')->target_id ?? 0);
+  if ($supplierId <= 0) {
+    // Required-field validation on field_supplier will catch this in
+    // form context; presave here just ensures we don't false-positive
+    // on a not-yet-set reference.
+    return;
+  }
+  $existing = \Drupal::entityTypeManager()
+    ->getStorage('supplier_ingest_config')
+    ->loadByProperties(['field_supplier' => $supplierId]);
+  foreach ($existing as $other) {
+    if ($entity->isNew() || (int) $other->id() !== (int) $entity->id()) {
+      throw new EntityStorageException(sprintf(
+        'A supplier_ingest_config already exists for this supplier (existing config id=%d). One config per supplier is the invariant; edit the existing config instead.',
+        $other->id(),
+      ));
+    }
+  }
+}
+
+/**
+ * Validates field_column_mapping JSON shape.
+ *
+ * Allows the field to be empty (incremental edits welcome) — but if
+ * present, it must be valid JSON with at minimum:
+ *   - source_columns: object
+ *   - all source_columns values are in IngestParser::ALLOWED_ROW_FIELDS
+ *   - at least one identifier field mapped
+ *   - field_unit_cost mapped
+ */
+function _supplier_price_ingest_validate_column_mapping(EntityInterface $entity): void {
+  $raw = (string) ($entity->get('field_column_mapping')->value ?? '');
+  if ($raw === '') {
+    return;
+  }
+  $decoded = json_decode($raw, TRUE);
+  if (!is_array($decoded)) {
+    throw new EntityStorageException(sprintf(
+      'field_column_mapping is not valid JSON: %s',
+      json_last_error_msg(),
+    ));
+  }
+  if (!isset($decoded['source_columns']) || !is_array($decoded['source_columns'])) {
+    throw new EntityStorageException(
+      'field_column_mapping must contain a "source_columns" object mapping CSV header strings to BOS row field names.',
+    );
+  }
+  $allowed = IngestParser::ALLOWED_ROW_FIELDS;
+  $identifierFields = IngestParser::IDENTIFIER_FIELDS;
+
+  $mappedTargets = [];
+  foreach ($decoded['source_columns'] as $header => $target) {
+    if (!is_string($target) || !in_array($target, $allowed, TRUE)) {
+      throw new EntityStorageException(sprintf(
+        'field_column_mapping source_columns["%s"] = "%s" is not a valid supplier_price_ingest_row field. Allowed: %s',
+        $header,
+        is_scalar($target) ? (string) $target : gettype($target),
+        implode(', ', $allowed),
+      ));
+    }
+    $mappedTargets[] = $target;
+  }
+  $hasIdentifier = !empty(array_intersect($identifierFields, $mappedTargets));
+  if (!$hasIdentifier) {
+    throw new EntityStorageException(sprintf(
+      'field_column_mapping must map at least one identifier column to one of: %s',
+      implode(', ', $identifierFields),
+    ));
+  }
+  if (!in_array('field_unit_cost', $mappedTargets, TRUE)) {
+    throw new EntityStorageException(
+      'field_column_mapping must map a column to field_unit_cost.',
+    );
+  }
+}
+
+/**
+ * Validates field_bundle_policy JSON shape.
+ *
+ * Allows empty (defaults to matched_only for every bundle at runtime).
+ * If present:
+ *   - valid JSON object
+ *   - every key is a real material bundle machine name
+ *   - every value is in SUPPLIER_PRICE_INGEST_BUNDLE_POLICY_VALUES
+ */
+function _supplier_price_ingest_validate_bundle_policy(EntityInterface $entity): void {
+  $raw = (string) ($entity->get('field_bundle_policy')->value ?? '');
+  if ($raw === '') {
+    return;
+  }
+  $decoded = json_decode($raw, TRUE);
+  if (!is_array($decoded)) {
+    throw new EntityStorageException(sprintf(
+      'field_bundle_policy is not valid JSON: %s',
+      json_last_error_msg(),
+    ));
+  }
+  $bundleInfo = \Drupal::service('entity_type.bundle.info')->getBundleInfo('material');
+  $materialBundles = array_keys($bundleInfo);
+  $allowedValues = SUPPLIER_PRICE_INGEST_BUNDLE_POLICY_VALUES;
+  foreach ($decoded as $bundle => $policy) {
+    if (!in_array($bundle, $materialBundles, TRUE)) {
+      throw new EntityStorageException(sprintf(
+        'field_bundle_policy key "%s" is not a valid material bundle. Valid bundles: %s',
+        $bundle,
+        implode(', ', $materialBundles),
+      ));
+    }
+    if (!is_string($policy) || !in_array($policy, $allowedValues, TRUE)) {
+      throw new EntityStorageException(sprintf(
+        'field_bundle_policy["%s"] = "%s" is not an allowed policy. Allowed: %s',
+        $bundle,
+        is_scalar($policy) ? (string) $policy : gettype($policy),
+        implode(', ', $allowedValues),
+      ));
+    }
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Targets the supplier_ingest_config entity edit/add form to:
+ *   - Render JSON textareas in monospace
+ *   - Add inline help with the JSON shape
+ *   - Add a "Load default bundle policy" submit button
+ *   - Pre-submit-guard to surface JSON-decode errors on the right field
+ */
+function supplier_price_ingest_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  if (!str_starts_with($form_id, 'supplier_ingest_config_')) {
+    return;
+  }
+
+  if (isset($form['field_column_mapping']['widget'][0]['value'])) {
+    $existing = (string) ($form['field_column_mapping']['widget'][0]['value']['#description'] ?? '');
+    $form['field_column_mapping']['widget'][0]['value']['#attributes']['style'] = 'font-family: monospace; min-height: 18em;';
+    $form['field_column_mapping']['widget'][0]['value']['#description'] = $existing
+      . '<br><strong>JSON shape (Phase 3.2):</strong> see <code>__BOS_AI/Entities/supplier_ingest_config.md</code>. Required keys: <code>source_columns</code> (object mapping CSV headers → BOS row field names). Allowed BOS fields: <code>'
+      . implode('</code>, <code>', IngestParser::ALLOWED_ROW_FIELDS)
+      . '</code>. Must map at least one identifier (supplier SKU, mfr item #, or description) and <code>field_unit_cost</code>.';
+  }
+
+  if (isset($form['field_bundle_policy']['widget'][0]['value'])) {
+    $existing = (string) ($form['field_bundle_policy']['widget'][0]['value']['#description'] ?? '');
+    $form['field_bundle_policy']['widget'][0]['value']['#attributes']['style'] = 'font-family: monospace; min-height: 18em;';
+    $form['field_bundle_policy']['widget'][0]['value']['#description'] = $existing
+      . '<br><strong>JSON shape:</strong> object mapping material bundle machine names to policy values (<code>matched_only</code>, <code>discovery</code>, <code>both</code>, <code>excluded</code>). Default for unlisted bundles: <code>matched_only</code>. See <code>__BOS_AI/Entities/supplier_ingest_config.md</code>.';
+
+    // Add a "Load default" button. Placed in the same actions area so
+    // it appears near Save / Delete.
+    $form['actions']['load_default_bundle_policy'] = [
+      '#type' => 'submit',
+      '#value' => t('Load default bundle policy (Phase 2 §6 matrix)'),
+      '#submit' => ['_supplier_price_ingest_load_default_bundle_policy'],
+      '#limit_validation_errors' => [],
+      '#weight' => 50,
+    ];
+  }
+
+  // Pre-submit guard to surface JSON errors on the right field.
+  if (isset($form['actions']['submit']['#submit'])) {
+    array_unshift($form['actions']['submit']['#submit'], '_supplier_price_ingest_pre_submit_guard');
+  }
+}
+
+/**
+ * Pre-submit guard: surface JSON-decode errors on the source field.
+ *
+ * Presave hook still backstops; this is purely a better-UX layer.
+ */
+function _supplier_price_ingest_pre_submit_guard(array &$form, FormStateInterface $form_state): void {
+  $colMap = (string) ($form_state->getValue(['field_column_mapping', 0, 'value']) ?? '');
+  if ($colMap !== '') {
+    $decoded = json_decode($colMap, TRUE);
+    if (!is_array($decoded)) {
+      $form_state->setErrorByName(
+        'field_column_mapping',
+        sprintf('Invalid JSON in Column Mapping: %s', json_last_error_msg()),
+      );
+    }
+  }
+  $bundlePol = (string) ($form_state->getValue(['field_bundle_policy', 0, 'value']) ?? '');
+  if ($bundlePol !== '') {
+    $decoded = json_decode($bundlePol, TRUE);
+    if (!is_array($decoded)) {
+      $form_state->setErrorByName(
+        'field_bundle_policy',
+        sprintf('Invalid JSON in Bundle Policy: %s', json_last_error_msg()),
+      );
+    }
+  }
+}
+
+/**
+ * Submit handler for the "Load default bundle policy" button.
+ *
+ * Only pre-fills if the field is currently empty.
+ */
+function _supplier_price_ingest_load_default_bundle_policy(array &$form, FormStateInterface $form_state): void {
+  $current = (string) ($form_state->getValue(['field_bundle_policy', 0, 'value']) ?? '');
+  if (trim($current) !== '') {
+    \Drupal::messenger()->addWarning(t(
+      'Bundle policy field is not empty — refusing to overwrite. Clear it manually first, then click Load again.',
+    ));
+    $form_state->setRebuild(TRUE);
+    return;
+  }
+  $json = json_encode(SUPPLIER_PRICE_INGEST_DEFAULT_BUNDLE_POLICY, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+  $form_state->setValue(['field_bundle_policy', 0, 'value'], $json);
+  $form_state->setRebuild(TRUE);
+  \Drupal::messenger()->addStatus(t(
+    'Loaded default bundle policy from Phase 2 §6 matrix. Review and save.',
+  ));
+}

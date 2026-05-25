@@ -39,17 +39,19 @@ Children: `supplier_price_ingest_row` entities reference this batch via their `f
 ### Status
 
 - `field_status` (list_string) — current pipeline stage. Allowed values, in lifecycle order:
-  - `pending_dry_run` — created at upload time; parsing has not begun.
-  - `dry_run_complete` — parse + match passes finished; reviewer can inspect the report.
+  - `pending_dry_run` — created at upload time; parsing has not begun. **Phase 3.2: also the status AFTER parse completes** — the parser does not advance the status, intentionally. Matcher (3.3) owns the `pending_dry_run → dry_run_complete` transition.
+  - `dry_run_complete` — parse + match passes finished; reviewer can inspect the report. **Not yet reachable as of Phase 3.2** — lands when matcher ships in 3.3.
   - `awaiting_approval` — reviewer has reviewed and queued for commit but not yet approved.
   - `approved` — reviewer has approved; commit is scheduled.
   - `committed` — pipeline has mutated `material_suppliers` and written `material_price_history` rows.
   - `rejected` — reviewer rejected the batch; no catalog mutations occurred.
-  - `failed` — pipeline error during parse, match, or commit; details in `field_dry_run_report` or watchdog.
+  - `failed` — pipeline error during parse, match, or commit; details in `field_dry_run_report` or watchdog. **Reachable as of Phase 3.2** — the parser transitions to `failed` on any unrecoverable error (file unreadable, config missing, etc.) and stashes the error context into `field_dry_run_report` as JSON.
 
 ### Dry-run report
 
-- `field_dry_run_report` (text_long) — JSON payload summarizing the dry-run pass. Schema is owned by the Phase 3.2 `DryRunReporter` service; not a stable wire format.
+- `field_dry_run_report` (text_long) — JSON payload summarizing the dry-run pass.
+  - **Phase 3.2:** when batch transitions to `failed`, the parser writes a JSON object with `fatal_error`, `created_so_far`, `skipped_so_far`, `errored_so_far`, and `parse_errors[]` (per-row diagnostic notes). Surfaced verbatim in the placeholder batch view's "Parse Failure Detail" pane.
+  - **Phase 3.5:** the schema expands to cover the full dry-run report (per-tier counts, sample rows, match-confidence distribution) once the dry-run reporter service ships. Not a stable wire format until then.
 
 ### Commit metadata
 
@@ -58,7 +60,7 @@ Children: `supplier_price_ingest_row` entities reference this batch via their `f
 
 ### Aggregate row counts
 
-Populated by the matcher service in 3.2; default 0 in Phase 3.1.
+In Phase 3.2 only `field_row_count_total` and `field_row_count_skipped` are populated by the parser (per upload). Tier counts (`field_row_count_tier1` etc.) and `field_row_count_discovery` default 0; the matcher fills them in 3.3.
 
 - `field_row_count_total` (integer)
 - `field_row_count_tier1` (integer) — manufacturer-item-# matches.

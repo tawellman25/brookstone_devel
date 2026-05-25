@@ -1,0 +1,367 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Phase 3.2 — IngestParser + presave-validation round-trip verification.
+ *
+ * Mirrors the 8-step manual test from the Phase 3.2 spec, programmatic
+ * end-to-end. Cleans up all created entities on exit (success or fail).
+ *
+ * Steps:
+ *   1.  CREATE supplier_ingest_config (CPS - Grand Junction)
+ *   2.  ASSERT uniqueness violation when creating a second config for
+ *       the same supplier
+ *   3.  ASSERT presave error on malformed JSON in field_column_mapping
+ *   4.  ASSERT presave error when column_mapping targets unknown field
+ *   5.  PARSE a small valid CSV (3 rows, 6 columns)
+ *   6.  VERIFY batch + rows created, raw_data round-trips
+ *   7.  PARSE a broken CSV (mixed unparseable + valid rows) — parser
+ *       must not crash, errored rows flagged with field_match_tier='error'
+ *   8.  PARSE an XLSX — same content as CSV — same outcomes
+ *
+ * Usage:
+ *   ddev drush scr web/scripts/verify_supplier_price_ingest_parser.php
+ */
+
+if (PHP_SAPI !== 'cli') {
+  exit('CLI only.');
+}
+
+use Drupal\Core\File\FileSystemInterface;
+use Drupal\supplier_price_ingest\Service\IngestParser;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
+$results = [];
+$cleanup = [
+  'configs' => [],
+  'batches' => [],
+  'rows' => [],
+  'files' => [],
+];
+
+$etm = \Drupal::entityTypeManager();
+$parser = \Drupal::service('supplier_price_ingest.parser');
+$fileRepo = \Drupal::service('file.repository');
+$fileSystem = \Drupal::service('file_system');
+$uploadDir = 'public://supplier_ingest';
+$fileSystem->prepareDirectory(
+  $uploadDir,
+  FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS,
+);
+
+// Pick the first supplier in the DB to test with.
+$sids = \Drupal::entityQuery('supplier')->accessCheck(FALSE)->range(0, 1)->execute();
+if (!$sids) {
+  echo "ABORT: no supplier entities in DB.\n";
+  exit(1);
+}
+$supplierId = (int) reset($sids);
+$supplier = $etm->getStorage('supplier')->load($supplierId);
+echo "Using supplier id=$supplierId (" . $supplier->label() . ")\n\n";
+
+// If a config already exists for this supplier (from prior runs), clear it.
+foreach ($etm->getStorage('supplier_ingest_config')->loadByProperties(['field_supplier' => $supplierId]) as $stale) {
+  $stale->delete();
+  echo "Cleared stale config id=" . $stale->id() . "\n";
+}
+
+$validColumnMapping = json_encode([
+  'source_columns' => [
+    'Item Number' => 'field_supplier_sku',
+    'Mfr Part #'  => 'field_manufacturer_item_number',
+    'Brand'       => 'field_manufacturer_name',
+    'Description' => 'field_description',
+    'Price'       => 'field_unit_cost',
+    'UOM'         => 'field_cost_uom',
+    'Pack Qty'    => 'field_pack_quantity',
+  ],
+  'header_row' => 1,
+  'skip_rows_until_header' => FALSE,
+  'case_sensitive_headers' => FALSE,
+  'trim_whitespace' => TRUE,
+]);
+
+try {
+  // ── Step 1: create config ─────────────────────────────────────────
+  echo "=== Step 1: create supplier_ingest_config ===\n";
+  $cfg = $etm->getStorage('supplier_ingest_config')->create([
+    'type' => 'config',
+    'title' => 'TEST CONFIG — phase 3.2 verify',
+    'uid' => 1,
+    'field_supplier' => $supplierId,
+    'field_active' => 1,
+    'field_default_cost_uom' => 'each',
+    'field_fuzzy_threshold_high' => '90.00',
+    'field_fuzzy_threshold_med' => '70.00',
+    'field_column_mapping' => $validColumnMapping,
+    'field_bundle_policy' => json_encode(['irrigation' => 'matched_only', 'pvc' => 'matched_only']),
+  ]);
+  $cfg->save();
+  $cleanup['configs'][] = (int) $cfg->id();
+  $results['step1_create_config'] = 'PASS — id=' . $cfg->id();
+  echo "  PASS — config id=" . $cfg->id() . "\n";
+
+  // ── Step 2: uniqueness violation ──────────────────────────────────
+  echo "\n=== Step 2: second config for same supplier should fail ===\n";
+  try {
+    $cfg2 = $etm->getStorage('supplier_ingest_config')->create([
+      'type' => 'config',
+      'title' => 'TEST DUP — should fail',
+      'uid' => 1,
+      'field_supplier' => $supplierId,
+      'field_column_mapping' => $validColumnMapping,
+    ]);
+    $cfg2->save();
+    // If save succeeded, that's a FAIL.
+    $cleanup['configs'][] = (int) $cfg2->id();
+    $results['step2_uniqueness'] = 'FAIL — duplicate config saved';
+    echo "  FAIL — duplicate config saved (id=" . $cfg2->id() . ")\n";
+  }
+  catch (\Drupal\Core\Entity\EntityStorageException $e) {
+    if (stripos($e->getMessage(), 'already exists') !== FALSE) {
+      $results['step2_uniqueness'] = 'PASS — exception with expected message';
+      echo "  PASS — blocked with: " . $e->getMessage() . "\n";
+    }
+    else {
+      $results['step2_uniqueness'] = 'FAIL — wrong exception: ' . $e->getMessage();
+      echo "  FAIL — wrong message\n";
+    }
+  }
+
+  // ── Step 3: malformed JSON in column_mapping ──────────────────────
+  echo "\n=== Step 3: malformed column_mapping JSON ===\n";
+  try {
+    $cfg->set('field_column_mapping', 'not { valid json');
+    $cfg->save();
+    $results['step3_malformed_json'] = 'FAIL — malformed JSON saved';
+    echo "  FAIL — saved\n";
+  }
+  catch (\Drupal\Core\Entity\EntityStorageException $e) {
+    if (stripos($e->getMessage(), 'not valid JSON') !== FALSE || stripos($e->getMessage(), 'JSON') !== FALSE) {
+      $results['step3_malformed_json'] = 'PASS — exception thrown';
+      echo "  PASS — " . $e->getMessage() . "\n";
+    }
+    else {
+      $results['step3_malformed_json'] = 'FAIL — wrong exception';
+      echo "  FAIL — " . $e->getMessage() . "\n";
+    }
+  }
+
+  // Restore valid mapping for the next step.
+  $cfg = $etm->getStorage('supplier_ingest_config')->load(end($cleanup['configs']));
+  $cfg->set('field_column_mapping', $validColumnMapping);
+  $cfg->save();
+
+  // ── Step 4: column_mapping with non-existent BOS field ────────────
+  echo "\n=== Step 4: column_mapping targets non-existent BOS field ===\n";
+  $badMapping = json_encode([
+    'source_columns' => [
+      'Item Number' => 'field_supplier_sku',
+      'Price' => 'field_unit_cost',
+      'Bogus' => 'field_completely_made_up',
+    ],
+  ]);
+  try {
+    $cfg->set('field_column_mapping', $badMapping);
+    $cfg->save();
+    $results['step4_bad_field'] = 'FAIL — bad mapping saved';
+    echo "  FAIL\n";
+  }
+  catch (\Drupal\Core\Entity\EntityStorageException $e) {
+    if (stripos($e->getMessage(), 'field_completely_made_up') !== FALSE) {
+      $results['step4_bad_field'] = 'PASS — exception thrown';
+      echo "  PASS — " . $e->getMessage() . "\n";
+    }
+    else {
+      $results['step4_bad_field'] = 'FAIL — wrong exception: ' . $e->getMessage();
+      echo "  FAIL — wrong exception\n";
+    }
+  }
+  // Restore
+  $cfg->set('field_column_mapping', $validColumnMapping);
+  $cfg->save();
+
+  // ── Step 5+6: parse a small valid CSV, verify rows ────────────────
+  echo "\n=== Step 5+6: parse valid CSV, verify rows ===\n";
+  $csv = "Item Number,Mfr Part #,Brand,Description,Price,UOM,Pack Qty\n"
+       . "SKU-001,HUNTER-001,Hunter,Hunter PGP-04 Rotor,\$12.95,each,1\n"
+       . "SKU-002,RB-002,Rain Bird,Rain Bird 5004 Plus PRS,15.50,each,1\n"
+       . "SKU-003,SPEARS-003,Spears,1\" PVC Schedule 40 Tee,2.45,each,10\n";
+  $csvPath = '/tmp/spi_test_valid.csv';
+  file_put_contents($csvPath, $csv);
+  $csvFile = $fileRepo->writeData($csv, 'public://supplier_ingest/spi_test_valid.csv', FileSystemInterface::EXISTS_REPLACE);
+  $csvFile->setPermanent();
+  $csvFile->save();
+  $cleanup['files'][] = (int) $csvFile->id();
+
+  $batch1 = $etm->getStorage('supplier_price_ingest_batch')->create([
+    'type' => 'batch',
+    'title' => 'TEST BATCH — valid CSV',
+    'uid' => 1,
+    'field_supplier' => $supplierId,
+    'field_source_file' => $csvFile->id(),
+    'field_source_filename' => 'spi_test_valid.csv',
+    'field_uploaded_by' => 1,
+    'field_uploaded_on' => date('Y-m-d\TH:i:s'),
+    'field_status' => 'pending_dry_run',
+  ]);
+  $batch1->save();
+  $cleanup['batches'][] = (int) $batch1->id();
+
+  $result1 = $parser->parseUploadedFile($batch1);
+  echo "  parser: " . $result1->summary() . "\n";
+
+  $rows = $etm->getStorage('supplier_price_ingest_row')
+    ->loadByProperties(['field_batch' => $batch1->id()]);
+  foreach ($rows as $r) $cleanup['rows'][] = (int) $r->id();
+
+  $checks = [
+    'rows_created=3' => $result1->rowsCreated === 3,
+    'rows_skipped=0' => $result1->rowsSkipped === 0,
+    'rows_errored=0' => $result1->rowsErrored === 0,
+    'entities_persisted=3' => count($rows) === 3,
+  ];
+  // Round-trip raw_data on first row
+  $first = reset($rows);
+  $raw = json_decode($first->get('field_raw_data')->value, TRUE);
+  $checks['raw_data_roundtrip'] = isset($raw['Item Number']) && $raw['Item Number'] === 'SKU-001';
+  // Cost normalization (strip $)
+  $checks['cost_strip_dollar'] = (float) $first->get('field_unit_cost')->value === 12.95;
+  foreach ($checks as $k => $v) {
+    echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  }
+  $allPass = !in_array(FALSE, $checks, TRUE);
+  $results['step5_6_valid_csv'] = $allPass ? 'PASS' : 'FAIL';
+
+  // ── Step 7: broken CSV, no crash, errored rows flagged ────────────
+  echo "\n=== Step 7: parse broken CSV — must not crash ===\n";
+  $brokenCsv = "Item Number,Mfr Part #,Brand,Description,Price,UOM,Pack Qty\n"
+             . "SKU-100,FOO-001,FooBrand,Valid row,5.00,each,1\n"
+             . ",,,Description only no price,,,\n"                    // skipped: no cost
+             . "SKU-101,FOO-002,FooBrand,Bad price,not-a-number,each,1\n"  // errored: bad cost
+             . "SKU-102,FOO-003,FooBrand,Bad UOM,7.50,gallon,1\n"     // errored: unmapped UOM (no default in this config — wait, default IS 'each')
+             . "SKU-103,FOO-004,FooBrand,Another valid,9.99,each,1\n";
+
+  $brokenFile = $fileRepo->writeData($brokenCsv, 'public://supplier_ingest/spi_test_broken.csv', FileSystemInterface::EXISTS_REPLACE);
+  $brokenFile->setPermanent();
+  $brokenFile->save();
+  $cleanup['files'][] = (int) $brokenFile->id();
+
+  $batch2 = $etm->getStorage('supplier_price_ingest_batch')->create([
+    'type' => 'batch',
+    'title' => 'TEST BATCH — broken CSV',
+    'uid' => 1,
+    'field_supplier' => $supplierId,
+    'field_source_file' => $brokenFile->id(),
+    'field_source_filename' => 'spi_test_broken.csv',
+    'field_uploaded_by' => 1,
+    'field_uploaded_on' => date('Y-m-d\TH:i:s'),
+    'field_status' => 'pending_dry_run',
+  ]);
+  $batch2->save();
+  $cleanup['batches'][] = (int) $batch2->id();
+
+  try {
+    $result2 = $parser->parseUploadedFile($batch2);
+    echo "  parser: " . $result2->summary() . "\n";
+    $rows2 = $etm->getStorage('supplier_price_ingest_row')->loadByProperties(['field_batch' => $batch2->id()]);
+    foreach ($rows2 as $r) $cleanup['rows'][] = (int) $r->id();
+    $erroredEntities = array_filter($rows2, fn($r) => ($r->get('field_match_tier')->value ?? '') === 'error');
+    // Expected behavior:
+    //   - SKU-100 valid → created
+    //   - empty SKU/no-price row → skipped (no identifier AND no cost)
+    //   - SKU-101 bad price "not-a-number" → row entity created, marked errored
+    //   - SKU-102 "gallon" UOM → falls back to default_cost_uom='each' (NOT errored)
+    //   - SKU-103 valid → created
+    // So: 3 rows created (1 errored), 1 skipped.
+    $checks7 = [
+      'no_crash' => TRUE,
+      'created_3' => $result2->rowsCreated === 3,
+      'skipped_1' => $result2->rowsSkipped === 1,
+      'errored_1' => $result2->rowsErrored === 1,
+      'errored_rows_marked' => count($erroredEntities) === 1,
+    ];
+    foreach ($checks7 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+    $results['step7_broken_csv'] = !in_array(FALSE, $checks7, TRUE) ? 'PASS' : 'FAIL';
+  }
+  catch (\Throwable $e) {
+    $results['step7_broken_csv'] = 'FAIL — parser crashed: ' . $e->getMessage();
+    echo "  FAIL — parser crashed\n";
+  }
+
+  // ── Step 8: XLSX same content as valid CSV ────────────────────────
+  echo "\n=== Step 8: parse XLSX — same shape as CSV ===\n";
+  $ss = new Spreadsheet();
+  $sh = $ss->getActiveSheet();
+  $sh->fromArray([
+    ['Item Number', 'Mfr Part #', 'Brand', 'Description', 'Price', 'UOM', 'Pack Qty'],
+    ['XL-001', 'HUNTER-001', 'Hunter', 'XLSX test 1', 12.95, 'each', 1],
+    ['XL-002', 'RB-002',    'Rain Bird', 'XLSX test 2', 15.50, 'each', 1],
+  ], NULL, 'A1');
+  $xlsxPath = '/tmp/spi_test_valid.xlsx';
+  (new Xlsx($ss))->save($xlsxPath);
+  $xlsxData = file_get_contents($xlsxPath);
+  $xlsxFile = $fileRepo->writeData($xlsxData, 'public://supplier_ingest/spi_test_valid.xlsx', FileSystemInterface::EXISTS_REPLACE);
+  $xlsxFile->setPermanent();
+  $xlsxFile->save();
+  $cleanup['files'][] = (int) $xlsxFile->id();
+
+  $batch3 = $etm->getStorage('supplier_price_ingest_batch')->create([
+    'type' => 'batch',
+    'title' => 'TEST BATCH — valid XLSX',
+    'uid' => 1,
+    'field_supplier' => $supplierId,
+    'field_source_file' => $xlsxFile->id(),
+    'field_source_filename' => 'spi_test_valid.xlsx',
+    'field_uploaded_by' => 1,
+    'field_uploaded_on' => date('Y-m-d\TH:i:s'),
+    'field_status' => 'pending_dry_run',
+  ]);
+  $batch3->save();
+  $cleanup['batches'][] = (int) $batch3->id();
+
+  $result3 = $parser->parseUploadedFile($batch3);
+  echo "  parser: " . $result3->summary() . "\n";
+  $rows3 = $etm->getStorage('supplier_price_ingest_row')->loadByProperties(['field_batch' => $batch3->id()]);
+  foreach ($rows3 as $r) $cleanup['rows'][] = (int) $r->id();
+  $checks8 = [
+    'no_crash' => TRUE,
+    'created_2' => $result3->rowsCreated === 2,
+    'errored_0' => $result3->rowsErrored === 0,
+  ];
+  foreach ($checks8 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step8_xlsx'] = !in_array(FALSE, $checks8, TRUE) ? 'PASS' : 'FAIL';
+}
+finally {
+  // Cleanup
+  echo "\n=== Cleanup ===\n";
+  foreach ($cleanup['rows'] as $id) {
+    $e = $etm->getStorage('supplier_price_ingest_row')->load($id);
+    if ($e) $e->delete();
+  }
+  foreach ($cleanup['batches'] as $id) {
+    $e = $etm->getStorage('supplier_price_ingest_batch')->load($id);
+    if ($e) $e->delete();
+  }
+  foreach ($cleanup['configs'] as $id) {
+    $e = $etm->getStorage('supplier_ingest_config')->load($id);
+    if ($e) $e->delete();
+  }
+  foreach ($cleanup['files'] as $id) {
+    $f = $etm->getStorage('file')->load($id);
+    if ($f) $f->delete();
+  }
+  echo "  done.\n";
+}
+
+echo "\n========== SUMMARY ==========\n";
+$overall = 'PASS';
+foreach ($results as $k => $v) {
+  printf("  %-32s %s\n", $k, $v);
+  if (!str_starts_with($v, 'PASS')) $overall = 'FAIL';
+}
+echo "----------------------------\n";
+echo "  OVERALL                          $overall\n";
+echo "=============================\n";

@@ -1,0 +1,40 @@
+# Phase 3.2 — upload form, batch placeholder view, custom add route
+# for supplier_ingest_config. List page is provided by a Views config
+# (views.view.supplier_ingest_configs) registered to the same path
+# segment; that's a separate config file, not a PHP route.
+# Edit is handled by ECK's auto-generated entity.supplier_ingest_config.edit_form
+# route (no override needed).
+
+supplier_price_ingest.upload:
+  path: '/admin/materials/supplier-ingest/upload'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\BatchUploadForm'
+    _title: 'Upload Supplier Catalog'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+
+supplier_price_ingest.batch_view:
+  path: '/admin/materials/supplier-ingest/batch/{supplier_price_ingest_batch}'
+  defaults:
+    _controller: '\Drupal\supplier_price_ingest\Controller\BatchPlaceholderController::view'
+    _title_callback: '\Drupal\supplier_price_ingest\Controller\BatchPlaceholderController::title'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_batch:
+        type: 'entity:supplier_price_ingest_batch'
+
+supplier_price_ingest.config_add:
+  path: '/admin/materials/supplier-ingest/configs/add'
+  defaults:
+    _entity_form: 'supplier_ingest_config.default'
+    _title: 'Add Supplier Ingest Config'
+    bundle: 'config'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE

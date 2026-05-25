@@ -1,0 +1,201 @@
+uuid: b768a2b9-fd17-4661-ab03-97cfc99f9a35
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.supplier_ingest_config.field_active
+    - field.storage.supplier_ingest_config.field_supplier
+  module:
+    - eck
+    - user
+id: supplier_ingest_configs
+label: 'Supplier Ingest Configs'
+module: views
+description: 'Admin list of supplier_ingest_config entities — per-supplier ingest configurations.'
+tag: supplier_price_ingest
+base_table: supplier_ingest_config
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      fields:
+        field_supplier:
+          id: field_supplier
+          table: supplier_ingest_config__field_supplier
+          field: field_supplier
+          relationship: none
+          plugin_id: field
+          label: Supplier
+          type: entity_reference_label
+          settings:
+            link: false
+        field_active:
+          id: field_active
+          table: supplier_ingest_config__field_active
+          field: field_active
+          relationship: none
+          plugin_id: field
+          label: Active
+          type: boolean
+          settings:
+            format: yes-no
+            format_custom_false: ''
+            format_custom_true: ''
+        changed:
+          id: changed
+          table: supplier_ingest_config
+          field: changed
+          relationship: none
+          plugin_id: field
+          label: 'Last Updated'
+          type: timestamp
+          settings:
+            date_format: short
+            custom_date_format: ''
+            timezone: ''
+            tooltip:
+              date_format: ''
+              custom_date_format: ''
+            time_diff:
+              enabled: false
+              future_format: '@interval hence'
+              past_format: '@interval ago'
+              granularity: 2
+              refresh: 60
+        operations:
+          id: operations
+          table: supplier_ingest_config
+          field: operations
+          relationship: none
+          plugin_id: entity_operations
+          label: Operations
+          destination: true
+      pager:
+        type: mini
+        options:
+          pagination_heading_level: h4
+          items_per_page: 50
+      exposed_form:
+        type: basic
+        options: {  }
+      access:
+        type: perm
+        options:
+          perm: 'administer supplier price ingest'
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area_text_custom:
+          id: area_text_custom
+          table: views
+          field: area_text_custom
+          plugin_id: text_custom
+          empty: true
+          content: 'No supplier ingest configurations yet. <a href="/admin/materials/supplier-ingest/configs/add">Add the first one.</a>'
+      sorts:
+        changed:
+          id: changed
+          table: supplier_ingest_config
+          field: changed
+          relationship: none
+          plugin_id: date
+          order: DESC
+      arguments: {  }
+      filters: {  }
+      style:
+        type: table
+        options:
+          grouping: {  }
+          row_class: ''
+          default_row_class: true
+          columns:
+            field_supplier: field_supplier
+            field_active: field_active
+            changed: changed
+            operations: operations
+          default: changed
+          info:
+            field_supplier:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_active:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            changed:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            operations:
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          override: true
+          sticky: true
+          order: desc
+          empty_table: true
+      row:
+        type: fields
+        options: {  }
+      query:
+        type: views_query
+        options: {  }
+      relationships: {  }
+      use_ajax: false
+      use_more: false
+      header: {  }
+      footer: {  }
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.permissions
+      tags:
+        - 'config:field.storage.supplier_ingest_config.field_active'
+        - 'config:field.storage.supplier_ingest_config.field_supplier'
+  page_1:
+    id: page_1
+    display_title: Page
+    display_plugin: page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/materials/supplier-ingest/configs
+      menu:
+        type: none
+        title: 'Supplier Ingest Configs'
+        description: ''
+        weight: 0
+        menu_name: admin
+        parent: ''
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url.query_args
+        - user.permissions
+      tags:
+        - 'config:field.storage.supplier_ingest_config.field_active'
+        - 'config:field.storage.supplier_ingest_config.field_supplier'
+

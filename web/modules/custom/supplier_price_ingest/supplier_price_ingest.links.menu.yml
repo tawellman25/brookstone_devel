@@ -1,0 +1,37 @@
+# Phase 3.2 menu links under the admin menu.
+#
+# Parent: system.admin — places under the standard admin toolbar.
+# When the materials section gets a dedicated parent menu link, the
+# parent: can be retargeted at that.
+
+supplier_price_ingest.hub:
+  title: 'Supplier Price Ingest'
+  route_name: supplier_price_ingest.upload
+  parent: system.admin
+  menu_name: admin
+  description: 'Upload supplier price catalogs and manage per-supplier ingest configurations.'
+  weight: -2
+
+supplier_price_ingest.upload:
+  title: 'Upload Catalog'
+  route_name: supplier_price_ingest.upload
+  parent: supplier_price_ingest.hub
+  menu_name: admin
+  description: 'Upload a supplier CSV or XLSX file to parse into ingest rows.'
+  weight: 0
+
+supplier_price_ingest.config_list:
+  title: 'Supplier Configs'
+  route_name: view.supplier_ingest_configs.page_1
+  parent: supplier_price_ingest.hub
+  menu_name: admin
+  description: 'Per-supplier column mapping, bundle policy, and fuzzy thresholds.'
+  weight: 10
+
+supplier_price_ingest.batch_list:
+  title: 'Batches'
+  route_name: eck.entity.supplier_price_ingest_batch.list
+  parent: supplier_price_ingest.hub
+  menu_name: admin
+  description: 'Recent ingest runs (placeholder — dedicated Batch Manager lands in Phase 3.7).'
+  weight: 20

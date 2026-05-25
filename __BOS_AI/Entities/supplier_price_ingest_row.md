@@ -54,7 +54,12 @@ All optional — some supplier feeds omit fields:
   - `skipped_discontinued` — matched but target material is discontinued.
   - `skipped_do_not_use` — matched but target supplier-link is marked do-not-use.
   - `skipped_excluded_bundle` — bundle policy in `supplier_ingest_config.field_bundle_policy` excludes this bundle.
-  - `error` — matcher threw an exception on this row; see `field_resolution_notes`.
+  - `error` — row failed to parse cleanly OR the matcher threw an exception on this row; see `field_resolution_notes` for the reason. **As of Phase 3.2** the parser produces this tier when:
+    - the cost cell isn't a valid decimal after stripping `$`, commas, and whitespace,
+    - the cost UOM isn't in the allowed-values list AND `supplier_ingest_config.field_default_cost_uom` is empty or unmapped,
+    - JSON encoding of the raw row fails (very rare — invalid UTF-8 that even `JSON_INVALID_UTF8_SUBSTITUTE` can't fix), or
+    - any uncaught throw during the row's save call.
+  Rows with `match_tier='error'` ARE persisted (the audit trail is the point), but the matcher (3.3) and commit pipeline (3.6) skip them. Resolution notes describe the failure mode.
 - `field_match_confidence` (decimal 5,2) — 0.00 – 100.00. Always populated for fuzzy tiers; populated as 100.00 for tier_1 / tier_2.
 - `field_matched_material` (entity_reference → material, all bundles) — the BOS material this row maps to. NULL for `discovery` and the `skipped_*` / `error` tiers.
 - `field_existing_link` (entity_reference → material_suppliers, bundle: supplier) — the existing `material_suppliers` row for `(matched_material × batch's supplier)` if one already exists. NULL if a new link will be created at commit.

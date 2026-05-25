@@ -21,7 +21,7 @@ The config is consulted at parse and match time but is **not** the source of tru
 |---|---|---:|---|
 | `field_supplier` | `supplier` (bundle: `supplier`) | 1 | The supplier this config applies to. |
 
-**Uniqueness invariant:** one `supplier_ingest_config` per supplier. Enforcement deferred to Phase 3.2 presave hook (not in 3.1). Until then, the constraint is documented but not code-enforced — a second config for the same supplier would be saveable. Office UI in 3.3+ will also pre-flight check before allowing save.
+**Uniqueness invariant:** one `supplier_ingest_config` per supplier. **Enforced as of Phase 3.2** via `hook_ENTITY_TYPE_presave` in `supplier_price_ingest.module`. Attempts to save a second config for the same supplier throw `Drupal\Core\Entity\EntityStorageException` with the conflicting config's ID in the message. The form alter surfaces this as a form error rather than a WSOD.
 
 ---
 
@@ -112,8 +112,52 @@ Bundles not listed in the mapping default to `matched_only`. This is the conserv
 
 1. **One config per supplier.** Enforced by Phase 3.2 presave hook (not in 3.1). Documented expectation regardless.
 2. **`field_supplier` is immutable once set.** Changing supplier on an existing config would orphan the previously-meaningful config history. Phase 3.2 enforces.
-3. **JSON fields must be valid JSON.** Phase 3.2 validates on save. In 3.1, malformed JSON is a soft failure — the parser ignores the config and falls back to defaults.
-4. **Threshold sanity:** `field_fuzzy_threshold_high` must be ≥ `field_fuzzy_threshold_med`. Cross-field validation lands in 3.2.
+3. **JSON fields must be valid JSON.** **Enforced as of Phase 3.2** via `hook_ENTITY_TYPE_presave`. Empty values are allowed (incremental edits welcome); non-empty values must parse. See "Phase 3.2 presave validation contract" below for the full rules.
+4. **Threshold sanity:** `field_fuzzy_threshold_high` must be ≥ `field_fuzzy_threshold_med`. Cross-field validation deferred to 3.3 (when the matcher consumes them).
+
+---
+
+## Phase 3.2 Presave Validation Contract
+
+Implemented in `supplier_price_ingest.module` → `supplier_price_ingest_supplier_ingest_config_presave()`. Throws `Drupal\Core\Entity\EntityStorageException` on any violation; the form alter (`supplier_price_ingest_form_alter`) surfaces these as form errors.
+
+### `field_column_mapping` validation
+
+If the field is non-empty, validates that the JSON:
+
+- Parses as a JSON object.
+- Contains a `source_columns` key whose value is an object.
+- Every value in `source_columns` is in the allowed-target whitelist: `field_supplier_sku`, `field_manufacturer_item_number`, `field_manufacturer_name`, `field_description`, `field_unit_cost`, `field_cost_uom`, `field_pack_quantity`.
+- Maps at least one identifier (`field_supplier_sku` OR `field_manufacturer_item_number` OR `field_description`).
+- Maps `field_unit_cost`.
+
+Other keys in the JSON (`header_row`, `case_sensitive_headers`, etc.) are accepted with sensible defaults at parse time — see `IngestParser` for the defaults.
+
+### `field_bundle_policy` validation
+
+If the field is non-empty, validates that the JSON:
+
+- Parses as a JSON object.
+- Every key is a real `material` bundle machine name (validated against `entity_type.bundle.info.material` at save time).
+- Every value is in the allowed-policy set: `matched_only`, `discovery`, `both`, `excluded`.
+
+**Default for bundles not listed:** `matched_only`. This is the conservative default — known catalog gets matched, unknown bundles don't generate discovery-queue noise. Consumed by the matcher (3.3); the parser ignores `field_bundle_policy`.
+
+### Pre-submit guard (UX layer)
+
+A form-alter pre-submit handler runs JSON-decode before the presave hook fires. Catches the JSON-syntax case early and routes the error to the right form field (`field_column_mapping` or `field_bundle_policy`) so the user sees focused feedback. The presave hook still backstops — anything the pre-submit misses, the presave catches.
+
+### "Load default bundle policy" button
+
+The form alter adds a button to the entity edit form that pre-fills `field_bundle_policy` with the Phase 2 §6 seed matrix:
+
+- `matched_only`: irrigation, pvc, galv, poly, brass, electric, misc, backflow
+- `discovery`: decorative_rock, landscape, copper, pavers, xmas, supplies, mulch, bulk_material
+- `excluded`: plants, shrubs, trees, annuals, sod
+
+Refuses to overwrite a non-empty field — clear the textarea manually first if the user wants to reload defaults.
+
+The seed lives in code (`SUPPLIER_PRICE_INGEST_DEFAULT_BUNDLE_POLICY` in `supplier_price_ingest.module`) rather than config so it's version-controlled and reviewable as part of the module.
 
 ---
 

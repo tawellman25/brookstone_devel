@@ -1,6 +1,11 @@
-# Phase 3.1 — empty container. Service definitions land in 3.2 alongside
-# the IngestParser, MatchingService, DryRunReporter, and PipelineCommitter
-# implementations. Intentionally empty file so the module declares an
-# explicit (empty) container rather than implicitly inheriting nothing.
+# Phase 3.2 — IngestParser service.
+# Matcher, dry-run reporter, commit pipeline services land in 3.3+.
 
-services: {}
+services:
+  supplier_price_ingest.parser:
+    class: Drupal\supplier_price_ingest\Service\IngestParser
+    arguments:
+      - '@entity_type.manager'
+      - '@file.repository'
+      - '@logger.factory'
+      - '@current_user'

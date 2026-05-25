@@ -1,13 +1,14 @@
 # Phase 3.2 menu links under the admin menu.
 #
-# Parent: system.admin — places under the standard admin toolbar.
-# When the materials section gets a dedicated parent menu link, the
-# parent: can be retargeted at that.
+# Parent: views_view:views.materials.page_1 — the same parent that
+# wo_material_price_sync's price-review menu link uses, so the
+# supplier ingest section sits alongside Price Review in the
+# Materials admin menu rather than orphaned under system.admin.
 
 supplier_price_ingest.hub:
   title: 'Supplier Price Ingest'
   route_name: supplier_price_ingest.upload
-  parent: system.admin
+  parent: views_view:views.materials.page_1
   menu_name: admin
   description: 'Upload supplier price catalogs and manage per-supplier ingest configurations.'
   weight: -2

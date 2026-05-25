@@ -20,6 +20,7 @@ dependencies:
     - field.field.material.backflow.field_material_tags
     - field.field.material.backflow.field_name
     - field.field.material.backflow.field_price_updated
+    - field.field.material.backflow.field_replaced_by
     - field.field.material.backflow.field_retail_price_disclaimer
     - field.field.material.backflow.field_safety_data_sheet
     - field.field.material.backflow.field_size
@@ -281,6 +282,16 @@ content:
     settings:
       display_label: true
     third_party_settings: {  }
+  field_replaced_by:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_retail_price_disclaimer:
     type: string_textfield
     weight: 17
@@ -356,13 +367,13 @@ content:
     third_party_settings: {  }
   field_unit_of_measure:
     type: options_select
-    weight: 4
+    weight: 5
     region: content
     settings: {  }
     third_party_settings: {  }
   path:
     type: path
-    weight: 4
+    weight: 5
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -384,5 +395,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden:
-  {  }
+hidden: {  }
+

@@ -1,0 +1,43 @@
+uuid: 5ea2e50d-569c-4462-968b-1385ee6bda16
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+    - options
+id: supplier_price_ingest_row.field_resolution_action
+field_name: field_resolution_action
+entity_type: supplier_price_ingest_row
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: created_link
+      label: 'Created Link'
+    -
+      value: updated_link
+      label: 'Updated Link'
+    -
+      value: created_new_material_and_link
+      label: 'Created New Material and Link'
+    -
+      value: linked_to_existing_material
+      label: 'Linked to Existing Material'
+    -
+      value: marked_as_replacement
+      label: 'Marked as Replacement'
+    -
+      value: rejected
+      label: Rejected
+    -
+      value: noop
+      label: No-op
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false
+

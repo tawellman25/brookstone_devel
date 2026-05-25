@@ -1,0 +1,29 @@
+uuid: 29f06d81-7f17-40e0-91ac-937b9130bd25
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material_price_history.entry
+    - eck.eck_type.supplier_price_ingest_batch.batch
+    - field.storage.material_price_history.field_ingest_batch
+id: material_price_history.entry.field_ingest_batch
+field_name: field_ingest_batch
+entity_type: material_price_history
+bundle: entry
+label: 'Ingest Batch'
+description: 'Set when this history entry originated from a supplier price ingest. Links to the batch that produced it. NULL for all non-ingest sources (wo_entry, manual, invoice, etc.).'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:supplier_price_ingest_batch'
+  handler_settings:
+    target_bundles:
+      batch: batch
+    sort:
+      field: _none
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference
+

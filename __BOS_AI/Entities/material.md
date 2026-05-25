@@ -69,6 +69,13 @@ Common inventory controls:
 - field_discontinued | boolean | Discontinued
   - Indicates the material should no longer be used for new work.
 
+- field_replaced_by | entity_reference → material | Replaced By
+  - **Added 2026-05-25** as part of Phase 3.1 of the supplier-pricing-ingest pipeline. For a discontinued material, points to its current-generation equivalent. Empty when no replacement is known (the common state on day one).
+  - Cardinality 1. Optional. Self-referential entity reference. Autocomplete widget revealed after `field_discontinued` on the form.
+  - **Present on 17 bundles** (all hard-goods + plant bundles where discontinuation-and-replacement is a real concept): `irrigation`, `pvc`, `brass`, `copper`, `galv`, `electric`, `poly`, `pumps`, `backflow`, `landscape`, `pavers`, `supplies`, `xmas`, `plants`, `shrubs`, `trees`, `annuals`.
+  - **NOT present on 5 bundles** by deliberate decision: `bulk_material`, `mulch`, `decorative_rock`, `sod`, `misc`. Rationale: bulk goods and sod don't have "discontinued part with replacement" semantics — when a topsoil source changes you re-source it, you don't redirect a discontinued SKU. `misc` is too loose — including the field would invite inappropriate uses; revisit only if a clear pattern emerges.
+  - Backfill state: ships empty on day one (Phase 3.1). The apprentice's catalog-cleanup work surfaces values into it over time. Rich UI surfacing (banners, warnings on estimate-line-add) lands in Phase 3.9; for Phase 3.1 the field only carries the data, the view display renders it as an inline label.
+
 - field_price_updated | boolean | Price Updated
   - Internal flag for price maintenance workflow.
 

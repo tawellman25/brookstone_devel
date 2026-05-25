@@ -25,6 +25,7 @@ dependencies:
     - field.field.material.pumps.field_pump_size
     - field.field.material.pumps.field_pump_suction_size
     - field.field.material.pumps.field_pump_volts
+    - field.field.material.pumps.field_replaced_by
     - field.field.material.pumps.field_retail_price_disclaimer
     - field.field.material.pumps.field_safety_data_sheet
     - field.field.material.pumps.field_slideshow_image
@@ -320,7 +321,7 @@ content:
     third_party_settings: {  }
   field_pump_size:
     type: options_select
-    weight: 1
+    weight: 2
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -335,6 +336,16 @@ content:
     weight: 11
     region: content
     settings: {  }
+    third_party_settings: {  }
+  field_replaced_by:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
     third_party_settings: {  }
   field_retail_price_disclaimer:
     type: string_textfield
@@ -419,7 +430,7 @@ content:
     third_party_settings: {  }
   title:
     type: string_textfield
-    weight: 1
+    weight: 2
     region: content
     settings:
       size: 60
@@ -437,3 +448,4 @@ content:
     third_party_settings: {  }
 hidden:
   field_supplier: true
+

@@ -1,0 +1,40 @@
+uuid: e25d6447-d26c-4dc0-8ec5-ee0e0526e835
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+    - options
+id: supplier_price_ingest_row.field_row_status
+field_name: field_row_status
+entity_type: supplier_price_ingest_row
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: dry_run
+      label: 'Dry Run'
+    -
+      value: committed
+      label: Committed
+    -
+      value: discovery_pending
+      label: 'Discovery — Pending'
+    -
+      value: discovery_resolved
+      label: 'Discovery — Resolved'
+    -
+      value: rejected
+      label: Rejected
+    -
+      value: error
+      label: Error
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false
+

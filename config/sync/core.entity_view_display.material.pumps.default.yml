@@ -25,6 +25,7 @@ dependencies:
     - field.field.material.pumps.field_pump_size
     - field.field.material.pumps.field_pump_suction_size
     - field.field.material.pumps.field_pump_volts
+    - field.field.material.pumps.field_replaced_by
     - field.field.material.pumps.field_retail_price_disclaimer
     - field.field.material.pumps.field_safety_data_sheet
     - field.field.material.pumps.field_slideshow_image
@@ -34,7 +35,6 @@ dependencies:
     - field.field.material.pumps.field_supplier_website_item_link
     - field.field.material.pumps.field_suppliers
     - field.field.material.pumps.field_supporting_images
-    - image.style.max_325x325
   module:
     - field_group
     - file
@@ -252,6 +252,14 @@ content:
     third_party_settings: {  }
     weight: 29
     region: content
+  field_replaced_by:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 100
+    region: content
   field_safety_data_sheet:
     type: file_default
     label: above
@@ -317,3 +325,4 @@ hidden:
   field_supporting_images: true
   title: true
   uid: true
+

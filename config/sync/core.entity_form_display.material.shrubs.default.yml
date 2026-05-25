@@ -26,6 +26,7 @@ dependencies:
     - field.field.material.shrubs.field_price
     - field.field.material.shrubs.field_price_updated
     - field.field.material.shrubs.field_quantity_in_stock
+    - field.field.material.shrubs.field_replaced_by
     - field.field.material.shrubs.field_supplier_item_number
     - field.field.material.shrubs.field_supplier_website_item_link
     - field.field.material.shrubs.field_suppliers
@@ -345,6 +346,16 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_replaced_by:
+    type: entity_reference_autocomplete
+    weight: 100
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_supplier_item_number:
     type: string_textfield
     weight: 9
@@ -409,5 +420,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden:
-  {  }
+hidden: {  }
+

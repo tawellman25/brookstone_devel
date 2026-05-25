@@ -20,6 +20,7 @@ dependencies:
     - field.field.material.pvc.field_material_tags
     - field.field.material.pvc.field_name
     - field.field.material.pvc.field_price_updated
+    - field.field.material.pvc.field_replaced_by
     - field.field.material.pvc.field_retail_price_disclaimer
     - field.field.material.pvc.field_safety_data_sheet
     - field.field.material.pvc.field_size
@@ -275,10 +276,20 @@ content:
     third_party_settings: {  }
   field_price_updated:
     type: boolean_checkbox
-    weight: 12
+    weight: 13
     region: content
     settings:
       display_label: true
+    third_party_settings: {  }
+  field_replaced_by:
+    type: entity_reference_autocomplete
+    weight: 12
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
     third_party_settings: {  }
   field_retail_price_disclaimer:
     type: string_textfield
@@ -395,3 +406,4 @@ content:
     third_party_settings: {  }
 hidden:
   field_supplier: true
+

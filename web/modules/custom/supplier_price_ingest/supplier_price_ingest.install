@@ -1,0 +1,52 @@
+<?php
+
+/**
+ * @file
+ * Install / uninstall hooks for supplier_price_ingest.
+ *
+ * Phase 3.1 — both hooks intentionally empty.
+ *
+ * Why install() is empty:
+ *   All schema additions in this phase are config-driven (entity types,
+ *   bundles, field storages, field instances, displays, pathauto
+ *   patterns, permissions) and ride in via `drush cim` from the YAMLs
+ *   shipped in config/sync/. There is no install-time data seed, no
+ *   programmatic field creation, and no migration step.
+ *
+ * Why uninstall() is empty (and especially: why field_replaced_by stays
+ * on uninstall):
+ *   - The three new ECK entity types (supplier_price_ingest_batch,
+ *     supplier_price_ingest_row, supplier_ingest_config) are owned by
+ *     ECK + their own config; they are removed by config sync when their
+ *     bundle YAMLs leave config/sync/, not by this module's uninstall.
+ *   - field_replaced_by lives on the material entity, not on any entity
+ *     owned by this module. It is not module-owned; it must NOT be
+ *     deleted on this module's uninstall. The field is also expected to
+ *     accumulate data over time (the apprentice's catalog cleanup
+ *     surfaces values into it) and that data must survive an
+ *     uninstall/reinstall of the ingest pipeline.
+ *   - field_ingest_batch on material_price_history.entry is module-
+ *     adjacent (it references this module's batch entity type). If this
+ *     module is uninstalled, existing history rows that reference a
+ *     batch should retain the reference for audit; the field stays. New
+ *     writes can no longer reference it because the batch entity type
+ *     would also be gone, but that's a deliberate deferred concern, not
+ *     something this hook addresses.
+ *
+ *   In short: nothing this hook would do is correct. Leaving it empty
+ *   is the deliberate choice.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function supplier_price_ingest_install(): void {
+  // Intentionally empty — see file-level doc comment.
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function supplier_price_ingest_uninstall(): void {
+  // Intentionally empty — see file-level doc comment.
+}

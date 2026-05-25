@@ -1,0 +1,28 @@
+uuid: 224380bc-0452-4b83-8021-984387cd434c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.supplier_price_ingest_batch.batch
+    - eck.eck_type.supplier_price_ingest_row.row
+    - field.storage.supplier_price_ingest_row.field_batch
+id: supplier_price_ingest_row.row.field_batch
+field_name: field_batch
+entity_type: supplier_price_ingest_row
+bundle: row
+label: Batch
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:supplier_price_ingest_batch'
+  handler_settings:
+    target_bundles:
+      batch: batch
+    sort:
+      field: _none
+    auto_create: false
+field_type: entity_reference
+

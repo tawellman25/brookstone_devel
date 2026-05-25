@@ -27,6 +27,7 @@ dependencies:
     - field.field.material.annuals.field_price
     - field.field.material.annuals.field_price_updated
     - field.field.material.annuals.field_quantity_in_stock
+    - field.field.material.annuals.field_replaced_by
     - field.field.material.annuals.field_supplier_item_number
     - field.field.material.annuals.field_supplier_website_item_link
     - field.field.material.annuals.field_suppliers
@@ -330,7 +331,7 @@ content:
     third_party_settings: {  }
   field_plant_species:
     type: string_textfield
-    weight: 12
+    weight: 13
     region: content
     settings:
       size: 60
@@ -355,6 +356,16 @@ content:
     weight: 8
     region: content
     settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_replaced_by:
+    type: entity_reference_autocomplete
+    weight: 12
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
       placeholder: ''
     third_party_settings: {  }
   field_supplier_item_number:
@@ -421,5 +432,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden:
-  {  }
+hidden: {  }
+

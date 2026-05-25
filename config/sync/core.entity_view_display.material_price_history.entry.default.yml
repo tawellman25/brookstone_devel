@@ -6,6 +6,7 @@ dependencies:
     - eck.eck_type.material_price_history.entry
     - field.field.material_price_history.entry.field_change_notes
     - field.field.material_price_history.entry.field_delta_percent
+    - field.field.material_price_history.entry.field_ingest_batch
     - field.field.material_price_history.entry.field_material
     - field.field.material_price_history.entry.field_new_cost
     - field.field.material_price_history.entry.field_old_cost
@@ -22,6 +23,7 @@ dependencies:
   module:
     - datetime
     - options
+    - user
 id: material_price_history.entry.default
 targetEntityType: material_price_history
 bundle: entry
@@ -63,6 +65,14 @@ content:
       prefix_suffix: true
     third_party_settings: {  }
     weight: 5
+    region: content
+  field_ingest_batch:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 7
     region: content
   field_material:
     type: entity_reference_label
@@ -189,3 +199,4 @@ content:
     region: content
 hidden:
   changed: true
+

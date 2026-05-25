@@ -20,6 +20,7 @@ dependencies:
     - field.field.material.pavers.field_material_tags
     - field.field.material.pavers.field_name
     - field.field.material.pavers.field_price_updated
+    - field.field.material.pavers.field_replaced_by
     - field.field.material.pavers.field_retail_price_disclaimer
     - field.field.material.pavers.field_safety_data_sheet
     - field.field.material.pavers.field_size
@@ -31,7 +32,6 @@ dependencies:
     - field.field.material.pavers.field_suppliers
     - field.field.material.pavers.field_supporting_images
     - field.field.material.pavers.field_unit_of_measure
-    - image.style.max_325x325
   module:
     - field_group
     - file
@@ -156,6 +156,14 @@ content:
     third_party_settings: {  }
     weight: 5
     region: content
+  field_replaced_by:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 100
+    region: content
   field_size:
     type: string
     label: above
@@ -238,3 +246,4 @@ hidden:
   field_unit_of_measure: true
   title: true
   uid: true
+

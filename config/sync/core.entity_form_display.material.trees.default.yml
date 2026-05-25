@@ -27,6 +27,7 @@ dependencies:
     - field.field.material.trees.field_price
     - field.field.material.trees.field_price_updated
     - field.field.material.trees.field_quantity_in_stock
+    - field.field.material.trees.field_replaced_by
     - field.field.material.trees.field_supplier_item_number
     - field.field.material.trees.field_supplier_website_item_link
     - field.field.material.trees.field_suppliers
@@ -39,6 +40,7 @@ dependencies:
     - image
     - layout_discovery
     - link
+    - path
     - text
 third_party_settings:
   field_layout:
@@ -356,6 +358,16 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_replaced_by:
+    type: entity_reference_autocomplete
+    weight: 100
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_supplier_item_number:
     type: string_textfield
     weight: 6
@@ -420,5 +432,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden:
-  {  }
+hidden: {  }
+

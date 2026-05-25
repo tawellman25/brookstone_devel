@@ -1,0 +1,28 @@
+uuid: b82b39c3-868e-4c08-a2c0-d6a20f6bbe95
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.supplier_price_ingest_batch.batch
+    - field.storage.supplier_price_ingest_batch.field_source_file
+  module:
+    - file
+id: supplier_price_ingest_batch.batch.field_source_file
+field_name: field_source_file
+entity_type: supplier_price_ingest_batch
+bundle: batch
+label: 'Source File'
+description: 'CSV or XLSX file from the supplier (max 50 MB).'
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: supplier_ingest
+  file_extensions: 'csv xls xlsx'
+  max_filesize: '50 MB'
+  description_field: false
+field_type: file
+

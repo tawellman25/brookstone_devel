@@ -1,0 +1,28 @@
+uuid: decc9648-dabd-4c0c-82ac-29274b578be6
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material_suppliers.supplier
+    - eck.eck_type.supplier_price_ingest_row.row
+    - field.storage.supplier_price_ingest_row.field_existing_link
+id: supplier_price_ingest_row.row.field_existing_link
+field_name: field_existing_link
+entity_type: supplier_price_ingest_row
+bundle: row
+label: 'Existing Link'
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:material_suppliers'
+  handler_settings:
+    target_bundles:
+      supplier: supplier
+    sort:
+      field: _none
+    auto_create: false
+field_type: entity_reference
+

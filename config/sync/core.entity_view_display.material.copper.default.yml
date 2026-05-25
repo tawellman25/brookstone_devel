@@ -20,6 +20,7 @@ dependencies:
     - field.field.material.copper.field_material_tags
     - field.field.material.copper.field_name
     - field.field.material.copper.field_price_updated
+    - field.field.material.copper.field_replaced_by
     - field.field.material.copper.field_retail_price_disclaimer
     - field.field.material.copper.field_safety_data_sheet
     - field.field.material.copper.field_size
@@ -31,7 +32,6 @@ dependencies:
     - field.field.material.copper.field_suppliers
     - field.field.material.copper.field_supporting_images
     - field.field.material.copper.field_unit_of_measure
-    - image.style.max_325x325
   module:
     - field_group
     - file
@@ -264,6 +264,14 @@ content:
     third_party_settings: {  }
     weight: 3
     region: content
+  field_replaced_by:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
   field_retail_price_disclaimer:
     type: string
     label: above
@@ -396,3 +404,4 @@ hidden:
   field_supporting_images: true
   title: true
   uid: true
+

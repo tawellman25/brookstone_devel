@@ -16,6 +16,7 @@ dependencies:
     - field.field.material.supplies.field_material_tags
     - field.field.material.supplies.field_name
     - field.field.material.supplies.field_price_updated
+    - field.field.material.supplies.field_replaced_by
     - field.field.material.supplies.field_safety_data_sheet
     - field.field.material.supplies.field_size
     - field.field.material.supplies.field_supplier_item_number
@@ -236,6 +237,16 @@ content:
     settings:
       display_label: true
     third_party_settings: {  }
+  field_replaced_by:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_safety_data_sheet:
     type: file_generic
     weight: 8
@@ -287,13 +298,13 @@ content:
     third_party_settings: {  }
   field_unit_of_measure:
     type: options_select
-    weight: 4
+    weight: 5
     region: content
     settings: {  }
     third_party_settings: {  }
   path:
     type: path
-    weight: 4
+    weight: 5
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -315,5 +326,5 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden:
-  {  }
+hidden: {  }
+

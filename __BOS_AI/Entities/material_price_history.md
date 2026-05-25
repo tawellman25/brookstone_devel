@@ -65,15 +65,24 @@ This entity exists so the office can answer:
 | `field_review_notes`              | string_long                       | Office Manager's notes from the approve/reject decision. NULL until reviewed.                                          |
 | `field_reviewed_by`               | entity_reference → user           | The Office Manager (or admin) who decided. NULL until reviewed.                                                        |
 | `field_reviewed_on`               | datetime                          | When the review was performed. NULL until reviewed.                                                                    |
+| `field_ingest_batch`              | entity_reference → supplier_price_ingest_batch | **Added 2026-05-25 (Phase 3.1).** Set when this entry originated from a supplier price ingest. Links to the batch that produced it. NULL for all non-ingest sources. Form-display placement: inside the existing "Source / Origin" fieldset group, immediately after `field_wo_reference`. View display: visible as inline reference label. |
 
 ### `field_source` Allowed Values
 
-| Value          | Meaning                                                                          |
-| -------------- | -------------------------------------------------------------------------------- |
-| `wo_entry`     | Crew typed a different price on a WO line.                                       |
-| `manual`       | Office staff edited the supplier link directly (not via the WO flow).            |
-| `invoice`      | Entered from a supplier invoice (reserved for office data entry).                |
-| `auto_created` | The (material, vendor) pair didn't exist; the system created the link.           |
+| Value                  | Meaning                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `wo_entry`             | Crew typed a different price on a WO line.                                       |
+| `manual`               | Office staff edited the supplier link directly (not via the WO flow).            |
+| `invoice`              | Entered from a supplier invoice (reserved for office data entry).                |
+| `auto_created`         | The (material, vendor) pair didn't exist; the system created the link.           |
+| `catalog`              | Price obtained from a supplier catalog (printed or PDF). *Added 2026-05-25.*    |
+| `quote`                | Price obtained from a supplier quote (custom pricing). *Added 2026-05-25.*       |
+| `website`              | Price obtained from a supplier website (manual lookup). *Added 2026-05-25.*       |
+| `phone`                | Price obtained by phone call to supplier. *Added 2026-05-25.*                   |
+| `feed_import_auto`     | Applied by the supplier-price-ingest pipeline without office review (Tier 1, Tier 2, or Tier 3 high-confidence matches). `field_ingest_batch` is always populated. *Added 2026-05-25 (Phase 3.1).* |
+| `feed_import_reviewed` | Applied by the supplier-price-ingest pipeline after Office Manager review (Tier 3 medium-confidence or discovery resolution). `field_ingest_batch` is always populated. *Added 2026-05-25 (Phase 3.1).* |
+
+**Stability invariant:** value order in the underlying `list_string` field storage YAML must remain stable. `wo_entry`, `manual`, `invoice`, `auto_created`, `catalog`, `quote`, `website`, `phone`, `feed_import_auto`, `feed_import_reviewed` are the canonical order. Do NOT reorder or relabel existing values — production rows depend on the stored value strings.
 
 ### `field_status` Allowed Values
 
@@ -95,6 +104,7 @@ This entity exists so the office can answer:
 3. **No retroactive backfill.** History builds forward from the moment `wo_material_price_sync` was enabled. Earlier supplier link changes have no entries.
 4. **Snapshot at entry time.** `field_supplier_invoice_number` and `field_supplier_item_number` reflect what the crew member entered on the WO line at the time. If the office later edits the supplier link's SKU, the history entry's SKU does not change.
 5. **No deletion in normal operation.** The entity supports delete via API/admin only — never via UI for end users.
+6. **Feed-import entries always carry a batch reference.** When `field_source` is `feed_import_auto` or `feed_import_reviewed`, `field_ingest_batch` MUST be populated. The supplier-price-ingest pipeline enforces this at write time (Phase 3.2+). Audits should treat any feed_import_* row with NULL `field_ingest_batch` as a data integrity defect.
 
 ---
 

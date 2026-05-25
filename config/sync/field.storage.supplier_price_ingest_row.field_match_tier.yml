@@ -1,0 +1,52 @@
+uuid: deb6587e-1d0d-449b-9f30-fc439774f344
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+    - options
+id: supplier_price_ingest_row.field_match_tier
+field_name: field_match_tier
+entity_type: supplier_price_ingest_row
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: tier_1_mfr
+      label: 'Tier 1 — Manufacturer Item #'
+    -
+      value: tier_2_supplier_sku
+      label: 'Tier 2 — Supplier SKU'
+    -
+      value: tier_3_fuzzy_high
+      label: 'Tier 3 — Fuzzy (High Confidence)'
+    -
+      value: tier_3_fuzzy_med
+      label: 'Tier 3 — Fuzzy (Medium Confidence)'
+    -
+      value: tier_3_fuzzy_low
+      label: 'Tier 3 — Fuzzy (Low Confidence)'
+    -
+      value: discovery
+      label: 'Discovery (No Match)'
+    -
+      value: skipped_discontinued
+      label: 'Skipped — Discontinued'
+    -
+      value: skipped_do_not_use
+      label: 'Skipped — Do Not Use'
+    -
+      value: skipped_excluded_bundle
+      label: 'Skipped — Excluded Bundle'
+    -
+      value: error
+      label: Error
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false
+

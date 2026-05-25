@@ -1,0 +1,28 @@
+uuid: 9f69bab2-baac-4281-acab-0dd8ce1e567b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.supplier.supplier
+    - eck.eck_type.supplier_ingest_config.config
+    - field.storage.supplier_ingest_config.field_supplier
+id: supplier_ingest_config.config.field_supplier
+field_name: field_supplier
+entity_type: supplier_ingest_config
+bundle: config
+label: Supplier
+description: 'One ingest config per supplier (uniqueness enforced in 3.2 presave hook).'
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:supplier'
+  handler_settings:
+    target_bundles:
+      supplier: supplier
+    sort:
+      field: _none
+    auto_create: false
+field_type: entity_reference
+

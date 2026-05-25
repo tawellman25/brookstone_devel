@@ -6,6 +6,7 @@ dependencies:
     - eck.eck_type.material_price_history.entry
     - field.field.material_price_history.entry.field_change_notes
     - field.field.material_price_history.entry.field_delta_percent
+    - field.field.material_price_history.entry.field_ingest_batch
     - field.field.material_price_history.entry.field_material
     - field.field.material_price_history.entry.field_new_cost
     - field.field.material_price_history.entry.field_old_cost
@@ -22,7 +23,8 @@ dependencies:
   module:
     - datetime
     - field_group
-    - options
+    - field_layout
+    - layout_discovery
 third_party_settings:
   field_group:
     group_change_details:
@@ -51,6 +53,7 @@ third_party_settings:
         - field_source
         - field_status
         - field_wo_reference
+        - field_ingest_batch
         - field_user
         - field_change_notes
       label: 'Source / Origin'
@@ -104,6 +107,16 @@ content:
     weight: 5
     region: content
     settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_ingest_batch:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
       placeholder: ''
     third_party_settings: {  }
   field_material:
@@ -230,3 +243,4 @@ content:
 hidden:
   created: true
   uid: true
+

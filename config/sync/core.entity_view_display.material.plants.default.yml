@@ -27,15 +27,16 @@ dependencies:
     - field.field.material.plants.field_price
     - field.field.material.plants.field_price_updated
     - field.field.material.plants.field_quantity_in_stock
+    - field.field.material.plants.field_replaced_by
     - field.field.material.plants.field_supplier_item_number
     - field.field.material.plants.field_supplier_website_item_link
     - field.field.material.plants.field_suppliers
     - field.field.material.plants.field_water_use
     - field.field.material.plants.field_width
-    - image.style.max_325x325
   module:
     - field_group
     - image
+    - link
     - options
     - text
     - user
@@ -301,6 +302,14 @@ content:
     third_party_settings: {  }
     weight: 10
     region: content
+  field_replaced_by:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 100
+    region: content
   field_supplier_item_number:
     type: string
     label: above
@@ -375,3 +384,4 @@ hidden:
   field_price_updated: true
   title: true
   uid: true
+

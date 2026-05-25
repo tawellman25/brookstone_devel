@@ -383,6 +383,37 @@ try {
   ];
   foreach ($checks9 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
   $results['step9_unmapped_uom_errors'] = !in_array(FALSE, $checks9, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 10: admin page smoke-test ───────────────────────────────
+  // Catches "route registered but page throws" bugs — the kind that
+  // would otherwise ship undetected until an office user clicks the
+  // link. Render each admin page via subrequest as uid 1 and assert
+  // 200 OK. Add new pages here as the module surfaces new admin URLs.
+  echo "\n=== Step 10: admin pages render cleanly (subrequest, uid 1) ===\n";
+  \Drupal::currentUser()->setAccount(\Drupal\user\Entity\User::load(1));
+  $httpKernel = \Drupal::service('http_kernel');
+  $pages = [
+    '/admin/materials/supplier-ingest/upload'        => 'Upload Catalog form',
+    '/admin/materials/supplier-ingest/configs'       => 'Supplier Configs list (Views)',
+    '/admin/materials/supplier-ingest/configs/add'   => 'Add Supplier Ingest Config',
+    '/admin/materials/supplier-ingest/batches/add'   => 'Add Supplier Price Ingest Batch (preemptive)',
+    '/admin/materials/supplier-ingest/rows/add'      => 'Add Supplier Price Ingest Row (preemptive)',
+  ];
+  $checks10 = [];
+  foreach ($pages as $path => $label) {
+    try {
+      $subRequest = \Symfony\Component\HttpFoundation\Request::create($path, 'GET');
+      $response = $httpKernel->handle($subRequest, \Symfony\Component\HttpKernel\HttpKernelInterface::SUB_REQUEST);
+      $code = $response->getStatusCode();
+      $checks10["$path → 200"] = ($code === 200);
+      echo sprintf("  %s — %s (HTTP %d)\n", $code === 200 ? 'PASS' : 'FAIL', $label, $code);
+    }
+    catch (\Throwable $e) {
+      $checks10["$path → 200"] = FALSE;
+      echo sprintf("  FAIL — %s EXCEPTION: %s\n", $label, $e->getMessage());
+    }
+  }
+  $results['step10_admin_pages_smoke'] = !in_array(FALSE, $checks10, TRUE) ? 'PASS' : 'FAIL';
 }
 finally {
   // Cleanup

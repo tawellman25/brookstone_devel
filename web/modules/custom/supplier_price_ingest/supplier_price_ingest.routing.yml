@@ -31,9 +31,31 @@ supplier_price_ingest.batch_view:
 supplier_price_ingest.config_add:
   path: '/admin/materials/supplier-ingest/configs/add'
   defaults:
-    _entity_form: 'supplier_ingest_config.default'
+    _controller: '\Drupal\supplier_price_ingest\Controller\AddRouteController::addConfig'
     _title: 'Add Supplier Ingest Config'
-    bundle: 'config'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+
+# Preemptive — Phase 3.7 dashboards may invoke these. URLs not yet
+# surfaced in the menu; routes exist so future code doesn't trip on
+# the same "Missing bundle" error.
+supplier_price_ingest.batch_add:
+  path: '/admin/materials/supplier-ingest/batches/add'
+  defaults:
+    _controller: '\Drupal\supplier_price_ingest\Controller\AddRouteController::addBatch'
+    _title: 'Add Supplier Price Ingest Batch'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+
+supplier_price_ingest.row_add:
+  path: '/admin/materials/supplier-ingest/rows/add'
+  defaults:
+    _controller: '\Drupal\supplier_price_ingest\Controller\AddRouteController::addRow'
+    _title: 'Add Supplier Price Ingest Row'
   requirements:
     _permission: 'administer supplier price ingest'
   options:

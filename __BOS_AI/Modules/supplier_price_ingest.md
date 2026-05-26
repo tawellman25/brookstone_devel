@@ -9,7 +9,7 @@ Status:
 - **Phase 3.4 shipped 2026-05-25** — Tier 3 fuzzy matching (`FuzzyScorer` + bundle inference + threshold routing) inserted between Tier 2 and discovery. 12-scenario verifier (`web/scripts/verify_supplier_price_ingest_fuzzy.php`) covers high/medium/low confidence routing, anti-signal handling, bundle inference correctness, excluded-bundle filtering, discontinued exclusion, and a 100-row × ~200-candidate performance pass (~2.5s in DDEV, vs the 30s budget).
 - **Phase 3.5 shipped 2026-05-25** — dry-run report UI, approve/reject confirm forms, CSV export, stub committer, source filter on `views.view.material_price_review_queue`, Tier 1 sort fix from the range-audit. Commit logic was stubbed pending Phase 3.6.
 - **Phase 3.6 shipped 2026-05-25** — real commit pipeline. `IngestCommitter` replaces the stub; per-row hand-off to `PriceSyncService::ingestRow()` (new unified mutation authority extending the existing WO-driven service). Approve form runs synchronously for small batches (<500 auto-applying rows) and via Drupal Batch API for large batches. Idempotent recovery on interrupted commits.
-- **Phase 3.7 shipped 2026-05-25** — Office Manager dashboards. Three new Views surfaces (Batch Manager, Discovery Queue, Fuzzy Match Review). Eight per-row operations: Create Material from Row, Link to Existing, Mark as Replacement, Reject (×4 for discovery); Confirm Match, Override Match, Send to Discovery, Reject (×4 for fuzzy review). Committer extended to route discovery + fuzzy_med rows to `discovery_pending` on commit so they surface in the queue views. SiteOne column-mapping seed button. Bulk Reject action wired into both row views.
+- **Phase 3.7 shipped 2026-05-25** — Office Manager dashboards. Three new Views surfaces (Batch Manager, Discovery Queue, Fuzzy Match Review). Eight per-row operations: Create Material from Row, Link to Existing, Mark as Replacement, Reject (×4 for discovery); Confirm Match, Override Match, Send to Discovery, Reject (×4 for fuzzy review). Committer extended to route discovery + fuzzy_med rows to `discovery_pending` on commit so they surface in the queue views. Bulk Reject action wired into both row views. **(Phase 3.7 also shipped two seed-load buttons — "Load default bundle policy" and "Load SiteOne column mapping" — on the supplier_ingest_config form. Both buttons were REMOVED in the 2026-05-25 form-alter follow-up. Office staff paste seed JSON directly from Chat output. See the Phase 3.7 section below for the current state.)**
 
 ---
 
@@ -854,9 +854,41 @@ Wired into both row views via the `views_bulk_operations_bulk_form` field. Same 
 
 No bulk Create / Link / Confirm — those are inherently per-row decisions and per-row review is the point of the queue surface. Bulk Confirm in particular was considered risky enough to defer until a demonstrated need.
 
-### SiteOne column-mapping seed
+### Seed JSON for supplier_ingest_config (copy-paste from Chat)
 
-Second button on the `supplier_ingest_config` form alter (next to the Phase 3.2 "Load default bundle policy" button). Pre-fills `field_column_mapping` with the SiteOne CSV shape:
+**As of 2026-05-25 the two seed-load buttons on the supplier_ingest_config form ("Load default bundle policy" and "Load SiteOne column mapping") have been REMOVED.** Office staff configure new supplier configs by pasting JSON directly from Claude Chat output into the two textareas. The buttons added a population path that became worthless once the field had any content, and the rebuild-doesn't-update-textarea-from-form_state mechanic (see `__BOS_AI/Governance/drupal_bos_gotchas.md`) made the buttons unreliable.
+
+Reference seed JSON (paste into the matching textarea — both are plain `string_long` so no formatting concerns):
+
+**Default bundle policy** (Phase 2 §6 matrix):
+
+```json
+{
+  "irrigation":      "matched_only",
+  "pvc":             "matched_only",
+  "galv":            "matched_only",
+  "poly":            "matched_only",
+  "brass":           "matched_only",
+  "electric":        "matched_only",
+  "misc":            "matched_only",
+  "backflow":        "matched_only",
+  "decorative_rock": "discovery",
+  "landscape":       "discovery",
+  "copper":          "discovery",
+  "pavers":          "discovery",
+  "xmas":            "discovery",
+  "supplies":        "discovery",
+  "mulch":           "discovery",
+  "bulk_material":   "discovery",
+  "plants":          "excluded",
+  "shrubs":          "excluded",
+  "trees":           "excluded",
+  "annuals":         "excluded",
+  "sod":             "excluded"
+}
+```
+
+**SiteOne column mapping** (reflects the actual scraped CSV shape):
 
 ```json
 {
@@ -873,8 +905,6 @@ Second button on the `supplier_ingest_config` form alter (next to the Phase 3.2 
   "trim_whitespace": true
 }
 ```
-
-Same overwrite-protection semantics as the bundle-policy seed: warns and refuses if the field is already populated. Stored in `SUPPLIER_PRICE_INGEST_SITEONE_COLUMN_MAPPING` module constant so it's reviewable as part of the module and not duplicated across config/code.
 
 #### Known limitation — 1:many column mapping for SiteOne
 
@@ -910,26 +940,28 @@ SiteOne's `supplier_item_number` column frequently IS the manufacturer's item nu
 | `templates/supplier-price-ingest-batch-detail.html.twig` | Committed-state banner shows routed counts + links to queue views |
 | `supplier_price_ingest.routing.yml` | 8 new operation routes |
 | `supplier_price_ingest.links.menu.yml` | Discovery Queue + Fuzzy Match Review menu links; Batches link repointed from ECK list to new Views page |
-| `supplier_price_ingest.module` | SiteOne mapping seed constant + button + handler |
+| `supplier_price_ingest.module` | Phase 3.7 also shipped seed-load buttons here — REMOVED 2026-05-25 (see follow-up note above) |
 | `web/scripts/verify_supplier_price_ingest_parser.php` | Step 10 smoke-test extended with 11 new URLs |
 
 ### Phase 3.7 Verification
 
-- `verify_supplier_price_ingest_dashboards.php` — **11 scenarios all PASS**:
+- `verify_supplier_price_ingest_dashboards.php` — **13 scenarios all PASS** (after the 2026-05-25 follow-up):
   - 0. Committer routes 4 discovery+fuzzy_med rows to `discovery_pending` (the upstream dependency)
   - 1-4. Discovery: Create Material / Link to Existing / Mark as Replacement / Reject
   - 5a-5d. Fuzzy: Confirm / Override / Send to Discovery / Reject
-  - 6. SiteOne mapping seed constant present and shaped correctly
+  - 6. Seed-load button artifacts are absent (constants + handlers removed after 2026-05-25 form-alter follow-up)
   - 7. Bulk Reject action — 3/3 rows transitioned
+  - 8. supplier_ingest_config form-render assertions: marker class present on textareas; CKEditor absent; uid / created / pathauto noise hidden; seed buttons absent
+  - 9. field_column_mapping + field_bundle_policy storage type is `string_long` (not `text_long`)
 
 - `verify_supplier_price_ingest_parser.php` Step 10 — **18 URLs PASS** (5 prior + 4 batch-id + 3 Phase 3.7 views + 8 row operations).
 - All other standing verifiers (matcher, fuzzy, committer, WO regression) — PASS, no regressions.
 
 ### Forward dependencies
 
-- ⚠ SOP NEEDED — three new Office Manager workflows now user-facing: Batch Manager navigation, Discovery Queue resolution, Fuzzy Match Review. Listed in Phase 2 §11 as separate SOPs (Discovery Queue Resolution, Fuzzy Match Review, plus the Upload-and-Review SOP that now includes Batches view navigation). All three owned by Phase 3.12 SOP authoring.
+- ⚠ SOP NEEDED — three new Office Manager workflows now user-facing: Batch Manager navigation, Discovery Queue resolution, Fuzzy Match Review. Listed in Phase 2 §11 as separate SOPs (Discovery Queue Resolution, Fuzzy Match Review, plus the Upload-and-Review SOP that now includes Batches view navigation). All three owned by Phase 3.12 SOP authoring. The Upload-and-Review SOP should also document the copy-paste-from-Chat seed JSON workflow for new supplier_ingest_config setups (the two reference snippets above).
 - 1:many column mapping for SiteOne (see "Known limitation" above) — deferred until Phase 3.10 produces evidence the 1:1 shape costs Tier 1 hits.
-- CPS / Denver Brass column mapping seed buttons — defer until those CSVs are in hand.
+- CPS / Denver Brass column mapping JSON snippets — add to this doc when those CSVs are scraped.
 
 ---
 

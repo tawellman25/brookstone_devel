@@ -147,17 +147,11 @@ If the field is non-empty, validates that the JSON:
 
 A form-alter pre-submit handler runs JSON-decode before the presave hook fires. Catches the JSON-syntax case early and routes the error to the right form field (`field_column_mapping` or `field_bundle_policy`) so the user sees focused feedback. The presave hook still backstops — anything the pre-submit misses, the presave catches.
 
-### "Load default bundle policy" button
+### Seed JSON — copy-paste from Chat (no button)
 
-The form alter adds a button to the entity edit form that pre-fills `field_bundle_policy` with the Phase 2 §6 seed matrix:
+Phase 3.2 originally shipped a "Load default bundle policy" button and Phase 3.7 added a "Load SiteOne column mapping" button next to the JSON textareas. **Both buttons were removed on 2026-05-25** — Office staff paste seed JSON directly from Claude Chat output, which is faster than maintaining the button-mediated workflow (Drupal's rebuild-doesn't-update-textarea-from-form_state mechanic made the buttons unreliable; the underlying limitation is documented in `__BOS_AI/Governance/drupal_bos_gotchas.md`).
 
-- `matched_only`: irrigation, pvc, galv, poly, brass, electric, misc, backflow
-- `discovery`: decorative_rock, landscape, copper, pavers, xmas, supplies, mulch, bulk_material
-- `excluded`: plants, shrubs, trees, annuals, sod
-
-Refuses to overwrite a non-empty field — clear the textarea manually first if the user wants to reload defaults.
-
-The seed lives in code (`SUPPLIER_PRICE_INGEST_DEFAULT_BUNDLE_POLICY` in `supplier_price_ingest.module`) rather than config so it's version-controlled and reviewable as part of the module.
+The reference snippets for the default bundle policy (Phase 2 §6 matrix) and the SiteOne column mapping live in `__BOS_AI/Modules/supplier_price_ingest.md` under "Seed JSON for supplier_ingest_config (copy-paste from Chat)." Same content the buttons used to inject; same overwrite semantics (the textarea is now-or-never — paste over existing content deliberately).
 
 ---
 

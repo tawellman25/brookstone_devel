@@ -435,19 +435,23 @@ try {
   $results['scenario_5d_reject_fuzzy'] = !in_array(FALSE, $checks5d, TRUE) ? 'PASS' : 'FAIL';
 
   // ════════════════════════════════════════════════════════════════
-  // SCENARIO 6 — SiteOne column mapping seed constant
+  // SCENARIO 6 — seed buttons + constants are GONE
   // ════════════════════════════════════════════════════════════════
-  echo "\n=== Scenario 6: SiteOne column mapping seed constant present ===\n";
-  $seed = SUPPLIER_PRICE_INGEST_SITEONE_COLUMN_MAPPING;
+  // The Phase 3.7 seed buttons were removed in the 2026-05-25 follow-up
+  // (Office staff paste seed JSON directly from Chat output). Both the
+  // SUPPLIER_PRICE_INGEST_SITEONE_COLUMN_MAPPING constant and the
+  // SUPPLIER_PRICE_INGEST_DEFAULT_BUNDLE_POLICY constant were removed
+  // alongside. This scenario asserts the cleanup is complete — defined()
+  // returns FALSE for both.
+  echo "\n=== Scenario 6: removed-seed-button artifacts are absent ===\n";
   $checks6 = [
-    'has_source_columns' => isset($seed['source_columns']) && is_array($seed['source_columns']),
-    'maps_supplier_item_number' => ($seed['source_columns']['supplier_item_number'] ?? '') === 'field_supplier_sku',
-    'maps_your_price'  => ($seed['source_columns']['your_price'] ?? '') === 'field_unit_cost',
-    'maps_cost_uom'    => ($seed['source_columns']['cost_uom'] ?? '') === 'field_cost_uom',
-    'header_row_set'   => ($seed['header_row'] ?? 0) === 1,
+    'siteone_const_removed' => !defined('SUPPLIER_PRICE_INGEST_SITEONE_COLUMN_MAPPING'),
+    'bundle_policy_const_removed' => !defined('SUPPLIER_PRICE_INGEST_DEFAULT_BUNDLE_POLICY'),
+    'seed_handler_removed' => !function_exists('_supplier_price_ingest_load_default_bundle_policy'),
+    'siteone_handler_removed' => !function_exists('_supplier_price_ingest_load_siteone_column_mapping'),
   ];
   foreach ($checks6 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
-  $results['scenario_6_siteone_seed'] = !in_array(FALSE, $checks6, TRUE) ? 'PASS' : 'FAIL';
+  $results['scenario_6_seed_buttons_removed'] = !in_array(FALSE, $checks6, TRUE) ? 'PASS' : 'FAIL';
 
   // ════════════════════════════════════════════════════════════════
   // SCENARIO 7 — Bulk Reject action
@@ -501,13 +505,14 @@ try {
   // ════════════════════════════════════════════════════════════════
   // SCENARIO 8 — supplier_ingest_config form-render assertions
   // ════════════════════════════════════════════════════════════════
-  // Fix-driven additions (2026-05-25). The Phase 3.2 / 3.7 form alter
-  // silently failed to mutate the rendered form because the original
-  // text_format widget's #process callback ran AFTER hook_form_alter
-  // and clobbered #attributes. Scenario 6 (constant-existence) passed
-  // anyway. These four assertions render the actual form and check
-  // the HTML — that's what would have caught the bug originally, so
-  // these stay regardless of future widget choice.
+  // Constant-existence in PHP code is not the same as button-on-form;
+  // a working alter is verified by rendering the actual form HTML and
+  // checking it.
+  //
+  // The 2026-05-25 follow-up REMOVED both seed-load buttons (user
+  // wanted to paste JSON from Chat output directly). 8a/8b assert
+  // their absence — re-introducing either button without first
+  // restoring the constants + handlers + intent would fail this check.
   echo "\n=== Scenario 8: supplier_ingest_config form-render assertions ===\n";
   \Drupal::currentUser()->setAccount(\Drupal\user\Entity\User::load(1));
   $kernel = \Drupal::service('http_kernel');
@@ -516,8 +521,8 @@ try {
   $html = (string) $resp->getContent();
   $checks8 = [
     'http_200' => $resp->getStatusCode() === 200,
-    '8a_siteone_button_renders' => str_contains($html, 'Load SiteOne column mapping'),
-    '8b_bundle_policy_button_renders' => str_contains($html, 'Load default bundle policy'),
+    '8a_siteone_button_ABSENT' => !str_contains($html, 'Load SiteOne column mapping'),
+    '8b_bundle_policy_button_ABSENT' => !str_contains($html, 'Load default bundle policy'),
     '8c_marker_class_present_on_textarea' => str_contains($html, 'supplier-price-ingest-json-textarea'),
     '8d_no_ckeditor_wrapper_for_json_fields' => !preg_match('/data-ckeditor[\w-]*="[^"]*field[-_]column[-_]mapping[^"]*"/', $html)
                                               && !preg_match('/data-ckeditor[\w-]*="[^"]*field[-_]bundle[-_]policy[^"]*"/', $html)

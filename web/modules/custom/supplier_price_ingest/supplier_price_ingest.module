@@ -10,8 +10,10 @@
  *       * JSON shape validation for field_column_mapping and
  *         field_bundle_policy
  *   - hook_form_alter for the supplier_ingest_config edit form:
- *       * monospace JSON textareas with help text
- *       * "Load default bundle policy" button (Phase 2 §6 matrix)
+ *       * JSON-shape help on the two JSON textareas
+ *       * marker class so verifiers can assert plain textarea (vs CKE)
+ *       * hide uid / created / pathauto noise
+ *       * pre-submit guard for JSON-decode errors
  *   - hook_theme for the placeholder batch view template
  *
  * Matching (3.3), dry-run UI (3.5), commit logic (3.6), and dashboards
@@ -26,37 +28,6 @@ use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\supplier_price_ingest\Service\IngestParser;
 
-/**
- * Default bundle policy seed — Phase 2 §6 matrix.
- *
- * Used by the "Load default bundle policy" button on the config form.
- * Kept in code (not config) so the seed is version-controlled and
- * reviewable as part of the module.
- */
-const SUPPLIER_PRICE_INGEST_DEFAULT_BUNDLE_POLICY = [
-  'irrigation'      => 'matched_only',
-  'pvc'             => 'matched_only',
-  'galv'            => 'matched_only',
-  'poly'            => 'matched_only',
-  'brass'           => 'matched_only',
-  'electric'        => 'matched_only',
-  'misc'            => 'matched_only',
-  'backflow'        => 'matched_only',
-  'decorative_rock' => 'discovery',
-  'landscape'       => 'discovery',
-  'copper'          => 'discovery',
-  'pavers'          => 'discovery',
-  'xmas'            => 'discovery',
-  'supplies'        => 'discovery',
-  'mulch'           => 'discovery',
-  'bulk_material'   => 'discovery',
-  'plants'          => 'excluded',
-  'shrubs'          => 'excluded',
-  'trees'           => 'excluded',
-  'annuals'         => 'excluded',
-  'sod'             => 'excluded',
-];
-
 const SUPPLIER_PRICE_INGEST_BUNDLE_POLICY_VALUES = [
   'matched_only',
   'discovery',
@@ -64,32 +35,17 @@ const SUPPLIER_PRICE_INGEST_BUNDLE_POLICY_VALUES = [
   'excluded',
 ];
 
-/**
- * Phase 3.7 — SiteOne column mapping seed.
- *
- * Reflects the actual CSV format scraped from SiteOne. Saves 5 minutes
- * of hand-authoring per SiteOne config setup. Pattern is extensible —
- * add CPS / Denver Brass seeds when those CSVs are in hand.
- *
- * NOTE on the 1:many question: SiteOne's supplier_item_number column
- * frequently IS the manufacturer's part number too. The current 1:1
- * mapping shape doesn't express that — see Phase 3.7 governance doc
- * for the deferred 1:many parser support. If Tier 1 hit rate is poor
- * against SiteOne data in Phase 3.10, revisit.
- */
-const SUPPLIER_PRICE_INGEST_SITEONE_COLUMN_MAPPING = [
-  'source_columns' => [
-    'supplier_item_number'  => 'field_supplier_sku',
-    'product_name'          => 'field_description',
-    'manufacturer_inferred' => 'field_manufacturer_name',
-    'your_price'            => 'field_unit_cost',
-    'cost_uom'              => 'field_cost_uom',
-  ],
-  'header_row' => 1,
-  'skip_rows_until_header' => FALSE,
-  'case_sensitive_headers' => FALSE,
-  'trim_whitespace' => TRUE,
-];
+// Phase 3.7 had a "Load default bundle policy" button and a "Load
+// SiteOne column mapping" button next to the two JSON textareas.
+// Both buttons are removed in the 2026-05-25 follow-up — Office staff
+// paste the JSON directly from Claude Chat output, which is faster
+// than maintaining the button-mediated workflow and avoids the
+// Drupal-form-rebuild-doesn't-update-textarea trap (documented in
+// __BOS_AI/Governance/drupal_bos_gotchas.md "Form-state setValue
+// alone doesn't update field-widget textareas on rebuild" — the
+// notes from the failed fix attempt are kept for future reference).
+// The default bundle policy + SiteOne column mapping seed values
+// live in the governance docs as copy-pasteable JSON snippets.
 
 /**
  * Implements hook_theme().
@@ -261,9 +217,9 @@ function _supplier_price_ingest_validate_bundle_policy(EntityInterface $entity):
  * Implements hook_form_alter().
  *
  * Targets the supplier_ingest_config entity edit/add form to:
- *   - Render JSON textareas in monospace
- *   - Add inline help with the JSON shape
- *   - Add a "Load default bundle policy" submit button
+ *   - Add inline help with the JSON shape on each JSON textarea
+ *   - Tag each JSON textarea with a marker class for verifier checks
+ *   - Hide author / created / pathauto-alias noise from office users
  *   - Pre-submit-guard to surface JSON-decode errors on the right field
  */
 function supplier_price_ingest_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
@@ -271,23 +227,25 @@ function supplier_price_ingest_form_alter(array &$form, FormStateInterface $form
     return;
   }
 
-  // Phase 3.2 / 3.7 form enhancements. Both JSON fields are
-  // string_long (converted from text_long in the 2026-05-25 fix) so
-  // their natural widget is a plain textarea with no format selector
-  // and no CKEditor — see __BOS_AI/Governance/drupal_bos_gotchas.md
+  // Both JSON fields are string_long (converted from text_long in the
+  // 2026-05-25 fix) so their widget is a plain textarea — no format
+  // selector, no CKEditor. See __BOS_AI/Governance/drupal_bos_gotchas.md
   // "text_long vs string_long for structured-text fields" for why.
-  // That conversion removed the need for #after_build acrobatics that
-  // the interim fix used to override text_format's #process callback.
   //
-  // What this hook still does:
-  //   * Append JSON-shape help to each field's description
-  //   * Inject the "Load default bundle policy" + "Load SiteOne column
-  //     mapping" seed buttons into $form['actions']
+  // What this hook does:
+  //   * Append JSON-shape help to each field's description so users
+  //     know what valid input looks like
   //   * Apply a marker CSS class to each textarea so verifiers can
-  //     assert presence of a plain textarea (vs CKEditor wrapper)
+  //     assert "plain textarea, not CKEditor"
   //   * Hide uid / created / pathauto noise from office users
   //   * Register a pre-submit guard that surfaces JSON-decode errors
   //     against the correct field
+  //
+  // The Phase 3.7 "Load default bundle policy" and "Load SiteOne
+  // column mapping" seed buttons were removed in the 2026-05-25
+  // follow-up — Office staff paste JSON directly from Chat output
+  // which is faster than maintaining button-mediated population. The
+  // seed JSON lives in governance docs as copy-pasteable snippets.
   $jsonTextareaClass = 'supplier-price-ingest-json-textarea';
 
   if (isset($form['field_column_mapping']['widget'][0]['value'])) {
@@ -297,32 +255,13 @@ function supplier_price_ingest_form_alter(array &$form, FormStateInterface $form
       . implode('</code>, <code>', IngestParser::ALLOWED_ROW_FIELDS)
       . '</code>. Must map at least one identifier (supplier SKU, mfr item #, or description) and <code>field_unit_cost</code>.';
     $form['field_column_mapping']['widget'][0]['value']['#attributes']['class'][] = $jsonTextareaClass;
-
-    // Phase 3.7 — SiteOne column-mapping seed button.
-    $form['actions']['load_siteone_column_mapping'] = [
-      '#type' => 'submit',
-      '#value' => t('Load SiteOne column mapping'),
-      '#submit' => ['_supplier_price_ingest_load_siteone_column_mapping'],
-      '#limit_validation_errors' => [],
-      '#weight' => 51,
-    ];
   }
 
   if (isset($form['field_bundle_policy']['widget'][0]['value'])) {
     $existing = (string) ($form['field_bundle_policy']['widget'][0]['value']['#description'] ?? '');
     $form['field_bundle_policy']['widget'][0]['value']['#description'] = $existing
-      . '<br><strong>JSON shape:</strong> object mapping material bundle machine names to policy values (<code>matched_only</code>, <code>discovery</code>, <code>both</code>, <code>excluded</code>). Default for unlisted bundles: <code>matched_only</code>. See <code>__BOS_AI/Entities/supplier_ingest_config.md</code>.';
+      . '<br><strong>JSON shape:</strong> object mapping material bundle machine names to policy values (<code>matched_only</code>, <code>discovery</code>, <code>both</code>, <code>excluded</code>). Default for unlisted bundles: <code>matched_only</code>. See <code>__BOS_AI/Entities/supplier_ingest_config.md</code> for a copy-pasteable seed.';
     $form['field_bundle_policy']['widget'][0]['value']['#attributes']['class'][] = $jsonTextareaClass;
-
-    // Add a "Load default" button. Placed in the same actions area so
-    // it appears near Save / Delete.
-    $form['actions']['load_default_bundle_policy'] = [
-      '#type' => 'submit',
-      '#value' => t('Load default bundle policy (Phase 2 §6 matrix)'),
-      '#submit' => ['_supplier_price_ingest_load_default_bundle_policy'],
-      '#limit_validation_errors' => [],
-      '#weight' => 50,
-    ];
   }
 
   // Hide author / created / URL-alias fields from office users —
@@ -369,47 +308,3 @@ function _supplier_price_ingest_pre_submit_guard(array &$form, FormStateInterfac
   }
 }
 
-/**
- * Submit handler for the "Load default bundle policy" button.
- *
- * Only pre-fills if the field is currently empty.
- */
-function _supplier_price_ingest_load_default_bundle_policy(array &$form, FormStateInterface $form_state): void {
-  $current = (string) ($form_state->getValue(['field_bundle_policy', 0, 'value']) ?? '');
-  if (trim($current) !== '') {
-    \Drupal::messenger()->addWarning(t(
-      'Bundle policy field is not empty — refusing to overwrite. Clear it manually first, then click Load again.',
-    ));
-    $form_state->setRebuild(TRUE);
-    return;
-  }
-  $json = json_encode(SUPPLIER_PRICE_INGEST_DEFAULT_BUNDLE_POLICY, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-  $form_state->setValue(['field_bundle_policy', 0, 'value'], $json);
-  $form_state->setRebuild(TRUE);
-  \Drupal::messenger()->addStatus(t(
-    'Loaded default bundle policy from Phase 2 §6 matrix. Review and save.',
-  ));
-}
-
-/**
- * Phase 3.7 — submit handler for the "Load SiteOne column mapping" button.
- *
- * Same overwrite-protection semantics as the bundle-policy seed: warns
- * and refuses when the column-mapping field is already populated.
- */
-function _supplier_price_ingest_load_siteone_column_mapping(array &$form, FormStateInterface $form_state): void {
-  $current = (string) ($form_state->getValue(['field_column_mapping', 0, 'value']) ?? '');
-  if (trim($current) !== '') {
-    \Drupal::messenger()->addWarning(t(
-      'Column mapping field is not empty — refusing to overwrite. Clear it manually first, then click Load again.',
-    ));
-    $form_state->setRebuild(TRUE);
-    return;
-  }
-  $json = json_encode(SUPPLIER_PRICE_INGEST_SITEONE_COLUMN_MAPPING, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-  $form_state->setValue(['field_column_mapping', 0, 'value'], $json);
-  $form_state->setRebuild(TRUE);
-  \Drupal::messenger()->addStatus(t(
-    'Loaded SiteOne column mapping. Review and save. NOTE: SiteOne\'s supplier_item_number is also frequently the manufacturer item # — if Tier 1 hit rate is poor against SiteOne data, see Phase 3.7 governance doc for the 1:many mapping follow-up.',
-  ));
-}

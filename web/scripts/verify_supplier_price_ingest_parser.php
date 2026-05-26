@@ -408,6 +408,25 @@ try {
     echo "  WARN — failed to promote batch1 for smoke test: " . $e->getMessage() . "\n";
   }
 
+  // Phase 3.7 — also need an ingest row id for the per-row operation
+  // URLs. Pick any row from the smoke batch (they exist regardless of
+  // matcher outcome). Operations don't require the row to be in a
+  // specific status to RENDER — validation gates submit, not display —
+  // so any row works for a 200-OK smoke check.
+  $smokeRowId = 0;
+  try {
+    $smokeRowIds = $etm->getStorage('supplier_price_ingest_row')->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_batch', $smokeBatchId)
+      ->sort('id', 'ASC')
+      ->range(0, 1)
+      ->execute();
+    $smokeRowId = $smokeRowIds ? (int) reset($smokeRowIds) : 0;
+  }
+  catch (\Throwable $e) {
+    echo "  WARN — failed to resolve smoke row id: " . $e->getMessage() . "\n";
+  }
+
   $pages = [
     '/admin/materials/supplier-ingest/upload'        => ['label' => 'Upload Catalog form', 'expect_ct' => NULL],
     '/admin/materials/supplier-ingest/configs'       => ['label' => 'Supplier Configs list (Views)', 'expect_ct' => NULL],
@@ -419,7 +438,24 @@ try {
     "/admin/materials/supplier-ingest/batch/$smokeBatchId/approve"    => ['label' => 'Approve Batch confirm form', 'expect_ct' => NULL],
     "/admin/materials/supplier-ingest/batch/$smokeBatchId/reject"     => ['label' => 'Reject Batch confirm form', 'expect_ct' => NULL],
     "/admin/materials/supplier-ingest/batch/$smokeBatchId/export.csv" => ['label' => 'Batch CSV export', 'expect_ct' => 'text/csv'],
+    // Phase 3.7 — three new Office Manager dashboards.
+    '/admin/materials/supplier-ingest/batches'                       => ['label' => 'Batch Manager (Views)', 'expect_ct' => NULL],
+    '/admin/materials/supplier-ingest/discovery'                     => ['label' => 'Discovery Queue (Views)', 'expect_ct' => NULL],
+    '/admin/materials/supplier-ingest/fuzzy-review'                  => ['label' => 'Fuzzy Match Review (Views)', 'expect_ct' => NULL],
   ];
+  // Phase 3.7 — 8 per-row operation URLs (skipped if no smoke row).
+  if ($smokeRowId > 0) {
+    $pages += [
+      "/admin/materials/supplier-ingest/discovery/$smokeRowId/create-material"   => ['label' => 'Discovery — Create Material', 'expect_ct' => NULL],
+      "/admin/materials/supplier-ingest/discovery/$smokeRowId/link-existing"     => ['label' => 'Discovery — Link to Existing', 'expect_ct' => NULL],
+      "/admin/materials/supplier-ingest/discovery/$smokeRowId/mark-replacement"  => ['label' => 'Discovery — Mark as Replacement', 'expect_ct' => NULL],
+      "/admin/materials/supplier-ingest/discovery/$smokeRowId/reject"            => ['label' => 'Discovery — Reject Row', 'expect_ct' => NULL],
+      "/admin/materials/supplier-ingest/fuzzy-review/$smokeRowId/confirm"        => ['label' => 'Fuzzy Review — Confirm Match', 'expect_ct' => NULL],
+      "/admin/materials/supplier-ingest/fuzzy-review/$smokeRowId/override"       => ['label' => 'Fuzzy Review — Override Match', 'expect_ct' => NULL],
+      "/admin/materials/supplier-ingest/fuzzy-review/$smokeRowId/send-to-discovery" => ['label' => 'Fuzzy Review — Send to Discovery', 'expect_ct' => NULL],
+      "/admin/materials/supplier-ingest/fuzzy-review/$smokeRowId/reject"         => ['label' => 'Fuzzy Review — Reject Row', 'expect_ct' => NULL],
+    ];
+  }
   $checks10 = [];
   foreach ($pages as $path => $meta) {
     $label = $meta['label'];

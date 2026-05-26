@@ -318,10 +318,38 @@ class BatchDetailController extends ControllerBase {
    */
   private function buildReport(EntityInterface $batch): array {
     return [
-      'match_summary'       => $this->buildMatchSummary($batch),
-      'price_impact'        => $this->buildPriceImpact($batch),
-      'samples'             => $this->buildSamples($batch),
-      'discovery_breakdown' => $this->buildDiscoveryBreakdown($batch),
+      'match_summary'          => $this->buildMatchSummary($batch),
+      'price_impact'           => $this->buildPriceImpact($batch),
+      'samples'                => $this->buildSamples($batch),
+      'discovery_breakdown'    => $this->buildDiscoveryBreakdown($batch),
+      'review_routing_summary' => $this->buildReviewRoutingSummary($batch),
+    ];
+  }
+
+  /**
+   * Phase 3.7 — count rows currently in `discovery_pending` status,
+   * broken down by match tier. Surfaces in the committed-state banner
+   * so office staff see at a glance how much review work remains.
+   */
+  private function buildReviewRoutingSummary(EntityInterface $batch): array {
+    $rowStorage = $this->entityTypeManager()->getStorage('supplier_price_ingest_row');
+    $discoveryPending = (int) $rowStorage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_batch', $batch->id())
+      ->condition('field_row_status', 'discovery_pending')
+      ->condition('field_match_tier', 'discovery')
+      ->count()
+      ->execute();
+    $fuzzyMedPending = (int) $rowStorage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_batch', $batch->id())
+      ->condition('field_row_status', 'discovery_pending')
+      ->condition('field_match_tier', 'tier_3_fuzzy_med')
+      ->count()
+      ->execute();
+    return [
+      'discovery_pending' => $discoveryPending,
+      'fuzzy_med_pending' => $fuzzyMedPending,
     ];
   }
 

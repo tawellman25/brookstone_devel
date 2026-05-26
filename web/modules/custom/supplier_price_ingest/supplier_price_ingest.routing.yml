@@ -68,6 +68,114 @@ supplier_price_ingest.batch_export:
       supplier_price_ingest_batch:
         type: 'entity:supplier_price_ingest_batch'
 
+# Phase 3.7 — Discovery Queue per-row operations.
+supplier_price_ingest.discovery_create_material:
+  path: '/admin/materials/supplier-ingest/discovery/{supplier_price_ingest_row}/create-material'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\CreateMaterialFromRowForm'
+    _title: 'Create New Material from Row'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_row:
+        type: 'entity:supplier_price_ingest_row'
+
+supplier_price_ingest.discovery_link_existing:
+  path: '/admin/materials/supplier-ingest/discovery/{supplier_price_ingest_row}/link-existing'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\LinkRowToMaterialForm'
+    _title: 'Link Row to Existing Material'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_row:
+        type: 'entity:supplier_price_ingest_row'
+
+supplier_price_ingest.discovery_mark_replacement:
+  path: '/admin/materials/supplier-ingest/discovery/{supplier_price_ingest_row}/mark-replacement'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\MarkRowAsReplacementForm'
+    _title: 'Mark Row as Replacement'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_row:
+        type: 'entity:supplier_price_ingest_row'
+
+supplier_price_ingest.discovery_reject:
+  path: '/admin/materials/supplier-ingest/discovery/{supplier_price_ingest_row}/reject'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\RejectRowForm'
+    _title: 'Reject Row'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_row:
+        type: 'entity:supplier_price_ingest_row'
+
+# Phase 3.7 — Fuzzy Match Review per-row operations.
+supplier_price_ingest.fuzzy_confirm:
+  path: '/admin/materials/supplier-ingest/fuzzy-review/{supplier_price_ingest_row}/confirm'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\ConfirmFuzzyMatchForm'
+    _title: 'Confirm Fuzzy Match'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_row:
+        type: 'entity:supplier_price_ingest_row'
+
+supplier_price_ingest.fuzzy_override:
+  path: '/admin/materials/supplier-ingest/fuzzy-review/{supplier_price_ingest_row}/override'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\OverrideFuzzyMatchForm'
+    _title: 'Override Fuzzy Match'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_row:
+        type: 'entity:supplier_price_ingest_row'
+
+supplier_price_ingest.fuzzy_send_to_discovery:
+  path: '/admin/materials/supplier-ingest/fuzzy-review/{supplier_price_ingest_row}/send-to-discovery'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\SendToDiscoveryForm'
+    _title: 'Send to Discovery Queue'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_row:
+        type: 'entity:supplier_price_ingest_row'
+
+# Re-use the discovery_reject form for fuzzy-review rejections — same form,
+# different route so the URL pattern is consistent per surface.
+supplier_price_ingest.fuzzy_reject:
+  path: '/admin/materials/supplier-ingest/fuzzy-review/{supplier_price_ingest_row}/reject'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\RejectRowForm'
+    _title: 'Reject Row'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_row:
+        type: 'entity:supplier_price_ingest_row'
+
 supplier_price_ingest.config_add:
   path: '/admin/materials/supplier-ingest/configs/add'
   defaults:

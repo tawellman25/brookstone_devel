@@ -1,0 +1,359 @@
+uuid: 2ab5d6e9-f865-435c-8c24-ba809ff2a4c0
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.supplier_price_ingest_batch.field_row_count_discovery
+    - field.storage.supplier_price_ingest_batch.field_row_count_total
+    - field.storage.supplier_price_ingest_batch.field_source_filename
+    - field.storage.supplier_price_ingest_batch.field_status
+    - field.storage.supplier_price_ingest_batch.field_supplier
+    - field.storage.supplier_price_ingest_batch.field_uploaded_by
+    - field.storage.supplier_price_ingest_batch.field_uploaded_on
+  module:
+    - datetime
+    - eck
+    - options
+    - user
+id: supplier_ingest_batches
+label: 'Supplier Ingest Batches'
+module: views
+description: 'Office Manager batch manager — every supplier ingest batch with status, counts, and operations.'
+tag: supplier_price_ingest
+base_table: supplier_price_ingest_batch_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      fields:
+        id:
+          id: id
+          table: supplier_price_ingest_batch_field_data
+          field: id
+          relationship: none
+          plugin_id: field
+          label: Batch
+          alter:
+            make_link: true
+            path: '/admin/materials/supplier-ingest/batch/{{ id }}'
+          type: number_integer
+          settings:
+            thousand_separator: ''
+            prefix_suffix: false
+        field_source_filename:
+          id: field_source_filename
+          table: supplier_price_ingest_batch__field_source_filename
+          field: field_source_filename
+          relationship: none
+          plugin_id: field
+          label: 'Source File'
+          type: string
+        field_supplier:
+          id: field_supplier
+          table: supplier_price_ingest_batch__field_supplier
+          field: field_supplier
+          relationship: none
+          plugin_id: field
+          label: Supplier
+          type: entity_reference_label
+          settings:
+            link: true
+        field_status:
+          id: field_status
+          table: supplier_price_ingest_batch__field_status
+          field: field_status
+          relationship: none
+          plugin_id: field
+          label: Status
+          type: list_default
+        field_row_count_total:
+          id: field_row_count_total
+          table: supplier_price_ingest_batch__field_row_count_total
+          field: field_row_count_total
+          relationship: none
+          plugin_id: field
+          label: Total
+          type: number_integer
+          settings:
+            thousand_separator: ','
+            prefix_suffix: false
+        field_row_count_discovery:
+          id: field_row_count_discovery
+          table: supplier_price_ingest_batch__field_row_count_discovery
+          field: field_row_count_discovery
+          relationship: none
+          plugin_id: field
+          label: Discovery
+          type: number_integer
+          settings:
+            thousand_separator: ','
+            prefix_suffix: false
+        field_uploaded_on:
+          id: field_uploaded_on
+          table: supplier_price_ingest_batch__field_uploaded_on
+          field: field_uploaded_on
+          relationship: none
+          plugin_id: field
+          label: 'Uploaded On'
+          type: datetime_custom
+          settings:
+            date_format: m/d/Y
+            timezone: ''
+        field_uploaded_by:
+          id: field_uploaded_by
+          table: supplier_price_ingest_batch__field_uploaded_by
+          field: field_uploaded_by
+          relationship: none
+          plugin_id: field
+          label: 'Uploaded By'
+          type: entity_reference_label
+          settings:
+            link: false
+      pager:
+        type: mini
+        options:
+          pagination_heading_level: h4
+          items_per_page: 50
+      exposed_form:
+        type: basic
+        options: {  }
+      access:
+        type: perm
+        options:
+          perm: 'administer supplier price ingest'
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area_text_custom:
+          id: area_text_custom
+          table: views
+          field: area_text_custom
+          plugin_id: text_custom
+          empty: true
+          content: 'No batches yet. <a href="/admin/materials/supplier-ingest/upload">Upload a supplier price catalog</a> to get started.'
+      sorts:
+        field_uploaded_on_value:
+          id: field_uploaded_on_value
+          table: supplier_price_ingest_batch__field_uploaded_on
+          field: field_uploaded_on_value
+          relationship: none
+          plugin_id: date
+          order: DESC
+        id:
+          id: id
+          table: supplier_price_ingest_batch_field_data
+          field: id
+          relationship: none
+          plugin_id: standard
+          order: DESC
+      arguments: {  }
+      filters:
+        field_supplier_target_id:
+          id: field_supplier_target_id
+          table: supplier_price_ingest_batch__field_supplier
+          field: field_supplier_target_id
+          relationship: none
+          plugin_id: numeric
+          operator: '='
+          exposed: true
+          expose:
+            operator_id: field_supplier_target_id_op
+            label: Supplier
+            description: ''
+            use_operator: false
+            operator: field_supplier_target_id_op
+            identifier: supplier
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+        field_status_value:
+          id: field_status_value
+          table: supplier_price_ingest_batch__field_status
+          field: field_status_value
+          relationship: none
+          plugin_id: list_field
+          operator: or
+          exposed: true
+          expose:
+            operator_id: field_status_value_op
+            label: Status
+            description: ''
+            use_operator: false
+            operator: field_status_value_op
+            identifier: status
+            required: false
+            remember: false
+            multiple: true
+            remember_roles:
+              authenticated: authenticated
+        field_uploaded_on_value:
+          id: field_uploaded_on_value
+          table: supplier_price_ingest_batch__field_uploaded_on
+          field: field_uploaded_on_value
+          relationship: none
+          plugin_id: datetime
+          operator: between
+          exposed: true
+          expose:
+            operator_id: field_uploaded_on_value_op
+            label: 'Uploaded On'
+            description: ''
+            use_operator: true
+            operator: field_uploaded_on_value_op
+            identifier: uploaded_on
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+      style:
+        type: table
+        options:
+          grouping: {  }
+          row_class: ''
+          default_row_class: true
+          columns:
+            id: id
+            field_source_filename: field_source_filename
+            field_supplier: field_supplier
+            field_status: field_status
+            field_row_count_total: field_row_count_total
+            field_row_count_discovery: field_row_count_discovery
+            field_uploaded_on: field_uploaded_on
+            field_uploaded_by: field_uploaded_by
+            operations: operations
+          default: field_uploaded_on
+          info:
+            id:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_source_filename:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_supplier:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_status:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_row_count_total:
+              sortable: true
+              default_sort_order: desc
+              align: right
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_row_count_discovery:
+              sortable: true
+              default_sort_order: desc
+              align: right
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_uploaded_on:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_uploaded_by:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            operations:
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          override: true
+          sticky: true
+          order: desc
+          empty_table: true
+      row:
+        type: fields
+        options: {  }
+      query:
+        type: views_query
+        options: {  }
+      relationships: {  }
+      use_ajax: false
+      use_more: false
+      header: {  }
+      footer: {  }
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.permissions
+      tags:
+        - 'config:field.storage.supplier_price_ingest_batch.field_row_count_discovery'
+        - 'config:field.storage.supplier_price_ingest_batch.field_row_count_total'
+        - 'config:field.storage.supplier_price_ingest_batch.field_source_filename'
+        - 'config:field.storage.supplier_price_ingest_batch.field_status'
+        - 'config:field.storage.supplier_price_ingest_batch.field_supplier'
+        - 'config:field.storage.supplier_price_ingest_batch.field_uploaded_by'
+        - 'config:field.storage.supplier_price_ingest_batch.field_uploaded_on'
+  page_1:
+    id: page_1
+    display_title: Page
+    display_plugin: page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/materials/supplier-ingest/batches
+      menu:
+        type: none
+        title: Batches
+        description: ''
+        weight: 0
+        menu_name: admin
+        parent: ''
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.permissions
+      tags:
+        - 'config:field.storage.supplier_price_ingest_batch.field_row_count_discovery'
+        - 'config:field.storage.supplier_price_ingest_batch.field_row_count_total'
+        - 'config:field.storage.supplier_price_ingest_batch.field_source_filename'
+        - 'config:field.storage.supplier_price_ingest_batch.field_status'
+        - 'config:field.storage.supplier_price_ingest_batch.field_supplier'
+        - 'config:field.storage.supplier_price_ingest_batch.field_uploaded_by'
+        - 'config:field.storage.supplier_price_ingest_batch.field_uploaded_on'
+

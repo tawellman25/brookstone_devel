@@ -9,6 +9,7 @@ Status:
 - **Phase 3.4 shipped 2026-05-25** — Tier 3 fuzzy matching (`FuzzyScorer` + bundle inference + threshold routing) inserted between Tier 2 and discovery. 12-scenario verifier (`web/scripts/verify_supplier_price_ingest_fuzzy.php`) covers high/medium/low confidence routing, anti-signal handling, bundle inference correctness, excluded-bundle filtering, discontinued exclusion, and a 100-row × ~200-candidate performance pass (~2.5s in DDEV, vs the 30s budget).
 - **Phase 3.5 shipped 2026-05-25** — dry-run report UI, approve/reject confirm forms, CSV export, stub committer, source filter on `views.view.material_price_review_queue`, Tier 1 sort fix from the range-audit. Commit logic was stubbed pending Phase 3.6.
 - **Phase 3.6 shipped 2026-05-25** — real commit pipeline. `IngestCommitter` replaces the stub; per-row hand-off to `PriceSyncService::ingestRow()` (new unified mutation authority extending the existing WO-driven service). Approve form runs synchronously for small batches (<500 auto-applying rows) and via Drupal Batch API for large batches. Idempotent recovery on interrupted commits.
+- **Phase 3.7 shipped 2026-05-25** — Office Manager dashboards. Three new Views surfaces (Batch Manager, Discovery Queue, Fuzzy Match Review). Eight per-row operations: Create Material from Row, Link to Existing, Mark as Replacement, Reject (×4 for discovery); Confirm Match, Override Match, Send to Discovery, Reject (×4 for fuzzy review). Committer extended to route discovery + fuzzy_med rows to `discovery_pending` on commit so they surface in the queue views. SiteOne column-mapping seed button. Bulk Reject action wired into both row views.
 
 ---
 
@@ -808,6 +809,130 @@ This is **pre-existing** Phase 2 behavior (the service has been in prod since Ap
 
 ---
 
+## Phase 3.7 — Office Manager Dashboards
+
+### Three new Views surfaces
+
+| View | Path | Filters | Sort |
+|---|---|---|---|
+| Batch Manager | `/admin/materials/supplier-ingest/batches` | Supplier, Status (multi), Date Range (exposed) | `field_uploaded_on DESC, id DESC` |
+| Discovery Queue | `/admin/materials/supplier-ingest/discovery` | row_status=`discovery_pending` AND tier=`discovery` (baked into view); Batch + Description-contains + Inferred-bundle (exposed) | `field_batch DESC, field_row_number ASC, id ASC` |
+| Fuzzy Match Review | `/admin/materials/supplier-ingest/fuzzy-review` | row_status=`discovery_pending` AND tier=`tier_3_fuzzy_med` (baked); Batch + Confidence range (exposed) | `field_match_confidence DESC, id ASC` |
+
+All three views use `base_table: {entity}_field_data` (the BOS-standard pattern from commit 558934ed — never the bare entity table). Every sort definition includes `id ASC/DESC` as a deterministic secondary tiebreaker per the range-audit gotcha.
+
+### IngestCommitter update — discovery routing
+
+Phase 3.6 left discovery + fuzzy_med rows in `field_row_status = 'dry_run'` after commit. Phase 3.7 added `IngestCommitter::routeRemainingRowsToDiscovery(int $batchId): int` which transitions both tiers' rows to `discovery_pending` after the auto-applying commit loop finishes. The Discovery Queue and Fuzzy Match Review views filter on that status — without this transition, the queues would stay empty even after committed batches.
+
+`CommitResult` gained a `rowsRoutedToDiscovery` counter. The Batch API path in `ApproveBatchForm::batchCommitFinished()` calls the routing step explicitly (it doesn't go through `commitBatch()`).
+
+### Eight per-row operations
+
+Each operation is a route + a custom form. All operations share the `IngestRowFormTrait` for the row summary block, `row_data` array shape, and `appendNote()` helper.
+
+| View | Operation | Form | Catalog effect | Row status after |
+|---|---|---|---|---|
+| Discovery | Create Material | `CreateMaterialFromRowForm` | Creates material + link via `ingestRow(source='feed_import_reviewed')` | `discovery_resolved` (action: `created_new_material_and_link`) |
+| Discovery | Link to Existing | `LinkRowToMaterialForm` | Links to chosen existing material via `ingestRow(...)` | `discovery_resolved` (action: `linked_to_existing_material`) |
+| Discovery | Mark as Replacement | `MarkRowAsReplacementForm` | Sets `field_replaced_by` on discontinued material + creates/uses replacement material's link | `discovery_resolved` (action: `marked_as_replacement`) |
+| Discovery | Reject Row | `RejectRowForm` | None — audit-only | `rejected` (action: `rejected`) |
+| Fuzzy | Confirm Match | `ConfirmFuzzyMatchForm` | Links to matcher's proposed material via `ingestRow(...)` | `committed` (action: `updated_link` or `created_link`) |
+| Fuzzy | Override Match | `OverrideFuzzyMatchForm` | Links to a different material the reviewer chose, via `ingestRow(...)` | `committed` (action: `updated_link` or `created_link`) |
+| Fuzzy | Send to Discovery | `SendToDiscoveryForm` | None — changes `field_match_tier` from `tier_3_fuzzy_med` to `discovery`; status stays `discovery_pending` so row appears in Discovery Queue | `discovery_pending` (no action set) |
+| Fuzzy | Reject Row | `RejectRowForm` (reused) | None | `rejected` |
+
+`MarkRowAsReplacementForm` is the only dual-mode form — the reviewer either picks an existing live material as the replacement OR creates a new one inline from the row data. The "create new" path runs the same material-creation logic `CreateMaterialFromRowForm` uses but inside the same transaction as the `field_replaced_by` set on the discontinued material.
+
+All catalog-touching operations route through `PriceSyncService::ingestRow($material, $supplier, $row_data, 'feed_import_reviewed', $batch_id)` — the unified mutation authority added in Phase 3.6. The `feed_import_reviewed` source value distinguishes manually-resolved entries from auto-committed ones in the price-review queue's source filter.
+
+### Bulk Reject action (VBO)
+
+Plugin: `supplier_price_ingest_bulk_reject_rows` (`@Action` annotation, picked up by `plugin.manager.action`). Class extends `ViewsBulkOperationsActionBase`.
+
+Wired into both row views via the `views_bulk_operations_bulk_form` field. Same effect as `RejectRowForm` applied per row. Useful for clearing obvious-junk rows (e.g., branded apparel mixed into an irrigation supplier's catalog scrape).
+
+No bulk Create / Link / Confirm — those are inherently per-row decisions and per-row review is the point of the queue surface. Bulk Confirm in particular was considered risky enough to defer until a demonstrated need.
+
+### SiteOne column-mapping seed
+
+Second button on the `supplier_ingest_config` form alter (next to the Phase 3.2 "Load default bundle policy" button). Pre-fills `field_column_mapping` with the SiteOne CSV shape:
+
+```json
+{
+  "source_columns": {
+    "supplier_item_number":  "field_supplier_sku",
+    "product_name":          "field_description",
+    "manufacturer_inferred": "field_manufacturer_name",
+    "your_price":            "field_unit_cost",
+    "cost_uom":              "field_cost_uom"
+  },
+  "header_row": 1,
+  "skip_rows_until_header": false,
+  "case_sensitive_headers": false,
+  "trim_whitespace": true
+}
+```
+
+Same overwrite-protection semantics as the bundle-policy seed: warns and refuses if the field is already populated. Stored in `SUPPLIER_PRICE_INGEST_SITEONE_COLUMN_MAPPING` module constant so it's reviewable as part of the module and not duplicated across config/code.
+
+#### Known limitation — 1:many column mapping for SiteOne
+
+SiteOne's `supplier_item_number` column frequently IS the manufacturer's item number too (their SKU is the mfr SKU passthrough). The current 1:1 source-columns shape doesn't express that — the same source column can only map to one BOS field. If Tier 1 hit rate is poor against SiteOne data in Phase 3.10 verification, the parser will need extension to support `{source_column: [target_field_1, target_field_2]}` array values. Deferred until there's evidence the limitation matters in practice — for now we map `supplier_item_number → field_supplier_sku` only.
+
+### Files Added in Phase 3.7
+
+| File | Purpose |
+|---|---|
+| `src/Form/IngestRowFormTrait.php` | Shared helpers for the per-row dashboard forms |
+| `src/Form/CreateMaterialFromRowForm.php` | Discovery — create new material |
+| `src/Form/LinkRowToMaterialForm.php` | Discovery — link to existing material |
+| `src/Form/MarkRowAsReplacementForm.php` | Discovery — mark as replacement (dual-mode) |
+| `src/Form/RejectRowForm.php` | Discovery + Fuzzy — reject row |
+| `src/Form/ConfirmFuzzyMatchForm.php` | Fuzzy — confirm match |
+| `src/Form/OverrideFuzzyMatchForm.php` | Fuzzy — override match |
+| `src/Form/SendToDiscoveryForm.php` | Fuzzy — send to discovery queue |
+| `src/Plugin/Action/BulkRejectIngestRowsAction.php` | VBO bulk-reject action |
+| `config/sync/views.view.supplier_ingest_batches.yml` | Batch Manager view |
+| `config/sync/views.view.supplier_ingest_discovery_queue.yml` | Discovery Queue view |
+| `config/sync/views.view.supplier_ingest_fuzzy_review.yml` | Fuzzy Match Review view |
+| `web/scripts/setup_phase37_dashboards.php` | Setup script (generates the three views — re-runnable for spec changes) |
+| `web/scripts/verify_supplier_price_ingest_dashboards.php` | 11-scenario verifier |
+
+### Files Modified in Phase 3.7
+
+| File | Change |
+|---|---|
+| `src/Service/IngestCommitter.php` | `routeRemainingRowsToDiscovery()` + integration into `commitBatch()` |
+| `src/Service/CommitResult.php` | `rowsRoutedToDiscovery` counter |
+| `src/Controller/BatchDetailController.php` | `buildReviewRoutingSummary()` for committed-state banner |
+| `src/Form/ApproveBatchForm.php` | Batch API finish callback calls routing step |
+| `templates/supplier-price-ingest-batch-detail.html.twig` | Committed-state banner shows routed counts + links to queue views |
+| `supplier_price_ingest.routing.yml` | 8 new operation routes |
+| `supplier_price_ingest.links.menu.yml` | Discovery Queue + Fuzzy Match Review menu links; Batches link repointed from ECK list to new Views page |
+| `supplier_price_ingest.module` | SiteOne mapping seed constant + button + handler |
+| `web/scripts/verify_supplier_price_ingest_parser.php` | Step 10 smoke-test extended with 11 new URLs |
+
+### Phase 3.7 Verification
+
+- `verify_supplier_price_ingest_dashboards.php` — **11 scenarios all PASS**:
+  - 0. Committer routes 4 discovery+fuzzy_med rows to `discovery_pending` (the upstream dependency)
+  - 1-4. Discovery: Create Material / Link to Existing / Mark as Replacement / Reject
+  - 5a-5d. Fuzzy: Confirm / Override / Send to Discovery / Reject
+  - 6. SiteOne mapping seed constant present and shaped correctly
+  - 7. Bulk Reject action — 3/3 rows transitioned
+
+- `verify_supplier_price_ingest_parser.php` Step 10 — **18 URLs PASS** (5 prior + 4 batch-id + 3 Phase 3.7 views + 8 row operations).
+- All other standing verifiers (matcher, fuzzy, committer, WO regression) — PASS, no regressions.
+
+### Forward dependencies
+
+- ⚠ SOP NEEDED — three new Office Manager workflows now user-facing: Batch Manager navigation, Discovery Queue resolution, Fuzzy Match Review. Listed in Phase 2 §11 as separate SOPs (Discovery Queue Resolution, Fuzzy Match Review, plus the Upload-and-Review SOP that now includes Batches view navigation). All three owned by Phase 3.12 SOP authoring.
+- 1:many column mapping for SiteOne (see "Known limitation" above) — deferred until Phase 3.10 produces evidence the 1:1 shape costs Tier 1 hits.
+- CPS / Denver Brass column mapping seed buttons — defer until those CSVs are in hand.
+
+---
+
 ## Status
 
 - **Phase 3.1** — shipped 2026-05-25 (commit `911c2221`).
@@ -815,8 +940,9 @@ This is **pre-existing** Phase 2 behavior (the service has been in prod since Ap
 - **Phase 3.3** — shipped 2026-05-25 (commit `05f77e05` on `feature/supplier-price-ingest`).
 - **Phase 3.4** — shipped 2026-05-25 (commit `c5782cfb` on `feature/supplier-price-ingest`).
 - **Phase 3.5** — shipped 2026-05-25 (commit `27a81558` on `feature/supplier-price-ingest`).
-- **Phase 3.6** — shipped 2026-05-25 on `feature/supplier-price-ingest`.
+- **Phase 3.6** — shipped 2026-05-25 (commit `0f2650a1` on `feature/supplier-price-ingest`).
+- **Phase 3.7** — shipped 2026-05-25 on `feature/supplier-price-ingest`.
 
 Branch: `feature/supplier-price-ingest`.
 
-Next phase: 3.7 — review-queue UI for medium-confidence fuzzy matches, discovery rows, and batch manager dashboard.
+Next phase: 3.8 — estimator surfaces (Refresh Prices button on Estimates, discontinued warnings).

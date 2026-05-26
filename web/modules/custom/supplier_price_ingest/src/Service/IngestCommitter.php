@@ -42,11 +42,29 @@ use Drupal\wo_material_price_sync\Service\PriceSyncService;
 final class IngestCommitter {
 
   /**
-   * Per-chunk size for the commit loop. Tuned for memory safety on
-   * very large batches; per-row work is small (one entity load, one
-   * service call, one row save).
+   * Per-chunk size for the auto-applying commit loop. Tuned for memory
+   * safety on very large batches; per-row work is small (one entity
+   * load, one service call, one row save).
    */
   private const CHUNK_SIZE = 50;
+
+  /**
+   * Per-chunk size for the post-commit discovery-routing loop.
+   * Cheaper per-row work (one field set, one save) so a larger chunk.
+   */
+  private const ROUTING_CHUNK_SIZE = 100;
+
+  /**
+   * Tiers that get routed to discovery_pending after the auto-applying
+   * loop finishes. Both flow into the Phase 3.7 review surfaces:
+   * `discovery` → Discovery Queue; `tier_3_fuzzy_med` → Fuzzy Match
+   * Review. The shared `discovery_pending` status keeps status semantics
+   * simple; the views slice by match tier.
+   */
+  private const DISCOVERY_ROUTING_TIERS = [
+    'discovery',
+    'tier_3_fuzzy_med',
+  ];
 
   /**
    * Match tiers the committer auto-applies. Other tiers stay untouched.
@@ -92,6 +110,22 @@ final class IngestCommitter {
     $rowIds = $this->queryAutoApplyingRowIds((int) $batch->id());
     $result = $this->processRows($batch, $supplier, $rowIds);
 
+    // Phase 3.7 — route discovery + fuzzy_med rows to discovery_pending
+    // so the Discovery Queue and Fuzzy Match Review views pick them up.
+    // Counted into the CommitResult so the batch detail report can
+    // surface "routed to discovery: N" alongside the committed counts.
+    $routedCount = $this->routeRemainingRowsToDiscovery((int) $batch->id());
+    $result = new CommitResult(
+      rowsCommitted: $result->rowsCommitted,
+      rowsApplied: $result->rowsApplied,
+      rowsFlaggedHigh: $result->rowsFlaggedHigh,
+      rowsAutoCreated: $result->rowsAutoCreated,
+      rowsSkipped: $result->rowsSkipped,
+      rowsErrored: $result->rowsErrored,
+      commitErrors: $result->commitErrors,
+      rowsRoutedToDiscovery: $routedCount,
+    );
+
     $this->finalizeBatch($batch);
 
     $this->loggerFactory->get('supplier_price_ingest')->info(
@@ -100,6 +134,45 @@ final class IngestCommitter {
     );
 
     return $result;
+  }
+
+  /**
+   * Transition still-`dry_run` discovery + fuzzy_med rows to
+   * `discovery_pending` so the Phase 3.7 review surfaces pick them up.
+   *
+   * Idempotent: the query filters on `field_row_status = 'dry_run'`, so
+   * a re-invocation after partial completion only touches rows that
+   * weren't already transitioned. Same property as the auto-applying
+   * commit loop.
+   *
+   * Public so the ApproveBatchForm Batch API finish callback can
+   * invoke it explicitly without re-running commitBatch.
+   *
+   * @return int  Number of rows transitioned.
+   */
+  public function routeRemainingRowsToDiscovery(int $batchId): int {
+    $rowStorage = $this->entityTypeManager->getStorage('supplier_price_ingest_row');
+    $rowIds = $rowStorage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_batch', $batchId)
+      ->condition('field_match_tier', self::DISCOVERY_ROUTING_TIERS, 'IN')
+      ->condition('field_row_status', 'dry_run')
+      ->sort('id', 'ASC')
+      ->execute();
+    if (empty($rowIds)) {
+      return 0;
+    }
+    $routed = 0;
+    foreach (array_chunk(array_values($rowIds), self::ROUTING_CHUNK_SIZE) as $chunk) {
+      $rows = $rowStorage->loadMultiple($chunk);
+      foreach ($rows as $row) {
+        $row->set('field_row_status', 'discovery_pending');
+        $row->save();
+        $routed++;
+      }
+      $rowStorage->resetCache(array_keys($rows));
+    }
+    return $routed;
   }
 
   /**

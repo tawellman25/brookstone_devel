@@ -65,6 +65,33 @@ const SUPPLIER_PRICE_INGEST_BUNDLE_POLICY_VALUES = [
 ];
 
 /**
+ * Phase 3.7 — SiteOne column mapping seed.
+ *
+ * Reflects the actual CSV format scraped from SiteOne. Saves 5 minutes
+ * of hand-authoring per SiteOne config setup. Pattern is extensible —
+ * add CPS / Denver Brass seeds when those CSVs are in hand.
+ *
+ * NOTE on the 1:many question: SiteOne's supplier_item_number column
+ * frequently IS the manufacturer's part number too. The current 1:1
+ * mapping shape doesn't express that — see Phase 3.7 governance doc
+ * for the deferred 1:many parser support. If Tier 1 hit rate is poor
+ * against SiteOne data in Phase 3.10, revisit.
+ */
+const SUPPLIER_PRICE_INGEST_SITEONE_COLUMN_MAPPING = [
+  'source_columns' => [
+    'supplier_item_number'  => 'field_supplier_sku',
+    'product_name'          => 'field_description',
+    'manufacturer_inferred' => 'field_manufacturer_name',
+    'your_price'            => 'field_unit_cost',
+    'cost_uom'              => 'field_cost_uom',
+  ],
+  'header_row' => 1,
+  'skip_rows_until_header' => FALSE,
+  'case_sensitive_headers' => FALSE,
+  'trim_whitespace' => TRUE,
+];
+
+/**
  * Implements hook_theme().
  *
  * Phase 3.5 — single theme hook for the batch detail / dry-run report.
@@ -251,6 +278,15 @@ function supplier_price_ingest_form_alter(array &$form, FormStateInterface $form
       . '<br><strong>JSON shape (Phase 3.2):</strong> see <code>__BOS_AI/Entities/supplier_ingest_config.md</code>. Required keys: <code>source_columns</code> (object mapping CSV headers → BOS row field names). Allowed BOS fields: <code>'
       . implode('</code>, <code>', IngestParser::ALLOWED_ROW_FIELDS)
       . '</code>. Must map at least one identifier (supplier SKU, mfr item #, or description) and <code>field_unit_cost</code>.';
+
+    // Phase 3.7 — SiteOne column-mapping seed button.
+    $form['actions']['load_siteone_column_mapping'] = [
+      '#type' => 'submit',
+      '#value' => t('Load SiteOne column mapping'),
+      '#submit' => ['_supplier_price_ingest_load_siteone_column_mapping'],
+      '#limit_validation_errors' => [],
+      '#weight' => 51,
+    ];
   }
 
   if (isset($form['field_bundle_policy']['widget'][0]['value'])) {
@@ -323,5 +359,28 @@ function _supplier_price_ingest_load_default_bundle_policy(array &$form, FormSta
   $form_state->setRebuild(TRUE);
   \Drupal::messenger()->addStatus(t(
     'Loaded default bundle policy from Phase 2 §6 matrix. Review and save.',
+  ));
+}
+
+/**
+ * Phase 3.7 — submit handler for the "Load SiteOne column mapping" button.
+ *
+ * Same overwrite-protection semantics as the bundle-policy seed: warns
+ * and refuses when the column-mapping field is already populated.
+ */
+function _supplier_price_ingest_load_siteone_column_mapping(array &$form, FormStateInterface $form_state): void {
+  $current = (string) ($form_state->getValue(['field_column_mapping', 0, 'value']) ?? '');
+  if (trim($current) !== '') {
+    \Drupal::messenger()->addWarning(t(
+      'Column mapping field is not empty — refusing to overwrite. Clear it manually first, then click Load again.',
+    ));
+    $form_state->setRebuild(TRUE);
+    return;
+  }
+  $json = json_encode(SUPPLIER_PRICE_INGEST_SITEONE_COLUMN_MAPPING, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+  $form_state->setValue(['field_column_mapping', 0, 'value'], $json);
+  $form_state->setRebuild(TRUE);
+  \Drupal::messenger()->addStatus(t(
+    'Loaded SiteOne column mapping. Review and save. NOTE: SiteOne\'s supplier_item_number is also frequently the manufacturer item # — if Tier 1 hit rate is poor against SiteOne data, see Phase 3.7 governance doc for the 1:many mapping follow-up.',
   ));
 }

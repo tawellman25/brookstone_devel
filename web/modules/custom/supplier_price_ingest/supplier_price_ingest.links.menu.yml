@@ -31,8 +31,24 @@ supplier_price_ingest.config_list:
 
 supplier_price_ingest.batch_list:
   title: 'Batches'
-  route_name: eck.entity.supplier_price_ingest_batch.list
+  route_name: view.supplier_ingest_batches.page_1
   parent: supplier_price_ingest.hub
   menu_name: admin
-  description: 'Recent ingest runs (placeholder — dedicated Batch Manager lands in Phase 3.7).'
+  description: 'Office Manager batch manager — every ingest batch with status, counts, and operations.'
   weight: 20
+
+supplier_price_ingest.discovery_queue:
+  title: 'Discovery Queue'
+  route_name: view.supplier_ingest_discovery_queue.page_1
+  parent: supplier_price_ingest.hub
+  menu_name: admin
+  description: 'Rows the matcher could not resolve — Office Manager creates, links, marks as replacement, or rejects.'
+  weight: 30
+
+supplier_price_ingest.fuzzy_review:
+  title: 'Fuzzy Match Review'
+  route_name: view.supplier_ingest_fuzzy_review.page_1
+  parent: supplier_price_ingest.hub
+  menu_name: admin
+  description: 'Tier 3 medium-confidence matches awaiting Office Manager confirmation.'
+  weight: 40

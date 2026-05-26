@@ -318,6 +318,11 @@ class ApproveBatchForm extends ConfirmFormBase {
 
     /** @var \Drupal\supplier_price_ingest\Service\IngestCommitter $committer */
     $committer = \Drupal::service('supplier_price_ingest.committer');
+    // Phase 3.7 — route discovery + fuzzy_med rows to discovery_pending.
+    // Synchronous commitBatch() does this internally; the Batch API
+    // path skips commitBatch (drives commitOneRow directly), so we
+    // invoke the routing step explicitly here on finish.
+    $routed = $committer->routeRemainingRowsToDiscovery($batchId);
     $committer->finalizeBatch($batch);
 
     $applied = (int) ($results['applied'] ?? 0);
@@ -326,13 +331,14 @@ class ApproveBatchForm extends ConfirmFormBase {
     $errored = (int) ($results['errored'] ?? 0);
 
     \Drupal::messenger()->addStatus(t(
-      'Batch @id committed: @applied applied, @flagged flagged for review, @created auto-created links, @errored errored.',
+      'Batch @id committed: @applied applied, @flagged flagged for review, @created auto-created links, @errored errored, @routed routed to review.',
       [
         '@id' => $batchId,
         '@applied' => $applied,
         '@flagged' => $flagged,
         '@created' => $created,
         '@errored' => $errored,
+        '@routed' => $routed,
       ],
     ));
   }

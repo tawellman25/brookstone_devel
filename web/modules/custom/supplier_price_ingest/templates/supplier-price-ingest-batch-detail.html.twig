@@ -102,8 +102,15 @@
     {% elseif status == 'committed' %}
       <div class="messages messages--status" role="status">
         <strong>This batch is committed.</strong>
-        {# Phase 3.5 ships a STUB commit — no catalog mutations actually occurred yet. Make this fact visible to office staff who run the report before 3.6 ships. #}
-        <em>(Phase 3.5: commit logic is stubbed. Real catalog mutations land in Phase 3.6. The match decisions above were not applied to <code>material_suppliers</code> — see module governance doc.)</em>
+        {# Phase 3.6 lit up the real commit pipeline. Phase 3.7 added the routed-to-review handoff so the discovery/fuzzy_med rows land in the queue views. #}
+        Auto-applying rows have been written to <code>material_suppliers</code>; review-required rows are routed to the
+        <a href="/admin/materials/supplier-ingest/discovery">Discovery Queue</a> and
+        <a href="/admin/materials/supplier-ingest/fuzzy-review">Fuzzy Match Review</a>.
+        {% if report.review_routing_summary is not empty %}
+          <br><strong>Pending review:</strong>
+          {{ report.review_routing_summary.discovery_pending }} discovery,
+          {{ report.review_routing_summary.fuzzy_med_pending }} fuzzy match.
+        {% endif %}
       </div>
     {% endif %}
 

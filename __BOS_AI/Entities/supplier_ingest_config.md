@@ -33,7 +33,7 @@ The config is consulted at parse and match time but is **not** the source of tru
 
 ### Parser configuration
 
-- `field_column_mapping` (text_long, JSON) — see "JSON shape: column_mapping" below.
+- `field_column_mapping` (**string_long**, JSON) — see "JSON shape: column_mapping" below. **Converted from `text_long` → `string_long` on 2026-05-25.** Structured-JSON storage requires plain raw text without a text-format dependency; `text_long` routes input through a text format (and CKEditor by default), which silently mangles JSON via smart quotes, paragraph tags, and editor auto-formatting. `string_long` removes that surface area at the storage layer — any form / API / View path that reads or writes this field now gets the raw JSON string. See `__BOS_AI/Governance/drupal_bos_gotchas.md` "text_long vs string_long for structured-text fields."
 - `field_default_cost_uom` (list_string) — `each` / `case` / `box` / `bag` / `roll`. Applied to any row whose UOM column is empty or unmapped. Mirrors `material_suppliers.field_cost_unit_of_measure` allowed values.
 
 ### Match configuration
@@ -43,7 +43,7 @@ The config is consulted at parse and match time but is **not** the source of tru
 
 ### Bundle policy
 
-- `field_bundle_policy` (text_long, JSON) — see "JSON shape: bundle_policy" below.
+- `field_bundle_policy` (**string_long**, JSON) — see "JSON shape: bundle_policy" below. **Converted from `text_long` → `string_long` on 2026-05-25** for the same reason as `field_column_mapping` above.
 
 ### Notes
 

@@ -497,6 +497,57 @@ try {
   }
   echo "  $bulkRejected/3 rows transitioned to rejected\n";
   $results['scenario_7_bulk_reject'] = $bulkRejected === 3 ? 'PASS' : 'FAIL';
+
+  // ════════════════════════════════════════════════════════════════
+  // SCENARIO 8 — supplier_ingest_config form-render assertions
+  // ════════════════════════════════════════════════════════════════
+  // Fix-driven additions (2026-05-25). The Phase 3.2 / 3.7 form alter
+  // silently failed to mutate the rendered form because the original
+  // text_format widget's #process callback ran AFTER hook_form_alter
+  // and clobbered #attributes. Scenario 6 (constant-existence) passed
+  // anyway. These four assertions render the actual form and check
+  // the HTML — that's what would have caught the bug originally, so
+  // these stay regardless of future widget choice.
+  echo "\n=== Scenario 8: supplier_ingest_config form-render assertions ===\n";
+  \Drupal::currentUser()->setAccount(\Drupal\user\Entity\User::load(1));
+  $kernel = \Drupal::service('http_kernel');
+  $req = \Symfony\Component\HttpFoundation\Request::create('/admin/materials/supplier-ingest/configs/add', 'GET');
+  $resp = $kernel->handle($req, \Symfony\Component\HttpKernel\HttpKernelInterface::SUB_REQUEST);
+  $html = (string) $resp->getContent();
+  $checks8 = [
+    'http_200' => $resp->getStatusCode() === 200,
+    '8a_siteone_button_renders' => str_contains($html, 'Load SiteOne column mapping'),
+    '8b_bundle_policy_button_renders' => str_contains($html, 'Load default bundle policy'),
+    '8c_marker_class_present_on_textarea' => str_contains($html, 'supplier-price-ingest-json-textarea'),
+    '8d_no_ckeditor_wrapper_for_json_fields' => !preg_match('/data-ckeditor[\w-]*="[^"]*field[-_]column[-_]mapping[^"]*"/', $html)
+                                              && !preg_match('/data-ckeditor[\w-]*="[^"]*field[-_]bundle[-_]policy[^"]*"/', $html)
+                                              && !str_contains($html, 'ckeditor5/admin-fix-toolbar')
+                                              && !preg_match('/<select[^>]*data-drupal-selector="edit-field-column-mapping-0-format/', $html)
+                                              && !preg_match('/<select[^>]*data-drupal-selector="edit-field-bundle-policy-0-format/', $html),
+    '8e_uid_field_hidden' => !preg_match('/name="uid\[0\]\[target_id\]"/', $html),
+    '8e_created_field_hidden' => !preg_match('/name="created\[0\]\[value\]\[date\]"/', $html),
+    '8e_pathauto_alias_hidden' => !preg_match('/name="path\[0\]\[alias\]"/', $html),
+  ];
+  foreach ($checks8 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
+  $results['scenario_8_form_render'] = !in_array(FALSE, $checks8, TRUE) ? 'PASS' : 'FAIL';
+
+  // ════════════════════════════════════════════════════════════════
+  // SCENARIO 9 — field storage type is string_long (root-cause fix)
+  // ════════════════════════════════════════════════════════════════
+  // Pairs with the form-render scenario above. Asserts the storage
+  // type is string_long, not text_long — so any future tool that
+  // renders these fields gets a plain textarea regardless of whether
+  // the form_alter fires. Pure config check, no rendering needed.
+  echo "\n=== Scenario 9: field storage type is string_long ===\n";
+  $checks9 = [];
+  foreach (['field_column_mapping', 'field_bundle_policy'] as $f) {
+    $storage = $etm->getStorage('field_storage_config')->load("supplier_ingest_config.$f");
+    $type = $storage ? $storage->getType() : '(missing)';
+    $checks9["${f}_is_string_long"] = $type === 'string_long';
+    echo "  $f storage type: $type\n";
+  }
+  foreach ($checks9 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
+  $results['scenario_9_storage_string_long'] = !in_array(FALSE, $checks9, TRUE) ? 'PASS' : 'FAIL';
 }
 finally {
   echo "\n=== Cleanup ===\n";

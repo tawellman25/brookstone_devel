@@ -271,13 +271,32 @@ function supplier_price_ingest_form_alter(array &$form, FormStateInterface $form
     return;
   }
 
+  // Phase 3.2 / 3.7 form enhancements. Both JSON fields are
+  // string_long (converted from text_long in the 2026-05-25 fix) so
+  // their natural widget is a plain textarea with no format selector
+  // and no CKEditor — see __BOS_AI/Governance/drupal_bos_gotchas.md
+  // "text_long vs string_long for structured-text fields" for why.
+  // That conversion removed the need for #after_build acrobatics that
+  // the interim fix used to override text_format's #process callback.
+  //
+  // What this hook still does:
+  //   * Append JSON-shape help to each field's description
+  //   * Inject the "Load default bundle policy" + "Load SiteOne column
+  //     mapping" seed buttons into $form['actions']
+  //   * Apply a marker CSS class to each textarea so verifiers can
+  //     assert presence of a plain textarea (vs CKEditor wrapper)
+  //   * Hide uid / created / pathauto noise from office users
+  //   * Register a pre-submit guard that surfaces JSON-decode errors
+  //     against the correct field
+  $jsonTextareaClass = 'supplier-price-ingest-json-textarea';
+
   if (isset($form['field_column_mapping']['widget'][0]['value'])) {
     $existing = (string) ($form['field_column_mapping']['widget'][0]['value']['#description'] ?? '');
-    $form['field_column_mapping']['widget'][0]['value']['#attributes']['style'] = 'font-family: monospace; min-height: 18em;';
     $form['field_column_mapping']['widget'][0]['value']['#description'] = $existing
       . '<br><strong>JSON shape (Phase 3.2):</strong> see <code>__BOS_AI/Entities/supplier_ingest_config.md</code>. Required keys: <code>source_columns</code> (object mapping CSV headers → BOS row field names). Allowed BOS fields: <code>'
       . implode('</code>, <code>', IngestParser::ALLOWED_ROW_FIELDS)
       . '</code>. Must map at least one identifier (supplier SKU, mfr item #, or description) and <code>field_unit_cost</code>.';
+    $form['field_column_mapping']['widget'][0]['value']['#attributes']['class'][] = $jsonTextareaClass;
 
     // Phase 3.7 — SiteOne column-mapping seed button.
     $form['actions']['load_siteone_column_mapping'] = [
@@ -291,9 +310,9 @@ function supplier_price_ingest_form_alter(array &$form, FormStateInterface $form
 
   if (isset($form['field_bundle_policy']['widget'][0]['value'])) {
     $existing = (string) ($form['field_bundle_policy']['widget'][0]['value']['#description'] ?? '');
-    $form['field_bundle_policy']['widget'][0]['value']['#attributes']['style'] = 'font-family: monospace; min-height: 18em;';
     $form['field_bundle_policy']['widget'][0]['value']['#description'] = $existing
       . '<br><strong>JSON shape:</strong> object mapping material bundle machine names to policy values (<code>matched_only</code>, <code>discovery</code>, <code>both</code>, <code>excluded</code>). Default for unlisted bundles: <code>matched_only</code>. See <code>__BOS_AI/Entities/supplier_ingest_config.md</code>.';
+    $form['field_bundle_policy']['widget'][0]['value']['#attributes']['class'][] = $jsonTextareaClass;
 
     // Add a "Load default" button. Placed in the same actions area so
     // it appears near Save / Delete.
@@ -304,6 +323,16 @@ function supplier_price_ingest_form_alter(array &$form, FormStateInterface $form
       '#limit_validation_errors' => [],
       '#weight' => 50,
     ];
+  }
+
+  // Hide author / created / URL-alias fields from office users —
+  // uid + created are populated automatically on entity save; pathauto
+  // generates the alias from field_supplier per the Phase 3.1 pattern.
+  // Office staff editing supplier configs don't need to see any of these.
+  foreach (['uid', 'created', 'path'] as $noise) {
+    if (isset($form[$noise])) {
+      $form[$noise]['#access'] = FALSE;
+    }
   }
 
   // Pre-submit guard to surface JSON errors on the right field.

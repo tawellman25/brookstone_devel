@@ -505,6 +505,55 @@ $ids = $storage->getQuery()
 
 **Surfaced 2026-05-25 fixing the Phase 3.4 fuzzy-pool flake (commit `c5782cfb`); audit + rule documented same day.**
 
+## text_long vs string_long for structured-text fields
+
+`text_long` field storage is a **formatted-text** column — values pass through a text format (often CKEditor by default) on input and a filter chain on output. Use it for human-written prose where you want WYSIWYG editing and HTML filtering. Use it ONLY for that.
+
+`string_long` is a **raw-text** column with no format dependency. Values store and emit exactly as submitted. No CKEditor, no `<p>` autowrapping, no smart-quote replacement, no `&amp;` mangling.
+
+**Rule:** any field that stores structured data (JSON, CSV, config, code snippets, markup intended to be rendered verbatim, anything machine-readable) MUST be `string_long`, not `text_long`. The cost of getting this wrong is silent data corruption.
+
+Failure modes seen / anticipated when JSON is in `text_long`:
+
+- **CKEditor auto-formats input.** Paste `{"key": "value"}` into a CKEditor-enabled textarea; CKEditor wraps it in `<p>...</p>`, optionally converts `"` to `&quot;` or smart quotes, optionally drops the JSON's whitespace. `json_decode()` then fails or — worse — succeeds on a structurally-warped input.
+- **Form alters can't override at the widget level reliably.** `text_format` is a compound element whose `#process` callback runs AFTER `hook_form_alter`. Setting `#attributes` on `widget[0]['value']` from a form alter gets overwritten silently. Workarounds (`#after_build` callbacks, removing the format selector) all add complexity that disappears the moment storage is `string_long`.
+- **Future tool re-introduces CKEditor by default.** A Views in-place edit, an entity-edit-by-API tool, a custom admin form rendering the same field — none of them know to disable CKEditor unless the storage type itself denies the formatter. With `string_long`, no caller can accidentally route the field through a formatter.
+- **`drush cim` refuses field-type changes.** Once a field is created as `text_long` and you decide it should be `string_long`, Drupal core refuses the change via config-import. You have to delete the field storage (which deletes the data) and re-import. So getting the type right at creation matters disproportionately — fixing later is a delete-and-recreate operation.
+
+**Discovered:** Phase 3.7 dashboard verification, 2026-05-25. The Phase 3.1 spec authored `supplier_ingest_config.field_column_mapping` and `field_bundle_policy` as `text_long`. Subsequent form-alters tried to override the widget to behave like a plain textarea — none of which landed visibly on the rendered form. Root cause was the storage type, not the form alter; converting both fields to `string_long` made every workaround redundant.
+
+**Correct pattern:**
+
+```yaml
+# field.storage.{entity}.{field_name}.yml
+type: string_long
+settings:
+  case_sensitive: false
+module: core
+```
+
+```yaml
+# field.field.{entity}.{bundle}.{field_name}.yml
+field_type: string_long
+settings: {  }
+```
+
+```yaml
+# core.entity_form_display.{entity}.{bundle}.default.yml
+type: string_textarea
+settings:
+  rows: 18
+```
+
+```yaml
+# core.entity_view_display.{entity}.{bundle}.default.yml
+type: basic_string
+```
+
+**Migration path when correcting an existing field with empty data:** delete the field storage via `\Drupal::entityTypeManager()->getStorage('field_storage_config')->load($id)->delete()`, then re-import config — cim re-creates the field as the new type. If the field has data, the migration is more involved (export → delete → re-import → restore) and should be planned per-field.
+
+**Surfaced 2026-05-25 fixing the supplier_ingest_config form alter that wouldn't land (paired with the storage-type conversion).**
+
 ---
 
 ## Status

@@ -41,6 +41,10 @@ The config is consulted at parse and match time but is **not** the source of tru
 - `field_fuzzy_threshold_high` (decimal 5,2, default 90.00) — confidence ≥ this auto-applies (Tier 3 fuzzy high).
 - `field_fuzzy_threshold_med` (decimal 5,2, default 70.00) — confidence ≥ this goes to office review (Tier 3 fuzzy medium). Confidence below this lands in the discovery queue (Tier 3 fuzzy low).
 
+### SKU transformations (Phase 3.10)
+
+- `field_sku_transformations` (**string_long**, JSON, optional) — distributor-specific SKU prefix/suffix transformations applied BEFORE normalization in Tier 1 / Tier 2 matching. See "JSON shape: sku_transformations" below.
+
 ### Bundle policy
 
 - `field_bundle_policy` (**string_long**, JSON) — see "JSON shape: bundle_policy" below. **Converted from `text_long` → `string_long` on 2026-05-25** for the same reason as `field_column_mapping` above.
@@ -108,6 +112,60 @@ Bundles not listed in the mapping default to `matched_only`. This is the conserv
 
 ---
 
+## JSON shape: `field_sku_transformations` (Phase 3.10)
+
+Optional, distributor-specific SKU transformations applied BEFORE the Tier 1 / Tier 2 normalization layer. Empirical motivation: SiteOne prefixes Rain Bird nozzle SKUs with "R" (their `R15H` is Rain Bird's native `15H`); without stripping the prefix at the lookup layer, the matcher fails to find perfectly-good Tier 1 candidates.
+
+```json
+{
+  "strip_prefix": ["R"],
+  "strip_suffix": []
+}
+```
+
+**Shape:**
+
+- Both keys (`strip_prefix`, `strip_suffix`) are optional. Empty arrays are valid. Both default to empty arrays when unset.
+- Values are arrays of strings — not strings, not nested objects. The presave validator rejects non-string entries.
+- Strips happen in the order listed; first match wins; applied ONCE (not iteratively). Stripping `R` from `RR15H` yields `R15H`, not `15H`. Avoids surprising over-strips.
+- Matching is case-sensitive at this stage — the matcher's normalization layer (which runs AFTER transformation) handles case afterwards.
+
+**Order of operations in Tier 1 / Tier 2:**
+
+```
+row.field_manufacturer_item_number              ("R15H")
+  → applySkuTransformations()                    ("15H")
+  → normalizeSku() — lowercase + strip ws/-/.    ("15h")
+  → lookup in per-batch normalized index
+  → match against BOS material #N (whose own
+    field_manufacturer_item_number "15H" was
+    normalized to "15h" when the index was built)
+```
+
+The same chain runs on Tier 2 supplier-SKU lookups.
+
+**Audit trail.** When a match required transformation or normalization (not exact string equality), `field_resolution_notes` on the row gets one of:
+
+- `Matched via mfr item # normalization: row '1806PRS' → BOS '1806-PRS'.`
+- `Matched via mfr item # transformation: row 'R15H' stripped to '15H', normalized to BOS '15H'.`
+
+Exact matches stay silent (preserves the simple-case audit signal: empty notes means clean Tier 1 hit, no drift).
+
+**Supplier seeds — copy-paste from Chat:**
+
+SiteOne (Pioneer):
+
+```json
+{
+  "strip_prefix": ["R"],
+  "strip_suffix": []
+}
+```
+
+CPS / Denver Brass / other suppliers — add as their SKU drift patterns are discovered.
+
+---
+
 ## Invariants (Non-Negotiable)
 
 1. **One config per supplier.** Enforced by Phase 3.2 presave hook (not in 3.1). Documented expectation regardless.
@@ -142,6 +200,16 @@ If the field is non-empty, validates that the JSON:
 - Every value is in the allowed-policy set: `matched_only`, `discovery`, `both`, `excluded`.
 
 **Default for bundles not listed:** `matched_only`. This is the conservative default — known catalog gets matched, unknown bundles don't generate discovery-queue noise. Consumed by the matcher (3.3); the parser ignores `field_bundle_policy`.
+
+### `field_sku_transformations` validation (Phase 3.10)
+
+If the field is non-empty, validates that the JSON:
+
+- Parses as a JSON object.
+- Only contains the recognized top-level keys: `strip_prefix`, `strip_suffix`. Unknown keys throw with the allowed-key list.
+- Each value is an array of strings (not strings, not nested objects, not arrays of mixed types). Empty arrays are valid.
+
+The validator is permissive on order — `strip_suffix` without `strip_prefix` is fine; both keys omitted is fine; the whole field empty is fine (defaults to no-op transformation chain).
 
 ### Pre-submit guard (UX layer)
 

@@ -498,6 +498,169 @@ try {
   ];
   foreach ($checks9 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
   $results['step_9_determinism'] = !in_array(FALSE, $checks9, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 10: Phase 3.10 — SKU normalization + supplier transformations ──
+  // Three scenarios from the Phase 3.10 spec:
+  //   10a. Hyphen normalization match (row "1806PRS" → BOS "1806-PRS")
+  //   10b. Supplier-specific prefix strip + normalization (strip_prefix=["R"];
+  //        row "R15H" → BOS "15H")
+  //   10c. Transformation with no match (row "Z99Q" — no prefix to strip,
+  //        no matching material — falls through cleanly)
+  //
+  // Uses a dedicated supplier + config + fixture materials so it can't
+  // interfere with the earlier steps' fixtures.
+  echo "\n=== Step 10: Phase 3.10 SKU normalization + supplier transformations ===\n";
+
+  // Fresh fixtures.
+  $normMfr = $etm->getStorage('manufacturer')->create([
+    'type' => 'manufacturer',
+    'field_name' => 'TestMfr-P310',
+    'uid' => 1,
+  ]);
+  $normMfr->save();
+  $cleanup['mfrs'][] = (int) $normMfr->id();
+
+  $normSup = $etm->getStorage('supplier')->create([
+    'type' => 'supplier',
+    'field_supplier_name' => 'TestSupplier-P310',
+    'uid' => 1,
+  ]);
+  $normSup->save();
+  $cleanup['suppliers'][] = (int) $normSup->id();
+
+  // BOS materials: stored in BOS-native form
+  //   1806-PRS (with hyphen, BOS conventional spelling)
+  //   15H       (bare manufacturer-native form)
+  $m_1806 = $etm->getStorage('material')->create([
+    'type' => 'irrigation',
+    'title' => 'TestMaterial-1806-PRS',
+    'uid' => 1,
+    'field_manufacturer' => $normMfr->id(),
+    'field_manufacturer_item_number' => '1806-PRS',
+  ]);
+  $m_1806->save();
+  $cleanup['materials'][] = (int) $m_1806->id();
+
+  $m_15H = $etm->getStorage('material')->create([
+    'type' => 'irrigation',
+    'title' => 'TestMaterial-15H',
+    'uid' => 1,
+    'field_manufacturer' => $normMfr->id(),
+    'field_manufacturer_item_number' => '15H',
+  ]);
+  $m_15H->save();
+  $cleanup['materials'][] = (int) $m_15H->id();
+
+  // Config with strip_prefix=["R"].
+  $normCfg = $etm->getStorage('supplier_ingest_config')->create([
+    'type' => 'config',
+    'title' => 'TestConfig-P310',
+    'uid' => 1,
+    'field_supplier' => $normSup->id(),
+    'field_active' => 1,
+    'field_default_cost_uom' => 'each',
+    'field_column_mapping' => json_encode([
+      'source_columns' => [
+        'SKU'   => 'field_supplier_sku',
+        'Mfr#'  => 'field_manufacturer_item_number',
+        'Brand' => 'field_manufacturer_name',
+        'Desc'  => 'field_description',
+        'Price' => 'field_unit_cost',
+        'UOM'   => 'field_cost_uom',
+      ],
+      'header_row' => 1,
+    ]),
+    'field_bundle_policy' => json_encode(['irrigation' => 'matched_only']),
+    'field_sku_transformations' => json_encode(['strip_prefix' => ['R'], 'strip_suffix' => []]),
+  ]);
+  $normCfg->save();
+  $cleanup['configs'][] = (int) $normCfg->id();
+
+  // CSV with three rows:
+  //   row-A: mfr-item "1806PRS"  → should match 1806-PRS via normalization
+  //   row-B: mfr-item "R15H"     → strip R → "15H" → match 15H via transformation
+  //   row-C: mfr-item "Z99Q"     → no match anywhere → falls through
+  $normCsv = "SKU,Mfr#,Brand,Desc,Price,UOM\n"
+    . "anything-a,1806PRS,TestMfr-P310,row A hyphen-norm,1.00,each\n"
+    . "anything-b,R15H,TestMfr-P310,row B prefix strip,2.00,each\n"
+    . "anything-c,Z99Q,TestMfr-P310,row C no match,3.00,each\n";
+
+  $normFile = $fileRepo->writeData($normCsv, "$uploadDir/spi_test_p310_norm.csv", FileSystemInterface::EXISTS_REPLACE);
+  $normFile->setPermanent();
+  $normFile->save();
+  $cleanup['files'][] = (int) $normFile->id();
+
+  $normBatch = $etm->getStorage('supplier_price_ingest_batch')->create([
+    'type' => 'batch',
+    'title' => 'TEST BATCH — Phase 3.10 SKU norm',
+    'uid' => 1,
+    'field_supplier' => $normSup->id(),
+    'field_source_file' => $normFile->id(),
+    'field_source_filename' => 'spi_test_p310_norm.csv',
+    'field_uploaded_by' => 1,
+    'field_uploaded_on' => date('Y-m-d\TH:i:s'),
+    'field_status' => 'pending_dry_run',
+  ]);
+  $normBatch->save();
+  $cleanup['batches'][] = (int) $normBatch->id();
+
+  $parser->parseUploadedFile($normBatch);
+  $normBatch = $etm->getStorage('supplier_price_ingest_batch')->load($normBatch->id());
+  $normResult = $matcher->matchBatch($normBatch);
+  echo "  matcher: " . $normResult->summary() . "\n";
+
+  $normRows = $etm->getStorage('supplier_price_ingest_row')
+    ->loadByProperties(['field_batch' => $normBatch->id()]);
+  foreach ($normRows as $r) {
+    $cleanup['rows'][] = (int) $r->id();
+  }
+  $normBySku = [];
+  foreach ($normRows as $r) {
+    $sku = (string) ($r->get('field_supplier_sku')->value ?? '');
+    if ($sku !== '') {
+      $normBySku[$sku] = $r;
+    }
+  }
+
+  // 10a — hyphen normalization
+  $rA = $normBySku['anything-a'] ?? NULL;
+  $checks10a = [
+    'tier_1_hit'         => $rA && (string) $rA->get('field_match_tier')->value === 'tier_1_mfr',
+    'matched_material'   => $rA && (int) $rA->get('field_matched_material')->target_id === (int) $m_1806->id(),
+    'confidence_100'     => $rA && (int) $rA->get('field_match_confidence')->value === 100,
+    'note_has_normalization' => $rA && stripos((string) $rA->get('field_resolution_notes')->value, 'normalization') !== FALSE,
+    'note_no_transformation' => $rA && stripos((string) $rA->get('field_resolution_notes')->value, 'transformation') === FALSE,
+  ];
+  echo "  -- 10a: hyphen normalization (row 1806PRS → BOS 1806-PRS) --\n";
+  foreach ($checks10a as $k => $v) echo "    " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+
+  // 10b — prefix strip + normalization
+  $rB = $normBySku['anything-b'] ?? NULL;
+  $checks10b = [
+    'tier_1_hit'           => $rB && (string) $rB->get('field_match_tier')->value === 'tier_1_mfr',
+    'matched_material'     => $rB && (int) $rB->get('field_matched_material')->target_id === (int) $m_15H->id(),
+    'confidence_100'       => $rB && (int) $rB->get('field_match_confidence')->value === 100,
+    'note_has_transformation' => $rB && stripos((string) $rB->get('field_resolution_notes')->value, 'transformation') !== FALSE,
+    'note_mentions_strip'  => $rB && stripos((string) $rB->get('field_resolution_notes')->value, "stripped to '15H'") !== FALSE,
+  ];
+  echo "  -- 10b: prefix strip (row R15H → strip R → BOS 15H) --\n";
+  foreach ($checks10b as $k => $v) echo "    " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+
+  // 10c — no match; falls through. The fixture supplier's policy lists
+  // only irrigation→matched_only, so an unmatched row goes to
+  // skipped_excluded_bundle (no discovery-enabled bundles). Either way:
+  // not tier_1_mfr, not tier_2_supplier_sku.
+  $rC = $normBySku['anything-c'] ?? NULL;
+  $checks10c = [
+    'not_tier1' => $rC && (string) $rC->get('field_match_tier')->value !== 'tier_1_mfr',
+    'not_tier2' => $rC && (string) $rC->get('field_match_tier')->value !== 'tier_2_supplier_sku',
+    'no_matched_material' => $rC && $rC->get('field_matched_material')->isEmpty(),
+  ];
+  echo "  -- 10c: no transformation match (row Z99Q falls through) --\n";
+  foreach ($checks10c as $k => $v) echo "    " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+
+  $all10 = array_merge($checks10a, $checks10b, $checks10c);
+  $results['step_10_sku_norm_and_transform'] = !in_array(FALSE, $all10, TRUE) ? 'PASS' : 'FAIL';
 }
 finally {
   echo "\n=== Cleanup ===\n";

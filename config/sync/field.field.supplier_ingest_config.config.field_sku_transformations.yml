@@ -1,0 +1,19 @@
+uuid: 32fbaba7-9124-4942-a117-c5ecb527ac20
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.supplier_ingest_config.config
+    - field.storage.supplier_ingest_config.field_sku_transformations
+id: supplier_ingest_config.config.field_sku_transformations
+field_name: field_sku_transformations
+entity_type: supplier_ingest_config
+bundle: config
+label: 'SKU Transformations (JSON)'
+description: 'JSON object describing supplier-specific SKU transformations applied BEFORE normalization in Tier 1 / Tier 2 matching. Optional keys: strip_prefix (array of strings to strip from the start of the SKU), strip_suffix (array of strings to strip from the end). Example for SiteOne: {"strip_prefix": ["R"], "strip_suffix": []} — SiteOne prefixes Rain Bird nozzle SKUs with "R" (e.g., "R15H" is Rain Bird native "15H"). Both keys optional; both default to empty arrays. See __BOS_AI/Entities/supplier_ingest_config.md.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string_long

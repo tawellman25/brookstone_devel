@@ -95,6 +95,20 @@ class IngestMatcher {
     'xmas'            => ['christmas', 'led light string'],
   ];
 
+  /**
+   * Per-batch index: manufacturer_id → [normalized_mfr_item_# → [material_ids]].
+   * Built lazily on first Tier 1 query for a given manufacturer; reused
+   * across every row in the same batch matching that manufacturer.
+   * Cleared at the start of each matchBatch() call.
+   */
+  private array $tier1Index = [];
+
+  /**
+   * Per-batch index: supplier_id → [normalized_supplier_sku → [link_ids]].
+   * Same cache lifecycle as $tier1Index.
+   */
+  private array $tier2Index = [];
+
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly Connection $database,
@@ -123,6 +137,13 @@ class IngestMatcher {
 
     $rowsProcessed = 0;
     $matchErrors   = [];
+
+    // Reset per-batch indexes. matchBatch is the only entry point that
+    // builds these; clearing here keeps two batches in the same PHP
+    // request from cross-contaminating (e.g., the verifier runs
+    // multiple batches in one drush invocation).
+    $this->tier1Index = [];
+    $this->tier2Index = [];
 
     try {
       // ── 1. Load supplier + config ─────────────────────────────────
@@ -155,6 +176,7 @@ class IngestMatcher {
       $config = reset($configs);
       $policy = $this->parseBundlePolicy($config);
       $thresholds = $this->loadFuzzyThresholds($config);
+      $transformations = $this->parseSkuTransformations($config);
 
       // ── 2. Iterate rows in chunks ─────────────────────────────────
       $rowStorage = $this->entityTypeManager->getStorage('supplier_price_ingest_row');
@@ -171,7 +193,7 @@ class IngestMatcher {
         foreach ($rows as $row) {
           $rowsProcessed++;
           try {
-            $this->matchRow($row, $batch, $supplier, $policy, $thresholds);
+            $this->matchRow($row, $batch, $supplier, $policy, $thresholds, $transformations);
             $row->save();
           }
           catch (\Throwable $e) {
@@ -276,16 +298,17 @@ class IngestMatcher {
     EntityInterface $supplier,
     array $policy,
     array $thresholds,
+    array $transformations,
   ): void {
     // ── Tier 1 ─────────────────────────────────────────────────────
-    $t1 = $this->attemptTier1($row, $policy);
+    $t1 = $this->attemptTier1($row, $policy, $transformations);
     if ($t1 !== NULL) {
       $this->applyMatch($row, $t1, $policy, 'tier_1_mfr');
       return;
     }
 
     // ── Tier 2 ─────────────────────────────────────────────────────
-    $t2 = $this->attemptTier2($row, $supplier);
+    $t2 = $this->attemptTier2($row, $supplier, $transformations);
     if ($t2 !== NULL) {
       $this->applyMatch($row, $t2, $policy, 'tier_2_supplier_sku');
       return;
@@ -308,7 +331,7 @@ class IngestMatcher {
    *   ['kind' => 'direct',    'material' => Material]
    *   ['kind' => 'ambiguous', 'material' => Material, 'count' => int]
    */
-  private function attemptTier1(EntityInterface $row, array $policy): ?array {
+  private function attemptTier1(EntityInterface $row, array $policy, array $transformations): ?array {
     $mfrName  = trim((string) ($row->get('field_manufacturer_name')->value ?? ''));
     $itemNum  = trim((string) ($row->get('field_manufacturer_item_number')->value ?? ''));
     if ($mfrName === '' || $itemNum === '') {
@@ -330,26 +353,28 @@ class IngestMatcher {
     }
     $mfrId = (int) reset($mfrIds);
 
-    // Find candidate materials. Don't pre-filter excluded bundles —
-    // applyMatch() needs to see the match so it can route it to
-    // skipped_excluded_bundle per the supplier's policy. Pre-filtering
-    // here would silently drop matches and let the row fall through
-    // to discovery instead, which loses the audit trail of what the
-    // match WOULD have been.
-    $materialIds = array_values(
-      $this->entityTypeManager->getStorage('material')->getQuery()
-        ->accessCheck(FALSE)
-        ->condition('field_manufacturer', $mfrId)
-        ->condition('field_manufacturer_item_number', $itemNum, '=')
-        ->execute()
-    );
+    // Apply supplier-specific transformations BEFORE normalization
+    // (per Phase 3.10 SKU-norm spec — strip distributor-specific
+    // prefixes/suffixes so "R15H" becomes "15H" before lookup).
+    $transformed = $this->applySkuTransformations($itemNum, $transformations);
+    $normalized  = $this->normalizeSku($transformed);
+
+    $index = $this->getTier1Index($mfrId);
+    $materialIds = $index[$normalized] ?? [];
 
     if (count($materialIds) === 0) {
       return NULL;
     }
     if (count($materialIds) === 1) {
       $material = $this->entityTypeManager->getStorage('material')->load($materialIds[0]);
-      return ['kind' => 'direct', 'material' => $material];
+      return [
+        'kind'        => 'direct',
+        'material'    => $material,
+        'audit_path'  => $this->classifyMatchPath($itemNum, $transformed, (string) $material->get('field_manufacturer_item_number')->value),
+        'row_raw'     => $itemNum,
+        'transformed' => $transformed,
+        'mat_raw'     => (string) $material->get('field_manufacturer_item_number')->value,
+      ];
     }
     // Ambiguous — pick the first deterministically (lowest ID) so the
     // reviewer has a starting point.
@@ -364,6 +389,47 @@ class IngestMatcher {
   }
 
   /**
+   * Build (or return cached) per-manufacturer Tier 1 index. Loads every
+   * material that references the manufacturer, normalizes its
+   * field_manufacturer_item_number, and indexes id under the normalized
+   * key. Empty mfr-item-# values are skipped (can't be matched anyway).
+   *
+   * @return array<string, int[]>  normalized SKU → [material_ids]
+   */
+  private function getTier1Index(int $mfrId): array {
+    if (isset($this->tier1Index[$mfrId])) {
+      return $this->tier1Index[$mfrId];
+    }
+    $matStorage = $this->entityTypeManager->getStorage('material');
+    $ids = array_values(
+      $matStorage->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('field_manufacturer', $mfrId)
+        ->sort('id', 'ASC')
+        ->execute()
+    );
+    $index = [];
+    foreach (array_chunk($ids, 200) as $chunk) {
+      foreach ($matStorage->loadMultiple($chunk) as $material) {
+        if (!$material->hasField('field_manufacturer_item_number')) {
+          continue;
+        }
+        $raw = trim((string) ($material->get('field_manufacturer_item_number')->value ?? ''));
+        if ($raw === '') {
+          continue;
+        }
+        $key = $this->normalizeSku($raw);
+        if ($key === '') {
+          continue;
+        }
+        $index[$key][] = (int) $material->id();
+      }
+      $matStorage->resetCache($chunk);
+    }
+    return $this->tier1Index[$mfrId] = $index;
+  }
+
+  /**
    * Tier 2 — existing material_suppliers SKU exact match.
    *
    * Returns NULL when no candidate found. Returns an outcome array:
@@ -372,20 +438,27 @@ class IngestMatcher {
    *     — meaning multi-match (shouldn't happen by design but we
    *     handle defensively)
    */
-  private function attemptTier2(EntityInterface $row, EntityInterface $supplier): ?array {
+  private function attemptTier2(EntityInterface $row, EntityInterface $supplier, array $transformations): ?array {
     $supplierSku = trim((string) ($row->get('field_supplier_sku')->value ?? ''));
     if ($supplierSku === '') {
       return NULL;
     }
-    $linkIds = $this->entityTypeManager->getStorage('material_suppliers')->getQuery()
-      ->accessCheck(FALSE)
-      ->condition('field_supplier', $supplier->id())
-      ->condition('field_supplier_item_number', $supplierSku, '=')
-      ->execute();
+    // Tier 2 also runs through transformations + normalization. Tier 2
+    // comparisons are supplier-against-itself (the SKU column the
+    // supplier writes today vs. what their last batch wrote), so
+    // transformations are usually a no-op here — but applying them
+    // symmetrically protects against the case where a supplier
+    // started writing SKUs differently between batches (e.g.,
+    // SiteOne began stripping their own R prefix mid-year; the
+    // existing link still has "R15H", the new row has "15H").
+    $transformed = $this->applySkuTransformations($supplierSku, $transformations);
+    $normalized  = $this->normalizeSku($transformed);
+
+    $index = $this->getTier2Index((int) $supplier->id());
+    $linkIds = $index[$normalized] ?? [];
     if (!$linkIds) {
       return NULL;
     }
-    $linkIds = array_values($linkIds);
     sort($linkIds, SORT_NUMERIC);
     $link = $this->entityTypeManager->getStorage('material_suppliers')->load($linkIds[0]);
     $materialId = (int) ($link->get('field_material')->target_id ?? 0);
@@ -393,13 +466,58 @@ class IngestMatcher {
     if (!$material) {
       return NULL;
     }
+    $linkRaw = (string) ($link->get('field_supplier_item_number')->value ?? '');
     return [
-      'kind'     => count($linkIds) === 1 ? 'direct' : 'defensive',
-      'material' => $material,
-      'link'     => $link,
-      'count'    => count($linkIds),
-      'all_ids'  => $linkIds,
+      'kind'        => count($linkIds) === 1 ? 'direct' : 'defensive',
+      'material'    => $material,
+      'link'        => $link,
+      'count'       => count($linkIds),
+      'all_ids'     => $linkIds,
+      'audit_path'  => $this->classifyMatchPath($supplierSku, $transformed, $linkRaw),
+      'row_raw'     => $supplierSku,
+      'transformed' => $transformed,
+      'mat_raw'     => $linkRaw,
     ];
+  }
+
+  /**
+   * Build (or return cached) per-supplier Tier 2 index. Loads every
+   * material_suppliers link for the supplier, normalizes its
+   * field_supplier_item_number, indexes link id under the normalized key.
+   *
+   * @return array<string, int[]>  normalized SKU → [material_suppliers link ids]
+   */
+  private function getTier2Index(int $supplierId): array {
+    if (isset($this->tier2Index[$supplierId])) {
+      return $this->tier2Index[$supplierId];
+    }
+    $linkStorage = $this->entityTypeManager->getStorage('material_suppliers');
+    $ids = array_values(
+      $linkStorage->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('field_supplier', $supplierId)
+        ->sort('id', 'ASC')
+        ->execute()
+    );
+    $index = [];
+    foreach (array_chunk($ids, 200) as $chunk) {
+      foreach ($linkStorage->loadMultiple($chunk) as $link) {
+        if (!$link->hasField('field_supplier_item_number')) {
+          continue;
+        }
+        $raw = trim((string) ($link->get('field_supplier_item_number')->value ?? ''));
+        if ($raw === '') {
+          continue;
+        }
+        $key = $this->normalizeSku($raw);
+        if ($key === '') {
+          continue;
+        }
+        $index[$key][] = (int) $link->id();
+      }
+      $linkStorage->resetCache($chunk);
+    }
+    return $this->tier2Index[$supplierId] = $index;
   }
 
   /**
@@ -459,6 +577,30 @@ class IngestMatcher {
     $confidence    = self::CONFIDENCE_TIER_DIRECT;
     $note          = NULL;
 
+    // Phase 3.10 audit-note transparency: when normalization or
+    // transformation was load-bearing in producing this match, prepend
+    // a note so the reviewer can see WHY the strings looked different
+    // and trust the matcher's judgment. Exact matches stay silent
+    // (preserves prior behavior; resolution_notes column stays empty
+    // for the overwhelming-majority well-behaved case).
+    $auditPath = (string) ($outcome['audit_path'] ?? 'exact');
+    if ($auditPath !== 'exact') {
+      $rowRaw     = (string) ($outcome['row_raw'] ?? '');
+      $matRaw     = (string) ($outcome['mat_raw'] ?? '');
+      $transformed = (string) ($outcome['transformed'] ?? $rowRaw);
+      $sourceLabel = $cleanTier === 'tier_2_supplier_sku' ? 'supplier SKU' : 'mfr item #';
+      $rowOrigin   = $cleanTier === 'tier_2_supplier_sku' ? 'row' : 'row';
+      $note = $auditPath === 'transformed'
+        ? sprintf(
+            "Matched via %s transformation: %s '%s' stripped to '%s', normalized to BOS '%s'.",
+            $sourceLabel, $rowOrigin, $rowRaw, $transformed, $matRaw,
+          )
+        : sprintf(
+            "Matched via %s normalization: %s '%s' → BOS '%s'.",
+            $sourceLabel, $rowOrigin, $rowRaw, $matRaw,
+          );
+    }
+
     if ($this->isDiscontinued($material)) {
       $replacement = $this->resolveReplacement($material);
       if ($replacement === NULL) {
@@ -484,13 +626,16 @@ class IngestMatcher {
       // Retargeted via field_replaced_by.
       $finalMaterial = $replacement;
       $confidence    = self::CONFIDENCE_TIER_REPLACED;
-      $note          = sprintf(
+      $retargetNote = sprintf(
         'Original match was discontinued material #%d (%s); retargeted to replacement #%d (%s).',
         $material->id(),
         $material->label(),
         $replacement->id(),
         $replacement->label(),
       );
+      // Combine with any audit note (normalization / transformation
+      // path) that's already set.
+      $note = $note === NULL ? $retargetNote : ($note . "\n" . $retargetNote);
     }
 
     // Bundle policy on the FINAL target.
@@ -958,6 +1103,119 @@ class IngestMatcher {
       return [];
     }
     return $decoded;
+  }
+
+  /**
+   * Normalize a SKU for indexed matching: lowercase, trim, strip all
+   * whitespace / hyphens / dots. Catches format drift like:
+   *   "1806-PRS" (BOS)  vs  "1806PRS" (SiteOne)
+   *   "PRO-SPRAY PROS-12" (BOS catalog)  vs  "PROSPRAY PROS12" (typo)
+   *
+   * Empirically the distributor-vs-manufacturer drift in the SiteOne
+   * dry-run was all hyphen / case / whitespace; this single helper
+   * collapses all of those into one canonical form.
+   *
+   * Applied to BOTH sides of every Tier 1 / Tier 2 comparison. The
+   * matcher's per-batch index pre-normalizes BOS-side values once and
+   * caches; the row's incoming value is normalized at lookup time.
+   */
+  private function normalizeSku(?string $value): string {
+    if ($value === NULL) {
+      return '';
+    }
+    $trimmed = strtolower(trim($value));
+    if ($trimmed === '') {
+      return '';
+    }
+    return preg_replace('/[\s\-\.]+/', '', $trimmed) ?? $trimmed;
+  }
+
+  /**
+   * Apply supplier-specific SKU transformations BEFORE normalization.
+   *
+   * Distributor catalogs often prefix manufacturer SKUs with their own
+   * letter — SiteOne writes "R15H" for Rain Bird's native "15H". This
+   * helper strips configured prefixes/suffixes so the lookup compares
+   * the manufacturer-native form against BOS's manufacturer-native
+   * field_manufacturer_item_number.
+   *
+   * Rules (per Phase 3.10 SKU-norm spec):
+   *   - Both keys (`strip_prefix`, `strip_suffix`) are optional; default empty.
+   *   - Values are arrays of strings.
+   *   - Strips in the order listed, first match wins, applied ONCE
+   *     (not iteratively — "R" stripped from "RR15H" yields "R15H",
+   *     not "15H"). Avoids surprising over-strips.
+   *   - Case-sensitive matching here; Part A normalization handles
+   *     case afterward.
+   *
+   * @param array $transformations  Decoded JSON from field_sku_transformations.
+   */
+  private function applySkuTransformations(string $value, array $transformations): string {
+    $out = $value;
+    foreach (($transformations['strip_prefix'] ?? []) as $prefix) {
+      if ($prefix !== '' && str_starts_with($out, $prefix)) {
+        $out = substr($out, strlen($prefix));
+        break;
+      }
+    }
+    foreach (($transformations['strip_suffix'] ?? []) as $suffix) {
+      if ($suffix !== '' && str_ends_with($out, $suffix)) {
+        $out = substr($out, 0, -strlen($suffix));
+        break;
+      }
+    }
+    return $out;
+  }
+
+  /**
+   * Classify the path a match took for the audit-note column.
+   *
+   * Returns one of:
+   *   'exact'        — raw row value === raw BOS value (no transformation,
+   *                    no normalization mattered).
+   *   'normalized'   — equal only after normalization (transformation
+   *                    didn't change the row's value, but
+   *                    hyphen/case/whitespace differed).
+   *   'transformed'  — transformation changed the row's value; the
+   *                    transformed form then normalized to the BOS form.
+   */
+  private function classifyMatchPath(string $rowRaw, string $rowTransformed, string $matRaw): string {
+    if ($rowRaw === $matRaw) {
+      return 'exact';
+    }
+    if ($rowTransformed === $rowRaw) {
+      return 'normalized';
+    }
+    return 'transformed';
+  }
+
+  /**
+   * Decode field_sku_transformations from a supplier_ingest_config.
+   * Returns the empty-default shape when unset / invalid JSON so the
+   * matcher's `applySkuTransformations()` is a guaranteed no-op for
+   * suppliers that don't ship transformations.
+   */
+  private function parseSkuTransformations(EntityInterface $config): array {
+    $default = ['strip_prefix' => [], 'strip_suffix' => []];
+    if (!$config->hasField('field_sku_transformations')) {
+      return $default;
+    }
+    $raw = (string) ($config->get('field_sku_transformations')->value ?? '');
+    if (trim($raw) === '') {
+      return $default;
+    }
+    $decoded = json_decode($raw, TRUE);
+    if (!is_array($decoded)) {
+      $this->loggerFactory->get('supplier_price_ingest')->warning(
+        'supplier_ingest_config @cid: field_sku_transformations is not valid JSON; treating as empty. Decode error: @err',
+        ['@cid' => $config->id(), '@err' => json_last_error_msg()],
+      );
+      return $default;
+    }
+    return [
+      'strip_prefix' => is_array($decoded['strip_prefix'] ?? NULL) ? array_values(array_filter($decoded['strip_prefix'], 'is_string')) : [],
+      'strip_suffix' => is_array($decoded['strip_suffix'] ?? NULL) ? array_values(array_filter($decoded['strip_suffix'], 'is_string')) : [],
+    ];
   }
 
   /**

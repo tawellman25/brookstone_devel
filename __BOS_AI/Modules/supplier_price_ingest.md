@@ -10,6 +10,7 @@ Status:
 - **Phase 3.5 shipped 2026-05-25** — dry-run report UI, approve/reject confirm forms, CSV export, stub committer, source filter on `views.view.material_price_review_queue`, Tier 1 sort fix from the range-audit. Commit logic was stubbed pending Phase 3.6.
 - **Phase 3.6 shipped 2026-05-25** — real commit pipeline. `IngestCommitter` replaces the stub; per-row hand-off to `PriceSyncService::ingestRow()` (new unified mutation authority extending the existing WO-driven service). Approve form runs synchronously for small batches (<500 auto-applying rows) and via Drupal Batch API for large batches. Idempotent recovery on interrupted commits.
 - **Phase 3.7 shipped 2026-05-25** — Office Manager dashboards. Three new Views surfaces (Batch Manager, Discovery Queue, Fuzzy Match Review). Eight per-row operations: Create Material from Row, Link to Existing, Mark as Replacement, Reject (×4 for discovery); Confirm Match, Override Match, Send to Discovery, Reject (×4 for fuzzy review). Committer extended to route discovery + fuzzy_med rows to `discovery_pending` on commit so they surface in the queue views. Bulk Reject action wired into both row views. **(Phase 3.7 also shipped two seed-load buttons — "Load default bundle policy" and "Load SiteOne column mapping" — on the supplier_ingest_config form. Both buttons were REMOVED in the 2026-05-25 form-alter follow-up. Office staff paste seed JSON directly from Chat output. See the Phase 3.7 section below for the current state.)**
+- **Phase 3.10 (matcher enhancement) shipped 2026-05-26** — SKU normalization + supplier-specific transformations in Tier 1 / Tier 2. Empirical motivation: first SiteOne dry-run produced 5/59 Tier 1 hits on Rain Bird rows; diagnostics traced two distinct gaps — distributor-vs-catalog format drift (hyphen / dot / space / case) and SiteOne-specific "R" prefix on Rain Bird nozzle SKUs. The combined fix is projected to move Tier 1 hit rate from 8% to ~60% on Rain Bird rows. New `field_sku_transformations` JSON field on `supplier_ingest_config`; per-batch normalized index cache keyed by manufacturer (Tier 1) / supplier (Tier 2); audit-note transparency that explains every non-exact match in `field_resolution_notes`.
 
 ---
 
@@ -965,6 +966,92 @@ SiteOne's `supplier_item_number` column frequently IS the manufacturer's item nu
 
 ---
 
+## Phase 3.10 — SKU Normalization + Supplier Transformations (matcher enhancement)
+
+### Architecture
+
+Tier 1 and Tier 2 matching previously did exact-string-equality comparison of incoming SKU vs. BOS-stored SKU. That brittle comparison missed two classes of legitimate match:
+
+1. **Format drift.** BOS writes `1806-PRS`, SiteOne writes `1806PRS`. Both are Rain Bird's `1806-PRS` model. Hyphen / dot / whitespace / case all drift between distributor and catalog. ~20 of 54 Rain Bird misses in the first SiteOne dry-run.
+2. **Distributor-specific prefixes.** SiteOne prefixes Rain Bird nozzle SKUs with `R` (their `R15H` is Rain Bird's native `15H`). Manufacturer SKU drift between distributor and catalog conventions. ~10–12 additional Rain Bird misses.
+
+Combined, the matcher's Tier 1 hit rate on Rain Bird rows in the first SiteOne dry-run was 5/59 (8%). Phase 3.10 is projected to move that to ~60% (35/59).
+
+### `normalizeSku()` helper
+
+Private method on `IngestMatcher`. Lowercases, trims, strips whitespace / hyphens / dots. Applied to both sides of every Tier 1 / Tier 2 comparison.
+
+```php
+private function normalizeSku(?string $value): string {
+  if ($value === NULL) return '';
+  $trimmed = strtolower(trim($value));
+  if ($trimmed === '') return '';
+  return preg_replace('/[\s\-\.]+/', '', $trimmed) ?? $trimmed;
+}
+```
+
+### Supplier-specific transformations (`field_sku_transformations`)
+
+New JSON field on `supplier_ingest_config`. Shape and validation contract in `__BOS_AI/Entities/supplier_ingest_config.md`. The matcher applies `strip_prefix` / `strip_suffix` BEFORE normalization — distributor-side SKUs are stripped of their distributor-specific affix and then normalized against BOS's manufacturer-native form.
+
+SiteOne config seed: `{"strip_prefix": ["R"], "strip_suffix": []}` — stored in `supplier_ingest_config:64`.
+
+### Per-batch normalized index (Tier 1 + Tier 2 cache)
+
+Loading every BOS material matching a manufacturer reference once per batch and indexing it by normalized SKU is dramatically more efficient than running per-row entity queries with normalized predicates (which can't use indexes). Same SiteOne batch's 59 Rain Bird rows all hit the same Rain Bird index built once at the start.
+
+Implementation:
+
+```php
+// Instance properties, cleared at start of each matchBatch():
+private array $tier1Index = [];  // [mfr_id => [normalized_sku => [material_ids]]]
+private array $tier2Index = [];  // [supplier_id => [normalized_sku => [link_ids]]]
+```
+
+`getTier1Index(int $mfrId)` and `getTier2Index(int $supplierId)` build-lazily and cache. Skip materials/links with empty SKU (can't be matched). All BOS-side values are normalized at index-build time; row-side values are normalized at lookup time.
+
+### Audit-note transparency
+
+`field_resolution_notes` on the matched row carries one of three states:
+
+- **No note** when the match was exact (empty resolution_notes preserves the simple-case audit signal: blank = clean tier-1 hit, no drift).
+- `Matched via mfr item # normalization: row '1806PRS' → BOS '1806-PRS'.` — when only normalization (hyphen / case / whitespace collapse) was load-bearing.
+- `Matched via mfr item # transformation: row 'R15H' stripped to '15H', normalized to BOS '15H'.` — when supplier-specific transformation contributed to the match.
+
+Same shape for Tier 2 with "supplier SKU" in place of "mfr item #". The note combines with any discontinued-retarget note (one note per line, newline-separated).
+
+### Files modified in Phase 3.10
+
+| File | Change |
+|---|---|
+| `src/Service/IngestMatcher.php` | `normalizeSku()`, `applySkuTransformations()`, `classifyMatchPath()`, `parseSkuTransformations()`; per-batch `$tier1Index` + `$tier2Index` caches; `attemptTier1` + `attemptTier2` rewritten to use indexed lookups; `applyMatch` writes audit notes for non-exact matches |
+| `supplier_price_ingest.module` | `_supplier_price_ingest_validate_sku_transformations()` presave validator |
+| `config/sync/field.storage.supplier_ingest_config.field_sku_transformations.yml` | New storage (string_long) |
+| `config/sync/field.field.supplier_ingest_config.config.field_sku_transformations.yml` | New field instance |
+| `config/sync/core.entity_form_display.supplier_ingest_config.config.default.yml` | string_textarea widget |
+| `config/sync/core.entity_view_display.supplier_ingest_config.config.default.yml` | basic_string formatter |
+| `web/scripts/update_siteone_config_strip_prefix.php` | Idempotent SiteOne config update — sets `strip_prefix=["R"]` on supplier_ingest_config #64 |
+| `web/scripts/verify_supplier_price_ingest_matcher.php` | New Step 10 (3 scenarios: 10a hyphen norm, 10b prefix strip + norm, 10c no-transform-no-match) |
+
+### Phase 3.10 Verification
+
+`verify_supplier_price_ingest_matcher.php` Step 10 — all 13 sub-checks PASS:
+
+- 10a (hyphen normalization): row `1806PRS` → BOS `1806-PRS`. Tier 1 hit, confidence 100, note contains "normalization" but NOT "transformation".
+- 10b (prefix strip + normalization): config has `strip_prefix=["R"]`; row `R15H` → strip R → `15H` → match BOS `15H`. Tier 1 hit, confidence 100, note contains both "transformation" and "stripped to '15H'".
+- 10c (no transformation match): row `Z99Q` — no prefix to strip, no matching material. Falls through cleanly (not tier_1_mfr, not tier_2_supplier_sku, no matched material).
+
+All existing matcher / fuzzy / committer / dashboard verifiers — PASS, no regressions.
+
+### Out of scope (per the spec)
+
+- Historical product naming drift (`5004PLPC` ↔ `5004PC` where `PL` was historically `Plus`). Beyond punctuation/prefix handling; routes to discovery queue.
+- Manufacturer alias resolution (Aqualine → Hunter). Deferred per Phase 2 §7.6.
+- Tier 3 fuzzy scoring changes.
+- Backfill of empty `field_manufacturer_item_number` — handled by `bos:mfr-backfill` drush commands.
+
+---
+
 ## Status
 
 - **Phase 3.1** — shipped 2026-05-25 (commit `911c2221`).
@@ -973,7 +1060,8 @@ SiteOne's `supplier_item_number` column frequently IS the manufacturer's item nu
 - **Phase 3.4** — shipped 2026-05-25 (commit `c5782cfb` on `feature/supplier-price-ingest`).
 - **Phase 3.5** — shipped 2026-05-25 (commit `27a81558` on `feature/supplier-price-ingest`).
 - **Phase 3.6** — shipped 2026-05-25 (commit `0f2650a1` on `feature/supplier-price-ingest`).
-- **Phase 3.7** — shipped 2026-05-25 on `feature/supplier-price-ingest`.
+- **Phase 3.7** — shipped 2026-05-25 (commit `20856acd` on `feature/supplier-price-ingest`).
+- **Phase 3.10 matcher enhancement** — shipped 2026-05-26 on `feature/supplier-price-ingest`.
 
 Branch: `feature/supplier-price-ingest`.
 

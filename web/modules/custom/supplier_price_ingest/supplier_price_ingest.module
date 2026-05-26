@@ -87,6 +87,7 @@ function supplier_price_ingest_supplier_ingest_config_presave(EntityInterface $e
   _supplier_price_ingest_validate_uniqueness($entity);
   _supplier_price_ingest_validate_column_mapping($entity);
   _supplier_price_ingest_validate_bundle_policy($entity);
+  _supplier_price_ingest_validate_sku_transformations($entity);
 }
 
 /**
@@ -209,6 +210,61 @@ function _supplier_price_ingest_validate_bundle_policy(EntityInterface $entity):
         is_scalar($policy) ? (string) $policy : gettype($policy),
         implode(', ', $allowedValues),
       ));
+    }
+  }
+}
+
+/**
+ * Validates field_sku_transformations JSON shape.
+ *
+ * Allows empty (no transformations). If present:
+ *   - Valid JSON object
+ *   - Recognized top-level keys only: strip_prefix, strip_suffix
+ *     (both optional; unrecognized keys throw)
+ *   - Each value must be an array of strings (not nested objects,
+ *     not bare strings)
+ *   - Empty arrays are valid
+ */
+function _supplier_price_ingest_validate_sku_transformations(EntityInterface $entity): void {
+  if (!$entity->hasField('field_sku_transformations')) {
+    return;
+  }
+  $raw = (string) ($entity->get('field_sku_transformations')->value ?? '');
+  if ($raw === '') {
+    return;
+  }
+  $decoded = json_decode($raw, TRUE);
+  if (!is_array($decoded)) {
+    throw new EntityStorageException(sprintf(
+      'field_sku_transformations is not valid JSON: %s',
+      json_last_error_msg(),
+    ));
+  }
+  $allowedKeys = ['strip_prefix', 'strip_suffix'];
+  foreach ($decoded as $key => $value) {
+    if (!in_array($key, $allowedKeys, TRUE)) {
+      throw new EntityStorageException(sprintf(
+        'field_sku_transformations key "%s" is not recognized. Allowed: %s.',
+        $key,
+        implode(', ', $allowedKeys),
+      ));
+    }
+    if (!is_array($value)) {
+      throw new EntityStorageException(sprintf(
+        'field_sku_transformations["%s"] must be an array (got %s).',
+        $key,
+        gettype($value),
+      ));
+    }
+    foreach ($value as $idx => $item) {
+      if (!is_string($item)) {
+        throw new EntityStorageException(sprintf(
+          'field_sku_transformations["%s"][%s] must be a string (got %s).',
+          $key,
+          (string) $idx,
+          gettype($item),
+        ));
+      }
     }
   }
 }

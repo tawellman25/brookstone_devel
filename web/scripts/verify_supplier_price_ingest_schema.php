@@ -125,7 +125,13 @@ try {
     'field_default_cost_uom' => 'each',
     'field_fuzzy_threshold_high' => '92.50',
     'field_fuzzy_threshold_med'  => '75.00',
-    'field_column_mapping' => json_encode(['SKU' => 'field_supplier_sku', 'Price' => 'field_unit_cost']),
+    // Schema check only — but the Phase 3.2 presave validator runs on save,
+    // so we have to give it a shape it'll accept: source_columns wrapper,
+    // ≥ 1 identifier mapped, field_unit_cost mapped.
+    'field_column_mapping' => json_encode([
+      'source_columns' => ['SKU' => 'field_supplier_sku', 'Price' => 'field_unit_cost'],
+      'header_row' => 1,
+    ]),
     'field_bundle_policy'  => json_encode(['irrigation' => 'matched_only', 'pvc' => 'both']),
   ]);
   $cfg->save();

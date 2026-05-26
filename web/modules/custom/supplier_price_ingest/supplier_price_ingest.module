@@ -145,11 +145,34 @@ function _supplier_price_ingest_validate_column_mapping(EntityInterface $entity)
   $allowed = IngestParser::ALLOWED_ROW_FIELDS;
   $identifierFields = IngestParser::IDENTIFIER_FIELDS;
 
+  // Per-header destination is either a string (1:1) or an array of
+  // strings (1:many). Both shapes are valid; mixed shapes across
+  // headers are also allowed.
   $mappedTargets = [];
   foreach ($decoded['source_columns'] as $header => $target) {
+    if (is_array($target)) {
+      if ($target === []) {
+        throw new EntityStorageException(sprintf(
+          'field_column_mapping source_columns["%s"] is an empty array. A destination must name at least one BOS field, e.g. ["field_supplier_sku","field_manufacturer_item_number"].',
+          $header,
+        ));
+      }
+      foreach ($target as $t) {
+        if (!is_string($t) || $t === '' || !in_array($t, $allowed, TRUE)) {
+          throw new EntityStorageException(sprintf(
+            'field_column_mapping source_columns["%s"] array contains invalid entry "%s". Each entry must be a non-empty string in: %s',
+            $header,
+            is_scalar($t) ? (string) $t : gettype($t),
+            implode(', ', $allowed),
+          ));
+        }
+        $mappedTargets[] = $t;
+      }
+      continue;
+    }
     if (!is_string($target) || !in_array($target, $allowed, TRUE)) {
       throw new EntityStorageException(sprintf(
-        'field_column_mapping source_columns["%s"] = "%s" is not a valid supplier_price_ingest_row field. Allowed: %s',
+        'field_column_mapping source_columns["%s"] = "%s" is not a valid supplier_price_ingest_row field. Allowed: %s (or an array of those names for 1:many destinations).',
         $header,
         is_scalar($target) ? (string) $target : gettype($target),
         implode(', ', $allowed),

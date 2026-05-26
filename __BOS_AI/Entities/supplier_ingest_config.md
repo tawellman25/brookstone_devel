@@ -57,24 +57,52 @@ The config is consulted at parse and match time but is **not** the source of tru
 
 ## JSON shape: `field_column_mapping`
 
-Maps CSV header strings to BOS row-field machine names. The keys are case-insensitive when matched at parse time but stored as written. Unknown headers are ignored (logged in the dry-run report).
+Top-level keys: `source_columns` (required), plus optional parser controls (`header_row`, `skip_rows_until_header`, `case_sensitive_headers`, `trim_whitespace`).
+
+`source_columns` maps CSV header strings → one or more BOS row-field machine names. Header matching is case-insensitive at parse time but stored as written. Unknown headers are ignored (their raw values still ride along in `field_raw_data`).
+
+**Destination shape — two forms (both valid, can be mixed across headers):**
+
+- **1:1 (string):** the source cell is written to exactly one BOS field.
+- **1:many (array of strings):** the same source cell is written to every BOS field named in the array. Use when the supplier re-uses a single column for both their SKU and the manufacturer item number — common with SiteOne.
 
 ```json
 {
-  "SKU":           "field_supplier_sku",
-  "Item #":        "field_supplier_sku",
-  "Mfr Part #":    "field_manufacturer_item_number",
-  "Manufacturer":  "field_manufacturer_name",
-  "Description":   "field_description",
-  "Unit Price":    "field_unit_cost",
-  "UOM":           "field_cost_uom",
-  "Pack Qty":      "field_pack_quantity"
+  "source_columns": {
+    "SKU":          "field_supplier_sku",
+    "Mfr Part #":   "field_manufacturer_item_number",
+    "Manufacturer": "field_manufacturer_name",
+    "Description":  "field_description",
+    "Unit Price":   "field_unit_cost",
+    "UOM":          "field_cost_uom",
+    "Pack Qty":     "field_pack_quantity"
+  },
+  "header_row": 1,
+  "case_sensitive_headers": false,
+  "trim_whitespace": true
 }
 ```
 
-Multiple CSV header strings can map to the same BOS field (e.g., both `SKU` and `Item #` → `field_supplier_sku`). The parser uses the first non-empty value in CSV column order.
+**Worked example — SiteOne (1:many):** SiteOne's catalog does not provide a separate manufacturer-item-# column; their `supplier_item_number` doubles as both their SKU and (often R-prefixed) the manufacturer item number. The matcher's strip_prefix transformation (`field_sku_transformations: {"strip_prefix":["R"]}`) handles `R15H → 15H`, but only when `field_manufacturer_item_number` is also populated on the row — otherwise the Tier-1 manufacturer-# lookup has nothing to query. The 1:many destination closes that gap:
 
-Allowed target field names (Phase 3.1):
+```json
+{
+  "source_columns": {
+    "supplier_item_number":   ["field_supplier_sku", "field_manufacturer_item_number"],
+    "product_name":           "field_description",
+    "manufacturer_inferred":  "field_manufacturer_name",
+    "your_price":             "field_unit_cost",
+    "cost_uom":               "field_cost_uom"
+  },
+  "header_row": 1
+}
+```
+
+A CSV cell value of `R15H` lands in BOTH `field_supplier_sku` and `field_manufacturer_item_number`. The matcher then attempts Tier 1 against the (transformed) `15H`, against a BOS material whose `field_manufacturer_item_number = "15H"`.
+
+Multiple CSV header strings can also map to the same BOS field (e.g., both `SKU` and `Item #` → `"field_supplier_sku"`). The parser uses the first non-empty value in CSV column order.
+
+Allowed target field names:
 
 - `field_supplier_sku`
 - `field_manufacturer_item_number`
@@ -84,7 +112,7 @@ Allowed target field names (Phase 3.1):
 - `field_cost_uom`
 - `field_pack_quantity`
 
-Any other value is ignored by the parser. Schema validation of the mapping is added in Phase 3.2.
+For the 1:many shape, every entry in the array must be one of the names above, and the array must be non-empty. Per-destination transformations are not supported — when an array is used, the source cell is written verbatim (subject only to the parser's whitespace-trim) to every named field. If you need different normalization per field, use 1:1 entries (this is not a current need; the matcher's SKU transformations operate at lookup time, not at write time).
 
 ---
 
@@ -185,9 +213,18 @@ If the field is non-empty, validates that the JSON:
 
 - Parses as a JSON object.
 - Contains a `source_columns` key whose value is an object.
-- Every value in `source_columns` is in the allowed-target whitelist: `field_supplier_sku`, `field_manufacturer_item_number`, `field_manufacturer_name`, `field_description`, `field_unit_cost`, `field_cost_uom`, `field_pack_quantity`.
-- Maps at least one identifier (`field_supplier_sku` OR `field_manufacturer_item_number` OR `field_description`).
-- Maps `field_unit_cost`.
+- Every value in `source_columns` is either:
+  - a string in the allowed-target whitelist (1:1), OR
+  - a non-empty array of strings, every one of which is in the allowed-target whitelist (1:many).
+- Allowed-target whitelist: `field_supplier_sku`, `field_manufacturer_item_number`, `field_manufacturer_name`, `field_description`, `field_unit_cost`, `field_cost_uom`, `field_pack_quantity`.
+- Across all destinations (string + array entries combined), maps at least one identifier (`field_supplier_sku` OR `field_manufacturer_item_number` OR `field_description`).
+- Across all destinations (string + array entries combined), maps `field_unit_cost`.
+
+Specific rejection messages:
+
+- Empty array as a destination → "source_columns[\"…\"] is an empty array. A destination must name at least one BOS field…"
+- Array entry that is not a string or not on the whitelist → "source_columns[\"…\"] array contains invalid entry \"…\". Each entry must be a non-empty string in: …"
+- String destination not on the whitelist → "source_columns[\"…\"] = \"…\" is not a valid supplier_price_ingest_row field. Allowed: … (or an array of those names for 1:many destinations)."
 
 Other keys in the JSON (`header_row`, `case_sensitive_headers`, etc.) are accepted with sensible defaults at parse time — see `IngestParser` for the defaults.
 

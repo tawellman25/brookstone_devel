@@ -661,6 +661,117 @@ try {
 
   $all10 = array_merge($checks10a, $checks10b, $checks10c);
   $results['step_10_sku_norm_and_transform'] = !in_array(FALSE, $all10, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 11: end-to-end SiteOne R15H path (1:many destination
+  //              + strip_prefix transformation, no Mfr# column) ─────
+  // The SiteOne CSV does NOT have a separate manufacturer item-number
+  // column — the supplier_item_number column is re-used. The 1:many
+  // destination shape ("supplier_item_number": ["field_supplier_sku",
+  // "field_manufacturer_item_number"]) closes that gap: same source
+  // cell → both BOS row fields. Combined with strip_prefix=["R"],
+  // a raw "R15H" cell must Tier-1 match a BOS material whose
+  // field_manufacturer_item_number is "15H".
+  echo "\n=== Step 11: 1:many destination + strip_prefix (no Mfr# column) ===\n";
+
+  $e2eMfr = $etm->getStorage('manufacturer')->create([
+    'type' => 'manufacturer',
+    'field_name' => 'TestMfr-E2E',
+    'uid' => 1,
+  ]);
+  $e2eMfr->save();
+  $cleanup['mfrs'][] = (int) $e2eMfr->id();
+
+  $e2eSup = $etm->getStorage('supplier')->create([
+    'type' => 'supplier',
+    'field_supplier_name' => 'TestSupplier-E2E',
+    'uid' => 1,
+  ]);
+  $e2eSup->save();
+  $cleanup['suppliers'][] = (int) $e2eSup->id();
+
+  $e2eMat = $etm->getStorage('material')->create([
+    'type' => 'irrigation',
+    'title' => 'TestMaterial-15H-E2E',
+    'uid' => 1,
+    'field_manufacturer' => $e2eMfr->id(),
+    'field_manufacturer_item_number' => '15H',
+  ]);
+  $e2eMat->save();
+  $cleanup['materials'][] = (int) $e2eMat->id();
+
+  $e2eCfg = $etm->getStorage('supplier_ingest_config')->create([
+    'type' => 'config',
+    'title' => 'TestConfig-E2E',
+    'uid' => 1,
+    'field_supplier' => $e2eSup->id(),
+    'field_active' => 1,
+    'field_default_cost_uom' => 'each',
+    'field_column_mapping' => json_encode([
+      'source_columns' => [
+        // SiteOne-style: one CSV column → both SKU and Mfr#.
+        'supplier_item_number' => ['field_supplier_sku', 'field_manufacturer_item_number'],
+        'product_name'         => 'field_description',
+        'manufacturer_inferred' => 'field_manufacturer_name',
+        'your_price'           => 'field_unit_cost',
+        'cost_uom'             => 'field_cost_uom',
+      ],
+      'header_row' => 1,
+    ]),
+    'field_bundle_policy' => json_encode(['irrigation' => 'matched_only']),
+    'field_sku_transformations' => json_encode(['strip_prefix' => ['R'], 'strip_suffix' => []]),
+  ]);
+  $e2eCfg->save();
+  $cleanup['configs'][] = (int) $e2eCfg->id();
+
+  $e2eCsv = "supplier_item_number,product_name,manufacturer_inferred,your_price,cost_uom\n"
+    . "R15H,Rain Bird R15H nozzle,TestMfr-E2E,2.95,each\n";
+  $e2eFile = $fileRepo->writeData($e2eCsv, "$uploadDir/spi_test_e2e_siteone.csv", FileSystemInterface::EXISTS_REPLACE);
+  $e2eFile->setPermanent();
+  $e2eFile->save();
+  $cleanup['files'][] = (int) $e2eFile->id();
+
+  $e2eBatch = $etm->getStorage('supplier_price_ingest_batch')->create([
+    'type' => 'batch',
+    'title' => 'TEST BATCH — E2E SiteOne 1:many',
+    'uid' => 1,
+    'field_supplier' => $e2eSup->id(),
+    'field_source_file' => $e2eFile->id(),
+    'field_source_filename' => 'spi_test_e2e_siteone.csv',
+    'field_uploaded_by' => 1,
+    'field_uploaded_on' => date('Y-m-d\TH:i:s'),
+    'field_status' => 'pending_dry_run',
+  ]);
+  $e2eBatch->save();
+  $cleanup['batches'][] = (int) $e2eBatch->id();
+
+  $parser->parseUploadedFile($e2eBatch);
+  $e2eBatch = $etm->getStorage('supplier_price_ingest_batch')->load($e2eBatch->id());
+  $e2eResult = $matcher->matchBatch($e2eBatch);
+  echo "  matcher: " . $e2eResult->summary() . "\n";
+
+  $e2eRows = $etm->getStorage('supplier_price_ingest_row')
+    ->loadByProperties(['field_batch' => $e2eBatch->id()]);
+  foreach ($e2eRows as $r) $cleanup['rows'][] = (int) $r->id();
+  $row11 = reset($e2eRows);
+
+  $checks11 = [];
+  if ($row11) {
+    $sku = trim((string) ($row11->get('field_supplier_sku')->value ?? ''));
+    $mfr = trim((string) ($row11->get('field_manufacturer_item_number')->value ?? ''));
+    $checks11['parser_populated_sku']          = ($sku === 'R15H');
+    $checks11['parser_populated_mfr']          = ($mfr === 'R15H');
+    $checks11['tier_1_hit']                    = (string) $row11->get('field_match_tier')->value === 'tier_1_mfr';
+    $checks11['matched_expected_material']     = (int) $row11->get('field_matched_material')->target_id === (int) $e2eMat->id();
+    $checks11['confidence_100']                = (int) $row11->get('field_match_confidence')->value === 100;
+    $notes = (string) $row11->get('field_resolution_notes')->value;
+    $checks11['note_mentions_transformation']  = stripos($notes, 'transformation') !== FALSE;
+    $checks11['note_mentions_strip']           = stripos($notes, "stripped to '15H'") !== FALSE;
+  }
+  else {
+    $checks11['row_parsed'] = FALSE;
+  }
+  foreach ($checks11 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step_11_e2e_siteone_1many_plus_strip'] = !in_array(FALSE, $checks11, TRUE) ? 'PASS' : 'FAIL';
 }
 finally {
   echo "\n=== Cleanup ===\n";

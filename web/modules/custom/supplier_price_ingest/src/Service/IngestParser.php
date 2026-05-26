@@ -255,12 +255,17 @@ class IngestParser {
    *
    * Shape returned:
    *   [
-   *     'source_columns' => [header_string => bos_field_name, ...],
+   *     'source_columns' => [header_string => [bos_field_name, ...], ...],
    *     'header_row' => int,
    *     'skip_rows_until_header' => bool,
    *     'case_sensitive_headers' => bool,
    *     'trim_whitespace' => bool,
    *   ]
+   *
+   * Source-column destination is normalized to a list of BOS field
+   * names regardless of whether the config used the 1:1 string shape
+   * or the 1:many array shape. Downstream apply code (buildHeaderKeyMap
+   * / cellsToAssoc) is uniform.
    *
    * Defense-in-depth: also validates source_columns target fields
    * against the whitelist; presave should have already done this but
@@ -275,18 +280,29 @@ class IngestParser {
     if (!is_array($decoded) || !isset($decoded['source_columns']) || !is_array($decoded['source_columns'])) {
       throw new \RuntimeException('field_column_mapping JSON is missing source_columns object.');
     }
+    $normalizedColumns = [];
     foreach ($decoded['source_columns'] as $header => $target) {
-      if (!in_array($target, self::ALLOWED_ROW_FIELDS, TRUE)) {
+      $targets = is_array($target) ? $target : [$target];
+      if ($targets === []) {
         throw new \RuntimeException(sprintf(
-          'field_column_mapping targets unknown field "%s" (header: "%s"). Allowed: %s',
-          $target,
+          'field_column_mapping destination for header "%s" is an empty array; must name at least one BOS field.',
           $header,
-          implode(', ', self::ALLOWED_ROW_FIELDS),
         ));
       }
+      foreach ($targets as $t) {
+        if (!is_string($t) || !in_array($t, self::ALLOWED_ROW_FIELDS, TRUE)) {
+          throw new \RuntimeException(sprintf(
+            'field_column_mapping targets unknown field "%s" (header: "%s"). Allowed: %s',
+            is_scalar($t) ? (string) $t : gettype($t),
+            $header,
+            implode(', ', self::ALLOWED_ROW_FIELDS),
+          ));
+        }
+      }
+      $normalizedColumns[$header] = array_values($targets);
     }
     return [
-      'source_columns' => $decoded['source_columns'],
+      'source_columns' => $normalizedColumns,
       'header_row' => max(1, (int) ($decoded['header_row'] ?? 1)),
       'skip_rows_until_header' => (bool) ($decoded['skip_rows_until_header'] ?? FALSE),
       'case_sensitive_headers' => (bool) ($decoded['case_sensitive_headers'] ?? FALSE),
@@ -411,13 +427,16 @@ class IngestParser {
   }
 
   /**
-   * Build map from normalized header → BOS field name.
+   * Build map from normalized header → list of BOS field names.
+   *
+   * parseColumnMapping() already normalized each entry to an array,
+   * so every value here is a list of one-or-more field names.
    */
   private function buildHeaderKeyMap(array $sourceColumns, bool $caseSensitive, bool $trim): array {
     $out = [];
-    foreach ($sourceColumns as $header => $field) {
+    foreach ($sourceColumns as $header => $fields) {
       $key = $this->normalizeHeader((string) $header, $caseSensitive, $trim);
-      $out[$key] = $field;
+      $out[$key] = is_array($fields) ? $fields : [$fields];
     }
     return $out;
   }
@@ -465,8 +484,10 @@ class IngestParser {
       $raw[$rawHeader] = is_string($val) ? $val : (string) ($val ?? '');
       $key = $this->normalizeHeader((string) $rawHeader, $mapping['case_sensitive_headers'], $mapping['trim_whitespace']);
       if (isset($headerKeyMap[$key])) {
-        $bosField = $headerKeyMap[$key];
-        $mapped[$bosField] = $raw[$rawHeader];
+        // 1:many destination: same source cell populates every named field.
+        foreach ($headerKeyMap[$key] as $bosField) {
+          $mapped[$bosField] = $raw[$rawHeader];
+        }
       }
     }
     $mapped['_raw'] = $raw;

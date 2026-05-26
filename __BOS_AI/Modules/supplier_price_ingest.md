@@ -11,6 +11,7 @@ Status:
 - **Phase 3.6 shipped 2026-05-25** — real commit pipeline. `IngestCommitter` replaces the stub; per-row hand-off to `PriceSyncService::ingestRow()` (new unified mutation authority extending the existing WO-driven service). Approve form runs synchronously for small batches (<500 auto-applying rows) and via Drupal Batch API for large batches. Idempotent recovery on interrupted commits.
 - **Phase 3.7 shipped 2026-05-25** — Office Manager dashboards. Three new Views surfaces (Batch Manager, Discovery Queue, Fuzzy Match Review). Eight per-row operations: Create Material from Row, Link to Existing, Mark as Replacement, Reject (×4 for discovery); Confirm Match, Override Match, Send to Discovery, Reject (×4 for fuzzy review). Committer extended to route discovery + fuzzy_med rows to `discovery_pending` on commit so they surface in the queue views. Bulk Reject action wired into both row views. **(Phase 3.7 also shipped two seed-load buttons — "Load default bundle policy" and "Load SiteOne column mapping" — on the supplier_ingest_config form. Both buttons were REMOVED in the 2026-05-25 form-alter follow-up. Office staff paste seed JSON directly from Chat output. See the Phase 3.7 section below for the current state.)**
 - **Phase 3.10 (matcher enhancement) shipped 2026-05-26** — SKU normalization + supplier-specific transformations in Tier 1 / Tier 2. Empirical motivation: first SiteOne dry-run produced 5/59 Tier 1 hits on Rain Bird rows; diagnostics traced two distinct gaps — distributor-vs-catalog format drift (hyphen / dot / space / case) and SiteOne-specific "R" prefix on Rain Bird nozzle SKUs. The combined fix is projected to move Tier 1 hit rate from 8% to ~60% on Rain Bird rows. New `field_sku_transformations` JSON field on `supplier_ingest_config`; per-batch normalized index cache keyed by manufacturer (Tier 1) / supplier (Tier 2); audit-note transparency that explains every non-exact match in `field_resolution_notes`.
+- **Parser 1:many destination shipped 2026-05-26** — `source_columns` destinations may now be either a string (1:1) or a non-empty array of strings (1:many). Closes the SiteOne 0/72 Tier 1 gap: SiteOne's `supplier_item_number` column doubles as the manufacturer item number, but the Phase 3.10 strip_prefix transformation needs `field_manufacturer_item_number` populated to do its Tier 1 lookup. The 1:many shape lets one CSV cell populate both `field_supplier_sku` and `field_manufacturer_item_number`. Presave validator extended (rejects empty arrays + invalid field names per array entry); parser dispatch is array-aware; SiteOne supplier_ingest_config #64 updated via `web/scripts/update_siteone_config_1many.php`. Parser verifier Step 12 + Step 13 and matcher verifier Step 11 cover the path end-to-end.
 
 ---
 
@@ -175,7 +176,9 @@ Behavior — `parseUploadedFile`:
 Allowed target field names (whitelist, enforced by both presave and parser):
 `field_supplier_sku`, `field_manufacturer_item_number`, `field_manufacturer_name`, `field_description`, `field_unit_cost`, `field_cost_uom`, `field_pack_quantity`.
 
-Required: ≥ 1 identifier (`field_supplier_sku` OR `field_manufacturer_item_number` OR `field_description`) AND `field_unit_cost` mapped.
+Required: ≥ 1 identifier (`field_supplier_sku` OR `field_manufacturer_item_number` OR `field_description`) AND `field_unit_cost` mapped — counted across both 1:1 and 1:many destinations.
+
+**Destination shape — 1:1 or 1:many (since 2026-05-26):** a destination is either a string (1:1, the source cell goes to one BOS field) OR a non-empty array of strings (1:many, the source cell goes to every BOS field named in the array). Both shapes can be mixed across headers in the same config. See `__BOS_AI/Entities/supplier_ingest_config.md` for the full shape spec and worked SiteOne example.
 
 Unmapped source columns are ignored (not errored). Suppliers commonly add columns BOS doesn't care about.
 
@@ -202,7 +205,7 @@ Consumed by the matcher (3.3), not the parser. The parser ignores the bundle pol
 `hook_ENTITY_TYPE_presave` for `supplier_ingest_config` enforces:
 
 1. **Uniqueness** — one config per supplier. Same-entity update detected by ID comparison. On violation, throws `EntityStorageException` with the conflicting config's ID in the message.
-2. **JSON shape on `field_column_mapping`** — valid JSON, contains `source_columns` object, all targets in the whitelist, ≥ 1 identifier mapped, `field_unit_cost` mapped.
+2. **JSON shape on `field_column_mapping`** — valid JSON, contains `source_columns` object, every value is either a whitelisted string or a non-empty array of whitelisted strings (1:many), ≥ 1 identifier mapped (counted across both shapes), `field_unit_cost` mapped.
 3. **JSON shape on `field_bundle_policy`** — valid JSON, all keys are real material bundles, all values in the allowed set.
 
 Empty values for either JSON field are accepted (allows incremental editing). The parser will fail loudly at upload time if the config is incomplete.
@@ -889,12 +892,12 @@ Reference seed JSON (paste into the matching textarea — both are plain `string
 }
 ```
 
-**SiteOne column mapping** (reflects the actual scraped CSV shape):
+**SiteOne column mapping** (reflects the actual scraped CSV shape — uses the 1:many destination shape introduced 2026-05-26 because SiteOne's `supplier_item_number` IS the manufacturer item number too):
 
 ```json
 {
   "source_columns": {
-    "supplier_item_number":  "field_supplier_sku",
+    "supplier_item_number":  ["field_supplier_sku", "field_manufacturer_item_number"],
     "product_name":          "field_description",
     "manufacturer_inferred": "field_manufacturer_name",
     "your_price":            "field_unit_cost",
@@ -907,9 +910,13 @@ Reference seed JSON (paste into the matching textarea — both are plain `string
 }
 ```
 
-#### Known limitation — 1:many column mapping for SiteOne
+#### 1:many destination support (shipped 2026-05-26)
 
-SiteOne's `supplier_item_number` column frequently IS the manufacturer's item number too (their SKU is the mfr SKU passthrough). The current 1:1 source-columns shape doesn't express that — the same source column can only map to one BOS field. If Tier 1 hit rate is poor against SiteOne data in Phase 3.10 verification, the parser will need extension to support `{source_column: [target_field_1, target_field_2]}` array values. Deferred until there's evidence the limitation matters in practice — for now we map `supplier_item_number → field_supplier_sku` only.
+`source_columns` destinations are either a string (1:1) or a non-empty array of strings (1:many). When an array is given, the parser writes the source cell to every BOS field named in the array. For SiteOne, this lets the same `supplier_item_number` cell populate both `field_supplier_sku` and `field_manufacturer_item_number` — the latter is what the Phase 3.10 strip_prefix transformation needs in order to do Tier 1 manufacturer-item-# lookup. Without 1:many, the SiteOne first dry-run returned 0/72 Tier 1 hits because the mfr-# side of the row was always empty.
+
+Validation: empty arrays rejected at presave; every entry in an array must be a real field from the allowed-target whitelist. Full shape spec lives in `__BOS_AI/Entities/supplier_ingest_config.md` ("JSON shape: field_column_mapping").
+
+Per-destination transformations are out of scope — the source cell is written verbatim (subject only to whitespace trim) to every named field. SKU transformations operate at matcher-lookup time, not at parser-write time, so a single source cell can still be matched in multiple normalized forms against different fields.
 
 ### Files Added in Phase 3.7
 
@@ -961,7 +968,7 @@ SiteOne's `supplier_item_number` column frequently IS the manufacturer's item nu
 ### Forward dependencies
 
 - ⚠ SOP NEEDED — three new Office Manager workflows now user-facing: Batch Manager navigation, Discovery Queue resolution, Fuzzy Match Review. Listed in Phase 2 §11 as separate SOPs (Discovery Queue Resolution, Fuzzy Match Review, plus the Upload-and-Review SOP that now includes Batches view navigation). All three owned by Phase 3.12 SOP authoring. The Upload-and-Review SOP should also document the copy-paste-from-Chat seed JSON workflow for new supplier_ingest_config setups (the two reference snippets above).
-- 1:many column mapping for SiteOne (see "Known limitation" above) — deferred until Phase 3.10 produces evidence the 1:1 shape costs Tier 1 hits.
+- ~~1:many column mapping for SiteOne~~ — **shipped 2026-05-26**. The 0/72 Tier 1 result on the first SiteOne dry-run (Phase 3.10) provided the evidence. Parser, presave validator, verifier (parser Step 12 + matcher Step 11), config update script (`web/scripts/update_siteone_config_1many.php`), and SiteOne supplier_ingest_config #64 all updated.
 - CPS / Denver Brass column mapping JSON snippets — add to this doc when those CSVs are scraped.
 
 ---
@@ -1052,6 +1059,44 @@ All existing matcher / fuzzy / committer / dashboard verifiers — PASS, no regr
 
 ---
 
+## Parser 1:many destination follow-up (2026-05-26)
+
+Empirical motivation: the first SiteOne dry-run after Phase 3.10 returned **0/72** Tier 1 hits, not the projected ~60%. Diagnosis: the SiteOne CSV does not carry a separate manufacturer-item-# column — the supplier's `supplier_item_number` IS the manufacturer item number. With the 1:1 source-columns shape, the row's `field_manufacturer_item_number` stayed empty, so the Phase 3.10 strip_prefix transformation had nothing to query against the Tier 1 index.
+
+The 1:many destination shape lets a single source column be written to multiple BOS row fields. SiteOne's mapping becomes:
+
+```json
+{
+  "supplier_item_number": ["field_supplier_sku", "field_manufacturer_item_number"],
+  ...
+}
+```
+
+A CSV cell value of `R15H` now lands in both fields. Tier 1 then runs strip_prefix → `15H` → matches a BOS material whose `field_manufacturer_item_number = "15H"`.
+
+### Files modified
+
+| File | Change |
+|---|---|
+| `src/Service/IngestParser.php` | `parseColumnMapping()` accepts string or non-empty array per destination; result normalized to a list of fields. `buildHeaderKeyMap()` + `cellsToAssoc()` dispatch on the list and write the source cell to every named field |
+| `supplier_price_ingest.module` | `_supplier_price_ingest_validate_column_mapping()` accepts the array shape; rejects empty arrays and arrays with invalid field names per entry; identifier + unit-cost requirements counted across both shapes |
+| `web/scripts/update_siteone_config_1many.php` | Idempotent — sets `supplier_item_number → ["field_supplier_sku", "field_manufacturer_item_number"]` on supplier_ingest_config #64 |
+| `web/scripts/verify_supplier_price_ingest_parser.php` | New Step 12 (parser writes one source cell to two fields) + Step 13 (presave rejects empty array, presave rejects invalid array entry) |
+| `web/scripts/verify_supplier_price_ingest_matcher.php` | New Step 11 (end-to-end SiteOne path: 1:many destination + strip_prefix R → Tier 1 match against `15H`) |
+| `__BOS_AI/Entities/supplier_ingest_config.md` | JSON shape section rewritten — documents both 1:1 and 1:many with SiteOne worked example; presave validation contract updated with the new rejection messages |
+
+### Verification
+
+- Parser verifier — Steps 1-13 all PASS (Step 12: 1:many populates both fields; Step 13: presave rejects empty array + invalid field name in array).
+- Matcher verifier — Steps 1-11 all PASS (Step 11: SiteOne `R15H` → strip_prefix → Tier 1 match against BOS `15H`, confidence 100, audit note mentions transformation + "stripped to '15H'").
+
+### Out of scope (per the spec)
+
+- Per-destination transformations (e.g., write the source cell verbatim to field A but a normalized form to field B). Out of scope; SKU transformations remain matcher-side.
+- The "same source column appears twice in `source_columns`" case is impossible — JSON object semantics already collapse it.
+
+---
+
 ## Status
 
 - **Phase 3.1** — shipped 2026-05-25 (commit `911c2221`).
@@ -1062,6 +1107,7 @@ All existing matcher / fuzzy / committer / dashboard verifiers — PASS, no regr
 - **Phase 3.6** — shipped 2026-05-25 (commit `0f2650a1` on `feature/supplier-price-ingest`).
 - **Phase 3.7** — shipped 2026-05-25 (commit `20856acd` on `feature/supplier-price-ingest`).
 - **Phase 3.10 matcher enhancement** — shipped 2026-05-26 on `feature/supplier-price-ingest`.
+- **Parser 1:many destination follow-up** — shipped 2026-05-26 on `feature/supplier-price-ingest`.
 
 Branch: `feature/supplier-price-ingest`.
 

@@ -620,6 +620,157 @@ try {
     $checks11['no_exception'] = FALSE;
   }
   $results['step11_upload_form_full_lifecycle'] = (!empty($checks11) && !in_array(FALSE, $checks11, TRUE)) ? 'PASS' : 'FAIL';
+
+  // ── Step 12: 1:many destination — single source column populates ──
+  //               multiple BOS row fields
+  // Reproduces the SiteOne empirical gap: supplier_item_number is
+  // re-used as both the supplier's SKU and the manufacturer item #.
+  // Maps one CSV column to both fields and verifies the parsed row
+  // has identical values on field_supplier_sku and
+  // field_manufacturer_item_number.
+  echo "\n=== Step 12: 1:many destination — one source col → two BOS fields ===\n";
+  $checks12 = [];
+  try {
+    $sup12 = $etm->getStorage('supplier')->create([
+      'type' => 'supplier',
+      'field_supplier_name' => 'P32-1ManyTest-Sup',
+      'uid' => 1,
+    ]);
+    $sup12->save();
+    $cleanup['suppliers'][] = (int) $sup12->id();
+
+    $cfg12 = $etm->getStorage('supplier_ingest_config')->create([
+      'type' => 'config',
+      'title' => 'P32-1ManyTest-Cfg',
+      'uid' => 1,
+      'field_supplier' => $sup12->id(),
+      'field_active' => 1,
+      'field_default_cost_uom' => 'each',
+      'field_column_mapping' => json_encode([
+        'source_columns' => [
+          // 1:many — one source column writes both fields.
+          'Item Number' => ['field_supplier_sku', 'field_manufacturer_item_number'],
+          'Brand'       => 'field_manufacturer_name',
+          'Description' => 'field_description',
+          'Price'       => 'field_unit_cost',
+          'UOM'         => 'field_cost_uom',
+        ],
+        'header_row' => 1,
+      ]),
+    ]);
+    $cfg12->save();
+    $cleanup['configs'][] = (int) $cfg12->id();
+    $checks12['config_saves_with_array_destination'] = TRUE;
+
+    $csv12 = "Item Number,Brand,Description,Price,UOM\n"
+           . "R15H,Rain Bird,Rain Bird R15H nozzle,2.95,each\n";
+    $file12 = $fileRepo->writeData($csv12, "$uploadDir/spi_step12_1many.csv", FileSystemInterface::EXISTS_REPLACE);
+    $file12->setPermanent();
+    $file12->save();
+    $cleanup['files'][] = (int) $file12->id();
+
+    $batch12 = $etm->getStorage('supplier_price_ingest_batch')->create([
+      'type' => 'batch',
+      'title' => 'TEST BATCH — 1:many parser',
+      'uid' => 1,
+      'field_supplier' => $sup12->id(),
+      'field_source_file' => $file12->id(),
+      'field_source_filename' => 'spi_step12_1many.csv',
+      'field_uploaded_by' => 1,
+      'field_uploaded_on' => date('Y-m-d\TH:i:s'),
+      'field_status' => 'pending_dry_run',
+    ]);
+    $batch12->save();
+    $cleanup['batches'][] = (int) $batch12->id();
+
+    $result12 = $parser->parseUploadedFile($batch12);
+    echo "  parser: " . $result12->summary() . "\n";
+
+    $rows12 = $etm->getStorage('supplier_price_ingest_row')
+      ->loadByProperties(['field_batch' => $batch12->id()]);
+    foreach ($rows12 as $r) $cleanup['rows'][] = (int) $r->id();
+    $row = reset($rows12);
+
+    $checks12['one_row_created'] = $result12->rowsCreated === 1 && count($rows12) === 1;
+    if ($row) {
+      $sku = trim((string) ($row->get('field_supplier_sku')->value ?? ''));
+      $mfr = trim((string) ($row->get('field_manufacturer_item_number')->value ?? ''));
+      $checks12['both_fields_populated'] = ($sku === 'R15H' && $mfr === 'R15H');
+      $checks12['fields_identical'] = ($sku !== '' && $sku === $mfr);
+      echo "  field_supplier_sku='$sku' field_manufacturer_item_number='$mfr'\n";
+    }
+    else {
+      $checks12['both_fields_populated'] = FALSE;
+      $checks12['fields_identical'] = FALSE;
+    }
+
+    foreach ($checks12 as $k => $v) {
+      echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+    }
+  }
+  catch (\Throwable $e) {
+    echo "  FAIL — exception: " . $e->getMessage() . "\n";
+    $checks12['no_exception'] = FALSE;
+  }
+  $results['step12_one_to_many_destination'] = (!empty($checks12) && !in_array(FALSE, $checks12, TRUE)) ? 'PASS' : 'FAIL';
+
+  // ── Step 13: presave validator rejects bad 1:many shapes ─────────
+  // (a) empty array as destination → reject
+  // (b) array with invalid BOS field name → reject
+  echo "\n=== Step 13: presave rejects invalid 1:many shapes ===\n";
+  $checks13 = [];
+
+  // (a) empty array
+  $cfgEmpty = $etm->getStorage('supplier_ingest_config')->load(end($cleanup['configs']));
+  $emptyArrayMapping = json_encode([
+    'source_columns' => [
+      'Item Number' => [],
+      'Price' => 'field_unit_cost',
+    ],
+  ]);
+  try {
+    $cfgEmpty->set('field_column_mapping', $emptyArrayMapping);
+    $cfgEmpty->save();
+    $checks13['rejects_empty_array'] = FALSE;
+    echo "  FAIL — empty array destination accepted\n";
+  }
+  catch (\Drupal\Core\Entity\EntityStorageException $e) {
+    $hit = stripos($e->getMessage(), 'empty array') !== FALSE
+        || stripos($e->getMessage(), 'at least one') !== FALSE;
+    $checks13['rejects_empty_array'] = $hit;
+    echo '  ' . ($hit ? 'PASS' : 'FAIL') . " — " . $e->getMessage() . "\n";
+  }
+
+  // (b) invalid field name in array
+  $badArrayMapping = json_encode([
+    'source_columns' => [
+      'Item Number' => ['field_supplier_sku', 'field_completely_made_up'],
+      'Price' => 'field_unit_cost',
+    ],
+  ]);
+  try {
+    $cfgEmpty->set('field_column_mapping', $badArrayMapping);
+    $cfgEmpty->save();
+    $checks13['rejects_invalid_field_in_array'] = FALSE;
+    echo "  FAIL — invalid field in array accepted\n";
+  }
+  catch (\Drupal\Core\Entity\EntityStorageException $e) {
+    $hit = stripos($e->getMessage(), 'field_completely_made_up') !== FALSE;
+    $checks13['rejects_invalid_field_in_array'] = $hit;
+    echo '  ' . ($hit ? 'PASS' : 'FAIL') . " — " . $e->getMessage() . "\n";
+  }
+
+  // Restore something valid so cleanup teardown doesn't trip on it.
+  $cfgEmpty->set('field_column_mapping', json_encode([
+    'source_columns' => [
+      'Item Number' => 'field_supplier_sku',
+      'Price' => 'field_unit_cost',
+    ],
+    'header_row' => 1,
+  ]));
+  $cfgEmpty->save();
+
+  $results['step13_presave_rejects_bad_1many'] = (!empty($checks13) && !in_array(FALSE, $checks13, TRUE)) ? 'PASS' : 'FAIL';
 }
 finally {
   // Cleanup

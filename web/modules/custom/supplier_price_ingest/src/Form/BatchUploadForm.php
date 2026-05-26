@@ -28,11 +28,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class BatchUploadForm extends FormBase {
 
   public function __construct(
-    private readonly EntityTypeManagerInterface $entityTypeManager,
-    private readonly FileRepositoryInterface $fileRepository,
-    private readonly IngestParser $parser,
-    private readonly IngestMatcher $matcher,
-    private readonly AccountInterface $currentUser,
+    protected EntityTypeManagerInterface $entityTypeManager,
+    protected FileRepositoryInterface $fileRepository,
+    protected IngestParser $parser,
+    protected IngestMatcher $matcher,
+    protected AccountInterface $currentUser,
   ) {}
 
   public static function create(ContainerInterface $container): static {

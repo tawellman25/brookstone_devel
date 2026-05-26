@@ -48,11 +48,11 @@ class CreateMaterialFromRowForm extends FormBase {
   private ?EntityInterface $row = NULL;
 
   public function __construct(
-    private readonly EntityTypeManagerInterface $entityTypeManager,
-    private readonly PriceSyncService $priceSync,
-    private readonly IngestMatcher $matcher,
-    private readonly AccountInterface $currentUser,
-    private readonly Connection $database,
+    protected EntityTypeManagerInterface $entityTypeManager,
+    protected PriceSyncService $priceSync,
+    protected IngestMatcher $matcher,
+    protected AccountInterface $currentUser,
+    protected Connection $database,
   ) {}
 
   public static function create(ContainerInterface $container): self {

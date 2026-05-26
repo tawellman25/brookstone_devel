@@ -30,9 +30,9 @@ class ConfirmFuzzyMatchForm extends FormBase {
   private ?EntityInterface $row = NULL;
 
   public function __construct(
-    private readonly EntityTypeManagerInterface $entityTypeManager,
-    private readonly PriceSyncService $priceSync,
-    private readonly AccountInterface $currentUser,
+    protected EntityTypeManagerInterface $entityTypeManager,
+    protected PriceSyncService $priceSync,
+    protected AccountInterface $currentUser,
   ) {}
 
   public static function create(ContainerInterface $container): self {

@@ -29,8 +29,8 @@ class RejectRowForm extends FormBase {
   private ?EntityInterface $row = NULL;
 
   public function __construct(
-    private readonly EntityTypeManagerInterface $entityTypeManager,
-    private readonly AccountInterface $currentUser,
+    protected EntityTypeManagerInterface $entityTypeManager,
+    protected AccountInterface $currentUser,
   ) {}
 
   public static function create(ContainerInterface $container): self {

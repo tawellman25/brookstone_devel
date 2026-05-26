@@ -41,9 +41,9 @@ class ApproveBatchForm extends ConfirmFormBase {
   private ?EntityInterface $batch = NULL;
 
   public function __construct(
-    private readonly EntityTypeManagerInterface $entityTypeManager,
-    private readonly IngestCommitter $committer,
-    private readonly AccountInterface $currentUser,
+    protected EntityTypeManagerInterface $entityTypeManager,
+    protected IngestCommitter $committer,
+    protected AccountInterface $currentUser,
   ) {}
 
   public static function create(ContainerInterface $container): self {

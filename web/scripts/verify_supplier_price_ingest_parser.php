@@ -39,6 +39,9 @@ $cleanup = [
   'batches' => [],
   'rows' => [],
   'files' => [],
+  // Step 11 (Phase 3.2 form-DI regression guard) needs a fixture
+  // supplier of its own.
+  'suppliers' => [],
 ];
 
 $etm = \Drupal::entityTypeManager();
@@ -485,6 +488,138 @@ try {
     }
   }
   $results['step10_admin_pages_smoke'] = !in_array(FALSE, $checks10, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 11: BatchUploadForm — full form-submit lifecycle ────────
+  // Catches form-level DI failures that service-level tests miss.
+  // Specifically: when Drupal serializes a form between the AJAX
+  // managed_file upload step and the final submit (which it does for
+  // any form with managed_file), the `DependencySerializationTrait`
+  // uses `get_object_vars($this)` from inside the trait's __sleep().
+  // PRIVATE properties of the using class are invisible in trait
+  // scope — so `private readonly` promoted properties get omitted
+  // from serialization entirely, leaving them uninitialized after
+  // unserialize. PHP then throws "must not be accessed before
+  // initialization" the first time submit code touches them.
+  //
+  // Fix shipped 2026-05-25: all 10 forms changed from
+  // `private readonly` → `protected` promoted properties. This step
+  // is the regression guard.
+  echo "\n=== Step 11: BatchUploadForm survives serialize/wakeup + submit ===\n";
+  $checks11 = [];
+  try {
+    // Build a fixture supplier + active config so the form's
+    // supplier dropdown has an option to submit against.
+    $sup = $etm->getStorage('supplier')->create([
+      'type' => 'supplier',
+      'field_supplier_name' => 'P32-UploadFormTest-Sup',
+      'uid' => 1,
+    ]);
+    $sup->save();
+    $cleanup['suppliers'][] = (int) $sup->id();
+
+    $cfg = $etm->getStorage('supplier_ingest_config')->create([
+      'type' => 'config',
+      'title' => 'P32-UploadFormTest-Cfg',
+      'uid' => 1,
+      'field_supplier' => $sup->id(),
+      'field_active' => 1,
+      'field_default_cost_uom' => 'each',
+      'field_column_mapping' => json_encode([
+        'source_columns' => [
+          'SKU' => 'field_supplier_sku',
+          'Mfr#' => 'field_manufacturer_item_number',
+          'Brand' => 'field_manufacturer_name',
+          'Desc' => 'field_description',
+          'Price' => 'field_unit_cost',
+          'UOM' => 'field_cost_uom',
+        ],
+        'header_row' => 1,
+      ]),
+    ]);
+    $cfg->save();
+    $cleanup['configs'][] = (int) $cfg->id();
+
+    // Stage the CSV as a managed file (the form's managed_file
+    // widget would have done this during the AJAX upload step).
+    $stepCsv = "SKU,Mfr#,Brand,Desc,Price,UOM\nstep11-1,,,Step 11 upload-form regression row,1.00,each\n";
+    $stepFile = $fileRepo->writeData(
+      $stepCsv,
+      "$uploadDir/spi_step11_upload.csv",
+      \Drupal\Core\File\FileSystemInterface::EXISTS_REPLACE,
+    );
+    $stepFile->save(); // intentionally NOT setPermanent — form's submit handler promotes it
+    $cleanup['files'][] = (int) $stepFile->id();
+
+    // 1. Construct the form via class_resolver (mirrors what Drupal
+    //    does on the first form-build request).
+    $formClass = 'Drupal\\supplier_price_ingest\\Form\\BatchUploadForm';
+    $form = \Drupal::service('class_resolver')->getInstanceFromDefinition($formClass);
+
+    // 2. Round-trip through serialize/wakeup — mirrors what Drupal
+    //    does between the AJAX managed_file upload and the final
+    //    submit (form_state cache).
+    $form = unserialize(serialize($form));
+
+    // 3. Confirm all typed properties are still initialized post-wakeup.
+    $reflect = new ReflectionClass($form);
+    $uninit = [];
+    foreach ($reflect->getProperties() as $p) {
+      if ($p->isStatic() || str_starts_with($p->getName(), '_')) {
+        continue;
+      }
+      if ($p->hasType() && $p->getType() && !$p->getType()->allowsNull()
+          && !$p->isInitialized($form) && !$p->hasDefaultValue()) {
+        $uninit[] = $p->getName();
+      }
+    }
+    $checks11['post_wakeup_no_uninit_props'] = $uninit === [];
+    if ($uninit) {
+      echo "  uninit props after wakeup: " . implode(', ', $uninit) . "\n";
+    }
+
+    // 4. Call submitForm() DIRECTLY on the deserialized form
+    //    instance. We bypass FormBuilder::submitForm() here because
+    //    that path runs managed_file's element validator, which
+    //    rejects programmatic submission (it expects to have
+    //    processed a real upload pipeline). The bug we're guarding
+    //    against fires inside submitForm() at the first property
+    //    access — line ~118, $this->entityTypeManager->getStorage().
+    //    If DI is broken, the throw happens before any business
+    //    logic; the test just needs to prove submitForm() can read
+    //    its own injected properties post-wakeup.
+    $form_array = [];
+    $form_state = new \Drupal\Core\Form\FormState();
+    $form_state->setValues([
+      'supplier' => (string) $sup->id(),
+      'source_file' => [(string) $stepFile->id()],
+      'notes' => 'Step 11 — verifier-generated upload',
+    ]);
+    $form->submitForm($form_array, $form_state);
+
+    // 5. Confirm a batch was created (submitForm reads the file via
+    //    $this->entityTypeManager, then creates the batch via the
+    //    same path — both touch the previously-uninitialized
+    //    property; both have to work for this assertion to pass).
+    $createdBatches = $etm->getStorage('supplier_price_ingest_batch')
+      ->loadByProperties(['field_supplier' => $sup->id()]);
+    foreach ($createdBatches as $b) {
+      $cleanup['batches'][] = (int) $b->id();
+      foreach ($etm->getStorage('supplier_price_ingest_row')->loadByProperties(['field_batch' => $b->id()]) as $r) {
+        $cleanup['rows'][] = (int) $r->id();
+      }
+    }
+    $checks11['batch_created'] = count($createdBatches) >= 1;
+
+    foreach ($checks11 as $k => $v) {
+      echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+    }
+  }
+  catch (\Throwable $e) {
+    echo "  FAIL — exception during form submit: " . $e->getMessage() . "\n";
+    echo "    class: " . get_class($e) . "\n";
+    $checks11['no_exception'] = FALSE;
+  }
+  $results['step11_upload_form_full_lifecycle'] = (!empty($checks11) && !in_array(FALSE, $checks11, TRUE)) ? 'PASS' : 'FAIL';
 }
 finally {
   // Cleanup
@@ -499,6 +634,12 @@ finally {
   }
   foreach ($cleanup['configs'] as $id) {
     $e = $etm->getStorage('supplier_ingest_config')->load($id);
+    if ($e) $e->delete();
+  }
+  // Suppliers must come AFTER configs (config has a required reference
+  // to the supplier).
+  foreach ($cleanup['suppliers'] as $id) {
+    $e = $etm->getStorage('supplier')->load($id);
     if ($e) $e->delete();
   }
   foreach ($cleanup['files'] as $id) {

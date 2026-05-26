@@ -554,6 +554,62 @@ type: basic_string
 
 **Surfaced 2026-05-25 fixing the supplier_ingest_config form alter that wouldn't land (paired with the storage-type conversion).**
 
+## `private readonly` promoted properties on Drupal forms break serialize/wakeup
+
+Drupal forms that get serialized between request and submit (anything with `managed_file`, AJAX, multi-step, or Batch API flows) hit a silent failure mode when constructor-promoted properties are declared `private readonly`:
+
+```php
+class MyForm extends FormBase {
+  public function __construct(
+    private readonly EntityTypeManagerInterface $entityTypeManager,  // BROKEN
+  ) {}
+}
+```
+
+Symptom: **`Error: Typed property ::$entityTypeManager must not be accessed before initialization`** in the submit handler, on a form that worked when serialization wasn't involved.
+
+Mechanism — three things interact:
+
+1. **Drupal's `DependencySerializationTrait::__sleep()`** uses `get_object_vars($this)` to enumerate properties. The function is defined inside the trait, which has its own visibility scope. Inside that scope, **private properties of the class using the trait are invisible**. The trait sees only its own properties (`_serviceIds`, `_entityStorages`) plus public/protected properties of the class.
+2. With `private`, the trait captures *nothing*. `_serviceIds` stays empty. Serialization proceeds with the property's value stripped from `$vars`.
+3. On unserialize, `__wakeup()` has nothing in `_serviceIds` to restore. The typed property ends up uninitialized. First access throws PHP's "must not be accessed before initialization" error.
+
+`readonly` makes this even more brittle: even if visibility were fixed, `__wakeup`'s reassignment (`$this->$key = $container->get($service_id)`) would throw "Cannot modify readonly property" in PHP 8.2+.
+
+**Fix:** use `protected` (or `public`) promoted properties without `readonly` on any class that uses `DependencySerializationTrait` (FormBase and subclasses; some other Drupal base classes):
+
+```php
+class MyForm extends FormBase {
+  public function __construct(
+    protected EntityTypeManagerInterface $entityTypeManager,  // works
+  ) {}
+}
+```
+
+`protected` is visible to the trait, and non-readonly lets `__wakeup()` reassign.
+
+**Doesn't apply to:**
+- **Services** registered in `*.services.yml` — they're fetched fresh per request from the container; they aren't serialized between request and submit. `private readonly` is fine on services.
+- **Controllers** — same as services: fresh per request, never serialized into form state.
+- Anything that doesn't use `DependencySerializationTrait`.
+
+**Discovered 2026-05-25:** `BatchUploadForm` (uses `managed_file`, which forces form-state caching between the AJAX upload and the final submit) threw the property-uninitialized error on submit. All 10 Phase 3.5+ forms had the same latent bug — they hadn't hit it because their submit paths didn't trigger form caching. Fixed by converting `private readonly` → `protected` across all 10. Verifier addition: `verify_supplier_price_ingest_parser.php` Step 11 round-trips `BatchUploadForm` through `serialize()`/`unserialize()` and calls `submitForm()` directly on the deserialized instance — catches this class of regression at the form-DI layer rather than the service layer.
+
+**Verification helper for any FormBase subclass with constructor-promoted properties:**
+
+```php
+$form = \Drupal::service('class_resolver')->getInstanceFromDefinition($formClass);
+$round = unserialize(serialize($form));
+$reflect = new ReflectionClass($round);
+foreach ($reflect->getProperties() as $p) {
+  if ($p->isStatic() || str_starts_with($p->getName(), '_')) continue;
+  if ($p->hasType() && !$p->getType()->allowsNull()
+      && !$p->isInitialized($round) && !$p->hasDefaultValue()) {
+    fail("Property {$p->getName()} uninitialized post-wakeup");
+  }
+}
+```
+
 ---
 
 ## Status

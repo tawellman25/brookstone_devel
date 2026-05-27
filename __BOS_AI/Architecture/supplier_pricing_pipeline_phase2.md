@@ -631,6 +631,104 @@ Each SOP follows GOV-SOP-001 dual-format standard (`.docx` + paste-ready HTML).
 
 ---
 
+## 12. Lessons Learned — Field Discoveries
+
+This section captures matcher behavior observations that surfaced during the
+first weeks of real-world ingest (SiteOne batches 205, 276, 318 in particular).
+These are not new requirements — they're guardrails for future maintainers,
+and rules-of-thumb for configuring new suppliers.
+
+### 12.1 The Tier 1 empty-field guard is load-bearing
+
+`IngestMatcher::attemptTier1()` opens with:
+
+```php
+if ($mfrName === '' || $itemNum === '') {
+  return NULL;
+}
+```
+
+This guard is the single biggest determinant of Tier 1 hit rate. If
+`field_manufacturer_item_number` is empty on the parsed row, Tier 1 cannot
+fire at all — the row goes straight to Tier 2, then Tier 3, then Discovery,
+with no audit-trail explanation of "Tier 1 was attempted but found nothing"
+because Tier 1 was never attempted.
+
+**Implication:** `field_mapping` completeness on
+`supplier_ingest_config.field_column_mapping` is a Tier 1 precondition.
+A supplier whose CSV doesn't expose a manufacturer-item-# column needs the
+1:many destination shape (see §12.2). Without it, every row falls past
+Tier 1 silently.
+
+Anyone refactoring the matcher must preserve this guard or replace it with
+explicit "skip Tier 1, log why" telemetry. Removing the guard without that
+replacement breaks the audit-note contract.
+
+### 12.2 1:many destination is the default for supplier-as-mfr-SKU catalogs
+
+Most irrigation distributors (SiteOne, Ewing, Horizon, etc.) use the
+manufacturer's own SKU as their internal SKU. Their CSV has one identifier
+column that doubles as both supplier SKU and manufacturer item number.
+Map it 1:many:
+
+```json
+"supplier_item_number": ["field_supplier_sku", "field_manufacturer_item_number"]
+```
+
+This is the **default mapping pattern** for irrigation suppliers, not a
+special case. Treat the 1:1 shape as the exception (reserved for
+distributors who genuinely maintain their own SKU namespace distinct from
+the manufacturer item number — relatively rare in irrigation, more common
+in chemicals, hardscape, and own-brand consumer lines).
+
+When onboarding a new supplier, default to 1:many for the SKU column unless
+the catalog clearly has separate `supplier_sku` and `mfr_item_number`
+columns. The cost of 1:many when not needed is zero (Tier 2 lookup uses the
+same value); the cost of 1:1 when the supplier reuses the manufacturer SKU
+is a Tier 1 short-circuit and full Discovery routing.
+
+### 12.3 Historical Discovery rejections from the empty-field bug
+
+Batches **205** and **276** contain Discovery rejections that were caused
+specifically by the pre-fix 1:1 column mapping leaving
+`field_manufacturer_item_number` empty (see §12.1). The matcher logic that
+ran was correct; the column-mapping config was incomplete.
+
+The fix (commit `2f723fc7`, 2026-05-26) shipped 1:many destination support;
+batch 318 — first re-ingest of the same SiteOne data after the fix —
+matched all four HE-VAN rows cleanly via Tier 1.
+
+**For future use:** if dry-run hit rates need a boost on a slow afternoon,
+batches 205 and 276 are good candidates for re-ingest against the current
+matcher. Expect a meaningful chunk of their previously-rejected rows to
+auto-match retroactively. This is not a required cleanup; the records are
+still useful as audit history of the pre-fix state.
+
+### 12.4 Tier 2 with zero hits is healthy behavior
+
+When Tier 1 is configured correctly (manufacturer + item-# both populated
+on every row), Tier 2 will frequently see zero hits per batch. This is
+**correct**, not a dead tier.
+
+Tier 2 earns its keep in three scenarios:
+
+1. **Supplier-specific SKU that diverges from the manufacturer SKU.**
+   Common at SiteOne for own-brand items and packaged kits where the
+   distributor SKU bears no relationship to any single manufacturer SKU.
+2. **Non-irrigation categories.** Hardscape, chemicals, supplies, and
+   bulk material catalogs frequently use distributor-internal SKUs with
+   no manufacturer-item-# at all. Tier 1 short-circuits cleanly via
+   §12.1; Tier 2 carries the supplier-side memory.
+3. **Re-ingests after a manufacturer reassignment.** If a BOS material's
+   `field_manufacturer` is later corrected (e.g., a product reattributed
+   to its actual manufacturer), Tier 1 against the new manufacturer
+   misses, but the prior Tier 2 supplier link still matches.
+
+Do not interpret Tier 2 = 0 hits in a single batch as a configuration
+problem. It usually means Tier 1 caught everything cleanly.
+
+---
+
 ## End of Phase 2 Architecture Draft
 
 Awaiting your review and decisions on items D1–D8 in §9.

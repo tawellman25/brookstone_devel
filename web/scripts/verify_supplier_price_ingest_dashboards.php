@@ -553,6 +553,109 @@ try {
   }
   foreach ($checks9 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
   $results['scenario_9_storage_string_long'] = !in_array(FALSE, $checks9, TRUE) ? 'PASS' : 'FAIL';
+
+  // ════════════════════════════════════════════════════════════════
+  // SCENARIO 10 — Views render an Operations column with the four
+  //               per-row operation links
+  // ════════════════════════════════════════════════════════════════
+  // Class-of-bug regression test that pairs with the Phase 3.7 spec.
+  // Scenarios 1-5 PROVE the operation routes work via direct form
+  // submission, but never PROVE the Views config makes them reachable
+  // from the queue pages. The Operations column was missing for months
+  // on a previous deploy of this verifier — discovered only by the user
+  // navigating to /admin/materials/supplier-ingest/discovery and seeing
+  // no per-row buttons. This scenario closes the loop by sub-rendering
+  // both Views pages and asserting:
+  //
+  //   1. The Operations column header is in the table HTML.
+  //   2. Each fixture row's rendered HTML contains all four expected
+  //      operation routes (parameterized by that row's id).
+  //
+  // Fixture rows are created directly (status + tier set explicitly)
+  // since Scenarios 1-5 already mutated their own rows out of
+  // discovery_pending by the time we get here.
+  echo "\n=== Scenario 10: Views render Operations column with per-row op links ===\n";
+  $checks10 = [];
+  try {
+    $discoveryRow = $etm->getStorage('supplier_price_ingest_row')->create([
+      'type' => 'row',
+      'title' => 'P37-S10-discovery row',
+      'uid' => 1,
+      'field_batch' => $batch->id(),
+      'field_row_number' => 9001,
+      'field_raw_data' => json_encode(['SKU' => 's10-disc']),
+      'field_row_status' => 'discovery_pending',
+      'field_match_tier' => 'discovery',
+      'field_supplier_sku' => 's10-disc',
+      'field_description' => 'P37 S10 discovery fixture',
+      'field_unit_cost' => '1.23',
+      'field_cost_uom' => 'each',
+    ]);
+    $discoveryRow->save();
+    $cleanup['rows'][] = (int) $discoveryRow->id();
+
+    $fuzzyRow = $etm->getStorage('supplier_price_ingest_row')->create([
+      'type' => 'row',
+      'title' => 'P37-S10-fuzzy row',
+      'uid' => 1,
+      'field_batch' => $batch->id(),
+      'field_row_number' => 9002,
+      'field_raw_data' => json_encode(['SKU' => 's10-fuzz']),
+      'field_row_status' => 'discovery_pending',
+      'field_match_tier' => 'tier_3_fuzzy_med',
+      'field_match_confidence' => '75.0',
+      'field_supplier_sku' => 's10-fuzz',
+      'field_description' => 'P37 S10 fuzzy_med fixture',
+      'field_unit_cost' => '2.34',
+      'field_cost_uom' => 'each',
+      'field_matched_material' => $fuzzyTarget->id(),
+    ]);
+    $fuzzyRow->save();
+    $cleanup['rows'][] = (int) $fuzzyRow->id();
+
+    \Drupal::service('account_switcher')->switchTo(\Drupal\user\Entity\User::load(1));
+
+    // 10a — Discovery Queue view
+    $req = \Symfony\Component\HttpFoundation\Request::create('/admin/materials/supplier-ingest/discovery', 'GET');
+    $resp = \Drupal::service('http_kernel')->handle($req);
+    $body = $resp->getContent();
+    $checks10['discovery_http_200'] = $resp->getStatusCode() === 200;
+    $checks10['discovery_operations_header'] = (bool) preg_match('#<th[^>]*>\s*Operations\s*</th>#', $body);
+    $dId = $discoveryRow->id();
+    foreach ([
+      "/admin/materials/supplier-ingest/discovery/$dId/create-material"  => 'discovery_create_link_for_row',
+      "/admin/materials/supplier-ingest/discovery/$dId/link-existing"    => 'discovery_link_existing_link_for_row',
+      "/admin/materials/supplier-ingest/discovery/$dId/mark-replacement" => 'discovery_mark_replacement_link_for_row',
+      "/admin/materials/supplier-ingest/discovery/$dId/reject"           => 'discovery_reject_link_for_row',
+    ] as $needle => $key) {
+      $checks10[$key] = strpos($body, $needle) !== FALSE;
+    }
+
+    // 10b — Fuzzy Match Review view
+    $req = \Symfony\Component\HttpFoundation\Request::create('/admin/materials/supplier-ingest/fuzzy-review', 'GET');
+    $resp = \Drupal::service('http_kernel')->handle($req);
+    $body = $resp->getContent();
+    $checks10['fuzzy_http_200'] = $resp->getStatusCode() === 200;
+    $checks10['fuzzy_operations_header'] = (bool) preg_match('#<th[^>]*>\s*Operations\s*</th>#', $body);
+    $fId = $fuzzyRow->id();
+    foreach ([
+      "/admin/materials/supplier-ingest/fuzzy-review/$fId/confirm"           => 'fuzzy_confirm_link_for_row',
+      "/admin/materials/supplier-ingest/fuzzy-review/$fId/override"          => 'fuzzy_override_link_for_row',
+      "/admin/materials/supplier-ingest/fuzzy-review/$fId/send-to-discovery" => 'fuzzy_send_to_discovery_link_for_row',
+      "/admin/materials/supplier-ingest/fuzzy-review/$fId/reject"            => 'fuzzy_reject_link_for_row',
+    ] as $needle => $key) {
+      $checks10[$key] = strpos($body, $needle) !== FALSE;
+    }
+
+    \Drupal::service('account_switcher')->switchBack();
+
+    foreach ($checks10 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
+  }
+  catch (\Throwable $e) {
+    echo "  FAIL — exception: " . $e->getMessage() . "\n";
+    $checks10['no_exception'] = FALSE;
+  }
+  $results['scenario_10_views_operations_column'] = (!empty($checks10) && !in_array(FALSE, $checks10, TRUE)) ? 'PASS' : 'FAIL';
 }
 finally {
   echo "\n=== Cleanup ===\n";

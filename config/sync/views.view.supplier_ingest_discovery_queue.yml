@@ -134,6 +134,32 @@ display:
           plugin_id: field
           label: UOM
           type: list_default
+        operations:
+          id: operations
+          table: supplier_price_ingest_row
+          field: operations
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: entity_operations
+          label: Operations
+          exclude: false
+          alter:
+            alter_text: false
+            make_link: false
+            absolute: false
+            word_boundary: true
+            ellipsis: true
+            strip_tags: false
+            trim: false
+            html: false
+          element_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          destination: true
       pager:
         type: mini
         options:
@@ -187,7 +213,7 @@ display:
           field: field_row_status_value
           relationship: none
           plugin_id: list_field
-          operator: '='
+          operator: or
           value:
             discovery_pending: discovery_pending
           group: 1
@@ -198,7 +224,7 @@ display:
           field: field_match_tier_value
           relationship: none
           plugin_id: list_field
-          operator: '='
+          operator: or
           value:
             discovery: discovery
           group: 1
@@ -263,6 +289,10 @@ display:
             multiple: false
             remember_roles:
               authenticated: authenticated
+      filter_groups:
+        operator: AND
+        groups:
+          1: AND
       style:
         type: table
         options:

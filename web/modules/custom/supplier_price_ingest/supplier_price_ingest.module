@@ -26,6 +26,7 @@
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\supplier_price_ingest\Service\IngestParser;
 
 const SUPPLIER_PRICE_INGEST_BUNDLE_POLICY_VALUES = [
@@ -385,5 +386,89 @@ function _supplier_price_ingest_pre_submit_guard(array &$form, FormStateInterfac
       );
     }
   }
+}
+
+/**
+ * Implements hook_entity_operation().
+ *
+ * Injects per-row review-queue operations for supplier_price_ingest_row
+ * entities. The set of operations is gated by the row's match-tier so the
+ * dropdown only ever shows the ops applicable to that row's review path:
+ *
+ *   - discovery rows (field_match_tier=discovery) get the four discovery
+ *     ops (create / link / mark-as-replacement / reject).
+ *   - fuzzy_med rows (field_match_tier=tier_3_fuzzy_med, including
+ *     Tier-1-ambiguous rows the matcher reroutes there) get the four
+ *     fuzzy ops (confirm / override / send-to-discovery / reject).
+ *
+ * Rows in any other state (auto-applied, errored, already resolved) get
+ * no custom ops. Views' entity_operations field plugin renders the
+ * returned array as the native Drupal admin dropdown.
+ *
+ * Wired up to:
+ *   - views.view.supplier_ingest_discovery_queue (Discovery Queue)
+ *   - views.view.supplier_ingest_fuzzy_review (Fuzzy Match Review)
+ */
+function supplier_price_ingest_entity_operation(EntityInterface $entity): array {
+  if ($entity->getEntityTypeId() !== 'supplier_price_ingest_row') {
+    return [];
+  }
+  $tier = (string) ($entity->get('field_match_tier')->value ?? '');
+  $status = (string) ($entity->get('field_row_status')->value ?? '');
+  if ($status !== 'discovery_pending') {
+    return [];
+  }
+
+  if ($tier === 'discovery') {
+    return [
+      'create_material' => [
+        'title'  => t('Create New Material'),
+        'url'    => Url::fromRoute('supplier_price_ingest.discovery_create_material', ['supplier_price_ingest_row' => $entity->id()]),
+        'weight' => 10,
+      ],
+      'link_existing' => [
+        'title'  => t('Link to Existing'),
+        'url'    => Url::fromRoute('supplier_price_ingest.discovery_link_existing', ['supplier_price_ingest_row' => $entity->id()]),
+        'weight' => 20,
+      ],
+      'mark_replacement' => [
+        'title'  => t('Mark as Replacement'),
+        'url'    => Url::fromRoute('supplier_price_ingest.discovery_mark_replacement', ['supplier_price_ingest_row' => $entity->id()]),
+        'weight' => 30,
+      ],
+      'reject' => [
+        'title'  => t('Reject'),
+        'url'    => Url::fromRoute('supplier_price_ingest.discovery_reject', ['supplier_price_ingest_row' => $entity->id()]),
+        'weight' => 40,
+      ],
+    ];
+  }
+
+  if ($tier === 'tier_3_fuzzy_med') {
+    return [
+      'confirm_match' => [
+        'title'  => t('Confirm Match'),
+        'url'    => Url::fromRoute('supplier_price_ingest.fuzzy_confirm', ['supplier_price_ingest_row' => $entity->id()]),
+        'weight' => 10,
+      ],
+      'override_match' => [
+        'title'  => t('Override Match'),
+        'url'    => Url::fromRoute('supplier_price_ingest.fuzzy_override', ['supplier_price_ingest_row' => $entity->id()]),
+        'weight' => 20,
+      ],
+      'send_to_discovery' => [
+        'title'  => t('Send to Discovery'),
+        'url'    => Url::fromRoute('supplier_price_ingest.fuzzy_send_to_discovery', ['supplier_price_ingest_row' => $entity->id()]),
+        'weight' => 30,
+      ],
+      'reject' => [
+        'title'  => t('Reject'),
+        'url'    => Url::fromRoute('supplier_price_ingest.fuzzy_reject', ['supplier_price_ingest_row' => $entity->id()]),
+        'weight' => 40,
+      ],
+    ];
+  }
+
+  return [];
 }
 

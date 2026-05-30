@@ -69,6 +69,14 @@ class IngestParser {
     'field_unit_cost',
     'field_cost_uom',
     'field_pack_quantity',
+    // Pack-tier capture fields (Phase 3.11). Scrape populates the full
+    // Each/Mid/Case structure per row; commit pipeline persists these
+    // onto the matched material entity.
+    'field_pack_qty_mid_label',
+    'field_pack_qty_mid',
+    'field_pack_qty_case',
+    'field_pack_family',
+    'field_pack_data_source',
   ];
 
   /**
@@ -581,6 +589,17 @@ class IngestParser {
         }
       }
 
+      // Pack-tier capture coercion (Phase 3.11).
+      // mid/case → unsigned integer; mid_label/data_source → string
+      // (validated against storage allowed_values); family → resolve
+      // string to taxonomy_term ID, auto-creating the term if missing
+      // so no scrape data is silently dropped.
+      $packMid = $this->coerceUintField($mapped, 'field_pack_qty_mid');
+      $packCase = $this->coerceUintField($mapped, 'field_pack_qty_case');
+      $packMidLabel = $this->coerceAllowedString($mapped, 'field_pack_qty_mid_label', 'supplier_price_ingest_row', $errorMessages);
+      $packDataSource = $this->coerceAllowedString($mapped, 'field_pack_data_source', 'supplier_price_ingest_row', $errorMessages);
+      $packFamilyTid = $this->resolvePackFamilyTid($mapped);
+
       // Encode raw data. If encoding fails, that's an errored row.
       $rawJson = json_encode($raw, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
       if ($rawJson === FALSE) {
@@ -611,6 +630,12 @@ class IngestParser {
       if ($packQty !== NULL) {
         $values['field_pack_quantity'] = $packQty;
       }
+      // Pack-tier capture (Phase 3.11) — only set if the row had the value.
+      if ($packMid !== NULL)        { $values['field_pack_qty_mid'] = $packMid; }
+      if ($packCase !== NULL)       { $values['field_pack_qty_case'] = $packCase; }
+      if ($packMidLabel !== NULL)   { $values['field_pack_qty_mid_label'] = $packMidLabel; }
+      if ($packDataSource !== NULL) { $values['field_pack_data_source'] = $packDataSource; }
+      if ($packFamilyTid !== NULL)  { $values['field_pack_family'] = $packFamilyTid; }
       if (!empty($errorMessages)) {
         $values['field_match_tier'] = self::MATCH_TIER_ERROR;
         $values['field_resolution_notes'] = implode("\n", $errorMessages);
@@ -667,6 +692,77 @@ class IngestParser {
       $allowed = $storage ? array_keys($storage->getSetting('allowed_values') ?? []) : [];
     }
     return $allowed;
+  }
+
+  // ── Phase 3.11 pack-tier coercion helpers ──────────────────────────
+
+  /**
+   * Coerce a CSV cell into an unsigned integer, or NULL if the cell is
+   * empty / not numeric. Strips formatting characters like commas.
+   */
+  private function coerceUintField(array $mapped, string $field): ?int {
+    if (!isset($mapped[$field]) || trim((string) $mapped[$field]) === '') {
+      return NULL;
+    }
+    $raw = preg_replace('/[^\d]/', '', (string) $mapped[$field]);
+    if ($raw === '' || $raw === NULL) {
+      return NULL;
+    }
+    return (int) $raw;
+  }
+
+  /**
+   * Coerce a CSV cell into a list_string value, validated against the
+   * field storage's allowed_values. Returns NULL if cell empty; pushes
+   * an error message into $errorMessages if value not in allowed list.
+   */
+  private function coerceAllowedString(array $mapped, string $field, string $entityType, array &$errorMessages): ?string {
+    if (!isset($mapped[$field]) || trim((string) $mapped[$field]) === '') {
+      return NULL;
+    }
+    $value = trim((string) $mapped[$field]);
+    static $allowedCache = [];
+    $cacheKey = "$entityType.$field";
+    if (!isset($allowedCache[$cacheKey])) {
+      $storage = \Drupal\field\Entity\FieldStorageConfig::loadByName($entityType, $field);
+      $allowedCache[$cacheKey] = $storage ? array_keys($storage->getSetting('allowed_values') ?? []) : [];
+    }
+    if (!in_array($value, $allowedCache[$cacheKey], TRUE)) {
+      $errorMessages[] = sprintf(
+        "Unrecognized %s value: '%s'. Expected one of: %s.",
+        $field,
+        $value,
+        implode(', ', $allowedCache[$cacheKey]),
+      );
+      return NULL;
+    }
+    return $value;
+  }
+
+  /**
+   * Resolve a pack_family CSV cell (e.g., "Rain Bird VAN") to a
+   * taxonomy_term ID in the pack_family vocabulary. Auto-creates the
+   * term if not found, so no scrape data is silently dropped — office
+   * curates the term's canonical pack rule later.
+   */
+  private function resolvePackFamilyTid(array $mapped): ?int {
+    if (!isset($mapped['field_pack_family']) || trim((string) $mapped['field_pack_family']) === '') {
+      return NULL;
+    }
+    $name = trim((string) $mapped['field_pack_family']);
+    $termStorage = $this->entityTypeManager->getStorage('taxonomy_term');
+    $existing = $termStorage->loadByProperties(['vid' => 'pack_family', 'name' => $name]);
+    if ($existing) {
+      $term = reset($existing);
+      return (int) $term->id();
+    }
+    $term = $termStorage->create([
+      'vid' => 'pack_family',
+      'name' => $name,
+      'description' => 'Auto-created by supplier_price_ingest parser. Office: edit to add canonical mid_label / mid / case pack rule.',
+    ]);
+    $term->save();
+    return (int) $term->id();
   }
 
 }

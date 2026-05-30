@@ -3,7 +3,7 @@
 **Status:** Active build plan.
 **Date authored:** 2026-05-24.
 **Parent doc:** `__BOS_AI/Architecture/supplier_pricing_pipeline_phase2.md`.
-**Last completed phase:** None — Phase 3.1 is next.
+**Last completed phase:** Phase 3.7 (dashboards, 2026-05-25) + Phase 3.10 matcher enhancement (SKU normalization, 2026-05-26) + Phase 3.7.5 pack-tier capture refinement (2026-05-30). Phase 3.8 (estimator surfaces) is next; the full Phase 3.10 end-to-end DDEV ingest and Phase 3.11 production cut-over remain as originally specced.
 
 ---
 
@@ -322,6 +322,31 @@
 **Pause point:** Todd and Office Manager use the dashboards in DDEV against the test data from 3.6. Resolve a few discovery rows. Confirm a few fuzzy matches. Reject one batch. Verify all flows are intuitive and don't require explanation.
 
 **Deployment readiness:** Holds in DDEV until 3.8–3.9 also complete, then UI bundle ships as a single deploy.
+
+---
+
+## Phase 3.7.5 — Pack-Tier Capture (refinement)
+
+**Inserted out-of-sequence; shipped 2026-05-30** on `feature/pack-tier-capture` (commits `0275a1b4`, `91e74b07`, `834636b6`). This refinement was driven by real scrape data examined after Phase 3.7 shipped: the SiteOne scrape was already producing Each / Mid / Case pack-quantity columns + a family attribution + a confidence tag, but BOS was dropping all five at parse time. Office staff were having to bounce to the supplier site to see volume-pricing tiers while standing in BOS — a workflow violation Todd called out directly.
+
+**Goal:** Persist supplier pack-tier metadata onto materials so BOS itself is the source of truth for "this part comes in Each / Bag(50) / Case(250)".
+
+**Why 3.7.5 (not 3.8 or 3.11):** It refines the Phase 3.7 ingest path (parser whitelist + commit-side writeback), so the numbering reflects its architectural position rather than chronological. The originally-specced Phase 3.10 (end-to-end DDEV ingest), Phase 3.11 (production cut-over), and Phase 3.12 (SOP authoring) numbering is preserved.
+
+**Delivered:**
+
+- Schema: new `pack_family` taxonomy vocabulary; 5 new fields on `material` (all 22 bundles), 5 on `supplier_price_ingest_row.row`, 3 on `taxonomy_term:pack_family` (the canonical-rule fields).
+- Parser: `IngestParser::ALLOWED_ROW_FIELDS` extended 7 → 12; helpers `coerceUintField()`, `coerceAllowedString()`, `resolvePackFamilyTid()` (the last auto-creates `pack_family` terms the scrape names that don't yet exist in BOS, so no scrape data is silently dropped).
+- Commit-side: `PriceSyncService::writePackTierToMaterial()` called inside the `ingestRow()` transaction; trust-aware rule (`confirmed` → overwrites material's existing pack values; lesser sources only fill empty fields; `field_pack_family` + `field_pack_data_source` always tag-set with the latest scrape's attribution).
+- Seed data: 26 well-evidenced families pre-seeded via `web/scripts/seed_pack_family_terms.php` from the 2026-05-26 → 2026-05-30 SiteOne sweep.
+- Verifier: `verify_supplier_price_ingest_committer.php` Scenario 10 with 17 sub-checks covering trust-rule behavior end-to-end.
+- Docs: `__BOS_AI/Modules/supplier_price_ingest.md` (Phase 3.7.5 section), `__BOS_AI/Entities/material.md` (Pack-tier fields subsection), `__BOS_AI/Extraction/siteone_families.md` (intro rewritten for implemented schema; family-rule library expanded).
+
+**Pause point:** Branch sits on `feature/pack-tier-capture` awaiting merge to `main`. All 6 ingest verifiers PASS post-shipping.
+
+**Deployment readiness:** Holds with the rest of the UI bundle (3.7 + 3.8 + 3.9) for combined off-hours deploy, OR can ship standalone if Todd wants the office-facing Each/Mid/Case fields visible sooner.
+
+**Forward dependency for SOP authoring (Phase 3.12):** Two new SOPs likely — "Curating pack_family taxonomy terms" and "Interpreting Each/Mid/Case fields on a material". Flagged for Phase 3.12.
 
 ---
 

@@ -250,7 +250,7 @@ final class PriceSyncService {
 
     $transaction = $this->database->startTransaction();
     try {
-      // Pack-tier capture (Phase 3.11). The scrape provides Each/Mid/Case
+      // Pack-tier capture (Phase 3.7.5). The scrape provides Each/Mid/Case
       // pack data per row; persist it onto the matched material entity so
       // teammates can see "1 / Bag(50) / Case(250)" on the material page
       // instead of having to bounce to the supplier site. Rule: an
@@ -899,7 +899,7 @@ final class PriceSyncService {
   }
 
   /**
-   * Phase 3.11 — write pack-tier data from the parsed row onto the
+   * Phase 3.7.5 — write pack-tier data from the parsed row onto the
    * matched material entity.
    *
    * Trust-aware write rule:

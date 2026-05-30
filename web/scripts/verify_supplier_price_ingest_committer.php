@@ -683,7 +683,7 @@ try {
   $results['scenario_9_full_pipeline_determinism'] = !in_array(FALSE, $checks, TRUE) ? 'PASS' : 'FAIL';
 
   // ════════════════════════════════════════════════════════════════
-  // SCENARIO 10 — Phase 3.11 pack-tier capture (parse → row → material)
+  // SCENARIO 10 — Phase 3.7.5 pack-tier capture (parse → row → material)
   // ════════════════════════════════════════════════════════════════
   // End-to-end: scrape CSV with 5 pack-tier columns → parser writes
   // them to the row entity → committer hands off to PriceSyncService →
@@ -698,7 +698,7 @@ try {
   //   10c — listing_only source on a fresh material with empty pack
   //         fields fills them; on a material with already-confirmed
   //         pack fields it does NOT overwrite (trust ladder honored).
-  echo "\n=== Scenario 10: Phase 3.11 pack-tier capture ===\n";
+  echo "\n=== Scenario 10: Phase 3.7.5 pack-tier capture ===\n";
 
   // Defensive: skip the whole scenario if the pack schema isn't
   // present (this verifier should still work on a DDEV that hasn't

@@ -2,7 +2,7 @@
 
 This document is the human-curated rule book for the `pack_family` taxonomy in BOS. Each entry documents the Each / Mid / Case pack rule a supplier uses for a given SKU family, the membership pattern (which SKUs belong), and the evidence trail (PDP samples, price-identity reasoning).
 
-**Schema — implemented in Phase 3.11.** BOS has dedicated fields for the full Each / Mid / Case tier structure on both `material` and `supplier_price_ingest_row`:
+**Schema — implemented in Phase 3.7.5.** BOS has dedicated fields for the full Each / Mid / Case tier structure on both `material` and `supplier_price_ingest_row`:
 
 - `field_pack_qty_mid_label` (list_string: Bag / Package / Box / Carton / Case)
 - `field_pack_qty_mid` (integer)

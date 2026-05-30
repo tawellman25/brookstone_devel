@@ -81,7 +81,7 @@ Common inventory controls:
 - field_price_updated | boolean | Price Updated
   - Internal flag for price maintenance workflow.
 
-### Pack-tier fields (Phase 3.11 — 2026-05-30)
+### Pack-tier fields (Phase 3.7.5 — 2026-05-30)
 
 The legacy `field_pack_quantity` (single-tier pack qty) is preserved unchanged. Five new fields capture the full **Each / Mid / Case** pack-tier structure that distributors typically expose (e.g., SiteOne lists Rain Bird Spiral Barb at Each $0.29, Bag(50) $14.40, Case(250) $72.00). Present on all 22 material bundles:
 
@@ -91,7 +91,7 @@ The legacy `field_pack_quantity` (single-tier pack qty) is preserved unchanged. 
 - `field_pack_family` | entity_reference → taxonomy_term:pack_family | Pack family attribution (carries the canonical Each/Mid/Case rule for the family)
 - `field_pack_data_source` | list_string (confirmed / inferred / inferred_low_confidence / listing_only) | Provenance / confidence of the pack rule
 
-**Why this exists:** Before Phase 3.11, BOS dropped these columns at supplier-feed parse time even though the scrape already captured them. Office staff had to look up volume-pricing tiers on the supplier's website while standing in BOS — a workflow violation. The new fields let BOS itself be the source of truth.
+**Why this exists:** Before Phase 3.7.5, BOS dropped these columns at supplier-feed parse time even though the scrape already captured them. Office staff had to look up volume-pricing tiers on the supplier's website while standing in BOS — a workflow violation. The new fields let BOS itself be the source of truth.
 
 **Source of truth chain (pack tiers):**
 
@@ -107,7 +107,7 @@ The legacy `field_pack_quantity` (single-tier pack qty) is preserved unchanged. 
 
 **Bundle inclusion:** Present on all 22 material bundles (no exclusions). Even bundles where pack-tier semantics may be borderline (e.g., `bulk_material`, `sod`) carry the fields; if not applicable they stay empty and don't get written to. The writeback method is defensive — no-ops silently if a material somehow lacks the fields.
 
-**Module owner:** Schema + data flow owned by `supplier_price_ingest` (see `__BOS_AI/Modules/supplier_price_ingest.md` — Phase 3.11 section). Writeback method lives in `wo_material_price_sync` (PriceSyncService is the unified pricing-mutation authority).
+**Module owner:** Schema + data flow owned by `supplier_price_ingest` (see `__BOS_AI/Modules/supplier_price_ingest.md` — Phase 3.7.5 section). Writeback method lives in `wo_material_price_sync` (PriceSyncService is the unified pricing-mutation authority).
 
 Supplier references:
 - field_suppliers | entity_reference | Supplier

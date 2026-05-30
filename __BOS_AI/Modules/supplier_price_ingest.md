@@ -12,7 +12,7 @@ Status:
 - **Phase 3.7 shipped 2026-05-25** — Office Manager dashboards. Three new Views surfaces (Batch Manager, Discovery Queue, Fuzzy Match Review). Eight per-row operations: Create Material from Row, Link to Existing, Mark as Replacement, Reject (×4 for discovery); Confirm Match, Override Match, Send to Discovery, Reject (×4 for fuzzy review). Committer extended to route discovery + fuzzy_med rows to `discovery_pending` on commit so they surface in the queue views. Bulk Reject action wired into both row views. **(Phase 3.7 also shipped two seed-load buttons — "Load default bundle policy" and "Load SiteOne column mapping" — on the supplier_ingest_config form. Both buttons were REMOVED in the 2026-05-25 form-alter follow-up. Office staff paste seed JSON directly from Chat output. See the Phase 3.7 section below for the current state.)**
 - **Phase 3.10 (matcher enhancement) shipped 2026-05-26** — SKU normalization + supplier-specific transformations in Tier 1 / Tier 2. Empirical motivation: first SiteOne dry-run produced 5/59 Tier 1 hits on Rain Bird rows; diagnostics traced two distinct gaps — distributor-vs-catalog format drift (hyphen / dot / space / case) and SiteOne-specific "R" prefix on Rain Bird nozzle SKUs. The combined fix is projected to move Tier 1 hit rate from 8% to ~60% on Rain Bird rows. New `field_sku_transformations` JSON field on `supplier_ingest_config`; per-batch normalized index cache keyed by manufacturer (Tier 1) / supplier (Tier 2); audit-note transparency that explains every non-exact match in `field_resolution_notes`.
 - **Parser 1:many destination shipped 2026-05-26** — `source_columns` destinations may now be either a string (1:1) or a non-empty array of strings (1:many). Closes the SiteOne 0/72 Tier 1 gap: SiteOne's `supplier_item_number` column doubles as the manufacturer item number, but the Phase 3.10 strip_prefix transformation needs `field_manufacturer_item_number` populated to do its Tier 1 lookup. The 1:many shape lets one CSV cell populate both `field_supplier_sku` and `field_manufacturer_item_number`. Presave validator extended (rejects empty arrays + invalid field names per array entry); parser dispatch is array-aware; SiteOne supplier_ingest_config #64 updated via `web/scripts/update_siteone_config_1many.php`. Parser verifier Step 12 + Step 13 and matcher verifier Step 11 cover the path end-to-end.
-- **Phase 3.11 (pack-tier capture) shipped 2026-05-30** — extends the schema to capture the full Each / Mid / Case pack-tier structure that SiteOne (and other distributor scrapes) already emit but BOS was previously dropping at parse time. Five new fields on both `material` (22 bundles) and `supplier_price_ingest_row`: `field_pack_qty_mid_label` (list_string: Bag / Package / Box / Carton / Case), `field_pack_qty_mid` (integer), `field_pack_qty_case` (integer), `field_pack_family` (taxonomy ref → new `pack_family` vocab carrying canonical Each/Mid/Case rules), `field_pack_data_source` (list_string: confirmed / inferred / inferred_low_confidence / listing_only). Legacy `field_pack_quantity` preserved unchanged. Parser whitelist extended to 12 fields; trust-aware writeback rule in `PriceSyncService::writePackTierToMaterial()` (confirmed → overwrites; lesser sources only fill empty fields; pack_family + pack_data_source always tag-set with latest scrape attribution). Pack_family taxonomy auto-creates terms the parser sees, so no scrape data is silently dropped. 26 well-evidenced families pre-seeded via `web/scripts/seed_pack_family_terms.php` from the 2026-05-26 → 2026-05-30 SiteOne sweep. See the Phase 3.11 section below.
+- **Phase 3.7.5 (pack-tier capture) shipped 2026-05-30** — extends the schema to capture the full Each / Mid / Case pack-tier structure that SiteOne (and other distributor scrapes) already emit but BOS was previously dropping at parse time. Five new fields on both `material` (22 bundles) and `supplier_price_ingest_row`: `field_pack_qty_mid_label` (list_string: Bag / Package / Box / Carton / Case), `field_pack_qty_mid` (integer), `field_pack_qty_case` (integer), `field_pack_family` (taxonomy ref → new `pack_family` vocab carrying canonical Each/Mid/Case rules), `field_pack_data_source` (list_string: confirmed / inferred / inferred_low_confidence / listing_only). Legacy `field_pack_quantity` preserved unchanged. Parser whitelist extended to 12 fields; trust-aware writeback rule in `PriceSyncService::writePackTierToMaterial()` (confirmed → overwrites; lesser sources only fill empty fields; pack_family + pack_data_source always tag-set with latest scrape attribution). Pack_family taxonomy auto-creates terms the parser sees, so no scrape data is silently dropped. 26 well-evidenced families pre-seeded via `web/scripts/seed_pack_family_terms.php` from the 2026-05-26 → 2026-05-30 SiteOne sweep. See the Phase 3.7.5 section below.
 
 ---
 
@@ -1098,9 +1098,11 @@ A CSV cell value of `R15H` now lands in both fields. Tier 1 then runs strip_pref
 
 ---
 
-## Phase 3.11 — Pack-Tier Capture (2026-05-30)
+## Phase 3.7.5 — Pack-Tier Capture (2026-05-30)
 
-Empirical motivation: the SiteOne scrape already produces per-product Each / Mid / Case pack data (Bag(50), Package(25), Case(250), etc.) along with a family attribution (e.g., `Rain Bird Spiral Barb Fitting`) and a data-source confidence (`confirmed` / `inferred` / `listing_only`). Before Phase 3.11, BOS dropped all five of those columns at parse time because no destination fields existed and the parser whitelist excluded unknown columns. Office staff had to look up volume-pricing tiers on the supplier's website even though the data was sitting in our scrape — a workflow violation the user called out directly ("I don't want to have to look on another site for that type of information when a team member is already in BOS").
+> **Numbering note.** This work slotted in between the Phase 3.7 dashboards (shipped 2026-05-25) and the originally-specced Phase 3.10–3.11 production cut-over. It's a refinement of the ingest pipeline that surfaced from real scrape data — not a re-scoping of the master plan. The original Phase 3.10 (SKU normalization, shipped 2026-05-26), Phase 3.11 (production cut-over), and Phase 3.12 (SOP authoring) numbering stays intact in `supplier_pricing_pipeline_phase3_sequencing.md`.
+
+Empirical motivation: the SiteOne scrape already produces per-product Each / Mid / Case pack data (Bag(50), Package(25), Case(250), etc.) along with a family attribution (e.g., `Rain Bird Spiral Barb Fitting`) and a data-source confidence (`confirmed` / `inferred` / `listing_only`). Before Phase 3.7.5, BOS dropped all five of those columns at parse time because no destination fields existed and the parser whitelist excluded unknown columns. Office staff had to look up volume-pricing tiers on the supplier's website even though the data was sitting in our scrape — a workflow violation the user called out directly ("I don't want to have to look on another site for that type of information when a team member is already in BOS").
 
 The fix is purely additive: legacy `field_pack_quantity` is preserved unchanged for backward compatibility; the new fields sit alongside it.
 
@@ -1145,7 +1147,7 @@ public const ALLOWED_ROW_FIELDS = [
   'field_unit_cost',
   'field_cost_uom',
   'field_pack_quantity',
-  // Phase 3.11
+  // Phase 3.7.5
   'field_pack_qty_mid_label',
   'field_pack_qty_mid',
   'field_pack_qty_case',
@@ -1244,7 +1246,8 @@ Idempotent — re-runs cleanly when the config already has all 5 mappings.
 - **Phase 3.7** — shipped 2026-05-25 (commit `20856acd` on `feature/supplier-price-ingest`).
 - **Phase 3.10 matcher enhancement** — shipped 2026-05-26 on `feature/supplier-price-ingest`.
 - **Parser 1:many destination follow-up** — shipped 2026-05-26 on `feature/supplier-price-ingest`.
+- **Phase 3.7.5 pack-tier capture** — shipped 2026-05-30 on `feature/pack-tier-capture` (commits `0275a1b4`, `91e74b07`, `834636b6`). Refinement of the 3.7 ingest path; does not consume the originally-specced 3.11 production-cut-over slot.
 
-Branch: `feature/supplier-price-ingest`.
+Branch: `feature/supplier-price-ingest` (3.1–3.7 + 3.10 + 1:many follow-up); `feature/pack-tier-capture` (3.7.5).
 
 Next phase: 3.8 — estimator surfaces (Refresh Prices button on Estimates, discontinued warnings).

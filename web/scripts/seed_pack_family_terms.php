@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Phase 3.11 — seed pack_family taxonomy with canonical pack rules
+ * Phase 3.7.5 — seed pack_family taxonomy with canonical pack rules
  * derived from the SiteOne scrape sweeps (2026-05-26 to 2026-05-30).
  *
  * Each family term carries the Mid label / Mid qty / Case qty rule

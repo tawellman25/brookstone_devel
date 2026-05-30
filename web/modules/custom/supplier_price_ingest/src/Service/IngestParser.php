@@ -69,7 +69,7 @@ class IngestParser {
     'field_unit_cost',
     'field_cost_uom',
     'field_pack_quantity',
-    // Pack-tier capture fields (Phase 3.11). Scrape populates the full
+    // Pack-tier capture fields (Phase 3.7.5). Scrape populates the full
     // Each/Mid/Case structure per row; commit pipeline persists these
     // onto the matched material entity.
     'field_pack_qty_mid_label',
@@ -589,7 +589,7 @@ class IngestParser {
         }
       }
 
-      // Pack-tier capture coercion (Phase 3.11).
+      // Pack-tier capture coercion (Phase 3.7.5).
       // mid/case → unsigned integer; mid_label/data_source → string
       // (validated against storage allowed_values); family → resolve
       // string to taxonomy_term ID, auto-creating the term if missing
@@ -630,7 +630,7 @@ class IngestParser {
       if ($packQty !== NULL) {
         $values['field_pack_quantity'] = $packQty;
       }
-      // Pack-tier capture (Phase 3.11) — only set if the row had the value.
+      // Pack-tier capture (Phase 3.7.5) — only set if the row had the value.
       if ($packMid !== NULL)        { $values['field_pack_qty_mid'] = $packMid; }
       if ($packCase !== NULL)       { $values['field_pack_qty_case'] = $packCase; }
       if ($packMidLabel !== NULL)   { $values['field_pack_qty_mid_label'] = $packMidLabel; }
@@ -694,7 +694,7 @@ class IngestParser {
     return $allowed;
   }
 
-  // ── Phase 3.11 pack-tier coercion helpers ──────────────────────────
+  // ── Phase 3.7.5 pack-tier coercion helpers ──────────────────────────
 
   /**
    * Coerce a CSV cell into an unsigned integer, or NULL if the cell is

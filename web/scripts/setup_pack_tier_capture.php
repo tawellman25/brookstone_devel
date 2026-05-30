@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Phase 3.11 — Pack-tier capture schema setup.
+ * Phase 3.7.5 — Pack-tier capture schema setup.
  *
  * Adds the schema needed to preserve Each/Mid/Case pack-quantity data
  * captured by the supplier scrape (today this data lands in BOS rows

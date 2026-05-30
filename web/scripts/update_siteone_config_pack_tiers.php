@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Phase 3.11 — extend SiteOne supplier_ingest_config column_mapping to
+ * Phase 3.7.5 — extend SiteOne supplier_ingest_config column_mapping to
  * capture the 5 pack-tier columns the scrape already produces but BOS
  * was previously dropping at parse time.
  *

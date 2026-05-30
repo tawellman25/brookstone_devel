@@ -19,6 +19,11 @@ dependencies:
     - field.field.material.annuals.field_lead_time
     - field.field.material.annuals.field_main_image
     - field.field.material.annuals.field_material_tags
+    - field.field.material.annuals.field_pack_data_source
+    - field.field.material.annuals.field_pack_family
+    - field.field.material.annuals.field_pack_qty_case
+    - field.field.material.annuals.field_pack_qty_mid
+    - field.field.material.annuals.field_pack_qty_mid_label
     - field.field.material.annuals.field_plant_characteristics
     - field.field.material.annuals.field_plant_color
     - field.field.material.annuals.field_plant_family
@@ -295,6 +300,42 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_pack_data_source:
+    type: options_select
+    weight: 54
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_pack_family:
+    type: entity_reference_autocomplete
+    weight: 53
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_case:
+    type: number
+    weight: 52
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid:
+    type: number
+    weight: 51
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid_label:
+    type: options_select
+    weight: 50
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_plant_characteristics:
     type: entity_reference_autocomplete
     weight: 22
@@ -433,4 +474,3 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden: {  }
-

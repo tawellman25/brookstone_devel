@@ -1,0 +1,29 @@
+uuid: 10a3db6f-f0fe-40f3-9053-917100ec73b8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.xmas
+    - field.storage.material.field_pack_family
+    - taxonomy.vocabulary.pack_family
+id: material.xmas.field_pack_family
+field_name: field_pack_family
+entity_type: material
+bundle: xmas
+label: 'Pack Family'
+description: 'Family attribution. The taxonomy term carries the canonical pack rule; individual material may override via its own pack fields.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      pack_family: pack_family
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

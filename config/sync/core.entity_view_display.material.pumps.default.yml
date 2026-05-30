@@ -18,6 +18,11 @@ dependencies:
     - field.field.material.pumps.field_manufacturer_website_item
     - field.field.material.pumps.field_material_tags
     - field.field.material.pumps.field_name
+    - field.field.material.pumps.field_pack_data_source
+    - field.field.material.pumps.field_pack_family
+    - field.field.material.pumps.field_pack_qty_case
+    - field.field.material.pumps.field_pack_qty_mid
+    - field.field.material.pumps.field_pack_qty_mid_label
     - field.field.material.pumps.field_price_updated
     - field.field.material.pumps.field_pump_discharge_size
     - field.field.material.pumps.field_pump_model_number
@@ -209,6 +214,46 @@ content:
     third_party_settings: {  }
     weight: 9
     region: content
+  field_pack_data_source:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 129
+    region: content
+  field_pack_family:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: false
+    third_party_settings: {  }
+    weight: 128
+    region: content
+  field_pack_qty_case:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 127
+    region: content
+  field_pack_qty_mid:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 126
+    region: content
+  field_pack_qty_mid_label:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 125
+    region: content
   field_pump_discharge_size:
     type: list_default
     label: above
@@ -325,4 +370,3 @@ hidden:
   field_supporting_images: true
   title: true
   uid: true
-

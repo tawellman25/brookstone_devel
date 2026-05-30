@@ -13,6 +13,11 @@ dependencies:
     - field.field.supplier_price_ingest_row.row.field_match_confidence
     - field.field.supplier_price_ingest_row.row.field_match_tier
     - field.field.supplier_price_ingest_row.row.field_matched_material
+    - field.field.supplier_price_ingest_row.row.field_pack_data_source
+    - field.field.supplier_price_ingest_row.row.field_pack_family
+    - field.field.supplier_price_ingest_row.row.field_pack_qty_case
+    - field.field.supplier_price_ingest_row.row.field_pack_qty_mid
+    - field.field.supplier_price_ingest_row.row.field_pack_qty_mid_label
     - field.field.supplier_price_ingest_row.row.field_pack_quantity
     - field.field.supplier_price_ingest_row.row.field_raw_data
     - field.field.supplier_price_ingest_row.row.field_resolution_action
@@ -117,6 +122,42 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_pack_data_source:
+    type: options_select
+    weight: 54
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_pack_family:
+    type: entity_reference_autocomplete
+    weight: 53
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_case:
+    type: number
+    weight: 52
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid:
+    type: number
+    weight: 51
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid_label:
+    type: options_select
+    weight: 50
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_pack_quantity:
     type: number
     weight: 16
@@ -216,4 +257,3 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden: {  }
-

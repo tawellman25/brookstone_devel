@@ -19,6 +19,11 @@ dependencies:
     - field.field.material.plants.field_main_image
     - field.field.material.plants.field_material_tags
     - field.field.material.plants.field_name
+    - field.field.material.plants.field_pack_data_source
+    - field.field.material.plants.field_pack_family
+    - field.field.material.plants.field_pack_qty_case
+    - field.field.material.plants.field_pack_qty_mid
+    - field.field.material.plants.field_pack_qty_mid_label
     - field.field.material.plants.field_plant_characteristics
     - field.field.material.plants.field_plant_color
     - field.field.material.plants.field_plant_family
@@ -242,6 +247,46 @@ content:
     third_party_settings: {  }
     weight: 22
     region: content
+  field_pack_data_source:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 119
+    region: content
+  field_pack_family:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: false
+    third_party_settings: {  }
+    weight: 118
+    region: content
+  field_pack_qty_case:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 117
+    region: content
+  field_pack_qty_mid:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 116
+    region: content
+  field_pack_qty_mid_label:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 115
+    region: content
   field_plant_characteristics:
     type: entity_reference_label
     label: above
@@ -384,4 +429,3 @@ hidden:
   field_price_updated: true
   title: true
   uid: true
-

@@ -1,0 +1,33 @@
+uuid: 603eecf7-2517-4be6-a4a7-2c684e8f7532
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+    - options
+id: supplier_price_ingest_row.field_pack_data_source
+field_name: field_pack_data_source
+entity_type: supplier_price_ingest_row
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: confirmed
+      label: 'Confirmed (2+ PDPs)'
+    -
+      value: inferred
+      label: 'Inferred (1 PDP sampled)'
+    -
+      value: inferred_low_confidence
+      label: 'Inferred - low confidence (no PDP sample)'
+    -
+      value: listing_only
+      label: 'Listing-only (no pack data)'
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

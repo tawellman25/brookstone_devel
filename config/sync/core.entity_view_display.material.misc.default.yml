@@ -19,6 +19,11 @@ dependencies:
     - field.field.material.misc.field_manufacturer_website_item
     - field.field.material.misc.field_material_tags
     - field.field.material.misc.field_name
+    - field.field.material.misc.field_pack_data_source
+    - field.field.material.misc.field_pack_family
+    - field.field.material.misc.field_pack_qty_case
+    - field.field.material.misc.field_pack_qty_mid
+    - field.field.material.misc.field_pack_qty_mid_label
     - field.field.material.misc.field_price_updated
     - field.field.material.misc.field_retail_price_disclaimer
     - field.field.material.misc.field_safety_data_sheet
@@ -31,7 +36,6 @@ dependencies:
     - field.field.material.misc.field_suppliers
     - field.field.material.misc.field_supporting_images
     - field.field.material.misc.field_unit_of_measure
-    - image.style.max_325x325
   module:
     - field_group
     - file
@@ -253,6 +257,46 @@ content:
       link_to_entity: false
     third_party_settings: {  }
     weight: 24
+    region: content
+  field_pack_data_source:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 104
+    region: content
+  field_pack_family:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: false
+    third_party_settings: {  }
+    weight: 103
+    region: content
+  field_pack_qty_case:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 102
+    region: content
+  field_pack_qty_mid:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 101
+    region: content
+  field_pack_qty_mid_label:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 100
     region: content
   field_price_updated:
     type: boolean

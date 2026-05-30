@@ -1,0 +1,29 @@
+uuid: b98f1482-1775-48a2-8697-df0912dadf82
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.supplier_price_ingest_row.row
+    - field.storage.supplier_price_ingest_row.field_pack_family
+    - taxonomy.vocabulary.pack_family
+id: supplier_price_ingest_row.row.field_pack_family
+field_name: field_pack_family
+entity_type: supplier_price_ingest_row
+bundle: row
+label: 'Pack Family'
+description: 'Family attribution. The taxonomy term carries the canonical pack rule; individual material may override via its own pack fields.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      pack_family: pack_family
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -681,6 +681,200 @@ try {
   $checks = ['identical' => $runA === $runB];
   foreach ($checks as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
   $results['scenario_9_full_pipeline_determinism'] = !in_array(FALSE, $checks, TRUE) ? 'PASS' : 'FAIL';
+
+  // ════════════════════════════════════════════════════════════════
+  // SCENARIO 10 — Phase 3.7.5 pack-tier capture (parse → row → material)
+  // ════════════════════════════════════════════════════════════════
+  // End-to-end: scrape CSV with 5 pack-tier columns → parser writes
+  // them to the row entity → committer hands off to PriceSyncService →
+  // PriceSyncService writes onto the matched material per the
+  // trust-aware rule.
+  //
+  // Three sub-scenarios:
+  //   10a — confirmed source overwrites empty material's pack fields,
+  //         tags family + data_source.
+  //   10b — confirmed source DOES overwrite material's existing
+  //         (different) values.
+  //   10c — listing_only source on a fresh material with empty pack
+  //         fields fills them; on a material with already-confirmed
+  //         pack fields it does NOT overwrite (trust ladder honored).
+  echo "\n=== Scenario 10: Phase 3.7.5 pack-tier capture ===\n";
+
+  // Defensive: skip the whole scenario if the pack schema isn't
+  // present (this verifier should still work on a DDEV that hasn't
+  // run setup_pack_tier_capture.php yet).
+  $packSchemaPresent = (bool) \Drupal\field\Entity\FieldStorageConfig::loadByName('material', 'field_pack_qty_mid_label');
+  if (!$packSchemaPresent) {
+    echo "  SKIP — pack-tier schema not installed (run setup_pack_tier_capture.php first)\n";
+    $results['scenario_10_pack_tier_capture'] = 'SKIP — schema not installed';
+  } else {
+    $checks10 = [];
+
+    // Fresh materials, one per sub-scenario, all with NO pack data.
+    $m10a = $etm->getStorage('material')->create([
+      'type' => 'irrigation', 'uid' => 1,
+      'field_manufacturer' => $bs['mfr']->id(),
+      'field_manufacturer_item_number' => 'P311-S10A',
+      'field_name' => 'P311-S10A-confirmed-onto-empty',
+    ]);
+    $m10a->save();
+    $cleanup['materials'][] = (int) $m10a->id();
+
+    // 10b material: pre-populate with a different pack rule so the
+    // confirmed-overwrite assertion can prove the change.
+    $m10b = $etm->getStorage('material')->create([
+      'type' => 'irrigation', 'uid' => 1,
+      'field_manufacturer' => $bs['mfr']->id(),
+      'field_manufacturer_item_number' => 'P311-S10B',
+      'field_name' => 'P311-S10B-confirmed-overwrites-existing',
+      'field_pack_qty_mid_label' => 'Box',
+      'field_pack_qty_mid' => 10,
+      'field_pack_qty_case' => 100,
+    ]);
+    $m10b->save();
+    $cleanup['materials'][] = (int) $m10b->id();
+
+    // 10c-prefilled material: simulate a prior confirmed ingest by
+    // pre-populating pack fields, then commit a low-confidence row;
+    // material's existing values must survive untouched.
+    $m10c_prefilled = $etm->getStorage('material')->create([
+      'type' => 'irrigation', 'uid' => 1,
+      'field_manufacturer' => $bs['mfr']->id(),
+      'field_manufacturer_item_number' => 'P311-S10C',
+      'field_name' => 'P311-S10C-low-confidence-does-not-overwrite',
+      'field_pack_qty_mid_label' => 'Bag',
+      'field_pack_qty_mid' => 50,
+      'field_pack_qty_case' => 250,
+    ]);
+    $m10c_prefilled->save();
+    $cleanup['materials'][] = (int) $m10c_prefilled->id();
+
+    // Build a config fixture that maps the pack columns. Reuse the
+    // existing $bs['sup'] but build a fresh config (the shared $bs
+    // config doesn't have pack mappings).
+    $cfg10 = $etm->getStorage('supplier_ingest_config')->create([
+      'type' => 'config',
+      'title' => 'P311-S10-Cfg',
+      'uid' => 1,
+      'field_supplier' => $bs['sup']->id(),
+      'field_active' => 1,
+      'field_default_cost_uom' => 'each',
+      'field_column_mapping' => json_encode([
+        'source_columns' => [
+          'Mfr#'             => 'field_manufacturer_item_number',
+          'Brand'            => 'field_manufacturer_name',
+          'Desc'             => 'field_description',
+          'Price'            => 'field_unit_cost',
+          'UOM'              => 'field_cost_uom',
+          'PackMidLabel'     => 'field_pack_qty_mid_label',
+          'PackMid'          => 'field_pack_qty_mid',
+          'PackCase'         => 'field_pack_qty_case',
+          'PackFamily'       => 'field_pack_family',
+          'PackDataSource'   => 'field_pack_data_source',
+        ],
+        'header_row' => 1,
+      ]),
+      'field_bundle_policy' => json_encode(['irrigation' => 'matched_only']),
+    ]);
+    // We can't save two configs for the same supplier (uniqueness
+    // invariant). Delete any other config for this supplier first.
+    $existingCfgs = $etm->getStorage('supplier_ingest_config')->loadByProperties(['field_supplier' => $bs['sup']->id()]);
+    foreach ($existingCfgs as $ec) {
+      // Track for cleanup so the shared fixture's config doesn't leak,
+      // but delete here so the unique invariant is satisfied.
+      $cleanup['configs'][] = (int) $ec->id();
+      $ec->delete();
+    }
+    $cfg10->save();
+    $cleanup['configs'][] = (int) $cfg10->id();
+
+    // CSV: three rows, one per sub-scenario.
+    $csv10 = "Mfr#,Brand,Desc,Price,UOM,PackMidLabel,PackMid,PackCase,PackFamily,PackDataSource\n"
+      . "P311-S10A,P36-TestMfr,confirmed-onto-empty,1.00,each,Bag,25,500,Rain Bird R-Series,confirmed\n"
+      . "P311-S10B,P36-TestMfr,confirmed-overwrites,2.00,each,Package,10,50,Rain Bird R-VAN,confirmed\n"
+      . "P311-S10C,P36-TestMfr,low-conf-no-overwrite,3.00,each,Carton,5,20,Hunter ST Commercial,listing_only\n";
+    $f10 = $fileRepo->writeData($csv10, "$uploadDir/spi_p311_s10.csv", FileSystemInterface::EXISTS_REPLACE);
+    $f10->setPermanent(); $f10->save();
+    $cleanup['files'][] = (int) $f10->id();
+
+    $b10 = $etm->getStorage('supplier_price_ingest_batch')->create([
+      'type' => 'batch', 'title' => 'P311-S10', 'uid' => 1,
+      'field_supplier' => $bs['sup']->id(),
+      'field_source_file' => $f10->id(),
+      'field_source_filename' => 'p311-s10.csv',
+      'field_uploaded_by' => 1,
+      'field_uploaded_on' => date('Y-m-d\TH:i:s'),
+      'field_status' => 'pending_dry_run',
+    ]);
+    $b10->save();
+    $cleanup['batches'][] = (int) $b10->id();
+
+    $parser->parseUploadedFile($b10);
+    $b10 = $etm->getStorage('supplier_price_ingest_batch')->load($b10->id());
+    $matcher->matchBatch($b10);
+    $b10 = $etm->getStorage('supplier_price_ingest_batch')->load($b10->id());
+
+    // Track rows for cleanup. Pull them by SKU/Mfr# for assertion.
+    $rows10 = $etm->getStorage('supplier_price_ingest_row')->loadByProperties(['field_batch' => $b10->id()]);
+    foreach ($rows10 as $r) { $cleanup['rows'][] = (int) $r->id(); }
+
+    // Assertion 1: parser populated row fields from CSV.
+    $rowA = NULL;
+    foreach ($rows10 as $r) {
+      if ((string) $r->get('field_manufacturer_item_number')->value === 'P311-S10A') {
+        $rowA = $r; break;
+      }
+    }
+    $checks10['10_row_parsed_mid_label'] = $rowA && (string) $rowA->get('field_pack_qty_mid_label')->value === 'Bag';
+    $checks10['10_row_parsed_mid_qty']   = $rowA && (int) $rowA->get('field_pack_qty_mid')->value === 25;
+    $checks10['10_row_parsed_case_qty']  = $rowA && (int) $rowA->get('field_pack_qty_case')->value === 500;
+    $checks10['10_row_parsed_data_source'] = $rowA && (string) $rowA->get('field_pack_data_source')->value === 'confirmed';
+    $rbRSeriesTid = NULL;
+    if ($rowA && !$rowA->get('field_pack_family')->isEmpty()) {
+      $term = $rowA->get('field_pack_family')->entity;
+      $rbRSeriesTid = $term ? (int) $term->id() : NULL;
+      $checks10['10_row_parsed_family_term'] = $term && $term->label() === 'Rain Bird R-Series';
+    } else {
+      $checks10['10_row_parsed_family_term'] = FALSE;
+    }
+
+    // Commit the batch.
+    $b10->set('field_status', 'awaiting_approval'); $b10->save();
+    $b10->set('field_status', 'approved');
+    $b10->set('field_committed_by', 1);
+    $b10->set('field_committed_on', gmdate('Y-m-d\TH:i:s'));
+    $b10->save();
+    $committer->commitBatch($b10);
+
+    // Re-load the materials post-commit.
+    $m10a = $etm->getStorage('material')->load($m10a->id());
+    $m10b = $etm->getStorage('material')->load($m10b->id());
+    $m10c_prefilled = $etm->getStorage('material')->load($m10c_prefilled->id());
+
+    // 10a: confirmed → empty material → all 3 tier fields populated.
+    $checks10['10a_mid_label_filled'] = (string) $m10a->get('field_pack_qty_mid_label')->value === 'Bag';
+    $checks10['10a_mid_qty_filled']   = (int) $m10a->get('field_pack_qty_mid')->value === 25;
+    $checks10['10a_case_filled']      = (int) $m10a->get('field_pack_qty_case')->value === 500;
+    $checks10['10a_data_source_set']  = (string) $m10a->get('field_pack_data_source')->value === 'confirmed';
+
+    // 10b: confirmed → material with different existing values → overwrite.
+    $checks10['10b_mid_label_overwritten'] = (string) $m10b->get('field_pack_qty_mid_label')->value === 'Package';
+    $checks10['10b_mid_qty_overwritten']   = (int) $m10b->get('field_pack_qty_mid')->value === 10;
+    $checks10['10b_case_overwritten']      = (int) $m10b->get('field_pack_qty_case')->value === 50;
+
+    // 10c: listing_only → material with existing confirmed values → NO overwrite.
+    $checks10['10c_mid_label_preserved'] = (string) $m10c_prefilled->get('field_pack_qty_mid_label')->value === 'Bag';
+    $checks10['10c_mid_qty_preserved']   = (int) $m10c_prefilled->get('field_pack_qty_mid')->value === 50;
+    $checks10['10c_case_preserved']      = (int) $m10c_prefilled->get('field_pack_qty_case')->value === 250;
+    // But family + data_source DO update (they're metadata tags, not rule).
+    $checks10['10c_family_still_updated'] = !$m10c_prefilled->get('field_pack_family')->isEmpty()
+      && $m10c_prefilled->get('field_pack_family')->entity
+      && $m10c_prefilled->get('field_pack_family')->entity->label() === 'Hunter ST Commercial';
+    $checks10['10c_data_source_still_updated'] = (string) $m10c_prefilled->get('field_pack_data_source')->value === 'listing_only';
+
+    foreach ($checks10 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
+    $results['scenario_10_pack_tier_capture'] = !in_array(FALSE, $checks10, TRUE) ? 'PASS' : 'FAIL';
+  }
 }
 finally {
   echo "\n=== Cleanup ===\n";

@@ -17,6 +17,11 @@ dependencies:
     - field.field.material.bulk_material.field_main_image
     - field.field.material.bulk_material.field_material_tags
     - field.field.material.bulk_material.field_name
+    - field.field.material.bulk_material.field_pack_data_source
+    - field.field.material.bulk_material.field_pack_family
+    - field.field.material.bulk_material.field_pack_qty_case
+    - field.field.material.bulk_material.field_pack_qty_mid
+    - field.field.material.bulk_material.field_pack_qty_mid_label
     - field.field.material.bulk_material.field_price
     - field.field.material.bulk_material.field_price_updated
     - field.field.material.bulk_material.field_quantity_in_stock
@@ -123,6 +128,46 @@ content:
     third_party_settings: {  }
     weight: 10
     region: content
+  field_pack_data_source:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 69
+    region: content
+  field_pack_family:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: false
+    third_party_settings: {  }
+    weight: 68
+    region: content
+  field_pack_qty_case:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 67
+    region: content
+  field_pack_qty_mid:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 66
+    region: content
+  field_pack_qty_mid_label:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 65
+    region: content
   field_price:
     type: number_decimal
     label: inline
@@ -214,4 +259,3 @@ hidden:
   field_slideshow_image: true
   title: true
   uid: true
-

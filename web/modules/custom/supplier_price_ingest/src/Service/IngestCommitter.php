@@ -232,6 +232,13 @@ final class IngestCommitter {
       'manufacturer_name'        => (string) ($row->get('field_manufacturer_name')->value ?? ''),
       'pack_quantity'            => (string) ($row->get('field_pack_quantity')->value ?? ''),
       'description'              => (string) ($row->get('field_description')->value ?? ''),
+      // Pack-tier capture (Phase 3.7.5). Pass through to PriceSyncService
+      // which writes onto the matched material entity.
+      'pack_qty_mid_label'       => (string) ($row->get('field_pack_qty_mid_label')->value ?? ''),
+      'pack_qty_mid'             => $row->get('field_pack_qty_mid')->isEmpty() ? NULL : (int) $row->get('field_pack_qty_mid')->value,
+      'pack_qty_case'            => $row->get('field_pack_qty_case')->isEmpty() ? NULL : (int) $row->get('field_pack_qty_case')->value,
+      'pack_family_tid'          => $row->get('field_pack_family')->isEmpty() ? NULL : (int) $row->get('field_pack_family')->target_id,
+      'pack_data_source'         => (string) ($row->get('field_pack_data_source')->value ?? ''),
     ];
 
     $outcome = $this->priceSync->ingestRow(

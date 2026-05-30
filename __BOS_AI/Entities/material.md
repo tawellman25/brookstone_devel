@@ -81,6 +81,34 @@ Common inventory controls:
 - field_price_updated | boolean | Price Updated
   - Internal flag for price maintenance workflow.
 
+### Pack-tier fields (Phase 3.7.5 — 2026-05-30)
+
+The legacy `field_pack_quantity` (single-tier pack qty) is preserved unchanged. Five new fields capture the full **Each / Mid / Case** pack-tier structure that distributors typically expose (e.g., SiteOne lists Rain Bird Spiral Barb at Each $0.29, Bag(50) $14.40, Case(250) $72.00). Present on all 22 material bundles:
+
+- `field_pack_qty_mid_label` | list_string (Bag / Package / Box / Carton / Case) | Mid-tier label
+- `field_pack_qty_mid` | integer | Mid-tier quantity (e.g., 50 for Bag(50))
+- `field_pack_qty_case` | integer | Case-tier quantity (e.g., 250 for Case(250))
+- `field_pack_family` | entity_reference → taxonomy_term:pack_family | Pack family attribution (carries the canonical Each/Mid/Case rule for the family)
+- `field_pack_data_source` | list_string (confirmed / inferred / inferred_low_confidence / listing_only) | Provenance / confidence of the pack rule
+
+**Why this exists:** Before Phase 3.7.5, BOS dropped these columns at supplier-feed parse time even though the scrape already captured them. Office staff had to look up volume-pricing tiers on the supplier's website while standing in BOS — a workflow violation. The new fields let BOS itself be the source of truth.
+
+**Source of truth chain (pack tiers):**
+
+1. The `pack_family` taxonomy term carries the **canonical** rule for the family (its own `field_pack_qty_mid_label` / `_mid` / `_case`).
+2. Individual materials may override via their own fields when an SKU diverges from the family default.
+3. The `supplier_price_ingest_row` writeback (`PriceSyncService::writePackTierToMaterial()`) is **trust-aware**:
+   - `data_source = confirmed` (≥2 PDPs in the family confirm identical pack rule) → **overwrites** the material's existing pack fields. Higher trust wins.
+   - Any lesser source → **only fills empty fields** on the material; does not clobber higher-trust data.
+   - `field_pack_family` + `field_pack_data_source` always tag-set with the most recent scrape's attribution (metadata, not the rule itself).
+4. The parser auto-creates `pack_family` terms it hasn't seen, so no scrape data is silently dropped. Office can later populate empty-rule terms via the taxonomy admin form.
+
+**Seeded families:** `web/scripts/seed_pack_family_terms.php` front-loads 26 well-evidenced families from the 2026-05-26 → 2026-05-30 SiteOne scrape sweep (Rain Bird Spiral Barb Fitting, VAN, R-Series, R-VAN, HE-VAN, U-Series; Hunter MP Rotator, PRO Adjustable Arc, I-40, Golf/Commercial Rotor, etc.; Toro 570 MPR Plus; K-Rain Super Pro; cross-brand Rotor-Case-20 / Spray-Body-Case-20). Full evidence trail and confidence levels in `__BOS_AI/Extraction/siteone_families.md`.
+
+**Bundle inclusion:** Present on all 22 material bundles (no exclusions). Even bundles where pack-tier semantics may be borderline (e.g., `bulk_material`, `sod`) carry the fields; if not applicable they stay empty and don't get written to. The writeback method is defensive — no-ops silently if a material somehow lacks the fields.
+
+**Module owner:** Schema + data flow owned by `supplier_price_ingest` (see `__BOS_AI/Modules/supplier_price_ingest.md` — Phase 3.7.5 section). Writeback method lives in `wo_material_price_sync` (PriceSyncService is the unified pricing-mutation authority).
+
 Supplier references:
 - field_suppliers | entity_reference | Supplier
   - One material may have multiple suppliers.

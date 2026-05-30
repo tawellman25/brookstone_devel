@@ -19,6 +19,11 @@ dependencies:
     - field.field.material.brass.field_manufacturer_website_item
     - field.field.material.brass.field_material_tags
     - field.field.material.brass.field_name
+    - field.field.material.brass.field_pack_data_source
+    - field.field.material.brass.field_pack_family
+    - field.field.material.brass.field_pack_qty_case
+    - field.field.material.brass.field_pack_qty_mid
+    - field.field.material.brass.field_pack_qty_mid_label
     - field.field.material.brass.field_price_updated
     - field.field.material.brass.field_replaced_by
     - field.field.material.brass.field_retail_price_disclaimer
@@ -234,6 +239,46 @@ content:
     third_party_settings: {  }
     weight: 23
     region: content
+  field_pack_data_source:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 64
+    region: content
+  field_pack_family:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: false
+    third_party_settings: {  }
+    weight: 63
+    region: content
+  field_pack_qty_case:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 62
+    region: content
+  field_pack_qty_mid:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 61
+    region: content
+  field_pack_qty_mid_label:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 60
+    region: content
   field_price_updated:
     type: boolean
     label: above
@@ -377,4 +422,3 @@ hidden:
   field_supporting_images: true
   title: true
   uid: true
-

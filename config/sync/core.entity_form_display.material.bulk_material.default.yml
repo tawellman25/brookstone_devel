@@ -17,6 +17,11 @@ dependencies:
     - field.field.material.bulk_material.field_main_image
     - field.field.material.bulk_material.field_material_tags
     - field.field.material.bulk_material.field_name
+    - field.field.material.bulk_material.field_pack_data_source
+    - field.field.material.bulk_material.field_pack_family
+    - field.field.material.bulk_material.field_pack_qty_case
+    - field.field.material.bulk_material.field_pack_qty_mid
+    - field.field.material.bulk_material.field_pack_qty_mid_label
     - field.field.material.bulk_material.field_price
     - field.field.material.bulk_material.field_price_updated
     - field.field.material.bulk_material.field_quantity_in_stock
@@ -135,6 +140,42 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_pack_data_source:
+    type: options_select
+    weight: 69
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_pack_family:
+    type: entity_reference_autocomplete
+    weight: 68
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_case:
+    type: number
+    weight: 67
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid:
+    type: number
+    weight: 66
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid_label:
+    type: options_select
+    weight: 65
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_price:
     type: number
     weight: 10
@@ -219,4 +260,3 @@ hidden:
   path: true
   title: true
   uid: true
-

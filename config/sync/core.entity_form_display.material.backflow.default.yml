@@ -19,6 +19,11 @@ dependencies:
     - field.field.material.backflow.field_manufacturer_website_item
     - field.field.material.backflow.field_material_tags
     - field.field.material.backflow.field_name
+    - field.field.material.backflow.field_pack_data_source
+    - field.field.material.backflow.field_pack_family
+    - field.field.material.backflow.field_pack_qty_case
+    - field.field.material.backflow.field_pack_qty_mid
+    - field.field.material.backflow.field_pack_qty_mid_label
     - field.field.material.backflow.field_price_updated
     - field.field.material.backflow.field_replaced_by
     - field.field.material.backflow.field_retail_price_disclaimer
@@ -275,6 +280,42 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_pack_data_source:
+    type: options_select
+    weight: 59
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_pack_family:
+    type: entity_reference_autocomplete
+    weight: 58
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_case:
+    type: number
+    weight: 57
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid:
+    type: number
+    weight: 56
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid_label:
+    type: options_select
+    weight: 55
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_price_updated:
     type: boolean_checkbox
     weight: 6
@@ -396,4 +437,3 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden: {  }
-

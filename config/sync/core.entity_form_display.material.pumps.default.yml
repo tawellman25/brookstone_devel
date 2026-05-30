@@ -18,6 +18,11 @@ dependencies:
     - field.field.material.pumps.field_manufacturer_website_item
     - field.field.material.pumps.field_material_tags
     - field.field.material.pumps.field_name
+    - field.field.material.pumps.field_pack_data_source
+    - field.field.material.pumps.field_pack_family
+    - field.field.material.pumps.field_pack_qty_case
+    - field.field.material.pumps.field_pack_qty_mid
+    - field.field.material.pumps.field_pack_qty_mid_label
     - field.field.material.pumps.field_price_updated
     - field.field.material.pumps.field_pump_discharge_size
     - field.field.material.pumps.field_pump_model_number
@@ -292,6 +297,42 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_pack_data_source:
+    type: options_select
+    weight: 129
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_pack_family:
+    type: entity_reference_autocomplete
+    weight: 128
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_case:
+    type: number
+    weight: 127
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid:
+    type: number
+    weight: 126
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid_label:
+    type: options_select
+    weight: 125
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_price_updated:
     type: boolean_checkbox
     weight: 10
@@ -448,4 +489,3 @@ content:
     third_party_settings: {  }
 hidden:
   field_supplier: true
-

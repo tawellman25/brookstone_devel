@@ -11,6 +11,11 @@ dependencies:
     - field.field.material.sod.field_lead_time
     - field.field.material.sod.field_main_image
     - field.field.material.sod.field_material_tags
+    - field.field.material.sod.field_pack_data_source
+    - field.field.material.sod.field_pack_family
+    - field.field.material.sod.field_pack_qty_case
+    - field.field.material.sod.field_pack_qty_mid
+    - field.field.material.sod.field_pack_qty_mid_label
     - field.field.material.sod.field_price
     - field.field.material.sod.field_price_updated
     - field.field.material.sod.field_quantity_in_stock
@@ -210,6 +215,42 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_pack_data_source:
+    type: options_select
+    weight: 144
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_pack_family:
+    type: entity_reference_autocomplete
+    weight: 143
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_case:
+    type: number
+    weight: 142
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid:
+    type: number
+    weight: 141
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid_label:
+    type: options_select
+    weight: 140
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_price:
     type: number
     weight: 3
@@ -295,5 +336,4 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden:
-  {  }
+hidden: {  }

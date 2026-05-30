@@ -250,6 +250,17 @@ final class PriceSyncService {
 
     $transaction = $this->database->startTransaction();
     try {
+      // Pack-tier capture (Phase 3.7.5). The scrape provides Each/Mid/Case
+      // pack data per row; persist it onto the matched material entity so
+      // teammates can see "1 / Bag(50) / Case(250)" on the material page
+      // instead of having to bounce to the supplier site. Rule: an
+      // incoming "confirmed" data_source overwrites the material's current
+      // pack fields; anything else only fills empty fields (no clobbering
+      // higher-trust data with lower-trust). Family + data_source always
+      // tag-set on the material so the most recent scrape's attribution
+      // wins.
+      $this->writePackTierToMaterial($material, $row_data);
+
       $ms_storage = $this->entityTypeManager->getStorage('material_suppliers');
       // Audit derivative: range() must pair with sort() to stay
       // deterministic when (material, supplier) uniqueness drifts.
@@ -885,6 +896,73 @@ final class PriceSyncService {
       supplier_item_number: $supplier_item_number,
       change_notes: $notes,
     );
+  }
+
+  /**
+   * Phase 3.7.5 — write pack-tier data from the parsed row onto the
+   * matched material entity.
+   *
+   * Trust-aware write rule:
+   *   - data_source = 'confirmed' (≥2 PDPs agree on the rule):
+   *     OVERWRITE material's existing pack fields.
+   *   - any other data_source ('inferred', 'inferred_low_confidence',
+   *     'listing_only', empty): only FILL empty fields on the material;
+   *     do not overwrite higher-trust data with lower-trust.
+   *   - pack_family + pack_data_source: always tag-set on the material
+   *     (so the most-recent scrape's attribution wins regardless of
+   *     trust ladder — family/source are metadata, not the rule itself).
+   *
+   * No-op if the row has no pack data at all.
+   */
+  private function writePackTierToMaterial(EntityInterface $material, array $row_data): void {
+    $mid_label   = isset($row_data['pack_qty_mid_label']) ? trim((string) $row_data['pack_qty_mid_label']) : '';
+    $mid         = $row_data['pack_qty_mid'] ?? NULL;
+    $case        = $row_data['pack_qty_case'] ?? NULL;
+    $family_tid  = $row_data['pack_family_tid'] ?? NULL;
+    $data_source = isset($row_data['pack_data_source']) ? trim((string) $row_data['pack_data_source']) : '';
+
+    // Nothing to write — keep the material as-is.
+    $hasAnyPackData = ($mid_label !== '') || ($mid !== NULL) || ($case !== NULL) || ($family_tid !== NULL) || ($data_source !== '');
+    if (!$hasAnyPackData) {
+      return;
+    }
+
+    // Defensive: material may not have these fields if the schema setup
+    // script hasn't been run yet on this environment. Skip silently
+    // rather than fatal — the row data still survives on the
+    // supplier_price_ingest_row entity.
+    if (!$material->hasField('field_pack_qty_mid_label')) {
+      return;
+    }
+
+    $isConfirmed = ($data_source === 'confirmed');
+    $dirty = FALSE;
+
+    // Tier fields — trust-aware (overwrite only on confirmed).
+    foreach (['field_pack_qty_mid_label' => $mid_label, 'field_pack_qty_mid' => $mid, 'field_pack_qty_case' => $case] as $field => $value) {
+      // Skip if no incoming value.
+      if ($value === '' || $value === NULL) {
+        continue;
+      }
+      if ($isConfirmed || $material->get($field)->isEmpty()) {
+        $material->set($field, $value);
+        $dirty = TRUE;
+      }
+    }
+
+    // Metadata fields — always tag with the latest scrape's attribution.
+    if ($family_tid !== NULL) {
+      $material->set('field_pack_family', $family_tid);
+      $dirty = TRUE;
+    }
+    if ($data_source !== '') {
+      $material->set('field_pack_data_source', $data_source);
+      $dirty = TRUE;
+    }
+
+    if ($dirty) {
+      $material->save();
+    }
   }
 
 }

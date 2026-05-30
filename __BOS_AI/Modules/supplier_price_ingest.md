@@ -12,6 +12,7 @@ Status:
 - **Phase 3.7 shipped 2026-05-25** — Office Manager dashboards. Three new Views surfaces (Batch Manager, Discovery Queue, Fuzzy Match Review). Eight per-row operations: Create Material from Row, Link to Existing, Mark as Replacement, Reject (×4 for discovery); Confirm Match, Override Match, Send to Discovery, Reject (×4 for fuzzy review). Committer extended to route discovery + fuzzy_med rows to `discovery_pending` on commit so they surface in the queue views. Bulk Reject action wired into both row views. **(Phase 3.7 also shipped two seed-load buttons — "Load default bundle policy" and "Load SiteOne column mapping" — on the supplier_ingest_config form. Both buttons were REMOVED in the 2026-05-25 form-alter follow-up. Office staff paste seed JSON directly from Chat output. See the Phase 3.7 section below for the current state.)**
 - **Phase 3.10 (matcher enhancement) shipped 2026-05-26** — SKU normalization + supplier-specific transformations in Tier 1 / Tier 2. Empirical motivation: first SiteOne dry-run produced 5/59 Tier 1 hits on Rain Bird rows; diagnostics traced two distinct gaps — distributor-vs-catalog format drift (hyphen / dot / space / case) and SiteOne-specific "R" prefix on Rain Bird nozzle SKUs. The combined fix is projected to move Tier 1 hit rate from 8% to ~60% on Rain Bird rows. New `field_sku_transformations` JSON field on `supplier_ingest_config`; per-batch normalized index cache keyed by manufacturer (Tier 1) / supplier (Tier 2); audit-note transparency that explains every non-exact match in `field_resolution_notes`.
 - **Parser 1:many destination shipped 2026-05-26** — `source_columns` destinations may now be either a string (1:1) or a non-empty array of strings (1:many). Closes the SiteOne 0/72 Tier 1 gap: SiteOne's `supplier_item_number` column doubles as the manufacturer item number, but the Phase 3.10 strip_prefix transformation needs `field_manufacturer_item_number` populated to do its Tier 1 lookup. The 1:many shape lets one CSV cell populate both `field_supplier_sku` and `field_manufacturer_item_number`. Presave validator extended (rejects empty arrays + invalid field names per array entry); parser dispatch is array-aware; SiteOne supplier_ingest_config #64 updated via `web/scripts/update_siteone_config_1many.php`. Parser verifier Step 12 + Step 13 and matcher verifier Step 11 cover the path end-to-end.
+- **Phase 3.7.5 (pack-tier capture) shipped 2026-05-30** — extends the schema to capture the full Each / Mid / Case pack-tier structure that SiteOne (and other distributor scrapes) already emit but BOS was previously dropping at parse time. Five new fields on both `material` (22 bundles) and `supplier_price_ingest_row`: `field_pack_qty_mid_label` (list_string: Bag / Package / Box / Carton / Case), `field_pack_qty_mid` (integer), `field_pack_qty_case` (integer), `field_pack_family` (taxonomy ref → new `pack_family` vocab carrying canonical Each/Mid/Case rules), `field_pack_data_source` (list_string: confirmed / inferred / inferred_low_confidence / listing_only). Legacy `field_pack_quantity` preserved unchanged. Parser whitelist extended to 12 fields; trust-aware writeback rule in `PriceSyncService::writePackTierToMaterial()` (confirmed → overwrites; lesser sources only fill empty fields; pack_family + pack_data_source always tag-set with latest scrape attribution). Pack_family taxonomy auto-creates terms the parser sees, so no scrape data is silently dropped. 26 well-evidenced families pre-seeded via `web/scripts/seed_pack_family_terms.php` from the 2026-05-26 → 2026-05-30 SiteOne sweep. See the Phase 3.7.5 section below.
 
 ---
 
@@ -1097,6 +1098,143 @@ A CSV cell value of `R15H` now lands in both fields. Tier 1 then runs strip_pref
 
 ---
 
+## Phase 3.7.5 — Pack-Tier Capture (2026-05-30)
+
+> **Numbering note.** This work slotted in between the Phase 3.7 dashboards (shipped 2026-05-25) and the originally-specced Phase 3.10–3.11 production cut-over. It's a refinement of the ingest pipeline that surfaced from real scrape data — not a re-scoping of the master plan. The original Phase 3.10 (SKU normalization, shipped 2026-05-26), Phase 3.11 (production cut-over), and Phase 3.12 (SOP authoring) numbering stays intact in `supplier_pricing_pipeline_phase3_sequencing.md`.
+
+Empirical motivation: the SiteOne scrape already produces per-product Each / Mid / Case pack data (Bag(50), Package(25), Case(250), etc.) along with a family attribution (e.g., `Rain Bird Spiral Barb Fitting`) and a data-source confidence (`confirmed` / `inferred` / `listing_only`). Before Phase 3.7.5, BOS dropped all five of those columns at parse time because no destination fields existed and the parser whitelist excluded unknown columns. Office staff had to look up volume-pricing tiers on the supplier's website even though the data was sitting in our scrape — a workflow violation the user called out directly ("I don't want to have to look on another site for that type of information when a team member is already in BOS").
+
+The fix is purely additive: legacy `field_pack_quantity` is preserved unchanged for backward compatibility; the new fields sit alongside it.
+
+### New fields
+
+**On `supplier_price_ingest_row.row` (5 fields — capture the scrape):**
+
+| Field | Type | Purpose |
+|---|---|---|
+| `field_pack_qty_mid_label` | list_string (Bag / Package / Box / Carton / Case) | The label the supplier uses for the middle tier on this row |
+| `field_pack_qty_mid` | integer | Mid-tier quantity (e.g., 50 for Bag(50)) |
+| `field_pack_qty_case` | integer | Case-tier quantity (e.g., 250 for Case(250)) |
+| `field_pack_family` | entity_reference → taxonomy_term:pack_family | Family attribution from the scrape; parser auto-creates terms it hasn't seen |
+| `field_pack_data_source` | list_string (confirmed / inferred / inferred_low_confidence / listing_only) | Confidence/provenance of the pack rule on this row |
+
+**On `material` (same 5 fields on all 22 bundles — the source of truth):**
+
+The same five fields exist on every `material` bundle, so once a material has been populated, BOS itself carries the Each/Mid/Case rule and team members don't need to consult the supplier site.
+
+**On `taxonomy_term:pack_family` (3 fields — the canonical rule):**
+
+The `pack_family` taxonomy term carries the canonical rule shared by all member SKUs:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `field_pack_qty_mid_label` | list_string | Canonical Mid label for the family |
+| `field_pack_qty_mid` | integer | Canonical Mid qty (nullable when the family has no Mid tier — e.g., golf rotors that only have Each + Case) |
+| `field_pack_qty_case` | integer | Canonical Case qty |
+
+Individual materials may override via their own fields; the family term provides the default rule when a new SKU is added.
+
+### Parser whitelist extension
+
+`IngestParser::ALLOWED_ROW_FIELDS` extended from 7 to 12 fields:
+
+```php
+public const ALLOWED_ROW_FIELDS = [
+  'field_supplier_sku',
+  'field_manufacturer_item_number',
+  'field_manufacturer_name',
+  'field_description',
+  'field_unit_cost',
+  'field_cost_uom',
+  'field_pack_quantity',
+  // Phase 3.7.5
+  'field_pack_qty_mid_label',
+  'field_pack_qty_mid',
+  'field_pack_qty_case',
+  'field_pack_family',
+  'field_pack_data_source',
+];
+```
+
+Three helper coercion methods landed alongside the whitelist extension:
+
+- `coerceUintField()` — accepts integer-like CSV cell values; rejects negatives; empty → NULL.
+- `coerceAllowedString()` — uppercase/trim the cell and verify membership in the field's allowed_values; non-member values written through verbatim so the matcher can flag them.
+- `resolvePackFamilyTid()` — looks up an existing `pack_family` term by exact name match; if no match, **creates** a new term (with empty rule fields, ready for office to fill in). Returns the tid for the entity-reference assignment. This is what guarantees no scrape data is silently dropped — every family the scrape names gets a term.
+
+### Trust-aware writeback (PriceSyncService::writePackTierToMaterial)
+
+Called from inside `PriceSyncService::ingestRow()` after the cost/SKU writes complete (same transaction). The rule, by `data_source`:
+
+- `confirmed` (≥2 PDPs in the family confirm identical pack rule): **overwrites** the material's existing pack fields. Trust outweighs prior data.
+- `inferred` / `inferred_low_confidence` / `listing_only`: **only fills empty fields** on the material; does not clobber higher-trust data with lower-trust.
+- `field_pack_family` + `field_pack_data_source`: always tag-set with the most recent scrape's attribution (these are metadata, not the rule itself — knowing what scrape attributed the family last is more useful than the first attribution).
+
+Defensive guard: if the material entity lacks the new fields (e.g., schema not yet installed in a given environment), the method no-ops silently — write is opportunistic, not required.
+
+### Auto-created vs. seeded pack_family terms
+
+The parser's `resolvePackFamilyTid()` auto-creates any family it hasn't seen, so the pipeline never drops data. But auto-created terms ship with **empty** rule fields — they capture the membership signal but can't drive a default pack rule on new SKUs until office fills them in.
+
+The seed script `web/scripts/seed_pack_family_terms.php` front-loads 26 well-evidenced families with full rules so the most common SKU patterns from the SiteOne sweep (2026-05-26 → 2026-05-30) have rules in place from day one. Families covered include:
+
+- **Rain Bird** — Spiral Barb Fitting, VAN, R-Series, R-VAN, HE-VAN, U-Series, SA Swing Joint
+- **Hunter** — MP Rotator, PRO Adjustable Arc, PRO Fixed Nozzle, Bubbler, Stream Spray, I-40, Golf/Commercial Rotor, MPR Nozzle, ST Commercial
+- **Toro** — 570 MPR Plus, 570Z, Toro Nozzle
+- **K-Rain** — Super Pro, K-Rain generic
+- **Underhill / Irritrol** — Underhill Impact, I-Pro
+- **Cross-brand** — Rotor-Case-20, Spray-Body-Case-20 (industry-standard fallback families for items without a more specific attribution)
+
+Each seeded term carries a description summarizing the confidence level and PDP evidence. Full rule book lives in `__BOS_AI/Extraction/siteone_families.md`.
+
+### SiteOne config column-mapping update
+
+`web/scripts/update_siteone_config_pack_tiers.php` adds the 5 new column mappings to `supplier_ingest_config` #64 (SiteOne):
+
+```json
+{
+  "pack_qty_mid_label": "field_pack_qty_mid_label",
+  "pack_qty_mid":       "field_pack_qty_mid",
+  "pack_qty_case":      "field_pack_qty_case",
+  "pack_family":        "field_pack_family",
+  "pack_data_source":   "field_pack_data_source"
+}
+```
+
+Idempotent — re-runs cleanly when the config already has all 5 mappings.
+
+### Files modified
+
+| File | Change |
+|---|---|
+| `src/Service/IngestParser.php` | `ALLOWED_ROW_FIELDS` extended 7 → 12; new helpers `coerceUintField()`, `coerceAllowedString()`, `resolvePackFamilyTid()` (auto-creates pack_family terms); `cellsToAssoc()` dispatches the new field types via the helpers |
+| `src/Service/IngestCommitter.php` | `row_data` hash passed to `PriceSyncService::ingestRow()` extended with 5 pack-tier values; pack_family resolved to `pack_family_tid` (entity-ref target_id) before the call |
+| `web/modules/custom/wo_material_price_sync/src/Service/PriceSyncService.php` | New `writePackTierToMaterial()` method called inside the `ingestRow()` transaction; trust-aware rule per spec; no-ops if material lacks the new fields |
+| `web/scripts/setup_pack_tier_capture.php` | Idempotent setup: creates pack_family taxonomy + 13 field storages + 118 field instances + 230 displays. Uses runtime `[value => label]` form for `allowed_values` (Drupal's structured `[{'value', 'label'}]` shape is YAML-export-only) |
+| `web/scripts/update_siteone_config_pack_tiers.php` | Idempotent: adds 5 pack-tier mappings to SiteOne `supplier_ingest_config` |
+| `web/scripts/seed_pack_family_terms.php` | Idempotent: creates / updates 26 canonical pack_family terms from the 2026-05-26 → 2026-05-30 SiteOne sweep |
+| `web/scripts/verify_supplier_price_ingest_committer.php` | New Scenario 10 with 17 sub-checks: parser populates row pack fields; 10a (confirmed → empty material fills all 3 tiers); 10b (confirmed → existing values overwrites); 10c (listing_only → prefilled material preserves existing values but updates family + data_source metadata) |
+| `__BOS_AI/Extraction/siteone_families.md` | Intro rewritten to reflect implemented schema; Confirmed families table expanded to 19 entries; Inferred + Inferred-low-confidence tables added |
+| `__BOS_AI/Entities/material.md` | New "Pack-Tier Fields" section under Common Inventory Controls documenting the 5 new fields, trust-aware writeback, and seeded pack_family taxonomy reference |
+
+### Verification
+
+- Schema verifier — all PASS (13 new field storages + 118 instances present on the expected entity types/bundles).
+- Parser verifier — all PASS including new path that populates the 5 pack-tier row fields from a SiteOne-shaped CSV.
+- Committer verifier — Scenario 10 / 17 sub-checks all PASS:
+  - 10a: confirmed scrape → empty material → all 3 tiers + family + source written.
+  - 10b: confirmed scrape → material with pre-existing pack values → overwritten (trust wins).
+  - 10c: listing_only scrape → material with pre-existing pack values → values preserved; family + data_source still updated (metadata always tag-sets).
+- End-to-end SiteOne dry-run on the latest batch (2026-05-30 scrape sweep) — pack-tier columns now flow through to row entities and forward to materials per the trust rule. No "silently dropped column" warnings in the parse log.
+
+### Out of scope (deferred)
+
+- Estimator UI surfacing of pack-tier data (the data is there; rendering it on the estimate-line UX so an estimator can see "this comes in Case(250), Bag(50), or Each" comes later).
+- Per-supplier override of pack-tier values when materials have multiple supplier links (current behavior: last-confirmed-writer wins; sufficient for now because the trust rule prevents lesser sources from clobbering higher-trust data).
+- Pack_family term curation UI for office (currently office edits terms via the taxonomy admin form; a dedicated workflow may emerge if auto-created terms accumulate faster than expected).
+
+---
+
 ## Status
 
 - **Phase 3.1** — shipped 2026-05-25 (commit `911c2221`).
@@ -1108,7 +1246,8 @@ A CSV cell value of `R15H` now lands in both fields. Tier 1 then runs strip_pref
 - **Phase 3.7** — shipped 2026-05-25 (commit `20856acd` on `feature/supplier-price-ingest`).
 - **Phase 3.10 matcher enhancement** — shipped 2026-05-26 on `feature/supplier-price-ingest`.
 - **Parser 1:many destination follow-up** — shipped 2026-05-26 on `feature/supplier-price-ingest`.
+- **Phase 3.7.5 pack-tier capture** — shipped 2026-05-30 on `feature/pack-tier-capture` (commits `0275a1b4`, `91e74b07`, `834636b6`). Refinement of the 3.7 ingest path; does not consume the originally-specced 3.11 production-cut-over slot.
 
-Branch: `feature/supplier-price-ingest`.
+Branch: `feature/supplier-price-ingest` (3.1–3.7 + 3.10 + 1:many follow-up); `feature/pack-tier-capture` (3.7.5).
 
 Next phase: 3.8 — estimator surfaces (Refresh Prices button on Estimates, discontinued warnings).

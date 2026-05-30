@@ -19,6 +19,11 @@ dependencies:
     - field.field.material.irrigation.field_manufacturer_website_item
     - field.field.material.irrigation.field_material_tags
     - field.field.material.irrigation.field_name
+    - field.field.material.irrigation.field_pack_data_source
+    - field.field.material.irrigation.field_pack_family
+    - field.field.material.irrigation.field_pack_qty_case
+    - field.field.material.irrigation.field_pack_qty_mid
+    - field.field.material.irrigation.field_pack_qty_mid_label
     - field.field.material.irrigation.field_price_updated
     - field.field.material.irrigation.field_replaced_by
     - field.field.material.irrigation.field_retail_price_disclaimer
@@ -275,6 +280,42 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_pack_data_source:
+    type: options_select
+    weight: 94
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_pack_family:
+    type: entity_reference_autocomplete
+    weight: 93
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_case:
+    type: number
+    weight: 92
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid:
+    type: number
+    weight: 91
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid_label:
+    type: options_select
+    weight: 90
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_price_updated:
     type: boolean_checkbox
     weight: 6
@@ -396,4 +437,3 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden: {  }
-

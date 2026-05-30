@@ -18,6 +18,11 @@ dependencies:
     - field.field.material.shrubs.field_lead_time
     - field.field.material.shrubs.field_main_image
     - field.field.material.shrubs.field_material_tags
+    - field.field.material.shrubs.field_pack_data_source
+    - field.field.material.shrubs.field_pack_family
+    - field.field.material.shrubs.field_pack_qty_case
+    - field.field.material.shrubs.field_pack_qty_mid
+    - field.field.material.shrubs.field_pack_qty_mid_label
     - field.field.material.shrubs.field_plant_characteristics
     - field.field.material.shrubs.field_plant_color
     - field.field.material.shrubs.field_plant_family
@@ -287,6 +292,42 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_pack_data_source:
+    type: options_select
+    weight: 139
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_pack_family:
+    type: entity_reference_autocomplete
+    weight: 138
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_case:
+    type: number
+    weight: 137
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid:
+    type: number
+    weight: 136
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pack_qty_mid_label:
+    type: options_select
+    weight: 135
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_plant_characteristics:
     type: options_buttons
     weight: 8
@@ -421,4 +462,3 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden: {  }
-

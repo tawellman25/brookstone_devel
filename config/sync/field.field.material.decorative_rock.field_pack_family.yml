@@ -1,0 +1,29 @@
+uuid: 29cae72d-7ca4-4f2e-aab0-7c8244b35306
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.material.decorative_rock
+    - field.storage.material.field_pack_family
+    - taxonomy.vocabulary.pack_family
+id: material.decorative_rock.field_pack_family
+field_name: field_pack_family
+entity_type: material
+bundle: decorative_rock
+label: 'Pack Family'
+description: 'Family attribution. The taxonomy term carries the canonical pack rule; individual material may override via its own pack fields.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      pack_family: pack_family
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

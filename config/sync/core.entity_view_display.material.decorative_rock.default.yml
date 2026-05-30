@@ -4,6 +4,7 @@ status: true
 dependencies:
   config:
     - eck.eck_type.material.decorative_rock
+    - field.field.material.decorative_rock.feeds_item
     - field.field.material.decorative_rock.field_banner_images
     - field.field.material.decorative_rock.field_cost_integer
     - field.field.material.decorative_rock.field_description
@@ -15,6 +16,11 @@ dependencies:
     - field.field.material.decorative_rock.field_main_image
     - field.field.material.decorative_rock.field_material_tags
     - field.field.material.decorative_rock.field_name
+    - field.field.material.decorative_rock.field_pack_data_source
+    - field.field.material.decorative_rock.field_pack_family
+    - field.field.material.decorative_rock.field_pack_qty_case
+    - field.field.material.decorative_rock.field_pack_qty_mid
+    - field.field.material.decorative_rock.field_pack_qty_mid_label
     - field.field.material.decorative_rock.field_price
     - field.field.material.decorative_rock.field_price_updated
     - field.field.material.decorative_rock.field_quantity_in_stock
@@ -26,12 +32,10 @@ dependencies:
     - field.field.material.decorative_rock.field_suppliers
     - field.field.material.decorative_rock.field_unit_of_measure
     - field.field.material.decorative_rock.field_yard_per_ton
-    - image.style.max_325x325
+    - image.style.max_650x650
   module:
     - colorbox
     - field_group
-    - layout_builder
-    - layout_discovery
     - link
     - options
     - text
@@ -183,6 +187,46 @@ content:
       link: true
     third_party_settings: {  }
     weight: 10
+    region: content
+  field_pack_data_source:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 79
+    region: content
+  field_pack_family:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: false
+    third_party_settings: {  }
+    weight: 78
+    region: content
+  field_pack_qty_case:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 77
+    region: content
+  field_pack_qty_mid:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ''
+      prefix_suffix: false
+    third_party_settings: {  }
+    weight: 76
+    region: content
+  field_pack_qty_mid_label:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 75
     region: content
   field_price:
     type: number_decimal

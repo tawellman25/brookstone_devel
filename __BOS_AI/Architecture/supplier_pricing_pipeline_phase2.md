@@ -177,6 +177,8 @@ A CSV from a supplier moves through five stages. Each stage has a clear precondi
 
 **Service:** `Drupal\supplier_price_ingest\Service\IngestParser`.
 
+**See also:** per-supplier family pack rules — used when a row's pack quantity must be inferred from family membership rather than extracted from the CSV — are catalogued in [`__BOS_AI/Extraction/siteone_families.md`](../Extraction/siteone_families.md).
+
 ### 3.3 Stage 2: Match (the cascading matcher)
 
 **Input:** All `supplier_price_ingest_row` entities for a batch.

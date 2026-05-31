@@ -549,3 +549,85 @@ a.bos-stat-link:hover {
   font-weight: 400;
   margin-left: 4px;
 }
+
+/* ─── Weekly Trends (Phase 2F) ────────────────────────────────────────────── */
+.bos-weekly-trends-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 16px 0;
+}
+.bos-weekly-trends-table th,
+.bos-weekly-trends-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: middle;
+}
+.bos-weekly-trends-table th {
+  background: #1B5E20;
+  color: #fff;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 2px solid #0D3D14;
+  white-space: nowrap;
+}
+.bos-weekly-trends-table th small {
+  display: block;
+  font-weight: 400;
+  font-size: 11px;
+  color: #c8e6c9;
+  margin-top: 2px;
+}
+.bos-weekly-trends-table th:first-child {
+  text-align: left;
+}
+.bos-weekly-trends-table tr:nth-child(even) {
+  background: #fafafa;
+}
+.bos-weekly-trends-table tr:hover {
+  background: #f1f8e9;
+}
+.bos-trend-teammate {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Weekly cells — compact, square-ish, color-coded by productivity band. */
+.bos-trend-cell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  width: 38px;
+  min-width: 38px;
+}
+.bos-trend-cell.bos-variance-green  { background: #e8f5e9; color: #1B5E20; }
+.bos-trend-cell.bos-variance-yellow { background: #fff9c4; color: #5D4037; }
+.bos-trend-cell.bos-variance-red    { background: #ffebee; color: #B71C1C; }
+.bos-trend-cell-na {
+  color: #9e9e9e;
+  background: #fafafa;
+}
+
+/* Aggregate columns — slightly heavier border and larger to anchor the eye. */
+.bos-trend-avg {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  border-left: 2px solid #cfd8dc;
+  padding-left: 12px;
+}
+.bos-trend-avg.bos-variance-green  { background: #c8e6c9; color: #1B5E20; }
+.bos-trend-avg.bos-variance-yellow { background: #fff59d; color: #5D4037; }
+.bos-trend-avg.bos-variance-red    { background: #ffcdd2; color: #B71C1C; }
+
+/* Trend direction column. */
+.bos-trend-arrow {
+  text-align: center;
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.bos-trend-up       { color: #1B5E20; }
+.bos-trend-down     { color: #B71C1C; }
+.bos-trend-steady   { color: #607d8b; }
+.bos-trend-inactive { color: #5D4037; font-style: italic; }

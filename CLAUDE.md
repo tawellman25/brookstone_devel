@@ -491,7 +491,7 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 ### Operations dashboard modules
 | Module | Purpose |
 |---|---|
-| `bos_teammate_operations` | Teammate Operations Hub at `/admin/office/operations/teammates`. Variance dashboards (compensable hrs vs WO hrs per teammate), per-teammate detail drill-down, time-clock data hygiene check. Provides `CompensableHoursService` (8.5-hour assumption now, swappable to real `time_clock_entry` data when TimeTrax integration completes — see `__BOS_AI/Strategy/timetrax_strategy.md`) and `AnomalyDetectionService`. Phases 2A through 2D delivered (commits `8d98ba2a`, `dcb6c67f`, `1e72a804`, `6b1714b1`, `dd17e77f`); Phase 2E (Active Now) and 2F (Weekly Trends) planned. |
+| `bos_teammate_operations` | Teammate Operations Hub at `/admin/office/operations/teammates`. Variance dashboards (compensable hrs vs WO hrs per teammate), per-teammate detail drill-down, time-clock data hygiene check, Active Now operational snapshot, Weekly Trends 8-week productivity table. Provides `CompensableHoursService` (8.5-hour assumption now, swappable to real `time_clock_entry` data when TimeTrax integration completes — see `__BOS_AI/Strategy/timetrax_strategy.md`) and `AnomalyDetectionService`. Phases 2A–2F delivered (2A=`8d98ba2a`, 2B=`dcb6c67f`, 2B.1=`1e72a804`, 2C=`6b1714b1`, 2D=`dd17e77f`, 2E=`a375a8ea`, 2F shipped 2026-05-30). Tier 2 surfaces (Team Roster, Today's Schedule) remain planned. |
 
 ### Utility/infrastructure modules
 | Module | Purpose |

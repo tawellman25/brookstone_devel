@@ -252,6 +252,150 @@ final class CompensableHoursService {
   }
 
   /**
+   * Productive % aggregated over an arbitrary inclusive date range.
+   *
+   * Sums compensable + WO hours across every activity day in the range
+   * (no-activity days are skipped, not zero-counted — matching how the
+   * hub stat cards compute the 7-day team average). Returns the ratio
+   * as wo/comp * 100.
+   *
+   * Generic primitive used by the Weekly Trends dashboard (Phase 2F) to
+   * compute per-week, per-4-week, and per-8-week numbers — but also
+   * available to any future surface that wants a windowed productivity
+   * number without re-deriving from the per-day primitives.
+   *
+   * @param int $uid
+   * @param string $startDate  Inclusive lower bound, 'Y-m-d' local TZ.
+   * @param string $endDate    Inclusive upper bound, 'Y-m-d' local TZ.
+   *
+   * @return float|null
+   *   Productive % (0..100+), or NULL when the teammate had no
+   *   activity across the entire window.
+   */
+  public function getProductivePercentForUserInRange(int $uid, string $startDate, string $endDate): ?float {
+    $totalComp = 0.0;
+    $totalWo = 0.0;
+    foreach ($this->datesBetween($startDate, $endDate) as $date) {
+      if (!$this->hasWoActivityOnDate($uid, $date)) {
+        continue;
+      }
+      $totalComp += $this->getCompensableHoursForUserOnDate($uid, $date);
+      $totalWo += $this->getWoHoursForUserOnDate($uid, $date);
+    }
+    if ($totalComp <= 0.0) {
+      return NULL;
+    }
+    return round(($totalWo / $totalComp) * 100.0, 1);
+  }
+
+  /**
+   * Per-week productive %s for a teammate over the last $weeks completed
+   * weeks (Monday-anchored).
+   *
+   * "Completed" means the most recent week shown is the one that ended
+   * on the prior Sunday — never the partial current week. This avoids
+   * the "Monday morning shows this week at 0%" pitfall and gives every
+   * weekly cell apples-to-apples 7-day weight.
+   *
+   * Returned as [weekStartDate (Y-m-d, Monday) => ?float], ordered
+   * oldest first. NULL value = no activity that week (distinct from 0%,
+   * which would mean the teammate clocked in but logged zero WO hours).
+   *
+   * Bound to the data quality boundary: weeks whose Monday falls before
+   * the configured boundary are still iterated (so the cell layout
+   * stays stable across all teammates), but their values come from a
+   * range that's clamped at the boundary on the lower edge. If a week
+   * is entirely pre-boundary it returns NULL.
+   *
+   * @param int $uid
+   * @param int $weeks
+   *   How many completed weeks back to compute. Phase 2F asks for 8.
+   *
+   * @return array<string, float|null>
+   *   Map of week-start date → weekly productive % (or NULL).
+   */
+  public function getWeeklyProductivePercents(int $uid, int $weeks = 8): array {
+    if ($weeks < 1) {
+      return [];
+    }
+    $boundary = $this->getDataQualityBoundary()->format('Y-m-d');
+    $tz = new \DateTimeZone(date_default_timezone_get());
+    $result = [];
+    foreach ($this->lastCompletedWeeks($weeks, $tz) as [$weekStart, $weekEnd]) {
+      // Clamp the start at the data quality boundary so pre-boundary
+      // partial weeks don't produce misleading numbers from legacy data.
+      $effectiveStart = ($weekStart < $boundary) ? $boundary : $weekStart;
+      $effectiveEnd = $weekEnd;
+      if ($effectiveStart > $effectiveEnd) {
+        // Entire week is pre-boundary — nothing reliable to show.
+        $result[$weekStart] = NULL;
+        continue;
+      }
+      $result[$weekStart] = $this->getProductivePercentForUserInRange(
+        $uid, $effectiveStart, $effectiveEnd
+      );
+    }
+    return $result;
+  }
+
+  /**
+   * Generate [weekStart, weekEnd] pairs for the last $weeks completed
+   * Monday-Sunday weeks, ordered oldest first.
+   *
+   * Most recent pair's weekEnd is the Sunday on or before yesterday.
+   * Today is intentionally excluded so all cells get the same 7-day
+   * weight (see getWeeklyProductivePercents() docblock).
+   *
+   * @return \Generator<int, array{0: string, 1: string}>
+   */
+  private function lastCompletedWeeks(int $weeks, \DateTimeZone $tz): \Generator {
+    // Walk back from today to the Sunday that closed the most recent
+    // completed week. If today is a Sunday, the "completed" week ending
+    // today is included (Sunday is end-of-week in this scheme so a
+    // Sunday view sees the full Mon-Sun that just ended).
+    $today = new \DateTime('today', $tz);
+    $dow = (int) $today->format('N'); // 1=Mon … 7=Sun
+    if ($dow === 7) {
+      $lastSunday = clone $today;
+    }
+    else {
+      $lastSunday = (clone $today)->modify('-' . $dow . ' days');
+    }
+    // Walk back $weeks weeks; each iteration produces [Mon, Sun].
+    $weekPairs = [];
+    $cursor = clone $lastSunday;
+    for ($i = 0; $i < $weeks; $i++) {
+      $sun = clone $cursor;
+      $mon = (clone $sun)->modify('-6 days');
+      $weekPairs[] = [$mon->format('Y-m-d'), $sun->format('Y-m-d')];
+      $cursor->modify('-7 days');
+    }
+    // Reverse so caller sees oldest → newest.
+    foreach (array_reverse($weekPairs) as $pair) {
+      yield $pair;
+    }
+  }
+
+  /**
+   * Inclusive iteration over local-tz dates as 'Y-m-d' strings.
+   *
+   * Exposed publicly so the Weekly Trends dashboard and any other
+   * caller can match the service's own iteration semantics rather
+   * than re-deriving a date loop.
+   *
+   * @return \Generator<int, string>
+   */
+  public function datesBetween(string $startDate, string $endDate): \Generator {
+    $tz = new \DateTimeZone(date_default_timezone_get());
+    $cur = new \DateTime($startDate, $tz);
+    $end = new \DateTime($endDate, $tz);
+    while ($cur <= $end) {
+      yield $cur->format('Y-m-d');
+      $cur->modify('+1 day');
+    }
+  }
+
+  /**
    * TRUE when the teammate has at least one closed wo_time_clock entry
    * starting within the given local date.
    *

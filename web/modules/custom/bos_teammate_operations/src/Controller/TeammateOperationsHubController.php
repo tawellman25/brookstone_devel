@@ -37,6 +37,20 @@ final class TeammateOperationsHubController extends ControllerBase implements Co
   private const TEAM_AVG_RED    = 50.0;
   private const TEAM_AVG_YELLOW = 70.0;
 
+  /**
+   * Trend-detection threshold (percentage points). A teammate is
+   * counted as "trending down" when 4-week avg productive % is at
+   * least this many pp below the 8-week avg. Keep in sync with
+   * WeeklyTrendsController::TREND_DELTA_PP — both surfaces use the
+   * same classification to give the office one number, one rule.
+   */
+  private const TREND_DELTA_PP = 10.0;
+
+  /** How many recent completed weeks the trending-down stat counts over. */
+  private const TREND_WINDOW_WEEKS = 8;
+  /** Tail size of the trending-down stat's recent-window comparison. */
+  private const TREND_RECENT_WEEKS = 4;
+
   public function __construct(
     private readonly CompensableHoursService $compensableHours,
     private readonly AnomalyDetectionService $anomalyDetection,
@@ -114,6 +128,9 @@ final class TeammateOperationsHubController extends ControllerBase implements Co
     // Stat 6 — Lowest productive % (last 30 days)
     $lowest = $this->getLowestProductivityTeammate(30);
 
+    // Stat 7 — Teammates trending down (4-week avg vs 8-week avg, Phase 2F)
+    $trendingDown = $this->getTeammatesTrendingDownCount();
+
     // Card render helpers
     $cards = [];
 
@@ -163,6 +180,16 @@ final class TeammateOperationsHubController extends ControllerBase implements Co
       'bos-variance-red',
       Url::fromRoute('bos_teammate_operations.variance_daily', [], [
         'query' => ['order' => 'Productive %', 'sort' => 'asc'],
+      ])->toString()
+    );
+
+    $cards[] = $this->card(
+      'Teammates Trending Down',
+      (string) $trendingDown,
+      '4-wk avg ≥ ' . (int) self::TREND_DELTA_PP . 'pp below 8-wk',
+      $trendingDown > 0 ? 'bos-stat-warn' : 'bos-variance-green',
+      Url::fromRoute('bos_teammate_operations.weekly_trends', [], [
+        'query' => ['sort' => 'trend_worst_first'],
       ])->toString()
     );
 
@@ -222,8 +249,8 @@ final class TeammateOperationsHubController extends ControllerBase implements Co
       [
         'icon' => '📈', 'title' => 'Weekly Trends',
         'desc' => 'Per-teammate productivity patterns over rolling 4-week and 8-week windows. Spot trends rather than reacting to single bad days.',
-        'url'  => NULL,
-        'badge' => 'PLANNED — Phase 2F', 'badge_class' => 'badge-planned',
+        'url'  => Url::fromRoute('bos_teammate_operations.weekly_trends')->toString(),
+        'badge' => 'ACTIVE', 'badge_class' => 'badge-active',
       ],
       [
         'icon' => '👥', 'title' => 'Team Roster',
@@ -473,6 +500,36 @@ final class TeammateOperationsHubController extends ControllerBase implements Co
       return NULL;
     }
     return round(array_sum($perUserPcts) / count($perUserPcts), 1);
+  }
+
+  /**
+   * Count of teammates whose 4-week productivity is at least
+   * TREND_DELTA_PP below their 8-week productivity (Phase 2F).
+   *
+   * "Inactive in the last 4 weeks" teammates are intentionally NOT
+   * counted here — that's a different signal (the WeeklyTrends page
+   * shows them as "inactive (4wk)"). Operators looking at this stat
+   * want to know "who's slipping," not "who stopped working."
+   */
+  public function getTeammatesTrendingDownCount(): int {
+    $count = 0;
+    foreach ($this->getActiveTeammates() as $user) {
+      $uid = (int) $user->id();
+      $weekly = $this->compensableHours->getWeeklyProductivePercents($uid, self::TREND_WINDOW_WEEKS);
+      $values = array_values($weekly);
+      if (!$values) continue;
+      $recent = array_slice($values, -self::TREND_RECENT_WEEKS);
+      $recentNonNull = array_filter($recent, static fn ($v) => $v !== NULL);
+      if (!$recentNonNull) continue; // "inactive (4wk)" — excluded.
+      $allNonNull = array_filter($values, static fn ($v) => $v !== NULL);
+      if (!$allNonNull) continue;
+      $avg4 = array_sum($recentNonNull) / count($recentNonNull);
+      $avg8 = array_sum($allNonNull) / count($allNonNull);
+      if (($avg4 - $avg8) <= -self::TREND_DELTA_PP) {
+        $count++;
+      }
+    }
+    return $count;
   }
 
   /**

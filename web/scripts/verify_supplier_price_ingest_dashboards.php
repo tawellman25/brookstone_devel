@@ -629,14 +629,12 @@ try {
     $checks10['discovery_http_200'] = $resp->getStatusCode() === 200;
     $checks10['discovery_operations_header'] = (bool) preg_match('#<th[^>]*>\s*Operations\s*</th>#', $body);
     $dId = $discoveryRow->id();
-    foreach ([
-      "/admin/materials/supplier-ingest/discovery/$dId/create-material"  => 'discovery_create_link_for_row',
-      "/admin/materials/supplier-ingest/discovery/$dId/link-existing"    => 'discovery_link_existing_link_for_row',
-      "/admin/materials/supplier-ingest/discovery/$dId/mark-replacement" => 'discovery_mark_replacement_link_for_row',
-      "/admin/materials/supplier-ingest/discovery/$dId/reject"           => 'discovery_reject_link_for_row',
-    ] as $needle => $key) {
-      $checks10[$key] = strpos($body, $needle) !== FALSE;
-    }
+    // Phase 3.7.5 iteration 2 (2026-05-31) — Operations column now
+    // emits a single Resolve link to the unified ResolveRowForm
+    // instead of the 4 per-operation links. The 4 legacy routes
+    // still exist as deep-link fallback.
+    $checks10['discovery_resolve_link_for_row'] = strpos($body,
+      "/admin/materials/supplier-ingest/row/$dId/resolve") !== FALSE;
 
     // 10b — Fuzzy Match Review view, scoped the same way.
     $req = \Symfony\Component\HttpFoundation\Request::create(
@@ -648,14 +646,12 @@ try {
     $checks10['fuzzy_http_200'] = $resp->getStatusCode() === 200;
     $checks10['fuzzy_operations_header'] = (bool) preg_match('#<th[^>]*>\s*Operations\s*</th>#', $body);
     $fId = $fuzzyRow->id();
-    foreach ([
-      "/admin/materials/supplier-ingest/fuzzy-review/$fId/confirm"           => 'fuzzy_confirm_link_for_row',
-      "/admin/materials/supplier-ingest/fuzzy-review/$fId/override"          => 'fuzzy_override_link_for_row',
-      "/admin/materials/supplier-ingest/fuzzy-review/$fId/send-to-discovery" => 'fuzzy_send_to_discovery_link_for_row',
-      "/admin/materials/supplier-ingest/fuzzy-review/$fId/reject"            => 'fuzzy_reject_link_for_row',
-    ] as $needle => $key) {
-      $checks10[$key] = strpos($body, $needle) !== FALSE;
-    }
+    // Same — single Resolve link replaces the 4 per-operation fuzzy links.
+    $checks10['fuzzy_resolve_link_for_row'] = strpos($body,
+      "/admin/materials/supplier-ingest/row/$fId/resolve") !== FALSE;
+
+    // Legacy per-operation links (commented out — deep-link routes
+    // still exist but are no longer surfaced in the Operations column).
 
     \Drupal::service('account_switcher')->switchBack();
 
@@ -818,6 +814,50 @@ try {
   }
   foreach ($checks14 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
   $results['scenario_14_fuzzy_last_in_batch'] = !in_array(FALSE, $checks14, TRUE) ? 'PASS' : 'FAIL';
+
+  // ════════════════════════════════════════════════════════════════
+  // SCENARIO 15 — Unified ResolveRowForm renders for both contexts
+  //
+  // Verify the new single-entry-point form (Phase 3.7.5 iteration 2)
+  // renders with the right operation set based on the row's tier:
+  //   - discovery tier  → Create / Link / Mark Replacement / Reject
+  //   - fuzzy_med tier  → Confirm / Override / Send to Discovery / Reject
+  //   - tier_1_5 tier   → same as fuzzy_med (routes through fuzzy review)
+  // ════════════════════════════════════════════════════════════════
+  echo "\n=== Scenario 15: Unified ResolveRowForm — discovery + fuzzy contexts ===\n";
+  $rowD = $makeRow('discovery', 's15-resolve-disc');
+  $rowF = $makeRow('tier_3_fuzzy_med', 's15-resolve-fuzz');
+  $rowT15 = $makeRow('tier_1_5_title_substring', 's15-resolve-t15');
+
+  $renderResolve = function ($row) {
+    $form = \Drupal::formBuilder()->getForm(
+      'Drupal\\supplier_price_ingest\\Form\\ResolveRowForm',
+      $row
+    );
+    return (string) \Drupal::service('renderer')->renderRoot($form);
+  };
+  $bodyD = $renderResolve($rowD);
+  $bodyF = $renderResolve($rowF);
+  $bodyT15 = $renderResolve($rowT15);
+  $checks15 = [
+    'discovery_create_present'   => stripos($bodyD, 'Create New Material') !== FALSE,
+    'discovery_link_present'     => stripos($bodyD, 'Link to Existing Material') !== FALSE,
+    'discovery_replace_present'  => stripos($bodyD, 'Mark as Replacement') !== FALSE,
+    'discovery_reject_present'   => stripos($bodyD, 'Rejection notes') !== FALSE,
+    'discovery_NO_confirm_op'    => stripos($bodyD, 'Confirm proposed match') === FALSE,
+    'fuzzy_confirm_present'      => stripos($bodyF, 'Confirm proposed match') !== FALSE,
+    'fuzzy_override_present'     => stripos($bodyF, 'Override Match') !== FALSE,
+    'fuzzy_send_present'         => stripos($bodyF, 'Send to Discovery Queue') !== FALSE,
+    'fuzzy_reject_present'       => stripos($bodyF, 'Rejection notes') !== FALSE,
+    'fuzzy_NO_create_op'         => stripos($bodyF, 'Create New Material') === FALSE,
+    'tier15_uses_fuzzy_ops'      => stripos($bodyT15, 'Confirm proposed match') !== FALSE
+                                     && stripos($bodyT15, 'Create New Material') === FALSE,
+    'save_and_load_next_button'  => stripos($bodyD, 'Save and load next row') !== FALSE,
+    'back_to_queue_link'         => stripos($bodyD, 'Back to Discovery Queue') !== FALSE
+                                     && stripos($bodyF, 'Back to Fuzzy Match Review') !== FALSE,
+  ];
+  foreach ($checks15 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
+  $results['scenario_15_resolve_form_renders'] = !in_array(FALSE, $checks15, TRUE) ? 'PASS' : 'FAIL';
 }
 finally {
   echo "\n=== Cleanup ===\n";

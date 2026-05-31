@@ -68,6 +68,22 @@ supplier_price_ingest.batch_export:
       supplier_price_ingest_batch:
         type: 'entity:supplier_price_ingest_batch'
 
+# Phase 3.7.5 iteration 2 (2026-05-31) — unified Resolve form.
+# Single entry point for both Discovery and Fuzzy Review row resolution.
+# The 4 per-operation forms below stay as deep-link fallback.
+supplier_price_ingest.resolve_row:
+  path: '/admin/materials/supplier-ingest/row/{supplier_price_ingest_row}/resolve'
+  defaults:
+    _form: '\Drupal\supplier_price_ingest\Form\ResolveRowForm'
+    _title: 'Resolve row'
+  requirements:
+    _permission: 'administer supplier price ingest'
+  options:
+    _admin_route: TRUE
+    parameters:
+      supplier_price_ingest_row:
+        type: 'entity:supplier_price_ingest_row'
+
 # Phase 3.7 — Discovery Queue per-row operations.
 supplier_price_ingest.discovery_create_material:
   path: '/admin/materials/supplier-ingest/discovery/{supplier_price_ingest_row}/create-material'

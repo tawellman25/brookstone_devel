@@ -419,55 +419,19 @@ function supplier_price_ingest_entity_operation(EntityInterface $entity): array 
     return [];
   }
 
-  if ($tier === 'discovery') {
+  // Phase 3.7.5 iteration 2 (2026-05-31) — single "Resolve →" entry
+  // for the unified ResolveRowForm. Replaces the 4-button-per-row
+  // dropdown that was here previously. The 4 legacy per-operation
+  // routes are still callable via direct URL (deep-link fallback);
+  // they just don't appear in the queue's Operations column anymore.
+  if ($tier === 'discovery'
+      || $tier === 'tier_3_fuzzy_med'
+      || $tier === 'tier_1_5_title_substring') {
     return [
-      'create_material' => [
-        'title'  => t('Create New Material'),
-        'url'    => Url::fromRoute('supplier_price_ingest.discovery_create_material', ['supplier_price_ingest_row' => $entity->id()]),
+      'resolve' => [
+        'title'  => t('Resolve →'),
+        'url'    => Url::fromRoute('supplier_price_ingest.resolve_row', ['supplier_price_ingest_row' => $entity->id()]),
         'weight' => 10,
-      ],
-      'link_existing' => [
-        'title'  => t('Link to Existing'),
-        'url'    => Url::fromRoute('supplier_price_ingest.discovery_link_existing', ['supplier_price_ingest_row' => $entity->id()]),
-        'weight' => 20,
-      ],
-      'mark_replacement' => [
-        'title'  => t('Mark as Replacement'),
-        'url'    => Url::fromRoute('supplier_price_ingest.discovery_mark_replacement', ['supplier_price_ingest_row' => $entity->id()]),
-        'weight' => 30,
-      ],
-      'reject' => [
-        'title'  => t('Reject'),
-        'url'    => Url::fromRoute('supplier_price_ingest.discovery_reject', ['supplier_price_ingest_row' => $entity->id()]),
-        'weight' => 40,
-      ],
-    ];
-  }
-
-  // Both tier_3_fuzzy_med (Phase 3.4) and tier_1_5_title_substring
-  // (Phase 3.7.6) route reviewers through the Fuzzy Match Review
-  // workflow, so they get the same four operations.
-  if ($tier === 'tier_3_fuzzy_med' || $tier === 'tier_1_5_title_substring') {
-    return [
-      'confirm_match' => [
-        'title'  => t('Confirm Match'),
-        'url'    => Url::fromRoute('supplier_price_ingest.fuzzy_confirm', ['supplier_price_ingest_row' => $entity->id()]),
-        'weight' => 10,
-      ],
-      'override_match' => [
-        'title'  => t('Override Match'),
-        'url'    => Url::fromRoute('supplier_price_ingest.fuzzy_override', ['supplier_price_ingest_row' => $entity->id()]),
-        'weight' => 20,
-      ],
-      'send_to_discovery' => [
-        'title'  => t('Send to Discovery'),
-        'url'    => Url::fromRoute('supplier_price_ingest.fuzzy_send_to_discovery', ['supplier_price_ingest_row' => $entity->id()]),
-        'weight' => 30,
-      ],
-      'reject' => [
-        'title'  => t('Reject'),
-        'url'    => Url::fromRoute('supplier_price_ingest.fuzzy_reject', ['supplier_price_ingest_row' => $entity->id()]),
-        'weight' => 40,
       ],
     ];
   }

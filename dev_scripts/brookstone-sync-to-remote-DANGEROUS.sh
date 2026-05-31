@@ -62,14 +62,47 @@ remote() {
   ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "bash -lc '$*'"
 }
 
+# Run a multi-line bash script on the remote in a SINGLE ssh session.
+# Stdin is piped through to `bash -ls` on the remote so the whole
+# heredoc runs in one connection. Use this whenever you have 2+ remote
+# commands to issue — it avoids the SSH-burst pattern that previously
+# tripped the live host's MaxStartups / fail2ban rate limiter (the
+# preflight phase alone used to open ~5 SSH sessions in <2 seconds,
+# which the live host rejected with "Connection reset by peer" and
+# left the deploy in a partial state).
+#
+# Usage:
+#   remote_script <<EOF
+#     set -e
+#     cd "${REMOTE_ROOT}"
+#     drush cr
+#   EOF
+#
+# Variables inside the heredoc are expanded LOCALLY before the script
+# is sent (unquoted EOF marker), so ${REMOTE_ROOT}, $RUN_CIM, etc.
+# reach the remote already substituted. Use 'EOF' (quoted) if you ever
+# need a literal $ on the remote side.
+remote_script() {
+  ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "bash -ls"
+}
+
 cleanup() {
   local code=$?
+  # Compose maintenance-off + lock-remove into ONE ssh session. On
+  # failure we leave maintenance on (intentional fail-safe) but still
+  # remove the lock so the next deploy can re-acquire it.
+  local cleanup_script
   if [[ $code -ne 0 ]]; then
     log "DEPLOY FAILED — leaving LIVE in maintenance mode."
+    cleanup_script="cd '${REMOTE_ROOT}' && rm -f '${LOCK_NAME}'"
+  elif [[ "$USE_MAINTENANCE" -eq 1 ]]; then
+    cleanup_script="cd '${REMOTE_ROOT}' && drush sset system.maintenance_mode 0 -y && drush cr -y && rm -f '${LOCK_NAME}'"
   else
-    [[ "$USE_MAINTENANCE" -eq 1 ]] && remote "cd '${REMOTE_ROOT}' && drush sset system.maintenance_mode 0 -y && drush cr -y"
+    cleanup_script="cd '${REMOTE_ROOT}' && rm -f '${LOCK_NAME}'"
   fi
-  remote "cd '${REMOTE_ROOT}' && rm -f '${LOCK_NAME}'" || true
+  remote_script <<EOF || true
+${cleanup_script}
+EOF
   exit $code
 }
 trap cleanup EXIT
@@ -77,12 +110,21 @@ trap cleanup EXIT
 log "Preflight checks…"
 command -v rsync >/dev/null 2>&1 || die "rsync not found"
 [[ -d "$LOCAL_ROOT" ]] || die "LOCAL_ROOT not found: $LOCAL_ROOT"
-ssh "${SSH_OPTS[@]}" "$REMOTE_HOST" "true" >/dev/null
-remote "cd '${REMOTE_ROOT}' >/dev/null"
-remote "command -v drush >/dev/null"
-[[ "$RUN_COMPOSER" -eq 1 ]] && remote "command -v composer >/dev/null"
-remote "grep -q 'brookstoneadmin_bos_prod' '${REMOTE_ROOT}/web/sites/default/settings.php'" \
-  || die "ABORT: Remote settings.php does not contain expected database name. Refusing to deploy. Fix settings.php before deploying."
+
+# Consolidated remote preflight — single SSH session. The previous
+# pattern of 4-5 separate `remote` calls in a row tripped the live
+# host's SSH rate limiter, producing "Connection reset by peer" and
+# aborting mid-deploy with maintenance mode stuck on. Now: one
+# session, all checks, fail with a specific message identifying
+# which check rejected.
+remote_script <<EOF || die "Remote preflight failed (see error above)."
+set -e
+cd "${REMOTE_ROOT}" || { echo "FAIL: cannot cd to ${REMOTE_ROOT}" >&2; exit 1; }
+command -v drush >/dev/null || { echo "FAIL: drush not found on remote PATH" >&2; exit 1; }
+$( [[ "$RUN_COMPOSER" -eq 1 ]] && echo 'command -v composer >/dev/null || { echo "FAIL: composer not found on remote PATH" >&2; exit 1; }' )
+grep -q 'brookstoneadmin_bos_prod' web/sites/default/settings.php \
+  || { echo "FAIL: web/sites/default/settings.php does not contain expected database name 'brookstoneadmin_bos_prod'. Refusing to deploy." >&2; exit 1; }
+EOF
 
 if [[ "$DRY_RUN" -eq 0 && "$REQUIRE_CONFIRM" -eq 1 ]]; then
   log "LIVE DEPLOY — type LIVE to continue:"
@@ -90,12 +132,26 @@ if [[ "$DRY_RUN" -eq 0 && "$REQUIRE_CONFIRM" -eq 1 ]]; then
   [[ "$confirm" == "LIVE" ]] || die "Aborted"
 fi
 
-log "Acquiring deploy lock…"
-remote "cd '${REMOTE_ROOT}' && test ! -e '${LOCK_NAME}' && echo 'locked' > '${LOCK_NAME}'"
-
+# Combined lock acquire + maintenance enable in ONE ssh session.
+# Lock first so a race between two concurrent deploys can't both
+# enable maintenance.
+log "Acquiring deploy lock${DRY_RUN:+ (dry-run skips maintenance)}…"
 if [[ "$DRY_RUN" -eq 0 && "$USE_MAINTENANCE" -eq 1 ]]; then
-  log "Enabling maintenance mode…"
-  remote "cd '${REMOTE_ROOT}' && drush sset system.maintenance_mode 1 -y && drush cr -y"
+  remote_script <<EOF
+set -e
+cd "${REMOTE_ROOT}"
+test ! -e "${LOCK_NAME}" || { echo "FAIL: deploy lock '${LOCK_NAME}' already exists — another deploy may be in progress, or the previous deploy's cleanup didn't finish. Remove it manually if you've verified no other deploy is running." >&2; exit 1; }
+echo 'locked' > "${LOCK_NAME}"
+drush sset system.maintenance_mode 1 -y
+drush cr -y
+EOF
+else
+  remote_script <<EOF
+set -e
+cd "${REMOTE_ROOT}"
+test ! -e "${LOCK_NAME}" || { echo "FAIL: deploy lock '${LOCK_NAME}' already exists." >&2; exit 1; }
+echo 'locked' > "${LOCK_NAME}"
+EOF
 fi
 
 log "Syncing code to LIVE…"
@@ -174,8 +230,20 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   exit 0
 fi
 
-[[ "$RUN_COMPOSER" -eq 1 ]] && remote "cd '${REMOTE_ROOT}' && composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --ignore-platform-req=ext-redis"
-[[ "$RUN_CIM" -eq 1 ]] && remote "cd '${REMOTE_ROOT}' && drush cim -y"
-[[ "$RUN_CR" -eq 1 ]] && remote "cd '${REMOTE_ROOT}' && drush cr -y"
+# Post-rsync remote work — composer install + (optional) cim + drush cr,
+# all in ONE ssh session. Previously three sequential `remote` calls;
+# the trailing two would occasionally hit the rate limiter mid-deploy.
+post_rsync_script="set -e
+cd '${REMOTE_ROOT}'
+"
+[[ "$RUN_COMPOSER" -eq 1 ]] && post_rsync_script+="composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --ignore-platform-req=ext-redis
+"
+[[ "$RUN_CIM" -eq 1 ]] && post_rsync_script+="drush cim -y
+"
+[[ "$RUN_CR" -eq 1 ]] && post_rsync_script+="drush cr -y
+"
+remote_script <<EOF
+${post_rsync_script}
+EOF
 
 log "Deploy complete (code + vendor${RUN_CIM:+, config import}; DB untouched; files on S3)."

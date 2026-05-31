@@ -101,8 +101,8 @@ See [`__BOS_AI/Strategy/timetrax_strategy.md`](../Strategy/timetrax_strategy.md)
 | **2B.1** | Data quality boundary (configurable cutoff date for reliable data) | ✅ built |
 | **2C** | Per-teammate detail page (day-by-day breakdown + WO drill-down) | ✅ built |
 | **2D** | Hub landing page at `/admin/office/operations/teammates` (stats + nav + recent anomalies) | ✅ built |
-| 2E | "Active Now" view (who's clocked in right now, current WO context) | planned |
-| 2F | Weekly trend chart (one-month rolling productivity %) | planned |
+| **2E** | "Active Now" view (who's clocked in right now, current WO context) | ✅ built |
+| **2F** | Weekly Trends view — per-teammate productivity over 8 completed Mon-Sun weeks + 4-wk vs 8-wk trend classification | ✅ built |
 
 When TimeTrax integration completes (Phase 3), the swap is one method body in `CompensableHoursService::getCompensableHoursForUserOnDate()` — no other module touches.
 
@@ -240,7 +240,7 @@ The hub landing page (Phase 2D) will surface this view as the canonical drill-do
 URL: **`/admin/office/operations/teammates`**
 Same role gate as the rest of the suite. New canonical front door for the variance suite. Direct links to `/variance` and `/variance/data-check` still work for bookmark compatibility — the hub is just the recommended starting point.
 
-### Six Today-at-a-Glance stat cards
+### Seven Today-at-a-Glance stat cards
 
 | Card | What it measures |
 |---|---|
@@ -250,13 +250,13 @@ Same role gate as the rest of the suite. New canonical front door for the varian
 | **Active Anomalies (since boundary)** | `AnomalyDetectionService` total across all 5 types since the data quality boundary. Amber when > 0; green when 0. Linked to data-check page. |
 | **Avg Productive % (last 7 days)** | Per-teammate productive % computed across each user's last-7-day window (skipping no-activity days), then averaged across teammates. Uses **hub-specific thresholds** distinct from the per-day variance bands: red < 50%, yellow 50–70%, green > 70%. |
 | **Lowest Productive % (30 days)** | Lowest individual teammate productivity in the boundary-aware 30-day window, displayed as `Name: pct%`. Always red (it's the bottom-of-the-list spotlight). Linked to the rollup pre-sorted ascending. |
+| **Teammates Trending Down** *(Phase 2F)* | Count of active teammates whose recent (4-week) productivity is ≥ 10pp below their 8-week average. Teammates with no activity in the last 4 weeks are excluded (they show as "inactive" on the Weekly Trends page rather than "declining"). Amber when > 0; green when 0. Linked to the Weekly Trends page pre-sorted worst-first. |
 
 ### Variance Suite navigation grid
 
-Six cards. Three ACTIVE (linked) and three PLANNED (visually muted, no link, status badge):
+Six cards. Four ACTIVE (linked) and two PLANNED (visually muted, no link, status badge):
 
-- ACTIVE: Daily Variance, Data Hygiene Check, Active Now (Phase 2E)
-- PLANNED — Phase 2F: Weekly Trends
+- ACTIVE: Daily Variance, Data Hygiene Check, Active Now, Weekly Trends (Phase 2F)
 - PLANNED — Tier 2: Team Roster, Today's Schedule
 
 ### Recent Active Anomalies snippet
@@ -285,6 +285,7 @@ admin (menu)
     └── Teammate Operations             (bos_teammate_operations.hub)
         ├── Daily Variance              (bos_teammate_operations.variance_daily)   weight 0
         ├── Active Now                  (bos_teammate_operations.active_now)       weight 5
+        ├── Weekly Trends               (bos_teammate_operations.weekly_trends)    weight 7
         └── Time Clock Data Check       (bos_teammate_operations.variance_data_check) weight 10
 ```
 
@@ -331,6 +332,82 @@ Some "currently clocked in" rows on live are forgotten clock-outs from days or w
 ### Teammate resolution priority
 
 Each row's teammate is resolved by `field_teammate` first (the explicit roster reference, populated going forward by `wo_total_time`'s presave auto-sync — commit `69d6f3cc`). Falls back to entity owner uid when `field_teammate` is empty. Pre-2026 historical entries with empty `field_teammate` still display correctly via the fallback.
+
+---
+
+## Phase 2F — Weekly Trends view
+
+URL: **`/admin/office/operations/teammates/trends`**
+Same role gate as the rest of the suite. Per-teammate productivity over the most recent **8 completed Mon-Sun weeks**, with a 4-week-vs-8-week trend classification per teammate. Answers the question the daily variance dashboard can't: "is this teammate's productivity shifting over time, or did they just have a few bad days?"
+
+Read-only against existing `wo_time_clock` data via shared `CompensableHoursService` primitives. No service swaps, no auto-refresh, no caching, no JS chart library. Pure server-rendered HTML + CSS, matching every other page in the suite.
+
+### Table shape
+
+One row per active teammate (role=`teammates`, status=1) with **at least one week of activity** in the 8-week window. Columns:
+
+| Column | Notes |
+|---|---|
+| Teammate | links to the per-teammate detail page (`bos_teammate_operations.variance_teammate_detail`) |
+| **W-8 … W-1** (8 columns) | One color-coded cell per completed Mon-Sun week, ordered oldest → newest. Header shows the week-start Monday in `MM/DD` format. Value is the rounded productive % (or "—" for no-activity weeks). Tooltip shows the precise %. |
+| **4-wk** | Average of the most-recent 4 weeks' values (skipping NULL weeks). |
+| **8-wk** | Average of all 8 weeks' values (skipping NULL weeks). |
+| **Trend** | Arrow + label: ↑ improving / ↓ declining / → steady / ⏸ inactive (4wk). See classification rules below. |
+
+Cell color coding uses the same hub-level thresholds as the `Avg Productive %` stat card: < 50% red, 50–70% yellow, > 70% green. Distinct from the per-day variance bands in `business_setting` — those are for single-day deviation analysis; productivity-% bands are for windowed averages.
+
+### Why 8 completed weeks (not 8 rolling weeks ending today)
+
+The current calendar week is intentionally excluded. If a teammate is viewed mid-week (e.g. Wednesday morning), a "rolling" 8 weeks would put a partial-week cell at the most-recent end that's always going to look low relative to the others. Excluding the current week gives every cell apples-to-apples 7-day weight and makes the cell strip a fair comparison.
+
+The most-recent week shown (W-1) is the Mon-Sun week that ended on the prior Sunday (or today, if today is Sunday — Sunday is end-of-week in this scheme so a Sunday viewing sees the just-closed week).
+
+### Trend classification
+
+```
+recent = last 4 weeks' productive % values (skipping NULL weeks)
+older  = all 8 weeks' productive % values (skipping NULL weeks)
+
+if recent is entirely NULL → "inactive (4wk)"   — exclude from trending-down stat
+else if avg4 - avg8 >=  +TREND_DELTA_PP → "↑ improving"
+else if avg4 - avg8 <=  -TREND_DELTA_PP → "↓ declining"
+else                                     → "→ steady"
+```
+
+`TREND_DELTA_PP = 10.0` (percentage points). Same constant on both `WeeklyTrendsController` and `TeammateOperationsHubController` so the hub stat card and the page agree on what "trending down" means. Hardcoded rather than business_setting — analogous to the hub's TEAM_AVG thresholds; rarely needs adjustment, and putting it in config would invite confusion with the per-day variance bands.
+
+The "inactive" classification matters because it cleanly separates two different operational signals — a teammate who's slipping (declining) needs a check-in conversation; a teammate who's stopped working entirely needs a different one. Mixing them under a "declining" label would obscure both.
+
+### Filters
+
+- **Department** — same `crew_types`-driven dropdown the other pages use; defaults to "— All Departments —".
+- **Sort by** — four options: Trend (decliners first) [default], 4-week avg lowest first, 8-week avg lowest first, Teammate name A→Z. The trend-sort default surfaces the teammates an operator should look at first.
+- **Group by department** — checkbox, defaults off. When on, the table splits into per-department subtables.
+
+GET-submission — filters live in the URL, bookmarkable and shareable.
+
+### Data quality boundary
+
+Each weekly window is clamped to the configured `field_data_quality_boundary_date` on its lower edge. A week that's entirely pre-boundary returns NULL (rendered as "—") even if `wo_time_clock` rows exist for it — that legacy data is explicitly excluded from default views per Phase 2B.1's rule. A week that straddles the boundary uses only post-boundary days, which is the same averaging behavior the rest of the suite applies.
+
+### Service additions (Phase 2F)
+
+Two helpers added to `CompensableHoursService`:
+
+| Method | Purpose |
+|---|---|
+| `getProductivePercentForUserInRange(int $uid, string $startDate, string $endDate): ?float` | Generic primitive — productive % over any inclusive date range. NULL = no activity in window. Used by Phase 2F internally and available to any future surface. |
+| `getWeeklyProductivePercents(int $uid, int $weeks = 8): array<string, ?float>` | Phase-2F-specific helper: per-completed-week productive % map, oldest first, NULL = no activity that week. Anchored Monday, ends prior-or-current Sunday, clamped at the data quality boundary. |
+
+Also exposed: `datesBetween(string $startDate, string $endDate): \Generator` was promoted from a duplicated controller-internal helper to a public service primitive so callers can iterate dates with the same semantics the service uses.
+
+The hub controller's existing `getTeamAvgProductivePercent()` and `getLowestProductivityTeammate()` methods were *not* refactored to use the new primitive — that's a Phase 2D cleanup opportunity, not part of this scope.
+
+### Hub stat card (added in Phase 2F)
+
+Seventh card on the hub: **Teammates Trending Down** — count of active teammates whose 4-week avg is ≥ TREND_DELTA_PP (10pp) below their 8-week avg. Excludes the "inactive (4wk)" case so the number is "who's slipping" not "who stopped." Amber when > 0; green when 0. Links to the Weekly Trends page pre-sorted worst-first (`?sort=trend_worst_first`).
+
+The stat-card computation runs `getWeeklyProductivePercents()` once per active teammate at hub render time. With ~30 active teammates and the hub already loading 6 other stats, the marginal cost is minimal; no caching introduced. If hub render time becomes a concern later, this is the obvious caching candidate (15-minute TTL would suffice for an operational dashboard).
 
 ---
 
@@ -385,14 +462,19 @@ web/modules/custom/bos_teammate_operations/
                                               teammate column links to detail page)
       VarianceTeammateDetailController.php  (Phase 2C — single-teammate drill-down)
       TeammateOperationsHubController.php   (Phase 2D — hub landing page;
-                                              Phase 2E — Active Now card promoted ACTIVE)
+                                              Phase 2E — Active Now card promoted ACTIVE;
+                                              Phase 2F — Weekly Trends card promoted ACTIVE +
+                                                         7th stat card "Teammates Trending Down")
       ActiveNowController.php               (Phase 2E — operational snapshot view)
+      WeeklyTrendsController.php            (Phase 2F — 8-week productivity trend table)
     Form/
       VarianceDailyFilterForm.php           (Phase 2B — GET filter form for rollup)
       VarianceTeammateDetailFilterForm.php  (Phase 2C — GET filter form for detail page)
       ActiveNowFilterForm.php               (Phase 2E — GET filter form: dept + group toggle)
+      WeeklyTrendsFilterForm.php            (Phase 2F — GET filter form: dept + sort + group toggle)
     Service/
-      CompensableHoursService.php
+      CompensableHoursService.php           (Phase 2F — added range-aggregated %, weekly map,
+                                                         and promoted datesBetween() to public)
       AnomalyDetectionService.php           (Phase 2C — extracted from inline data-check logic)
 ```
 
@@ -455,4 +537,6 @@ The spec called for `entity_type.manager` and `config.factory`. Substituted `con
 
 **Phase 2E Active Now built 2026-05-03.** Operational snapshot view at `/admin/office/operations/teammates/active`. Two stacked sections — Currently Clocked In + Today's Activity — with department filter and group-by-department toggle. Status indicator dots (green / yellow / red) make stale forgotten clock-outs visually obvious without filtering them out. Hub card promoted from PLANNED to ACTIVE; menu entry added between Daily Variance (weight 0) and Time Clock Data Check (weight 10).
 
-Ready for Phase 2F (Weekly Trends).
+**Phase 2F Weekly Trends built 2026-05-30.** Per-teammate productivity table at `/admin/office/operations/teammates/trends` covering the last 8 completed Mon-Sun weeks, with 4-wk-vs-8-wk trend classification (↑ improving / ↓ declining / → steady / ⏸ inactive 4wk). Reuses `CompensableHoursService` for all numbers; two new public service helpers — `getProductivePercentForUserInRange()` (generic windowed productivity primitive) and `getWeeklyProductivePercents()` (per-week map for the cell strip). Hub gets a 7th stat card "Teammates Trending Down" with the same TREND_DELTA_PP threshold (10pp); the Weekly Trends nav card promoted from PLANNED to ACTIVE; menu link weight 7 (between Active Now=5 and Data Check=10). Smoke-tested in DDEV on real data: 22-row table renders cleanly, service helpers return the expected shape (active teammates have numeric weekly %, inactive return all-NULL and are correctly excluded). The data quality boundary is honored — pre-boundary weeks render as "—" not as 0%.
+
+Tier 2 (Team Roster, Today's Schedule) remain planned.

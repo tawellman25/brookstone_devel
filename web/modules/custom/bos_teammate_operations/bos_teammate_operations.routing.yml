@@ -38,6 +38,16 @@ bos_teammate_operations.active_now:
   options:
     _admin_route: TRUE
 
+bos_teammate_operations.weekly_trends:
+  path: '/admin/office/operations/teammates/trends'
+  defaults:
+    _controller: '\Drupal\bos_teammate_operations\Controller\WeeklyTrendsController::build'
+    _title: 'Weekly Trends'
+  requirements:
+    _role: 'administrator+site_admin+administration+supervisor+site_assistant'
+  options:
+    _admin_route: TRUE
+
 bos_teammate_operations.variance_teammate_detail:
   path: '/admin/office/operations/teammates/variance/{user}'
   defaults:

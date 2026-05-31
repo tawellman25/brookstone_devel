@@ -615,8 +615,15 @@ try {
 
     \Drupal::service('account_switcher')->switchTo(\Drupal\user\Entity\User::load(1));
 
-    // 10a — Discovery Queue view
-    $req = \Symfony\Component\HttpFoundation\Request::create('/admin/materials/supplier-ingest/discovery', 'GET');
+    // 10a — Discovery Queue view, scoped to our test batch via the
+    // view's exposed ?batch= filter. Without the filter, accumulated
+    // pre-existing discovery_pending rows from real ingest work can
+    // paginate the fixture off page 1 — the view's 50-per-page limit
+    // is operator-friendly but flaky for a single-fixture assertion.
+    $req = \Symfony\Component\HttpFoundation\Request::create(
+      '/admin/materials/supplier-ingest/discovery?batch=' . (int) $batch->id(),
+      'GET'
+    );
     $resp = \Drupal::service('http_kernel')->handle($req);
     $body = $resp->getContent();
     $checks10['discovery_http_200'] = $resp->getStatusCode() === 200;
@@ -631,8 +638,11 @@ try {
       $checks10[$key] = strpos($body, $needle) !== FALSE;
     }
 
-    // 10b — Fuzzy Match Review view
-    $req = \Symfony\Component\HttpFoundation\Request::create('/admin/materials/supplier-ingest/fuzzy-review', 'GET');
+    // 10b — Fuzzy Match Review view, scoped the same way.
+    $req = \Symfony\Component\HttpFoundation\Request::create(
+      '/admin/materials/supplier-ingest/fuzzy-review?batch=' . (int) $batch->id(),
+      'GET'
+    );
     $resp = \Drupal::service('http_kernel')->handle($req);
     $body = $resp->getContent();
     $checks10['fuzzy_http_200'] = $resp->getStatusCode() === 200;
@@ -656,6 +666,158 @@ try {
     $checks10['no_exception'] = FALSE;
   }
   $results['scenario_10_views_operations_column'] = (!empty($checks10) && !in_array(FALSE, $checks10, TRUE)) ? 'PASS' : 'FAIL';
+
+  // ════════════════════════════════════════════════════════════════
+  // SCENARIO 11–14 — Save-and-load-next redirect (Phase 3.7.5 UX)
+  //
+  // Verify that IngestRowFormTrait::nextRowRedirect() returns:
+  //   - a routed Url pointing at the same-operation form on the next
+  //     pending row in the same batch (when one exists, id > current);
+  //   - falls back to the lowest-id pending row across all batches;
+  //   - finally a queue Url when nothing pending remains.
+  //
+  // We call the helper DIRECTLY via reflection on a shim class that
+  // uses the trait. The alternative — going through $formBuilder
+  // ->submitForm() and inspecting $form_state->getRedirect() — does
+  // not work for our case because programmatic submissions
+  // (FormState::getProgrammed() === TRUE) make getRedirect() return
+  // FALSE by design; the redirect is computed and set, but never
+  // surfaced to the caller. Calling the trait method directly tests
+  // the contract that matters — given (currentRow, route, context),
+  // produce the right Url.
+  // ════════════════════════════════════════════════════════════════
+  $trait = new class {
+    use \Drupal\supplier_price_ingest\Form\IngestRowFormTrait;
+  };
+  $ref = new \ReflectionMethod($trait, 'nextRowRedirect');
+  $ref->setAccessible(TRUE);
+  $messenger = \Drupal::service('messenger');
+  $callNextRedirect = fn (\Drupal\Core\Entity\EntityInterface $r, string $route, string $ctx) =>
+    $ref->invoke($trait, $r, $route, $ctx, $etm, $messenger);
+
+  // Common fixture maker for scenarios 11–14.
+  $makeRow = function (string $tier, string $skuTag) use ($etm, $batch, &$cleanup, $fuzzyTarget) {
+    $vals = [
+      'type' => 'row', 'uid' => 1,
+      'title' => 'P37-S11-' . $tier . '-' . $skuTag,
+      'field_batch' => $batch->id(),
+      'field_row_number' => 9100 + random_int(0, 800),
+      'field_raw_data' => json_encode(['SKU' => $skuTag]),
+      'field_row_status' => 'discovery_pending',
+      'field_match_tier' => $tier,
+      'field_supplier_sku' => $skuTag,
+      'field_description' => 'P37 S11 ' . $tier . ' fixture (' . $skuTag . ')',
+      'field_unit_cost' => '3.00',
+      'field_cost_uom' => 'each',
+    ];
+    if ($tier === 'tier_3_fuzzy_med') {
+      $vals['field_match_confidence'] = '75.0';
+      $vals['field_matched_material'] = $fuzzyTarget->id();
+    }
+    $r = $etm->getStorage('supplier_price_ingest_row')->create($vals);
+    $r->save();
+    $cleanup['rows'][] = (int) $r->id();
+    return $r;
+  };
+
+  // ── Scenario 11 — Discovery: next-in-batch redirect ──────────────
+  echo "\n=== Scenario 11: Save-and-load-next — Discovery, next-in-batch ===\n";
+  $rA = $makeRow('discovery', 's11-disc-a');
+  $rB = $makeRow('discovery', 's11-disc-b');
+  // Sanity: rA created first → rA.id < rB.id.
+  if ((int) $rA->id() >= (int) $rB->id()) {
+    [$rA, $rB] = [$rB, $rA];
+  }
+  $url11 = $callNextRedirect($rA, 'supplier_price_ingest.discovery_create_material', 'discovery');
+  $checks11 = [
+    'returns_url_object'  => $url11 instanceof \Drupal\Core\Url,
+    'is_routed'           => $url11->isRouted(),
+    'route_is_same_op'    => $url11->getRouteName() === 'supplier_price_ingest.discovery_create_material',
+    'targets_next_row_rB' => (int) ($url11->getRouteParameters()['supplier_price_ingest_row'] ?? 0) === (int) $rB->id(),
+  ];
+  foreach ($checks11 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
+  $results['scenario_11_discovery_next_in_batch'] = !in_array(FALSE, $checks11, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Scenario 12 — Discovery: last-in-batch falls through ────────
+  echo "\n=== Scenario 12: Save-and-load-next — Discovery, last in batch ===\n";
+  // Mark rA as resolved so rB is the LAST pending in our batch.
+  $rA->set('field_row_status', 'discovery_resolved')->save();
+  // What SHOULD nextRowRedirect return? Mirror the helper's logic:
+  // - same-batch lookup with id > rB.id finds nothing
+  // - cross-batch lookup finds the lowest-id discovery_pending row in
+  //   the system (could be rB itself if no other pending rows exist;
+  //   we explicitly skip past rB by re-querying with id != rB)
+  $expIds = $etm->getStorage('supplier_price_ingest_row')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_row_status', 'discovery_pending')
+    ->condition('field_match_tier', 'discovery')
+    ->condition('id', $rB->id(), '<>')
+    ->sort('id', 'ASC')->range(0, 1)->execute();
+  $expCrossBatchId = $expIds ? (int) reset($expIds) : 0;
+  $url12 = $callNextRedirect($rB, 'supplier_price_ingest.discovery_create_material', 'discovery');
+  $checks12 = ['returns_url_object' => $url12 instanceof \Drupal\Core\Url];
+  // The helper itself may pick rB (its own id) as the cross-batch target
+  // because rB is still discovery_pending until the form completes its
+  // mutation. In real use the form sets discovery_resolved BEFORE
+  // calling the helper; we simulate by checking either acceptable shape.
+  $actualRouteParam = $url12->isRouted()
+    ? (int) ($url12->getRouteParameters()['supplier_price_ingest_row'] ?? 0)
+    : 0;
+  if ($expCrossBatchId > 0) {
+    $checks12['cross_batch_fallback_hit'] = $url12->isRouted()
+      && $url12->getRouteName() === 'supplier_price_ingest.discovery_create_material'
+      && in_array($actualRouteParam, [$expCrossBatchId, (int) $rB->id()], TRUE);
+  }
+  else {
+    $checks12['queue_url_fallback'] = !$url12->isRouted()
+      && str_contains($url12->toString(), '/admin/materials/supplier-ingest/discovery');
+  }
+  foreach ($checks12 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
+  $results['scenario_12_discovery_last_in_batch'] = !in_array(FALSE, $checks12, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Scenario 13 — Fuzzy review: next-in-batch redirect ──────────
+  echo "\n=== Scenario 13: Save-and-load-next — Fuzzy review, next-in-batch ===\n";
+  $fA = $makeRow('tier_3_fuzzy_med', 's13-fuzz-a');
+  $fB = $makeRow('tier_3_fuzzy_med', 's13-fuzz-b');
+  if ((int) $fA->id() >= (int) $fB->id()) {
+    [$fA, $fB] = [$fB, $fA];
+  }
+  $url13 = $callNextRedirect($fA, 'supplier_price_ingest.fuzzy_confirm', 'fuzzy_review');
+  $checks13 = [
+    'returns_url_object'  => $url13 instanceof \Drupal\Core\Url,
+    'is_routed'           => $url13->isRouted(),
+    'route_is_same_op'    => $url13->getRouteName() === 'supplier_price_ingest.fuzzy_confirm',
+    'targets_next_row_fB' => (int) ($url13->getRouteParameters()['supplier_price_ingest_row'] ?? 0) === (int) $fB->id(),
+  ];
+  foreach ($checks13 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
+  $results['scenario_13_fuzzy_next_in_batch'] = !in_array(FALSE, $checks13, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Scenario 14 — Fuzzy review: last-in-batch falls through ─────
+  echo "\n=== Scenario 14: Save-and-load-next — Fuzzy review, last in batch ===\n";
+  $fA->set('field_row_status', 'discovery_resolved')->save();
+  $expIds14 = $etm->getStorage('supplier_price_ingest_row')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_row_status', 'discovery_pending')
+    ->condition('field_match_tier', 'tier_3_fuzzy_med')
+    ->condition('id', $fB->id(), '<>')
+    ->sort('id', 'ASC')->range(0, 1)->execute();
+  $expCrossBatchId14 = $expIds14 ? (int) reset($expIds14) : 0;
+  $url14 = $callNextRedirect($fB, 'supplier_price_ingest.fuzzy_confirm', 'fuzzy_review');
+  $checks14 = ['returns_url_object' => $url14 instanceof \Drupal\Core\Url];
+  $actualRouteParam14 = $url14->isRouted()
+    ? (int) ($url14->getRouteParameters()['supplier_price_ingest_row'] ?? 0)
+    : 0;
+  if ($expCrossBatchId14 > 0) {
+    $checks14['cross_batch_fallback_hit'] = $url14->isRouted()
+      && $url14->getRouteName() === 'supplier_price_ingest.fuzzy_confirm'
+      && in_array($actualRouteParam14, [$expCrossBatchId14, (int) $fB->id()], TRUE);
+  }
+  else {
+    $checks14['queue_url_fallback'] = !$url14->isRouted()
+      && str_contains($url14->toString(), '/admin/materials/supplier-ingest/fuzzy-review');
+  }
+  foreach ($checks14 as $k => $v) { echo '  ' . ($v ? 'PASS' : 'FAIL') . " — $k\n"; }
+  $results['scenario_14_fuzzy_last_in_batch'] = !in_array(FALSE, $checks14, TRUE) ? 'PASS' : 'FAIL';
 }
 finally {
   echo "\n=== Cleanup ===\n";

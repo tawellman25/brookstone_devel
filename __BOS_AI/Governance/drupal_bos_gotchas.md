@@ -612,6 +612,29 @@ foreach ($reflect->getProperties() as $p) {
 
 ---
 
+## Word-boundary regex prevents partial-numeric over-matches
+
+**Discovered:** 2026-05-31 — Tier 1.5 title-substring matcher design (Phase 3.7.6 of `supplier_price_ingest`).
+
+When implementing a substring-match search across user-entered text, **always anchor the lookup with word-boundary metacharacters** — otherwise short numeric SKUs swallow longer ones that just happen to start with the same digits.
+
+Concrete example from the Tier 1.5 matcher:
+
+| Naive substring | Word-boundary regex |
+|---|---|
+| `'1806' in '...Rain Bird 18006 Heavy-Duty Body...'` → MATCH (wrong!) | `/(?:^|\W)1806(?:$|\W)/i` → no match (correct) |
+| `'1806' in '...Rain Bird 1806 Spray Body...'` → MATCH | `/(?:^|\W)1806(?:$|\W)/i` → MATCH (correct) |
+
+The `(?:^|\W)` and `(?:$|\W)` flanks require the SKU to be bounded by non-word characters OR the start/end of the haystack. `\W` covers spaces, punctuation, parentheses — anything that isn't `[A-Za-z0-9_]`.
+
+**Why this matters:** Tier 1.5 verifier Scenario 14 specifically tests this — a row with `field_supplier_sku = "1806"` must NOT match a material whose name contains "18006". Without word boundaries, every "1806" SKU would spuriously match every "18006" material, polluting fuzzy_med review with false candidates.
+
+**Generalization:** This applies anywhere a short identifier is searched inside longer user-entered text — SKUs, model numbers, lot codes, ZIP+4 prefixes, etc. If the haystack might contain longer strings starting with the needle, word-boundary anchoring is mandatory.
+
+**Pair with `preg_quote()`** when the needle comes from user input — the metacharacters in `preg_quote($needle, '/')` get escaped, defending against `.`, `*`, or `(` in supplier-provided SKUs. Tier 1.5 normalizes the SKU to alphanumerics before this, so the escape is defensive overhead rather than essential, but the pattern (`preg_quote` always when interpolating user data into regex) is the safe default.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

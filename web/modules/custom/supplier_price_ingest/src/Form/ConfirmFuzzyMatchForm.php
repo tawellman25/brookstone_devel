@@ -54,6 +54,9 @@ class ConfirmFuzzyMatchForm extends FormBase {
       return $form;
     }
 
+    $form['back_link'] = $this->buildBackToQueueLink(self::CTX_FUZZY_REVIEW);
+    $this->attachRowFormLibrary($form);
+
     $form['row_summary'] = $this->buildRowSummary($this->row);
 
     $matched = $this->row->get('field_matched_material')->entity;
@@ -129,7 +132,13 @@ class ConfirmFuzzyMatchForm extends FormBase {
     $row->save();
 
     $this->messenger()->addStatus($this->t('Confirmed match → @l.', ['@l' => $matched->label()]));
-    $form_state->setRedirectUrl(Url::fromUserInput('/admin/materials/supplier-ingest/fuzzy-review'));
+    $form_state->setRedirectUrl($this->nextRowRedirect(
+      $this->row,
+      'supplier_price_ingest.fuzzy_confirm',
+      self::CTX_FUZZY_REVIEW,
+      $this->entityTypeManager,
+      $this->messenger(),
+    ));
   }
 
 }

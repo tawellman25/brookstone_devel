@@ -72,6 +72,9 @@ class MarkRowAsReplacementForm extends FormBase {
       return $form;
     }
 
+    $form['back_link'] = $this->buildBackToQueueLink(self::CTX_DISCOVERY);
+    $this->attachRowFormLibrary($form);
+
     $form['row_summary'] = $this->buildRowSummary($this->row);
 
     $form['discontinued_material'] = [
@@ -276,7 +279,13 @@ class MarkRowAsReplacementForm extends FormBase {
         'Marked as replacement: discontinued #@d ("@dl") → current #@r ("@rl").',
         ['@d' => $disc->id(), '@dl' => $disc->label(), '@r' => $rep->id(), '@rl' => $rep->label()],
       ));
-      $form_state->setRedirectUrl(Url::fromUserInput('/admin/materials/supplier-ingest/discovery'));
+      $form_state->setRedirectUrl($this->nextRowRedirect(
+        $this->row,
+        'supplier_price_ingest.discovery_mark_replacement',
+        self::CTX_DISCOVERY,
+        $this->entityTypeManager,
+        $this->messenger(),
+      ));
     }
     catch (\Throwable $e) {
       $tx->rollBack();

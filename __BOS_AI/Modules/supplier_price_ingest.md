@@ -1235,6 +1235,124 @@ Idempotent — re-runs cleanly when the config already has all 5 mappings.
 
 ---
 
+## Phase 3.7.6 — Tier 1.5 Title-Substring Matcher (2026-05-31)
+
+**Empirical motivation:** Manual discovery queue work on SiteOne batch #367 revealed that every row resolving to "Link to Existing Material" was a case where the BOS material's product name embedded the SKU but `field_manufacturer_item_number` was empty. The title-extraction backfill commands (Phase 3.10 follow-up) populate that field over time, but at any moment a meaningful percentage of materials still have the SKU in their name but not in the indexed field — Tier 1 misses, Tier 3 fuzzy may or may not catch them, and they fall to discovery unnecessarily. A title-substring tier converts those misses into review-tier hits today, complementing the backfill rather than replacing it.
+
+### Where it slots
+
+New tier between Tier 2 and Tier 3 in the matcher walk:
+
+1. Tier 1 — manufacturer + mfr_item_no exact (with normalization / transformation)
+2. Tier 2 — material_suppliers.supplier_item_number exact (with normalization)
+3. **Tier 1.5 — title-substring within manufacturer (NEW)**
+4. Tier 3 high — fuzzy ≥90
+5. Tier 3 medium — fuzzy 70-89
+6. Discovery
+
+Tier 1 and Tier 2 still win when they can — Tier 1.5 only fires when both exact-match tiers fall through.
+
+### Algorithm
+
+Preconditions (any failure → skip Tier 1.5, fall through to Tier 3):
+
+- Row has non-empty `field_manufacturer_name` AND it resolves to a BOS `manufacturer` entity (same lookup Tier 1 uses).
+- Row's `field_supplier_sku` is non-empty.
+- Supplier-config `field_sku_transformations` applied (strip_prefix etc., same as Tier 1/2).
+- Normalized SKU length ≥ **4 chars** — shorter SKUs ("PC", "FC", "SAM") would over-match and trigger spurious ambiguity.
+
+Per-manufacturer **title-substring index** (cached per batch, same lifecycle as the Tier 1/2 indexes):
+
+- For each material with `field_manufacturer = <mfr_id>`:
+  - `searchable_text = field_name->value` when present and non-empty
+  - else fall back to `material->label()` (entity title)
+- Normalize the searchable text: lowercase + collapse runs of whitespace to single spaces (preserves `\W` boundaries that the regex relies on — distinct from `normalizeSku()`, which strips all non-alphanumerics).
+- Store `[material_id, normalized, original, source_field]` tuples.
+
+**Why `field_name` before `title`** *(course-correction from the original Chat spec)*: On AEL-derived bundles (`irrigation`, `decorative_rock`, weeds, etc.) the entity title is COMPOSED from `field_size + field_name` and includes formatting prefixes the human source data doesn't have ("15 ft. 15SST..." vs "15SST..."). Searching the composite would match against substrings the human-entered source data doesn't contain. `field_name` is the canonical product-name field on the bundles that have it; fall back to title only on bundles where `field_name` doesn't exist or is empty (the entity title IS the source data there).
+
+Search: walk the index with a **word-boundary regex** anchored to the normalized SKU:
+
+```
+/(?:^|\W)<normalized_sku_escaped>(?:$|\W)/i
+```
+
+Word boundary prevents partial-numeric over-matches — "180" inside "1806" must not match. `\W` covers spaces, punctuation, parentheses, etc.
+
+Resolution:
+
+- **Zero hits** → return NULL; matcher falls through to Tier 3 fuzzy.
+- **Exactly one hit** → direct match: `field_match_tier = tier_1_5_title_substring`, `field_match_confidence = 85`, audit note documents the source field used.
+- **2+ hits** → ambiguous: `field_match_tier = tier_1_5_title_substring`, `field_matched_material = NULL`, `field_match_confidence = 50`, audit note lists all candidate ids for the reviewer to pick from.
+
+### Discontinued handling
+
+Inherited from `applyMatch()` shared logic — same as Tier 1. If the matched material has `field_discontinued = TRUE`, follow `field_replaced_by`. If no replacement, route to `skipped_discontinued` (NOT fuzzy_med review — matches existing Tier 1 behavior).
+
+### Confidence calibration — two-stage rollout
+
+**Stage 1 (this phase): confidence 85.** Tier 1.5 matches route to fuzzy_med review (same routing logic as Phase 3.4's `tier_3_fuzzy_med`). Office reviewer confirms or overrides via the Fuzzy Match Review dashboard. Operational expectation per the SiteOne sweep: 30–60 rows per batch will land here.
+
+**Stage 2 (future, after empirical validation): confidence 90.** After 2–3 batches show zero false positives among Tier 1.5 matches reviewed through fuzzy_med, a small follow-up commit bumps the confidence threshold to 90 — moving Tier 1.5 to auto-applying via `IngestCommitter::AUTO_APPLY_TIERS`. **Do not implement Stage 2 until empirical data supports it.** Build optimistic, ship cautious.
+
+### Audit transparency
+
+Direct match note shape (when matched via `field_name`):
+
+```
+Tier 1.5 substring match: row 'R15SST' → stripped to '15SST', normalized to '15sst', matched material #26173 ('15 ft. 15SST Plastic Side Strip Nozzle - 30 Degree') via field_name substring lookup. Confidence 85 — routed to fuzzy match review for confirmation.
+```
+
+When matched via `title` fallback (bundles without `field_name`): same shape with `via title substring lookup` instead.
+
+Ambiguous match note:
+
+```
+Tier 1.5 title-substring match: ambiguous. SKU 'AMBIG13X' (normalized 'ambig13x') matched 2 materials in 'TestMfr-Tier1.5': #1, #2. Reviewer must select correct material.
+```
+
+### Routing wiring (Phase 3.7.6)
+
+| File | Change |
+|---|---|
+| `IngestMatcher::matchRow()` | New Tier 1.5 step inserted between Tier 2 and Tier 3 |
+| `IngestMatcher` new methods | `attemptTier1_5()`, `getTier1_5Index()`, `normalizeSearchableText()` |
+| `IngestMatcher::applyMatch()` | Recognizes `tier_1_5_title_substring` cleanTier — direct path uses confidence 85 + the Tier 1.5 audit note; ambiguous path preserves the `tier_1_5_title_substring` tier (doesn't downgrade to `tier_3_fuzzy_med` the way Tier 1 ambiguous does) |
+| `IngestCommitter::DISCOVERY_ROUTING_TIERS` | Adds `tier_1_5_title_substring` so committer routes Tier 1.5 hits to `discovery_pending` instead of auto-applying |
+| `supplier_price_ingest_entity_operation()` | `tier_1_5_title_substring` rows get the four fuzzy ops (confirm/override/send-to-discovery/reject) — identical UX to `tier_3_fuzzy_med` |
+| `views.view.supplier_ingest_fuzzy_review` | Filter `field_match_tier IN (tier_3_fuzzy_med, tier_1_5_title_substring)` so Tier 1.5 rows surface in the Fuzzy Match Review queue |
+| `field.storage.supplier_price_ingest_row.field_match_tier` | New allowed value: `tier_1_5_title_substring` |
+| `IngestRowFormTrait::CTX_TIERS_FOR_QUERY` | Fuzzy-review context query includes `tier_1_5_title_substring` so save-and-load-next correctly steps from one Tier 1.5 row to the next |
+| `RejectRowForm::buildForm()` | Recognizes `tier_1_5_title_substring` as fuzzy-review context for the reject-then-load-next redirect |
+
+### Verifier (Steps 12–19 in `verify_supplier_price_ingest_matcher.php`)
+
+| # | Scenario | What it proves |
+|---|---|---|
+| 12 | Single-match success | Direct hit → tier_1_5_title_substring, confidence 85, audit note documents normalization + strip_prefix |
+| 13 | Ambiguous match | 2+ candidates → matched_material NULL, confidence 50, both ids in notes |
+| 14 | Word-boundary | SKU "1806" does NOT match material with "18006" in name |
+| 15 | Short-SKU precondition | SKU "PRS" (length 3) skipped at Tier 1.5; falls through |
+| 16 | Tier 1 wins | Material with matching mfr_item_no + matching name → Tier 1, NOT Tier 1.5 |
+| 17 | Discontinued retargeting | Tier 1.5 hit on discontinued material → retargets via `field_replaced_by` |
+| 18 | No false positive | SKU absent from any material → falls through, no spurious match |
+| 19 | `field_name` preferred over `title` | AEL-bundle material with composite title and distinct `field_name` → matched via field_name, note says "via field_name substring lookup" |
+
+All 8 PASS; the 11 pre-existing matcher scenarios still pass. Performance impact negligible — Tier 1.5 only walks one per-manufacturer index per row (cached for the batch), and only when Tier 1 + Tier 2 both miss.
+
+### Out of scope (deferred)
+
+- **Stage 2 confidence bump to 90 (auto-applying)** — deferred until empirical validation across 2–3 batches.
+- **Cross-manufacturer title-substring matching** — risky, deferred indefinitely. A material whose name happens to contain a SKU string from a different manufacturer is almost certainly NOT the right target.
+- **Per-supplier title-substring confidence** — defer until empirical data shows variance across suppliers.
+- **Pre-normalized title storage in a dedicated indexed field** — optimization, defer until performance becomes a real issue. Cached PHP index easily handles batches of 200–500 rows.
+
+### SOP implication
+
+⚠ Discovery Queue Resolution SOP (Phase 3.12 backlog) needs to mention that Tier 1.5 results show up in **Fuzzy Match Review**, not the Discovery Queue. Office reviewers should expect new entries in Fuzzy Match Review from any supplier ingest going forward, distinguishable from Phase 3.4 fuzzy matches by the "Tier 1.5 substring match" line in resolution notes.
+
+---
+
 ## Status
 
 - **Phase 3.1** — shipped 2026-05-25 (commit `911c2221`).
@@ -1247,7 +1365,9 @@ Idempotent — re-runs cleanly when the config already has all 5 mappings.
 - **Phase 3.10 matcher enhancement** — shipped 2026-05-26 on `feature/supplier-price-ingest`.
 - **Parser 1:many destination follow-up** — shipped 2026-05-26 on `feature/supplier-price-ingest`.
 - **Phase 3.7.5 pack-tier capture** — shipped 2026-05-30 on `feature/pack-tier-capture` (commits `0275a1b4`, `91e74b07`, `834636b6`). Refinement of the 3.7 ingest path; does not consume the originally-specced 3.11 production-cut-over slot.
+- **Save-and-load-next + keyboard shortcuts UX** — shipped 2026-05-31 on `feature/supplier-price-ingest`. Discovery / fuzzy review forms redirect to the next pending row's same-operation form on successful submit; back-to-queue link; Ctrl/Cmd+Enter submit; Esc to queue with unsaved-changes guard.
+- **Phase 3.7.6 Tier 1.5 title-substring matcher** — shipped 2026-05-31 on `feature/supplier-price-ingest`. New matcher tier between Tier 2 and Tier 3, word-boundary substring search on `field_name` (fallback to title), confidence 85 (Stage 1) routes to fuzzy_med review; Stage 2 bump to 90 deferred until empirical validation.
 
-Branch: `feature/supplier-price-ingest` (3.1–3.7 + 3.10 + 1:many follow-up); `feature/pack-tier-capture` (3.7.5).
+Branch: `feature/supplier-price-ingest` (3.1–3.7 + 3.10 + 1:many follow-up + UX + 3.7.6); `feature/pack-tier-capture` (3.7.5).
 
 Next phase: 3.8 — estimator surfaces (Refresh Prices button on Estimates, discontinued warnings).

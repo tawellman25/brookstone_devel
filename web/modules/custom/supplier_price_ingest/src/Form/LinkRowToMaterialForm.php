@@ -55,6 +55,9 @@ class LinkRowToMaterialForm extends FormBase {
       return $form;
     }
 
+    $form['back_link'] = $this->buildBackToQueueLink(self::CTX_DISCOVERY);
+    $this->attachRowFormLibrary($form);
+
     $form['row_summary'] = $this->buildRowSummary($this->row);
 
     $form['material'] = [
@@ -141,7 +144,13 @@ class LinkRowToMaterialForm extends FormBase {
     $row->save();
 
     $this->messenger()->addStatus($this->t('Row linked to @label.', ['@label' => $material->label()]));
-    $form_state->setRedirectUrl(Url::fromUserInput('/admin/materials/supplier-ingest/discovery'));
+    $form_state->setRedirectUrl($this->nextRowRedirect(
+      $this->row,
+      'supplier_price_ingest.discovery_link_existing',
+      self::CTX_DISCOVERY,
+      $this->entityTypeManager,
+      $this->messenger(),
+    ));
   }
 
 }

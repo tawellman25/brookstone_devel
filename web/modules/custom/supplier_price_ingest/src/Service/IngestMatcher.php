@@ -43,6 +43,24 @@ class IngestMatcher {
   public const CONFIDENCE_TIER_DIRECT     = 100;
   public const CONFIDENCE_TIER_REPLACED   = 95;
   public const CONFIDENCE_TIER_AMBIGUOUS  = 50;
+
+  /**
+   * Tier 1.5 — title-substring matcher (Phase 3.7.6).
+   *
+   * Confidence 85 routes to fuzzy_med review (Stage 1 conservative
+   * rollout). Documented path to 90 (auto-applying) once empirical
+   * data on 2-3 batches confirms zero false positives. The bump is
+   * out of scope for this phase — see __BOS_AI/Modules/supplier_price_ingest.md
+   * Phase 3.7.6 section.
+   */
+  public const CONFIDENCE_TIER_1_5 = 85;
+
+  /**
+   * Minimum normalized-SKU length for Tier 1.5 candidacy. SKUs shorter
+   * than this are too generic — "PC", "FC", "SAM", etc. would
+   * over-match many materials. Empirical threshold.
+   */
+  private const TIER_1_5_MIN_SKU_LENGTH = 4;
   public const CONFIDENCE_DISCOVERY       = 0;
 
   /**
@@ -104,6 +122,19 @@ class IngestMatcher {
   private array $tier1Index = [];
 
   /**
+   * Per-manufacturer Tier 1.5 title-substring index — indexed by manufacturer
+   * id. Each entry is a list of [material_id, normalized_searchable_text,
+   * original_searchable_text, source_field] tuples that the linear-search
+   * Tier 1.5 lookup walks for a word-boundary regex match.
+   *
+   * Separate from $tier1Index because Tier 1 indexes on
+   * field_manufacturer_item_number and Tier 1.5 indexes on
+   * field_name (or title fallback). Same per-batch cache lifecycle as
+   * $tier1Index — cleared at the top of matchBatch().
+   */
+  private array $tier1_5Index = [];
+
+  /**
    * Per-batch index: supplier_id → [normalized_supplier_sku → [link_ids]].
    * Same cache lifecycle as $tier1Index.
    */
@@ -143,6 +174,7 @@ class IngestMatcher {
     // request from cross-contaminating (e.g., the verifier runs
     // multiple batches in one drush invocation).
     $this->tier1Index = [];
+    $this->tier1_5Index = [];
     $this->tier2Index = [];
 
     try {
@@ -311,6 +343,19 @@ class IngestMatcher {
     $t2 = $this->attemptTier2($row, $supplier, $transformations);
     if ($t2 !== NULL) {
       $this->applyMatch($row, $t2, $policy, 'tier_2_supplier_sku');
+      return;
+    }
+
+    // ── Tier 1.5 — title-substring within manufacturer (Phase 3.7.6)
+    // Empirical motivation: manual discovery queue work on SiteOne
+    // batch 367 found that every "Link to Existing" resolution was a
+    // case where the BOS material's name embedded the SKU but
+    // field_manufacturer_item_number was empty. Backfill is closing
+    // that gap over time but is incomplete at any given moment —
+    // Tier 1.5 converts those misses into review-tier hits today.
+    $t1_5 = $this->attemptTier1_5($row, $policy, $transformations);
+    if ($t1_5 !== NULL) {
+      $this->applyMatch($row, $t1_5, $policy, 'tier_1_5_title_substring');
       return;
     }
 
@@ -520,6 +565,196 @@ class IngestMatcher {
     return $this->tier2Index[$supplierId] = $index;
   }
 
+  // ────────────────────────────────────────────────────────────────────
+  // TIER 1.5 — title-substring within manufacturer (Phase 3.7.6)
+  // ────────────────────────────────────────────────────────────────────
+
+  /**
+   * Tier 1.5 — title-substring search within the row's resolved
+   * manufacturer.
+   *
+   * Same outcome shape as Tier 1 / Tier 2:
+   *   ['kind' => 'direct',    'material' => Material,
+   *    'searchable_text' => 'matched product name',
+   *    'source_field' => 'field_name' | 'title',
+   *    'normalized_sku' => 'lowercased normalized SKU used for match']
+   *   ['kind' => 'ambiguous', 'material' => Material, 'count' => int,
+   *    'all_ids' => int[]]
+   *
+   * Returns NULL when no candidate found (caller falls through to
+   * Tier 3 fuzzy). The fall-through cases:
+   *   - Manufacturer name empty on the row
+   *   - Manufacturer doesn't resolve to a BOS manufacturer entity
+   *   - Supplier SKU empty
+   *   - Normalized SKU < TIER_1_5_MIN_SKU_LENGTH chars (too generic)
+   *   - No material in the manufacturer has a word-boundary substring
+   *     match for the normalized SKU in its name (field_name or title
+   *     fallback)
+   */
+  private function attemptTier1_5(EntityInterface $row, array $policy, array $transformations): ?array {
+    $mfrName     = trim((string) ($row->get('field_manufacturer_name')->value ?? ''));
+    $supplierSku = trim((string) ($row->get('field_supplier_sku')->value ?? ''));
+    if ($mfrName === '' || $supplierSku === '') {
+      return NULL;
+    }
+    // Resolve manufacturer the same way Tier 1 does.
+    $mfrIds = $this->entityTypeManager->getStorage('manufacturer')->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('title', $mfrName, '=')
+      ->sort('id', 'ASC')
+      ->range(0, 1)
+      ->execute();
+    if (!$mfrIds) {
+      return NULL;
+    }
+    $mfrId = (int) reset($mfrIds);
+
+    // Apply supplier transformations (strip distributor prefix etc.)
+    // then normalize. Same pipeline Tier 1/2 use.
+    $transformed = $this->applySkuTransformations($supplierSku, $transformations);
+    $normalized  = $this->normalizeSku($transformed);
+    if (strlen($normalized) < self::TIER_1_5_MIN_SKU_LENGTH) {
+      return NULL;
+    }
+
+    // Word-boundary substring search. Regex prevents partial-numeric
+    // over-matches — "180" inside "1806" must not match. \W boundaries
+    // (or start/end of string) flank the SKU.
+    //
+    // preg_quote escapes any user-controlled regex metacharacters in the
+    // normalized SKU. normalizeSku produces alphanumerics only, but the
+    // defensive escape costs nothing.
+    $pattern = '/(?:^|\W)' . preg_quote($normalized, '/') . '(?:$|\W)/i';
+
+    $index = $this->getTier1_5Index($mfrId);
+    $hits = [];
+    foreach ($index as $entry) {
+      if (preg_match($pattern, $entry['normalized']) === 1) {
+        $hits[] = $entry;
+      }
+    }
+
+    if (count($hits) === 0) {
+      return NULL;
+    }
+    if (count($hits) === 1) {
+      $hit = $hits[0];
+      $material = $this->entityTypeManager->getStorage('material')->load($hit['material_id']);
+      if (!$material) {
+        return NULL;
+      }
+      return [
+        'kind'            => 'direct',
+        'material'        => $material,
+        'searchable_text' => (string) $hit['original'],
+        'source_field'    => (string) $hit['source_field'],
+        'normalized_sku'  => $normalized,
+        'row_raw'         => $supplierSku,
+        'transformed'     => $transformed,
+      ];
+    }
+
+    // Ambiguous — multiple materials in this manufacturer have the
+    // SKU embedded in their name. Reviewer must pick. Route to
+    // fuzzy_med review with all candidates noted.
+    $allIds = array_map(static fn ($h) => (int) $h['material_id'], $hits);
+    sort($allIds, SORT_NUMERIC);
+    $firstMaterial = $this->entityTypeManager->getStorage('material')->load($allIds[0]);
+    return [
+      'kind'           => 'ambiguous',
+      'material'       => $firstMaterial,
+      'count'          => count($hits),
+      'all_ids'        => $allIds,
+      'normalized_sku' => $normalized,
+      'row_raw'        => $supplierSku,
+      'transformed'    => $transformed,
+      'all_hits'       => $hits,
+    ];
+  }
+
+  /**
+   * Build (or return cached) per-manufacturer Tier 1.5 index.
+   *
+   * For each material in the manufacturer:
+   *   - searchable_text = field_name->value when present and non-empty,
+   *     else material->label() (entity title). The field_name preference
+   *     is bundle-agnostic but matters most on AEL-derived bundles
+   *     (irrigation, decorative_rock, weeds) where the entity title is
+   *     COMPOSED from field_size + field_name — searching the composed
+   *     form would match against substrings that don't exist in the
+   *     human-entered source data.
+   *   - normalized = lowercase + whitespace-collapsed form for the
+   *     regex haystack
+   *
+   * Returns a list of [material_id, normalized, original, source_field]
+   * tuples. The caller walks the list with a regex; we don't build a
+   * direct-lookup hash because substring search is fundamentally linear
+   * over candidate strings (a hash would only help for exact-key matches).
+   *
+   * Materials with both field_name AND title empty are skipped (nothing
+   * to index against).
+   *
+   * @return array<int, array{material_id:int, normalized:string, original:string, source_field:string}>
+   */
+  private function getTier1_5Index(int $mfrId): array {
+    if (isset($this->tier1_5Index[$mfrId])) {
+      return $this->tier1_5Index[$mfrId];
+    }
+    $matStorage = $this->entityTypeManager->getStorage('material');
+    $ids = array_values(
+      $matStorage->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('field_manufacturer', $mfrId)
+        ->sort('id', 'ASC')
+        ->execute()
+    );
+    $index = [];
+    foreach (array_chunk($ids, 200) as $chunk) {
+      foreach ($matStorage->loadMultiple($chunk) as $material) {
+        $sourceField = 'title';
+        $source = '';
+        if ($material->hasField('field_name') && !$material->get('field_name')->isEmpty()) {
+          $source = trim((string) $material->get('field_name')->value);
+          if ($source !== '') {
+            $sourceField = 'field_name';
+          }
+        }
+        if ($source === '') {
+          $source = trim((string) ($material->label() ?? ''));
+        }
+        if ($source === '') {
+          continue;
+        }
+        $index[] = [
+          'material_id'  => (int) $material->id(),
+          'normalized'   => $this->normalizeSearchableText($source),
+          'original'     => $source,
+          'source_field' => $sourceField,
+        ];
+      }
+      $matStorage->resetCache($chunk);
+    }
+    return $this->tier1_5Index[$mfrId] = $index;
+  }
+
+  /**
+   * Normalize a material's name for Tier 1.5 substring search:
+   *   - lowercase
+   *   - collapse runs of whitespace to a single space
+   *   - trim
+   *
+   * Deliberately NOT applying normalizeSku() here — that strips all
+   * non-alphanumerics, which would collapse "15 ft. 15SST Plastic"
+   * to "15ft15sstplastic" and destroy the word boundaries the regex
+   * relies on. Tier 1.5 needs whitespace + punctuation preserved as
+   * \W boundary markers.
+   */
+  private function normalizeSearchableText(string $text): string {
+    $text = mb_strtolower($text);
+    $text = preg_replace('/\s+/u', ' ', $text);
+    return trim((string) $text);
+  }
+
   /**
    * Apply a Tier 1 or Tier 2 outcome to the row entity. Handles:
    *   - direct vs ambiguous/defensive routing
@@ -531,6 +766,32 @@ class IngestMatcher {
     $kind     = $outcome['kind'];
 
     if ($kind === 'ambiguous') {
+      // Phase 3.7.6 — Tier 1.5 ambiguous routing diverges from Tier 1
+      // ambiguous (which keeps the tier_3_fuzzy_med catch-all). The
+      // spec calls for tier_1_5_title_substring as the field_match_tier
+      // value so the audit trail preserves attribution, while routing
+      // still flows through fuzzy review.
+      if ($cleanTier === 'tier_1_5_title_substring') {
+        $candidateList = array_map(
+          fn (int $mid): string => sprintf('#%d', $mid),
+          $outcome['all_ids']
+        );
+        $row->set('field_matched_material', NULL);
+        $row->set('field_match_tier', 'tier_1_5_title_substring');
+        $row->set('field_match_confidence', self::CONFIDENCE_TIER_AMBIGUOUS);
+        $row->set(
+          'field_resolution_notes',
+          sprintf(
+            "Tier 1.5 title-substring match: ambiguous. SKU '%s' (normalized '%s') matched %d materials in '%s': %s. Reviewer must select correct material.",
+            (string) ($outcome['row_raw'] ?? ''),
+            (string) ($outcome['normalized_sku'] ?? ''),
+            $outcome['count'],
+            (string) ($row->get('field_manufacturer_name')->value ?? ''),
+            implode(', ', $candidateList),
+          ),
+        );
+        return;
+      }
       // Tier 1 ambiguity — multiple materials share the same mfr + item #.
       // Route to fuzzy_med review and note all candidates.
       $row->set('field_matched_material', $material->id());
@@ -574,31 +835,60 @@ class IngestMatcher {
 
     // Direct match — apply discontinued handling, then bundle policy.
     $finalMaterial = $material;
-    $confidence    = self::CONFIDENCE_TIER_DIRECT;
+    $confidence    = ($cleanTier === 'tier_1_5_title_substring')
+      ? self::CONFIDENCE_TIER_1_5
+      : self::CONFIDENCE_TIER_DIRECT;
     $note          = NULL;
 
-    // Phase 3.10 audit-note transparency: when normalization or
-    // transformation was load-bearing in producing this match, prepend
-    // a note so the reviewer can see WHY the strings looked different
-    // and trust the matcher's judgment. Exact matches stay silent
-    // (preserves prior behavior; resolution_notes column stays empty
-    // for the overwhelming-majority well-behaved case).
-    $auditPath = (string) ($outcome['audit_path'] ?? 'exact');
-    if ($auditPath !== 'exact') {
+    if ($cleanTier === 'tier_1_5_title_substring') {
+      // Phase 3.7.6 — Tier 1.5 always emits an audit note documenting
+      // which source field produced the match (field_name preferred,
+      // title fallback). The transparency matters more here than on
+      // exact-match tiers because Tier 1.5 routes to fuzzy_med review:
+      // the reviewer sees the note and can confirm/override.
       $rowRaw     = (string) ($outcome['row_raw'] ?? '');
-      $matRaw     = (string) ($outcome['mat_raw'] ?? '');
       $transformed = (string) ($outcome['transformed'] ?? $rowRaw);
-      $sourceLabel = $cleanTier === 'tier_2_supplier_sku' ? 'supplier SKU' : 'mfr item #';
-      $rowOrigin   = $cleanTier === 'tier_2_supplier_sku' ? 'row' : 'row';
-      $note = $auditPath === 'transformed'
-        ? sprintf(
-            "Matched via %s transformation: %s '%s' stripped to '%s', normalized to BOS '%s'.",
-            $sourceLabel, $rowOrigin, $rowRaw, $transformed, $matRaw,
-          )
-        : sprintf(
-            "Matched via %s normalization: %s '%s' → BOS '%s'.",
-            $sourceLabel, $rowOrigin, $rowRaw, $matRaw,
-          );
+      $normalized  = (string) ($outcome['normalized_sku'] ?? '');
+      $sourceField = (string) ($outcome['source_field'] ?? 'title');
+      $searchableText = (string) ($outcome['searchable_text'] ?? $material->label());
+      $transformNote = ($transformed !== $rowRaw)
+        ? sprintf(" stripped to '%s',", $transformed)
+        : '';
+      $note = sprintf(
+        "Tier 1.5 substring match: row '%s' →%s normalized to '%s', matched material #%d ('%s') via %s substring lookup. Confidence %d — routed to fuzzy match review for confirmation.",
+        $rowRaw,
+        $transformNote,
+        $normalized,
+        $material->id(),
+        $searchableText,
+        $sourceField,
+        self::CONFIDENCE_TIER_1_5,
+      );
+    }
+    else {
+      // Phase 3.10 audit-note transparency: when normalization or
+      // transformation was load-bearing in producing this match, prepend
+      // a note so the reviewer can see WHY the strings looked different
+      // and trust the matcher's judgment. Exact matches stay silent
+      // (preserves prior behavior; resolution_notes column stays empty
+      // for the overwhelming-majority well-behaved case).
+      $auditPath = (string) ($outcome['audit_path'] ?? 'exact');
+      if ($auditPath !== 'exact') {
+        $rowRaw     = (string) ($outcome['row_raw'] ?? '');
+        $matRaw     = (string) ($outcome['mat_raw'] ?? '');
+        $transformed = (string) ($outcome['transformed'] ?? $rowRaw);
+        $sourceLabel = $cleanTier === 'tier_2_supplier_sku' ? 'supplier SKU' : 'mfr item #';
+        $rowOrigin   = $cleanTier === 'tier_2_supplier_sku' ? 'row' : 'row';
+        $note = $auditPath === 'transformed'
+          ? sprintf(
+              "Matched via %s transformation: %s '%s' stripped to '%s', normalized to BOS '%s'.",
+              $sourceLabel, $rowOrigin, $rowRaw, $transformed, $matRaw,
+            )
+          : sprintf(
+              "Matched via %s normalization: %s '%s' → BOS '%s'.",
+              $sourceLabel, $rowOrigin, $rowRaw, $matRaw,
+            );
+      }
     }
 
     if ($this->isDiscontinued($material)) {

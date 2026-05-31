@@ -64,6 +64,11 @@ final class IngestCommitter {
   private const DISCOVERY_ROUTING_TIERS = [
     'discovery',
     'tier_3_fuzzy_med',
+    // Phase 3.7.6 — Tier 1.5 hits ship at Stage-1 confidence 85, which
+    // routes to fuzzy_med review. The Stage-2 follow-up bumps to 90
+    // and would move this tier to AUTO_APPLY_TIERS instead (after
+    // empirical validation across 2-3 batches).
+    'tier_1_5_title_substring',
   ];
 
   /**

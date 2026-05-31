@@ -76,6 +76,9 @@ class CreateMaterialFromRowForm extends FormBase {
       return $form;
     }
 
+    $form['back_link'] = $this->buildBackToQueueLink(self::CTX_DISCOVERY);
+    $this->attachRowFormLibrary($form);
+
     $form['row_summary'] = $this->buildRowSummary($this->row);
 
     // Build bundle dropdown — every material bundle, alphabetically.
@@ -253,7 +256,13 @@ class CreateMaterialFromRowForm extends FormBase {
         'Created material @label (#@id) and linked to supplier @sup.',
         ['@label' => $material->label(), '@id' => $materialId, '@sup' => $supplier->label()],
       ));
-      $form_state->setRedirectUrl(Url::fromUserInput('/admin/materials/supplier-ingest/discovery'));
+      $form_state->setRedirectUrl($this->nextRowRedirect(
+        $this->row,
+        'supplier_price_ingest.discovery_create_material',
+        self::CTX_DISCOVERY,
+        $this->entityTypeManager,
+        $this->messenger(),
+      ));
     }
     catch (\Throwable $e) {
       $tx->rollBack();

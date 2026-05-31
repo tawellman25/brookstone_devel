@@ -59,6 +59,9 @@ class SendToDiscoveryForm extends FormBase {
       return $form;
     }
 
+    $form['back_link'] = $this->buildBackToQueueLink(self::CTX_FUZZY_REVIEW);
+    $this->attachRowFormLibrary($form);
+
     $form['row_summary'] = $this->buildRowSummary($this->row);
     $form['explainer'] = [
       '#type' => 'item',
@@ -93,7 +96,13 @@ class SendToDiscoveryForm extends FormBase {
     $row->save();
 
     $this->messenger()->addStatus($this->t('Row sent to Discovery Queue.'));
-    $form_state->setRedirectUrl(Url::fromUserInput('/admin/materials/supplier-ingest/discovery'));
+    $form_state->setRedirectUrl($this->nextRowRedirect(
+      $this->row,
+      'supplier_price_ingest.fuzzy_send_to_discovery',
+      self::CTX_FUZZY_REVIEW,
+      $this->entityTypeManager,
+      $this->messenger(),
+    ));
   }
 
 }

@@ -20,13 +20,23 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   /admin/materials/supplier-ingest/discovery/{row}/reject
  *   /admin/materials/supplier-ingest/fuzzy-review/{row}/reject
  *
- * Same form handles both routes. After submit, redirects back to
- * whichever queue the row was being reviewed from (detected via the
- * row's current match tier).
+ * Same form handles both routes. After submit, save-and-load-next
+ * sends the reviewer to the next pending row in the SAME workflow
+ * context (discovery or fuzzy review) — detected from the row's
+ * current match tier BEFORE the reject mutates field_row_status.
  */
 class RejectRowForm extends FormBase {
+  use IngestRowFormTrait;
 
   private ?EntityInterface $row = NULL;
+  /**
+   * Workflow context captured at buildForm so the post-submit redirect
+   * can route to the correct same-operation form / queue. The tier
+   * read is BEFORE the reject mutation, when the row is still on its
+   * originating queue's tier.
+   */
+  private string $context = self::CTX_DISCOVERY;
+  private string $sameOperationRoute = 'supplier_price_ingest.discovery_reject';
 
   public function __construct(
     protected EntityTypeManagerInterface $entityTypeManager,
@@ -50,6 +60,22 @@ class RejectRowForm extends FormBase {
       $form['error'] = ['#markup' => $this->t('No row loaded.')];
       return $form;
     }
+
+    // Capture workflow context from the row's current tier — before the
+    // reject mutation flips field_row_status. Used by submitForm to send
+    // the reviewer to the next pending row in the SAME workflow.
+    $tier = (string) ($this->row->get('field_match_tier')->value ?? '');
+    if ($tier === self::CTX_TIER_FUZZY_REVIEW) {
+      $this->context = self::CTX_FUZZY_REVIEW;
+      $this->sameOperationRoute = 'supplier_price_ingest.fuzzy_reject';
+    }
+    else {
+      $this->context = self::CTX_DISCOVERY;
+      $this->sameOperationRoute = 'supplier_price_ingest.discovery_reject';
+    }
+
+    $form['back_link'] = $this->buildBackToQueueLink($this->context);
+    $this->attachRowFormLibrary($form);
 
     $batch = $this->row->get('field_batch')->entity;
     $supplier = $batch ? $batch->get('field_supplier')->entity : NULL;
@@ -110,18 +136,23 @@ class RejectRowForm extends FormBase {
     $row->save();
 
     $this->messenger()->addStatus($this->t('Row #@n rejected.', ['@n' => $row->id()]));
-    $form_state->setRedirectUrl($this->getCancelUrl());
+    $form_state->setRedirectUrl($this->nextRowRedirect(
+      $row,
+      $this->sameOperationRoute,
+      $this->context,
+      $this->entityTypeManager,
+      $this->messenger(),
+    ));
   }
 
   /**
    * Cancel target — route back to whichever queue the row came from,
-   * inferred from its current match tier.
+   * inferred from its current match tier (read before submit).
    */
   private function getCancelUrl(): Url {
-    $tier = $this->row ? (string) ($this->row->get('field_match_tier')->value ?? '') : '';
-    return $tier === 'tier_3_fuzzy_med'
-      ? Url::fromUserInput('/admin/materials/supplier-ingest/fuzzy-review')
-      : Url::fromUserInput('/admin/materials/supplier-ingest/discovery');
+    return $this->context === self::CTX_FUZZY_REVIEW
+      ? Url::fromUserInput(self::QUEUE_URL_FUZZY_REVIEW)
+      : Url::fromUserInput(self::QUEUE_URL_DISCOVERY);
   }
 
 }

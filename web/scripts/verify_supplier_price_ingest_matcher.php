@@ -772,6 +772,284 @@ try {
   }
   foreach ($checks11 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
   $results['step_11_e2e_siteone_1many_plus_strip'] = !in_array(FALSE, $checks11, TRUE) ? 'PASS' : 'FAIL';
+
+  // ════════════════════════════════════════════════════════════════
+  // STEP 12–19 — Tier 1.5 title-substring matcher (Phase 3.7.6)
+  //
+  // Verify the new tier slots correctly between Tier 2 and Tier 3,
+  // honors its preconditions (≥4 char normalized SKU, word boundary),
+  // and gets full first-class routing (custom field_match_tier value,
+  // confidence 85, audit notes, fuzzy-review routing).
+  // ════════════════════════════════════════════════════════════════
+
+  // Per-scenario manufacturer (shared across all Tier 1.5 fixtures —
+  // each scenario adds its own materials to keep the index isolated).
+  $t15Mfr = $etm->getStorage('manufacturer')->create([
+    'type' => 'manufacturer',
+    'field_name' => 'TestMfr-Tier1.5',
+    'uid' => 1,
+  ]);
+  $t15Mfr->save();
+  $cleanup['mfrs'][] = (int) $t15Mfr->id();
+
+  // Helper — run a one-row batch through parser+matcher and return
+  // the populated row entity. Each call creates its own supplier +
+  // config (the "one config per supplier" invariant prevents reusing
+  // a single supplier across scenarios with different strip_prefix
+  // configurations).
+  $runTier15 = function (string $sku, array $stripPrefix = []) use ($etm, $parser, $matcher, $fileRepo, $uploadDir, &$cleanup) {
+    $supTag = preg_replace('/[^a-z0-9]+/i', '_', strtolower($sku)) . '_' . random_int(1000, 9999);
+    $sup = $etm->getStorage('supplier')->create([
+      'type' => 'supplier',
+      'field_supplier_name' => 'TestSupplier-Tier1.5-' . $supTag,
+      'uid' => 1,
+    ]);
+    $sup->save();
+    $cleanup['suppliers'][] = (int) $sup->id();
+    $cfg = $etm->getStorage('supplier_ingest_config')->create([
+      'type' => 'config',
+      'title' => 'TestCfg-Tier1.5-' . $supTag,
+      'uid' => 1,
+      'field_supplier' => $sup->id(),
+      'field_active' => 1,
+      'field_default_cost_uom' => 'each',
+      'field_column_mapping' => json_encode([
+        'source_columns' => [
+          'supplier_item_number' => ['field_supplier_sku', 'field_manufacturer_item_number'],
+          'product_name'         => 'field_description',
+          'manufacturer_inferred' => 'field_manufacturer_name',
+          'your_price'           => 'field_unit_cost',
+          'cost_uom'             => 'field_cost_uom',
+        ],
+        'header_row' => 1,
+      ]),
+      'field_bundle_policy' => json_encode(['irrigation' => 'matched_only', 'pvc' => 'matched_only']),
+      'field_sku_transformations' => json_encode(['strip_prefix' => $stripPrefix, 'strip_suffix' => []]),
+    ]);
+    $cfg->save();
+    $cleanup['configs'][] = (int) $cfg->id();
+    $csv = "supplier_item_number,product_name,manufacturer_inferred,your_price,cost_uom\n"
+      . $sku . ",Test product line,TestMfr-Tier1.5,4.21,each\n";
+    $file = $fileRepo->writeData($csv, "$uploadDir/spi_t15_$supTag.csv", FileSystemInterface::EXISTS_REPLACE);
+    $file->setPermanent();
+    $file->save();
+    $cleanup['files'][] = (int) $file->id();
+    $batch = $etm->getStorage('supplier_price_ingest_batch')->create([
+      'type' => 'batch',
+      'title' => 'TEST BATCH — Tier 1.5 — ' . $sku,
+      'uid' => 1,
+      'field_supplier' => $sup->id(),
+      'field_source_file' => $file->id(),
+      'field_source_filename' => "spi_t15_$supTag.csv",
+      'field_uploaded_by' => 1,
+      'field_uploaded_on' => date('Y-m-d\TH:i:s'),
+      'field_status' => 'pending_dry_run',
+    ]);
+    $batch->save();
+    $cleanup['batches'][] = (int) $batch->id();
+    $parser->parseUploadedFile($batch);
+    $batch = $etm->getStorage('supplier_price_ingest_batch')->load($batch->id());
+    $matcher->matchBatch($batch);
+    $rows = $etm->getStorage('supplier_price_ingest_row')
+      ->loadByProperties(['field_batch' => $batch->id()]);
+    foreach ($rows as $r) $cleanup['rows'][] = (int) $r->id();
+    return reset($rows);
+  };
+
+  // ── Step 12 — single-match success ──────────────────────────────
+  echo "\n=== Step 12: Tier 1.5 single-match success ===\n";
+  $m12 = $etm->getStorage('material')->create([
+    'type' => 'irrigation', 'uid' => 1,
+    'title' => '15 ft. 15SST Plastic Side Strip Nozzle - 30 Degree',
+    'field_name' => '15 ft. 15SST Plastic Side Strip Nozzle - 30 Degree',
+    'field_manufacturer' => $t15Mfr->id(),
+    // field_manufacturer_item_number intentionally empty — that's the
+    // backfill gap Tier 1.5 fills.
+  ]);
+  $m12->save();
+  $cleanup['materials'][] = (int) $m12->id();
+  $row12 = $runTier15('R15SST', ['R']);
+  $notes12 = (string) $row12->get('field_resolution_notes')->value;
+  $checks12 = [
+    'tier_is_1_5'           => (string) $row12->get('field_match_tier')->value === 'tier_1_5_title_substring',
+    'confidence_85'         => (int) $row12->get('field_match_confidence')->value === 85,
+    'matched_material'      => (int) $row12->get('field_matched_material')->target_id === (int) $m12->id(),
+    'note_says_tier_1_5'    => stripos($notes12, 'Tier 1.5 substring match') !== FALSE,
+    'note_mentions_normalized' => stripos($notes12, "normalized to '15sst'") !== FALSE,
+    'note_mentions_strip'   => stripos($notes12, "stripped to '15SST'") !== FALSE,
+  ];
+  foreach ($checks12 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step_12_tier_1_5_single_match'] = !in_array(FALSE, $checks12, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 13 — ambiguous match (multiple title hits in one mfr) ──
+  // The SKU must appear AS A WORD in both materials' field_name for
+  // word-boundary matching to find them. Using a synthetic distinctive
+  // token "AMBIG13X" present in both names guarantees ambiguity.
+  echo "\n=== Step 13: Tier 1.5 ambiguous match ===\n";
+  $m13a = $etm->getStorage('material')->create([
+    'type' => 'pvc', 'uid' => 1,
+    'title' => 'Hunter AMBIG13X Rotor Body 6-inch',
+    'field_name' => 'Hunter AMBIG13X Rotor Body 6-inch',
+    'field_manufacturer' => $t15Mfr->id(),
+  ]);
+  $m13a->save();
+  $cleanup['materials'][] = (int) $m13a->id();
+  $m13b = $etm->getStorage('material')->create([
+    'type' => 'pvc', 'uid' => 1,
+    'title' => 'Hunter AMBIG13X Rotor Alt — 4-inch',
+    'field_name' => 'Hunter AMBIG13X Rotor Alt — 4-inch',
+    'field_manufacturer' => $t15Mfr->id(),
+  ]);
+  $m13b->save();
+  $cleanup['materials'][] = (int) $m13b->id();
+  $row13 = $runTier15('AMBIG13X');
+  $notes13 = (string) $row13->get('field_resolution_notes')->value;
+  $checks13 = [
+    'tier_is_1_5'        => (string) $row13->get('field_match_tier')->value === 'tier_1_5_title_substring',
+    'matched_is_null'    => $row13->get('field_matched_material')->isEmpty(),
+    'confidence_is_50'   => (int) $row13->get('field_match_confidence')->value === 50,
+    'note_says_ambiguous' => stripos($notes13, 'ambiguous') !== FALSE,
+    'note_lists_m13a'    => str_contains($notes13, '#' . $m13a->id()),
+    'note_lists_m13b'    => str_contains($notes13, '#' . $m13b->id()),
+  ];
+  foreach ($checks13 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step_13_tier_1_5_ambiguous'] = !in_array(FALSE, $checks13, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 14 — word-boundary enforcement (1806 must not match 18006) ──
+  echo "\n=== Step 14: Tier 1.5 word-boundary enforcement ===\n";
+  $m14 = $etm->getStorage('material')->create([
+    'type' => 'irrigation', 'uid' => 1,
+    'title' => 'Rain Bird 18006 Heavy-Duty Body',
+    'field_name' => 'Rain Bird 18006 Heavy-Duty Body',
+    'field_manufacturer' => $t15Mfr->id(),
+  ]);
+  $m14->save();
+  $cleanup['materials'][] = (int) $m14->id();
+  $row14 = $runTier15('1806');
+  $checks14 = [
+    'tier_not_1_5'    => (string) $row14->get('field_match_tier')->value !== 'tier_1_5_title_substring',
+    'no_match_to_18006' => (int) $row14->get('field_matched_material')->target_id !== (int) $m14->id(),
+  ];
+  foreach ($checks14 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step_14_tier_1_5_word_boundary'] = !in_array(FALSE, $checks14, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 15 — short SKU rejected (<4 chars) ─────────────────────
+  echo "\n=== Step 15: Tier 1.5 short-SKU precondition rejects <4 char ===\n";
+  $m15 = $etm->getStorage('material')->create([
+    'type' => 'pvc', 'uid' => 1,
+    'title' => 'PRS Pressure-Reducing Stem assembly',
+    'field_name' => 'PRS Pressure-Reducing Stem assembly',
+    'field_manufacturer' => $t15Mfr->id(),
+  ]);
+  $m15->save();
+  $cleanup['materials'][] = (int) $m15->id();
+  $row15 = $runTier15('PRS');
+  $checks15 = [
+    'tier_not_1_5' => (string) $row15->get('field_match_tier')->value !== 'tier_1_5_title_substring',
+    'no_match_to_m15' => (int) $row15->get('field_matched_material')->target_id !== (int) $m15->id(),
+  ];
+  foreach ($checks15 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step_15_tier_1_5_short_sku_rejected'] = !in_array(FALSE, $checks15, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 16 — Tier 1 wins over Tier 1.5 when both would match ──
+  echo "\n=== Step 16: Tier 1 still wins over Tier 1.5 ===\n";
+  $m16 = $etm->getStorage('material')->create([
+    'type' => 'irrigation', 'uid' => 1,
+    'title' => '15 ft. 15H MPR Half Circle Nozzle',
+    'field_name' => '15 ft. 15H MPR Half Circle Nozzle',
+    'field_manufacturer' => $t15Mfr->id(),
+    'field_manufacturer_item_number' => '15H',
+  ]);
+  $m16->save();
+  $cleanup['materials'][] = (int) $m16->id();
+  $row16 = $runTier15('15H');
+  $checks16 = [
+    'tier_is_1_mfr'       => (string) $row16->get('field_match_tier')->value === 'tier_1_mfr',
+    'tier_NOT_1_5'        => (string) $row16->get('field_match_tier')->value !== 'tier_1_5_title_substring',
+    'matched_material_m16' => (int) $row16->get('field_matched_material')->target_id === (int) $m16->id(),
+  ];
+  foreach ($checks16 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step_16_tier_1_wins_over_1_5'] = !in_array(FALSE, $checks16, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 17 — Discontinued handling at Tier 1.5 ──────────────────
+  echo "\n=== Step 17: Tier 1.5 discontinued retargeting ===\n";
+  $m17rep = $etm->getStorage('material')->create([
+    'type' => 'irrigation', 'uid' => 1,
+    'title' => '15SST Replacement nozzle (active)',
+    'field_name' => '15SST Replacement nozzle (active)',
+    'field_manufacturer' => $t15Mfr->id(),
+  ]);
+  $m17rep->save();
+  $cleanup['materials'][] = (int) $m17rep->id();
+  $m17old = $etm->getStorage('material')->create([
+    'type' => 'irrigation', 'uid' => 1,
+    'title' => 'OLD 15SST Plastic Side Strip Nozzle — discontinued',
+    'field_name' => 'OLD 15SST Plastic Side Strip Nozzle — discontinued',
+    'field_manufacturer' => $t15Mfr->id(),
+    'field_discontinued' => 1,
+    'field_replaced_by' => $m17rep->id(),
+  ]);
+  $m17old->save();
+  $cleanup['materials'][] = (int) $m17old->id();
+  // Both materials in the mfr have "15SST" in name → ambiguous would
+  // fire FIRST since both word-boundary-match. To isolate the
+  // discontinued-retargeting path, run the Tier 1.5 attempt on a SKU
+  // that only matches the OLD one (e.g. "OLD-15SST" wouldn't, "15SST"
+  // matches both). Use an SKU that's unique to m17old's name.
+  // Simpler: name the OLD material with a unique token and the new
+  // with a different one, then SKU = the unique-to-old token.
+  // Re-do with distinct tokens:
+  $m17old->set('field_name', 'OLD UNIQUEOLD17 Nozzle (discontinued)')->save();
+  $m17rep->set('field_name', 'NEW UNIQUEREP17 Nozzle (active)')->save();
+  $row17 = $runTier15('UNIQUEOLD17');
+  $notes17 = (string) $row17->get('field_resolution_notes')->value;
+  $checks17 = [
+    'tier_is_1_5'         => (string) $row17->get('field_match_tier')->value === 'tier_1_5_title_substring',
+    'retargeted_to_rep'   => (int) $row17->get('field_matched_material')->target_id === (int) $m17rep->id(),
+    'note_says_discontinued' => stripos($notes17, 'discontinued') !== FALSE,
+    'note_mentions_old_id' => str_contains($notes17, (string) $m17old->id()),
+    'note_mentions_rep_id' => str_contains($notes17, (string) $m17rep->id()),
+  ];
+  foreach ($checks17 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step_17_tier_1_5_discontinued'] = !in_array(FALSE, $checks17, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 18 — no false positive when no match exists ────────────
+  echo "\n=== Step 18: Tier 1.5 no false positive on truly-absent SKU ===\n";
+  $row18 = $runTier15('Z99QXYZ');
+  $checks18 = [
+    'tier_not_1_5'    => (string) $row18->get('field_match_tier')->value !== 'tier_1_5_title_substring',
+    'no_matched_mat'  => $row18->get('field_matched_material')->isEmpty()
+                          || (int) $row18->get('field_matched_material')->target_id === 0,
+  ];
+  foreach ($checks18 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step_18_tier_1_5_no_false_positive'] = !in_array(FALSE, $checks18, TRUE) ? 'PASS' : 'FAIL';
+
+  // ── Step 19 — field_name preferred over title when both exist ──
+  // (User correction: AEL-derived bundles like irrigation compose
+  // their title from field_size + field_name. Searching the composite
+  // title would match against substrings that aren't in human-entered
+  // source data; searching field_name searches the canonical source.)
+  echo "\n=== Step 19: field_name preferred over title ===\n";
+  $m19 = $etm->getStorage('material')->create([
+    'type' => 'irrigation', 'uid' => 1,
+    // field_name is the human-entered source (no size prefix).
+    'field_name' => '19UNIQUE Plastic Side Strip Nozzle',
+    // title is the AEL-derived composite (with size prefix).
+    'title' => '15 ft. 19UNIQUE Plastic Side Strip Nozzle - 30 Degree',
+    'field_manufacturer' => $t15Mfr->id(),
+  ]);
+  $m19->save();
+  $cleanup['materials'][] = (int) $m19->id();
+  $row19 = $runTier15('19UNIQUE');
+  $notes19 = (string) $row19->get('field_resolution_notes')->value;
+  $checks19 = [
+    'tier_is_1_5'             => (string) $row19->get('field_match_tier')->value === 'tier_1_5_title_substring',
+    'matched_material_m19'    => (int) $row19->get('field_matched_material')->target_id === (int) $m19->id(),
+    'note_says_field_name'    => stripos($notes19, 'via field_name substring lookup') !== FALSE,
+    'note_NOT_says_title'     => stripos($notes19, 'via title substring lookup') === FALSE,
+  ];
+  foreach ($checks19 as $k => $v) echo "  " . ($v ? 'PASS' : 'FAIL') . " — $k\n";
+  $results['step_19_field_name_preferred'] = !in_array(FALSE, $checks19, TRUE) ? 'PASS' : 'FAIL';
 }
 finally {
   echo "\n=== Cleanup ===\n";

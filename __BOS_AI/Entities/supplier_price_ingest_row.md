@@ -50,6 +50,7 @@ All optional — some supplier feeds omit fields:
 |---|---|---|
 | `tier_1_mfr` | Direct match on `(manufacturer, manufacturer_item_number)`. Confidence 100; or 95 after discontinued retargeting. | Phase 3.3 |
 | `tier_2_supplier_sku` | Direct match on existing `material_suppliers` `(supplier, supplier_item_number)`. Confidence 100; or 95 after discontinued retargeting. | Phase 3.3 |
+| `tier_1_5_title_substring` | Word-boundary substring match on the material's `field_name` (fallback to title) within the resolved manufacturer. Slots between Tier 2 and Tier 3 in the matcher walk. Direct hits: confidence 85 → fuzzy_med review. Ambiguous (2+ candidates): confidence 50, `field_matched_material` NULL, all candidate ids in notes. Stage-2 follow-up plan: bump to confidence 90 once empirical validation shows zero false positives across 2–3 batches (would move it to auto-applying). | Phase 3.7.6 |
 | `tier_3_fuzzy_high` | Fuzzy match above the high threshold; auto-apply at commit. | Phase 3.4 |
 | `tier_3_fuzzy_med` | Fuzzy match above the medium threshold → office review queue. **Phase 3.3** also routes Tier 1 ambiguous matches (multiple BOS materials with the same `mfr+item#`) and the defensive Tier 2 multi-match case to this bucket — they share the same review surface. **Phase 3.4** adds real fuzzy scoring as the third path into this bucket. `field_match_confidence` distinguishes them: 50 → ambiguous; 70–89 → real fuzzy_med. | Phase 3.3 + 3.4 |
 | `tier_3_fuzzy_low` | Reserved storage value, **not assigned by the matcher as a terminal state**. Phase 3.4's Tier 3 scoring writes the low-confidence candidate's id/label/score into `field_resolution_notes` for audit, then sets `field_match_tier = 'discovery'` to keep the row from biasing reviewers toward a bad match. The value stays in the storage allowed_values list so a future review-UI phase can use it for in-flight tagging without a schema migration. | Reserved |
@@ -67,6 +68,7 @@ All optional — some supplier feeds omit fields:
 | 0 | Discovery — no candidate found, awaiting human routing. | 3.3 |
 | 50 | Tier 1 ambiguous OR Tier 2 defensive multi-match — routed to `tier_3_fuzzy_med` for human resolution. Confidence reflects "we found candidates but can't pick one." | 3.3 |
 | 70–89 | Tier 3 medium confidence — fuzzy match above medium threshold but below high. Routes to office review. | 3.4 |
+| 85 | Tier 1.5 direct match (title-substring within manufacturer). Stage-1 conservative confidence — routes to fuzzy_med review for confirmation. Planned bump to 90 (auto-applying) after empirical validation across 2–3 batches. | 3.7.6 |
 | 90–100 | Tier 3 high confidence — fuzzy match above high threshold, auto-apply at commit. | 3.4 |
 | 95 | Tier 1 or Tier 2 direct match retargeted through `material.field_replaced_by` (structural inference, slight discount from 100). The original (discontinued) material's ID is recorded in `field_resolution_notes`. | 3.3 |
 | 100 | Tier 1 or Tier 2 unambiguous direct match. | 3.3 |

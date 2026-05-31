@@ -39,8 +39,23 @@ trait IngestRowFormTrait {
 
   protected const CTX_STATUS_DISCOVERY    = 'discovery_pending';
   protected const CTX_STATUS_FUZZY_REVIEW = 'discovery_pending';
+  /**
+   * Primary tier identifier per context — used for equality checks
+   * (e.g., RejectRowForm classifying the originating workflow). For
+   * the multi-tier QUERY filter, see CTX_TIERS_FOR_QUERY.
+   */
   protected const CTX_TIER_DISCOVERY      = 'discovery';
   protected const CTX_TIER_FUZZY_REVIEW   = 'tier_3_fuzzy_med';
+  /**
+   * All tier values that count as belonging to a given context —
+   * used as the IN-condition for the next-row lookup. Fuzzy-review
+   * covers tier_3_fuzzy_med (Phase 3.4) AND tier_1_5_title_substring
+   * (Phase 3.7.6); both route through the same Fuzzy Match Review queue.
+   */
+  protected const CTX_TIERS_FOR_QUERY = [
+    self::CTX_DISCOVERY    => ['discovery'],
+    self::CTX_FUZZY_REVIEW => ['tier_3_fuzzy_med', 'tier_1_5_title_substring'],
+  ];
 
   protected const QUEUE_URL_DISCOVERY    = '/admin/materials/supplier-ingest/discovery';
   protected const QUEUE_URL_FUZZY_REVIEW = '/admin/materials/supplier-ingest/fuzzy-review';
@@ -168,17 +183,17 @@ trait IngestRowFormTrait {
     $entityTypeManager,
     $messenger,
   ): Url {
-    [$status, $tier, $queueUrl, $allResolvedMessage, $workflowLabel] = match ($context) {
+    [$status, $tiers, $queueUrl, $allResolvedMessage, $workflowLabel] = match ($context) {
       self::CTX_FUZZY_REVIEW => [
         self::CTX_STATUS_FUZZY_REVIEW,
-        self::CTX_TIER_FUZZY_REVIEW,
+        self::CTX_TIERS_FOR_QUERY[self::CTX_FUZZY_REVIEW],
         self::QUEUE_URL_FUZZY_REVIEW,
         'All fuzzy matches reviewed — none remaining in any batch.',
         'fuzzy match',
       ],
       default => [
         self::CTX_STATUS_DISCOVERY,
-        self::CTX_TIER_DISCOVERY,
+        self::CTX_TIERS_FOR_QUERY[self::CTX_DISCOVERY],
         self::QUEUE_URL_DISCOVERY,
         'All discovery rows resolved — none remaining in any batch.',
         'discovery',
@@ -197,7 +212,7 @@ trait IngestRowFormTrait {
       $ids = $storage->getQuery()
         ->accessCheck(FALSE)
         ->condition('field_row_status', $status)
-        ->condition('field_match_tier', $tier)
+        ->condition('field_match_tier', $tiers, 'IN')
         ->condition('field_batch', $currentBatchId)
         ->condition('id', $currentId, '>')
         ->sort('id', 'ASC')
@@ -215,7 +230,7 @@ trait IngestRowFormTrait {
       $ids = $storage->getQuery()
         ->accessCheck(FALSE)
         ->condition('field_row_status', $status)
-        ->condition('field_match_tier', $tier)
+        ->condition('field_match_tier', $tiers, 'IN')
         ->sort('id', 'ASC')
         ->range(0, 1)
         ->execute();

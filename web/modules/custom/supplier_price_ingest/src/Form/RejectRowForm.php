@@ -64,8 +64,10 @@ class RejectRowForm extends FormBase {
     // Capture workflow context from the row's current tier — before the
     // reject mutation flips field_row_status. Used by submitForm to send
     // the reviewer to the next pending row in the SAME workflow.
+    // Tier 1.5 (Phase 3.7.6) routes through fuzzy review the same as
+    // tier_3_fuzzy_med, so it counts as fuzzy-review context here.
     $tier = (string) ($this->row->get('field_match_tier')->value ?? '');
-    if ($tier === self::CTX_TIER_FUZZY_REVIEW) {
+    if (in_array($tier, [self::CTX_TIER_FUZZY_REVIEW, 'tier_1_5_title_substring'], TRUE)) {
       $this->context = self::CTX_FUZZY_REVIEW;
       $this->sameOperationRoute = 'supplier_price_ingest.fuzzy_reject';
     }

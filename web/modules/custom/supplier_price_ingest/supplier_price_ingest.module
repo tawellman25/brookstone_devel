@@ -444,7 +444,10 @@ function supplier_price_ingest_entity_operation(EntityInterface $entity): array 
     ];
   }
 
-  if ($tier === 'tier_3_fuzzy_med') {
+  // Both tier_3_fuzzy_med (Phase 3.4) and tier_1_5_title_substring
+  // (Phase 3.7.6) route reviewers through the Fuzzy Match Review
+  // workflow, so they get the same four operations.
+  if ($tier === 'tier_3_fuzzy_med' || $tier === 'tier_1_5_title_substring') {
     return [
       'confirm_match' => [
         'title'  => t('Confirm Match'),

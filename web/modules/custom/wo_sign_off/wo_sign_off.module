@@ -746,6 +746,7 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
               '@id' => $tc_id,
             ]),
             '#tree' => TRUE,
+            'copy_from_first' => _wo_sign_off_render_copy_button($wo_id),
             'end_time' => [
               '#type' => 'datetime',
               '#title' => t('End time'),
@@ -799,6 +800,7 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
       '#type' => 'fieldset',
       '#title' => t('@name — no entry; will be created', ['@name' => $name($uid)]),
       '#tree' => TRUE,
+      'copy_from_first' => _wo_sign_off_render_copy_button($wo_id),
       'start_time' => [
         '#type' => 'datetime',
         '#title' => t('Start time'),
@@ -818,6 +820,94 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
       ],
     ];
   }
+  // Attach library once if any row was rendered. Cheap to attach
+  // unconditionally; the row helper returns an empty array when there's
+  // no source entry, so the button class won't appear and the JS no-ops.
+  $form['#attached']['library'][] = 'wo_total_time/copy_from_first';
+}
+
+/**
+ * Build a "Copy from first crew member" button render element for a
+ * sign-off reconciliation row.
+ *
+ * Looks up the earliest wo_time_clock entry on the WO (the one with the
+ * lowest entity id that has both start and end times set) and emits a
+ * small button that fills the surrounding row's datetime widgets via
+ * the wo_total_time/copy_from_first JS behavior.
+ *
+ * Returns an empty render array if there is no usable source entry yet
+ * (the first teammate hasn't been entered) — that way the foreman sees
+ * nothing rather than a dead button.
+ *
+ * Scoped to the fieldset via data-scope="row"; JS searches for inputs
+ * by name suffix ([start_time][date], [end_time][time], etc.) so a
+ * single button works for both orphan rows (end_time only) and missing
+ * rows (start_time + end_time).
+ */
+function _wo_sign_off_render_copy_button(int $wo_id): array {
+  if ($wo_id <= 0) {
+    return [];
+  }
+  // Re-uses the helper defined in wo_total_time.module — both modules
+  // are always loaded, so the function is globally available.
+  if (!function_exists('_wo_total_time_get_first_entry_for_wo')) {
+    return [];
+  }
+  $first = _wo_total_time_get_first_entry_for_wo($wo_id);
+  if (!$first) {
+    return [];
+  }
+  $start_raw = (string) ($first->get('field_start_time')->value ?? '');
+  $end_raw = (string) ($first->get('field_end_time')->value ?? '');
+  if ($start_raw === '' || $end_raw === '') {
+    return [];
+  }
+  $tz = new \DateTimeZone(date_default_timezone_get());
+  try {
+    $start_dt = new \DateTime($start_raw . 'Z');
+    $start_dt->setTimezone($tz);
+    $end_dt = new \DateTime($end_raw . 'Z');
+    $end_dt->setTimezone($tz);
+  }
+  catch (\Throwable $e) {
+    return [];
+  }
+  $teammate_name = '(unknown teammate)';
+  if (!$first->get('field_teammate')->isEmpty()) {
+    $te = $first->get('field_teammate')->entity;
+    if ($te) {
+      $teammate_name = (string) $te->getDisplayName();
+    }
+  }
+  return [
+    '#type' => 'container',
+    '#attributes' => ['class' => ['bos-wtc-copy-from-first']],
+    '#weight' => -50,
+    'summary' => [
+      '#type' => 'item',
+      '#markup' => t(
+        '<p><strong>First crew entry on this WO:</strong> @name worked <strong>@start</strong> – <strong>@end</strong>.</p>',
+        [
+          '@name' => $teammate_name,
+          '@start' => $start_dt->format('m/d/Y g:i A'),
+          '@end' => $end_dt->format('m/d/Y g:i A'),
+        ]
+      ),
+    ],
+    'button' => [
+      '#type' => 'button',
+      '#value' => t('Copy these times'),
+      '#attributes' => [
+        'type' => 'button',
+        'class' => ['bos-wtc-copy-btn', 'button'],
+        'data-scope' => 'row',
+        'data-start-date' => $start_dt->format('Y-m-d'),
+        'data-start-time' => $start_dt->format('H:i:s'),
+        'data-end-date' => $end_dt->format('Y-m-d'),
+        'data-end-time' => $end_dt->format('H:i:s'),
+      ],
+    ],
+  ];
 }
 
 /**

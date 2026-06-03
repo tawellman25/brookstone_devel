@@ -249,6 +249,172 @@ function wo_total_time_form_alter(array &$form, FormStateInterface $form_state, 
   }
 
   $form['#validate'][] = '_wo_total_time_form_validate';
+
+  // "Copy times from first teammate" UX (2026-06-03).
+  //
+  // When the crew lead enters multiple teammates' time entries on the
+  // same WO, the start/end times are usually identical across teammates.
+  // Show a one-click "Copy times" affordance at the top of the ADD
+  // form when (a) the form is for a new entry, (b) field_work_order
+  // is pre-filled (typical: the "Enter Manually" button on the WO page
+  // passes ?edit[field_work_order][widget][0][target_id]=N), and
+  // (c) at least one wo_time_clock entry already exists for that WO.
+  //
+  // JS-only fill — no AJAX round-trip. Times are pre-formatted in the
+  // site's timezone before embedding so the JS just sets input.value
+  // directly on the datetime_default widget's date + time inputs.
+  // field_teammate is NOT copied (different per row).
+  _wo_total_time_form_add_copy_from_first($form, $form_state);
+}
+
+/**
+ * Inject the "Copy times from first teammate" affordance on the ADD
+ * form when there's an existing entry to copy from.
+ */
+function _wo_total_time_form_add_copy_from_first(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object || !method_exists($form_object, 'getEntity')) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if (!$entity instanceof EntityInterface || !$entity->isNew()) {
+    // Edit forms don't need this — the entity already has its own times.
+    return;
+  }
+
+  $wo_id = _wo_total_time_get_wo_id_from_form($form, $form_state);
+  if ($wo_id <= 0) {
+    // No WO context yet (free-form add from the wo_time_clock content
+    // list with no pre-fill). The copy UI requires knowing which WO
+    // to look up; bail quietly.
+    return;
+  }
+
+  $first = _wo_total_time_get_first_entry_for_wo($wo_id);
+  if (!$first) {
+    return;
+  }
+
+  $start_raw = (string) ($first->get('field_start_time')->value ?? '');
+  $end_raw = (string) ($first->get('field_end_time')->value ?? '');
+  if ($start_raw === '' || $end_raw === '') {
+    return;
+  }
+
+  // Datetime fields store UTC ISO strings; the widget displays in the
+  // site's default timezone. Pre-format here so the JS doesn't have
+  // to do TZ math.
+  $tz = new \DateTimeZone(date_default_timezone_get());
+  try {
+    $start_dt = new \DateTime($start_raw . 'Z');
+    $start_dt->setTimezone($tz);
+    $end_dt = new \DateTime($end_raw . 'Z');
+    $end_dt->setTimezone($tz);
+  }
+  catch (\Throwable $e) {
+    return;
+  }
+
+  $teammate_name = '(unknown teammate)';
+  if (!$first->get('field_teammate')->isEmpty()) {
+    $teammate_entity = $first->get('field_teammate')->entity;
+    if ($teammate_entity) {
+      $teammate_name = (string) $teammate_entity->getDisplayName();
+    }
+  }
+
+  $start_display = $start_dt->format('m/d/Y g:i A');
+  $end_display = $end_dt->format('m/d/Y g:i A');
+
+  $form['bos_wtc_copy_from_first'] = [
+    '#type' => 'container',
+    '#weight' => -100,
+    '#attributes' => ['class' => ['bos-wtc-copy-from-first']],
+    'summary' => [
+      '#type' => 'item',
+      '#markup' => t(
+        '<p><strong>First entry on this WO:</strong> @name worked <strong>@start</strong> – <strong>@end</strong>.</p>',
+        ['@name' => $teammate_name, '@start' => $start_display, '@end' => $end_display]
+      ),
+    ],
+    'button' => [
+      '#type' => 'button',
+      '#value' => t('Copy these times'),
+      '#attributes' => [
+        // type=button keeps the browser from treating Enter on this
+        // button as a form submit (the button is JS-only).
+        'type' => 'button',
+        'class' => ['bos-wtc-copy-btn', 'button'],
+        'data-scope' => 'form',
+        'data-start-date' => $start_dt->format('Y-m-d'),
+        'data-start-time' => $start_dt->format('H:i:s'),
+        'data-end-date' => $end_dt->format('Y-m-d'),
+        'data-end-time' => $end_dt->format('H:i:s'),
+      ],
+    ],
+    'note' => [
+      '#type' => 'item',
+      '#markup' => '<p><em>' . t('Pick the teammate this entry belongs to below, then save. You can adjust the times after copying if this person worked a different shift.') . '</em></p>',
+    ],
+  ];
+  $form['#attached']['library'][] = 'wo_total_time/copy_from_first';
+}
+
+/**
+ * Resolve the work_order id from the wo_time_clock add form.
+ *
+ * Priority:
+ *   1. $form_state values (after submit / rebuild)
+ *   2. The widget's default value (initial render — populated from the
+ *      ?edit[field_work_order][widget][0][target_id]=N URL query param
+ *      that the "Enter Manually" button on the WO page sets)
+ */
+function _wo_total_time_get_wo_id_from_form(array $form, FormStateInterface $form_state): int {
+  $values = $form_state->getValues();
+  if (!empty($values['field_work_order'][0]['target_id'])) {
+    return (int) $values['field_work_order'][0]['target_id'];
+  }
+  if (isset($form['field_work_order']['widget'][0]['target_id']['#default_value'])) {
+    $default = $form['field_work_order']['widget'][0]['target_id']['#default_value'];
+    if (is_object($default) && method_exists($default, 'id')) {
+      return (int) $default->id();
+    }
+    if (is_array($default) && !empty($default['target_id'])) {
+      return (int) $default['target_id'];
+    }
+    if (is_numeric($default)) {
+      return (int) $default;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Load the earliest (by entity id, i.e., "first created") wo_time_clock
+ * entry for a given work order that has both start and end times set.
+ * Returns NULL when no usable entry exists yet.
+ */
+function _wo_total_time_get_first_entry_for_wo(int $wo_id): ?EntityInterface {
+  if ($wo_id <= 0) {
+    return NULL;
+  }
+  try {
+    $ids = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_work_order', $wo_id)
+      ->exists('field_start_time')
+      ->exists('field_end_time')
+      ->sort('id', 'ASC')
+      ->range(0, 1)
+      ->execute();
+  }
+  catch (\Throwable $e) {
+    return NULL;
+  }
+  if (!$ids) {
+    return NULL;
+  }
+  return \Drupal::entityTypeManager()->getStorage('wo_time_clock')->load((int) reset($ids));
 }
 
 /**

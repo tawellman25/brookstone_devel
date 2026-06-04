@@ -64,7 +64,48 @@ bos_wex_import.import_service:
     - '@file_system'
 ```
 
-Single service. The form and batch processor both use it; future automation (cron import, REST endpoint) would do the same.
+Single service. The form, batch processor, and both Drush commands (`wex:import`, `wex:fetch-email`) call into the same `importFromFile()` core. A future REST endpoint would do the same — channel-agnostic by design.
+
+## Drush Commands
+
+Two commands, both backed by `WexFuelImportService::importFromFile()` so parse/import/match/mileage logic is never duplicated. Defined in `src/Commands/`; registered via `drush.services.yml`.
+
+| Command | Alias | Source | Purpose |
+|---|---|---|---|
+| `bos_wex_import:import <filepath>` | `wex:import <filepath>` | local file | Imports a CSV/XLSX from a path on disk. Same parse + match + mileage logic as the upload form, no UI. Useful for ad-hoc re-imports or initial backfills. |
+| `bos_wex_import:fetch-email` | `wex:fetch-email` | IMAP mailbox | Reads UNSEEN messages from the configured WEX mailbox, extracts the WEX report URL from each body, downloads the CSV with Guzzle, hands the file to `importFromFile()`. Marks message Seen only on a clean run (URL found + file-level import success); otherwise leaves Unseen for the next run to pick up. |
+
+Both commands print a one-line summary identical in format to the form-driven batch finished message, plus a `formatSummary()` watchdog entry. Exit code is `EXIT_SUCCESS` for any "normal operational outcome" (including empty mailbox, no-URL messages, row-level errors) and `EXIT_FAILURE` only for hard errors (missing config, connection failure).
+
+### `wex:fetch-email` IMAP configuration
+
+Read from `$settings['wex_imap']` in `web/sites/default/settings.php` via `Drupal\Core\Site\Settings::get()`. Required keys: `host`, `username`, `password`. Optional: `port` (default `993`), `encryption` (`ssl`), `validate_cert` (`TRUE`), `sender_match` (default `wexinc.com`).
+
+**Password discipline.** The password value MUST come from `getenv('WEX_IMAP_PASS')` — never a literal in `settings.php` or any other tracked file. The actual secret lives in an off-git env file on the live host (see "Scheduled Daily Fetch" below) and gets injected at command invocation time.
+
+The configured live block:
+
+```php
+$settings['wex_imap'] = [
+  'host'          => 'mail.brookstoneoutdoors.com',
+  'port'          => 993,
+  'username'      => 'wex@brookstoneoutdoors.com',
+  'password'      => getenv('WEX_IMAP_PASS') ?: NULL,
+  'encryption'    => 'ssl',
+  'validate_cert' => TRUE,
+  'sender_match'  => 'wexinc.com',
+];
+```
+
+`sender_match` is a case-insensitive substring search against the message `From` header. The WEX mailer sends from `OnlineServices@wexinc.com`, NOT from `wexonline.com` (which is the *download* domain in the body URL). Setting this to `wexonline.com` was the original default and produced silent "no UNSEEN matches" results on the first run.
+
+### Body extraction quirk
+
+WEX wraps the text/plain part of each email inside a `multipart/related` envelope. `webklex/php-imap` exposes that inner part as an "attachment" (mime `text/plain`, no filename) rather than via `getTextBody()`. The command's URL extractor therefore tries body sources in order: `getTextBody()` → `getHTMLBody()` → concatenated `text/*` attachment contents → `getRawBody()`. The download-URL regex is anchored to `https?://go\.wexonline\.com/web/gotoDownloadReport\.do\?…` so picking the URL out of raw multipart text is unambiguous.
+
+### Library dependency
+
+`webklex/php-imap` ^6.2 — pure-PHP IMAP4 client. Chosen over the C `ext-imap` extension because ext-imap is deprecated and slated for removal. Added to `composer.json` in commit `80dfcafb`.
 
 ## `WexFuelImportService` — public method reference
 
@@ -211,6 +252,53 @@ Two-layer protection against duplicate imports:
 
 Mileage updates do NOT run on `skipped_duplicate` rows — they only fire when an entity is actually saved. So re-importing yesterday's file doesn't double-touch any vehicle's mileage timestamp.
 
+## Scheduled Daily Fetch (live)
+
+Set up 2026-06-04 on the live host (`brookstone` SSH alias). Lives entirely off git — the cron entry, env file, and log file are all on the live filesystem under `~brookstoneadmin/`. Nothing about the schedule is deployed via the deploy script; it's pure server-side configuration.
+
+### Files on live (off git)
+
+| Path | Mode | Purpose |
+|---|---|---|
+| `~brookstoneadmin/.wex_imap_env` | `0600` | Exports `WEX_IMAP_PASS`. Sourced by the cron entry before drush runs. The only file that holds the live password. Rotate the password by editing this file only. |
+| `~brookstoneadmin/wex_fetch.log` | `0640` | Rolling log of every cron run. Date-stamped header per run. Truncate or rotate manually if it grows large; idempotency of the import means no harm in losing log history. |
+
+### Crontab entry
+
+Installed in `brookstoneadmin`'s crontab (no system-level scheduling):
+
+```
+# WEX fuel-card daily import — added 2026-06-04
+# Reads UNSEEN emails from wex@brookstoneoutdoors.com, downloads each
+# referenced WEX CSV, imports into equipment_fuel_transaction entities.
+# Password sourced from ~/.wex_imap_env (0600). Log: ~/wex_fetch.log.
+# Idempotent (dedupes on Transaction ID).
+# LANG=C suppresses the cPanel perl locale warnings that fill the log.
+# bash -c (NOT -lc) skips the login-profile chain that triggers them.
+0 7 * * * LANG=C bash -c 'echo; echo "=== WEX fetch $(date) ==="; . $HOME/.wex_imap_env && cd /home/brookstoneadmin/brookstone && /usr/local/bin/drush wex:fetch-email' >> $HOME/wex_fetch.log 2>&1
+```
+
+Fires at **7:00 AM America/Phoenix** every day (the live host is in MST with no DST, so cron's local time == site time year-round). WEX delivers its overnight report between roughly midnight and 6am, so 7am gives a comfortable margin while still picking up the data before the office starts working.
+
+### Why this exact shape
+
+- **`LANG=C`** — without it the cPanel server invokes a perl hook on every shell startup which complains about missing UTF-8 locales and floods stderr (and the log) with `perl: warning: Setting locale failed.` blocks.
+- **`bash -c`, not `bash -lc`** — login shells (`-l`) trigger `/etc/profile`, which on this cPanel host runs more perl hooks. Plain `bash -c` skips that chain entirely. Since drush has a deterministic absolute path (`/usr/local/bin/drush`), there's no PATH lookup that would have needed a login shell.
+- **Date-stamped header** — `echo "=== WEX fetch $(date) ==="` at the top of every run makes the log scannable when investigating "did it run yesterday?". Without it consecutive empty-mailbox days are indistinguishable.
+- **Single-line cron entry** — multi-line cron entries are unreliable across cron implementations. Keeping the whole pipeline on one logical line via `&&` chains is the portable choice.
+
+### Operating the schedule
+
+- **Disable temporarily**: `ssh brookstone "crontab -e"`, comment out the `0 7 * * *` line.
+- **Run manually** (same command line as cron): `ssh brookstone "LANG=C bash -c '. \$HOME/.wex_imap_env && cd /home/brookstoneadmin/brookstone && drush wex:fetch-email'"`.
+- **Watch live during 7am**: `ssh brookstone "tail -f ~/wex_fetch.log"`.
+- **Rotate password**: edit `~/.wex_imap_env` on live. The block in `settings.php` reads `getenv('WEX_IMAP_PASS')` so no Drupal config or code change needed.
+- **Investigate a failed run**: `grep -A 5 "=== WEX fetch.*<date>" ~/wex_fetch.log` finds the run's whole output; the full per-message details (UID, subject, URL, import counts) are all there.
+
+### Idempotency under the schedule
+
+The import service dedupes on `field_wex_transaction_id` BEFORE save, so a duplicated email (or a re-fetched UNSEEN run after a partial failure) imports zero rows. A re-fetched WEX email that already processed all its rows shows `imported=0, duplicates_skipped=N` in the summary. Mileage updates only fire when an entity is actually saved, so even a re-run can't double-touch any vehicle's mileage timestamp.
+
 ## Operational Notes
 
 - **Supported file formats**: CSV (`.csv`), XLSX (`.xlsx`), XLS (`.xls`). Detection is by extension; XLSX uses PhpSpreadsheet's `IOFactory`, CSV uses native `fgetcsv()`.
@@ -223,7 +311,7 @@ Mileage updates do NOT run on `skipped_duplicate` rows — they only fire when a
 
 - **No pre-import preview.** The form goes straight from upload to batch processing. Adding a "Preview first 10 rows" step before commit would let operators sanity-check the file before the batch runs.
 - **No error log surfacing.** When errors happen on individual rows during batch processing, the count appears in the summary message but the per-row messages are only in `watchdog`. A "View error log" link from the summary would help.
-- **No on-demand cron import.** The form is the only ingest path. A scheduled cron task that reads from a known location (S3 bucket, IMAP folder, etc.) could automate weekly imports. Out of scope for the initial build.
+- ~~**No on-demand cron import.**~~ **Resolved 2026-06-04** — `drush wex:fetch-email` + daily 7am crontab entry on live (see "Drush Commands" + "Scheduled Daily Fetch (live)" above).
 - **No bulk-resolve in the Review Queue.** Each unmatched transaction must be edited individually. A VBO bulk action ("Set match status to Manually Resolved + assign driver X") would speed up resolving systematic gaps (e.g., one unmapped contractor showing up across 15 rows).
 
 ## Related Entities and Views
@@ -245,3 +333,7 @@ The day-to-day import workflow for office staff is documented separately at [`we
 - Stub uniqueness hook landed earlier with the entity in commit `885eb452`
 - Deployed to live: 2026-05-05
 - First production run: ~209 transactions imported covering 2025-12-30 → 2026-04-30 (96% match rate)
+- IMAP fetch wrapper + channel-agnostic refactor: 2026-05-31, commit `80dfcafb` (`feature/wex-email-fetch`)
+- Merged to main + deployed: 2026-06-04 (commits `7330db9e` merge, `ff7a1f59` sender_match/body-extract fix)
+- First production IMAP run: 2026-06-04 — 3 messages, 12 transactions imported (11 matched, 1 unmatched_vehicle — known: Gerald's personal truck, equipment record to be created)
+- Daily 7am cron installed on live: 2026-06-04

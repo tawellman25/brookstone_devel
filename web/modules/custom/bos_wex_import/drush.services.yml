@@ -1,0 +1,18 @@
+services:
+  bos_wex_import.import_commands:
+    class: Drupal\bos_wex_import\Commands\WexImportCommands
+    arguments:
+      - '@bos_wex_import.import_service'
+      - '@logger.factory'
+    tags:
+      - { name: drush.command }
+
+  bos_wex_import.fetch_email_commands:
+    class: Drupal\bos_wex_import\Commands\WexFetchEmailCommands
+    arguments:
+      - '@bos_wex_import.import_service'
+      - '@logger.factory'
+      - '@http_client'
+      - '@file_system'
+    tags:
+      - { name: drush.command }

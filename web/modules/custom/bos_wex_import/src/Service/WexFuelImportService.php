@@ -275,6 +275,188 @@ final class WexFuelImportService {
   }
 
   // ──────────────────────────────────────────────────────────────────────
+  // FILE-LEVEL IMPORT (channel-agnostic core)
+  // ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Import every transaction in a WEX export file.
+   *
+   * Single entry point used by both the CLI command (drush wex:import)
+   * and the IMAP fetch wrapper (drush wex:fetch-email). Owns the full
+   * lifecycle:
+   *
+   *  - readability check
+   *  - parseFile() with exception capture
+   *  - empty-window sentinel detection ("No Records Found" or
+   *    header-only file) — clean zero-import, NOT a row error
+   *  - required-header validation
+   *  - synchronous row loop with tally
+   *
+   * The returned 'status' indicates which terminal branch was hit:
+   *   unreadable     — caller passed a non-readable path
+   *   parse_error    — parseFile() threw (unsupported extension,
+   *                    malformed file, etc.)
+   *   empty_window   — WEX emitted an empty-window report; zero rows
+   *                    processed, zero errors. Counts to "messages
+   *                    successfully handled".
+   *   missing_headers— one or more REQUIRED_HEADERS absent
+   *   imported       — file walked end-to-end (any mix of
+   *                    imported / duplicates / row errors)
+   *
+   * File-level branches (unreadable, parse_error, missing_headers)
+   * are the only ones a CLI caller should treat as failures. Row-level
+   * 'error' tally and unmatched-resolution tallies are normal
+   * operational outcomes — surfaced in the tally for reporting, not
+   * raised as exceptions.
+   *
+   * @return array{
+   *   status: string,
+   *   message: string,
+   *   filepath: string,
+   *   total: int,
+   *   imported: int,
+   *   skipped_duplicate: int,
+   *   errors: int,
+   *   matched: int,
+   *   unmatched_driver: int,
+   *   unmatched_vehicle: int,
+   *   unmatched_both: int,
+   *   missing_headers: string[],
+   *   error_rows: array<int, array{transaction_id:string, message:string}>
+   * }
+   */
+  public function importFromFile(string $filepath): array {
+    $result = $this->emptyTally($filepath);
+
+    if (!is_readable($filepath)) {
+      $result['status'] = 'unreadable';
+      $result['message'] = "WEX import file not readable: {$filepath}";
+      return $result;
+    }
+
+    try {
+      $rows = $this->parseFile($filepath);
+    }
+    catch (\Throwable $e) {
+      $result['status'] = 'parse_error';
+      $result['message'] = "WEX parse failed: {$e->getMessage()}";
+      return $result;
+    }
+
+    if ($this->isEmptyReport($rows)) {
+      $result['status'] = 'empty_window';
+      $result['message'] = 'WEX report contained no transactions (empty window).';
+      return $result;
+    }
+
+    // Validate headers from the first row (parser keys rows by header).
+    $headers = array_keys($rows[0]);
+    $missing = $this->validateHeaders($headers);
+    if ($missing) {
+      $result['status'] = 'missing_headers';
+      $result['missing_headers'] = $missing;
+      $result['message'] = 'WEX import aborted — missing required header(s): ' . implode(', ', $missing);
+      return $result;
+    }
+
+    $result['status'] = 'imported';
+    $result['total'] = count($rows);
+
+    foreach ($rows as $row) {
+      $rowResult = $this->importRow($row);
+      switch ($rowResult['status']) {
+        case 'imported':
+          $result['imported']++;
+          $ms = (string) ($rowResult['match_status'] ?? '');
+          if ($ms !== '' && array_key_exists($ms, $result)) {
+            $result[$ms]++;
+          }
+          break;
+
+        case 'skipped_duplicate':
+          $result['skipped_duplicate']++;
+          break;
+
+        case 'error':
+        default:
+          $result['errors']++;
+          $result['error_rows'][] = [
+            'transaction_id' => (string) ($rowResult['transaction_id'] ?? '(empty)'),
+            'message' => (string) ($rowResult['message'] ?? '(no message)'),
+          ];
+          break;
+      }
+    }
+
+    $result['message'] = self::formatSummary($result);
+    return $result;
+  }
+
+  /**
+   * Detect WEX's "empty window" output shape.
+   *
+   * WEX emits a header row + literal "No Records Found" line when the
+   * queried date window has no transactions. parseFile() preserves
+   * that sentinel as a one-row result whose only populated cell holds
+   * the phrase. Header-only files (zero data rows) are also empty.
+   */
+  public function isEmptyReport(array $rows): bool {
+    if (!$rows) {
+      return TRUE;
+    }
+    if (count($rows) !== 1) {
+      return FALSE;
+    }
+    $row = reset($rows);
+    $populated = array_filter(
+      $row,
+      static fn ($v) => trim((string) ($v ?? '')) !== ''
+    );
+    if (count($populated) !== 1) {
+      return FALSE;
+    }
+    $only = trim((string) reset($populated));
+    return (bool) preg_match('/^no\s+records?\s+found$/i', $only);
+  }
+
+  /**
+   * Format an importFromFile() result as a one-line summary string.
+   * Used by both the CLI command and the fetch-email wrapper so the
+   * watchdog log shape stays consistent across channels.
+   */
+  public static function formatSummary(array $result): string {
+    return sprintf(
+      'WEX import complete — %d total | imported=%d, duplicates_skipped=%d, errors=%d | match: matched=%d, unmatched_driver=%d, unmatched_vehicle=%d, unmatched_both=%d',
+      $result['total'] ?? 0,
+      $result['imported'] ?? 0,
+      $result['skipped_duplicate'] ?? 0,
+      $result['errors'] ?? 0,
+      $result['matched'] ?? 0,
+      $result['unmatched_driver'] ?? 0,
+      $result['unmatched_vehicle'] ?? 0,
+      $result['unmatched_both'] ?? 0,
+    );
+  }
+
+  private function emptyTally(string $filepath): array {
+    return [
+      'status' => '',
+      'message' => '',
+      'filepath' => $filepath,
+      'total' => 0,
+      'imported' => 0,
+      'skipped_duplicate' => 0,
+      'errors' => 0,
+      'matched' => 0,
+      'unmatched_driver' => 0,
+      'unmatched_vehicle' => 0,
+      'unmatched_both' => 0,
+      'missing_headers' => [],
+      'error_rows' => [],
+    ];
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
   // ROW IMPORT
   // ──────────────────────────────────────────────────────────────────────
 

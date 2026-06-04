@@ -279,7 +279,7 @@ final class WexFetchEmailCommands extends DrushCommands {
         : TRUE,
       'username'      => $raw['username'],
       'password'      => $raw['password'],
-      'sender_match'  => (string) ($raw['sender_match'] ?? 'wexonline.com'),
+      'sender_match'  => (string) ($raw['sender_match'] ?? 'wexinc.com'),
     ];
   }
 
@@ -321,10 +321,27 @@ final class WexFetchEmailCommands extends DrushCommands {
     $subject = trim((string) ($message->getSubject() ?? ''));
     $tag = sprintf('UID %d "%s"', $uid, $subject !== '' ? $subject : '(no subject)');
 
-    // Body — prefer plaintext; fall back to HTML.
+    // Body — prefer plaintext; fall back to HTML. The WEX mailer wraps
+    // the actual text/plain part inside multipart/related, which makes
+    // webklex surface it as an "attachment" rather than via
+    // getTextBody(). When the parsed bodies are empty we scan small
+    // text/* attachments next, and finally the raw RFC822 body. The
+    // URL regex is selective enough (anchored to the WEX endpoint)
+    // that picking it up out of raw multipart text is safe.
     $body = $message->hasTextBody() ? (string) $message->getTextBody() : '';
     if ($body === '' && $message->hasHTMLBody()) {
       $body = (string) $message->getHTMLBody();
+    }
+    if ($body === '') {
+      foreach ($message->getAttachments() as $att) {
+        $mime = (string) ($att->getMimeType() ?? '');
+        if (stripos($mime, 'text/') === 0) {
+          $body .= (string) $att->getContent() . "\n";
+        }
+      }
+    }
+    if ($body === '') {
+      $body = (string) ($message->getRawBody() ?? '');
     }
 
     if (!preg_match(self::WEX_DOWNLOAD_URL_REGEX, $body, $m)) {

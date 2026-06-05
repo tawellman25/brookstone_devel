@@ -29,45 +29,62 @@ dependencies:
     - field.field.work_order.special_mowing.field_task_rate
     - field.field.work_order.special_mowing.field_total_time
     - field.field.work_order.special_mowing.field_trip_fee
+    - field.field.work_order.special_mowing.field_trucks
     - field.field.work_order.special_mowing.field_wo_total
     - field.field.work_order.special_mowing.field_work_order_id
     - field.field.work_order.special_mowing.field_work_order_notes
     - field.field.work_order.special_mowing.field_work_todo_description
   module:
+    - field_group
     - options
     - text
-    - user
+third_party_settings:
+  field_group:
+    group_hours:
+      children:
+        - wo_hours_grouping_entity_view_1
+        - wo_time_clock_entries_total_entity_view_1
+      label: Hours
+      parent_name: ''
+      region: content
+      weight: 11
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
+    group_scheduling:
+      children:
+        - wo_scheduled_teammate_view_entity_view_1
+      label: Scheduling
+      parent_name: ''
+      region: content
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
 id: work_order.special_mowing.default
 targetEntityType: work_order
 bundle: special_mowing
 mode: default
 content:
-  created:
-    type: timestamp
-    label: hidden
-    settings:
-      date_format: medium
-      custom_date_format: ''
-      timezone: ''
-      tooltip:
-        date_format: long
-        custom_date_format: ''
-      time_diff:
-        enabled: false
-        future_format: '@interval hence'
-        past_format: '@interval ago'
-        granularity: 2
-        refresh: 60
-    third_party_settings: {  }
-    weight: 2
-    region: content
   field_client_app_wo_number:
     type: string
     label: inline
     settings:
       link_to_entity: false
     third_party_settings: {  }
-    weight: 6
+    weight: 1
     region: content
   field_current_turf_sq_footage:
     type: number_integer
@@ -76,38 +93,22 @@ content:
       thousand_separator: ''
       prefix_suffix: true
     third_party_settings: {  }
-    weight: 8
+    weight: 3
     region: content
   field_day_of_week_to_mow:
     type: list_default
-    label: above
+    label: inline
     settings: {  }
     third_party_settings: {  }
-    weight: 22
+    weight: 4
     region: content
   field_mowing_assigned_to:
     type: entity_reference_label
-    label: above
-    settings:
-      link: true
-    third_party_settings: {  }
-    weight: 21
-    region: content
-  field_property:
-    type: entity_reference_label
     label: inline
     settings:
       link: true
     third_party_settings: {  }
-    weight: 3
-    region: content
-  field_status:
-    type: entity_reference_label
-    label: inline
-    settings:
-      link: true
-    third_party_settings: {  }
-    weight: 4
+    weight: 2
     region: content
   field_supervisor:
     type: entity_reference_label
@@ -115,49 +116,43 @@ content:
     settings:
       link: true
     third_party_settings: {  }
-    weight: 5
+    weight: 0
+    region: content
+  field_trucks:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 18
     region: content
   field_work_todo_description:
     type: text_default
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 7
+    weight: 5
     region: content
   flag_work_order_timer:
     settings: {  }
     third_party_settings: {  }
-    weight: 20
-    region: content
-  title:
-    type: string
-    label: hidden
-    settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    weight: 0
-    region: content
-  uid:
-    type: author
-    label: hidden
-    settings: {  }
-    third_party_settings: {  }
-    weight: 1
+    weight: 10
     region: content
   wo_current_property_owner_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 9
+    weight: 17
     region: content
   wo_dump_records_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 10
+    weight: 12
     region: content
   wo_hours_grouping_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 13
+    weight: 14
     region: content
   wo_media_photos_entity_view_1:
     settings: {  }
@@ -167,7 +162,7 @@ content:
   wo_notes_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 11
+    weight: 13
     region: content
   wo_rented_equipment_entity_view_1:
     settings: {  }
@@ -177,7 +172,7 @@ content:
   wo_scheduled_teammate_view_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 12
+    weight: 7
     region: content
   wo_sign_off_entity_view_1:
     settings: {  }
@@ -187,20 +182,21 @@ content:
   wo_time_clock_buttons_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 17
+    weight: 9
     region: content
   wo_time_clock_buttons_entity_view_2:
     settings: {  }
     third_party_settings: {  }
-    weight: 18
+    weight: 8
     region: content
   wo_time_clock_entries_total_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 19
+    weight: 15
     region: content
 hidden:
   changed: true
+  created: true
   field_atv_total: true
   field_billing_adjustment: true
   field_billing_notes: true
@@ -213,12 +209,17 @@ hidden:
   field_labor_total: true
   field_material_chemical_total: true
   field_printed: true
+  field_property: true
   field_rental_total: true
   field_scheduled: true
   field_service: true
+  field_status: true
   field_task_rate: true
   field_total_time: true
   field_trip_fee: true
   field_wo_total: true
   field_work_order_id: true
   field_work_order_notes: true
+  title: true
+  uid: true
+

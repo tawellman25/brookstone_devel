@@ -44,10 +44,11 @@ gray #424242  | gray light #F5F5F5
 
 ## SOP Index
 
-| Code            | Title                                 | Ver | Status |
-|-----------------|---------------------------------------|-----|--------|
-| OFF-ADM-EST-001 | Estimate Request Intake & Pipeline    | 1.0 | Active |
-| OFF-ADM-EST-002 | Estimate Stage Management (Estimator) | 1.0 | Active |
+| Code            | Title                                              | Ver | Status |
+|-----------------|----------------------------------------------------|-----|--------|
+| OFF-ADM-EST-001 | Estimate Request Intake & Pipeline                 | 1.0 | Active |
+| OFF-ADM-EST-002 | Estimate Stage Management (Estimator)              | 1.0 | Active |
+| OFF-QBS-INV-003 | Printing Customer Invoices in QuickBooks Desktop   | 1.0 | Active |
 
 ---
 

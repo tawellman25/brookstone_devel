@@ -159,6 +159,28 @@ If a foreman on a complex bundle adds crew without clicking Refresh and submits,
 
 This is the only path that can require a second save. Foremen who click Refresh after editing the roster avoid it entirely. Simple bundles never trigger this path because they have no rows.
 
+### Copy from first crew member (2026-06-03)
+
+For complex bundles where the foreman has to hand-key per-row datetime widgets, each per-row fieldset (both **missing-row** start/end inputs AND **orphan-row** end inputs) now carries a small blue panel above the inputs:
+
+> **First crew entry on this WO:** Herbert Munoz worked **06/14/2026 6:30 AM** – **06/14/2026 2:15 PM**.
+>
+> [Copy these times]
+
+Click pre-fills that row's date+time widgets from the WO's earliest existing `wo_time_clock` entry (the row with the lowest entity id that has both start and end times set). On orphan rows, only the end fields are present, so only the end pair fills.
+
+Implementation:
+
+- `_wo_sign_off_render_copy_button(int $wo_id): array` builds the render array. Returns `[]` (renders nothing) when there's no source entry — first row on the WO sees an empty panel instead of a broken button.
+- The function reuses `_wo_total_time_get_first_entry_for_wo()` from `wo_total_time.module` rather than reimplementing the lookup — both modules are always loaded so the symbol is globally available.
+- Times are pre-formatted in PHP using `\DateTime` + `setTimezone(date_default_timezone_get())` so the JS does no TZ math. The four data attributes (`data-start-date`, `data-start-time`, `data-end-date`, `data-end-time`) carry pre-formatted strings ready for `<input type=date>` and `<input type=time>` values.
+- `data-scope="row"` tells the shared JS to target inputs by name suffix (`[start_time][date]`, `[end_time][time]`, etc.) within `btn.closest('fieldset')`, distinguishing it from the standalone-form variant in `wo_total_time` (`data-scope="form"`, full-name targeting).
+- Library `wo_total_time/copy_from_first` is attached once at the bottom of `_wo_sign_off_build_reconciliation_fieldset()`. The library lives in `wo_total_time` because the original feature shipped on that module's add form; the sign-off path reuses it.
+
+Why both row types: orphan rows might still be hand-keyed when the prefill end-time estimate is wrong (the foreman wants to match the rest of the crew's end time, not the system's "WO's latest end_time + 30 min" guess). Copying from the first entry's end time is often closer.
+
+Validate/submit handlers were already keyed explicitly (`$row['start_time']`, `$row['end_time']`, `$row['notes']`) — the new `copy_from_first` sibling key is a passive `#type=container` with `#type=button` (`type=button` HTML attribute so Enter doesn't submit), no submitted value, so no validate/submit changes were needed.
+
 ## Lawn Mowing Path (Phase 2c)
 
 The lawn mowing sign-off flow runs through `wo_tasks_list:lawn_mowing` rather than `wo_complete_info`. The foreman opens the wo_tasks_list edit form, fills out tasks, populates `field_mowing_who_on_site`, and toggles `field_completed = TRUE` (which gets saved as the falsy "field_completed = FALSE" trigger condition that fires the wo_lawn_mowing cascade). Phase 2c intercepts at this same form before the cascade fires.

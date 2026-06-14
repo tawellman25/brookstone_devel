@@ -82,7 +82,7 @@ Phase 1 reads the flag in guard 4 but never sets it. Phase 2's reconciliation co
 
 `wo_total_time_form_alter()` activates on any form whose underlying entity is a `wo_time_clock`. Detection by entity type rather than form ID, so this works for the standalone add/edit form, future inline entity form embeds, and any composed forms.
 
-Two responsibilities:
+Three responsibilities:
 
 ### Long-shift confirmation checkbox
 
@@ -97,6 +97,27 @@ Custom validate handler appended to `$form['#validate']`. Mirrors presave guards
 If the would-be duration is over `field_long_shift_hours` AND **neither** `field_time_limit_override` nor (in the fallback) `long_shift_confirmed` is checked, the user gets an error directing them to check the appropriate box and re-submit. The error is routed to whichever checkbox is actually on the form, and the message names that checkbox by its on-screen label. The presave layer has no >threshold guard, so a confirmed long shift saves through.
 
 The presave-layer guards still backstop the form layer (defense in depth) — a malformed form submission, REST write, or import bypassing the form layer will still be rejected at presave.
+
+### Copy-from-first panel on add forms (2026-06-03)
+
+When the form is rendering a **new** `wo_time_clock` entity (`$entity->isNew()`) AND the form already has a WO context (either pre-filled via the "Enter Manually" URL parameter from the WO page, or because the user picked one in the autocomplete and the form rebuilt with that value), `wo_total_time_form_alter` injects a small blue panel at the top of the form:
+
+> **First entry on this WO:** Herbert Munoz worked **06/14/2026 6:30 AM** – **06/14/2026 2:15 PM**.
+>
+> [Copy these times]
+>
+> *Pick the teammate this entry belongs to below, then save. You can adjust the times after copying if this person worked a different shift.*
+
+Click pre-fills the form's `field_start_time` and `field_end_time` datetime widgets from the WO's earliest existing entry. `field_teammate` is deliberately not copied — it's almost always different per row.
+
+Implementation:
+
+- `_wo_total_time_form_add_copy_from_first(array &$form, FormStateInterface $form_state): void` — called from the bottom of `wo_total_time_form_alter`. Quietly returns when there's no WO context yet (the unparameterized "free-form add" path), so users navigating directly to `/admin/content/wo_time_clock/add/entry` see no panel.
+- `_wo_total_time_get_wo_id_from_form()` — resolves the WO id from `$form_state->getValues()` first (post-rebuild) then falls back to the widget's `#default_value` (initial render, populated from the `?edit[field_work_order][widget][0][target_id]=N` query param).
+- `_wo_total_time_get_first_entry_for_wo(int $wo_id): ?EntityInterface` — entityQuery for the earliest `wo_time_clock:entry` on the WO with both start and end times set. Sort by entity id ascending, range 0/1. Also reused by `wo_sign_off` to render the same panel inside reconciliation row fieldsets — both modules are always loaded so the symbol is globally available.
+- Times are pre-formatted in PHP using `\DateTime` + `setTimezone(date_default_timezone_get())` so the JS does no TZ math. The four data attributes (`data-start-date`, `data-start-time`, `data-end-date`, `data-end-time`) carry pre-formatted strings.
+- `data-scope="form"` tells the shared JS to target inputs by full input name (`field_start_time[0][value][date]`, etc.) on the closest form, distinguishing it from the sign-off variant (`data-scope="row"`, suffix-match within a fieldset).
+- Library `wo_total_time/copy_from_first` is defined in `wo_total_time.libraries.yml`. JS in `web/modules/custom/wo_total_time/js/copy_from_first.js`, light styles in `web/modules/custom/wo_total_time/css/copy_from_first.css`. Dependencies: `core/drupal`, `core/once`.
 
 ---
 

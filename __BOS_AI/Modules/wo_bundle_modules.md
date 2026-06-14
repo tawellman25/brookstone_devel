@@ -91,7 +91,7 @@ These IDs are referenced directly in `wo_*` module hook guards. If the status ta
 | `wo_pinion_pine_ips_beetle` | `pinion_pine_ips_beetle` | Reads/writes `property_spraying_info:ips_beetle` |
 | `wo_pre_emergent` | `pre_emergent` | Reads/writes `property_spraying_info:pre_emergent` |
 | `wo_snow_removal` | `snow_removal` | Complex: reads salt/mag/shoveling from `wo_tasks_list:snow_removal`; reads per-push rate + shoveling flag from `contracts:snow_removal`; writes to `property_snow_removal_info` |
-| `wo_special_mowing` | `special_mowing` | |
+| `wo_special_mowing` | `special_mowing` | Billing formula: time + materials + trip + dump + rental + adjustment (matches `wo_fall_cleanup` shape). Rate: `field_maintenance_crew_labor`; minimum: `field_cleanup_labor_minimum` (1.0 hr); billed in `field_hour_billing_increment` increments. Dump fees sum `wo_material_dumping.field_dump_total` to `field_dump_fee_total`. Rental query uses the COALESCE pattern (`receipt_total_cost` OR `hourly_rate × hours`). `field_trucks` is informational only — per-truck dollars flow via `wo_sign_off` setting `field_trip_fee = zipcode_trip_fee × trucks`. **Rebuilt 2026-06-05** (commit `7b0b5268`) — prior code was missing dump fees entirely and dropped hourly-rented equipment. |
 | `wo_spring_cleanup` | `spring_cleanup` | |
 | `wo_sprinkler_check_up` | `sprinkler_check_up` | Reads `property_sprinkler_info`, `property_ss_zones` |
 | `wo_sprinkler_design` | `sprinkler_design` | Writes to `property_sprinkler_design` |

@@ -137,6 +137,55 @@ work_order [backflow_testing] (1) ──< (many) wo_backflow_test        [field_
 taxonomy backflow_device_types (1) ──< (many) property_backflow_device   [field_device_type]
 ```
 
+### 2.8 Completion write-back & status lifecycle (as-built, Gate 3a)
+
+When a `backflow_testing` WO completes, the `wo_backflow_testing` module reads
+the test children and writes the result back onto each referenced device asset,
+appending an audit row only when the device's status actually changes.
+
+**Completion trigger (coupling to note):** a `backflow_testing` WO reaches
+Complete (term **1097**) when the crew submits a `wo_complete_info` of the
+**`irrigation_crew`** sign-off bundle. `wo_sign_off` sets `field_status` = 1097
+and saves the WO (`wo_sign_off.module:156`), which fires
+`wo_backflow_testing_entity_update` → the write-back. **Backflow write-back
+therefore depends on `irrigation_crew` remaining an in-scope `wo_sign_off`
+bundle** — if the testing crew's sign-off bundle ever changes, the trigger
+moves with it. Test children are entered during execution, so they are already
+persisted at completion.
+
+**Per-device write-back** (children grouped by device; if one device has
+multiple tests on one visit, the latest `field_test_date` wins):
+
+- **PASS** → device `field_current_status` = `active`; `field_last_test_date`
+  and `field_last_pass_date` set to the test date; `field_next_due_date` =
+  last pass + `field_test_frequency_months` (default 12), computed with PHP
+  `DateTime` in the **site timezone** and stored **date-only** (`Y-m-d`) — never
+  SQL `FROM_UNIXTIME` (live MariaDB session TZ ≠ PHP TZ).
+- **FAIL** → device `field_current_status` = `failed`; `field_last_test_date`
+  set; **`field_last_pass_date` and `field_next_due_date` left untouched** so the
+  device reads non-compliant with its last-known-good dates intact.
+
+**Status log (`backflow_device_status_log`):** append-only; exactly **one row
+per actual status transition**, change-detected against the device's prior
+`field_current_status` (captured before the write). `field_from_status` /
+`field_to_status` / `field_triggered_by_wo` / an auto note / `uid` are recorded.
+A PASS on an already-`active` device, or a FAIL on an already-`failed` device,
+writes **no** row.
+
+**Idempotency:** re-saving a Complete WO with no status-relevant change writes
+no log row and leaves device dates unchanged — device field writes are
+deterministic from the children, and the log row is gated on a real transition.
+
+**Not test-produced:** `repaired`, `out_of_service`, and `replaced` are manual
+/ future statuses; the write-back never sets them.
+
+**Cert snapshot** (`wo_backflow_test` presave): the tester's
+`teammate_profile.field_certification_number` is copied onto the test child's
+`field_certification_number`. It **mirrors the currently-selected tester while
+the parent WO is not yet Complete**, and **freezes once the WO is Complete**
+(1097). If the tester has no cert on profile, the snapshot is left blank (no
+error). This is the snapshot the Gate 3b report/tag will read — no double entry.
+
 ---
 
 ## 3. Key Decisions & Rationale
@@ -169,7 +218,24 @@ The `full` view mode is the public compliance page. `field_property`'s `entity_r
 
 ### 3.7 Reports and tags are generated from WO data + the tester's stored signature
 
-The test report PDF and the device service tag are generated from `wo_backflow_test` + `work_order` data plus `teammate_profile.field_signature` — no double entry of tester identity or signature. Generation (Entity Print / dompdf) is planned for Gate 3.
+The test report PDF and the device service tag are generated from `wo_backflow_test` + `work_order` data plus the Gate 3a cert snapshot and `teammate_profile.field_signature` — no double entry of tester identity or signature. Generation (Entity Print / dompdf) is planned for **Gate 3b** (the HB25-1077 tag).
+
+### 3.8 Inline device-create: hybrid autocomplete + button, not `inline_entity_form` (Gate 3a)
+
+On the `wo_backflow_test` form, `field_backflow_device` stays an
+`entity_reference_autocomplete` and the form adds a **"Create new device for
+this property" button** (`wo_backflow_testing` `hook_form_alter`), rather than
+switching the field to an `inline_entity_form_complex` widget.
+
+Rationale: the six reading fields are top-level siblings of the device field,
+and per-type reading visibility must update **live** when a device is selected.
+IEF's AJAX only refreshes its **own** widget wrapper — it cannot live-refresh
+sibling fields — so an IEF widget on `field_backflow_device` would break the
+per-type readings AJAX. The autocomplete keeps a clean change-event AJAX that
+rebuilds the readings, and the separate button covers the "no device on this
+property yet" case. The button creates the device inheriting `field_property`
+from the parent WO and relies on the Gate 2 `backflow_device` insert hook for
+the `BF-NNNNNN` title, QR, and pathauto alias, then auto-selects it.
 
 ---
 
@@ -179,7 +245,8 @@ The test report PDF and the device service tag are generated from `wo_backflow_t
 |---|---|---|---|
 | **Gate 1** | Config: 3 ECK types + bundles + fields, `backflow_device_types` vocab + 4 terms + landing view, `teammate_profile` fields, `backflow_testing` parity, displays, pathauto, permissions | **DONE** | `1a011f9a` |
 | **Gate 2** | `backflow_device` module: `BF-NNNNNN` title, permanent canonical-URL QR, public pull-through address render; endroid/qr-code dependency | **DONE** | `153a9e2c` |
-| **Gate 3** | `wo_backflow_test` → device write-back (`field_last_test_date`/`field_last_pass_date`/`field_next_due_date`, status + status-log rows), generated PDF report + service tag, per-type reading visibility (`hook_form_alter` on `field_type_code`), tester uid-1 form default, cert-number snapshot, SOP authoring | **PLANNED** | — |
+| **Gate 3a** | `wo_backflow_testing` module/form logic: cert snapshot (test-child presave), device write-back + status-log on WO completion (1097), per-type reading visibility (`hook_form_alter` on `field_type_code`), tester uid-1 form default, hybrid inline device-create button (§3.8). No new fields/config. | **DONE** | `7608bfdc` |
+| **Gate 3b** | Generated PDF test report + HB25-1077 service tag (Entity Print / dompdf), from WO data + cert snapshot + `teammate_profile.field_signature`; SOP authoring for the human field-testing workflow | **PLANNED** | — |
 | **Gate 4** | EVAs (test history + status log on the device page), compliance dashboard | **PLANNED** | — |
 | **Legacy migration** | Synthesize devices from `property_ss_sources.field_ss_backflow`, idempotent | **PLANNED** | — |
 
@@ -190,6 +257,7 @@ The test report PDF and the device service tag are generated from `wo_backflow_t
 - **Config created via import/generator (not the UI) bit us twice.** (1) `property_backflow_device` was missing from `pathauto.settings:enabled_entity_types`, so pathauto never added the computed `path` base field → the alias type was "broken" and alias generation was a **silent no-op** (cim reported success). (2) The three new-entity form displays had malformed widget settings (`settings: null` with leaked top-level keys) from a generator indentation bug → **`ImageWidget` crashed whenever the add/edit form rendered**, invisible until a form was actually built. **Standing rule: after any programmatic config change, render the actual add/edit form AND hit a generated alias. `drush cim` success is not sufficient verification.**
 - **`endroid/qr-code ^6`** is a new project dependency (+ `bacon/bacon-qr-code`, `dasprid/enum`); resolves and runs on PHP 8.3 (gd present). `composer require` re-triggered a **dead `drupal/calendar` patch URL** (pre-existing, unrelated). Add to the pre-deploy checklist alongside the `form_mode_control` / `views_bulk_operations` patch reapplication: contrib is excluded from rsync, so patches are re-applied manually on live after `composer install`.
 - **The property-detail family has no standalone `/add` content route** (confirmed against `property_ss_sources` too). Devices are created via inline/embedded entity forms and programmatically — both fire `hook_entity_insert`, which is what drives title/QR generation.
+- **The "Create new device" button (Gate 3a) requires the work order — and thus the property — to be selected first.** If clicked before a WO is chosen it warns ("Could not create device: select a work order…") and stays open rather than creating a device. This is an **intentional ordering constraint, not a bug**: a device created without `field_property` would have a broken pathauto alias (no property path segment), so the button refuses to create one until it can inherit the property from the parent WO.
 - **`config/sync` currently diverges from live-synced active config** in hundreds of unrelated configs on this environment. All Gate 1/2 imports were done as **surgical `cim --partial` from a staging dir of only the changed files** — a full `drush cim` would clobber unrelated active config, and a blind `drush cex` would clobber manually-synced live config. Treat full cim/cex on this branch as forbidden until the divergence is reconciled. **Standing hazard; separate cleanup owed.**
 
 ---

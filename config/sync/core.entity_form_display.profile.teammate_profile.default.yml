@@ -9,19 +9,21 @@ dependencies:
     - field.field.profile.teammate_profile.field_billing_allowed
     - field.field.profile.teammate_profile.field_birthday
     - field.field.profile.teammate_profile.field_cell_number
+    - field.field.profile.teammate_profile.field_certification_number
     - field.field.profile.teammate_profile.field_emergency_contacts
     - field.field.profile.teammate_profile.field_first_name
     - field.field.profile.teammate_profile.field_hat_preference
     - field.field.profile.teammate_profile.field_job_title
     - field.field.profile.teammate_profile.field_last_name
-    - field.field.profile.teammate_profile.field_position
     - field.field.profile.teammate_profile.field_list_position
     - field.field.profile.teammate_profile.field_middle_name
     - field.field.profile.teammate_profile.field_portal_allowed
+    - field.field.profile.teammate_profile.field_position
     - field.field.profile.teammate_profile.field_public_viewable
     - field.field.profile.teammate_profile.field_qb_account_number
     - field.field.profile.teammate_profile.field_qb_list_id
     - field.field.profile.teammate_profile.field_shirt_size
+    - field.field.profile.teammate_profile.field_signature
     - field.field.profile.teammate_profile.field_spouse_birthday
     - field.field.profile.teammate_profile.field_spouse_name
     - field.field.profile.teammate_profile.field_teammate_bio
@@ -33,6 +35,7 @@ dependencies:
     - eck
     - field_group
     - field_layout
+    - image
     - inline_entity_form
     - layout_discovery
     - path
@@ -108,6 +111,22 @@ targetEntityType: profile
 bundle: teammate_profile
 mode: default
 content:
+  field_certification_number:
+    type: string_textfield
+    weight: 20
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_signature:
+    type: image_image
+    weight: 21
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
   field_address:
     type: inline_entity_form_complex
     weight: 5

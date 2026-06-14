@@ -1,0 +1,28 @@
+uuid: 57d52db9-effc-4122-9bba-8af0df010960
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_backflow_test.test
+    - field.storage.wo_backflow_test.field_tester
+  module:
+    - user
+id: wo_backflow_test.test.field_tester
+field_name: field_tester
+entity_type: wo_backflow_test
+bundle: test
+label: 'Tester'
+description: 'Defaults to the current user / admin in Gate 3.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: _none
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

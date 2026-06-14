@@ -1,0 +1,31 @@
+uuid: b80221e9-f9fd-469f-bdcb-84b6dd7518b8
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_backflow_device.device
+    - field.storage.property_backflow_device.field_device_type
+    - taxonomy.vocabulary.backflow_device_types
+  module:
+    - taxonomy
+id: property_backflow_device.device.field_device_type
+field_name: field_device_type
+entity_type: property_backflow_device
+bundle: device
+label: 'Device Type'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      backflow_device_types: backflow_device_types
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

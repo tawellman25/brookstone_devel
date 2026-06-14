@@ -1,0 +1,22 @@
+uuid: d9b861b7-761f-473a-a921-8e1eacdd30b6
+langcode: en
+status: true
+dependencies:
+  module:
+    - taxonomy
+id: backflow_device_type_paths
+label: 'Backflow Device Type Paths'
+type: 'canonical_entities:taxonomy_term'
+pattern: 'services/backflow-prevention/[term:name]'
+selection_criteria:
+  549f4fa6-f10e-4683-901a-7a3f2202da6c:
+    id: 'entity_bundle:taxonomy_term'
+    negate: false
+    uuid: 549f4fa6-f10e-4683-901a-7a3f2202da6c
+    context_mapping:
+      taxonomy_term: taxonomy_term
+    bundles:
+      backflow_device_types: backflow_device_types
+selection_logic: and
+weight: -40
+relationships: {  }

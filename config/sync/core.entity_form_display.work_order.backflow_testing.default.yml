@@ -4,13 +4,35 @@ status: true
 dependencies:
   config:
     - eck.eck_type.work_order.backflow_testing
+    - field.field.work_order.backflow_testing.field_billing_adjustment
+    - field.field.work_order.backflow_testing.field_billing_notes
+    - field.field.work_order.backflow_testing.field_client_app_wo_number
     - field.field.work_order.backflow_testing.field_contact
     - field.field.work_order.backflow_testing.field_contract
+    - field.field.work_order.backflow_testing.field_dump_fee_total
     - field.field.work_order.backflow_testing.field_estimate
+    - field.field.work_order.backflow_testing.field_estimated_price
+    - field.field.work_order.backflow_testing.field_invoiced
+    - field.field.work_order.backflow_testing.field_labor_total
+    - field.field.work_order.backflow_testing.field_material_chemical_total
+    - field.field.work_order.backflow_testing.field_printed
+    - field.field.work_order.backflow_testing.field_property
+    - field.field.work_order.backflow_testing.field_rental_total
+    - field.field.work_order.backflow_testing.field_scheduled
+    - field.field.work_order.backflow_testing.field_service
+    - field.field.work_order.backflow_testing.field_status
+    - field.field.work_order.backflow_testing.field_supervisor
+    - field.field.work_order.backflow_testing.field_total_time
+    - field.field.work_order.backflow_testing.field_trip_fee
+    - field.field.work_order.backflow_testing.field_trucks
+    - field.field.work_order.backflow_testing.field_wo_total
+    - field.field.work_order.backflow_testing.field_work_todo_description
   module:
+    - allowed_formats
     - field_layout
     - layout_discovery
     - path
+    - text
 third_party_settings:
   field_layout:
     id: layout_onecol
@@ -21,6 +43,160 @@ targetEntityType: work_order
 bundle: backflow_testing
 mode: default
 content:
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_status:
+    type: options_select
+    weight: 17
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_service:
+    type: entity_reference_autocomplete
+    weight: 22
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_supervisor:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_scheduled:
+    type: boolean_checkbox
+    weight: 20
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_invoiced:
+    type: boolean_checkbox
+    weight: 24
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_printed:
+    type: boolean_checkbox
+    weight: 21
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_labor_total:
+    type: number
+    weight: 20
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_material_chemical_total:
+    type: number
+    weight: 21
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_wo_total:
+    type: number
+    weight: 22
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_total_time:
+    type: number
+    weight: 18
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_trucks:
+    type: number
+    weight: 17
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_trip_fee:
+    type: number
+    weight: 23
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_todo_description:
+    type: text_textarea
+    weight: 3
+    region: content
+    settings:
+      rows: 5
+      placeholder: 'Enter the description of Work To Be Done here'
+    third_party_settings:
+      allowed_formats:
+        hide_help: '1'
+        hide_guidelines: '0'
+  field_estimated_price:
+    type: number
+    weight: 16
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_billing_adjustment:
+    type: number
+    weight: 21
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_billing_notes:
+    type: string_textfield
+    weight: 23
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_client_app_wo_number:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_dump_fee_total:
+    type: number
+    weight: 22
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_rental_total:
+    type: number
+    weight: 24
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
   created:
     type: datetime_timestamp
     weight: 10

@@ -1,0 +1,27 @@
+uuid: b6683066-1356-4076-b66c-586cf19b8628
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.backflow_testing
+    - field.storage.work_order.field_work_todo_description
+    - filter.format.full_html
+  module:
+    - text
+id: work_order.backflow_testing.field_work_todo_description
+field_name: field_work_todo_description
+entity_type: work_order
+bundle: backflow_testing
+label: 'Work To Be Done'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: '<p>[current-date:html_year] - Aerate Lawn as needed.</p>'
+    format: full_html
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - full_html
+field_type: text_long

@@ -280,6 +280,14 @@ backflow now behaves like every other service (same child entity, same EVA/add
 pattern, same permission model), which is also why the WO **view display** is
 modeled on a sprinkler service (§ aligns with the irrigation crew).
 
+### 3.10 Compliance dashboard: anti-double-count, print-tag resolution, EVA placement (Gate 4)
+
+The compliance dashboard (`backflow_compliance`, `/admin/operations/backflow`) is the office scheduling surface. Three decisions:
+
+- **Anti-double-count is load-bearing and structural.** The buckets the office reads — overdue / due-soon / up-to-date — are all **gated on `status == active`**, distinguished only by `next_due`. A FAILED device has an untouched/stale `next_due` (Gate 3a leaves it alone on fail), so without the status gate it would read as overdue *and* failed. The dashboard prevents this by construction: it is one row per device, and `field_current_status` (whose Views filter is the **string** plugin, exact match — not `list_field`) is the discriminator. Verified both directions: filtering **Status = Active** returns the overdue device but **not** the failed one; **Status = Failed** returns the failed one. A failed device therefore appears in the failed bucket only, never in overdue. Standing filter excludes `replaced` (superseded devices are off the action board).
+- **Print-tag resolution.** The Gate 3b tag route is keyed by the test child (`/backflow/tag/{wo_tasks_list}`), so the **per-test "Print Tag" link lives on the Test History EVA** (each row *is* a test child → the route resolves exactly). Device-list rows (the property Devices EVA and the dashboard) instead link the Device ID to the device page, because a base-`property_backflow_device` Views row cannot resolve its single most-recent test child without a row-multiplying reverse relationship. From a device row you reach the tag via Device ID → device page → Test History.
+- **EVA placement uses Drupal's default content region**, not explicit footer weights. EVA extra fields default to visible, so the device/property EVAs render on their pages (verified in the device `full` + `default` modes and the property page) without editing the shared, divergent property/device **view-display** configs — keeping Gate 4 to the four new view configs only and respecting the config/sync divergence hazard (§5).
+
 ---
 
 ## 4. As-Built Status
@@ -292,7 +300,7 @@ modeled on a sprinkler service (§ aligns with the irrigation crew).
 | **Gate 3a — WO displays** | `backflow_testing` WO form aligned to `sprinkler_repair` + corrected service/work-todo defaults (`f12c1503`); WO view display modeled on `sprinkler_repair` with operational EVAs attached to the bundle (`627317fb`). | **DONE** | `f12c1503`, `627317fb` |
 | **Gate 3a — rework** | Folded the test record from a bespoke `wo_backflow_test` entity into **`wo_tasks_list:backflow_testing`** (§2.3, §3.9): moved the full field set, re-pointed all Gate 3a logic, added the WO-page test EVA + "Add Test" button, re-pointed role permissions, and **retired `wo_backflow_test`**. | **DONE** | `a7560b62` |
 | **Gate 3b** | Entity Print + dompdf. Single data builder (`_wo_backflow_testing_report_data`) feeding both outputs; per-test-child report PDF generated at sign-off into `field_report_pdf`, **frozen** (skip if populated); HB25-1077 tag as an on-demand print route `/backflow/tag/{wo_tasks_list}` (streamed, not stored); signature + QR embedded as base64 data: URIs. (SOP authoring still owed — §6.) | **DONE** | `369a9b23` |
-| **Gate 4** | Device-page EVAs (test history + status log on the *device* page) and the compliance dashboard. (The *WO*-page test EVA shipped in the Gate 3a rework.) | **PLANNED** | — |
+| **Gate 4** | Views only: device-page Test History EVA + Status Log EVA (`backflow_test_history_eva`, `backflow_device_status_log_eva`); property-page Devices EVA (`backflow_property_devices_eva`); compliance dashboard `backflow_compliance` at `/admin/operations/backflow` (next-due ASC, standing filter excludes `replaced`, exposed Status + next-due-range filters). Anti-double-count §3.10. (WO-page test EVA shipped in the rework; public test-history EVA is the §5 follow-up.) | **DONE** | `0cb4c4c7` |
 | **Legacy migration** | Synthesize devices from `property_ss_sources.field_ss_backflow`, idempotent | **PLANNED** | — |
 
 ---
@@ -320,5 +328,7 @@ modeled on a sprinkler service (§ aligns with the irrigation crew).
 - **Automated reminders engine** — not built; `field_next_due_date` is the intended hook point.
 - **Customer portal exposure** — not built.
 - **Water-district compliance export** — not built.
+- **Compliance dashboard AREA filter — deferred (focused follow-up owed).** The dashboard ships Status + next-due-range exposed filters. The intended area filter (by `field_property → properties → field_zipcode_reference`) needs a Views relationship from `property_backflow_device` to `properties`; building that relationship in the Views API threw query errors (e.g. `addcslashes`/empty-table during execute), so area/zip filtering was deferred rather than ship a broken dashboard. Owed as a focused follow-up (add the property relationship, then expose the zipcode/area).
+- **Public test-history EVA (§5)** — the reduced, anonymous-facing test history on the device `full` page (date/result/tester/cert/next-due only; no report/WO/repairs links) is the Gate 4 §5 follow-up, pending the field-exposure decision. A clean seam is left (the office Test History EVA is a separate display and is not loosened).
 - **⚠ SOP NEEDED — now owed.** Gate 3a/3b built the human field-testing workflow (tech enters a test on the WO, signs off via `irrigation_crew`, the device updates and a frozen report PDF + reprintable HB25-1077 tag are produced). Per CLAUDE.md SOP governance this human-facing workflow needs an SOP — flag raised; SOP content is authored by Claude Chat, not written inline.
 - **`field_tester` form default = uid 1** — a Gate 3 form-level default (not a field default, which would be env-specific by UUID).

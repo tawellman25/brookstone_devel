@@ -1,34 +1,24 @@
-uuid: 103f0657-acd0-4016-96f7-831c6739123e
+uuid: 88104418-baad-46c7-ab47-e5eeb7949663
 langcode: en
 status: true
 dependencies:
   config:
     - eck.eck_type.wo_tasks_list.backflow_testing
     - field.storage.wo_tasks_list.field_certification_number
-    - field.storage.wo_tasks_list.field_is_initial_test
     - field.storage.wo_tasks_list.field_pass_fail
-    - field.storage.wo_tasks_list.field_repairs_recommended
-    - field.storage.wo_tasks_list.field_report_pdf
     - field.storage.wo_tasks_list.field_test_date
     - field.storage.wo_tasks_list.field_tester
-    - field.storage.wo_tasks_list.field_work_order
-    - user.role.administration
-    - user.role.administrator
-    - user.role.site_admin
-    - user.role.supervisor
   module:
     - datetime
     - eck
     - eva
-    - file
     - options
-    - text
     - user
     - views_url_path_arguments
-id: backflow_test_history_eva
-label: 'Backflow Test History'
+id: backflow_test_history_public_eva
+label: 'Backflow Test History (Public)'
 module: views
-description: 'Gate 4 backflow EVA.'
+description: 'Reduced, public-facing backflow test history for the anonymous device page.'
 tag: ''
 base_table: wo_tasks_list_field_data
 base_field: id
@@ -39,7 +29,7 @@ display:
     display_plugin: default
     position: 0
     display_options:
-      title: ''
+      title: 'Backflow Test History'
       fields:
         field_test_date:
           id: field_test_date
@@ -62,28 +52,6 @@ display:
           hide_empty: false
           type: datetime_default
           settings: {  }
-        field_tester:
-          id: field_tester
-          table: wo_tasks_list__field_tester
-          field: field_tester
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: field
-          label: Tester
-          exclude: false
-          alter:
-            alter_text: false
-            make_link: false
-            trim: false
-          element_type: ''
-          element_class: ''
-          element_label_colon: true
-          empty: ''
-          hide_empty: false
-          type: entity_reference_label
-          settings:
-            link: false
         field_pass_fail:
           id: field_pass_fail
           table: wo_tasks_list__field_pass_fail
@@ -105,78 +73,15 @@ display:
           hide_empty: false
           type: list_default
           settings: {  }
-        field_certification_number:
-          id: field_certification_number
-          table: wo_tasks_list__field_certification_number
-          field: field_certification_number
+        field_tester:
+          id: field_tester
+          table: wo_tasks_list__field_tester
+          field: field_tester
           relationship: none
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: 'Cert #'
-          exclude: false
-          alter:
-            alter_text: false
-            make_link: false
-            trim: false
-          element_type: ''
-          element_class: ''
-          element_label_colon: true
-          empty: ''
-          hide_empty: false
-          type: string
-          settings: {  }
-        field_is_initial_test:
-          id: field_is_initial_test
-          table: wo_tasks_list__field_is_initial_test
-          field: field_is_initial_test
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: field
-          label: Initial
-          exclude: false
-          alter:
-            alter_text: false
-            make_link: false
-            trim: false
-          element_type: ''
-          element_class: ''
-          element_label_colon: true
-          empty: ''
-          hide_empty: false
-          type: boolean
-          settings: {  }
-        field_report_pdf:
-          id: field_report_pdf
-          table: wo_tasks_list__field_report_pdf
-          field: field_report_pdf
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: field
-          label: Report
-          exclude: false
-          alter:
-            alter_text: false
-            make_link: false
-            trim: false
-          element_type: ''
-          element_class: ''
-          element_label_colon: true
-          empty: ''
-          hide_empty: false
-          type: file_default
-          settings: {  }
-        field_work_order:
-          id: field_work_order
-          table: wo_tasks_list__field_work_order
-          field: field_work_order
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: field
-          label: 'Work Order'
+          label: 'Certified Tester'
           exclude: false
           alter:
             alter_text: false
@@ -189,16 +94,16 @@ display:
           hide_empty: false
           type: entity_reference_label
           settings:
-            link: true
-        field_repairs_recommended:
-          id: field_repairs_recommended
-          table: wo_tasks_list__field_repairs_recommended
-          field: field_repairs_recommended
+            link: false
+        field_certification_number:
+          id: field_certification_number
+          table: wo_tasks_list__field_certification_number
+          field: field_certification_number
           relationship: none
           group_type: group
           admin_label: ''
           plugin_id: field
-          label: Repairs
+          label: 'Certification #'
           exclude: false
           alter:
             alter_text: false
@@ -209,32 +114,7 @@ display:
           element_label_colon: true
           empty: ''
           hide_empty: false
-          type: text_default
-          settings: {  }
-        id:
-          id: id
-          table: wo_tasks_list_field_data
-          field: id
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: wo_tasks_list
-          entity_field: id
-          plugin_id: field
-          label: Tag
-          exclude: false
-          alter:
-            alter_text: true
-            text: 'Print Tag'
-            make_link: true
-            path: '/backflow/tag/{{ id }}'
-            trim: false
-          element_type: ''
-          element_class: ''
-          element_label_colon: true
-          empty: ''
-          hide_empty: false
-          type: number_integer
+          type: string
           settings: {  }
       pager:
         type: none
@@ -246,13 +126,9 @@ display:
           submit_button: Apply
           reset_button: false
       access:
-        type: role
+        type: perm
         options:
-          role:
-            administrator: administrator
-            site_admin: site_admin
-            administration: administration
-            supervisor: supervisor
+          perm: 'access content'
       cache:
         type: tag
         options: {  }
@@ -369,19 +245,15 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - user.roles
+        - user.permissions
       tags:
         - 'config:field.storage.wo_tasks_list.field_certification_number'
-        - 'config:field.storage.wo_tasks_list.field_is_initial_test'
         - 'config:field.storage.wo_tasks_list.field_pass_fail'
-        - 'config:field.storage.wo_tasks_list.field_repairs_recommended'
-        - 'config:field.storage.wo_tasks_list.field_report_pdf'
         - 'config:field.storage.wo_tasks_list.field_test_date'
         - 'config:field.storage.wo_tasks_list.field_tester'
-        - 'config:field.storage.wo_tasks_list.field_work_order'
   entity_view_1:
     id: entity_view_1
-    display_title: EVA
+    display_title: 'Public EVA'
     display_plugin: entity_view
     position: 1
     display_options:
@@ -395,14 +267,10 @@ display:
         - 'languages:language_content'
         - 'languages:language_interface'
         - url
-        - user.roles
+        - user.permissions
       tags:
         - 'config:field.storage.wo_tasks_list.field_certification_number'
-        - 'config:field.storage.wo_tasks_list.field_is_initial_test'
         - 'config:field.storage.wo_tasks_list.field_pass_fail'
-        - 'config:field.storage.wo_tasks_list.field_repairs_recommended'
-        - 'config:field.storage.wo_tasks_list.field_report_pdf'
         - 'config:field.storage.wo_tasks_list.field_test_date'
         - 'config:field.storage.wo_tasks_list.field_tester'
-        - 'config:field.storage.wo_tasks_list.field_work_order'
 

@@ -6,9 +6,9 @@
  *
  * - Billing totals on WO completion (presave on work_order:backflow_testing).
  * - Device write-back + append-only status log on WO completion
- *   (insert/update on work_order:backflow_testing): reads the wo_backflow_test
+ *   (insert/update on work_order:backflow_testing): reads the
  *   children and updates each referenced property_backflow_device asset.
- * - Tester certification-number snapshot onto each wo_backflow_test child
+ * - Tester certification-number snapshot onto each wo_tasks_list:backflow_testing child
  *   (presave), frozen once the parent WO is Complete.
  *
  * Device title/QR generation lives in the backflow_device module (Gate 2); a
@@ -28,7 +28,7 @@ use Drupal\user\Entity\User;
 const WO_BACKFLOW_TESTING_STATUS_COMPLETE = 1097;
 
 /**
- * All reading fields on wo_backflow_test.
+ * All reading fields on wo_tasks_list:backflow_testing.
  */
 const WO_BACKFLOW_TESTING_READING_FIELDS = [
   'field_line_pressure_psi',
@@ -54,7 +54,7 @@ const WO_BACKFLOW_TESTING_TYPE_READINGS = [
  */
 function wo_backflow_testing_entity_presave(EntityInterface $entity) {
     // Cert-number snapshot onto the test child (separate concern from billing).
-    if ($entity->getEntityTypeId() === 'wo_backflow_test') {
+    if ($entity->getEntityTypeId() === 'wo_tasks_list' && $entity->bundle() === 'backflow_testing') {
         _wo_backflow_testing_snapshot_cert($entity);
         return;
     }
@@ -156,7 +156,7 @@ function wo_backflow_testing_entity_update(EntityInterface $entity) {
  * Device write-back + append-only status log on backflow_testing completion.
  *
  * Fires on insert/update of a Complete (1097) backflow_testing WO. Reads the
- * wo_backflow_test children, and for each referenced device writes the
+ * wo_tasks_list:backflow_testing children, and for each referenced device writes the
  * last-test snapshot, recomputes status (pass -> active, fail -> failed) and
  * the next-due date (PHP DateTime, date-only, site timezone), and appends a
  * status-log row ONLY when the device status actually changes.
@@ -174,15 +174,16 @@ function _wo_backflow_testing_handle_work_order(EntityInterface $entity) {
     $wo_id = $entity->id();
     $etm = \Drupal::entityTypeManager();
 
-    // All test children for this WO.
-    $child_ids = $etm->getStorage('wo_backflow_test')->getQuery()
+    // All backflow test/task children for this WO.
+    $child_ids = $etm->getStorage('wo_tasks_list')->getQuery()
         ->accessCheck(FALSE)
+        ->condition('type', 'backflow_testing')
         ->condition('field_work_order', $wo_id)
         ->execute();
     if (!$child_ids) {
         return;
     }
-    $children = $etm->getStorage('wo_backflow_test')->loadMultiple($child_ids);
+    $children = $etm->getStorage('wo_tasks_list')->loadMultiple($child_ids);
 
     // Group by device; if a device has multiple tests on one visit, the latest
     // test_date wins (one device update + at most one log row per device).
@@ -253,16 +254,19 @@ function _wo_backflow_testing_handle_work_order(EntityInterface $entity) {
 }
 
 /**
- * Snapshots the tester's certification number onto a wo_backflow_test child.
+ * Snapshots the tester's certification number onto a wo_tasks_list:backflow_testing child.
  *
  * Mirrors the currently-selected tester while the parent WO is not yet
  * Complete; freezes once the WO is Complete (1097). If the tester has no cert
  * on their teammate_profile, the snapshot is cleared (no error this gate).
  */
 function _wo_backflow_testing_snapshot_cert(EntityInterface $child) {
-    // Freeze once the parent WO is Complete.
+    // Freeze once the parent WO is Complete. Load the WO fresh by id rather
+    // than via the cached ->entity reference, so a child loaded before the WO
+    // completed still sees the current WO status within the same request.
     if (!$child->get('field_work_order')->isEmpty()) {
-        $wo = $child->get('field_work_order')->entity;
+        $wo = \Drupal::entityTypeManager()->getStorage('work_order')
+            ->load($child->get('field_work_order')->target_id);
         if ($wo && ($wo->get('field_status')->target_id ?? 0) == WO_BACKFLOW_TESTING_STATUS_COMPLETE) {
             return;
         }
@@ -310,12 +314,13 @@ function _wo_backflow_testing_add_months($stored_datetime, $months) {
 /**
  * Implements hook_entity_prepare_form().
  *
- * Form-level default: on the wo_backflow_test add form, default the tester to
+ * Form-level default: on the wo_tasks_list:backflow_testing add form, default the tester to
  * uid 1 (set on the in-memory new entity before the widget builds — not a
  * stored field default, which would be env-specific by UUID).
  */
 function wo_backflow_testing_entity_prepare_form(EntityInterface $entity, $operation, FormStateInterface $form_state) {
-  if ($entity->getEntityTypeId() === 'wo_backflow_test'
+  if ($entity->getEntityTypeId() === 'wo_tasks_list'
+      && $entity->bundle() === 'backflow_testing'
       && $entity->isNew()
       && $entity->hasField('field_tester')
       && $entity->get('field_tester')->isEmpty()
@@ -327,7 +332,7 @@ function wo_backflow_testing_entity_prepare_form(EntityInterface $entity, $opera
 /**
  * Implements hook_form_alter().
  *
- * wo_backflow_test add/edit form:
+ * wo_tasks_list:backflow_testing add/edit form:
  *  (b) per-type reading visibility — live via AJAX on device select, and on
  *      edit/rebuild from the referenced device's taxonomy field_type_code;
  *  (c) a "Create new device for this property" button that creates a device
@@ -340,7 +345,7 @@ function wo_backflow_testing_form_alter(array &$form, FormStateInterface $form_s
     return;
   }
   $entity = $form_object->getEntity();
-  if ($entity->getEntityTypeId() !== 'wo_backflow_test') {
+  if ($entity->getEntityTypeId() !== 'wo_tasks_list' || $entity->bundle() !== 'backflow_testing') {
     return;
   }
 

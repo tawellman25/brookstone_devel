@@ -1,0 +1,181 @@
+uuid: fa202f5b-21e1-4876-9432-2071076290e2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.backflow_testing
+    - field.field.wo_tasks_list.backflow_testing.field_air_inlet_psid
+    - field.field.wo_tasks_list.backflow_testing.field_backflow_device
+    - field.field.wo_tasks_list.backflow_testing.field_certification_number
+    - field.field.wo_tasks_list.backflow_testing.field_check_valve_1_psid
+    - field.field.wo_tasks_list.backflow_testing.field_check_valve_2_psid
+    - field.field.wo_tasks_list.backflow_testing.field_check_valve_psid
+    - field.field.wo_tasks_list.backflow_testing.field_is_initial_test
+    - field.field.wo_tasks_list.backflow_testing.field_line_pressure_psi
+    - field.field.wo_tasks_list.backflow_testing.field_pass_fail
+    - field.field.wo_tasks_list.backflow_testing.field_relief_valve_psid
+    - field.field.wo_tasks_list.backflow_testing.field_repairs_recommended
+    - field.field.wo_tasks_list.backflow_testing.field_report_image
+    - field.field.wo_tasks_list.backflow_testing.field_report_pdf
+    - field.field.wo_tasks_list.backflow_testing.field_test_date
+    - field.field.wo_tasks_list.backflow_testing.field_tester
+    - field.field.wo_tasks_list.backflow_testing.field_work_order
+  module:
+    - datetime
+    - image
+    - options
+id: wo_tasks_list.backflow_testing.default
+targetEntityType: wo_tasks_list
+bundle: backflow_testing
+mode: default
+content:
+  field_work_order:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_backflow_device:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_test_date:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_tester:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_certification_number:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_pass_fail:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_is_initial_test:
+    type: boolean
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_line_pressure_psi:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: '.'
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_check_valve_1_psid:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: '.'
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_check_valve_2_psid:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: '.'
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_relief_valve_psid:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: '.'
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  field_air_inlet_psid:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: '.'
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_check_valve_psid:
+    type: number_decimal
+    label: above
+    settings:
+      thousand_separator: ''
+      decimal_separator: '.'
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_repairs_recommended:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  field_report_pdf:
+    type: file_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  field_report_image:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 16
+    region: content
+hidden: {  }

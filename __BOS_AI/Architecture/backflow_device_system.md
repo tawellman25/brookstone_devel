@@ -14,7 +14,7 @@
 > **A backflow device is an asset. A test is an event. A work order is a transaction.**
 
 - **Assets persist forever.** A `property_backflow_device` is created once and lives for the life of the physical device. It is never deleted and never replaced by a test or a work order — when a device is physically swapped, the old record is marked `replaced` and points (via `field_replaced_by`) to its successor record.
-- **Events and transactions reference the asset; they never become it.** A `wo_backflow_test` (event) and a `work_order` of bundle `backflow_testing` (transaction) both reference the device. Many of each accumulate against one device over its lifetime.
+- **Events and transactions reference the asset; they never become it.** A `wo_tasks_list:backflow_testing` test record (event) and a `work_order` of bundle `backflow_testing` (transaction) both reference the device. Many of each accumulate against one device over its lifetime.
 - **QR codes are permanent and are never reissued.** The QR encodes the device's immutable canonical URL. The device record — status, last test date, owner of the underlying property, even the property's street address — changes *underneath* a fixed URL. A printed tag affixed to a valve in the field must remain scannable for the life of the device, so nothing the QR encodes may ever change.
 
 This principle is the reason for nearly every decision in §3. When in doubt: the asset is the spine; everything else hangs off it and is additive.
@@ -63,20 +63,20 @@ Five new structures plus two `teammate_profile` additions. All are ECK except th
 | `field_triggered_by_wo` | entity_reference → `work_order` [all] | The transaction that caused the change, when applicable. |
 | `field_status_change_note` | string_long | Free-text reason / context. |
 
-### 2.3 `wo_backflow_test` — the test event (WO child)
+### 2.3 `wo_tasks_list:backflow_testing` — the test/task record (WO child)
 
-- **Entity type / bundle:** `wo_backflow_test` / `test`
-- **Family:** Work Order child entity, modeled on `wo_spraying_conditions`.
+- **Entity type / bundle:** `wo_tasks_list` / `backflow_testing`
+- **Family:** Work Order task-list child — the service's TASK record, the same model every other service uses (`lawn_mowing`, `aerating`, …). For backflow the task *is* the test, so the readings live here. (Originally modeled as a separate `wo_backflow_test` entity on the `wo_spraying_conditions` compliance-child pattern; retired as a modeling correction — see §3.9.)
 - **Base fields:** `uid`, `created`, `changed`, `title`.
-- **Cardinality intent:** **One testing work order → many `wo_backflow_test` children** (one visit can test many assemblies on a commercial site). The device reference lives here on the child, not on the WO (§3.4).
+- **Cardinality intent:** **One testing work order → many `wo_tasks_list:backflow_testing` children** (one visit can test many assemblies on a commercial site). The device reference lives here on the child, not on the WO (§3.4).
 
 | Field | Type | Notes |
 |---|---|---|
 | `field_work_order` | entity_reference → `work_order` [all] | **Required.** The parent testing transaction. |
 | `field_backflow_device` | entity_reference → `property_backflow_device` [all] | Which assembly this test result is for. |
 | `field_test_date` | datetime (date+time) | When the test was performed. |
-| `field_tester` | entity_reference → `user` [all] | The certified tester. Form default → uid 1 is a Gate 3 form concern (§4). |
-| `field_certification_number` | string | **Snapshot** of the tester's cert number at test time (written in Gate 3 from `teammate_profile`). |
+| `field_tester` | entity_reference → `user` [all] | The certified tester. Defaults to uid 1 on add (Gate 3a, `hook_entity_prepare_form`). |
+| `field_certification_number` | string | **Snapshot** of the tester's cert number, copied from `teammate_profile` on presave (Gate 3a); frozen once the WO is Complete. |
 | `field_pass_fail` | list_string `{pass\|fail}` | Test result. |
 | `field_is_initial_test` | boolean | Initial vs. periodic re-test. |
 | `field_line_pressure_psi` | decimal (6,2) | Reading. |
@@ -86,17 +86,17 @@ Five new structures plus two `teammate_profile` additions. All are ECK except th
 | `field_air_inlet_psid` | decimal (6,2) | Reading. |
 | `field_check_valve_psid` | decimal (6,2) | Reading. |
 | `field_repairs_recommended` | text_long | Tester's repair notes. |
-| `field_report_pdf` | file (ext: pdf) | Generated report (Gate 3). |
+| `field_report_pdf` | file (ext: pdf) | Generated report (Gate 3b). |
 | `field_report_image` | image (ext: png gif jpg jpeg pdf) | Legacy-scan fallback only. |
 
-> Per-device-type reading visibility (showing only the readings a PVB vs. RP needs) is **Gate 3** via a server-side `hook_form_alter` keyed on the device's type code — explicitly **not** `conditional_fields`. All reading fields are visible on the form for now.
+> Per-device-type reading visibility (showing only the readings a PVB vs. RP needs) is implemented (Gate 3a) via a server-side `hook_form_alter` keyed on the device's `field_type_code` — `#access`, explicitly **not** `conditional_fields`. With no device chosen yet, all readings show.
 
 ### 2.4 `work_order` bundle `backflow_testing` — the transaction
 
 The existing `backflow_testing` work order bundle, brought to **sibling parity** with a standard service WO (Gate 1). 22 operational/billing field instances were cloned from the `aerating` sibling: `field_property`, `field_status`, `field_service`, `field_supervisor`, `field_scheduled`, `field_invoiced`, `field_printed`, `field_labor_total`, `field_material_chemical_total`, `field_wo_total`, `field_total_time`, `field_trucks`, `field_trip_fee`, `field_work_order_id`, `field_work_order_notes`, `field_work_todo_description`, `field_estimated_price`, `field_billing_adjustment`, `field_billing_notes`, `field_client_app_wo_number`, `field_dump_fee_total`, `field_rental_total` (the latter two for parity; not expected to carry values for testing). `field_work_order_id` and `field_work_order_notes` are left off the form display to match the sibling.
 
 - **Labor rate source:** `config_pages:business_setting.field_sprinkler_technician_rate` (the testing crew is the sprinkler/irrigation crew).
-- **No reading fields and no device reference live on the WO bundle** — they live on `wo_backflow_test` so one visit can carry many tests.
+- **No reading fields and no device reference live on the WO bundle** — they live on `wo_tasks_list:backflow_testing` so one visit can carry many tests.
 - **Critical invariant (CLAUDE.md):** `work_order.bundle` must equal `field_service.term.field_service_bundle`. A Services taxonomy term with `field_service_bundle = backflow_testing` must exist before scheduling relies on `field_service` (Services terms are content, not config — verify in the environment).
 
 ### 2.5 `backflow_device_types` taxonomy vocabulary
@@ -128,11 +128,11 @@ properties (1) ──< (many) property_backflow_device   [field_property, requir
                               │
    property_backflow_device ──┘  field_replaced_by          (self, on physical swap)
 
-property_backflow_device (1) ──< (many) backflow_device_status_log   [field_backflow_device, required, append-only]
-property_backflow_device (1) ──< (many) wo_backflow_test            [field_backflow_device]
+property_backflow_device (1) ──< (many) backflow_device_status_log          [field_backflow_device, required, append-only]
+property_backflow_device (1) ──< (many) wo_tasks_list:backflow_testing       [field_backflow_device]
 
-work_order [backflow_testing] (1) ──< (many) wo_backflow_test        [field_work_order, required]
-   (one testing visit → many test children → each child → one device)
+work_order [backflow_testing] (1) ──< (many) wo_tasks_list:backflow_testing  [field_work_order, required]
+   (one testing visit → many test/task children → each child → one device)
 
 taxonomy backflow_device_types (1) ──< (many) property_backflow_device   [field_device_type]
 ```
@@ -140,8 +140,9 @@ taxonomy backflow_device_types (1) ──< (many) property_backflow_device   [fi
 ### 2.8 Completion write-back & status lifecycle (as-built, Gate 3a)
 
 When a `backflow_testing` WO completes, the `wo_backflow_testing` module reads
-the test children and writes the result back onto each referenced device asset,
-appending an audit row only when the device's status actually changes.
+the `wo_tasks_list:backflow_testing` children and writes the result back onto
+each referenced device asset, appending an audit row only when the device's
+status actually changes.
 
 **Completion trigger (coupling to note):** a `backflow_testing` WO reaches
 Complete (term **1097**) when the crew submits a `wo_complete_info` of the
@@ -179,12 +180,25 @@ deterministic from the children, and the log row is gated on a real transition.
 **Not test-produced:** `repaired`, `out_of_service`, and `replaced` are manual
 / future statuses; the write-back never sets them.
 
-**Cert snapshot** (`wo_backflow_test` presave): the tester's
+**Cert snapshot** (`wo_tasks_list:backflow_testing` presave): the tester's
 `teammate_profile.field_certification_number` is copied onto the test child's
 `field_certification_number`. It **mirrors the currently-selected tester while
 the parent WO is not yet Complete**, and **freezes once the WO is Complete**
-(1097). If the tester has no cert on profile, the snapshot is left blank (no
-error). This is the snapshot the Gate 3b report/tag will read — no double entry.
+(1097) — the freeze reads the WO status **fresh by id** (not via the cached
+`->entity` reference), so it holds even when a child loaded before completion is
+re-saved in the same request. If the tester has no cert on profile, the snapshot
+is left blank (no error). This is the snapshot the Gate 3b report/tag will read
+— no double entry.
+
+**WO-page surface (EVA + Add Test).** The test children render on the
+`work_order:backflow_testing` page via the `wo_tasks_list` EVA view
+(display `entity_view_5`, the backflow bundle), filtered to the current WO by the
+`id` argument — the same mechanism every other task-list service uses. An **"Add
+Test"** button (in the EVA empty + footer areas) links to the ECK content add
+route `/admin/content/wo_tasks_list/add/backflow_testing`, prefilling
+`field_work_order` to the current WO and setting `destination` back to the WO
+page. The button stays available after a save so a second device on the same
+property can be tested.
 
 ---
 
@@ -204,9 +218,9 @@ The QR encodes `toUrl('canonical', ['alias' => TRUE])->setAbsolute()` → `https
 
 **Regeneration guard:** the QR (and title) are written once, in `hook_entity_insert` only, behind a guard that no-ops when the title is already `BF-NNNNNN` and `field_qr_code` is non-empty, plus a re-entrancy guard around the single follow-up save. A normal later `->save()` is an update and never re-enters the insert hook, so the QR is never reissued. Verified: re-save leaves title and QR file byte-identical.
 
-### 3.4 Readings live on the `wo_backflow_test` child, not the WO bundle
+### 3.4 Readings live on the `wo_tasks_list:backflow_testing` child, not the WO bundle
 
-A single testing visit to a commercial site tests many assemblies. Putting readings and the device reference on the WO bundle would force one WO per assembly. Instead, one `work_order` (the billable transaction/visit) owns many `wo_backflow_test` children (one per assembly), each carrying its own readings and `field_backflow_device`. This mirrors the established WO-child pattern (`wo_spraying_conditions`, `wo_chemicals_used`).
+A single testing visit to a commercial site tests many assemblies. Putting readings and the device reference on the WO bundle would force one WO per assembly. Instead, one `work_order` (the billable transaction/visit) owns many `wo_tasks_list:backflow_testing` children (one per assembly), each carrying its own readings and `field_backflow_device`. This mirrors the established WO **task-list** pattern that every service uses (`lawn_mowing`, `aerating`, …) — see §3.9 for why the task list, not a bespoke compliance child.
 
 ### 3.5 `field_current_status` is a `list_string`; device *type* is a taxonomy
 
@@ -218,11 +232,11 @@ The `full` view mode is the public compliance page. `field_property`'s `entity_r
 
 ### 3.7 Reports and tags are generated from WO data + the tester's stored signature
 
-The test report PDF and the device service tag are generated from `wo_backflow_test` + `work_order` data plus the Gate 3a cert snapshot and `teammate_profile.field_signature` — no double entry of tester identity or signature. Generation (Entity Print / dompdf) is planned for **Gate 3b** (the HB25-1077 tag).
+The test report PDF and the device service tag are generated from `wo_tasks_list:backflow_testing` + `work_order` data plus the Gate 3a cert snapshot and `teammate_profile.field_signature` — no double entry of tester identity or signature. Generation (Entity Print / dompdf) is planned for **Gate 3b** (the HB25-1077 tag).
 
 ### 3.8 Inline device-create: hybrid autocomplete + button, not `inline_entity_form` (Gate 3a)
 
-On the `wo_backflow_test` form, `field_backflow_device` stays an
+On the `wo_tasks_list:backflow_testing` form, `field_backflow_device` stays an
 `entity_reference_autocomplete` and the form adds a **"Create new device for
 this property" button** (`wo_backflow_testing` `hook_form_alter`), rather than
 switching the field to an `inline_entity_form_complex` widget.
@@ -237,6 +251,28 @@ property yet" case. The button creates the device inheriting `field_property`
 from the parent WO and relies on the Gate 2 `backflow_device` insert hook for
 the `BF-NNNNNN` title, QR, and pathauto alias, then auto-selects it.
 
+### 3.9 The test record is a service task list (`wo_tasks_list`), not a bespoke child — `wo_backflow_test` retired
+
+Backflow testing was first built as its own ECK entity, `wo_backflow_test`,
+modeled on `wo_spraying_conditions` — a *compliance* child that records ambient
+conditions alongside a service. That was the wrong analogy: for backflow the
+test **is** the service's task, not side conditions about it. Every other BOS
+service records its execution on `wo_tasks_list` (the per-service task record),
+and `wo_tasks_list` already carries the established WO-page surface — a per-bundle
+EVA with an "Add Test/Task" button on the ECK content add route — that
+`wo_backflow_test` lacked (the property-detail family, which `wo_backflow_test`
+resembled, has no standalone add route).
+
+So the entire field set was moved onto a new **`wo_tasks_list:backflow_testing`**
+bundle and `wo_backflow_test` was **retired** (entity type, bundle, fields,
+displays deleted; per-bundle role permissions re-pointed to the new bundle,
+mirroring how sibling task-list bundles are granted). All Gate 3a logic moved
+across with identical semantics. This is a pure modeling correction — no real
+test data existed (Gate 3a content was test-only and cleaned up). The payoff:
+backflow now behaves like every other service (same child entity, same EVA/add
+pattern, same permission model), which is also why the WO **view display** is
+modeled on a sprinkler service (§ aligns with the irrigation crew).
+
 ---
 
 ## 4. As-Built Status
@@ -245,9 +281,11 @@ the `BF-NNNNNN` title, QR, and pathauto alias, then auto-selects it.
 |---|---|---|---|
 | **Gate 1** | Config: 3 ECK types + bundles + fields, `backflow_device_types` vocab + 4 terms + landing view, `teammate_profile` fields, `backflow_testing` parity, displays, pathauto, permissions | **DONE** | `1a011f9a` |
 | **Gate 2** | `backflow_device` module: `BF-NNNNNN` title, permanent canonical-URL QR, public pull-through address render; endroid/qr-code dependency | **DONE** | `153a9e2c` |
-| **Gate 3a** | `wo_backflow_testing` module/form logic: cert snapshot (test-child presave), device write-back + status-log on WO completion (1097), per-type reading visibility (`hook_form_alter` on `field_type_code`), tester uid-1 form default, hybrid inline device-create button (§3.8). No new fields/config. | **DONE** | `7608bfdc` |
+| **Gate 3a** | `wo_backflow_testing` module/form logic: cert snapshot (test-child presave), device write-back + status-log on WO completion (1097), per-type reading visibility (`hook_form_alter` on `field_type_code`), tester uid-1 form default, hybrid inline device-create button (§3.8). | **DONE** | `7608bfdc` |
+| **Gate 3a — WO displays** | `backflow_testing` WO form aligned to `sprinkler_repair` + corrected service/work-todo defaults (`f12c1503`); WO view display modeled on `sprinkler_repair` with operational EVAs attached to the bundle (`627317fb`). | **DONE** | `f12c1503`, `627317fb` |
+| **Gate 3a — rework** | Folded the test record from a bespoke `wo_backflow_test` entity into **`wo_tasks_list:backflow_testing`** (§2.3, §3.9): moved the full field set, re-pointed all Gate 3a logic, added the WO-page test EVA + "Add Test" button, re-pointed role permissions, and **retired `wo_backflow_test`**. | **DONE** | `a7560b62` |
 | **Gate 3b** | Generated PDF test report + HB25-1077 service tag (Entity Print / dompdf), from WO data + cert snapshot + `teammate_profile.field_signature`; SOP authoring for the human field-testing workflow | **PLANNED** | — |
-| **Gate 4** | EVAs (test history + status log on the device page), compliance dashboard | **PLANNED** | — |
+| **Gate 4** | Device-page EVAs (test history + status log on the *device* page) and the compliance dashboard. (The *WO*-page test EVA shipped in the Gate 3a rework.) | **PLANNED** | — |
 | **Legacy migration** | Synthesize devices from `property_ss_sources.field_ss_backflow`, idempotent | **PLANNED** | — |
 
 ---

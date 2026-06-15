@@ -1,0 +1,43 @@
+{#
+/**
+ * @file
+ * HB25-1077 backflow service tag (small format). Same data source as the
+ * report; passed as `tag`. The QR encodes the device's canonical URL (Gate 2).
+ */
+#}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { margin: 0.25in; }
+  body { font-family: DejaVu Sans, sans-serif; color: #111; font-size: 9pt; }
+  .tag { width: 3.5in; border: 2px solid #1f5c2f; border-radius: 6px; padding: 8px 10px; }
+  .tag .title { font-size: 10pt; font-weight: bold; color: #1f5c2f; border-bottom: 1px solid #1f5c2f; padding-bottom: 3px; margin-bottom: 5px; }
+  .tag .row { width: 100%; }
+  .tag .row td { vertical-align: top; padding: 1px 0; }
+  .tag .lbl { color: #555; width: 42%; }
+  .tag .result { font-weight: bold; }
+  .tag .result.pass { color: #1f5c2f; }
+  .tag .result.fail { color: #b00020; }
+  .qr { text-align: center; padding-top: 6px; }
+  .qr img { width: 1.1in; height: 1.1in; }
+  .foot { font-size: 7pt; color: #777; text-align: center; padding-top: 3px; }
+</style>
+</head>
+<body>
+  <div class="tag">
+    <div class="title">Brookstone Outdoors &middot; Backflow Service Tag</div>
+    <table class="row">
+      <tr><td class="lbl">Device ID</td><td><strong>{{ tag.device_id }}</strong></td></tr>
+      <tr><td class="lbl">Type</td><td>{{ tag.device_type }}</td></tr>
+      <tr><td class="lbl">Last Test</td><td>{{ tag.test_date|default('—') }}</td></tr>
+      <tr><td class="lbl">Result</td><td><span class="result {{ tag.passed ? 'pass' : 'fail' }}">{{ tag.passed ? 'PASS' : 'FAIL' }}</span></td></tr>
+    </table>
+    <div class="qr">
+      {% if tag.qr_uri %}<img src="{{ tag.qr_uri }}" alt="Device QR">{% endif %}
+      <div class="foot">Scan for current device record (HB25-1077)</div>
+    </div>
+  </div>
+</body>
+</html>

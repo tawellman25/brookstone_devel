@@ -18,6 +18,8 @@
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityFormInterface;
 use Drupal\Core\Entity\Element\EntityAutocomplete;
+use Drupal\Core\File\FileExists;
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\eck\Entity\EckEntity;
 use Drupal\user\Entity\User;
@@ -184,6 +186,12 @@ function _wo_backflow_testing_handle_work_order(EntityInterface $entity) {
         return;
     }
     $children = $etm->getStorage('wo_tasks_list')->loadMultiple($child_ids);
+
+    // Generate the frozen PDF compliance report for each test child (once each;
+    // skipped if field_report_pdf is already populated — see Gate 3b).
+    foreach ($children as $child) {
+        _wo_backflow_testing_generate_report_pdf($child);
+    }
 
     // Group by device; if a device has multiple tests on one visit, the latest
     // test_date wins (one device update + at most one log row per device).
@@ -639,4 +647,201 @@ function get_backflow_testing_total_rental_fees($workOrderId) {
     $result = $query->execute()->fetchField();
 
     return $result ? $result : 0;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function wo_backflow_testing_theme($existing, $type, $theme, $path) {
+    return [
+        'backflow_test_report' => [
+            'variables' => ['report' => []],
+            'template' => 'backflow-test-report',
+        ],
+        'backflow_service_tag' => [
+            'variables' => ['tag' => []],
+            'template' => 'backflow-service-tag',
+        ],
+    ];
+}
+
+/**
+ * Human labels for the reading fields (Gate 3b report/tag).
+ */
+function _wo_backflow_testing_reading_labels() {
+    return [
+        'field_line_pressure_psi' => 'Line Pressure (psi)',
+        'field_check_valve_1_psid' => 'Check Valve #1 (psid)',
+        'field_check_valve_2_psid' => 'Check Valve #2 (psid)',
+        'field_relief_valve_psid' => 'Relief Valve (psid)',
+        'field_air_inlet_psid' => 'Air Inlet (psid)',
+        'field_check_valve_psid' => 'Check Valve (psid)',
+    ];
+}
+
+/**
+ * Formats a stored datetime (UTC) as a US date in the site timezone.
+ */
+function _wo_backflow_testing_us_date($stored) {
+    if (empty($stored)) {
+        return '';
+    }
+    $tz = \Drupal::config('system.date')->get('timezone.default') ?: date_default_timezone_get();
+    $d = new \DateTime($stored, new \DateTimeZone('UTC'));
+    $d->setTimezone(new \DateTimeZone($tz));
+    return $d->format('m/d/Y');
+}
+
+/**
+ * Returns a base64 data: URI for a managed image file, or NULL.
+ *
+ * Reads via the stream wrapper (works for public:// and s3://) and embeds the
+ * bytes so dompdf never has to resolve a filesystem path — also sidesteps odd
+ * characters in filenames (e.g. an apostrophe in a signature filename).
+ */
+function _wo_backflow_testing_image_data_uri($file) {
+    if (!$file) {
+        return NULL;
+    }
+    $data = @file_get_contents($file->getFileUri());
+    if ($data === FALSE || $data === '') {
+        return NULL;
+    }
+    $mime = $file->getMimeType() ?: 'image/png';
+    return 'data:' . $mime . ';base64,' . base64_encode($data);
+}
+
+/**
+ * Builds the single report/tag data array for a backflow test child.
+ *
+ * One source for both the PDF report and the service tag so they cannot drift.
+ */
+function _wo_backflow_testing_report_data(EntityInterface $child) {
+    $passed = ($child->get('field_pass_fail')->value === 'pass');
+    $data = [
+        'device_id' => '',
+        'device_type' => '',
+        'type_code' => '',
+        'serial' => '',
+        'location' => '',
+        'address_lines' => [],
+        'test_date' => _wo_backflow_testing_us_date($child->get('field_test_date')->value),
+        'is_initial' => (bool) $child->get('field_is_initial_test')->value,
+        'tester_name' => '',
+        'cert_number' => $child->get('field_certification_number')->value ?? '',
+        'passed' => $passed,
+        'readings' => [],
+        'repairs' => $child->get('field_repairs_recommended')->value ?? '',
+        'signature_uri' => NULL,
+        'qr_uri' => NULL,
+        'generated_date' => \Drupal::service('date.formatter')->format(\Drupal::time()->getRequestTime(), 'custom', 'm/d/Y'),
+    ];
+
+    // Device facts + access-safe pull-through address (Gate 2 approach).
+    $device = $child->get('field_backflow_device')->entity;
+    if ($device) {
+        $data['device_id'] = (string) $device->label();
+        $data['serial'] = $device->get('field_serial_number')->value ?? '';
+        $data['location'] = $device->get('field_physical_location')->value ?? '';
+        $data['qr_uri'] = _wo_backflow_testing_image_data_uri($device->get('field_qr_code')->entity);
+
+        if (!$device->get('field_device_type')->isEmpty() && ($term = $device->get('field_device_type')->entity)) {
+            $data['device_type'] = (string) $term->label();
+            $data['type_code'] = $term->get('field_type_code')->value ?? '';
+        }
+
+        $property = $device->get('field_property')->entity;
+        if ($property) {
+            $street = $property->hasField('field_street_address') ? trim((string) $property->get('field_street_address')->value) : '';
+            if ($street !== '') {
+                $data['address_lines'][] = $street;
+            }
+            $city = '';
+            $zip = '';
+            if ($property->hasField('field_zipcode_reference') && !$property->get('field_zipcode_reference')->isEmpty()) {
+                $zipcode = $property->get('field_zipcode_reference')->entity;
+                if ($zipcode) {
+                    $zip = $zipcode->hasField('field_zipcode') ? trim((string) $zipcode->get('field_zipcode')->value) : '';
+                    if ($zipcode->hasField('field_city') && !$zipcode->get('field_city')->isEmpty() && ($cityEnt = $zipcode->get('field_city')->entity)) {
+                        $city = (string) $cityEnt->label();
+                    }
+                }
+            }
+            $city_zip = trim($city . (($city !== '' && $zip !== '') ? ', ' : ' ') . $zip);
+            if ($city_zip !== '') {
+                $data['address_lines'][] = $city_zip;
+            }
+        }
+    }
+
+    // Tester name + signature (no owner/customer data anywhere on the report).
+    if (!$child->get('field_tester')->isEmpty() && ($tester = $child->get('field_tester')->entity)) {
+        $data['tester_name'] = (string) $tester->getDisplayName();
+        $profiles = \Drupal::entityTypeManager()->getStorage('profile')->loadByProperties([
+            'uid' => $tester->id(),
+            'type' => 'teammate_profile',
+        ]);
+        if ($profiles) {
+            $profile = reset($profiles);
+            if ($profile->hasField('field_signature') && !$profile->get('field_signature')->isEmpty()) {
+                $data['signature_uri'] = _wo_backflow_testing_image_data_uri($profile->get('field_signature')->entity);
+            }
+        }
+    }
+
+    // Only the readings applicable to this device type (no N/A rows).
+    $labels = _wo_backflow_testing_reading_labels();
+    $applicable = $data['type_code'] && isset(WO_BACKFLOW_TESTING_TYPE_READINGS[$data['type_code']])
+        ? WO_BACKFLOW_TESTING_TYPE_READINGS[$data['type_code']]
+        : WO_BACKFLOW_TESTING_READING_FIELDS;
+    foreach ($applicable as $field) {
+        $data['readings'][] = [
+            'label' => $labels[$field] ?? $field,
+            'value' => $child->get($field)->value,
+        ];
+    }
+
+    return $data;
+}
+
+/**
+ * Renders a backflow test child to a PDF and stores it in field_report_pdf.
+ *
+ * FREEZE: generated once. If field_report_pdf is already populated, this is a
+ * no-op (the report is an as-issued compliance snapshot, like the QR).
+ */
+function _wo_backflow_testing_generate_report_pdf(EntityInterface $child) {
+    if (!$child->get('field_report_pdf')->isEmpty()) {
+        return;
+    }
+    try {
+        $data = _wo_backflow_testing_report_data($child);
+        $build = [
+            '#theme' => 'backflow_test_report',
+            '#report' => $data,
+        ];
+        $html = (string) \Drupal::service('renderer')->renderInIsolation($build);
+        $engine = \Drupal::service('plugin.manager.entity_print.print_engine')->createInstance('dompdf');
+        $engine->addPage($html);
+        $blob = $engine->getBlob();
+
+        $directory = 'public://wo_tasks_list/backflow_testing/reports';
+        \Drupal::service('file_system')->prepareDirectory(
+            $directory,
+            FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS
+        );
+        $id = $data['device_id'] !== '' ? $data['device_id'] : ('test-' . $child->id());
+        $uri = $directory . '/backflow-report-' . $id . '-' . $child->id() . '.pdf';
+        $file = \Drupal::service('file.repository')->writeData($blob, $uri, FileExists::Replace);
+
+        $child->set('field_report_pdf', $file->id());
+        $child->save();
+    }
+    catch (\Throwable $e) {
+        // Never block sign-off on report failure; log and continue.
+        \Drupal::logger('wo_backflow_testing')->error('Report PDF generation failed for test @id: @msg', [
+            '@id' => $child->id(),
+            '@msg' => $e->getMessage(),
+        ]);
+    }
 }

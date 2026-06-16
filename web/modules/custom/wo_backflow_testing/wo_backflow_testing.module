@@ -236,6 +236,17 @@ function _wo_backflow_testing_handle_work_order(EntityInterface $entity) {
             if ($next_due) {
                 $device->set('field_next_due_date', $next_due);
             }
+
+            // Commissioning date: stamp the device's initial test date on the
+            // first PASSING initial test only, and never overwrite it (an asset's
+            // commissioning date is permanent — a later reinstall lives on the
+            // test record, not by moving this). Date-only, site TZ — same
+            // conversion used for next_due above (add_months with 0). This is
+            // folded into the same device save below: no extra save, no log row.
+            if ((bool) $child->get('field_is_initial_test')->value
+                && $device->get('field_initial_test_date')->isEmpty()) {
+                $device->set('field_initial_test_date', _wo_backflow_testing_add_months($last_test, 0));
+            }
         }
         else {
             // Non-compliant. Leave last_pass_date / next_due_date untouched.

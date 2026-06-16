@@ -7,6 +7,7 @@ dependencies:
     - field.field.property_backflow_device.device.field_current_status
     - field.field.property_backflow_device.device.field_device_photos
     - field.field.property_backflow_device.device.field_device_type
+    - field.field.property_backflow_device.device.field_initial_test_date
     - field.field.property_backflow_device.device.field_last_pass_date
     - field.field.property_backflow_device.device.field_last_test_date
     - field.field.property_backflow_device.device.field_material_backflow
@@ -22,57 +23,52 @@ dependencies:
     - datetime
     - image
     - options
+    - user
 id: property_backflow_device.device.default
 targetEntityType: property_backflow_device
 bundle: device
 mode: default
 content:
-  field_serial_number:
-    type: string
-    label: above
-    settings:
-      link_to_entity: false
+  backflow_device_status_log_eva_entity_view_1:
+    settings: {  }
     third_party_settings: {  }
-    weight: 1
+    weight: 10
     region: content
-  field_material_backflow:
-    type: entity_reference_label
-    label: above
-    settings:
-      link: true
+  backflow_test_history_eva_entity_view_1:
+    settings: {  }
     third_party_settings: {  }
-    weight: 2
+    weight: 10
     region: content
-  field_device_type:
-    type: entity_reference_label
-    label: above
-    settings:
-      link: true
+  backflow_test_history_public_eva_entity_view_1:
+    settings: {  }
     third_party_settings: {  }
-    weight: 3
+    weight: 10
     region: content
-  field_property:
-    type: entity_reference_label
-    label: above
+  created:
+    type: timestamp
+    label: hidden
     settings:
-      link: true
+      date_format: medium
+      custom_date_format: ''
+      timezone: ''
+      tooltip:
+        date_format: long
+        custom_date_format: ''
+      time_diff:
+        enabled: false
+        future_format: '@interval hence'
+        past_format: '@interval ago'
+        granularity: 2
+        refresh: 60
     third_party_settings: {  }
-    weight: 4
+    weight: 0
     region: content
-  field_ss_source:
-    type: entity_reference_label
-    label: above
-    settings:
-      link: true
-    third_party_settings: {  }
-    weight: 5
-    region: content
-  field_physical_location:
-    type: basic_string
+  field_current_status:
+    type: list_default
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 6
+    weight: 12
     region: content
   field_device_photos:
     type: image
@@ -85,14 +81,22 @@ content:
     third_party_settings: {  }
     weight: 7
     region: content
-  field_last_test_date:
+  field_device_type:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_initial_test_date:
     type: datetime_default
     label: above
     settings:
       timezone_override: ''
       format_type: medium
     third_party_settings: {  }
-    weight: 8
+    weight: 7
     region: content
   field_last_pass_date:
     type: datetime_default
@@ -103,6 +107,23 @@ content:
     third_party_settings: {  }
     weight: 9
     region: content
+  field_last_test_date:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_material_backflow:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
   field_next_due_date:
     type: datetime_default
     label: above
@@ -112,29 +133,20 @@ content:
     third_party_settings: {  }
     weight: 10
     region: content
-  field_test_frequency_months:
-    type: number_integer
-    label: above
-    settings:
-      thousand_separator: ''
-      prefix_suffix: true
-    third_party_settings: {  }
-    weight: 11
-    region: content
-  field_current_status:
-    type: list_default
+  field_physical_location:
+    type: basic_string
     label: above
     settings: {  }
     third_party_settings: {  }
-    weight: 12
+    weight: 6
     region: content
-  field_replaced_by:
+  field_property:
     type: entity_reference_label
     label: above
     settings:
       link: true
     third_party_settings: {  }
-    weight: 13
+    weight: 4
     region: content
   field_qr_code:
     type: image
@@ -147,4 +159,57 @@ content:
     third_party_settings: {  }
     weight: 14
     region: content
-hidden: {  }
+  field_replaced_by:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_serial_number:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_ss_source:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_test_frequency_months:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
+  uid:
+    type: author
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  entity_print_view_epub: true
+  entity_print_view_pdf: true
+  entity_print_view_word_docx: true
+

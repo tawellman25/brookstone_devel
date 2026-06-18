@@ -1,0 +1,145 @@
+uuid: 87f23e07-1374-408f-a0e6-caf88fab4e0f
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.property_backflow_device.full
+    - eck.eck_type.property_backflow_device.device
+    - field.field.property_backflow_device.device.field_current_status
+    - field.field.property_backflow_device.device.field_device_photos
+    - field.field.property_backflow_device.device.field_device_type
+    - field.field.property_backflow_device.device.field_initial_test_date
+    - field.field.property_backflow_device.device.field_last_pass_date
+    - field.field.property_backflow_device.device.field_last_test_date
+    - field.field.property_backflow_device.device.field_material_backflow
+    - field.field.property_backflow_device.device.field_next_due_date
+    - field.field.property_backflow_device.device.field_physical_location
+    - field.field.property_backflow_device.device.field_property
+    - field.field.property_backflow_device.device.field_qr_code
+    - field.field.property_backflow_device.device.field_replaced_by
+    - field.field.property_backflow_device.device.field_serial_number
+    - field.field.property_backflow_device.device.field_ss_source
+    - field.field.property_backflow_device.device.field_test_frequency_months
+  module:
+    - datetime
+    - image
+    - options
+id: property_backflow_device.device.full
+targetEntityType: property_backflow_device
+bundle: device
+mode: full
+content:
+  backflow_device_status_log_eva_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  backflow_test_history_eva_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  backflow_test_history_public_eva_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_current_status:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_device_photos:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_device_type:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_initial_test_date:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_last_pass_date:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_last_test_date:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_next_due_date:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_physical_location:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_property:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  changed: true
+  created: true
+  entity_print_view_epub: true
+  entity_print_view_pdf: true
+  entity_print_view_word_docx: true
+  field_material_backflow: true
+  field_qr_code: true
+  field_replaced_by: true
+  field_serial_number: true
+  field_ss_source: true
+  field_test_frequency_months: true
+  uid: true
+

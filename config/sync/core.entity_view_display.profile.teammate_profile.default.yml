@@ -9,19 +9,21 @@ dependencies:
     - field.field.profile.teammate_profile.field_billing_allowed
     - field.field.profile.teammate_profile.field_birthday
     - field.field.profile.teammate_profile.field_cell_number
+    - field.field.profile.teammate_profile.field_certification_number
     - field.field.profile.teammate_profile.field_emergency_contacts
     - field.field.profile.teammate_profile.field_first_name
     - field.field.profile.teammate_profile.field_hat_preference
     - field.field.profile.teammate_profile.field_job_title
     - field.field.profile.teammate_profile.field_last_name
-    - field.field.profile.teammate_profile.field_position
     - field.field.profile.teammate_profile.field_list_position
     - field.field.profile.teammate_profile.field_middle_name
     - field.field.profile.teammate_profile.field_portal_allowed
+    - field.field.profile.teammate_profile.field_position
     - field.field.profile.teammate_profile.field_public_viewable
     - field.field.profile.teammate_profile.field_qb_account_number
     - field.field.profile.teammate_profile.field_qb_list_id
     - field.field.profile.teammate_profile.field_shirt_size
+    - field.field.profile.teammate_profile.field_signature
     - field.field.profile.teammate_profile.field_spouse_birthday
     - field.field.profile.teammate_profile.field_spouse_name
     - field.field.profile.teammate_profile.field_teammate_bio
@@ -31,6 +33,7 @@ dependencies:
     - datetime
     - eck
     - field_layout
+    - image
     - layout_builder
     - layout_discovery
     - options
@@ -284,6 +287,25 @@ targetEntityType: profile
 bundle: teammate_profile
 mode: default
 content:
+  field_certification_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 20
+    region: content
+  field_signature:
+    type: image
+    label: above
+    settings:
+      image_link: ''
+      image_style: ''
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 21
+    region: content
   emergency_contact_full_name_block_entity_view_1:
     settings: {  }
     third_party_settings: {  }

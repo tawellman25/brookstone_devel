@@ -15,6 +15,7 @@ BOS may integrate with accounting systems (e.g., QuickBooks), but does not repla
 
 | Directory | Contents |
 |---|---|
+| `Architecture/` | Architecture decision records: locked designs and as-built state for multi-gate systems |
 | `Entities/` | Entity type specifications: fields, bundles, relationships, invariants |
 | `Modules/` | Custom module architecture: hooks, services, business logic |
 | `Governance/` | Design charters, cross-cutting references, and process governance |
@@ -33,6 +34,7 @@ BOS may integrate with accounting systems (e.g., QuickBooks), but does not repla
 - **UI flow:** `Entities/03_bos_ui_flow_map.md` — user workflows
 - **Module tiers:** `Modules/01_modules_tier_policy.md` — contrib module governance
 - **WO modules:** `Modules/wo_bundle_modules.md` — the wo_* module pattern
+- **Backflow device system:** `Architecture/backflow_device_system.md` — backflow asset/test/QR ADR (as-built through Gate 2)
 
 ## Platform
 - Drupal 10 (Drupal 11 compatible)

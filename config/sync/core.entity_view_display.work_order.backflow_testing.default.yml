@@ -4,61 +4,198 @@ status: true
 dependencies:
   config:
     - eck.eck_type.work_order.backflow_testing
+    - field.field.work_order.backflow_testing.field_billing_adjustment
+    - field.field.work_order.backflow_testing.field_billing_notes
+    - field.field.work_order.backflow_testing.field_client_app_wo_number
     - field.field.work_order.backflow_testing.field_contact
     - field.field.work_order.backflow_testing.field_contract
+    - field.field.work_order.backflow_testing.field_dump_fee_total
     - field.field.work_order.backflow_testing.field_estimate
+    - field.field.work_order.backflow_testing.field_estimated_price
+    - field.field.work_order.backflow_testing.field_invoiced
+    - field.field.work_order.backflow_testing.field_labor_total
+    - field.field.work_order.backflow_testing.field_material_chemical_total
+    - field.field.work_order.backflow_testing.field_printed
+    - field.field.work_order.backflow_testing.field_property
+    - field.field.work_order.backflow_testing.field_rental_total
+    - field.field.work_order.backflow_testing.field_scheduled
+    - field.field.work_order.backflow_testing.field_service
+    - field.field.work_order.backflow_testing.field_status
+    - field.field.work_order.backflow_testing.field_supervisor
+    - field.field.work_order.backflow_testing.field_total_time
+    - field.field.work_order.backflow_testing.field_trip_fee
+    - field.field.work_order.backflow_testing.field_trucks
+    - field.field.work_order.backflow_testing.field_wo_total
+    - field.field.work_order.backflow_testing.field_work_order_id
+    - field.field.work_order.backflow_testing.field_work_order_notes
+    - field.field.work_order.backflow_testing.field_work_todo_description
   module:
-    - user
+    - field_group
+    - text
+third_party_settings:
+  field_group:
+    group_schedule:
+      children:
+        - wo_scheduled_teammate_view_entity_view_1
+      label: Schedule
+      parent_name: ''
+      region: content
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+    group_hours:
+      children:
+        - wo_time_clock_entries_total_entity_view_1
+        - wo_hours_grouping_entity_view_1
+      label: Hours
+      parent_name: ''
+      region: content
+      weight: 6
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_materials:
+      children:
+        - wo_material_list_grouping_entity_view_1
+      label: Materials
+      parent_name: ''
+      region: content
+      weight: 7
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: true
+        id: ''
+        open: true
+        description: ''
+    group_rental_equipment:
+      children:
+        - wo_rented_equipment_entity_view_1
+      label: 'Rental Equipment'
+      parent_name: ''
+      region: content
+      weight: 8
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_photos:
+      children:
+        - wo_media_photos_entity_view_1
+      label: Photos
+      parent_name: ''
+      region: content
+      weight: 9
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_files:
+      children:
+        - wo_media_files_entity_view_1
+      label: Files
+      parent_name: ''
+      region: content
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: false
+    group_notes:
+      children:
+        - wo_notes_entity_view_1
+      label: Notes
+      parent_name: ''
+      region: content
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+    group_time_clock:
+      children:
+        - wo_time_clock_buttons_entity_view_1
+        - wo_time_clock_buttons_entity_view_2
+        - flag_work_order_timer
+      label: 'Time Clock'
+      parent_name: ''
+      region: content
+      weight: 5
+      format_type: html_element
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        element: div
+        show_label: false
+        label_element: h3
+        label_element_classes: ''
+        attributes: ''
+        effect: none
+        speed: fast
+        description: ''
 id: work_order.backflow_testing.default
 targetEntityType: work_order
 bundle: backflow_testing
 mode: default
 content:
-  created:
-    type: timestamp
-    label: hidden
-    settings:
-      date_format: medium
-      custom_date_format: ''
-      timezone: ''
-      tooltip:
-        date_format: long
-        custom_date_format: ''
-      time_diff:
-        enabled: false
-        future_format: '@interval hence'
-        past_format: '@interval ago'
-        granularity: 2
-        refresh: 60
-    third_party_settings: {  }
-    weight: 2
-    region: content
-  flag_work_order_timer:
-    settings: {  }
-    third_party_settings: {  }
-    weight: 11
-    region: content
-  title:
+  field_client_app_wo_number:
     type: string
-    label: hidden
+    label: inline
     settings:
       link_to_entity: false
     third_party_settings: {  }
     weight: 0
     region: content
-  uid:
-    type: author
-    label: hidden
+  field_work_todo_description:
+    type: text_default
+    label: above
     settings: {  }
     third_party_settings: {  }
     weight: 1
     region: content
-  wo_current_property_owner_entity_view_1:
+  flag_work_order_timer:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  wo_hours_grouping_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  wo_material_list_grouping_entity_view_1:
     settings: {  }
     third_party_settings: {  }
     weight: 3
     region: content
-  wo_hours_grouping_entity_view_1:
+  wo_media_files_entity_view_1:
     settings: {  }
     third_party_settings: {  }
     weight: 4
@@ -71,30 +208,70 @@ content:
   wo_notes_entity_view_1:
     settings: {  }
     third_party_settings: {  }
+    weight: 3
+    region: content
+  wo_rented_equipment_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
     weight: 6
     region: content
   wo_scheduled_teammate_view_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 7
+    weight: 10
+    region: content
+  wo_sign_off_entity_view_5:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  wo_tasks_list_entity_view_5:
+    settings: {  }
+    third_party_settings: {  }
+    weight: -10
     region: content
   wo_time_clock_buttons_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 8
+    weight: 4
     region: content
   wo_time_clock_buttons_entity_view_2:
     settings: {  }
     third_party_settings: {  }
-    weight: 9
+    weight: 5
     region: content
   wo_time_clock_entries_total_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 10
+    weight: 12
     region: content
 hidden:
   changed: true
+  created: true
+  field_billing_adjustment: true
+  field_billing_notes: true
   field_contact: true
   field_contract: true
+  field_dump_fee_total: true
   field_estimate: true
+  field_estimated_price: true
+  field_invoiced: true
+  field_labor_total: true
+  field_material_chemical_total: true
+  field_printed: true
+  field_property: true
+  field_rental_total: true
+  field_scheduled: true
+  field_service: true
+  field_status: true
+  field_supervisor: true
+  field_total_time: true
+  field_trip_fee: true
+  field_trucks: true
+  field_wo_total: true
+  field_work_order_id: true
+  field_work_order_notes: true
+  title: true
+  uid: true
+  wo_current_property_owner_entity_view_1: true
+

@@ -1,0 +1,90 @@
+uuid: bf3dc5be-78d5-4761-86e3-85db46bb35e3
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.backflow_device_status_log.log
+    - field.field.backflow_device_status_log.log.field_backflow_device
+    - field.field.backflow_device_status_log.log.field_from_status
+    - field.field.backflow_device_status_log.log.field_status_change_note
+    - field.field.backflow_device_status_log.log.field_to_status
+    - field.field.backflow_device_status_log.log.field_triggered_by_wo
+  module:
+    - field_layout
+    - layout_discovery
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: backflow_device_status_log.log.default
+targetEntityType: backflow_device_status_log
+bundle: log
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_backflow_device:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_from_status:
+    type: options_select
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_status_change_note:
+    type: string_textarea
+    weight: 5
+    region: content
+    settings:
+      rows: 4
+      placeholder: ''
+    third_party_settings: {  }
+  field_to_status:
+    type: options_select
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_triggered_by_wo:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }
+

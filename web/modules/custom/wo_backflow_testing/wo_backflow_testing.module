@@ -1,12 +1,66 @@
 <?php
 
+/**
+ * @file
+ * Backflow Testing work order logic.
+ *
+ * - Billing totals on WO completion (presave on work_order:backflow_testing).
+ * - Device write-back + append-only status log on WO completion
+ *   (insert/update on work_order:backflow_testing): reads the
+ *   children and updates each referenced property_backflow_device asset.
+ * - Tester certification-number snapshot onto each wo_tasks_list:backflow_testing child
+ *   (presave), frozen once the parent WO is Complete.
+ *
+ * Device title/QR generation lives in the backflow_device module (Gate 2); a
+ * normal device ->save() here never regenerates them (Gate 2 guard).
+ */
+
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\Entity\EntityFormInterface;
+use Drupal\Core\Entity\Element\EntityAutocomplete;
+use Drupal\Core\File\FileExists;
+use Drupal\Core\File\FileSystemInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\eck\Entity\EckEntity;
+use Drupal\user\Entity\User;
+
+/**
+ * WO status taxonomy term ID for "Complete".
+ */
+const WO_BACKFLOW_TESTING_STATUS_COMPLETE = 1097;
+
+/**
+ * All reading fields on wo_tasks_list:backflow_testing.
+ */
+const WO_BACKFLOW_TESTING_READING_FIELDS = [
+  'field_line_pressure_psi',
+  'field_check_valve_1_psid',
+  'field_check_valve_2_psid',
+  'field_relief_valve_psid',
+  'field_air_inlet_psid',
+  'field_check_valve_psid',
+];
+
+/**
+ * Applicable reading fields per device type code (no hardcoded TIDs).
+ */
+const WO_BACKFLOW_TESTING_TYPE_READINGS = [
+  'RP'   => ['field_line_pressure_psi', 'field_check_valve_1_psid', 'field_check_valve_2_psid', 'field_relief_valve_psid'],
+  'DCVA' => ['field_line_pressure_psi', 'field_check_valve_1_psid', 'field_check_valve_2_psid'],
+  'PVB'  => ['field_line_pressure_psi', 'field_air_inlet_psid', 'field_check_valve_psid'],
+  'SVB'  => ['field_line_pressure_psi', 'field_air_inlet_psid', 'field_check_valve_psid'],
+];
 
 /**
  * Implements hook_entity_presave().
  */
 function wo_backflow_testing_entity_presave(EntityInterface $entity) {
+    // Cert-number snapshot onto the test child (separate concern from billing).
+    if ($entity->getEntityTypeId() === 'wo_tasks_list' && $entity->bundle() === 'backflow_testing') {
+        _wo_backflow_testing_snapshot_cert($entity);
+        return;
+    }
+
     // Initialize $grand_total at the start.
     $grand_total = 0;
     $labor_subtotal = 0;
@@ -17,7 +71,7 @@ function wo_backflow_testing_entity_presave(EntityInterface $entity) {
 
         // Check if the Work Order is marked as 'Complete'.
         $statusTermId = $entity->get('field_status')->target_id ?? 0;
-        if ($statusTermId != 1097) {
+        if ($statusTermId != WO_BACKFLOW_TESTING_STATUS_COMPLETE) {
             return;
         }
 
@@ -101,24 +155,477 @@ function wo_backflow_testing_entity_update(EntityInterface $entity) {
 }
 
 /**
- * Handles work order completion write-back for backflow_testing.
+ * Device write-back + append-only status log on backflow_testing completion.
  *
- * NOTE: property_sprinkler_system:system does not yet have a dedicated backflow
- * test date field. When that field is added (e.g. field_last_backflow_test_date),
- * load property_sprinkler_system by field_property here and write the completion
- * date back, following the wo_sprinkler_start_up pattern.
+ * Fires on insert/update of a Complete (1097) backflow_testing WO. Reads the
+ * wo_tasks_list:backflow_testing children, and for each referenced device writes the
+ * last-test snapshot, recomputes status (pass -> active, fail -> failed) and
+ * the next-due date (PHP DateTime, date-only, site timezone), and appends a
+ * status-log row ONLY when the device status actually changes.
+ *
+ * Idempotent: device field writes are deterministic from the children, and the
+ * log row is gated on a real status change — re-saving a Complete WO with no
+ * change appends nothing and leaves device dates untouched.
  */
 function _wo_backflow_testing_handle_work_order(EntityInterface $entity) {
     $statusTermId = $entity->get('field_status')->target_id ?? 0;
-    if ($statusTermId != 1097) {
+    if ($statusTermId != WO_BACKFLOW_TESTING_STATUS_COMPLETE) {
         return;
     }
 
-    // TODO: Write last backflow test date back to property_sprinkler_system:system
-    // once the field exists. Load by:
-    //   field_property = $entity->get('field_property')->target_id
-    //   type = 'system'
-    // Then set field_last_backflow_test_date and save.
+    $wo_id = $entity->id();
+    $etm = \Drupal::entityTypeManager();
+
+    // All backflow test/task children for this WO.
+    $child_ids = $etm->getStorage('wo_tasks_list')->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('type', 'backflow_testing')
+        ->condition('field_work_order', $wo_id)
+        ->execute();
+    if (!$child_ids) {
+        return;
+    }
+    $children = $etm->getStorage('wo_tasks_list')->loadMultiple($child_ids);
+
+    // Generate the frozen PDF compliance report for each test child (once each;
+    // skipped if field_report_pdf is already populated — see Gate 3b).
+    foreach ($children as $child) {
+        _wo_backflow_testing_generate_report_pdf($child);
+    }
+
+    // Group by device; if a device has multiple tests on one visit, the latest
+    // test_date wins (one device update + at most one log row per device).
+    $by_device = [];
+    foreach ($children as $child) {
+        $device_id = $child->get('field_backflow_device')->target_id;
+        if (!$device_id) {
+            continue;
+        }
+        $ts = (string) ($child->get('field_test_date')->value ?? '');
+        if (!isset($by_device[$device_id])
+            || $ts >= (string) ($by_device[$device_id]->get('field_test_date')->value ?? '')) {
+            $by_device[$device_id] = $child;
+        }
+    }
+    if (!$by_device) {
+        return;
+    }
+
+    $device_storage = $etm->getStorage('property_backflow_device');
+    $log_storage = $etm->getStorage('backflow_device_status_log');
+    $uid = \Drupal::currentUser()->id();
+
+    foreach ($by_device as $device_id => $child) {
+        $device = $device_storage->load($device_id);
+        if (!$device) {
+            continue;
+        }
+
+        $last_test = $child->get('field_test_date')->value;
+        $pass = ($child->get('field_pass_fail')->value === 'pass');
+        $prior_status = $device->get('field_current_status')->value;
+
+        // Always record that it was tested.
+        $device->set('field_last_test_date', $last_test);
+
+        if ($pass) {
+            $device->set('field_current_status', 'active');
+            $device->set('field_last_pass_date', $last_test);
+            $frequency = (int) ($device->get('field_test_frequency_months')->value ?: 12);
+            $next_due = _wo_backflow_testing_add_months($last_test, $frequency);
+            if ($next_due) {
+                $device->set('field_next_due_date', $next_due);
+            }
+
+            // Commissioning date: stamp the device's initial test date on the
+            // first PASSING initial test only, and never overwrite it (an asset's
+            // commissioning date is permanent — a later reinstall lives on the
+            // test record, not by moving this). Date-only, site TZ — same
+            // conversion used for next_due above (add_months with 0). This is
+            // folded into the same device save below: no extra save, no log row.
+            if ((bool) $child->get('field_is_initial_test')->value
+                && $device->get('field_initial_test_date')->isEmpty()) {
+                $device->set('field_initial_test_date', _wo_backflow_testing_add_months($last_test, 0));
+            }
+        }
+        else {
+            // Non-compliant. Leave last_pass_date / next_due_date untouched.
+            $device->set('field_current_status', 'failed');
+        }
+
+        // Normal save — Gate 2 guard prevents title/QR regeneration.
+        $device->save();
+
+        // Append a status-log row only on an actual status change (idempotency).
+        $new_status = $device->get('field_current_status')->value;
+        if ($new_status !== $prior_status) {
+            $log_storage->create([
+                'type' => 'log',
+                'field_backflow_device' => $device_id,
+                'field_from_status' => $prior_status,
+                'field_to_status' => $new_status,
+                'field_triggered_by_wo' => $wo_id,
+                'field_status_change_note' => 'Set by backflow test WO #' . $wo_id . ', result ' . ($pass ? 'pass' : 'fail') . '.',
+                'uid' => $uid,
+            ])->save();
+        }
+    }
+}
+
+/**
+ * Snapshots the tester's certification number onto a wo_tasks_list:backflow_testing child.
+ *
+ * Mirrors the currently-selected tester while the parent WO is not yet
+ * Complete; freezes once the WO is Complete (1097). If the tester has no cert
+ * on their teammate_profile, the snapshot is cleared (no error this gate).
+ */
+function _wo_backflow_testing_snapshot_cert(EntityInterface $child) {
+    // Freeze once the parent WO is Complete. Load the WO fresh by id rather
+    // than via the cached ->entity reference, so a child loaded before the WO
+    // completed still sees the current WO status within the same request.
+    if (!$child->get('field_work_order')->isEmpty()) {
+        $wo = \Drupal::entityTypeManager()->getStorage('work_order')
+            ->load($child->get('field_work_order')->target_id);
+        if ($wo && ($wo->get('field_status')->target_id ?? 0) == WO_BACKFLOW_TESTING_STATUS_COMPLETE) {
+            return;
+        }
+    }
+
+    if ($child->get('field_tester')->isEmpty()) {
+        return;
+    }
+    $tester_id = $child->get('field_tester')->target_id;
+
+    $profiles = \Drupal::entityTypeManager()->getStorage('profile')->loadByProperties([
+        'uid' => $tester_id,
+        'type' => 'teammate_profile',
+    ]);
+    $cert = '';
+    if ($profiles) {
+        $profile = reset($profiles);
+        if ($profile->hasField('field_certification_number') && !$profile->get('field_certification_number')->isEmpty()) {
+            $cert = $profile->get('field_certification_number')->value;
+        }
+    }
+
+    // Mirror the currently-selected tester (cert or blank).
+    $child->set('field_certification_number', $cert);
+}
+
+/**
+ * Adds N months to a stored datetime, returning a date-only string (Y-m-d).
+ *
+ * Computed with PHP DateTime, not SQL: the stored value is UTC, but the
+ * date-only due date must reflect the test's LOCAL (site timezone) date, so we
+ * convert before taking the date and adding months.
+ */
+function _wo_backflow_testing_add_months($stored_datetime, $months) {
+    if (empty($stored_datetime)) {
+        return NULL;
+    }
+    $site_tz = \Drupal::config('system.date')->get('timezone.default') ?: date_default_timezone_get();
+    $date = new \DateTime($stored_datetime, new \DateTimeZone('UTC'));
+    $date->setTimezone(new \DateTimeZone($site_tz));
+    $date->modify('+' . (int) $months . ' months');
+    return $date->format('Y-m-d');
+}
+
+/**
+ * Implements hook_entity_prepare_form().
+ *
+ * Form-level default: on the wo_tasks_list:backflow_testing add form, default the tester to
+ * uid 1 (set on the in-memory new entity before the widget builds — not a
+ * stored field default, which would be env-specific by UUID).
+ */
+function wo_backflow_testing_entity_prepare_form(EntityInterface $entity, $operation, FormStateInterface $form_state) {
+  if ($entity->getEntityTypeId() === 'wo_tasks_list'
+      && $entity->bundle() === 'backflow_testing'
+      && $entity->isNew()
+      && $entity->hasField('field_tester')
+      && $entity->get('field_tester')->isEmpty()
+      && User::load(1)) {
+    $entity->set('field_tester', 1);
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * wo_tasks_list:backflow_testing add/edit form:
+ *  (b) per-type reading visibility — live via AJAX on device select, and on
+ *      edit/rebuild from the referenced device's taxonomy field_type_code;
+ *  (c) a "Create new device for this property" button that creates a device
+ *      inline (inheriting field_property from the WO; BF id/QR/alias come from
+ *      the backflow_device module) and selects it.
+ */
+function wo_backflow_testing_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof EntityFormInterface) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if ($entity->getEntityTypeId() !== 'wo_tasks_list' || $entity->bundle() !== 'backflow_testing') {
+    return;
+  }
+
+  // Wrap the device field, readings, and create-UI in one AJAX section.
+  $form['bf_device_section'] = [
+    '#type' => 'container',
+    '#attributes' => ['id' => 'bf-device-section'],
+    '#weight' => $form['field_backflow_device']['#weight'] ?? 1,
+  ];
+
+  // Move field_backflow_device into the section (preserves #parents).
+  if (isset($form['field_backflow_device'])) {
+    $form['bf_device_section']['field_backflow_device'] = $form['field_backflow_device'];
+    unset($form['field_backflow_device']);
+    // Live readings refresh when the device autocomplete changes.
+    if (isset($form['bf_device_section']['field_backflow_device']['widget'][0]['target_id'])) {
+      $form['bf_device_section']['field_backflow_device']['widget'][0]['target_id']['#ajax'] = [
+        'callback' => 'wo_backflow_testing_device_section_ajax',
+        'wrapper' => 'bf-device-section',
+        'event' => 'change',
+      ];
+    }
+  }
+
+  // If a device was just created inline, select it in the autocomplete.
+  $created_id = $form_state->get('bf_created_device');
+  $created = $created_id ? \Drupal::entityTypeManager()->getStorage('property_backflow_device')->load($created_id) : NULL;
+  if ($created
+      && isset($form['bf_device_section']['field_backflow_device']['widget'][0]['target_id'])) {
+    $form['bf_device_section']['field_backflow_device']['widget'][0]['target_id']['#default_value'] = $created;
+  }
+
+  // Move the reading fields into the section (preserves #parents).
+  foreach (WO_BACKFLOW_TESTING_READING_FIELDS as $rf) {
+    if (isset($form[$rf])) {
+      $form['bf_device_section'][$rf] = $form[$rf];
+      unset($form[$rf]);
+    }
+  }
+
+  // (b) Set reading visibility from the effective device type code.
+  $type_code = _wo_backflow_testing_effective_type_code($entity, $form_state);
+  foreach (WO_BACKFLOW_TESTING_READING_FIELDS as $rf) {
+    if (!isset($form['bf_device_section'][$rf])) {
+      continue;
+    }
+    if ($type_code === NULL) {
+      // No device chosen yet — show all readings.
+      continue;
+    }
+    $applicable = WO_BACKFLOW_TESTING_TYPE_READINGS[$type_code] ?? WO_BACKFLOW_TESTING_READING_FIELDS;
+    $form['bf_device_section'][$rf]['#access'] = in_array($rf, $applicable, TRUE);
+  }
+
+  // (c) Inline "create new device" affordance.
+  _wo_backflow_testing_build_create_device_ui($form, $form_state);
+}
+
+/**
+ * Resolves the effective device type code for reading visibility.
+ *
+ * Priority: a just-created inline device > the AJAX-submitted device value >
+ * the stored referenced device (edit). Returns NULL when no device is chosen.
+ */
+function _wo_backflow_testing_effective_type_code(EntityInterface $entity, FormStateInterface $form_state) {
+  $device_id = $form_state->get('bf_created_device');
+
+  if (!$device_id) {
+    $val = $form_state->getValue(['field_backflow_device', 0, 'target_id']);
+    if (!empty($val)) {
+      $device_id = is_numeric($val) ? $val : EntityAutocomplete::extractEntityIdFromAutocompleteInput($val);
+    }
+  }
+  if (!$device_id && !$entity->get('field_backflow_device')->isEmpty()) {
+    $device_id = $entity->get('field_backflow_device')->target_id;
+  }
+  if (!$device_id) {
+    return NULL;
+  }
+
+  $device = \Drupal::entityTypeManager()->getStorage('property_backflow_device')->load($device_id);
+  if (!$device || $device->get('field_device_type')->isEmpty()) {
+    return NULL;
+  }
+  $term = $device->get('field_device_type')->entity;
+  if (!$term || $term->get('field_type_code')->isEmpty()) {
+    return NULL;
+  }
+  return $term->get('field_type_code')->value;
+}
+
+/**
+ * Builds the inline "create new device for this property" UI.
+ */
+function _wo_backflow_testing_build_create_device_ui(array &$form, FormStateInterface $form_state) {
+  $section = &$form['bf_device_section'];
+
+  if (!$form_state->get('bf_creating')) {
+    $section['bf_create_toggle'] = [
+      '#type' => 'submit',
+      '#value' => t('Create new device for this property'),
+      '#limit_validation_errors' => [],
+      '#submit' => ['wo_backflow_testing_create_toggle_submit'],
+      '#ajax' => [
+        'callback' => 'wo_backflow_testing_device_section_ajax',
+        'wrapper' => 'bf-device-section',
+      ],
+      '#weight' => 50,
+      '#name' => 'bf_create_toggle',
+    ];
+    return;
+  }
+
+  // Build the type options from the vocabulary (no hardcoded TIDs).
+  $type_options = [];
+  foreach (\Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties(['vid' => 'backflow_device_types']) as $term) {
+    $type_options[$term->id()] = $term->label();
+  }
+
+  $section['bf_new'] = [
+    '#type' => 'fieldset',
+    '#title' => t('New backflow device'),
+    '#weight' => 50,
+    '#tree' => TRUE,
+  ];
+  $section['bf_new']['type'] = [
+    '#type' => 'select',
+    '#title' => t('Device type'),
+    '#options' => $type_options,
+    '#empty_option' => t('- Select -'),
+    '#required' => TRUE,
+  ];
+  $section['bf_new']['serial'] = [
+    '#type' => 'textfield',
+    '#title' => t('Serial number'),
+    '#maxlength' => 255,
+  ];
+  $section['bf_new']['location'] = [
+    '#type' => 'textarea',
+    '#title' => t('Physical location'),
+    '#rows' => 2,
+  ];
+  $section['bf_new']['save'] = [
+    '#type' => 'submit',
+    '#value' => t('Save device'),
+    '#limit_validation_errors' => [
+      ['bf_new', 'type'],
+      ['bf_new', 'serial'],
+      ['bf_new', 'location'],
+      ['field_work_order'],
+    ],
+    '#submit' => ['wo_backflow_testing_create_device_submit'],
+    '#ajax' => [
+      'callback' => 'wo_backflow_testing_device_section_ajax',
+      'wrapper' => 'bf-device-section',
+    ],
+    '#name' => 'bf_create_save',
+  ];
+  $section['bf_new']['cancel'] = [
+    '#type' => 'submit',
+    '#value' => t('Cancel'),
+    '#limit_validation_errors' => [],
+    '#submit' => ['wo_backflow_testing_create_cancel_submit'],
+    '#ajax' => [
+      'callback' => 'wo_backflow_testing_device_section_ajax',
+      'wrapper' => 'bf-device-section',
+    ],
+    '#name' => 'bf_create_cancel',
+  ];
+}
+
+/**
+ * AJAX callback: returns the whole device section (device + readings + create).
+ */
+function wo_backflow_testing_device_section_ajax(array $form, FormStateInterface $form_state) {
+  return $form['bf_device_section'];
+}
+
+/**
+ * Submit: open the inline create-device form.
+ */
+function wo_backflow_testing_create_toggle_submit(array $form, FormStateInterface $form_state) {
+  $form_state->set('bf_creating', TRUE);
+  $form_state->setRebuild(TRUE);
+}
+
+/**
+ * Submit: cancel inline create-device.
+ */
+function wo_backflow_testing_create_cancel_submit(array $form, FormStateInterface $form_state) {
+  $form_state->set('bf_creating', FALSE);
+  $form_state->setRebuild(TRUE);
+}
+
+/**
+ * Submit: create the new device inheriting field_property from the WO.
+ */
+function wo_backflow_testing_create_device_submit(array $form, FormStateInterface $form_state) {
+  $type_tid = $form_state->getValue(['bf_new', 'type']);
+  $property_id = _wo_backflow_testing_context_property_id($form_state);
+
+  if (!$type_tid || !$property_id) {
+    \Drupal::messenger()->addWarning(t('Could not create device: select a work order (for the property) and a device type first.'));
+    $form_state->set('bf_creating', TRUE);
+    $form_state->setRebuild(TRUE);
+    return;
+  }
+
+  $values = [
+    'entity_type' => 'property_backflow_device',
+    'type' => 'device',
+    'field_property' => $property_id,
+    'field_device_type' => $type_tid,
+    'field_current_status' => 'active',
+  ];
+  if ($serial = $form_state->getValue(['bf_new', 'serial'])) {
+    $values['field_serial_number'] = $serial;
+  }
+  if ($location = $form_state->getValue(['bf_new', 'location'])) {
+    $values['field_physical_location'] = $location;
+  }
+
+  // Save fires backflow_device hook_entity_insert -> BF-NNNNNN title + QR + alias.
+  $device = EckEntity::create($values);
+  $device->save();
+
+  $form_state->set('bf_created_device', $device->id());
+  $form_state->set('bf_creating', FALSE);
+  // Select the new device in the reference field.
+  $form_state->setValue(['field_backflow_device', 0, 'target_id'], $device->id());
+  \Drupal::messenger()->addStatus(t('Created device @id and attached it to this test.', ['@id' => $device->label()]));
+  $form_state->setRebuild(TRUE);
+}
+
+/**
+ * Resolves the WO's property id from the test form context.
+ */
+function _wo_backflow_testing_context_property_id(FormStateInterface $form_state) {
+  $wo_id = NULL;
+
+  $val = $form_state->getValue(['field_work_order', 0, 'target_id']);
+  if (!empty($val)) {
+    $wo_id = is_numeric($val) ? $val : EntityAutocomplete::extractEntityIdFromAutocompleteInput($val);
+  }
+  if (!$wo_id) {
+    $form_object = $form_state->getFormObject();
+    if ($form_object instanceof EntityFormInterface) {
+      $test = $form_object->getEntity();
+      if (!$test->get('field_work_order')->isEmpty()) {
+        $wo_id = $test->get('field_work_order')->target_id;
+      }
+    }
+  }
+  if (!$wo_id) {
+    return NULL;
+  }
+  $wo = \Drupal::entityTypeManager()->getStorage('work_order')->load($wo_id);
+  if ($wo && !$wo->get('field_property')->isEmpty()) {
+    return $wo->get('field_property')->target_id;
+  }
+  return NULL;
 }
 
 /**
@@ -151,4 +658,201 @@ function get_backflow_testing_total_rental_fees($workOrderId) {
     $result = $query->execute()->fetchField();
 
     return $result ? $result : 0;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function wo_backflow_testing_theme($existing, $type, $theme, $path) {
+    return [
+        'backflow_test_report' => [
+            'variables' => ['report' => []],
+            'template' => 'backflow-test-report',
+        ],
+        'backflow_service_tag' => [
+            'variables' => ['tag' => []],
+            'template' => 'backflow-service-tag',
+        ],
+    ];
+}
+
+/**
+ * Human labels for the reading fields (Gate 3b report/tag).
+ */
+function _wo_backflow_testing_reading_labels() {
+    return [
+        'field_line_pressure_psi' => 'Line Pressure (psi)',
+        'field_check_valve_1_psid' => 'Check Valve #1 (psid)',
+        'field_check_valve_2_psid' => 'Check Valve #2 (psid)',
+        'field_relief_valve_psid' => 'Relief Valve (psid)',
+        'field_air_inlet_psid' => 'Air Inlet (psid)',
+        'field_check_valve_psid' => 'Check Valve (psid)',
+    ];
+}
+
+/**
+ * Formats a stored datetime (UTC) as a US date in the site timezone.
+ */
+function _wo_backflow_testing_us_date($stored) {
+    if (empty($stored)) {
+        return '';
+    }
+    $tz = \Drupal::config('system.date')->get('timezone.default') ?: date_default_timezone_get();
+    $d = new \DateTime($stored, new \DateTimeZone('UTC'));
+    $d->setTimezone(new \DateTimeZone($tz));
+    return $d->format('m/d/Y');
+}
+
+/**
+ * Returns a base64 data: URI for a managed image file, or NULL.
+ *
+ * Reads via the stream wrapper (works for public:// and s3://) and embeds the
+ * bytes so dompdf never has to resolve a filesystem path — also sidesteps odd
+ * characters in filenames (e.g. an apostrophe in a signature filename).
+ */
+function _wo_backflow_testing_image_data_uri($file) {
+    if (!$file) {
+        return NULL;
+    }
+    $data = @file_get_contents($file->getFileUri());
+    if ($data === FALSE || $data === '') {
+        return NULL;
+    }
+    $mime = $file->getMimeType() ?: 'image/png';
+    return 'data:' . $mime . ';base64,' . base64_encode($data);
+}
+
+/**
+ * Builds the single report/tag data array for a backflow test child.
+ *
+ * One source for both the PDF report and the service tag so they cannot drift.
+ */
+function _wo_backflow_testing_report_data(EntityInterface $child) {
+    $passed = ($child->get('field_pass_fail')->value === 'pass');
+    $data = [
+        'device_id' => '',
+        'device_type' => '',
+        'type_code' => '',
+        'serial' => '',
+        'location' => '',
+        'address_lines' => [],
+        'test_date' => _wo_backflow_testing_us_date($child->get('field_test_date')->value),
+        'is_initial' => (bool) $child->get('field_is_initial_test')->value,
+        'tester_name' => '',
+        'cert_number' => $child->get('field_certification_number')->value ?? '',
+        'passed' => $passed,
+        'readings' => [],
+        'repairs' => $child->get('field_repairs_recommended')->value ?? '',
+        'signature_uri' => NULL,
+        'qr_uri' => NULL,
+        'generated_date' => \Drupal::service('date.formatter')->format(\Drupal::time()->getRequestTime(), 'custom', 'm/d/Y'),
+    ];
+
+    // Device facts + access-safe pull-through address (Gate 2 approach).
+    $device = $child->get('field_backflow_device')->entity;
+    if ($device) {
+        $data['device_id'] = (string) $device->label();
+        $data['serial'] = $device->get('field_serial_number')->value ?? '';
+        $data['location'] = $device->get('field_physical_location')->value ?? '';
+        $data['qr_uri'] = _wo_backflow_testing_image_data_uri($device->get('field_qr_code')->entity);
+
+        if (!$device->get('field_device_type')->isEmpty() && ($term = $device->get('field_device_type')->entity)) {
+            $data['device_type'] = (string) $term->label();
+            $data['type_code'] = $term->get('field_type_code')->value ?? '';
+        }
+
+        $property = $device->get('field_property')->entity;
+        if ($property) {
+            $street = $property->hasField('field_street_address') ? trim((string) $property->get('field_street_address')->value) : '';
+            if ($street !== '') {
+                $data['address_lines'][] = $street;
+            }
+            $city = '';
+            $zip = '';
+            if ($property->hasField('field_zipcode_reference') && !$property->get('field_zipcode_reference')->isEmpty()) {
+                $zipcode = $property->get('field_zipcode_reference')->entity;
+                if ($zipcode) {
+                    $zip = $zipcode->hasField('field_zipcode') ? trim((string) $zipcode->get('field_zipcode')->value) : '';
+                    if ($zipcode->hasField('field_city') && !$zipcode->get('field_city')->isEmpty() && ($cityEnt = $zipcode->get('field_city')->entity)) {
+                        $city = (string) $cityEnt->label();
+                    }
+                }
+            }
+            $city_zip = trim($city . (($city !== '' && $zip !== '') ? ', ' : ' ') . $zip);
+            if ($city_zip !== '') {
+                $data['address_lines'][] = $city_zip;
+            }
+        }
+    }
+
+    // Tester name + signature (no owner/customer data anywhere on the report).
+    if (!$child->get('field_tester')->isEmpty() && ($tester = $child->get('field_tester')->entity)) {
+        $data['tester_name'] = (string) $tester->getDisplayName();
+        $profiles = \Drupal::entityTypeManager()->getStorage('profile')->loadByProperties([
+            'uid' => $tester->id(),
+            'type' => 'teammate_profile',
+        ]);
+        if ($profiles) {
+            $profile = reset($profiles);
+            if ($profile->hasField('field_signature') && !$profile->get('field_signature')->isEmpty()) {
+                $data['signature_uri'] = _wo_backflow_testing_image_data_uri($profile->get('field_signature')->entity);
+            }
+        }
+    }
+
+    // Only the readings applicable to this device type (no N/A rows).
+    $labels = _wo_backflow_testing_reading_labels();
+    $applicable = $data['type_code'] && isset(WO_BACKFLOW_TESTING_TYPE_READINGS[$data['type_code']])
+        ? WO_BACKFLOW_TESTING_TYPE_READINGS[$data['type_code']]
+        : WO_BACKFLOW_TESTING_READING_FIELDS;
+    foreach ($applicable as $field) {
+        $data['readings'][] = [
+            'label' => $labels[$field] ?? $field,
+            'value' => $child->get($field)->value,
+        ];
+    }
+
+    return $data;
+}
+
+/**
+ * Renders a backflow test child to a PDF and stores it in field_report_pdf.
+ *
+ * FREEZE: generated once. If field_report_pdf is already populated, this is a
+ * no-op (the report is an as-issued compliance snapshot, like the QR).
+ */
+function _wo_backflow_testing_generate_report_pdf(EntityInterface $child) {
+    if (!$child->get('field_report_pdf')->isEmpty()) {
+        return;
+    }
+    try {
+        $data = _wo_backflow_testing_report_data($child);
+        $build = [
+            '#theme' => 'backflow_test_report',
+            '#report' => $data,
+        ];
+        $html = (string) \Drupal::service('renderer')->renderInIsolation($build);
+        $engine = \Drupal::service('plugin.manager.entity_print.print_engine')->createInstance('dompdf');
+        $engine->addPage($html);
+        $blob = $engine->getBlob();
+
+        $directory = 'public://wo_tasks_list/backflow_testing/reports';
+        \Drupal::service('file_system')->prepareDirectory(
+            $directory,
+            FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS
+        );
+        $id = $data['device_id'] !== '' ? $data['device_id'] : ('test-' . $child->id());
+        $uri = $directory . '/backflow-report-' . $id . '-' . $child->id() . '.pdf';
+        $file = \Drupal::service('file.repository')->writeData($blob, $uri, FileExists::Replace);
+
+        $child->set('field_report_pdf', $file->id());
+        $child->save();
+    }
+    catch (\Throwable $e) {
+        // Never block sign-off on report failure; log and continue.
+        \Drupal::logger('wo_backflow_testing')->error('Report PDF generation failed for test @id: @msg', [
+            '@id' => $child->id(),
+            '@msg' => $e->getMessage(),
+        ]);
+    }
 }

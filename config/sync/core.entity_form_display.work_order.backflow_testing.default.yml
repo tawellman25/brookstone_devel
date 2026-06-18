@@ -4,18 +4,125 @@ status: true
 dependencies:
   config:
     - eck.eck_type.work_order.backflow_testing
+    - field.field.work_order.backflow_testing.field_billing_adjustment
+    - field.field.work_order.backflow_testing.field_billing_notes
+    - field.field.work_order.backflow_testing.field_client_app_wo_number
     - field.field.work_order.backflow_testing.field_contact
     - field.field.work_order.backflow_testing.field_contract
+    - field.field.work_order.backflow_testing.field_dump_fee_total
     - field.field.work_order.backflow_testing.field_estimate
+    - field.field.work_order.backflow_testing.field_estimated_price
+    - field.field.work_order.backflow_testing.field_invoiced
+    - field.field.work_order.backflow_testing.field_labor_total
+    - field.field.work_order.backflow_testing.field_material_chemical_total
+    - field.field.work_order.backflow_testing.field_printed
+    - field.field.work_order.backflow_testing.field_property
+    - field.field.work_order.backflow_testing.field_rental_total
+    - field.field.work_order.backflow_testing.field_scheduled
+    - field.field.work_order.backflow_testing.field_service
+    - field.field.work_order.backflow_testing.field_status
+    - field.field.work_order.backflow_testing.field_supervisor
+    - field.field.work_order.backflow_testing.field_total_time
+    - field.field.work_order.backflow_testing.field_trip_fee
+    - field.field.work_order.backflow_testing.field_trucks
+    - field.field.work_order.backflow_testing.field_wo_total
+    - field.field.work_order.backflow_testing.field_work_order_id
+    - field.field.work_order.backflow_testing.field_work_order_notes
+    - field.field.work_order.backflow_testing.field_work_todo_description
   module:
+    - allowed_formats
+    - field_group
     - field_layout
     - layout_discovery
     - path
+    - text
 third_party_settings:
   field_layout:
     id: layout_onecol
     settings:
       label: ''
+  field_group:
+    group_office_admin:
+      children:
+        - field_status
+        - group_billing
+        - group_system_info
+      label: 'Office Administration'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_billing:
+      children:
+        - field_estimated_price
+        - field_total_time
+        - field_trucks
+        - group_subtotals
+        - field_billing_adjustment
+        - field_wo_total
+        - field_billing_notes
+        - field_invoiced
+      label: Billing
+      region: content
+      parent_name: group_office_admin
+      weight: 25
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
+    group_subtotals:
+      children:
+        - field_labor_total
+        - field_material_chemical_total
+        - field_dump_fee_total
+        - field_trip_fee
+        - field_rental_total
+      label: Subtotals
+      region: content
+      parent_name: group_billing
+      weight: 9
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+    group_system_info:
+      children:
+        - field_contract
+        - field_estimate
+        - field_contact
+        - field_scheduled
+        - field_printed
+        - field_service
+        - flag
+        - uid
+        - created
+        - path
+      label: 'System Info'
+      region: content
+      parent_name: group_office_admin
+      weight: 26
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: ''
+        required_fields: true
 id: work_order.backflow_testing.default
 targetEntityType: work_order
 bundle: backflow_testing
@@ -23,13 +130,36 @@ mode: default
 content:
   created:
     type: datetime_timestamp
-    weight: 10
+    weight: 21
     region: content
     settings: {  }
     third_party_settings: {  }
+  field_billing_adjustment:
+    type: number
+    weight: 10
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_billing_notes:
+    type: string_textfield
+    weight: 12
+    region: content
+    settings:
+      size: 30
+      placeholder: ''
+    third_party_settings: {  }
+  field_client_app_wo_number:
+    type: string_textfield
+    weight: 2
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
   field_contact:
     type: entity_reference_autocomplete
-    weight: 29
+    weight: 15
     region: content
     settings:
       match_operator: CONTAINS
@@ -39,17 +169,24 @@ content:
     third_party_settings: {  }
   field_contract:
     type: entity_reference_autocomplete
-    weight: 19
+    weight: 13
     region: content
     settings:
       match_operator: CONTAINS
       match_limit: 10
       size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_dump_fee_total:
+    type: number
+    weight: 29
+    region: content
+    settings:
       placeholder: ''
     third_party_settings: {  }
   field_estimate:
     type: entity_reference_autocomplete
-    weight: 19
+    weight: 14
     region: content
     settings:
       match_operator: CONTAINS
@@ -57,28 +194,144 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_estimated_price:
+    type: number
+    weight: 6
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_invoiced:
+    type: boolean_checkbox
+    weight: 13
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_labor_total:
+    type: number
+    weight: 26
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_material_chemical_total:
+    type: number
+    weight: 28
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_printed:
+    type: boolean_checkbox
+    weight: 17
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_property:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_rental_total:
+    type: number
+    weight: 31
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_scheduled:
+    type: boolean_checkbox
+    weight: 16
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_service:
+    type: entity_reference_autocomplete
+    weight: 18
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_status:
+    type: options_select
+    weight: 24
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_supervisor:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_total_time:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_trip_fee:
+    type: number
+    weight: 30
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_trucks:
+    type: number
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_wo_total:
+    type: number
+    weight: 11
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_todo_description:
+    type: text_textarea
+    weight: 3
+    region: content
+    settings:
+      rows: 5
+      placeholder: 'Enter the description of Work To Be Done here'
+    third_party_settings:
+      allowed_formats:
+        hide_help: '1'
+        hide_guidelines: '0'
   flag:
-    weight: 10
+    weight: 19
     region: content
     settings: {  }
     third_party_settings: {  }
   path:
     type: path
-    weight: 30
+    weight: 22
     region: content
     settings: {  }
     third_party_settings: {  }
-  title:
-    type: string_textfield
-    weight: -5
-    region: content
-    settings:
-      size: 60
-      placeholder: ''
-    third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 5
+    weight: 20
     region: content
     settings:
       match_operator: CONTAINS
@@ -86,4 +339,8 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
-hidden: {  }
+hidden:
+  field_work_order_id: true
+  field_work_order_notes: true
+  title: true
+

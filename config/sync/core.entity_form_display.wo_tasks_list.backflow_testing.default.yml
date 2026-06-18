@@ -1,0 +1,231 @@
+uuid: 7147552d-6749-4641-8c97-98fe77443e7b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_tasks_list.backflow_testing
+    - field.field.wo_tasks_list.backflow_testing.field_air_inlet_psid
+    - field.field.wo_tasks_list.backflow_testing.field_backflow_device
+    - field.field.wo_tasks_list.backflow_testing.field_certification_number
+    - field.field.wo_tasks_list.backflow_testing.field_check_valve_1_psid
+    - field.field.wo_tasks_list.backflow_testing.field_check_valve_2_psid
+    - field.field.wo_tasks_list.backflow_testing.field_check_valve_psid
+    - field.field.wo_tasks_list.backflow_testing.field_is_initial_test
+    - field.field.wo_tasks_list.backflow_testing.field_line_pressure_psi
+    - field.field.wo_tasks_list.backflow_testing.field_pass_fail
+    - field.field.wo_tasks_list.backflow_testing.field_relief_valve_psid
+    - field.field.wo_tasks_list.backflow_testing.field_repairs_recommended
+    - field.field.wo_tasks_list.backflow_testing.field_report_image
+    - field.field.wo_tasks_list.backflow_testing.field_report_pdf
+    - field.field.wo_tasks_list.backflow_testing.field_test_date
+    - field.field.wo_tasks_list.backflow_testing.field_tester
+    - field.field.wo_tasks_list.backflow_testing.field_work_order
+    - image.style.thumbnail
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - file
+    - image
+    - layout_discovery
+    - path
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+  field_group:
+    group_test_details:
+      children:
+        - field_test_date
+        - field_tester
+        - field_certification_number
+        - field_is_initial_test
+        - field_pass_fail
+      label: 'Test Details'
+      region: content
+      parent_name: ''
+      weight: 1
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+    group_repairs_report:
+      children:
+        - field_repairs_recommended
+        - field_report_pdf
+        - field_report_image
+      label: 'Repairs & Report'
+      region: content
+      parent_name: ''
+      weight: 20
+      format_type: fieldset
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        description: ''
+        required_fields: true
+id: wo_tasks_list.backflow_testing.default
+targetEntityType: wo_tasks_list
+bundle: backflow_testing
+mode: default
+content:
+  created:
+    type: datetime_timestamp
+    weight: 10
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_air_inlet_psid:
+    type: number
+    weight: 12
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_backflow_device:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_certification_number:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_check_valve_1_psid:
+    type: number
+    weight: 9
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_check_valve_2_psid:
+    type: number
+    weight: 10
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_check_valve_psid:
+    type: number
+    weight: 13
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_is_initial_test:
+    type: boolean_checkbox
+    weight: 7
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_line_pressure_psi:
+    type: number
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_pass_fail:
+    type: options_select
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_relief_valve_psid:
+    type: number
+    weight: 11
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_repairs_recommended:
+    type: text_textarea
+    weight: 14
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_report_image:
+    type: image_image
+    weight: 16
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_report_pdf:
+    type: file_generic
+    weight: 15
+    region: content
+    settings:
+      progress_indicator: throbber
+    third_party_settings: {  }
+  field_test_date:
+    type: datetime_default
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_tester:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_work_order:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 30
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  uid:
+    type: entity_reference_autocomplete
+    weight: 5
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden: {  }
+

@@ -1,0 +1,11 @@
+wo_backflow_testing.service_tag:
+  path: '/backflow/tag/{wo_tasks_list}'
+  defaults:
+    _controller: '\Drupal\wo_backflow_testing\Controller\BackflowTagController::tag'
+    _title: 'Backflow Service Tag'
+  requirements:
+    _entity_access: 'wo_tasks_list.view'
+  options:
+    parameters:
+      wo_tasks_list:
+        type: 'entity:wo_tasks_list'

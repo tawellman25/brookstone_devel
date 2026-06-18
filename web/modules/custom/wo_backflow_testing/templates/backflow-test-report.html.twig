@@ -1,0 +1,86 @@
+{#
+/**
+ * @file
+ * Colorado backflow prevention assembly test report (Entity Print / dompdf).
+ * Data is computed in _wo_backflow_testing_report_data() and passed as `report`.
+ */
+#}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { margin: 0.75in; }
+  body { font-family: DejaVu Sans, sans-serif; color: #1a1a1a; font-size: 11pt; }
+  .hdr { border-bottom: 3px solid #1f5c2f; padding-bottom: 8px; margin-bottom: 14px; }
+  .hdr h1 { margin: 0; font-size: 16pt; color: #1f5c2f; }
+  .hdr .sub { font-size: 10pt; color: #555; }
+  .meta { width: 100%; margin-bottom: 12px; }
+  .meta td { vertical-align: top; padding: 1px 0; }
+  .meta .lbl { color: #555; width: 38%; }
+  h2 { font-size: 11pt; color: #1f5c2f; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin: 16px 0 6px; }
+  table.readings { width: 100%; border-collapse: collapse; }
+  table.readings th, table.readings td { border: 1px solid #bbb; padding: 5px 8px; text-align: left; }
+  table.readings th { background: #eef3ee; }
+  .result { font-size: 13pt; font-weight: bold; padding: 4px 10px; display: inline-block; }
+  .result.pass { color: #1f5c2f; }
+  .result.fail { color: #b00020; }
+  .sig { margin-top: 18px; }
+  .sig img { max-height: 70px; }
+  .sig .line { border-top: 1px solid #333; width: 280px; margin-top: 2px; padding-top: 2px; font-size: 9pt; color: #555; }
+  .foot { margin-top: 24px; font-size: 8pt; color: #777; }
+</style>
+</head>
+<body>
+  <div class="hdr">
+    <h1>Backflow Prevention Assembly Test Report</h1>
+    <div class="sub">Brookstone Outdoors LLC &middot; State of Colorado</div>
+  </div>
+
+  <table class="meta">
+    <tr><td class="lbl">Device ID</td><td><strong>{{ report.device_id }}</strong></td></tr>
+    <tr><td class="lbl">Assembly Type</td><td>{{ report.device_type }}</td></tr>
+    <tr><td class="lbl">Serial Number</td><td>{{ report.serial|default('—') }}</td></tr>
+    <tr><td class="lbl">Physical Location</td><td>{{ report.location|default('—') }}</td></tr>
+    <tr><td class="lbl">Service Address</td><td>
+      {% for line in report.address_lines %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}
+    </td></tr>
+  </table>
+
+  <h2>Test</h2>
+  <table class="meta">
+    <tr><td class="lbl">Test Date</td><td>{{ report.test_date|default('—') }}</td></tr>
+    <tr><td class="lbl">Test Type</td><td>{{ report.is_initial ? 'Initial' : 'Periodic' }}</td></tr>
+    <tr><td class="lbl">Certified Tester</td><td>{{ report.tester_name|default('—') }}</td></tr>
+    <tr><td class="lbl">Certification Number</td><td>{{ report.cert_number|default('—') }}</td></tr>
+    <tr><td class="lbl">Result</td><td>
+      <span class="result {{ report.passed ? 'pass' : 'fail' }}">{{ report.passed ? 'PASS' : 'FAIL' }}</span>
+    </td></tr>
+  </table>
+
+  <h2>Readings</h2>
+  <table class="readings">
+    <tr><th>Test Point</th><th>Reading (psid / psi)</th></tr>
+    {% for r in report.readings %}
+      <tr><td>{{ r.label }}</td><td>{{ r.value is not null and r.value != '' ? r.value : '—' }}</td></tr>
+    {% endfor %}
+  </table>
+
+  {% if report.repairs %}
+    <h2>Repairs Recommended</h2>
+    <div>{{ report.repairs }}</div>
+  {% endif %}
+
+  <div class="sig">
+    {% if report.signature_uri %}
+      <img src="{{ report.signature_uri }}" alt="Tester signature">
+    {% endif %}
+    <div class="line">Certified Tester Signature &mdash; {{ report.tester_name|default('') }}</div>
+  </div>
+
+  <div class="foot">
+    Report generated {{ report.generated_date }} from Brookstone Operating System.
+    Device ID {{ report.device_id }} &middot; canonical record retained in BOS.
+  </div>
+</body>
+</html>

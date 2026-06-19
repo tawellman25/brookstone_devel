@@ -16,8 +16,24 @@ function wo_timer_flag_update_flagging_insert(FlaggingInterface $flagging) {
       $work_order = $flagging->getFlaggable();
 
 
-      // Check if the current status is not 'In Progress' (1092)
-      if ($work_order->get('field_status')->target_id != 1092) {
+      // Read the WO's CURRENT persisted status (the flaggable is freshly
+      // loaded by the flag system at clock-in time — not a stale form value).
+      $current_status = (int) $work_order->get('field_status')->target_id;
+
+      // Governance immutability rule: a clock-in must NOT silently revert a
+      // closed/terminal Work Order back to In Progress. Crew clock back in to
+      // add a forgotten time/material entry after sign-off — that entry must
+      // still save (it does, below, outside this block), but the status flip
+      // is suppressed. Terminal set: 1097 Complete, 1283 Warrantied,
+      // 1281 Invoiced, 1504 Paid, 1098 Canceled. All other statuses keep
+      // today's behavior (Open/Scheduled/Assigned/blocker states promote to
+      // In Progress; In Progress is already a no-op). Skipping here is
+      // side-effect-free: no wo_status_updates record is created, so the
+      // wo_status_updates propagation never runs and the WO is never saved.
+      $terminal_statuses = [1097, 1283, 1281, 1504, 1098];
+
+      // Check if the current status is not 'In Progress' (1092) and not closed.
+      if ($current_status != 1092 && !in_array($current_status, $terminal_statuses, TRUE)) {
             // Update the 'field_status' of the work_order entity to 'In Progress'
             //$work_order->set('field_status', 1092); // Term ID for 'In Progress'
             //$work_order->save();

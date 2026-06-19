@@ -84,6 +84,55 @@ function wo_shared_entity_insert(EntityInterface $entity) {
 }
 
 /**
+ * Implements hook_ENTITY_TYPE_insert() for work_order entities.
+ *
+ * Heals the auto_entitylabel sentinel placeholder
+ * (`%AutoEntityLabel: <uuid>%`) that gets stuck in a WO title whenever
+ * the entity is created with a single ->save() and its AEL pattern uses
+ * the `[work_order:id]` token (30+ WO bundles do). The id is not yet
+ * assigned during presave-on-insert, so AEL writes its sentinel expecting
+ * a follow-up save to resolve it. Programmatic creators that save only
+ * once — and any interactive path that does the same — leave the sentinel
+ * in place; pathauto then builds the URL alias (and every child entity's
+ * alias) from that garbage string.
+ *
+ * This is the path-agnostic backstop: regardless of which code path or
+ * form created the WO, if the freshly-inserted title carries the
+ * sentinel we clear it and save again. AEL's status:2 (OPTIONAL) only
+ * fills an empty title, so the second save regenerates the label with
+ * the now-known id, and pathauto regenerates the alias from the corrected
+ * title. Because the WO title is fixed before any child entities are
+ * created, child aliases never inherit the broken segment.
+ *
+ * No recursion: the heal save is an update, so this insert hook does not
+ * re-fire. The guard (sentinel must be present) makes this a no-op for
+ * the overwhelming majority of inserts. See drupal_bos_gotchas.md and the
+ * cabb8a6e check-up title fix this generalizes.
+ */
+function wo_shared_work_order_insert(EntityInterface $entity) {
+  if (!$entity->hasField('title')) {
+    return;
+  }
+  $title = (string) $entity->get('title')->value;
+  if (strpos($title, '%AutoEntityLabel:') === FALSE) {
+    return;
+  }
+
+  $entity->set('title', '');
+  $entity->save();
+
+  \Drupal::logger('wo_shared')->notice(
+    'Healed stuck AutoEntityLabel sentinel on WO @id (@bundle): %before -> %after',
+    [
+      '@id'     => $entity->id(),
+      '@bundle' => $entity->bundle(),
+      '%before' => $title,
+      '%after'  => $entity->label(),
+    ]
+  );
+}
+
+/**
  * Implements hook_ENTITY_TYPE_presave() for work_order entities.
  *
  * Recalculates field_total_time = sum(wo_time_clock.field_total_time)

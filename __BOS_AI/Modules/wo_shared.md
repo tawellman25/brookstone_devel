@@ -137,8 +137,30 @@ every work_order save:
 
 ---
 
+## work_order insert — AEL sentinel heal (added 2026-06-19)
+
+`wo_shared_work_order_insert()` is a path-agnostic backstop for the
+`%AutoEntityLabel: <uuid>%` placeholder bug (see `drupal_bos_gotchas.md`).
+On any work_order insert, if the freshly-saved title still contains the AEL
+sentinel, it clears the title and re-saves so AEL regenerates the label with
+the now-known id; pathauto then rebuilds the alias from the corrected title.
+Because the WO title is fixed before any child entities are created, child
+aliases never inherit the broken segment.
+
+No recursion (the heal save is an update, not an insert) and a no-op for the
+vast majority of inserts (guarded on the sentinel being present). This
+generalizes the `cabb8a6e` double-save fix — which only covered the two
+programmatic check-up creators — to **every** creation path, including the
+interactive add form. 30+ WO bundles use the `[work_order:id]` AEL token and
+share the hazard. Live remediation of already-stuck rows:
+`backfill_broken_checkup_titles.php` + regenerate child-entity aliases.
+Commit `8a72d4ae`.
+
+---
+
 ## Status
 
+Updated: 2026-06-19 (work_order insert: AEL sentinel heal)
 Updated: 2026-05-16 (work_order presave: total_time recalc + Invoiced guard)
 Created: March 2026
 Live backfill counts: 37 records (March 2026 season)

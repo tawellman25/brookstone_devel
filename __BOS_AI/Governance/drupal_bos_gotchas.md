@@ -472,6 +472,8 @@ The cleared title is the cue AEL needs to re-evaluate its pattern with the now-k
 
 **Surfaced 2026-05-23 fixing 30 broken check-up WOs (commit `cabb8a6e`; backfill at `web/scripts/backfill_broken_checkup_titles.php`).**
 
+**Generalized 2026-06-19 (commit `8a72d4ae`):** `wo_shared_work_order_insert()` now auto-heals the sentinel on *any* work_order insert (clear title + re-save when the placeholder is present), so the manual double-save in programmatic creators is belt-and-suspenders rather than the only defense. The interactive add-form path — which the double-save never covered — is now protected too. Child entities (`wo_status_updates`, `wo_notes`, `wo_time_clock`, `scheduling`, `wo_material_list*`) inherit the parent's broken alias segment, so healing old rows means re-saving the WO **and** regenerating child aliases: iterate `path_alias` rows matching `%autoentitylabel%`, parse `/type/id`, load each entity, `\Drupal::service('pathauto.generator')->updateEntityAlias($e, 'update')`.
+
 ## Entity query `range()` without `sort()` is non-deterministic
 
 Drupal entity queries with `->range(N, M)` but no `->sort(...)` may return different `N..N+M` slices across calls when the underlying result set exceeds the cap. MariaDB makes no ordering guarantee on `LIMIT/OFFSET` queries without an explicit `ORDER BY`, so the storage engine returns whichever rows are convenient at query time. The behavior is silent — no warning, no exception, just intermittent results.
@@ -632,6 +634,22 @@ The `(?:^|\W)` and `(?:$|\W)` flanks require the SKU to be bounded by non-word c
 **Generalization:** This applies anywhere a short identifier is searched inside longer user-entered text — SKUs, model numbers, lot codes, ZIP+4 prefixes, etc. If the haystack might contain longer strings starting with the needle, word-boundary anchoring is mandatory.
 
 **Pair with `preg_quote()`** when the needle comes from user input — the metacharacters in `preg_quote($needle, '/')` get escaped, defending against `.`, `*`, or `(` in supplier-provided SKUs. Tier 1.5 normalizes the SKU to alphanumerics before this, so the escape is defensive overhead rather than essential, but the pattern (`preg_quote` always when interpolating user data into regex) is the safe default.
+
+---
+
+## An uncaught exception in a VBO action aborts the whole batch
+
+A Views Bulk Operations action's `execute()` runs once per selected row. If it throws an **uncaught** exception on one row, the **entire batch aborts** — rows already processed keep their writes, rows after the failure never run. Worse when the action does multiple writes per row: an early write commits, a later write throws, and the row is left half-applied.
+
+Hit 2026-06-19: "Mark WO Invoiced" (`MarkWorkOrderInvoicedAction`) set `field_invoiced = 1`, then created a status-update whose presave tripped the `wo_shared` Invoiced guard (`EntityStorageException`) because the WO wasn't Complete — aborting the batch and stranding `field_invoiced = 1` flags. Select-all-across-pages had swept pre-completion (Scheduled 1091) WOs into a billing batch.
+
+**Correct pattern for VBO actions:**
+1. **Eligibility-gate at the top** and `return` early on ineligible rows — never attempt the operation (so a downstream guard is never reached).
+2. **Order writes so the validated/throwing step runs first**, before any other persistent write — a throw then can't leave a half-applied row.
+3. **Wrap the body in try/catch** and collect per-row failures so the batch continues.
+4. **Defend at the data source too:** action/billing views should carry a **non-exposed** status floor so ineligible rows never appear for selection in the first place. (A `taxonomy_index_tid` filter with `operator: or` + fixed `value` + `exposed: false` gives a clean "is one of" floor.)
+
+Reference: `MarkWorkOrderInvoicedAction` (gate + inverted write order + per-row catch) and the non-exposed `IN(1097,1281)` floor on the five `admin_*_billing` views (commits `54f7ab23`, `df6592bc`).
 
 ---
 

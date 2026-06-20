@@ -121,6 +121,11 @@ Cancellation represents two distinct realities, even if stored as one status:
 **Automatic transitions:**
 - **Assigned → In Progress** on first teammate clock-in
 - **Open → In Progress** on first teammate clock-in (for walk-by / pass-through WO types)
+- Clock-in auto-promotion to In Progress (1092) is suppressed when the WO's
+  current status is terminal/closed — Complete (1097), Warrantied (1283),
+  Invoiced (1281), Paid (1504), or Canceled (1098). Re-clocking-in on a closed
+  WO records the time entry but does not revert status. (wo_timer_flag_update,
+  commit 5e76da8a, 2026-06-19.)
 - **In Progress → Complete** on creation of `wo_complete_info` (sign-off entity)
 
 **Manual transitions (no automation):**

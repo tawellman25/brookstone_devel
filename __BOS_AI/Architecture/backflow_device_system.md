@@ -39,7 +39,6 @@ Five new structures plus two `teammate_profile` additions. All are ECK except th
 | `field_material_backflow` | entity_reference → `material` [backflow] | Spec reference to the catalog material (make/model), not a copy of it. |
 | `field_device_type` | entity_reference → `taxonomy_term` [backflow_device_types] | PVB / RP / DCVA / SVB — the *mechanical* axis. See §2.5. |
 | `field_used_for` | entity_reference → `taxonomy_term` [backflow_uses] | **Optional, single-value.** The *application* axis — what the device protects (irrigation, domestic, fire…). Independent of `field_device_type`. See §2.5a, §3.11. |
-| `field_ss_source` | entity_reference → `property_ss_sources` [all] | Optional cross-link to the irrigation water source this device protects. |
 | `field_physical_location` | string_long | Free-text "where on site" the device is. |
 | `field_device_photos` | image (unlimited) | Field photos of the installed device. |
 | `field_last_test_date` | datetime (date+time) | "Last completed" snapshot, written on test completion (Gate 3). |

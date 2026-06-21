@@ -37,7 +37,8 @@ Five new structures plus two `teammate_profile` additions. All are ECK except th
 | `field_property` | entity_reference → `properties` [property] | **Required.** The parent property. Required relationship for the whole family. |
 | `field_serial_number` | string | Manufacturer serial as found on the device. |
 | `field_material_backflow` | entity_reference → `material` [backflow] | Spec reference to the catalog material (make/model), not a copy of it. |
-| `field_device_type` | entity_reference → `taxonomy_term` [backflow_device_types] | PVB / RP / DCVA / SVB. See §2.5. |
+| `field_device_type` | entity_reference → `taxonomy_term` [backflow_device_types] | PVB / RP / DCVA / SVB — the *mechanical* axis. See §2.5. |
+| `field_used_for` | entity_reference → `taxonomy_term` [backflow_uses] | **Optional, single-value.** The *application* axis — what the device protects (irrigation, domestic, fire…). Independent of `field_device_type`. See §2.5a, §3.11. |
 | `field_ss_source` | entity_reference → `property_ss_sources` [all] | Optional cross-link to the irrigation water source this device protects. |
 | `field_physical_location` | string_long | Free-text "where on site" the device is. |
 | `field_device_photos` | image (unlimited) | Field photos of the installed device. |
@@ -109,6 +110,18 @@ Vocabulary `backflow_device_types`, four seed terms (PVB, RP, DCVA, SVB). Type i
 | `field_public_description` | text_long | Training / public-facing copy. Reuses the shared `taxonomy_term.field_public_description` storage. |
 
 Public landing view `backflow_device_types_landing` at `/services/backflow-prevention` (anonymous access). Term pathauto pattern: `services/backflow-prevention/[term:name]`.
+
+### 2.5a `backflow_uses` taxonomy vocabulary (application axis)
+
+Vocabulary `backflow_uses`, 14 seed terms (IRRIGATION, DOMESTIC, FIRE, BOILER, FERTIGATION, KITCHEN, COOLING_TOWER, INDUSTRIAL, MEDICAL, POOL, POND, AGRICULTURAL, HOSE_BIBB, MOBILE). Captures *what a backflow protects* — independent of the mechanical device type (§2.5). Referenced from the device via `field_used_for`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `field_use_code` | string | **Required.** Dedicated stable machine code (key logic off this, never the TID). A separate field — **not** the device-type `field_type_code` `list_string`, whose `allowed_values` are storage-shared and scoped to PVB/RP/DCVA/SVB (see §3.11). |
+| `field_public_description` | text_long | Customer / water-district facing. Reuses the shared `taxonomy_term.field_public_description` storage. |
+| `field_teammate_description` | text_long | Training / tech facing. Reuses the shared `taxonomy_term.field_teammate_description` storage. |
+
+Term pathauto pattern: `services/backflow-prevention/uses/[term:name]` (pattern `backflow_use_paths`). Term pages are anonymous-viewable via the default `access content` permission (no role change) — descriptions are application info, safe to expose. Seeded by `web/scripts/seed_backflow_uses.php` (terms are content — run on live, see §5).
 
 ### 2.6 `teammate_profile` additions
 
@@ -290,6 +303,14 @@ The compliance dashboard (`backflow_compliance`, `/admin/operations/backflow`) i
 
 ---
 
+### 3.11 Two-axis classification: device *type* vs *use* are independent fields
+
+Mechanical design (`field_device_type` → `backflow_device_types`: PVB/RP/DCVA/SVB) and application (`field_used_for` → `backflow_uses`: irrigation/domestic/fire/…) are **orthogonal** — the same device type serves many uses, and a given use can be met by several device types. They are deliberately two separate single-value reference fields, not one merged taxonomy.
+
+`field_used_for` defaults: **single-value (cardinality 1) and optional.** *[Flagged for Todd — change to unlimited if multi-use devices must be recorded, or required if every device must carry a use. Confirm before relying on either.]*
+
+Use codes live on a **dedicated `field_use_code` string**, not the device-type `field_type_code`. In Drupal a `list_string`'s `allowed_values` are a **storage-level** property shared by every vocabulary instance of that field — so reusing `field_type_code` would have merged the 14 use codes and the 4 type codes into one shared dropdown across both vocabs. A separate plain-string field keeps the two code sets independent (decided with Todd; spec had assumed `field_type_code` was a free string).
+
 ## 4. As-Built Status
 
 | Gate | Scope | Status | Commit |
@@ -313,6 +334,7 @@ The compliance dashboard (`backflow_compliance`, `/admin/operations/backflow`) i
 - **The "Create new device" button (Gate 3a) requires the work order — and thus the property — to be selected first.** If clicked before a WO is chosen it warns ("Could not create device: select a work order…") and stays open rather than creating a device. This is an **intentional ordering constraint, not a bug**: a device created without `field_property` would have a broken pathauto alias (no property path segment), so the button refuses to create one until it can inherit the property from the parent WO.
 - **`config/sync` currently diverges from live-synced active config** in hundreds of unrelated configs on this environment. All Gate 1/2 imports were done as **surgical `cim --partial` from a staging dir of only the changed files** — a full `drush cim` would clobber unrelated active config, and a blind `drush cex` would clobber manually-synced live config. Treat full cim/cex on this branch as forbidden until the divergence is reconciled. **Standing hazard; separate cleanup owed.**
 - **`work_order.backflow_testing.field_service` default is stored by content UUID and is env-specific.** The committed default_value points at the "Backflow Testing and Certification" services term by `target_uuid` (`37f908e2-…`, the local term's UUID). Taxonomy terms are content, so the same term on live has a **different** UUID — on deploy, `cim` won't resolve this default and the field_service default will silently not apply on live until re-pointed. This is how **all** WO `field_service` instances behave (created on live with live's UUIDs); the wrinkle here is that the backflow term default was set in local dev. **Pre-deploy / post-deploy checklist:** after this branch deploys, confirm `work_order.backflow_testing.field_service`'s default resolves to live's Backflow Testing term and re-set it on live if blank. (Same caveat applies to any future field default that references a content entity by UUID.)
+- **Taxonomy terms are content — seed scripts must run on live after deploy.** Neither `backflow_device_types` nor `backflow_uses` terms ride `cim`. Post-deploy, run BOTH on live: `web/scripts/seed_backflow_device_types.php` (4 type terms) and `web/scripts/seed_backflow_uses.php` (14 use terms). Both idempotent (keyed on their code field), safe to re-run. (Device-type terms seeded on live 2026-06-20; uses pending the deploy of this branch.)
 - **S3 stream-wrapper smoke-test owed on live (Gate 3b PDFs).** The report/tag embed the signature and QR by reading the file via its stream wrapper (`file_get_contents($file->getFileUri())`) and base64-encoding it. In DDEV the public files are local, so this proves the *logic* but **not** that dompdf gets the bytes from `s3://` in production (BOS files live on S3 via `s3fs`). **Post-deploy: render one real backflow report on live and open it** — confirm the signature image and QR actually embed from `s3://` before the office relies on the PDF. If they come back blank, the fix is at the stream-read layer (e.g., resolve to a temp local copy), not the template.
 - **Pre-deploy patch reapplication checklist (`contrib/` is excluded from rsync — reapply manually after `composer install` on live):**
   - **`drupal/calendar`** — its `3177761` Smart Date patch URL is **dead**; `composer require` re-triggered the failure again in both Gate 2 (endroid) and Gate 3b (entity_print + dompdf). Pre-existing and unrelated to backflow — but every `composer install`/`require` re-extracts calendar unpatched. Decide whether to host the patch locally or drop it; until then, calendar runs unpatched on live.
@@ -332,3 +354,4 @@ The compliance dashboard (`backflow_compliance`, `/admin/operations/backflow`) i
 - **Public test-history EVA (§5)** — the reduced, anonymous-facing test history on the device `full` page (date/result/tester/cert/next-due only; no report/WO/repairs links) is the Gate 4 §5 follow-up, pending the field-exposure decision. A clean seam is left (the office Test History EVA is a separate display and is not loosened).
 - **⚠ SOP NEEDED — now owed.** Gate 3a/3b built the human field-testing workflow (tech enters a test on the WO, signs off via `irrigation_crew`, the device updates and a frozen report PDF + reprintable HB25-1077 tag are produced). Per CLAUDE.md SOP governance this human-facing workflow needs an SOP — flag raised; SOP content is authored by Claude Chat, not written inline.
 - **`field_tester` form default = uid 1** — a Gate 3 form-level default (not a field default, which would be env-specific by UUID).
+- **`field_used_for` form-display config is committed separately by Todd.** The field is on the device add/edit form (active, weight 5 next to Device Type) and on the default + `full` view displays. The two **view**-display configs are committed with this work; the **form**-display config is left to Todd's in-progress UI reorg (an `Office Admin` field_group, weight changes) — it'll carry `field_used_for` when he exports it.

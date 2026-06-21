@@ -246,3 +246,153 @@ function backflow_device_entity_view(array &$build, EntityInterface $entity, Ent
     $build['backflow_public_address']['#cache']['tags'] = $property->getCacheTags();
   }
 }
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * Attaches the status-card CSS to the Property Devices EVA (mirrors the way
+ * bos_spray_route_ui attaches spray-route.css to its route views).
+ */
+function backflow_device_views_pre_render($view) {
+  if ($view->id() === 'backflow_property_devices_eva') {
+    $view->element['#attached']['library'][] = 'backflow_device/backflow_cards';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views_view_fields.
+ *
+ * Computes the status-card data for each Property Devices EVA row from the
+ * device entity, so the row template (views-view-fields--backflow-property-
+ * devices-eva.html.twig) can render a card. Status + Next-Due logic live
+ * here (PHP), keyed on the status MACHINE value.
+ */
+function backflow_device_preprocess_views_view_fields(array &$variables) {
+  if (($variables['view']->id() ?? '') !== 'backflow_property_devices_eva') {
+    return;
+  }
+  $device = $variables['row']->_entity ?? NULL;
+  if (!$device instanceof ContentEntityInterface || $device->getEntityTypeId() !== 'property_backflow_device') {
+    return;
+  }
+
+  $status = (string) ($device->get('field_current_status')->value ?? '');
+
+  // Device type label.
+  $device_type = '';
+  if ($device->hasField('field_device_type') && !$device->get('field_device_type')->isEmpty()
+      && ($term = $device->get('field_device_type')->entity)) {
+    $device_type = (string) $term->label();
+  }
+
+  // Last test: stored UTC datetime -> site TZ, date only (BOS MM/DD/YYYY).
+  $last_test = '';
+  if ($device->hasField('field_last_test_date') && !$device->get('field_last_test_date')->isEmpty()) {
+    try {
+      $dt = new \DateTime((string) $device->get('field_last_test_date')->value, new \DateTimeZone('UTC'));
+      $dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+      $last_test = $dt->format('m/d/Y');
+    }
+    catch (\Exception $e) {
+      // Leave blank on a malformed stored value.
+    }
+  }
+
+  $location = $device->hasField('field_physical_location')
+    ? trim((string) $device->get('field_physical_location')->value) : '';
+
+  $next_due = ($device->hasField('field_next_due_date') && !$device->get('field_next_due_date')->isEmpty())
+    ? (string) $device->get('field_next_due_date')->value : '';
+
+  $variables['bf_card'] = [
+    'status' => $status,
+    'status_label' => _backflow_device_status_label($status),
+    'code' => _backflow_device_code($device),
+    'url' => $device->toUrl()->toString(TRUE)->getGeneratedUrl(),
+    'device_type' => $device_type,
+    'last_test' => $last_test,
+    'location' => $location,
+  ] + _backflow_device_next_due_meta($next_due, $status);
+}
+
+/**
+ * Human label for a field_current_status machine value (stable map).
+ */
+function _backflow_device_status_label(string $value): string {
+  $map = [
+    'active' => 'Active',
+    'failed' => 'Failed',
+    'repaired' => 'Repaired',
+    'out_of_service' => 'Out of Service',
+    'replaced' => 'Replaced',
+  ];
+  return $map[$value] ?? ucwords(str_replace('_', ' ', $value));
+}
+
+/**
+ * Next-Due treatment for the card. Coloring applies ONLY when status is
+ * active — a failed device reads via its red FAILED badge, never as an
+ * "overdue date" (no double-signal). Returns nextdue_class/label/date.
+ *
+ * Date math: PHP DateTime in the site timezone, date-only comparison
+ * (consistent with the date-only next-due field + the write-back).
+ */
+function _backflow_device_next_due_meta(string $next_due, string $status): array {
+  // Non-active statuses: the badge is the signal. Show a muted date if any.
+  if ($status !== 'active') {
+    if ($next_due === '') {
+      return ['nextdue_class' => 'muted', 'nextdue_label' => '', 'nextdue_date' => ''];
+    }
+    return ['nextdue_class' => 'muted', 'nextdue_label' => 'Next due', 'nextdue_date' => _backflow_device_fmt_due($next_due)];
+  }
+
+  // Active + no date on record -> amber "No test on record" (the BF-000002 case).
+  if ($next_due === '') {
+    return ['nextdue_class' => 'soon', 'nextdue_label' => 'No test on record', 'nextdue_date' => ''];
+  }
+
+  $tz = new \DateTimeZone(date_default_timezone_get());
+  $today = new \DateTime('now', $tz);
+  $today->setTime(0, 0, 0);
+  $due = \DateTime::createFromFormat('Y-m-d', $next_due, $tz);
+  if (!$due) {
+    return ['nextdue_class' => 'soon', 'nextdue_label' => 'No test on record', 'nextdue_date' => ''];
+  }
+  $due->setTime(0, 0, 0);
+  $days = (int) $today->diff($due)->format('%r%a');
+  $date_str = $due->format('m/d/Y');
+
+  if ($days < 0) {
+    return ['nextdue_class' => 'overdue', 'nextdue_label' => 'Overdue', 'nextdue_date' => $date_str];
+  }
+  if ($days <= 60) {
+    return ['nextdue_class' => 'soon', 'nextdue_label' => 'Due soon', 'nextdue_date' => $date_str];
+  }
+  return ['nextdue_class' => 'ok', 'nextdue_label' => 'Next due', 'nextdue_date' => $date_str];
+}
+
+/**
+ * Format a date-only (Y-m-d) next-due value as MM/DD/YYYY.
+ */
+function _backflow_device_fmt_due(string $next_due): string {
+  $tz = new \DateTimeZone(date_default_timezone_get());
+  $d = \DateTime::createFromFormat('Y-m-d', $next_due, $tz);
+  return $d ? $d->format('m/d/Y') : '';
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * Registers the Property Devices EVA row suggestion so this module's
+ * templates/views-view-fields--backflow-property-devices-eva.html.twig is
+ * discovered. A module template that overrides another module's theme hook
+ * (views_view_fields) is not auto-scanned unless the suggestion hook is
+ * registered with a base hook.
+ */
+function backflow_device_theme($existing, $type, $theme, $path) {
+  return [
+    'views_view_fields__backflow_property_devices_eva' => [
+      'base hook' => 'views_view_fields',
+    ],
+  ];
+}

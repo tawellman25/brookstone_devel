@@ -1,0 +1,150 @@
+/**
+ * Backflow Property Devices EVA — status cards.
+ *
+ * Visual tokens mirror the My Schedule crew cards
+ * (bos_scheduling/css/my_schedule.css): the .my-schedule-card container
+ * (white, 2px #ddd border, 6px radius, ~0.85rem 1rem padding, hover
+ * border #1a5276 + shadow), the left status-accent bar (border-left 5px),
+ * the flex header with the badge pushed right (margin-left:auto), and the
+ * badge shape (radius 3px, 0.15rem/0.5rem padding, 700/0.8rem,
+ * letter-spacing). Status colors are the backflow map (not the WO map).
+ */
+
+/* ── Card (mirrors .my-schedule-card) ──────────────────────────── */
+/* Unformatted-list rows render inside .views-row; spacing + width live on
+   the card itself rather than a flex wrapper. */
+.bf-card {
+  display: block;
+  max-width: 680px;
+  margin-bottom: 0.75rem;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  color: #1a1a1a;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.bf-card:hover {
+  border-color: #1a5276;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* Left status-accent bar (mirrors .my-schedule-status-* border-left). */
+.bf-card--active         { border-left: 5px solid #198754; }
+.bf-card--failed         { border-left: 5px solid #dc3545; }
+.bf-card--repaired       { border-left: 5px solid #0d6efd; }
+.bf-card--out_of_service { border-left: 5px solid #6c757d; }
+.bf-card--replaced       { border-left: 5px solid #6c757d; }
+
+/* ── Header (mirrors .my-schedule-card-header) ─────────────────── */
+.bf-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.bf-card-id {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-decoration: none;
+}
+
+.bf-card-id:hover {
+  text-decoration: underline;
+}
+
+/* Status badge (mirrors .my-schedule-service shape; pushed right like
+   .my-schedule-status via margin-left:auto). */
+.bf-badge {
+  margin-left: auto;
+  color: #fff;
+  border-radius: 3px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.bf-badge--active         { background: #198754; }
+.bf-badge--failed         { background: #dc3545; }
+.bf-badge--repaired       { background: #0d6efd; }
+.bf-badge--out_of_service { background: #6c757d; }
+.bf-badge--replaced       { background: #6c757d; }
+
+/* ── Body facts ────────────────────────────────────────────────── */
+.bf-card-facts {
+  margin-bottom: 0.5rem;
+}
+
+.bf-fact {
+  font-size: 0.9rem;
+  color: #444;
+  line-height: 1.5;
+}
+
+.bf-fact-label {
+  color: #888;
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+/* ── Next Due (prominent) ──────────────────────────────────────── */
+.bf-nextdue {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.bf-nextdue-label {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.78rem;
+  margin-right: 0.4rem;
+}
+
+.bf-nextdue-date {
+  font-weight: 700;
+}
+
+/* Overdue — red emphasis. */
+.bf-nextdue--overdue {
+  background: #fdecea;
+  color: #b02a37;
+  border-color: #f5c2c7;
+}
+
+/* Due soon / no record — amber. */
+.bf-nextdue--soon {
+  background: #fff9e6;
+  color: #7a5500;
+  border-color: #f0c040;
+}
+
+/* Comfortably in the future — green/normal. */
+.bf-nextdue--ok {
+  background: #e8f5ee;
+  color: #146c43;
+  border-color: #badbcb;
+}
+
+/* Non-active statuses — muted; the badge is the signal. */
+.bf-nextdue--muted {
+  background: transparent;
+  color: #888;
+  border-color: transparent;
+  font-weight: 600;
+  padding-left: 0;
+}
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .bf-card-id { font-size: 1rem; }
+}

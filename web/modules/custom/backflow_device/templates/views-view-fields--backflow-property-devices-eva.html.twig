@@ -1,0 +1,43 @@
+{#
+/**
+ * @file
+ * Property Devices EVA row — backflow status card.
+ *
+ * Renders one card per property_backflow_device, visually consistent with the
+ * My Schedule crew cards. Card data is computed in
+ * backflow_device_preprocess_views_view_fields() and passed as `bf_card`
+ * (status, status_label, code, url, device_type, last_test, location, and the
+ * nextdue_* treatment). The default `fields` are intentionally not rendered.
+ */
+#}
+{% if bf_card %}
+  <div class="bf-card bf-card--{{ bf_card.status }}">
+
+    <div class="bf-card-header">
+      <a href="{{ bf_card.url }}" class="bf-card-id">{{ bf_card.code }}</a>
+      <span class="bf-badge bf-badge--{{ bf_card.status }}">{{ bf_card.status_label }}</span>
+    </div>
+
+    {% if bf_card.device_type or bf_card.last_test or bf_card.location %}
+      <div class="bf-card-facts">
+        {% if bf_card.device_type %}
+          <div class="bf-fact"><span class="bf-fact-label">Type</span>{{ bf_card.device_type }}</div>
+        {% endif %}
+        {% if bf_card.last_test %}
+          <div class="bf-fact"><span class="bf-fact-label">Last test</span>{{ bf_card.last_test }}</div>
+        {% endif %}
+        {% if bf_card.location %}
+          <div class="bf-fact"><span class="bf-fact-label">Location</span>{{ bf_card.location }}</div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if bf_card.nextdue_label or bf_card.nextdue_date %}
+      <div class="bf-nextdue bf-nextdue--{{ bf_card.nextdue_class }}">
+        {% if bf_card.nextdue_label %}<span class="bf-nextdue-label">{{ bf_card.nextdue_label }}</span>{% endif %}
+        {% if bf_card.nextdue_date %}<span class="bf-nextdue-date">{{ bf_card.nextdue_date }}</span>{% endif %}
+      </div>
+    {% endif %}
+
+  </div>
+{% endif %}

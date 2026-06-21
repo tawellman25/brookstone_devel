@@ -653,6 +653,45 @@ Reference: `MarkWorkOrderInvoicedAction` (gate + inverted write order + per-row 
 
 ---
 
+## cPanel/CloudLinux cron `drush` invocation fails silently
+
+A `drush` command that works perfectly from an interactive shell fails when the **same** command runs from cron, with PHP errors like:
+
+```
+PHP Warning:  Undefined variable $argv in phar:///usr/local/bin/drush
+PHP Fatal error:  Uncaught TypeError: array_shift(): Argument #1 ($array) must be of type array, null given
+Status: 500 Internal Server Error
+X-Powered-By: PHP/8.3.31
+```
+
+Cron writes the error to the job's log file but nothing else alerts, so the failure can go unnoticed for **weeks**.
+
+**Cause.** On cPanel/CloudLinux/Hosting.com servers, `/usr/local/bin/php` is **not** a PHP binary — it's a small (~933-byte) Perl wrapper that uses CloudLinux's PHP selector (`/etc/cl.selector/ea-php-cli`) to route to whichever Alt-PHP the account has selected. The wrapper resolves correctly in an interactive shell but routes through **CGI PHP** when run from cron, which leaves `$argv` undefined and breaks drush's startup. (Drush's shebang is `#!/usr/bin/env php`, so it accepts whatever PHP the environment serves it — under cron that's CGI PHP.) The crash is at drush startup, **before any BOS module or drush command code loads**.
+
+**Fix.** In cron, invoke drush via the **direct CloudLinux Alt-PHP binary**, bypassing the wrapper. For PHP 8.3 that's typically `/opt/alt/php83/usr/bin/php`:
+
+```
+# BROKEN — relies on the wrapper:
+0 7 * * * ... && /usr/local/bin/drush wex:fetch-email ...
+
+# FIXED — direct Alt-PHP binary gives drush a real CLI context with $argv:
+0 7 * * * ... && /opt/alt/php83/usr/bin/php /usr/local/bin/drush wex:fetch-email ...
+```
+
+To confirm the correct binary for a given PHP version:
+
+```
+ls -la /opt/cpanel/ea-php*/root/usr/bin/php
+# or, while drush works interactively, print what the wrapper resolves to:
+/usr/local/bin/php -r 'echo PHP_BINARY . "\n";'
+```
+
+**This failure mode is silent by default** — cron surfaces nothing unless watched. Pair the fix with a failure-alert in the cron line (mail on non-zero exit) so the next environment shift doesn't go undetected.
+
+**Discovered** 2026-06-21, after **17 days** of silent WEX `wex:fetch-email` failures. The automation worked 2026-06-04 → 06-07, then broke when Hosting.com updated the cPanel/EasyApache environment around 06-07/06-08. Resolution was diagnostic log inspection, not a code change. See `__BOS_AI/Modules/wex_fuel_import_workflow.md` → Troubleshooting.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

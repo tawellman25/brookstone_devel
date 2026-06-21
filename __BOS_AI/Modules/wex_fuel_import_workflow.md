@@ -51,6 +51,26 @@ Use this when the scheduled report didn't arrive, you need a date range outside 
 8. Download the file when ready
 9. Continue with the upload steps above (step 2 onward)
 
+## Automated Daily Email Fetch (cron)
+
+Most days you don't import by hand at all — a cron job on the live server pulls the WEX report email automatically and runs the importer. (The manual/portal paths above are for catch-ups, backfills, or when the automation is down.)
+
+- **Schedule:** `0 7 * * *` — daily at **7:00 AM Mountain Time**, after WEX's overnight delivery.
+- **Command:** the `wex:fetch-email` drush command (reads UNSEEN messages from the WEX mailbox, extracts the report URL, downloads the CSV, and imports it). See [`bos_wex_import.md`](bos_wex_import.md) for what the command does internally.
+- **Log file:** `$HOME/wex_fetch.log` (i.e. `/home/brookstoneadmin/wex_fetch.log`) — every run appends a timestamped block here. This is the first place to look when transactions stop appearing.
+- **Credentials:** the IMAP login is sourced from `$HOME/.wex_imap_env` (must be `0600`, `-rw-------`). The cron line `. $HOME/.wex_imap_env` before running drush; without it the fetch can't authenticate to the mailbox.
+
+**Current live cron line** (`crontab -l` on the `brookstoneadmin` account):
+
+```
+0 7 * * * LANG=C bash -c 'echo; echo "=== WEX fetch $(date) ==="; \
+  . $HOME/.wex_imap_env && cd /home/brookstoneadmin/brookstone && \
+  /opt/alt/php83/usr/bin/php /usr/local/bin/drush wex:fetch-email' \
+  >> $HOME/wex_fetch.log 2>&1
+```
+
+> **The PHP binary path matters.** drush is invoked as `/opt/alt/php83/usr/bin/php /usr/local/bin/drush`, **not** the bare `/usr/local/bin/drush`. On this cPanel/CloudLinux host the bare path routes through a PHP wrapper that breaks drush under cron (silently — it only writes to the log). This exact line is the fix for a 17-day silent outage; do not "simplify" it back to `/usr/local/bin/drush`. Full explanation: `__BOS_AI/Governance/drupal_bos_gotchas.md` → "cPanel/CloudLinux cron `drush` invocation fails silently".
+
 ## Resolving Unmatched Transactions
 
 The Review Queue (`/admin/operations/equipment/fuel-transactions/unmatched`) shows transactions where automatic matching failed. The "Issue" column tells you which side(s) didn't resolve.
@@ -99,6 +119,97 @@ Sometimes a pump doesn't capture a PIN — usually a card reader fallback or a m
 | Whole batch shows `unmatched_vehicle` | Vehicles in BOS don't have Truck Number populated | Set field_vehicle_number on each vehicle to match its WEX asset ID |
 | Same person showing up unmatched across many transactions | Their prompt ID isn't set in BOS | Set their `field_wex_driver_prompt_id` once on their teammate profile — future imports for that driver will match automatically |
 | Mileage didn't update on a vehicle that should have | The transaction's odometer was lower than the vehicle's existing mileage | Check the transaction's odometer; if WEX has it wrong, edit the transaction's odometer fields manually; if BOS had a stale-high mileage, edit the vehicle's mileage manually first |
+
+## Troubleshooting
+
+Deeper diagnostics for when the automation (the daily cron fetch) is involved, or when something's off that the table above doesn't cover. These are server/CLI steps — run on the live server.
+
+### "Transactions aren't appearing in BOS"
+
+Work through these in order:
+
+1. **Check the live count + latest transaction date:**
+   ```
+   drush eval "
+   \$count = \Drupal::entityQuery('equipment_fuel_transaction')
+     ->accessCheck(FALSE)->count()->execute();
+   \$ids = \Drupal::entityQuery('equipment_fuel_transaction')
+     ->accessCheck(FALSE)->sort('field_transaction_date', 'DESC')
+     ->range(0, 1)->execute();
+   \$latest = \Drupal::entityTypeManager()
+     ->getStorage('equipment_fuel_transaction')->load(reset(\$ids));
+   print 'Total: ' . \$count . \"\n\";
+   print 'Latest TX: ' . \$latest->get('field_transaction_date')->value . \"\n\";
+   "
+   ```
+   If the latest date is days/weeks stale, the fetch has been failing.
+
+2. **Read the fetch log:** `tail -100 ~/wex_fetch.log`. Failure modes to look for:
+   - **PHP errors at drush startup** (`Undefined variable $argv`, `array_shift(): ... null given`, `500 Internal Server Error`) → the cron PHP-binary/wrapper problem. See `drupal_bos_gotchas.md` → "cPanel/CloudLinux cron `drush` invocation fails silently". This is the one that caused the 17-day outage.
+   - **IMAP connection failures** → bad/missing credentials, network, or mailbox auth (check `.wex_imap_env`).
+   - **`Found 0 UNSEEN messages`** → WEX isn't delivering, or something is marking the emails read before the fetch sees them.
+   - **URL-extraction failures** → the WEX email format/layout changed and the report-link extractor no longer finds it.
+
+3. **Verify the mailbox is actually receiving WEX emails:** log into webmail for `wex@brookstoneoutdoors.com` and confirm the WEX emails are (a) arriving, (b) **UNSEEN** (not already read), and (c) from the expected sender / subject the fetcher matches on.
+
+4. **Run the fetch by hand to watch real-time output:**
+   ```
+   cd /home/brookstoneadmin/brookstone && \
+   . $HOME/.wex_imap_env && \
+   /opt/alt/php83/usr/bin/php /usr/local/bin/drush wex:fetch-email
+   ```
+
+### "Vehicle mileage isn't updating"
+
+The fetch log shows repeated lines like:
+
+```
+[warning] Vehicle XXXXX: skipped lower odometer read (NNNNN < current MMMMM)
+```
+
+A one-off skip is normal (it's the pump-typo guard — see "What Happens Automatically"). But when the **same vehicle** gets rejected across multiple runs with **reasonable-looking** odometer readings, the stored `field_current_mileage` on that vehicle is likely **corrupted (too high)** — every legitimate read now looks "lower" and gets ignored.
+
+Fix:
+1. Physically read the vehicle's actual odometer.
+2. Correct the stored baseline:
+   ```
+   drush eval "
+   \$vehicle = \Drupal::entityTypeManager()
+     ->getStorage('equipment')->load(VEHICLE_ID);
+   \$vehicle->set('field_current_mileage', ACTUAL_ODOMETER);
+   \$vehicle->set('field_current_mileage_updated_on',
+     date('Y-m-d\TH:i:s'));
+   \$vehicle->save();
+   "
+   ```
+3. Future imports will accept correct reads going forward.
+
+#### Known suspected-corrupt mileage baselines (as of 2026-06-21)
+
+Listed for awareness — resolution requires reading the physical odometer and correcting via the steps above:
+
+| Vehicle ID | Stored `field_current_mileage` | Why suspected | 
+|---|---|---|
+| 77628 (Webster) | 81,983 | Multiple rejected reads in the ~18–19K and ~76–77K ranges — stored value looks corrupted (too high). |
+| 35103 (highest-mileage unit) | 300,649 | Plausible for the oldest truck, but worth a physical check before trusting it as the baseline. |
+| 35110 | 124,147 | Two rejected reads close to the baseline (101,497 and 123,726) suggest it may be slightly off. |
+
+### "Cron job stopped running entirely"
+
+1. **Confirm the cron is installed (with the correct PHP path):**
+   ```
+   crontab -l | grep wex
+   ```
+   It should show the full line including `/opt/alt/php83/usr/bin/php` before `/usr/local/bin/drush`.
+2. **Confirm the env file is present + locked down:**
+   ```
+   ls -la ~/.wex_imap_env
+   ```
+   Expect `-rw-------` (0600). If missing, the IMAP credentials need restoring.
+3. **Confirm the cron daemon is running:**
+   ```
+   ps aux | grep crond | grep -v grep
+   ```
 
 ## Where to Find Things
 

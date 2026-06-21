@@ -176,9 +176,9 @@ display:
           plugin_id: text
           empty: true
           content:
-            value: 'No backflow devices on record.'
-            format: basic_html
-          tokenize: false
+            value: "No backflow devices on record.\r\n\r\n<a href=\"/admin/content/property_backflow_device/add/device?edit[field_property][widget][0][target_id]={{ raw_arguments.field_property_target_id }}&destination=/properties/{{ raw_arguments.field_property_target_id }}\">\r\n  + Add Backflow\r\n</a>"
+            format: full_html
+          tokenize: true
       sorts:
         field_next_due_date:
           id: field_next_due_date
@@ -231,13 +231,12 @@ display:
           break_phrase: false
       filters: {  }
       style:
-        type: table
+        type: default
         options:
+          grouping: {  }
           row_class: ''
           default_row_class: true
-          columns: {  }
-          default: '-1'
-          info: {  }
+          uses_fields: false
       row:
         type: fields
         options:
@@ -255,7 +254,20 @@ display:
           query_tags: {  }
       relationships: {  }
       header: {  }
-      footer: {  }
+      footer:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          plugin_id: text
+          empty: false
+          content:
+            value: "<a href=\"/admin/content/property_backflow_device/add/device?edit[field_property][widget][0][target_id]={{ raw_arguments.field_property_target_id }}&destination=/properties/{{ raw_arguments.field_property_target_id }}\">\r\n  + Add Backflow\r\n</a>"
+            format: full_html
+          tokenize: true
       display_extenders: {  }
     cache_metadata:
       max-age: -1
@@ -291,4 +303,3 @@ display:
         - 'config:field.storage.property_backflow_device.field_device_type'
         - 'config:field.storage.property_backflow_device.field_last_test_date'
         - 'config:field.storage.property_backflow_device.field_next_due_date'
-

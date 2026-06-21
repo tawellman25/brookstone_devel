@@ -1,0 +1,29 @@
+uuid: 12a96679-4a7c-456f-8ea8-407a33b9054f
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.property_backflow_device.device
+    - field.storage.property_backflow_device.field_used_for
+    - taxonomy.vocabulary.backflow_uses
+id: property_backflow_device.device.field_used_for
+field_name: field_used_for
+entity_type: property_backflow_device
+bundle: device
+label: 'Used For'
+description: 'The application this device protects (e.g. irrigation, domestic, fire). Independent of device type.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      backflow_uses: backflow_uses
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

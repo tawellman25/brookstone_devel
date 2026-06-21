@@ -1,0 +1,23 @@
+uuid: dfd13f83-95e3-46b2-ab3d-524da2d905e9
+langcode: en
+status: true
+dependencies:
+  config:
+    - taxonomy.vocabulary.backflow_uses
+  module:
+    - taxonomy
+id: backflow_use_paths
+label: 'Backflow Use Paths'
+type: 'canonical_entities:taxonomy_term'
+pattern: '/services/backflow-prevention/uses/[term:name]'
+selection_criteria:
+  a1e58e19-934e-4b96-9303-dd0b7c7a0e06:
+    id: 'entity_bundle:taxonomy_term'
+    negate: false
+    context_mapping:
+      taxonomy_term: taxonomy_term
+    bundles:
+      backflow_uses: backflow_uses
+selection_logic: and
+weight: -40
+relationships: {  }

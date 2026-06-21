@@ -683,6 +683,28 @@ and `'m/d/Y g:i A'`). If you find yourself adding more than two,
 promote them to a shared trait or a tiny `BosDateFormatter` service
 — do not let a third copy land.
 
+## UI Patterns
+
+For BOS admin/crew UIs, prefer established components over new lookalikes —
+genuine visual consistency, reusing the component's actual tokens.
+
+**Status-card pattern:** for any list of stateful records (work orders,
+backflow devices, equipment, items with a status), default to a **status
+card per record** rather than a plain Views table. The canonical reference
+is the My Schedule crew cards (`bos_scheduling` — `my_schedule.css` /
+`bos-scheduling-my-schedule.html.twig`): white card, 2px `#ddd` border,
+6px radius, left 5px status-accent bar, flex header with the badge pushed
+right, badge `radius:3px / .15–.5rem / 700 .8rem`. Color by status keyed on
+the **machine value**; never double-signal (if the badge shows the state,
+don't also color a date as "overdue"). Apply to a View/EVA via: Unformatted
+row style + a `views-view-fields--<view-id>.html.twig` row template
+(registered in `hook_theme` with `'base hook' => 'views_view_fields'`) +
+card data computed in `hook_preprocess_views_view_fields` + CSS attached via
+`hook_views_pre_render`. Reference impl: `backflow_device`
+(`backflow-cards.css` + the Property Devices EVA).
+
+Full details: `__BOS_AI/Governance/ui_patterns.md`.
+
 ## SOP Governance
 
 When making changes to BOS workflows that involve human

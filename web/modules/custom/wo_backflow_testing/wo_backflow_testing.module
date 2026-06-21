@@ -751,7 +751,12 @@ function _wo_backflow_testing_report_data(EntityInterface $child) {
     // Device facts + access-safe pull-through address (Gate 2 approach).
     $device = $child->get('field_backflow_device')->entity;
     if ($device) {
-        $data['device_id'] = (string) $device->label();
+        // Clean stable code (BF-NNNNNN) for the official report/tag. The device
+        // title/label may also carry the material model, but the compliance
+        // document shows the bare device id.
+        $data['device_id'] = function_exists('_backflow_device_code')
+          ? _backflow_device_code($device)
+          : (string) $device->label();
         $data['serial'] = $device->get('field_serial_number')->value ?? '';
         $data['location'] = $device->get('field_physical_location')->value ?? '';
         $data['qr_uri'] = _wo_backflow_testing_image_data_uri($device->get('field_qr_code')->entity);

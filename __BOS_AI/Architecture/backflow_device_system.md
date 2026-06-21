@@ -222,7 +222,11 @@ A backflow device attaches to the **property**, not to the sprinkler graph. Devi
 
 ### 3.2 Device ID is the entity ID rendered into the title (`BF-NNNNNN`), set directly — not an AEL token
 
-The Device ID is `BF-` + zero-padded entity id (e.g. `BF-000005`). It is set **directly** in `backflow_device_entity_insert` after the id is known, **not** via an Auto Entity Label `[id]` token. This is deliberate: the `cabb8a6e` sentinel bug showed that AEL's `[id]` token is unresolved during presave-on-insert, leaving the literal `%AutoEntityLabel: <uuid>%` sentinel stuck in the title (and the pathauto alias) on programmatic creates. Direct-set in `hook_entity_insert` sidesteps that entirely. There is **no separate `field_device_id`** — the id *is* the title, single source of truth.
+The Device **code** is `BF-` + zero-padded entity id (e.g. `BF-000005`), returned by `_backflow_device_code()`. It is set **directly** in `backflow_device_entity_insert` after the id is known, **not** via an Auto Entity Label `[id]` token. This is deliberate: the `cabb8a6e` sentinel bug showed that AEL's `[id]` token is unresolved during presave-on-insert, leaving the literal `%AutoEntityLabel: <uuid>%` sentinel stuck in the title (and the pathauto alias) on programmatic creates. Direct-set in `hook_entity_insert` sidesteps that entirely. There is **no separate `field_device_id`** — the code is derived from the id, single source of truth.
+
+**Title format (updated 2026-06-21):** the stored **title** is the device code with the **material model appended when a `field_material_backflow` is set at insert** — e.g. `BF-000005 - 765 Pressure Vacuum Breaker (PVB)` (the model is the referenced material's `field_name`, falling back to its label). Set **once on insert**; the title does **not** auto-update if the material reference is later edited (the code portion is always the stable id, so the title stays valid). Devices created without a material (e.g. the inline test-flow creator) title as the bare `BF-NNNNNN`.
+
+The **clean code** (`_backflow_device_code()`, never the model-bearing title) is what's used for the QR filename, the test report, and the HB25-1077 tag (`wo_backflow_testing` `device_id`) — official artifacts carry the bare id, not the model. AEL is **not** configured on this entity (a short-lived experiment overlaying an AEL `BF#[id] - …` pattern was removed — it overrode the code-set title, made the id non-stable, and is the wrong mechanism here).
 
 ### 3.3 QR encodes the immutable canonical URL (forced), never the alias
 

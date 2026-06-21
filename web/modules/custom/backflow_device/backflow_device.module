@@ -46,8 +46,35 @@ function backflow_device_entity_insert(EntityInterface $entity) {
  * populated — a defensive belt-and-suspenders in addition to only hooking
  * insert.
  */
+/**
+ * The stable, clean device code: BF- + zero-padded entity id (BF-NNNNNN).
+ *
+ * This is the canonical device identifier used on the QR filename, the test
+ * report, and the service tag. It never changes and never includes the model.
+ * The human-facing TITLE may append the material model (see below), but the
+ * code stays clean for documents and filenames.
+ */
+function _backflow_device_code(ContentEntityInterface $device): string {
+  return 'BF-' . str_pad((string) $device->id(), 6, '0', STR_PAD_LEFT);
+}
+
 function _backflow_device_finalize(ContentEntityInterface $device) {
-  $expected_title = 'BF-' . str_pad((string) $device->id(), 6, '0', STR_PAD_LEFT);
+  $device_code = _backflow_device_code($device);
+
+  // Title = device code, with the material model appended when one is set at
+  // insert (e.g. "BF-000005 - 765 PVB"). Set once on insert; the code portion
+  // is always the stable id, so the title stays meaningful even if the model
+  // reference is later edited — the title does NOT auto-update (by design).
+  $model = '';
+  if ($device->hasField('field_material_backflow') && !$device->get('field_material_backflow')->isEmpty()) {
+    $material = $device->get('field_material_backflow')->entity;
+    if ($material) {
+      $model = $material->hasField('field_name') && !$material->get('field_name')->isEmpty()
+        ? trim((string) $material->get('field_name')->value)
+        : trim((string) $material->label());
+    }
+  }
+  $expected_title = $model !== '' ? $device_code . ' - ' . $model : $device_code;
   $needs_title = $device->label() !== $expected_title;
   $needs_qr = $device->get('field_qr_code')->isEmpty();
   if (!$needs_title && !$needs_qr) {
@@ -69,11 +96,11 @@ function _backflow_device_finalize(ContentEntityInterface $device) {
 
     if ($needs_qr) {
       try {
-        $file = _backflow_device_generate_qr($device, $expected_title);
+        $file = _backflow_device_generate_qr($device, $device_code);
         if ($file) {
           $device->set('field_qr_code', [
             'target_id' => $file->id(),
-            'alt' => 'QR code for ' . $expected_title,
+            'alt' => 'QR code for ' . $device_code,
           ]);
         }
       }

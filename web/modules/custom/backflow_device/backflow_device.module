@@ -225,7 +225,9 @@ function backflow_device_entity_view(array &$build, EntityInterface $entity, Ent
   $build['backflow_public_address'] = [
     '#type' => 'container',
     '#attributes' => ['class' => ['backflow-device-location']],
-    '#weight' => 8,
+    // Render above the configured device fields (Current Status is weight 0
+    // on the full view display) so the location/address leads the page.
+    '#weight' => -10,
     'heading' => [
       '#type' => 'html_tag',
       '#tag' => 'h3',

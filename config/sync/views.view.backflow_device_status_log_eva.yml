@@ -10,10 +10,11 @@ dependencies:
     - user.role.administration
     - user.role.administrator
     - user.role.site_admin
+    - user.role.site_assistant
     - user.role.supervisor
+    - user.role.teammates
   module:
     - eck
-    - eva
     - options
     - user
     - views_url_path_arguments
@@ -193,6 +194,8 @@ display:
             site_admin: site_admin
             administration: administration
             supervisor: supervisor
+            site_assistant: site_assistant
+            teammates: teammates
       cache:
         type: tag
         options: {  }
@@ -302,16 +305,23 @@ display:
         - 'config:field.storage.backflow_device_status_log.field_status_change_note'
         - 'config:field.storage.backflow_device_status_log.field_to_status'
         - 'config:field.storage.backflow_device_status_log.field_triggered_by_wo'
-  entity_view_1:
-    id: entity_view_1
-    display_title: EVA
-    display_plugin: entity_view
-    position: 1
+  page_1:
+    id: page_1
+    display_title: Page
+    display_plugin: page
+    position: 2
     display_options:
       display_extenders: {  }
-      entity_type: property_backflow_device
-      bundles:
-        - device
+      path: property_backflow_device/%property_backflow_device/status-changes
+      menu:
+        type: tab
+        title: 'Status Changes'
+        description: 'Status change history for this device'
+        weight: 5
+        expanded: false
+        menu_name: main
+        parent: ''
+        context: '0'
     cache_metadata:
       max-age: -1
       contexts:
@@ -324,4 +334,3 @@ display:
         - 'config:field.storage.backflow_device_status_log.field_status_change_note'
         - 'config:field.storage.backflow_device_status_log.field_to_status'
         - 'config:field.storage.backflow_device_status_log.field_triggered_by_wo'
-

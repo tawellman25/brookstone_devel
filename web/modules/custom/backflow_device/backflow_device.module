@@ -19,6 +19,7 @@
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Url;
 use Drupal\Core\File\FileExists;
 use Drupal\Core\File\FileSystemInterface;
 use Endroid\QrCode\Builder\Builder;
@@ -174,6 +175,32 @@ function _backflow_device_generate_qr(ContentEntityInterface $device, string $ti
  * code, notes, or link — and does not change properties entity access.
  */
 function backflow_device_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
+  // Edit-test link on rendered backflow test children. The WO's "Backflow
+  // Tests" EVA renders each wo_tasks_list:backflow_testing child as an entity
+  // (default view mode), so add an "Edit Test" link to the render — this is how
+  // a user gets back to the test (readings) form after the create flow's form
+  // is closed. Destination returns to the parent WO after saving.
+  if ($entity->getEntityTypeId() === 'wo_tasks_list'
+      && $entity->bundle() === 'backflow_testing'
+      && in_array($view_mode, ['default', 'full'], TRUE)
+      && $entity->access('update')) {
+    $options = [];
+    if (!$entity->get('field_work_order')->isEmpty() && ($wo = $entity->get('field_work_order')->entity)) {
+      $options['query']['destination'] = $wo->toUrl()->toString();
+    }
+    $build['backflow_edit_test'] = [
+      '#type' => 'link',
+      '#title' => 'Enter Test Results',
+      '#url' => Url::fromRoute('entity.wo_tasks_list.edit_form', ['wo_tasks_list' => $entity->id()], $options),
+      '#attributes' => [
+        'style' => 'display:inline-block;background:#2E7D32;color:#fff;font-weight:bold;text-decoration:none;padding:8px 16px;border-radius:4px;font-family:Calibri,Arial,sans-serif;margin-top:8px;',
+      ],
+      '#weight' => 100,
+      '#cache' => ['contexts' => ['user.permissions', 'user']],
+    ];
+    return;
+  }
+
   if ($entity->getEntityTypeId() !== 'property_backflow_device' || $view_mode !== 'full') {
     return;
   }
@@ -246,6 +273,28 @@ function backflow_device_entity_view(array &$build, EntityInterface $entity, Ent
   // address correction shows the current value.
   if ($property instanceof ContentEntityInterface) {
     $build['backflow_public_address']['#cache']['tags'] = $property->getCacheTags();
+  }
+
+  // "+ Add Test Work Order" button below the test-history EVAs (weights 11/12).
+  // Rendered as a render-array link, not a Views text area, so the CSRF-guarded
+  // route gets a cache-safe token placeholder via RouteProcessorCsrf. The
+  // device id is always available here, so the button works even when the
+  // device has no tests yet. Shown only to users who can create both entities
+  // (the route enforces the same), and only when the device has a property.
+  $account = \Drupal::currentUser();
+  if ($property instanceof ContentEntityInterface
+      && $account->hasPermission('create work_order entities of bundle backflow_testing')
+      && $account->hasPermission('create wo_tasks_list entities of bundle backflow_testing')) {
+    $build['backflow_add_test_wo'] = [
+      '#type' => 'link',
+      '#title' => 'Enter Test Results',
+      '#url' => Url::fromRoute('backflow_device.new_test_wo', ['property_backflow_device' => $entity->id()]),
+      '#attributes' => [
+        'style' => 'display:inline-block;background:#2E7D32;color:#fff;font-weight:bold;text-decoration:none;padding:8px 16px;border-radius:4px;font-family:Calibri,Arial,sans-serif;',
+      ],
+      '#weight' => 13,
+      '#cache' => ['contexts' => ['user.permissions']],
+    ];
   }
 }
 

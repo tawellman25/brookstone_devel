@@ -1,0 +1,15 @@
+backflow_device.new_test_wo:
+  path: '/backflow/device/{property_backflow_device}/new-test-wo'
+  defaults:
+    _controller: '\Drupal\backflow_device\Controller\BackflowNewTestWoController::createWo'
+    _title: 'New backflow test work order'
+  requirements:
+    # Mirror the create permissions for both entities the controller writes.
+    # Comma = AND: the user must be able to create both the WO and the test child.
+    _permission: 'create work_order entities of bundle backflow_testing,create wo_tasks_list entities of bundle backflow_testing'
+    # State-changing GET — guard with a CSRF token (added to the link by RouteProcessorCsrf).
+    _csrf_token: 'TRUE'
+  options:
+    parameters:
+      property_backflow_device:
+        type: 'entity:property_backflow_device'

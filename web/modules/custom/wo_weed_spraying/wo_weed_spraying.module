@@ -67,112 +67,61 @@ function wo_weed_spraying_entity_presave(EntityInterface $entity) {
     $gallonsUsed = get_largest_gallons_used_for_weed_spraying($workOrderId);
     $timeSpent = get_hours_for_weed_spraying($workOrderId);
 
-    // 0-gallon visit = inspection only. Bill $0, still allow write-back.
+    // 0-gallon visit = inspection / no-spray check. Bill $0, but DO continue to
+    // the property write-back below (Last Checked + no-spray note).
     if ($gallonsUsed == 0) {
       $entity->set('field_wo_total', 0);
-      return;
     }
+    else {
+      if ($gallonsUsed > $minGallon) {
+        $chemical_subtotal = ($gallonsUsed - $minGallon) * $additionalGallonRate;
+      }
+      $entity->set('field_material_chemical_total', $chemical_subtotal);
 
-    if ($gallonsUsed > $minGallon) {
-      $chemical_subtotal = ($gallonsUsed - $minGallon) * $additionalGallonRate;
-    }
-    $entity->set('field_material_chemical_total', $chemical_subtotal);
+      if ($timeSpent > $minAllottedTime) {
+        $extraHours = $timeSpent - $minAllottedTime;
+        $additionalIncrements = ceil($extraHours / $hourlyBillingIncrement);
+        $labor_subtotal = ($hourlyRate * $hourlyBillingIncrement) * $additionalIncrements;
+      }
+      $entity->set('field_labor_total', $labor_subtotal);
 
-    if ($timeSpent > $minAllottedTime) {
-      $extraHours = $timeSpent - $minAllottedTime;
-      $additionalIncrements = ceil($extraHours / $hourlyBillingIncrement);
-      $labor_subtotal = ($hourlyRate * $hourlyBillingIncrement) * $additionalIncrements;
-    }
-    $entity->set('field_labor_total', $labor_subtotal);
+      if ($sprayMinTrip > 0) {
+        $totalTrip = $sprayMinTrip;
+        $entity->set('field_trip_fee', $sprayMinTrip);
+      } else {
+        $totalTrip = $entity->get('field_trip_fee')->value ?? 0;
+      }
 
-    if ($sprayMinTrip > 0) {
-      $totalTrip = $sprayMinTrip;
-      $entity->set('field_trip_fee', $sprayMinTrip);
-    } else {
-      $totalTrip = $entity->get('field_trip_fee')->value ?? 0;
-    }
+      if ($minSprayFee > 0) {
+        $entity->set('field_task_rate', $minSprayFee);
+        $grand_total += $minSprayFee;
+      }
 
-    if ($minSprayFee > 0) {
-      $entity->set('field_task_rate', $minSprayFee);
-      $grand_total += $minSprayFee;
-    }
+      if ($chemical_subtotal > 0) {
+        $grand_total += $chemical_subtotal;
+      }
 
-    if ($chemical_subtotal > 0) {
-      $grand_total += $chemical_subtotal;
-    }
+      if ($labor_subtotal > 0) {
+        $grand_total += $labor_subtotal;
+      }
 
-    if ($labor_subtotal > 0) {
-      $grand_total += $labor_subtotal;
-    }
+      if ($totalTrip > 0) {
+        $grand_total += $totalTrip;
+      }
 
-    if ($totalTrip > 0) {
-      $grand_total += $totalTrip;
-    }
+      $billingAdjustment = $entity->get('field_billing_adjustment')->value ?? 0;
+      $grand_total += $billingAdjustment;
 
-    $billingAdjustment = $entity->get('field_billing_adjustment')->value ?? 0;
-    $grand_total += $billingAdjustment;
-
-    if ($grand_total > 0) {
-      $entity->set('field_wo_total', $grand_total);
-    }
-  }
-
-  // Process property_spraying_info
-  $gallonsUsed = get_largest_gallons_used_for_weed_spraying($workOrderId);
-  $signOffDateFormatted = null;
-  $signOffBy = null;
-
-  $query = \Drupal::entityQuery('wo_complete_info')
-    ->accessCheck(FALSE)
-    ->condition('field_work_order', $workOrderId)
-    ->sort('field_date_completed', 'DESC')
-    ->range(0, 1);
-  $result = $query->execute();
-
-  if (!empty($result)) {
-    $woSignOffInfo = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load(reset($result));
-    if ($woSignOffInfo) {
-      $woSignOffInfoTimestamp = $woSignOffInfo->get('field_date_completed')->value;
-      $signOffBy = $woSignOffInfo->get('field_signed_off_by')->target_id;
-      if ($woSignOffInfoTimestamp) {
-        $signOffDate = DrupalDateTime::createFromTimestamp($woSignOffInfoTimestamp);
-        $signOffDate->setTimezone(new \DateTimeZone('UTC'));
-        $signOffDateFormatted = $signOffDate->format('Y-m-d\TH:i:s');
+      if ($grand_total > 0) {
+        $entity->set('field_wo_total', $grand_total);
       }
     }
   }
 
-  if (!$signOffDateFormatted) {
-    $current_time = new DrupalDateTime('now', new \DateTimeZone('UTC'));
-    $signOffDateFormatted = $current_time->format('Y-m-d\TH:i:s');
-    $signOffBy = \Drupal::currentUser()->id();
-  }
-
-  $propertyId = $entity->get('field_property')->target_id ?? null;
-  if ($propertyId) {
-    $propertySprayingInfo = \Drupal::entityTypeManager()->getStorage('property_spraying_info')->loadByProperties([
-      'field_property' => $propertyId,
-      'type' => 'weed_spraying',
-    ]);
-
-    $sprayingInfoEntity = empty($propertySprayingInfo) ? \Drupal::entityTypeManager()->getStorage('property_spraying_info')->create([
-      'type' => 'weed_spraying',
-      'field_property' => $propertyId,
-    ]) : reset($propertySprayingInfo);
-
-    if ($sprayingInfoEntity && ($signOffBy || $signOffDateFormatted || $gallonsUsed > 0)) {
-      if ($gallonsUsed > 0) {
-        $sprayingInfoEntity->set('field_last_amount_applied', $gallonsUsed);
-      }
-      if ($signOffDateFormatted) {
-        $sprayingInfoEntity->set('field_last_applied_date', $signOffDateFormatted);
-      }
-      if ($signOffBy) {
-        $sprayingInfoEntity->set('field_last_applied_by', $signOffBy);
-      }
-      $sprayingInfoEntity->save();
-    }
-  }
+  // Record the visit on the property's weed-spraying info (Last Checked,
+  // no-spray note, Last Applied). Shared with the queue worker so the write-back
+  // is identical whether it runs synchronously here or via the retry queue.
+  _wo_weed_spraying_write_property_info($entity);
 }
 
 /**
@@ -257,65 +206,111 @@ function _wo_weed_spraying_handle_work_order(EntityInterface $entity, $operation
   if (!is_numeric($workOrderId) || $workOrderId < 1 || ($entity->get('field_status')->target_id ?? 0) != 1097) {
     return true;
   }
+  return _wo_weed_spraying_write_property_info($entity);
+}
+
+/**
+ * Writes the weed-spraying visit back to property_spraying_info.
+ *
+ * Shared by the presave (synchronous) and the retry queue. Always records the
+ * visit on field_last_checked. If the sign-off was flagged "No Spray" (or zero
+ * gallons), writes a no-spray note to field_last_check_note and leaves Last
+ * Applied (date/amount/by) on the last real spray. On a real application,
+ * updates Last Applied and clears the note.
+ *
+ * @return bool
+ *   TRUE always (the visit date falls back to now, so there is nothing to retry).
+ */
+function _wo_weed_spraying_write_property_info(EntityInterface $entity) {
+  $workOrderId = $entity->id();
+  if (!is_numeric($workOrderId) || $workOrderId < 1) {
+    return TRUE;
+  }
 
   $gallonsUsed = get_largest_gallons_used_for_weed_spraying($workOrderId);
-  $signOffDateFormatted = null;
-  $signOffBy = null;
+  $signOffDateFormatted = NULL;
+  $signOffBy = NULL;
+  $noSpray = FALSE;
 
-  $query = \Drupal::entityQuery('wo_complete_info')
+  // Most recent spray-crew sign-off for this WO.
+  $result = \Drupal::entityQuery('wo_complete_info')
     ->accessCheck(FALSE)
     ->condition('field_work_order', $workOrderId)
     ->condition('type', 'spray_crew')
     ->sort('field_date_completed', 'DESC')
-    ->range(0, 1);
-  $result = $query->execute();
-
+    ->range(0, 1)
+    ->execute();
   if (!empty($result)) {
     $woSignOffInfo = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load(reset($result));
     if ($woSignOffInfo) {
-      $woSignOffInfoTimestamp = $woSignOffInfo->get('field_date_completed')->value;
       $signOffBy = $woSignOffInfo->get('field_signed_off_by')->target_id;
-      if ($woSignOffInfoTimestamp) {
-        $signOffDate = DrupalDateTime::createFromTimestamp($woSignOffInfoTimestamp);
-        $signOffDate->setTimezone(new \DateTimeZone('UTC'));
-        $signOffDateFormatted = $signOffDate->format('Y-m-d\TH:i:s');
+      $noSpray = (bool) ($woSignOffInfo->get('field_no_spray')->value ?? FALSE);
+      $ts = $woSignOffInfo->get('field_date_completed')->value;
+      if ($ts) {
+        $d = DrupalDateTime::createFromTimestamp($ts);
+        $d->setTimezone(new \DateTimeZone('UTC'));
+        $signOffDateFormatted = $d->format('Y-m-d\TH:i:s');
       }
-    } else {
-      return false;
     }
-  } else {
-    return false;
   }
 
-  $propertyId = $entity->get('field_property')->target_id ?? null;
+  // Always have a visit date (fall back to now / current user).
+  if (!$signOffDateFormatted) {
+    $now = new DrupalDateTime('now', new \DateTimeZone('UTC'));
+    $signOffDateFormatted = $now->format('Y-m-d\TH:i:s');
+    if (!$signOffBy) {
+      $signOffBy = \Drupal::currentUser()->id();
+    }
+  }
+
+  $propertyId = $entity->get('field_property')->target_id ?? NULL;
   if (!$propertyId) {
-    return true;
+    return TRUE;
   }
 
-  $propertySprayingInfo = \Drupal::entityTypeManager()->getStorage('property_spraying_info')->loadByProperties([
+  $existing = \Drupal::entityTypeManager()->getStorage('property_spraying_info')->loadByProperties([
     'field_property' => $propertyId,
     'type' => 'weed_spraying',
   ]);
+  $info = empty($existing)
+    ? \Drupal::entityTypeManager()->getStorage('property_spraying_info')->create([
+        'type' => 'weed_spraying',
+        'field_property' => $propertyId,
+      ])
+    : reset($existing);
 
-  $sprayingInfoEntity = empty($propertySprayingInfo) ? \Drupal::entityTypeManager()->getStorage('property_spraying_info')->create([
-    'type' => 'weed_spraying',
-    'field_property' => $propertyId,
-  ]) : reset($propertySprayingInfo);
+  // Always record the visit.
+  $info->set('field_last_checked', $signOffDateFormatted);
 
-  if ($sprayingInfoEntity && ($signOffBy || $signOffDateFormatted || $gallonsUsed > 0)) {
-    if ($gallonsUsed > 0) {
-      $sprayingInfoEntity->set('field_last_amount_applied', $gallonsUsed);
+  if ($noSpray || $gallonsUsed <= 0) {
+    // Checked, nothing applied: note it; leave Last Applied on the last real spray.
+    $dateLabel = '';
+    try {
+      $dt = new \DateTime($signOffDateFormatted, new \DateTimeZone('UTC'));
+      $dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+      $dateLabel = $dt->format('m/d/Y');
     }
-    if ($signOffDateFormatted) {
-      $sprayingInfoEntity->set('field_last_applied_date', $signOffDateFormatted);
+    catch (\Exception $e) {
+      // Leave blank on a malformed value.
     }
+    $byName = '';
+    if ($signOffBy && ($u = \Drupal\user\Entity\User::load($signOffBy))) {
+      $byName = $u->getDisplayName();
+    }
+    $info->set('field_last_check_note', 'Checked ' . $dateLabel . ($byName ? ' by ' . $byName : '') . ' - no spraying performed.');
+  }
+  else {
+    // Real application: update Last Applied + clear the no-spray note.
+    $info->set('field_last_amount_applied', $gallonsUsed);
+    $info->set('field_last_applied_date', $signOffDateFormatted);
     if ($signOffBy) {
-      $sprayingInfoEntity->set('field_last_applied_by', $signOffBy);
+      $info->set('field_last_applied_by', $signOffBy);
     }
-    $sprayingInfoEntity->save();
+    $info->set('field_last_check_note', '');
   }
 
-  return true;
+  $info->save();
+  return TRUE;
 }
 
 /**

@@ -343,6 +343,22 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
     return;
   }
 
+  // "No Spray" check (spray_crew sign-off): when the tech flags a no-spray
+  // visit, hide the crew roster + truck count client-side via #states —
+  // nothing was applied, so those don't apply. The fields still exist (the
+  // reconciliation block anchors to field_how_many_trucks_taken); they're just
+  // hidden when the box is checked.
+  if ($entity_type === 'wo_complete_info' && $entity->bundle() === 'spray_crew'
+      && isset($form['field_no_spray'])) {
+    $no_spray_hide = ['invisible' => [':input[name="field_no_spray[value]"]' => ['checked' => TRUE]]];
+    if (isset($form['field_those_on_crew'])) {
+      $form['field_those_on_crew']['#states'] = $no_spray_hide;
+    }
+    if (isset($form['field_how_many_trucks_taken'])) {
+      $form['field_how_many_trucks_taken']['#states'] = $no_spray_hide;
+    }
+  }
+
   // Position the reconciliation block. Default placement is just
   // after the roster field. For wo_complete_info forms we anchor
   // instead to the field that follows the roster in the read order

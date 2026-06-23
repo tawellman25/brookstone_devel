@@ -375,19 +375,31 @@ function wo_backflow_testing_form_alter(array &$form, FormStateInterface $form_s
     '#weight' => $form['field_backflow_device']['#weight'] ?? 1,
   ];
 
-  // Move field_backflow_device into the section (preserves #parents).
+  // Move field_backflow_device into the section (preserves #parents). The device
+  // field sits at the Content level (not in a field group), so this does not
+  // affect the configured field-group layout.
   if (isset($form['field_backflow_device'])) {
     $form['bf_device_section']['field_backflow_device'] = $form['field_backflow_device'];
     unset($form['field_backflow_device']);
-    // Live readings refresh when the device autocomplete changes.
+    // Live-refresh reading visibility when the device changes. The AJAX target
+    // is the WHOLE form, not just the device section, so the readings — which
+    // stay in their field groups — re-render with updated #access without being
+    // moved out of those groups.
     if (isset($form['bf_device_section']['field_backflow_device']['widget'][0]['target_id'])) {
       $form['bf_device_section']['field_backflow_device']['widget'][0]['target_id']['#ajax'] = [
         'callback' => 'wo_backflow_testing_device_section_ajax',
-        'wrapper' => 'bf-device-section',
+        'wrapper' => 'bf-test-form-wrapper',
         'event' => 'change',
       ];
     }
   }
+
+  // Whole-form AJAX wrapper — used by the device-change live refresh above and
+  // the inline create-device buttons below. Wrapping the whole form (rather than
+  // a sub-section) lets the readings re-render in place, preserving the
+  // field-group layout.
+  $form['#prefix'] = '<div id="bf-test-form-wrapper">';
+  $form['#suffix'] = '</div>';
 
   // If a device was just created inline, select it in the autocomplete.
   $created_id = $form_state->get('bf_created_device');
@@ -397,30 +409,43 @@ function wo_backflow_testing_form_alter(array &$form, FormStateInterface $form_s
     $form['bf_device_section']['field_backflow_device']['widget'][0]['target_id']['#default_value'] = $created;
   }
 
-  // Move the reading fields into the section (preserves #parents).
-  foreach (WO_BACKFLOW_TESTING_READING_FIELDS as $rf) {
-    if (isset($form[$rf])) {
-      $form['bf_device_section'][$rf] = $form[$rf];
-      unset($form[$rf]);
-    }
-  }
-
-  // (b) Set reading visibility from the effective device type code.
+  // (b) Set reading visibility from the effective device type code, IN PLACE.
+  // The readings are left where the form display put them (inside the "Test
+  // Details" field group), so the configured field-group layout is preserved —
+  // moving them out is what broke the layout. Non-applicable readings for the
+  // device type are hidden via #access; the field group still renders.
+  // Applied on form build (the device is set when arriving from the create
+  // flow), so changing the device in the autocomplete updates visibility on the
+  // next save/reload rather than live.
   $type_code = _wo_backflow_testing_effective_type_code($entity, $form_state);
-  foreach (WO_BACKFLOW_TESTING_READING_FIELDS as $rf) {
-    if (!isset($form['bf_device_section'][$rf])) {
-      continue;
-    }
-    if ($type_code === NULL) {
-      // No device chosen yet — show all readings.
-      continue;
-    }
+  if ($type_code !== NULL) {
     $applicable = WO_BACKFLOW_TESTING_TYPE_READINGS[$type_code] ?? WO_BACKFLOW_TESTING_READING_FIELDS;
-    $form['bf_device_section'][$rf]['#access'] = in_array($rf, $applicable, TRUE);
+    foreach (WO_BACKFLOW_TESTING_READING_FIELDS as $rf) {
+      if (isset($form[$rf])) {
+        $form[$rf]['#access'] = in_array($rf, $applicable, TRUE);
+      }
+    }
   }
 
-  // (c) Inline "create new device" affordance.
-  _wo_backflow_testing_build_create_device_ui($form, $form_state);
+  // (c) Inline "create new device" affordance (only when no device is set yet).
+  _wo_backflow_testing_build_create_device_ui($form, $form_state, $entity);
+}
+
+/**
+ * Whether a backflow device is already selected on this test form.
+ *
+ * True if an inline device was just created, an AJAX-submitted device value is
+ * present, or the saved entity already references a device.
+ */
+function _wo_backflow_testing_has_device(EntityInterface $entity, FormStateInterface $form_state) {
+  if ($form_state->get('bf_created_device')) {
+    return TRUE;
+  }
+  $val = $form_state->getValue(['field_backflow_device', 0, 'target_id']);
+  if (!empty($val)) {
+    return TRUE;
+  }
+  return !$entity->get('field_backflow_device')->isEmpty();
 }
 
 /**
@@ -459,10 +484,19 @@ function _wo_backflow_testing_effective_type_code(EntityInterface $entity, FormS
 /**
  * Builds the inline "create new device for this property" UI.
  */
-function _wo_backflow_testing_build_create_device_ui(array &$form, FormStateInterface $form_state) {
+function _wo_backflow_testing_build_create_device_ui(array &$form, FormStateInterface $form_state, EntityInterface $entity) {
   $section = &$form['bf_device_section'];
 
+  // Render the create UI directly below the Backflow Device field.
+  $create_weight = ($section['field_backflow_device']['#weight'] ?? 0) + 1;
+
   if (!$form_state->get('bf_creating')) {
+    // Only offer "create new device" when no device is selected yet. Once a
+    // device is set (the normal path arriving from "Enter Test Results", or any
+    // saved test), the button is hidden — clear the field to create a new one.
+    if (_wo_backflow_testing_has_device($entity, $form_state)) {
+      return;
+    }
     $section['bf_create_toggle'] = [
       '#type' => 'submit',
       '#value' => t('Create new device for this property'),
@@ -470,9 +504,9 @@ function _wo_backflow_testing_build_create_device_ui(array &$form, FormStateInte
       '#submit' => ['wo_backflow_testing_create_toggle_submit'],
       '#ajax' => [
         'callback' => 'wo_backflow_testing_device_section_ajax',
-        'wrapper' => 'bf-device-section',
+        'wrapper' => 'bf-test-form-wrapper',
       ],
-      '#weight' => 50,
+      '#weight' => $create_weight,
       '#name' => 'bf_create_toggle',
     ];
     return;
@@ -487,7 +521,7 @@ function _wo_backflow_testing_build_create_device_ui(array &$form, FormStateInte
   $section['bf_new'] = [
     '#type' => 'fieldset',
     '#title' => t('New backflow device'),
-    '#weight' => 50,
+    '#weight' => $create_weight,
     '#tree' => TRUE,
   ];
   $section['bf_new']['type'] = [
@@ -537,10 +571,12 @@ function _wo_backflow_testing_build_create_device_ui(array &$form, FormStateInte
 }
 
 /**
- * AJAX callback: returns the whole device section (device + readings + create).
+ * AJAX callback: returns the whole form (device change + create-device buttons).
  */
 function wo_backflow_testing_device_section_ajax(array $form, FormStateInterface $form_state) {
-  return $form['bf_device_section'];
+  // Return the whole form so the readings (in their field groups) re-render with
+  // updated device-type visibility, not just the device section.
+  return $form;
 }
 
 /**

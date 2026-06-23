@@ -106,4 +106,54 @@ class BackflowNewTestWoController extends ControllerBase {
     return $this->redirect('entity.work_order.canonical', ['work_order' => $wo->id()]);
   }
 
+  /**
+   * Add ANOTHER backflow test to an existing WO, then open its readings form.
+   *
+   * Used by the "Enter Test Results" button on the WO page so a device can have
+   * more than one test (e.g. before- and after-repair). The new test inherits
+   * the device from the WO's most recent existing test (the same-device case),
+   * leaving it editable on the form.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $work_order
+   *   The backflow_testing work order (param-converted from the route).
+   *
+   * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *   Redirect to the new test child's edit form (destination back to the WO).
+   */
+  public function addTest(EntityInterface $work_order): RedirectResponse {
+    $tl = $this->entityTypeManager()->getStorage('wo_tasks_list');
+
+    // Inherit the device from the WO's most recent existing test, if any.
+    $device_id = NULL;
+    $existing = $tl->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('type', 'backflow_testing')
+      ->condition('field_work_order', $work_order->id())
+      ->sort('id', 'DESC')
+      ->execute();
+    foreach ($existing as $eid) {
+      $prior = $tl->load($eid);
+      if ($prior && !$prior->get('field_backflow_device')->isEmpty()) {
+        $device_id = $prior->get('field_backflow_device')->target_id;
+        break;
+      }
+    }
+
+    $values = [
+      'type' => 'backflow_testing',
+      'field_work_order' => $work_order->id(),
+    ];
+    if ($device_id) {
+      $values['field_backflow_device'] = $device_id;
+    }
+    $child = $tl->create($values);
+    $child->save();
+
+    $this->messenger()->addStatus($this->t('Added a backflow test. Enter the test results below.'));
+    return $this->redirect('entity.wo_tasks_list.edit_form',
+      ['wo_tasks_list' => $child->id()],
+      ['query' => ['destination' => $work_order->toUrl()->toString()]]
+    );
+  }
+
 }

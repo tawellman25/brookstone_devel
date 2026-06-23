@@ -13,3 +13,16 @@ backflow_device.new_test_wo:
     parameters:
       property_backflow_device:
         type: 'entity:property_backflow_device'
+
+backflow_device.add_test:
+  path: '/backflow/wo/{work_order}/new-test'
+  defaults:
+    _controller: '\Drupal\backflow_device\Controller\BackflowNewTestWoController::addTest'
+    _title: 'Add backflow test'
+  requirements:
+    _permission: 'create wo_tasks_list entities of bundle backflow_testing'
+    _csrf_token: 'TRUE'
+  options:
+    parameters:
+      work_order:
+        type: 'entity:work_order'

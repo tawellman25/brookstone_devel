@@ -1,0 +1,51 @@
+{#
+/**
+ * @file
+ * Backflow Tests EVA row (WO page) — test result card.
+ *
+ * One clickable card per wo_tasks_list:backflow_testing child. The whole card
+ * links to that test's edit form (the readings form). Card data is computed in
+ * backflow_device_preprocess_views_view_fields() -> _backflow_device_test_card()
+ * and passed as `bf_test_card` (result, result_label, test_date, tester, cert,
+ * initial, url). The default `fields` are intentionally not rendered — no WO
+ * title, no creator.
+ */
+#}
+{% if bf_test_card %}
+  <a href="{{ bf_test_card.url }}" class="bf-card bf-card--link bf-card--{{ bf_test_card.result }}">
+
+    <div class="bf-card-header">
+      <span class="bf-card-id">{{ bf_test_card.test_date ?: (bf_test_card.has_data ? 'Backflow Test' : 'New test — enter results') }}</span>
+      <span class="bf-badge bf-badge--{{ bf_test_card.result }}">{{ bf_test_card.result_label }}</span>
+    </div>
+
+    {% if bf_test_card.tester or bf_test_card.cert or bf_test_card.initial %}
+      <div class="bf-card-facts">
+        {% if bf_test_card.tester %}
+          <div class="bf-fact"><span class="bf-fact-label">Tester</span>{{ bf_test_card.tester }}</div>
+        {% endif %}
+        {% if bf_test_card.cert %}
+          <div class="bf-fact"><span class="bf-fact-label">Cert #</span>{{ bf_test_card.cert }}</div>
+        {% endif %}
+        {% if bf_test_card.initial %}
+          <div class="bf-fact"><span class="bf-fact-label">Initial test</span>Yes</div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if bf_test_card.readings %}
+      <div class="bf-card-facts bf-card-readings">
+        {% for r in bf_test_card.readings %}
+          <div class="bf-fact"><span class="bf-fact-label">{{ r.label }}</span>{{ r.value }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if bf_test_card.repairs %}
+      <div class="bf-card-facts">
+        <div class="bf-fact"><span class="bf-fact-label">Repairs recommended</span>{{ bf_test_card.repairs }}</div>
+      </div>
+    {% endif %}
+
+  </a>
+{% endif %}

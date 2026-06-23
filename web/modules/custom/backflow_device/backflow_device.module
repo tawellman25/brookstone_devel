@@ -175,29 +175,26 @@ function _backflow_device_generate_qr(ContentEntityInterface $device, string $ti
  * code, notes, or link — and does not change properties entity access.
  */
 function backflow_device_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
-  // Edit-test link on rendered backflow test children. The WO's "Backflow
-  // Tests" EVA renders each wo_tasks_list:backflow_testing child as an entity
-  // (default view mode), so add an "Edit Test" link to the render — this is how
-  // a user gets back to the test (readings) form after the create flow's form
-  // is closed. Destination returns to the parent WO after saving.
-  if ($entity->getEntityTypeId() === 'wo_tasks_list'
+  // "Enter Test Results" on the WO page: creates ANOTHER backflow test on this
+  // WO (e.g. a before- and after-repair test on the same device) and opens its
+  // readings form. Renders just below the Backflow Tests group (group is field-
+  // group weight 5; this sits at weight 6). Per-test editing is the clickable
+  // test cards in the Backflow Tests EVA, so no per-child edit link here.
+  if ($entity->getEntityTypeId() === 'work_order'
       && $entity->bundle() === 'backflow_testing'
-      && in_array($view_mode, ['default', 'full'], TRUE)
-      && $entity->access('update')) {
-    $options = [];
-    if (!$entity->get('field_work_order')->isEmpty() && ($wo = $entity->get('field_work_order')->entity)) {
-      $options['query']['destination'] = $wo->toUrl()->toString();
+      && in_array($view_mode, ['default', 'full'], TRUE)) {
+    if (\Drupal::currentUser()->hasPermission('create wo_tasks_list entities of bundle backflow_testing')) {
+      $build['backflow_add_test'] = [
+        '#type' => 'link',
+        '#title' => 'Enter Test Results',
+        '#url' => Url::fromRoute('backflow_device.add_test', ['work_order' => $entity->id()]),
+        '#attributes' => [
+          'style' => 'display:inline-block;background:#2E7D32;color:#fff;font-weight:bold;text-decoration:none;padding:8px 16px;border-radius:4px;font-family:Calibri,Arial,sans-serif;margin:0 0 1rem;',
+        ],
+        '#weight' => 6,
+        '#cache' => ['contexts' => ['user.permissions']],
+      ];
     }
-    $build['backflow_edit_test'] = [
-      '#type' => 'link',
-      '#title' => 'Enter Test Results',
-      '#url' => Url::fromRoute('entity.wo_tasks_list.edit_form', ['wo_tasks_list' => $entity->id()], $options),
-      '#attributes' => [
-        'style' => 'display:inline-block;background:#2E7D32;color:#fff;font-weight:bold;text-decoration:none;padding:8px 16px;border-radius:4px;font-family:Calibri,Arial,sans-serif;margin-top:8px;',
-      ],
-      '#weight' => 100,
-      '#cache' => ['contexts' => ['user.permissions', 'user']],
-    ];
     return;
   }
 
@@ -305,7 +302,8 @@ function backflow_device_entity_view(array &$build, EntityInterface $entity, Ent
  * bos_spray_route_ui attaches spray-route.css to its route views).
  */
 function backflow_device_views_pre_render($view) {
-  if ($view->id() === 'backflow_property_devices_eva') {
+  if ($view->id() === 'backflow_property_devices_eva'
+      || ($view->id() === 'wo_tasks_list' && $view->current_display === 'entity_view_5')) {
     $view->element['#attached']['library'][] = 'backflow_device/backflow_cards';
   }
 }
@@ -319,7 +317,13 @@ function backflow_device_views_pre_render($view) {
  * here (PHP), keyed on the status MACHINE value.
  */
 function backflow_device_preprocess_views_view_fields(array &$variables) {
-  if (($variables['view']->id() ?? '') !== 'backflow_property_devices_eva') {
+  $view = $variables['view'];
+  // Backflow Tests EVA on the WO page: one clickable test card per child.
+  if (($view->id() ?? '') === 'wo_tasks_list' && ($view->current_display ?? '') === 'entity_view_5') {
+    _backflow_device_test_card($variables);
+    return;
+  }
+  if (($view->id() ?? '') !== 'backflow_property_devices_eva') {
     return;
   }
   $device = $variables['row']->_entity ?? NULL;
@@ -432,6 +436,93 @@ function _backflow_device_fmt_due(string $next_due): string {
 }
 
 /**
+ * Human label for a field_pass_fail value.
+ */
+function _backflow_device_result_label(string $value): string {
+  $map = ['pass' => 'Pass', 'fail' => 'Fail'];
+  return $map[$value] ?? ($value !== '' ? ucfirst($value) : 'Pending');
+}
+
+/**
+ * Builds the test-card data for one wo_tasks_list:backflow_testing row on the
+ * WO's Backflow Tests EVA. The whole card links to the test's edit form (the
+ * readings form), returning to the WO after save. Shows the result, test date,
+ * and tester + certification — not the WO title or the creator.
+ */
+function _backflow_device_test_card(array &$variables) {
+  $test = $variables['row']->_entity ?? NULL;
+  if (!$test instanceof ContentEntityInterface
+      || $test->getEntityTypeId() !== 'wo_tasks_list'
+      || $test->bundle() !== 'backflow_testing') {
+    return;
+  }
+
+  $result = (string) ($test->get('field_pass_fail')->value ?? '');
+
+  // Test date: stored UTC -> site TZ, MM/DD/YYYY h:i A.
+  $test_date = '';
+  if (!$test->get('field_test_date')->isEmpty()) {
+    try {
+      $dt = new \DateTime((string) $test->get('field_test_date')->value, new \DateTimeZone('UTC'));
+      $dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+      $test_date = $dt->format('m/d/Y g:i A');
+    }
+    catch (\Exception $e) {
+      // Leave blank on a malformed stored value.
+    }
+  }
+
+  $tester = '';
+  if (!$test->get('field_tester')->isEmpty() && ($u = $test->get('field_tester')->entity)) {
+    $tester = (string) $u->getDisplayName();
+  }
+  $cert = trim((string) ($test->get('field_certification_number')->value ?? ''));
+  $initial = !$test->get('field_is_initial_test')->isEmpty() && (bool) $test->get('field_is_initial_test')->value;
+
+  // Readings entered (non-empty = applicable to the device type), with their
+  // configured field labels — shown on the card even for a failed test.
+  $defs = \Drupal::service('entity_field.manager')->getFieldDefinitions('wo_tasks_list', 'backflow_testing');
+  $readings = [];
+  foreach (['field_line_pressure_psi', 'field_check_valve_1_psid', 'field_check_valve_2_psid', 'field_relief_valve_psid', 'field_air_inlet_psid', 'field_check_valve_psid'] as $rf) {
+    if ($test->hasField($rf) && !$test->get($rf)->isEmpty()) {
+      $readings[] = [
+        'label' => (string) $defs[$rf]->getLabel(),
+        'value' => (string) $test->get($rf)->value,
+      ];
+    }
+  }
+
+  // Repairs recommended (plain text for the card).
+  $repairs = '';
+  if ($test->hasField('field_repairs_recommended') && !$test->get('field_repairs_recommended')->isEmpty()) {
+    $repairs = trim(strip_tags((string) $test->get('field_repairs_recommended')->value));
+  }
+
+  // "Has data" drives the title fallback when no test date is set, so a
+  // filled-but-undated test is not mislabeled "no readings yet".
+  $has_data = $result !== '' || $tester !== '' || $cert !== '' || !empty($readings) || $repairs !== '';
+
+  // Whole-card link -> the test edit form, returning to the WO after save.
+  $options = [];
+  if (!$test->get('field_work_order')->isEmpty() && ($wo = $test->get('field_work_order')->entity)) {
+    $options['query']['destination'] = $wo->toUrl()->toString();
+  }
+
+  $variables['bf_test_card'] = [
+    'result' => $result !== '' ? $result : 'pending',
+    'result_label' => _backflow_device_result_label($result),
+    'test_date' => $test_date,
+    'tester' => $tester,
+    'cert' => $cert,
+    'initial' => $initial,
+    'readings' => $readings,
+    'repairs' => $repairs,
+    'has_data' => $has_data,
+    'url' => $test->toUrl('edit-form', $options)->toString(),
+  ];
+}
+
+/**
  * Implements hook_theme().
  *
  * Registers the Property Devices EVA row suggestion so this module's
@@ -443,6 +534,9 @@ function _backflow_device_fmt_due(string $next_due): string {
 function backflow_device_theme($existing, $type, $theme, $path) {
   return [
     'views_view_fields__backflow_property_devices_eva' => [
+      'base hook' => 'views_view_fields',
+    ],
+    'views_view_fields__wo_tasks_list__entity_view_5' => [
       'base hook' => 'views_view_fields',
     ],
   ];

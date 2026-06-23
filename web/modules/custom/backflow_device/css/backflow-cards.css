@@ -144,6 +144,36 @@
   padding-left: 0;
 }
 
+/* ── Backflow Tests EVA — test result cards (whole card clickable) ──── */
+/* The card is an <a> to the test's edit form. Keep it from underlining and
+   color result by pass/fail/pending. */
+.bf-card--link,
+.bf-card--link:hover,
+.bf-card--link .bf-card-id:hover {
+  text-decoration: none;
+}
+
+.bf-card--pass    { border-left: 5px solid #198754; }
+.bf-card--fail    { border-left: 5px solid #dc3545; }
+.bf-card--pending { border-left: 5px solid #6c757d; }
+
+.bf-badge--pass    { background: #198754; }
+.bf-badge--fail    { background: #dc3545; }
+.bf-badge--pending { background: #6c757d; }
+
+/* Readings in a compact 2-column grid. */
+.bf-card-readings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 1.5rem;
+  border-top: 1px solid #eee;
+  padding-top: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .bf-card-readings { grid-template-columns: 1fr; }
+}
+
 /* ── Responsive ────────────────────────────────────────────────── */
 @media (max-width: 480px) {
   .bf-card-id { font-size: 1rem; }

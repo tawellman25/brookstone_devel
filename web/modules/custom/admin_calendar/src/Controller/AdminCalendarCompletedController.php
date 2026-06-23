@@ -228,8 +228,11 @@ class AdminCalendarCompletedController extends ControllerBase {
       }
 
       $property = trim($row->property_nickname ?? '') ?: 'Unknown Property';
-      $property_short = strlen($property) > 22
-        ? substr($property, 0, 21) . '…'
+      // Multibyte-safe truncation. Byte-based substr() can cut a multi-byte
+      // character (e.g. an en-dash in a nickname) mid-byte, producing invalid
+      // UTF-8 that makes JsonResponse throw and drops the ENTIRE completed feed.
+      $property_short = mb_strlen($property) > 22
+        ? mb_substr($property, 0, 21) . '…'
         : $property;
 
       $service_code = strtoupper(trim($row->service_code ?? ''))
@@ -297,7 +300,12 @@ class AdminCalendarCompletedController extends ControllerBase {
       unset($event['_sort']);
     }
 
-    return new JsonResponse($events);
+    // Defensive: substitute any remaining invalid UTF-8 rather than throwing —
+    // one bad byte would otherwise fail the whole feed and render no completed
+    // events. Root cause (byte truncation) is fixed above with mb_substr.
+    $response = new JsonResponse($events);
+    $response->setEncodingOptions($response->getEncodingOptions() | JSON_INVALID_UTF8_SUBSTITUTE);
+    return $response;
   }
 
 }

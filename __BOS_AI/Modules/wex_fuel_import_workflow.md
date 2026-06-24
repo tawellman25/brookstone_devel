@@ -65,11 +65,11 @@ Most days you don't import by hand at all — a cron job on the live server pull
 ```
 0 7 * * * LANG=C bash -c 'echo; echo "=== WEX fetch $(date) ==="; \
   . $HOME/.wex_imap_env && cd /home/brookstoneadmin/brookstone && \
-  /opt/alt/php83/usr/bin/php /usr/local/bin/drush wex:fetch-email' \
+  /opt/alt/php83/usr/bin/php vendor/drush/drush/drush.php wex:fetch-email' \
   >> $HOME/wex_fetch.log 2>&1
 ```
 
-> **The PHP binary path matters.** drush is invoked as `/opt/alt/php83/usr/bin/php /usr/local/bin/drush`, **not** the bare `/usr/local/bin/drush`. On this cPanel/CloudLinux host the bare path routes through a PHP wrapper that breaks drush under cron (silently — it only writes to the log). This exact line is the fix for a 17-day silent outage; do not "simplify" it back to `/usr/local/bin/drush`. Full explanation: `__BOS_AI/Governance/drupal_bos_gotchas.md` → "cPanel/CloudLinux cron `drush` invocation fails silently".
+> **The drush entry point matters — invoke `vendor/drush/drush/drush.php` directly, never `/usr/local/bin/drush`.** On this cPanel/CloudLinux host `/usr/local/bin/drush` is an ancient global drush **PHAR**; even when launched by the Alt-PHP CLI binary it re-execs `php` through the `/usr/bin/env php` → `/usr/local/bin/php` wrapper, which routes to **CGI PHP** under cron and breaks drush (silently — `$argv` undefined, `Content-type: text/html`, "[preflight] Drush is designed to run via the command line"). Running the project's own `vendor/drush/drush/drush.php` as a script argument to `/opt/alt/php83/usr/bin/php` keeps it in **one process with a real CLI context**. This is the fix for two silent outages (17 days in June, then a recurrence on 2026-06-24 after the global PHAR crept back into the path); do **not** "simplify" it to `/usr/local/bin/drush` or even `… php /usr/local/bin/drush`. Full explanation: `__BOS_AI/Governance/drupal_bos_gotchas.md` → "cPanel/CloudLinux cron `drush` invocation fails silently".
 
 ## Resolving Unmatched Transactions
 
@@ -156,7 +156,7 @@ Work through these in order:
    ```
    cd /home/brookstoneadmin/brookstone && \
    . $HOME/.wex_imap_env && \
-   /opt/alt/php83/usr/bin/php /usr/local/bin/drush wex:fetch-email
+   /opt/alt/php83/usr/bin/php vendor/drush/drush/drush.php wex:fetch-email
    ```
 
 ### "Vehicle mileage isn't updating"
@@ -200,7 +200,7 @@ Listed for awareness — resolution requires reading the physical odometer and c
    ```
    crontab -l | grep wex
    ```
-   It should show the full line including `/opt/alt/php83/usr/bin/php` before `/usr/local/bin/drush`.
+   It should show `/opt/alt/php83/usr/bin/php vendor/drush/drush/drush.php` — **not** `/usr/local/bin/drush` (the global PHAR that re-execs through the CGI wrapper and breaks under cron).
 2. **Confirm the env file is present + locked down:**
    ```
    ls -la ~/.wex_imap_env

@@ -668,27 +668,35 @@ Cron writes the error to the job's log file but nothing else alerts, so the fail
 
 **Cause.** On cPanel/CloudLinux/Hosting.com servers, `/usr/local/bin/php` is **not** a PHP binary — it's a small (~933-byte) Perl wrapper that uses CloudLinux's PHP selector (`/etc/cl.selector/ea-php-cli`) to route to whichever Alt-PHP the account has selected. The wrapper resolves correctly in an interactive shell but routes through **CGI PHP** when run from cron, which leaves `$argv` undefined and breaks drush's startup. (Drush's shebang is `#!/usr/bin/env php`, so it accepts whatever PHP the environment serves it — under cron that's CGI PHP.) The crash is at drush startup, **before any BOS module or drush command code loads**.
 
-**Fix.** In cron, invoke drush via the **direct CloudLinux Alt-PHP binary**, bypassing the wrapper. For PHP 8.3 that's typically `/opt/alt/php83/usr/bin/php`:
+**Fix.** In cron, invoke the **direct CloudLinux Alt-PHP binary on the project's own `drush.php` entry point** — bypassing both the `/usr/local/bin/php` wrapper *and* the global `/usr/local/bin/drush` phar. For PHP 8.3:
 
 ```
-# BROKEN — relies on the wrapper:
+# BROKEN — relies on the /usr/local/bin/php wrapper (routes to CGI under cron):
 0 7 * * * ... && /usr/local/bin/drush wex:fetch-email ...
 
-# FIXED — direct Alt-PHP binary gives drush a real CLI context with $argv:
+# ALSO BROKEN — Alt-PHP binary, but still hands off to the global drush PHAR:
 0 7 * * * ... && /opt/alt/php83/usr/bin/php /usr/local/bin/drush wex:fetch-email ...
+
+# FIXED — Alt-PHP CLI binary runs vendor drush.php directly, in ONE process:
+0 7 * * * ... && cd /home/brookstoneadmin/brookstone \
+  && /opt/alt/php83/usr/bin/php vendor/drush/drush/drush.php wex:fetch-email ...
 ```
 
-To confirm the correct binary for a given PHP version:
+**Why the middle form isn't enough (the 2026-06-24 recurrence).** `/usr/local/bin/drush` on this host is an ancient (2021) **global drush PHAR** with a `#!/usr/bin/env php` shebang. Even when you launch it with the Alt-PHP CLI binary, the PHAR's own bootstrap **re-execs `php`** to run the project drush — and that re-exec goes back through the `/usr/bin/env php` → `/usr/local/bin/php` wrapper → **CGI PHP**, re-introducing the exact "`$argv` undefined / Content-type: text/html / [preflight] Drush is designed to run via the command line" failure. The only robust fix is to invoke the project's `vendor/drush/drush/drush.php` **directly** as a script argument to the Alt-PHP CLI binary, so there is no phar and no re-exec — one process, real CLI context, `$argv` populated.
+
+Confirm the binary is genuinely CLI **under a cron-like (empty) environment**, not just interactively:
 
 ```
-ls -la /opt/cpanel/ea-php*/root/usr/bin/php
-# or, while drush works interactively, print what the wrapper resolves to:
-/usr/local/bin/php -r 'echo PHP_BINARY . "\n";'
+env -i HOME=/home/brookstoneadmin /opt/alt/php83/usr/bin/php -r 'echo PHP_SAPI;'   # must print: cli
+# Prove the whole cron line end-to-end (idempotent — re-running finds 0 UNSEEN):
+env -i HOME=/home/brookstoneadmin LANG=C bash -c '. $HOME/.wex_imap_env && \
+  cd /home/brookstoneadmin/brookstone && \
+  /opt/alt/php83/usr/bin/php vendor/drush/drush/drush.php wex:fetch-email'
 ```
 
-**This failure mode is silent by default** — cron surfaces nothing unless watched. Pair the fix with a failure-alert in the cron line (mail on non-zero exit) so the next environment shift doesn't go undetected.
+**This failure mode is silent by default** — cron surfaces nothing unless watched. The fetch log (`~/wex_fetch.log`) is the only signal; pair the fix with a failure-alert (mail on non-zero exit, or a staleness check on the latest `equipment_fuel_transaction` date) so the next environment shift doesn't go undetected.
 
-**Discovered** 2026-06-21, after **17 days** of silent WEX `wex:fetch-email` failures. The automation worked 2026-06-04 → 06-07, then broke when Hosting.com updated the cPanel/EasyApache environment around 06-07/06-08. Resolution was diagnostic log inspection, not a code change. See `__BOS_AI/Modules/wex_fuel_import_workflow.md` → Troubleshooting.
+**Discovered** 2026-06-21, after **17 days** of silent WEX `wex:fetch-email` failures (worked 06-04 → 06-07, broke when Hosting.com updated cPanel/EasyApache ~06-07/08; first "fix" was `/opt/alt/php83/usr/bin/php /usr/local/bin/drush`). **Recurred 2026-06-24** — a deploy's `composer install` (or another env shift) put the global PHAR back in the path so the Alt-PHP binary was handing off to it and re-exec'ing through the wrapper again; latest transaction had been stuck at 06-18 for ~6 days. Final fix: invoke `vendor/drush/drush/drush.php` directly (no phar, no re-exec). Caught up 9 transactions on the manual run. Resolution both times was diagnostic log inspection, not a code change. See `__BOS_AI/Modules/wex_fuel_import_workflow.md` → Troubleshooting.
 
 ---
 

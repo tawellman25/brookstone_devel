@@ -10,6 +10,8 @@ dependencies:
     - field.field.wo_complete_info.irrigation_crew.field_how_many_trucks_taken
     - field.field.wo_complete_info.irrigation_crew.field_signed_off_by
     - field.field.wo_complete_info.irrigation_crew.field_those_on_crew
+    - field.field.wo_complete_info.irrigation_crew.field_warranty
+    - field.field.wo_complete_info.irrigation_crew.field_warranty_why
     - field.field.wo_complete_info.irrigation_crew.field_work_order
     - field.field.wo_complete_info.irrigation_crew.field_work_order_completed
   module:
@@ -33,6 +35,8 @@ third_party_settings:
         - uid
         - created
         - path
+        - field_warranty
+        - field_warranty_why
       label: 'Office Administation'
       region: content
       parent_name: ''
@@ -63,9 +67,24 @@ content:
     settings:
       display_label: true
     third_party_settings: {  }
+  field_warranty:
+    type: boolean_checkbox
+    weight: 8
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_warranty_why:
+    type: string_textarea
+    weight: 9
+    region: content
+    settings:
+      rows: 3
+      placeholder: ''
+    third_party_settings: {  }
   field_canceled_why:
     type: string_textarea
-    weight: 8
+    weight: 10
     region: content
     settings:
       rows: 5

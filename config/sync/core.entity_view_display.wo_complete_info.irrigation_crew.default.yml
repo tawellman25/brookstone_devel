@@ -10,6 +10,8 @@ dependencies:
     - field.field.wo_complete_info.irrigation_crew.field_how_many_trucks_taken
     - field.field.wo_complete_info.irrigation_crew.field_signed_off_by
     - field.field.wo_complete_info.irrigation_crew.field_those_on_crew
+    - field.field.wo_complete_info.irrigation_crew.field_warranty
+    - field.field.wo_complete_info.irrigation_crew.field_warranty_why
     - field.field.wo_complete_info.irrigation_crew.field_work_order
     - field.field.wo_complete_info.irrigation_crew.field_work_order_completed
   module:
@@ -34,7 +36,7 @@ content:
     label: hidden
     settings: {  }
     third_party_settings: {  }
-    weight: 5
+    weight: 7
     region: content
   field_date_completed:
     type: timestamp
@@ -78,9 +80,29 @@ content:
     third_party_settings: {  }
     weight: 0
     region: content
+  field_warranty:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_warranty_why:
+    type: basic_string
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 6
+    region: content
 hidden:
   changed: true
   created: true
+  entity_print_view_epub: true
+  entity_print_view_pdf: true
+  entity_print_view_word_docx: true
   field_work_order: true
   field_work_order_completed: true
   title: true

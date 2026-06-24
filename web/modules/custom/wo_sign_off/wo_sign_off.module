@@ -6,6 +6,8 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\wo_sign_off\Service\WoCrewRosterService;
+use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
  * Implements hook_entity_presave() for wo_status_update entities.
@@ -45,6 +47,17 @@ function wo_sign_off_entity_presave(EntityInterface $entity) {
   }
 
   $current_user = \Drupal::currentUser();
+
+  // Mutual-exclusivity backstop for programmatic writes. The form enforces this
+  // with a #validate handler; hook_entity_validate is NOT invoked anywhere in
+  // this codebase, so the presave is the universal guard. If both flags are set,
+  // Canceled takes precedence (the branch below runs first) — log it so the
+  // override is traceable.
+  $both_set = $entity->hasField('field_warranty') && $entity->get('field_warranty')->value
+    && $entity->hasField('field_canceled') && $entity->get('field_canceled')->value;
+  if ($both_set) {
+    \Drupal::logger('wo_sign_off')->warning('Sign-off for WO @wo has both Canceled and Warranty set; Canceled takes precedence.', ['@wo' => $work_order_id]);
+  }
 
   // Check if the work order is marked as canceled.
   $is_canceled = $entity->hasField('field_canceled') && $entity->get('field_canceled')->value;
@@ -101,15 +114,41 @@ function wo_sign_off_entity_presave(EntityInterface $entity) {
     return; // Exit early to prevent any further field updates.
   }
 
-  // If not canceled, proceed with Complete status and field calculations.
+  // Warranty: a COMPLETION VARIANT, not a cancellation — the work happened, the
+  // crew was on site, time was tracked. It drives the WO to Warrantied (1283),
+  // NOT Complete (1097). Runs the SAME trip-fee + total-time calc as Complete so
+  // real amounts are captured for lost-revenue visibility. No email is sent.
+  $is_warranty = $entity->hasField('field_warranty') && $entity->get('field_warranty')->value;
+  if ($is_warranty) {
+    if ($work_order->get('field_status')->value != 1283) {
+      update_work_order_status($work_order, $current_user, 1283, 'Warranty work performed by crew');
+    }
+    _wo_sign_off_apply_completion_calcs($work_order, $entity, $work_order_id);
+    $work_order->save();
+    return;
+  }
+
+  // If not canceled or warranty, proceed with Complete status and calculations.
   $workOrderStatus = $work_order->get('field_status')->value;
   if ($workOrderStatus != 1097) {
     update_work_order_status($work_order, $current_user, 1097, 'Teammate Completed Work Order');
   }
 
+  _wo_sign_off_apply_completion_calcs($work_order, $entity, $work_order_id);
+
+  // Save the work order with updated fields.
+  $work_order->save();
+}
+
+/**
+ * Shared completion calc (trip fee + total time) used by both the Complete
+ * (1097) and Warranty (1283) sign-off branches, so a warrantied WO captures the
+ * same real amounts as a completed one (for lost-revenue visibility).
+ */
+function _wo_sign_off_apply_completion_calcs(EntityInterface $work_order, EntityInterface $entity, $work_order_id) {
   // Calculate trip fee.
   $excludedTripBundles = [
-    'sprinkler_start_up', 'sprinkler_winterizing'
+    'sprinkler_start_up', 'sprinkler_winterizing',
   ];
   if (!in_array($work_order->bundle(), $excludedTripBundles)) {
     $propertyId = $work_order->get('field_property')->target_id ?? NULL;
@@ -128,7 +167,7 @@ function wo_sign_off_entity_presave(EntityInterface $entity) {
   $excludedBundles = [
     'dethatching', 'lawn_mowing', 'landscaping', 'sprinkler_repair', 'sprinkler_check_up',
     'sprinkler_start_up', 'sprinkler_winterizing', 'sprinkler_installation', 'sprinkler_design',
-    'in_house_tasks', 'christmas_decorations', 'misc_services'
+    'in_house_tasks', 'christmas_decorations', 'misc_services',
   ];
   if (!in_array($work_order->bundle(), $excludedBundles)) {
     $timeSpent = 0;
@@ -151,9 +190,84 @@ function wo_sign_off_entity_presave(EntityInterface $entity) {
       $work_order->set('field_total_time', $timeSpent);
     }
   }
+}
 
-  // Save the work order with updated fields.
-  $work_order->save();
+/**
+ * Creates one wo_notes:note when a sign-off transitions into Warranty.
+ *
+ * Called from insert (warranty == TRUE) and update (empty/FALSE -> TRUE) so a
+ * re-saved warranty sign-off never produces a duplicate note. Note text is
+ * "Warranty work performed." plus the reason if one was given. uid is the
+ * signer (field_signed_off_by), falling back to the current user.
+ */
+function _wo_sign_off_create_warranty_note(EntityInterface $entity) {
+  $wo_id = $entity->get('field_work_order')->target_id ?? NULL;
+  if (!$wo_id) {
+    return;
+  }
+  $text = 'Warranty work performed.';
+  if ($entity->hasField('field_warranty_why') && !$entity->get('field_warranty_why')->isEmpty()) {
+    $why = trim((string) $entity->get('field_warranty_why')->value);
+    if ($why !== '') {
+      $text .= ' — ' . $why;
+    }
+  }
+  $uid = ($entity->hasField('field_signed_off_by') && !$entity->get('field_signed_off_by')->isEmpty())
+    ? $entity->get('field_signed_off_by')->target_id
+    : \Drupal::currentUser()->id();
+  try {
+    \Drupal::entityTypeManager()->getStorage('wo_notes')->create([
+      'type' => 'note',
+      'field_note_text' => $text,
+      'field_work_order' => $wo_id,
+      'uid' => $uid,
+      'created' => \Drupal::time()->getRequestTime(),
+    ])->save();
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('wo_sign_off')->error('Failed to write warranty WO note for WO @wo: @msg', [
+      '@wo' => $wo_id,
+      '@msg' => $e->getMessage(),
+    ]);
+  }
+}
+
+/**
+ * Implements hook_entity_validate().
+ *
+ * Canceled and Warranty are mutually exclusive on a sign-off. Mirrors the BOS
+ * *_entity_validate convention (contract_residential, material, estimate, etc.).
+ *
+ * NOTE: hook_entity_validate has no invoker in this codebase (verified: nothing
+ * in core/contrib/custom calls it), so this — like the other BOS entity_validate
+ * hooks — does not currently fire. The ACTIVE guards are the form #validate
+ * handler (UI) and the presave backstop (all programmatic saves). This is kept
+ * for convention + to work automatically if an invoker is ever added.
+ */
+function wo_sign_off_entity_validate(EntityInterface $entity, ConstraintViolationListInterface $violations) {
+  if ($entity->getEntityTypeId() !== 'wo_complete_info') {
+    return;
+  }
+  if (!$entity->hasField('field_canceled') || !$entity->hasField('field_warranty')) {
+    return;
+  }
+  if ($entity->get('field_canceled')->value && $entity->get('field_warranty')->value) {
+    $msg = 'A work order cannot be both Canceled and Warranty. Choose one.';
+    $violations->add(new ConstraintViolation(
+      $msg, $msg, [], $entity, 'field_warranty', $entity->get('field_warranty')->value
+    ));
+  }
+}
+
+/**
+ * Form #validate handler: Canceled and Warranty cannot both be checked.
+ */
+function _wo_sign_off_warranty_cancel_validate(array &$form, FormStateInterface $form_state) {
+  $canceled = (bool) $form_state->getValue(['field_canceled', 'value']);
+  $warranty = (bool) $form_state->getValue(['field_warranty', 'value']);
+  if ($canceled && $warranty && isset($form['field_warranty'])) {
+    $form_state->setError($form['field_warranty'], t('A work order cannot be both Canceled and Warranty. Choose one.'));
+  }
 }
 
 /**
@@ -220,6 +334,18 @@ function wo_sign_off_entity_update(EntityInterface $entity) {
         $work_order->save();
       } else {
         \Drupal::logger('wo_sign_off')->error('Work order not found for ID: @id', ['@id' => $work_order_id]);
+      }
+    }
+
+    // Warranty: log the WO note ONCE, only on the transition into warranty
+    // (was empty/FALSE, now TRUE). Re-saving an already-warranty sign-off does
+    // not create a second note.
+    if ($entity->hasField('field_warranty') && $entity->get('field_warranty')->value) {
+      $was_warranty = isset($entity->original)
+        && $entity->original->hasField('field_warranty')
+        && $entity->original->get('field_warranty')->value;
+      if (!$was_warranty) {
+        _wo_sign_off_create_warranty_note($entity);
       }
     }
   }
@@ -357,6 +483,20 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
     if (isset($form['field_how_many_trucks_taken'])) {
       $form['field_how_many_trucks_taken']['#states'] = $no_spray_hide;
     }
+  }
+
+  // Warranty (irrigation_crew sign-off): reveal the reason box only when the
+  // Warranty box is checked (the cancel reason is not wired with #states, so we
+  // mirror the established #states pattern above), and add a validate handler
+  // enforcing that Canceled and Warranty are mutually exclusive.
+  if ($entity_type === 'wo_complete_info' && $entity->bundle() === 'irrigation_crew'
+      && isset($form['field_warranty'])) {
+    if (isset($form['field_warranty_why'])) {
+      $form['field_warranty_why']['#states'] = [
+        'visible' => [':input[name="field_warranty[value]"]' => ['checked' => TRUE]],
+      ];
+    }
+    $form['#validate'][] = '_wo_sign_off_warranty_cancel_validate';
   }
 
   // Position the reconciliation block. Default placement is just
@@ -1521,6 +1661,11 @@ function wo_sign_off_entity_insert(EntityInterface $entity) {
   $svc = \Drupal::service('wo_sign_off.crew_roster');
   if (!$svc->isInScope('wo_complete_info', $entity->bundle())) {
     return;
+  }
+
+  // Warranty: log the WO note once, when a warranty sign-off is created.
+  if ($entity->hasField('field_warranty') && $entity->get('field_warranty')->value) {
+    _wo_sign_off_create_warranty_note($entity);
   }
 
   $closed_ids = $entity->_reconciled_closed_ids ?? [];

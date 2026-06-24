@@ -158,24 +158,28 @@ function _wo_schedule_capture_change_note(EntityInterface $entity): void {
   $newAssigned = $entity->get('field_assigned_to')->target_id ?? NULL;
   $newNote = trim((string) ($entity->get('field_scheduling_note')->value ?? ''));
 
-  $actor = \Drupal::currentUser()->getDisplayName();
-  $stamp = date('m/d/Y g:i A', \Drupal::time()->getRequestTime());
+  // Structured stash: the card builds attribution from the note's uid + created,
+  // so there is no "by {actor}, {stamp}" prefix here. summary = machine diff;
+  // note = the scheduling note's NEW value only.
   $parts = [];
 
   if ($entity->isNew()) {
     if (!empty($newStart)) {
-      $parts[] = 'Date: ' . $dateLabel($newStart, $newEnd);
+      $parts[] = 'Scheduled: ' . $dateLabel($newStart, $newEnd);
     }
     if (!empty($newAssigned)) {
       $parts[] = 'Assigned: ' . $name($newAssigned);
     }
-    if ($newNote !== '') {
-      $parts[] = 'Schedule note: "' . $newNote . '"';
-    }
-    if (empty($parts)) {
+    $summary = implode('; ', $parts);
+    $note = $newNote;
+    if ($summary === '' && $note === '') {
       return;
     }
-    $entity->_wo_schedule_change_note = "Scheduled by {$actor}, {$stamp} — " . implode('; ', $parts);
+    $entity->_wo_schedule_change_note = [
+      'summary' => $summary,
+      'note' => $note,
+      'kind' => 'schedule_insert',
+    ];
     return;
   }
 
@@ -189,19 +193,22 @@ function _wo_schedule_capture_change_note(EntityInterface $entity): void {
   $oldNote = trim((string) ($old->get('field_scheduling_note')->value ?? ''));
 
   if ($oldStart !== $newStart || $oldEnd !== $newEnd) {
-    $parts[] = 'Date: ' . $dateLabel($oldStart, $oldEnd) . ' → ' . $dateLabel($newStart, $newEnd);
+    $parts[] = 'Rescheduled: ' . $dateLabel($oldStart, $oldEnd) . ' → ' . $dateLabel($newStart, $newEnd);
   }
   if ((string) $oldAssigned !== (string) $newAssigned) {
     $parts[] = 'Assigned: ' . $name($oldAssigned) . ' → ' . $name($newAssigned);
   }
-  if ($oldNote !== $newNote) {
-    $parts[] = 'Schedule note: "' . ($oldNote !== '' ? $oldNote : '(empty)')
-      . '" → "' . ($newNote !== '' ? $newNote : '(empty)') . '"';
-  }
-  if (empty($parts)) {
+  $summary = implode('; ', $parts);
+  // Scheduling note: NEW value only when it changed; do not restate if unchanged.
+  $note = ($oldNote !== $newNote) ? $newNote : '';
+  if ($summary === '' && $note === '') {
     return;
   }
-  $entity->_wo_schedule_change_note = "Schedule changed by {$actor}, {$stamp} — " . implode('; ', $parts);
+  $entity->_wo_schedule_change_note = [
+    'summary' => $summary,
+    'note' => $note,
+    'kind' => 'schedule_change',
+  ];
 }
 
 /**
@@ -256,10 +263,10 @@ function wo_schedule_entity_update(EntityInterface $entity) {
  *   already baked into the stashed text.
  */
 function _wo_schedule_log_schedule_change_note(EntityInterface $entity, bool $isNew): void {
-  if (empty($entity->_wo_schedule_change_note)) {
+  $data = $entity->_wo_schedule_change_note ?? NULL;
+  if (empty($data) || !is_array($data)) {
     return;
   }
-  $text = $entity->_wo_schedule_change_note;
   $wo_ref = $entity->get('field_work_order')->getValue();
   $wo_id = !empty($wo_ref[0]['target_id']) ? $wo_ref[0]['target_id'] : NULL;
   if (!$wo_id) {
@@ -268,7 +275,10 @@ function _wo_schedule_log_schedule_change_note(EntityInterface $entity, bool $is
   try {
     \Drupal::entityTypeManager()->getStorage('wo_notes')->create([
       'type' => 'note',
-      'field_note_text' => $text,
+      'field_change_summary' => $data['summary'] ?? '',
+      'field_note_text' => $data['note'] ?? '',
+      'field_note_kind' => $data['kind'] ?? 'schedule_change',
+      'field_is_system_note' => TRUE,
       'field_work_order' => $wo_id,
       'uid' => \Drupal::currentUser()->id(),
       'created' => \Drupal::time()->getRequestTime(),

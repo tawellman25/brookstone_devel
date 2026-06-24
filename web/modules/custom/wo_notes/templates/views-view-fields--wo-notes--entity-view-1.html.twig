@@ -1,0 +1,40 @@
+{#
+/**
+ * @file
+ * WO Notes EVA row — one note card.
+ *
+ * Vars from wo_notes_preprocess_views_view_fields():
+ *   attribution    — "Name, m/d/Y g:i A" (who logged it + when).
+ *   body_lines     — system notes: labeled lines (Scheduled/Rescheduled,
+ *                    Assigned, Schedule note).
+ *   show_html_body — manual notes: render the formatted body (preserves HTML).
+ *   accent_class   — wo-note-card--system | wo-note-card--manual.
+ *   edit_url       — modal edit-form URL (empty if the user can't edit).
+ *
+ * The whole card opens the note's edit form in a modal (use-ajax), when the
+ * user can edit; otherwise it renders as a plain, non-clickable card.
+ */
+#}
+{% set card_inner %}
+  <div class="wo-note-attribution">{{ attribution }}</div>
+  {% if body_lines %}
+    <div class="wo-note-body">
+      {% for line in body_lines %}
+        <div class="wo-note-line">{{ line }}</div>
+      {% endfor %}
+    </div>
+  {% elseif show_html_body %}
+    <div class="wo-note-body">{{ fields.field_note_text.content }}</div>
+  {% endif %}
+{% endset %}
+
+{% if edit_url %}
+  <a href="{{ edit_url }}" class="wo-note-card wo-note-card--link {{ accent_class }} use-ajax"
+     data-dialog-type="modal" data-dialog-options='{"width":"90%","maxWidth":"1000"}'>
+    {{ card_inner }}
+  </a>
+{% else %}
+  <div class="wo-note-card {{ accent_class }}">
+    {{ card_inner }}
+  </div>
+{% endif %}

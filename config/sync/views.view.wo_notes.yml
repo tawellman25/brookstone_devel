@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.storage.wo_notes.field_change_summary
     - field.storage.wo_notes.field_note_text
     - user.role.administration
     - user.role.administrator
@@ -225,55 +226,6 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
-        nothing:
-          id: nothing
-          table: views
-          field: nothing
-          relationship: none
-          group_type: group
-          admin_label: ''
-          plugin_id: custom
-          label: ''
-          exclude: false
-          alter:
-            alter_text: true
-            text: '<sub>On {{ created }}, {{ uid }} wrote..,</sub>'
-            make_link: true
-            path: '{{ edit_wo_notes }}?destination=/work_order/{{ raw_arguments.field_work_order_target_id }}'
-            absolute: false
-            external: false
-            replace_spaces: false
-            path_case: none
-            trim_whitespace: false
-            alt: ''
-            rel: ''
-            link_class: ''
-            prefix: ''
-            suffix: ''
-            target: ''
-            nl2br: false
-            max_length: 0
-            word_boundary: true
-            ellipsis: true
-            more_link: false
-            more_link_text: ''
-            more_link_path: ''
-            strip_tags: false
-            trim: false
-            preserve_tags: ''
-            html: false
-          element_type: ''
-          element_class: entered-by-text
-          element_label_type: ''
-          element_label_class: ''
-          element_label_colon: false
-          element_wrapper_type: ''
-          element_wrapper_class: ''
-          element_default_classes: false
-          empty: ''
-          hide_empty: false
-          empty_zero: false
-          hide_alter_empty: false
         field_note_text:
           id: field_note_text
           table: wo_notes__field_note_text
@@ -336,6 +288,29 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        field_change_summary:
+          id: field_change_summary
+          table: wo_notes__field_change_summary
+          field: field_change_summary
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: wo_notes
+          entity_field: field_change_summary
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            make_link: false
+            trim: false
+          element_type: ''
+          element_class: ''
+          element_label_colon: false
+          empty: ''
+          hide_empty: false
+          type: basic_string
+          settings: {  }
       pager:
         type: none
         options:
@@ -478,6 +453,7 @@ display:
         - url
         - user.roles
       tags:
+        - 'config:field.storage.wo_notes.field_change_summary'
         - 'config:field.storage.wo_notes.field_note_text'
   entity_view_1:
     id: entity_view_1
@@ -533,4 +509,5 @@ display:
         - url
         - user.roles
       tags:
+        - 'config:field.storage.wo_notes.field_change_summary'
         - 'config:field.storage.wo_notes.field_note_text'

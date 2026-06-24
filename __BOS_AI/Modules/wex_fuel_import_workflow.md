@@ -71,6 +71,19 @@ Most days you don't import by hand at all — a cron job on the live server pull
 
 > **The drush entry point matters — invoke `vendor/drush/drush/drush.php` directly, never `/usr/local/bin/drush`.** On this cPanel/CloudLinux host `/usr/local/bin/drush` is an ancient global drush **PHAR**; even when launched by the Alt-PHP CLI binary it re-execs `php` through the `/usr/bin/env php` → `/usr/local/bin/php` wrapper, which routes to **CGI PHP** under cron and breaks drush (silently — `$argv` undefined, `Content-type: text/html`, "[preflight] Drush is designed to run via the command line"). Running the project's own `vendor/drush/drush/drush.php` as a script argument to `/opt/alt/php83/usr/bin/php` keeps it in **one process with a real CLI context**. This is the fix for two silent outages (17 days in June, then a recurrence on 2026-06-24 after the global PHAR crept back into the path); do **not** "simplify" it to `/usr/local/bin/drush` or even `… php /usr/local/bin/drush`. Full explanation: `__BOS_AI/Governance/drupal_bos_gotchas.md` → "cPanel/CloudLinux cron `drush` invocation fails silently".
 
+### Failure watcher (so it's never silent again)
+
+Because both outages were **silent** (only the log showed them), a second cron now watches the first. Added 2026-06-24:
+
+```
+15 7 * * * LANG=C bash /home/brookstoneadmin/brookstone/web/scripts/wex_alert_check.sh >> $HOME/wex_alert.log 2>&1
+```
+
+- **What it does:** 15 min after the fetch, it reads the latest block in `~/wex_fetch.log` and **emails `todd@brookstoneoutdoors.com` only on a real failure** — the block isn't from today (cron didn't fire), or it lacks the `fetch-email complete` line (drush crashed, IMAP auth failed, etc.). A clean run that imported nothing ("0 UNSEEN") still says "complete", so quiet weekend / no-fuel days do **not** alert.
+- **Deliberately drush/Drupal-independent** — pure bash + the server `mail` command. If the watcher depended on drush it would die in the exact same way it's meant to catch.
+- **Source:** `web/scripts/wex_alert_check.sh` (committed; deploys keep it in sync). Override recipient with `WEX_ALERT_TO`, or the inspected log with `WEX_FETCH_LOG`, for testing.
+- **No-news-is-good-news:** if the daily WEX confirmation stops appearing in BOS *and* you never got a failure email, suspect the watcher/cron host itself (rare) — check `~/wex_alert.log` and that both cron lines are still present.
+
 ## Resolving Unmatched Transactions
 
 The Review Queue (`/admin/operations/equipment/fuel-transactions/unmatched`) shows transactions where automatic matching failed. The "Issue" column tells you which side(s) didn't resolve.

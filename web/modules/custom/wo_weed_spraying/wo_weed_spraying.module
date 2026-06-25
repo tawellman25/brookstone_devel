@@ -14,24 +14,16 @@ function wo_weed_spraying_entity_presave(EntityInterface $entity) {
     return;
   }
 
-  // Guard: block duplicate open weed spray WOs for the same property in the current year.
+  // Guard: block a duplicate only when a GENUINELY-ACTIVE open weed spray WO
+  // already exists for this property+year. Abandoned open WOs (stale-empty /
+  // resurrected) are ignored here — they used to trap creation — and are healed
+  // by the create controller, the crew add-form alter, or the daily cron sweep.
+  // (Read-only check: this runs inside presave, so it must not modify entities.)
   if ($entity->isNew() && !$entity->get('field_property')->isEmpty()) {
     $property_id = (int) $entity->get('field_property')->target_id;
-    $done_statuses = [1097, 1098, 1281, 1283];
-    $year = date('Y');
-    $year_start = strtotime("{$year}-01-01 00:00:00");
-    $year_end = strtotime("{$year}-12-31 23:59:59");
-    $existing = \Drupal::entityQuery('work_order')
-      ->accessCheck(FALSE)
-      ->condition('type', 'weed_spraying')
-      ->condition('field_property', $property_id)
-      ->condition('field_status', $done_statuses, 'NOT IN')
-      ->condition('created', [$year_start, $year_end], 'BETWEEN')
-      ->range(0, 1)
-      ->execute();
-    if (!empty($existing)) {
-      $existing_id = reset($existing);
-      $msg = "A weed spray work order (#$existing_id) is already open for this property. Redirecting you to it.";
+    $active = _wo_weed_spraying_find_active_open_wo($property_id, FALSE);
+    if ($active) {
+      $msg = "A weed spray work order (#{$active->id()}) is already open for this property. Redirecting you to it.";
       \Drupal::messenger()->addWarning($msg);
       throw new \Drupal\Core\Entity\EntityStorageException($msg);
     }
@@ -564,29 +556,219 @@ function wo_weed_spraying_form_work_order_weed_spraying_form_alter(array &$form,
     return;
   }
 
-  // Check for existing open WO for this property.
-  $done_statuses = [1097, 1098, 1281, 1283];
-  $existing_ids = \Drupal::entityQuery('work_order')
+  // Crew add-form: route to the genuinely-active open WO if one exists. Abandoned
+  // open WOs (stale-empty / resurrected) are healed here so they no longer trap
+  // the crew, and the add form is allowed to proceed.
+  $active = _wo_weed_spraying_find_active_open_wo((int) $property_id, TRUE);
+  if ($active) {
+    \Drupal::messenger()->addWarning(
+      t('A weed spray work order (#@id) is already open for this property. Redirecting you to it.', ['@id' => $active->id()])
+    );
+    $response = new \Symfony\Component\HttpFoundation\RedirectResponse(
+      $active->toUrl('canonical')->toString()
+    );
+    $response->send();
+    exit;
+  }
+}
+
+/**
+ * Status TIDs and the "done" set used across weed-spray housekeeping.
+ */
+function _wo_weed_spraying_done_statuses(): array {
+  // Complete, Canceled, Invoiced, Warrantied.
+  return [1097, 1098, 1281, 1283];
+}
+
+/**
+ * Classifies an open (non-done) weed_spraying WO for housekeeping.
+ *
+ * @return string
+ *   'active'      — genuinely in use (recent, has work, or already invoiced);
+ *                   leave alone.
+ *   'resurrected' — reached Complete (1097) before, then was reopened (the
+ *                   clock-in resurrection bug). Billing/history are involved, so
+ *                   it is FLAGGED for office review, never auto-modified.
+ *   'stale_empty' — older than 45 days with zero time entries and zero
+ *                   chemicals; abandoned and safe to auto-cancel.
+ */
+function _wo_weed_spraying_classify_open_wo(EntityInterface $wo): string {
+  $etm = \Drupal::entityTypeManager();
+  $id = $wo->id();
+
+  // Never touch a WO that has already been billed.
+  if ((int) ($wo->get('field_invoiced')->value ?? 0) === 1) {
+    return 'active';
+  }
+
+  $had_complete = (int) $etm->getStorage('wo_status_updates')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_status_of_wo', $id)
+    ->condition('field_status', 1097)
+    ->count()->execute();
+  if ($had_complete > 0) {
+    return 'resurrected';
+  }
+
+  $age_days = (\Drupal::time()->getRequestTime() - (int) $wo->get('created')->value) / 86400;
+  if ($age_days > 45) {
+    $time = (int) $etm->getStorage('wo_time_clock')->getQuery()->accessCheck(FALSE)->condition('field_work_order', $id)->count()->execute();
+    $chem = (int) $etm->getStorage('wo_chemicals_used')->getQuery()->accessCheck(FALSE)->condition('field_work_order', $id)->count()->execute();
+    if ($time === 0 && $chem === 0) {
+      return 'stale_empty';
+    }
+  }
+
+  return 'active';
+}
+
+/**
+ * Drives a weed_spraying WO to a status via a wo_status_updates audit record.
+ *
+ * Mirrors how MarkWorkOrderInvoicedAction transitions status: the status-update
+ * entity's presave propagates field_status onto the WO, leaving an audit trail.
+ */
+function _wo_weed_spraying_set_status(EntityInterface $wo, int $status_tid, string $note): bool {
+  try {
+    \Drupal::entityTypeManager()->getStorage('wo_status_updates')->create([
+      'type' => 'update',
+      'field_status_of_wo' => $wo->id(),
+      'field_status' => $status_tid,
+      'field_status_change_note' => $note,
+      'uid' => \Drupal::currentUser()->id() ?: 1,
+    ])->save();
+    return TRUE;
+  }
+  catch (\Exception $e) {
+    \Drupal::logger('wo_weed_spraying')->error('Housekeeping status change failed for WO @id -> @s: @m', [
+      '@id' => $wo->id(), '@s' => $status_tid, '@m' => $e->getMessage(),
+    ]);
+    return FALSE;
+  }
+}
+
+/**
+ * Auto-cancels one stale-empty open WO via a status-update audit record.
+ *
+ * Only ever called for the 'stale_empty' class (old, zero time, zero chemicals,
+ * not invoiced) — the case where cancellation is unambiguously safe.
+ */
+function _wo_weed_spraying_cancel_stale(EntityInterface $wo): bool {
+  $created = date('m/d/Y', (int) $wo->get('created')->value);
+  $age = (int) ((\Drupal::time()->getRequestTime() - (int) $wo->get('created')->value) / 86400);
+  if (_wo_weed_spraying_set_status($wo, 1098, "Auto-canceled by spray housekeeping: created {$created}, no time or chemicals recorded after {$age} days. The number is kept as a canceled record; a fresh spray WO can now be created for this property.")) {
+    \Drupal::logger('wo_weed_spraying')->notice('Spray housekeeping canceled abandoned WO @id (created @c, no work).', ['@id' => $wo->id(), '@c' => $created]);
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Finds the genuinely-active open weed_spraying WO for a property this year.
+ *
+ * Abandoned open WOs (stale-empty / resurrected) are NOT considered active —
+ * they are exactly what used to trap techs, since the create route, the crew
+ * add-form, and the presave guard all treated any open WO as a blocker. When
+ * $heal is TRUE the abandoned ones are healed in place so they stop blocking;
+ * when FALSE (e.g. inside a presave) the function only inspects.
+ *
+ * @return \Drupal\Core\Entity\EntityInterface|null
+ *   The active open WO, or NULL.
+ */
+function _wo_weed_spraying_find_active_open_wo(int $property_id, bool $heal = FALSE): ?EntityInterface {
+  if ($property_id < 1) {
+    return NULL;
+  }
+  $storage = \Drupal::entityTypeManager()->getStorage('work_order');
+  $year = date('Y');
+  $ids = $storage->getQuery()
     ->accessCheck(FALSE)
     ->condition('type', 'weed_spraying')
-    ->condition('field_property', (int) $property_id)
-    ->condition('field_status', $done_statuses, 'NOT IN')
+    ->condition('field_property', $property_id)
+    ->condition('field_status', _wo_weed_spraying_done_statuses(), 'NOT IN')
+    ->condition('created', [strtotime("{$year}-01-01 00:00:00"), strtotime("{$year}-12-31 23:59:59")], 'BETWEEN')
     ->sort('created', 'DESC')
-    ->range(0, 1)
     ->execute();
-
-  if (!empty($existing_ids)) {
-    $wo_id = reset($existing_ids);
-    $wo = \Drupal::entityTypeManager()->getStorage('work_order')->load($wo_id);
-    if ($wo) {
-      \Drupal::messenger()->addWarning(
-        t('A weed spray work order (#@id) is already open for this property. Redirecting you to it.', ['@id' => $wo_id])
-      );
-      $response = new \Symfony\Component\HttpFoundation\RedirectResponse(
-        $wo->toUrl('canonical')->toString()
-      );
-      $response->send();
-      exit;
+  $active = NULL;
+  foreach ($storage->loadMultiple($ids) as $wo) {
+    $class = _wo_weed_spraying_classify_open_wo($wo);
+    if ($class === 'active') {
+      if ($active === NULL) {
+        $active = $wo;
+      }
+      continue;
     }
+    // Auto-cancel only the safe case (stale-empty). Resurrected WOs are left
+    // untouched here — they are non-active so they no longer block creation,
+    // and the daily sweep flags them for office review (billing-sensitive).
+    if ($heal && $class === 'stale_empty') {
+      _wo_weed_spraying_cancel_stale($wo);
+    }
+  }
+  return $active;
+}
+
+/**
+ * Sweeps all open weed_spraying WOs, healing abandoned ones.
+ *
+ * Shared by hook_cron and the one-time cleanup script.
+ */
+function _wo_weed_spraying_sweep_abandoned(bool $dry_run = FALSE): array {
+  $storage = \Drupal::entityTypeManager()->getStorage('work_order');
+  // Scope to the current year — the trap (and the create flow) only concerns
+  // this season's WOs; older WOs in legacy statuses are out of scope.
+  $year = date('Y');
+  $ids = $storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'weed_spraying')
+    ->condition('field_status', _wo_weed_spraying_done_statuses(), 'NOT IN')
+    ->condition('created', [strtotime("{$year}-01-01 00:00:00"), strtotime("{$year}-12-31 23:59:59")], 'BETWEEN')
+    ->execute();
+  $out = ['canceled' => [], 'flagged' => [], 'active' => 0];
+  foreach ($storage->loadMultiple($ids) as $wo) {
+    $class = _wo_weed_spraying_classify_open_wo($wo);
+    if ($class === 'active') {
+      $out['active']++;
+      continue;
+    }
+    if ($class === 'resurrected') {
+      // Billing/history-sensitive — flag for office review, never auto-modify.
+      $out['flagged'][] = $wo->id();
+      if (!$dry_run) {
+        \Drupal::logger('wo_weed_spraying')->warning('Spray housekeeping: resurrected WO @id (reached Complete, then reopened) needs office review — finalize (Complete/Invoice) or Cancel by hand so billing and spray history stay correct.', ['@id' => $wo->id()]);
+      }
+      continue;
+    }
+    // stale_empty.
+    if ($dry_run) {
+      $out['canceled'][] = $wo->id();
+      continue;
+    }
+    if (_wo_weed_spraying_cancel_stale($wo)) {
+      $out['canceled'][] = $wo->id();
+    }
+  }
+  return $out;
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Once a day, sweep abandoned weed_spraying WOs so stale/resurrected ones don't
+ * trap their property in the create flow (and so the route report stays honest).
+ */
+function wo_weed_spraying_cron() {
+  $state = \Drupal::state();
+  $now = \Drupal::time()->getRequestTime();
+  if ($now - (int) $state->get('wo_weed_spraying.last_sweep', 0) < 82800) {
+    return;
+  }
+  $state->set('wo_weed_spraying.last_sweep', $now);
+  $res = _wo_weed_spraying_sweep_abandoned();
+  if (!empty($res['canceled']) || !empty($res['flagged'])) {
+    \Drupal::logger('wo_weed_spraying')->notice('Spray housekeeping sweep: canceled @c stale-empty, flagged @f resurrected for review.', [
+      '@c' => count($res['canceled']),
+      '@f' => count($res['flagged']),
+    ]);
   }
 }

@@ -63,25 +63,36 @@ class WeedSprayDaysField extends FieldPluginBase {
       ];
     }
 
-    // No last applied date.
-    if ($entity->get('field_last_applied_date')->isEmpty()) {
+    // Days are measured from the most recent VISIT — a spray
+    // (field_last_applied_date) OR a no-spray check (field_last_checked). The
+    // weed-spray sign-off stamps field_last_checked on every visit; counting
+    // only actual sprays would let a "checked, no spray needed" visit still
+    // read as overdue and never reset the clock.
+    $now = new \DateTime();
+    $last = NULL;
+    foreach (['field_last_applied_date', 'field_last_checked'] as $field_name) {
+      if (!$entity->hasField($field_name) || $entity->get($field_name)->isEmpty()) {
+        continue;
+      }
+      try {
+        $candidate = new \DateTime($entity->get($field_name)->value);
+      }
+      catch (\Exception $e) {
+        continue;
+      }
+      if ($last === NULL || $candidate > $last) {
+        $last = $candidate;
+      }
+    }
+
+    // Never visited — neither sprayed nor checked.
+    if ($last === NULL) {
       return [
-        '#markup' => '<span class="spray-status spray-status--never">Never Applied</span>',
+        '#markup' => '<span class="spray-status spray-status--never">Never Visited</span>',
       ];
     }
 
-    // Calculate days since last applied.
-    $last_value = $entity->get('field_last_applied_date')->value;
-    try {
-      $last = new \DateTime($last_value);
-      $now = new \DateTime();
-      $days = (int) $now->diff($last)->days;
-    }
-    catch (\Exception $e) {
-      return [
-        '#markup' => '<span class="spray-status spray-status--never">Invalid Date</span>',
-      ];
-    }
+    $days = (int) $now->diff($last)->days;
 
     // Determine status class and label.
     if ($threshold === NULL) {

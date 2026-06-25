@@ -51,29 +51,17 @@ class WeedSprayWorkOrderController extends ControllerBase {
       return $this->redirect('/teammates/work-orders/spraying/weeds/route');
     }
 
-    // Check for any open weed spraying work order for this property in the current year.
+    // Find the genuinely-active open weed spraying WO for this property; heal any
+    // abandoned ones (stale-empty -> Canceled, resurrected -> Complete) so they
+    // no longer trap the tech here. Only a truly-active WO triggers a redirect.
     $current_year = date('Y');
-    $year_start = strtotime("{$current_year}-01-01 00:00:00");
-    $year_end = strtotime("{$current_year}-12-31 23:59:59");
-    $done_statuses = [1097, 1098, 1281, 1283]; // Complete, Canceled, Invoiced, Warrantied.
-    $existing_ids = $this->entityTypeManager->getStorage('work_order')->getQuery()
-      ->accessCheck(FALSE)
-      ->condition('type', 'weed_spraying')
-      ->condition('field_property', $property_id)
-      ->condition('field_status', $done_statuses, 'NOT IN')
-      ->condition('created', [$year_start, $year_end], 'BETWEEN')
-      ->range(0, 1)
-      ->execute();
-
-    if (!empty($existing_ids)) {
-      $existing_id = reset($existing_ids);
-      $existing_wo = $this->entityTypeManager->getStorage('work_order')->load($existing_id);
-      $this->messenger()->addWarning(t('A weed spraying work order (ID: @id) with an active status already exists for this property in @year. Redirecting to it.', [
-        '@id' => $existing_id,
+    $active_wo = _wo_weed_spraying_find_active_open_wo((int) $property_id, TRUE);
+    if ($active_wo) {
+      $this->messenger()->addWarning(t('A weed spraying work order (ID: @id) is already active for this property in @year. Redirecting to it.', [
+        '@id' => $active_wo->id(),
         '@year' => $current_year,
       ]));
-      $url = $existing_wo->toUrl('canonical');
-      return new RedirectResponse($url->toString());
+      return new RedirectResponse($active_wo->toUrl('canonical')->toString());
     }
 
     $current_user_id = $this->currentUser()->id();
@@ -91,18 +79,10 @@ class WeedSprayWorkOrderController extends ControllerBase {
       $work_order->save();
     }
     catch (\Drupal\Core\Entity\EntityStorageException $e) {
-      // Presave guard caught a duplicate — redirect to the existing WO.
-      $duplicate_ids = $this->entityTypeManager->getStorage('work_order')->getQuery()
-        ->accessCheck(FALSE)
-        ->condition('type', 'weed_spraying')
-        ->condition('field_property', $property_id)
-        ->condition('field_status', [1097, 1098, 1281, 1283], 'NOT IN')
-        ->condition('created', [$year_start, $year_end], 'BETWEEN')
-        ->range(0, 1)
-        ->execute();
-      if (!empty($duplicate_ids)) {
-        $dup_wo = $this->entityTypeManager->getStorage('work_order')->load(reset($duplicate_ids));
-        return new RedirectResponse($dup_wo->toUrl('canonical')->toString());
+      // Presave guard still blocked on a genuinely-active duplicate — go to it.
+      $active = _wo_weed_spraying_find_active_open_wo((int) $property_id, TRUE);
+      if ($active) {
+        return new RedirectResponse($active->toUrl('canonical')->toString());
       }
       throw $e;
     }

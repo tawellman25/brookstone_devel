@@ -102,6 +102,28 @@ Placed after: Last Amount Applied column
 
 ---
 
+## Days counted from last VISIT, not last spray (June 2026, branch `feature/spray-route-guard`)
+
+> Status: built + verified locally, commit `7c8c2334`, **not yet deployed**.
+
+`WeedSprayDaysField::render()` originally measured days from `field_last_applied_date`
+only. But the weed-spray sign-off stamps `field_last_checked` on **every** visit — and
+on a "checked, no spray needed" visit it sets only `field_last_checked` (leaving Last
+Applied on the prior real spray). Result: a no-spray visit never reset the overdue clock,
+so checked-but-not-sprayed properties read as increasingly overdue (and stuck/uncompleted
+WOs whose `field_last_applied_date` never advanced looked stale forever).
+
+Fix: count from the **most recent visit** = `max(field_last_applied_date,
+field_last_checked)`. The field now iterates both, takes the latest, and shows
+"Never Visited" only when neither is set. Example impact: a property checked 2026-04-27
+but last sprayed 2025-09-29 dropped from **268 days → 59 days** overdue. (The capture
+side — `field_last_checked` on every sign-off — was already live; this is the read side.)
+
+The companion create-trap fix + abandoned-WO housekeeping live in `wo_weed_spraying`
+(see `wo_weed_spraying_updates.md`).
+
+---
+
 ## Status
 
 Created: March 2026

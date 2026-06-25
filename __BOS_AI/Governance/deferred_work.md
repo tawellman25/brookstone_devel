@@ -277,6 +277,42 @@ Explicitly scoped OUT of the cap work — separate initiative, separate decision
 
 ---
 
+### 17. Finalize weed-spray WO #49698 by hand
+
+Surfaced 2026-06-25 (spray-route-guard investigation). #49698 (19988 Iris Rd) is a real
+spray ($183, completed 05-12) that was **resurrected** to In Progress by a stray clock-in.
+The new housekeeping **flags** resurrected WOs rather than auto-fixing them (auto-restore
+could corrupt spray history on older ones). #49698 specifically is safe to restore (it's
+its property's latest spray), but it's billing-sensitive, so: office should mark it
+**Complete** (then Invoice) — it carries 5 time-clock entries vs one recorded spray, so
+reconcile the extra time first if any of it is real later work.
+
+### 18. Weed-spray stale-cancel threshold tuning
+
+The abandoned-WO sweep cancels stale-empty WOs at **>45 days**. As of 2026-06-25, 49903
+and 49906 (43 days, zero work) sit just under the line and aren't swept yet. 45 days is
+past even a monthly cycle (35d), so it's deliberately conservative; revisit if the office
+wants empty WOs cleaned sooner (could be made frequency-relative). Branch
+`feature/spray-route-guard`.
+
+### 19. Legacy 2024 weed_spraying WOs stuck in status 1301 "Active"
+
+Surfaced 2026-06-25. A handful of 2024 weed_spraying WOs (e.g. 35093/35098/35104/35106)
+are `invoiced = 1` yet sit in status **1301 "Active"** — a non-done status. They're out
+of scope for the spray-route guard (year-scoped + invoiced-guarded, so never touched), but
+worth understanding: why did invoiced WOs land in "Active," and should 1301 be folded into
+the done-set / corrected? Data hygiene, not urgent.
+
+### 20. Old stranded `field_invoiced` flags (pre-completion status)
+
+Surfaced 2026-06-25 (billing-crash investigation). Three WOs carry `field_invoiced = 1`
+while in a pre-completion status (In Progress): ids **45301 / 49668 / 50078** (changed
+2026-04-20 / 05-26 / 06-05). They predate the 06-24 batch crash (unrelated) and are the
+same orphan pattern the 2026-06-20 remediation reverted for three other WOs. Optional
+data cleanup: revert the flag or finalize the WOs.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

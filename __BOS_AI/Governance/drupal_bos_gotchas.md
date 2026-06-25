@@ -700,6 +700,56 @@ env -i HOME=/home/brookstoneadmin LANG=C bash -c '. $HOME/.wex_imap_env && \
 
 ---
 
+## Find-or-create that treats "any open record" as a blocker traps on stale/abandoned records
+
+A find-or-create flow that redirects to an existing "open" record — anything **not** in a
+hardcoded done-set — will silently **trap** the user on a stale or wrongly-reopened record
+instead of making a new one. BOS hit this in weed spraying: the create route, the crew
+add-form alter, and the WO presave guard all used `field_status NOT IN [1097,1098,1281,1283]`
+to mean "already open → redirect to it." A WO that was **completed then resurrected** to
+In Progress (a stray clock-in) — or **created then abandoned** (never worked) — still
+matched "open," so every "create new spray" for that property bounced back to the dead WO.
+Techs reported "it keeps routing me back to the same work order."
+
+**Lessons.**
+- "Open" (`NOT IN done`) is not the same as "actively in use." Distinguish *genuinely
+  active* from *stale / resurrected / abandoned* before treating a record as a blocker.
+- Centralize the decision in **one** helper used by every path (create route, form alter,
+  presave guard) — divergent copies of the same `NOT IN done` query guarantee they drift.
+- Auto-cleanup the safe class (old + zero activity → cancel) but **flag, don't auto-fix**,
+  the billing/history-sensitive class (e.g. restoring a resurrected WO re-fires its
+  completion write-back and can overwrite a newer record's data).
+- Watch the done-set for omissions: BOS's list omits **Paid (1504)** (and a legacy
+  **1301 "Active"** exists), so those would read as "open" too.
+
+**Surfaced** 2026-06-25; fix on branch `feature/spray-route-guard` (commit `7c8c2334`).
+See `__BOS_AI/Modules/wo_weed_spraying_updates.md`.
+
+---
+
+## Config-ahead-of-code half-deploy (and why the BOS surgical-cim split invites it)
+
+BOS deploys code (rsync) and config (`drush cim --partial`) **separately**, and `cim`
+does not run by default. That's deliberate, but it means a fix split across **code + config**
+can go live in halves. The 2026-06-24 billing VBO batch crash was exactly this: the
+billing-views status-floor **config** had been imported (2026-06-20) while the rewritten
+`MarkWorkOrderInvoicedAction` **code** had not yet been rsync'd. So old, ungated code ran
+against floored views — and on a view without the floor (`admin_work_order_administration`),
+select-all swept an ineligible WO in, the old code threw an uncaught `EntityStorageException`,
+and the whole batch aborted (`404 "No batch with ID … exists"`).
+
+**Lessons.**
+- When a fix is code **and** config, deploy and verify them **together**, or you get a
+  window where one half is live and the other isn't — often worse than neither.
+- After a partial deploy, verify the *deployed code on disk* (live has no git history) **and**
+  `config:status`, not just one. A clean `config:status` does **not** mean the code shipped.
+- Diagnose "what's actually live" from the server, not from local `main`.
+
+**Surfaced** 2026-06-25 (read-only investigation). The fix is now fully live; no lasting
+data damage. Related: "uncaught exception in a VBO action aborts the whole batch" (above).
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

@@ -1,0 +1,19 @@
+{#
+/**
+ * @file
+ * WO Notes EVA — list wrapper + "Hide schedule changes" toggle.
+ *
+ * The card IS the row element (views-view-fields--wo-notes--entity-view-1), so
+ * no extra .views-row chrome is emitted here. The toggle (handled by
+ * js/wo-notes-toggle.js) adds .hide-system to .wo-notes-list, which hides the
+ * system (schedule) cards via CSS.
+ */
+#}
+<div class="wo-notes-toolbar">
+  <button type="button" class="wo-notes-toggle" aria-pressed="false">Hide schedule changes</button>
+</div>
+<div class="wo-notes-list">
+  {% for row in rows %}
+    {{ row.content }}
+  {% endfor %}
+</div>

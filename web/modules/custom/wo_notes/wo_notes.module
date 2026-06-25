@@ -9,6 +9,121 @@
  * Implements hook_page_attachments().
  */
 function wo_notes_page_attachments(array &$attachments) {
-  // Attach AJAX library and custom styles for the modal form.
+  // Attach AJAX library and custom styles for the modal form + note cards.
   $attachments['#attached']['library'][] = 'wo_notes/work_order_notes';
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * Registers the WO Notes EVA row + list templates so this module's overrides
+ * are discovered (same pattern as backflow_device's card registration: a module
+ * template overriding another module's theme hook needs the suggestion declared
+ * with a base hook).
+ */
+function wo_notes_theme($existing, $type, $theme, $path) {
+  return [
+    'views_view_fields__wo_notes__entity_view_1' => [
+      'base hook' => 'views_view_fields',
+    ],
+    'views_view_unformatted__wo_notes__entity_view_1' => [
+      'base hook' => 'views_view_unformatted',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views_view_fields.
+ *
+ * Computes the note-card data for each wo_notes:note row on the WO Notes EVA
+ * (entity_view_1). Attribution is built from the note's own uid + created (the
+ * stored text no longer carries a "by {actor}, {stamp}" prefix). Legacy notes
+ * (no field_note_kind) render as manual: no verb, body as-is.
+ */
+function wo_notes_preprocess_views_view_fields(array &$variables) {
+  $view = $variables['view'];
+  if (($view->id() ?? '') !== 'wo_notes' || ($view->current_display ?? '') !== 'entity_view_1') {
+    return;
+  }
+  $note = $variables['row']->_entity ?? NULL;
+  if (!$note instanceof \Drupal\Core\Entity\ContentEntityInterface || $note->getEntityTypeId() !== 'wo_notes') {
+    return;
+  }
+
+  $is_system = $note->hasField('field_is_system_note') && (bool) $note->get('field_is_system_note')->value;
+  $kind = ($note->hasField('field_note_kind') && !$note->get('field_note_kind')->isEmpty())
+    ? (string) $note->get('field_note_kind')->value : '';
+
+  // Author (note owner) + created datetime (m/d/Y g:i A, site timezone).
+  $author = '';
+  if ($owner = $note->getOwner()) {
+    $author = (string) $owner->getDisplayName();
+  }
+  $datetime = '';
+  $created = (int) ($note->get('created')->value ?? 0);
+  if ($created) {
+    try {
+      $dt = new \DateTime('@' . $created);
+      $dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+      $datetime = $dt->format('m/d/Y g:i A');
+    }
+    catch (\Exception $e) {
+      // Leave blank on a bad value.
+    }
+  }
+
+  // Attribution: who logged it + when only. The verb now lives in the body as
+  // the "Scheduled:/Rescheduled:" label.
+  $variables['attribution'] = ($datetime !== '') ? trim($author . ', ' . $datetime) : $author;
+
+  $summary = ($note->hasField('field_change_summary') && !$note->get('field_change_summary')->isEmpty())
+    ? (string) $note->get('field_change_summary')->value : '';
+  $note_value = ($note->hasField('field_note_text') && !$note->get('field_note_text')->isEmpty())
+    ? trim((string) $note->get('field_note_text')->value) : '';
+
+  // System (schedule) notes render as labeled lines: the summary parts
+  // (Scheduled/Rescheduled, Assigned) plus the scheduling note. Manual notes
+  // render their formatted body instead (preserves HTML / bulleted lists).
+  $body_lines = [];
+  if ($is_system) {
+    foreach (explode('; ', $summary) as $part) {
+      $part = trim($part);
+      if ($part !== '') {
+        $body_lines[] = $part;
+      }
+    }
+    $plain_note = trim(strip_tags($note_value));
+    if ($plain_note !== '') {
+      $body_lines[] = 'Schedule note: "' . $plain_note . '"';
+    }
+  }
+  $variables['body_lines'] = $body_lines;
+  $variables['show_html_body'] = !$is_system && trim(strip_tags($note_value)) !== '';
+
+  $variables['is_system'] = $is_system;
+  $variables['kind'] = $kind;
+  $variables['accent_class'] = $is_system ? 'wo-note-card--system' : 'wo-note-card--manual';
+
+  // Whole-card click -> the note's edit form in a modal (only when the user can
+  // edit). Destination returns to the WO after save.
+  $edit_url = '';
+  if ($note->access('update')) {
+    $opts = [];
+    $woid = $note->get('field_work_order')->target_id ?? NULL;
+    if ($woid) {
+      try {
+        $opts['query']['destination'] = \Drupal\Core\Url::fromRoute('entity.work_order.canonical', ['work_order' => $woid])->toString();
+      }
+      catch (\Exception $e) {
+        // No destination if the WO route can't be built.
+      }
+    }
+    try {
+      $edit_url = $note->toUrl('edit-form', $opts)->toString();
+    }
+    catch (\Exception $e) {
+      $edit_url = '';
+    }
+  }
+  $variables['edit_url'] = $edit_url;
 }

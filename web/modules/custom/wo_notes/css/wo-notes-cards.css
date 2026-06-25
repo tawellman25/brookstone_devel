@@ -1,0 +1,84 @@
+/**
+ * WO Notes — card styling, matching the My Schedule crew cards
+ * (bos_scheduling/css/my_schedule.css). Manual notes get the brand-blue accent;
+ * system (schedule) notes are muted and hideable via the toolbar toggle.
+ * Scoped to .wo-note-card / .wo-notes-list — no global bleed.
+ */
+
+.wo-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.wo-note-card {
+  display: block;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  color: #1a1a1a;
+}
+
+/* Whole card is a link to the note's edit form (modal). */
+a.wo-note-card--link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+a.wo-note-card--link:hover {
+  border-color: #1a5276;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  text-decoration: none;
+}
+
+/* Brand blue = human notes. */
+.wo-note-card--manual {
+  border-left: 5px solid #1a5276;
+}
+
+/* Muted = system (schedule) notes. */
+.wo-note-card--system {
+  border-left: 5px solid #b8b8b8;
+  background: #fafafa;
+}
+
+.wo-note-attribution {
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.wo-note-summary {
+  font-size: 0.82rem;
+  color: #444;
+  margin-top: 0.25rem;
+}
+
+.wo-note-body {
+  font-size: 0.93rem;
+  color: #1a1a1a;
+  margin-top: 0.4rem;
+  line-height: 1.5;
+  border-top: 1px solid #eee;
+  padding-top: 0.4rem;
+}
+
+/* One labeled line on a system (schedule) note card. */
+.wo-note-line {
+  line-height: 1.5;
+}
+
+.wo-note-edit {
+  font-size: 0.78rem;
+  margin-top: 0.4rem;
+}
+
+/* ── Toolbar + toggle ──────────────────────────────────────────── */
+.wo-notes-toolbar {
+  margin-bottom: 0.6rem;
+}
+
+.wo-notes-list.hide-system .wo-note-card--system {
+  display: none;
+}

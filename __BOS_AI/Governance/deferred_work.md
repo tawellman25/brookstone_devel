@@ -277,15 +277,15 @@ Explicitly scoped OUT of the cap work — separate initiative, separate decision
 
 ---
 
-### 17. Finalize weed-spray WO #49698 by hand
+### 17. Finalize weed-spray WO #49698 — mostly resolved
 
 Surfaced 2026-06-25 (spray-route-guard investigation). #49698 (19988 Iris Rd) is a real
 spray ($183, completed 05-12) that was **resurrected** to In Progress by a stray clock-in.
 The new housekeeping **flags** resurrected WOs rather than auto-fixing them (auto-restore
-could corrupt spray history on older ones). #49698 specifically is safe to restore (it's
-its property's latest spray), but it's billing-sensitive, so: office should mark it
-**Complete** (then Invoice) — it carries 5 time-clock entries vs one recorded spray, so
-reconcile the extra time first if any of it is real later work.
+could corrupt spray history on older ones). **Update (06-25):** the office set #49698 back
+to **Complete** by hand, so it's no longer stuck/trapping. Remaining: invoice it in the
+normal billing flow, and note it carries 5 time-clock entries vs one recorded spray —
+reconcile the extra time if any of it is real later work.
 
 ### 18. Weed-spray stale-cancel threshold tuning
 

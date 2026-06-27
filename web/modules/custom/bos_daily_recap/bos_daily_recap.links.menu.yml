@@ -2,5 +2,9 @@ bos_daily_recap.dashboard:
   title: 'Daily Recap'
   description: 'Yesterday completions and value generated per department.'
   route_name: bos_daily_recap.dashboard
-  parent: system.admin
+  # Nest under the UI-created "Office" admin menu item, directly below Calendar
+  # (Calendar weight -11, Work Load -9 → -10 sits between them). The parent is a
+  # content-entity menu link (menu_link_content); its UUID is stable across envs
+  # via DB sync. If the Office menu item is ever recreated, re-point this parent.
+  parent: 'menu_link_content:4b4baafc-6631-4b64-9157-b570acf68c2c'
   weight: -10

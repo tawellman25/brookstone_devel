@@ -3,11 +3,14 @@
  * @file
  * Daily Recap dashboard.
  *
- * - generated_at: formatted timestamp string
- * - yesterday_label: label for the yesterday window
- * - windows: [{ key, label, rows: [{dept, value, count}], total_value, total_count }]
- * - yesterday_completions: [{ wo, service, property, dept, value, completed_at }]
- * - mowing_note: footnote string
+ * - generated_at
+ * - windows: [{ key, label, rows: [{dept, value, count, url, active}], total_value, total_count }]
+ * - list_label, list_rows: [{wo, wo_url, service, property, dept, value, completed_at}],
+ *   list_total, list_count, selection_active, clear_url
+ * - mowing_note
+ *
+ * Clicking a department's value up top reloads with ?range=&dept= and re-targets
+ * the list below to those work orders.
  */
 #}
 <div class="daily-recap">
@@ -24,9 +27,9 @@
           </thead>
           <tbody>
             {% for r in w.rows %}
-              <tr>
+              <tr{% if r.active %} class="is-active"{% endif %}>
                 <td>{{ r.dept }}</td>
-                <td class="num"><a href="{{ r.url }}" title="See the work orders behind this total">{{ r.value }}</a></td>
+                <td class="num"><a href="{{ r.url }}" title="Show these work orders below">{{ r.value }}</a></td>
                 <td class="num">{{ r.count }}</td>
               </tr>
             {% else %}
@@ -41,7 +44,15 @@
     {% endfor %}
   </div>
 
-  <h2 class="daily-recap__section">{{ yesterday_label }} — completions</h2>
+  <div class="daily-recap__listhead">
+    <h2 class="daily-recap__section">
+      {{ list_label }}{% if list_count %} — {{ list_count }} work orders, {{ list_total }}{% endif %}
+    </h2>
+    {% if selection_active %}
+      <a class="daily-recap__clear" href="{{ clear_url }}">&times; clear &middot; show yesterday (all)</a>
+    {% endif %}
+  </div>
+
   <table class="recap-table recap-table--list">
     <thead>
       <tr>
@@ -49,9 +60,9 @@
       </tr>
     </thead>
     <tbody>
-      {% for c in yesterday_completions %}
+      {% for c in list_rows %}
         <tr>
-          <td>{{ c.wo }}</td>
+          <td><a href="{{ c.wo_url }}">{{ c.wo }}</a></td>
           <td>{{ c.service }}</td>
           <td>{{ c.property }}</td>
           <td>{{ c.dept }}</td>
@@ -59,7 +70,7 @@
           <td>{{ c.completed_at }}</td>
         </tr>
       {% else %}
-        <tr><td colspan="6" class="recap-empty">No completions yesterday.</td></tr>
+        <tr><td colspan="6" class="recap-empty">No completions.</td></tr>
       {% endfor %}
     </tbody>
   </table>

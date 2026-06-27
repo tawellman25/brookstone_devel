@@ -10,11 +10,12 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Daily Recap dashboard: yesterday's completions + value per department, with a
- * per-department / per-range drill-down to the work orders behind each total.
+ * Daily Recap dashboard: per-department value cards for yesterday / WTD / MTD,
+ * plus a completions list below that re-targets to whatever department + range
+ * total you click up top (default: yesterday, all departments).
  *
  * Completion is anchored on wo_complete_info.field_date_completed (a timestamp).
  * Revenue is work_order.field_wo_total; department resolves via field_service ->
@@ -42,11 +43,15 @@ final class DailyRecapController extends ControllerBase {
   }
 
   /**
-   * Main dashboard.
+   * Dashboard. ?range= & ?dept= select which total the bottom list shows.
    */
-  public function view(): array {
+  public function view(Request $request): array {
     $windows = $this->windows();
+    $sel_range = (string) $request->query->get('range', '');
+    $sel_dept = $request->query->get('dept', NULL);
+    $has_selection = $sel_range !== '' && isset($windows[$sel_range]) && $sel_dept !== NULL && $sel_dept !== '';
 
+    // Cards.
     $window_out = [];
     foreach ($windows as $key => $w) {
       $summary = $this->summarize($this->completedWorkOrderIds($w['start'], $w['end']));
@@ -60,7 +65,8 @@ final class DailyRecapController extends ControllerBase {
           'dept' => $d['label'],
           'value' => $this->money($d['value']),
           'count' => $d['count'],
-          'url' => Url::fromRoute('bos_daily_recap.detail', ['range' => $key, 'dept' => $dept_id])->toString(),
+          'url' => Url::fromRoute('bos_daily_recap.dashboard', [], ['query' => ['range' => $key, 'dept' => $dept_id]])->toString(),
+          'active' => $has_selection && $sel_range === $key && (string) $sel_dept === (string) $dept_id,
         ];
       }
       $window_out[] = [
@@ -72,61 +78,45 @@ final class DailyRecapController extends ControllerBase {
       ];
     }
 
-    return [
-      '#theme' => 'daily_recap',
-      '#generated_at' => $this->formatDateTimeUs($this->time->getRequestTime()),
-      '#yesterday_label' => $windows['yesterday']['label'],
-      '#windows' => $window_out,
-      '#yesterday_completions' => $this->completions($windows['yesterday']['start'], $windows['yesterday']['end']),
-      '#mowing_note' => 'Lawn mowing is contract-billed, so its dollar value is not carried on the work order — the per-department $ shows ~$0 for mowing; use the completions count for mowing volume.',
-      '#attached' => ['library' => ['bos_daily_recap/dashboard']],
-      '#cache' => ['max-age' => 0],
-    ];
-  }
-
-  /**
-   * Drill-down: the work orders behind one department's total for one window.
-   */
-  public function detail(string $range, string $dept): array {
-    $windows = $this->windows();
-    if (!isset($windows[$range])) {
-      throw new NotFoundHttpException();
+    // Bottom list: the selected department+range, or yesterday/all by default.
+    if ($has_selection) {
+      $w = $windows[$sel_range];
+      $list_rows = $this->completions($w['start'], $w['end'], (string) $sel_dept);
+      $list_label = $this->departmentLabel((string) $sel_dept) . ' · ' . $w['label'];
     }
-    $w = $windows[$range];
-    $rows = $this->completions($w['start'], $w['end'], $dept);
-
-    $total = 0.0;
-    foreach ($rows as &$r) {
-      $total += $r['value_raw'];
+    else {
+      $w = $windows['yesterday'];
+      $list_rows = $this->completions($w['start'], $w['end']);
+      $list_label = $windows['yesterday']['label'] . ' — all completions';
+    }
+    $list_total = 0.0;
+    foreach ($list_rows as &$r) {
+      $list_total += $r['value_raw'];
       unset($r['value_raw']);
     }
     unset($r);
 
     return [
-      '#theme' => 'daily_recap_detail',
-      '#dept_label' => $this->departmentLabel($dept),
-      '#window_label' => $w['label'],
-      '#rows' => $rows,
-      '#total_value' => $this->money($total),
-      '#total_count' => count($rows),
-      '#back_url' => Url::fromRoute('bos_daily_recap.dashboard')->toString(),
+      '#theme' => 'daily_recap',
+      '#generated_at' => $this->formatDateTimeUs($this->time->getRequestTime()),
+      '#windows' => $window_out,
+      '#list_label' => $list_label,
+      '#list_rows' => $list_rows,
+      '#list_total' => $this->money($list_total),
+      '#list_count' => count($list_rows),
+      '#selection_active' => $has_selection,
+      '#clear_url' => Url::fromRoute('bos_daily_recap.dashboard')->toString(),
+      '#mowing_note' => 'Lawn mowing is contract-billed, so its dollar value is not carried on the work order — the per-department $ shows ~$0 for mowing; use the completions count for mowing volume.',
       '#attached' => ['library' => ['bos_daily_recap/dashboard']],
-      '#cache' => ['max-age' => 0],
+      '#cache' => [
+        'max-age' => 0,
+        'contexts' => ['url.query_args:range', 'url.query_args:dept'],
+      ],
     ];
-  }
-
-  /**
-   * Title callback for the detail route.
-   */
-  public function detailTitle(string $range, string $dept): string {
-    return $this->departmentLabel($dept) . ' — Daily Recap detail';
   }
 
   /* ---------- windows ---------- */
 
-  /**
-   * The three reporting windows as [start_ts, end_ts] in the site timezone.
-   */
   private function windows(): array {
     $tz = new \DateTimeZone(date_default_timezone_get());
     $now = new \DateTime('@' . $this->time->getRequestTime());
@@ -162,9 +152,6 @@ final class DailyRecapController extends ControllerBase {
 
   /* ---------- data ---------- */
 
-  /**
-   * Distinct WO ids completed within [start, end] (deduped across complete_info).
-   */
   private function completedWorkOrderIds(int $start, int $end): array {
     $ci_ids = $this->etm->getStorage('wo_complete_info')->getQuery()
       ->accessCheck(FALSE)
@@ -184,9 +171,6 @@ final class DailyRecapController extends ControllerBase {
     return array_values($wo_ids);
   }
 
-  /**
-   * Per-department [value, count] keyed by department id (warranty-excluded).
-   */
   private function summarize(array $wo_ids): array {
     $by_dept = [];
     foreach (array_chunk($wo_ids, 300) as $chunk) {

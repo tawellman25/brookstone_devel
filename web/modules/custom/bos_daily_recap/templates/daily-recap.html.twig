@@ -1,0 +1,69 @@
+{#
+/**
+ * @file
+ * Daily Recap dashboard.
+ *
+ * - generated_at: formatted timestamp string
+ * - yesterday_label: label for the yesterday window
+ * - windows: [{ key, label, rows: [{dept, value, count}], total_value, total_count }]
+ * - yesterday_completions: [{ wo, service, property, dept, value, completed_at }]
+ * - mowing_note: footnote string
+ */
+#}
+<div class="daily-recap">
+
+  <p class="daily-recap__generated">Generated {{ generated_at }}</p>
+
+  <div class="daily-recap__windows">
+    {% for w in windows %}
+      <section class="recap-card">
+        <h2 class="recap-card__title">{{ w.label }}</h2>
+        <table class="recap-table">
+          <thead>
+            <tr><th>Department</th><th class="num">Value</th><th class="num">Jobs</th></tr>
+          </thead>
+          <tbody>
+            {% for r in w.rows %}
+              <tr>
+                <td>{{ r.dept }}</td>
+                <td class="num">{{ r.value }}</td>
+                <td class="num">{{ r.count }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="3" class="recap-empty">No completions.</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr><th>Total</th><th class="num">{{ w.total_value }}</th><th class="num">{{ w.total_count }}</th></tr>
+          </tfoot>
+        </table>
+      </section>
+    {% endfor %}
+  </div>
+
+  <h2 class="daily-recap__section">{{ yesterday_label }} — completions</h2>
+  <table class="recap-table recap-table--list">
+    <thead>
+      <tr>
+        <th>WO</th><th>Service</th><th>Property</th><th>Department</th><th class="num">Value</th><th>Completed</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in yesterday_completions %}
+        <tr>
+          <td>{{ c.wo }}</td>
+          <td>{{ c.service }}</td>
+          <td>{{ c.property }}</td>
+          <td>{{ c.dept }}</td>
+          <td class="num">{{ c.value }}</td>
+          <td>{{ c.completed_at }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="recap-empty">No completions yesterday.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="daily-recap__note">{{ mowing_note }}</p>
+
+</div>

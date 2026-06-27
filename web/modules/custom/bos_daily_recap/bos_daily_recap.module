@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * BOS Daily Recap module — admin dashboard hook_theme registration.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function bos_daily_recap_theme($existing, $type, $theme, $path) {
+  return [
+    'daily_recap' => [
+      'variables' => [
+        'generated_at' => '',
+        'yesterday_label' => '',
+        'windows' => [],
+        'yesterday_completions' => [],
+        'mowing_note' => '',
+      ],
+    ],
+  ];
+}

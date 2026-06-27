@@ -227,6 +227,7 @@ final class DailyRecapController extends ControllerBase {
           'wo_url' => $wo->toUrl()->toString(),
           'service' => $this->serviceLabel($wo),
           'property' => $this->propertyLabel($wo),
+          'nickname' => $this->propertyNickname($wo),
           'dept' => $dept_label,
           'value' => $this->money($value),
           'value_raw' => $value,
@@ -299,6 +300,16 @@ final class DailyRecapController extends ControllerBase {
       }
     }
     return '—';
+  }
+
+  private function propertyNickname(EntityInterface $wo): string {
+    if ($wo->hasField('field_property') && !$wo->get('field_property')->isEmpty()) {
+      $p = $wo->get('field_property')->entity;
+      if ($p && $p->hasField('field_nickname') && !$p->get('field_nickname')->isEmpty()) {
+        return (string) $p->get('field_nickname')->value;
+      }
+    }
+    return '';
   }
 
   /* ---------- formatting ---------- */

@@ -64,7 +64,10 @@
         <tr>
           <td><a href="{{ c.wo_url }}">{{ c.wo }}</a></td>
           <td>{{ c.service }}</td>
-          <td>{{ c.property }}</td>
+          <td>
+            {% if c.nickname %}<span class="recap-nick">{{ c.nickname }}</span><br>{% endif %}
+            <span class="recap-addr">{{ c.property }}</span>
+          </td>
           <td>{{ c.dept }}</td>
           <td class="num">{{ c.value }}</td>
           <td>{{ c.completed_at }}</td>

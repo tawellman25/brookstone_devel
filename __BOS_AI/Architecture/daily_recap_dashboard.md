@@ -122,4 +122,9 @@ per-request static cache).
 2. **Week start — Sunday.** WTD = Sunday 00:00 (site tz) → now.
 3. **Access — office set:** `administration`, `supervisor`, `site_admin`, `administrator`.
 
-Built on branch `feature/daily-recap-dashboard` (Gate 2).
+Built on branch `feature/daily-recap-dashboard` (Gate 2). **Deployed to live 2026-06-27**
+(`drush en bos_daily_recap`; the install hook grants `view daily recap` to the office roles).
+Post-build refinements: department total re-targets the bottom list in place (query-param;
+replaced the separate detail page); list groups by service type with subtotals; property cell
+shows nickname (customer) + address; URL `/admin/office/daily-recap`; menu link under Calendar
+in the Office menu.

@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ * Install/uninstall hooks for bos_daily_recap.
+ */
+
+use Drupal\user\Entity\Role;
+
+/**
+ * Implements hook_install().
+ *
+ * Grant the "view daily recap" permission to the office roles so the dashboard
+ * is reachable on enable, without hand-editing role config or a risky cim.
+ */
+function bos_daily_recap_install() {
+  foreach (['administration', 'supervisor', 'site_admin', 'administrator'] as $rid) {
+    $role = Role::load($rid);
+    if ($role && !$role->hasPermission('view daily recap')) {
+      $role->grantPermission('view daily recap');
+      $role->save();
+    }
+  }
+}

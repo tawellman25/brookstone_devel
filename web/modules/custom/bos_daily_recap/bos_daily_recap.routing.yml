@@ -7,3 +7,13 @@ bos_daily_recap.dashboard:
     _permission: 'view daily recap'
   options:
     _admin_route: TRUE
+
+bos_daily_recap.detail:
+  path: '/admin/operations/daily-recap/detail/{range}/{dept}'
+  defaults:
+    _controller: '\Drupal\bos_daily_recap\Controller\DailyRecapController::detail'
+    _title_callback: '\Drupal\bos_daily_recap\Controller\DailyRecapController::detailTitle'
+  requirements:
+    _permission: 'view daily recap'
+  options:
+    _admin_route: TRUE

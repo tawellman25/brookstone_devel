@@ -8,10 +8,13 @@ use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Daily Recap dashboard: yesterday's completions + value per department.
+ * Daily Recap dashboard: yesterday's completions + value per department, with a
+ * per-department / per-range drill-down to the work orders behind each total.
  *
  * Completion is anchored on wo_complete_info.field_date_completed (a timestamp).
  * Revenue is work_order.field_wo_total; department resolves via field_service ->
@@ -39,25 +42,25 @@ final class DailyRecapController extends ControllerBase {
   }
 
   /**
-   * Builds the dashboard render array.
+   * Main dashboard.
    */
   public function view(): array {
     $windows = $this->windows();
 
     $window_out = [];
     foreach ($windows as $key => $w) {
-      $wo_ids = $this->completedWorkOrderIds($w['start'], $w['end']);
-      $summary = $this->summarize($wo_ids);
+      $summary = $this->summarize($this->completedWorkOrderIds($w['start'], $w['end']));
       $total_value = 0.0;
       $total_count = 0;
       $rows = [];
-      foreach ($summary as $dept => $d) {
+      foreach ($summary as $dept_id => $d) {
         $total_value += $d['value'];
         $total_count += $d['count'];
         $rows[] = [
-          'dept' => $dept,
+          'dept' => $d['label'],
           'value' => $this->money($d['value']),
           'count' => $d['count'],
+          'url' => Url::fromRoute('bos_daily_recap.detail', ['range' => $key, 'dept' => $dept_id])->toString(),
         ];
       }
       $window_out[] = [
@@ -82,6 +85,46 @@ final class DailyRecapController extends ControllerBase {
   }
 
   /**
+   * Drill-down: the work orders behind one department's total for one window.
+   */
+  public function detail(string $range, string $dept): array {
+    $windows = $this->windows();
+    if (!isset($windows[$range])) {
+      throw new NotFoundHttpException();
+    }
+    $w = $windows[$range];
+    $rows = $this->completions($w['start'], $w['end'], $dept);
+
+    $total = 0.0;
+    foreach ($rows as &$r) {
+      $total += $r['value_raw'];
+      unset($r['value_raw']);
+    }
+    unset($r);
+
+    return [
+      '#theme' => 'daily_recap_detail',
+      '#dept_label' => $this->departmentLabel($dept),
+      '#window_label' => $w['label'],
+      '#rows' => $rows,
+      '#total_value' => $this->money($total),
+      '#total_count' => count($rows),
+      '#back_url' => Url::fromRoute('bos_daily_recap.dashboard')->toString(),
+      '#attached' => ['library' => ['bos_daily_recap/dashboard']],
+      '#cache' => ['max-age' => 0],
+    ];
+  }
+
+  /**
+   * Title callback for the detail route.
+   */
+  public function detailTitle(string $range, string $dept): string {
+    return $this->departmentLabel($dept) . ' — Daily Recap detail';
+  }
+
+  /* ---------- windows ---------- */
+
+  /**
    * The three reporting windows as [start_ts, end_ts] in the site timezone.
    */
   private function windows(): array {
@@ -93,7 +136,7 @@ final class DailyRecapController extends ControllerBase {
     $y_end = (clone $y_start)->setTime(23, 59, 59);
 
     // Week-to-date, Sunday start.
-    $dow = (int) $now->format('w'); // 0 = Sunday.
+    $dow = (int) $now->format('w');
     $w_start = (clone $now)->modify("-{$dow} days")->setTime(0, 0, 0);
 
     $m_start = (clone $now)->modify('first day of this month')->setTime(0, 0, 0);
@@ -116,6 +159,8 @@ final class DailyRecapController extends ControllerBase {
       ],
     ];
   }
+
+  /* ---------- data ---------- */
 
   /**
    * Distinct WO ids completed within [start, end] (deduped across complete_info).
@@ -140,7 +185,7 @@ final class DailyRecapController extends ControllerBase {
   }
 
   /**
-   * Per-department value + count for the given WO ids (warranty-excluded).
+   * Per-department [value, count] keyed by department id (warranty-excluded).
    */
   private function summarize(array $wo_ids): array {
     $by_dept = [];
@@ -149,23 +194,23 @@ final class DailyRecapController extends ControllerBase {
         if ((int) ($wo->get('field_status')->target_id ?? 0) === self::STATUS_WARRANTIED) {
           continue;
         }
-        $dept = $this->resolveDepartment($wo);
-        $value = $this->woTotal($wo);
-        if (!isset($by_dept[$dept])) {
-          $by_dept[$dept] = ['value' => 0.0, 'count' => 0];
+        [$dept_id, $dept_label] = $this->resolveDepartment($wo);
+        if (!isset($by_dept[$dept_id])) {
+          $by_dept[$dept_id] = ['label' => $dept_label, 'value' => 0.0, 'count' => 0];
         }
-        $by_dept[$dept]['value'] += $value;
-        $by_dept[$dept]['count']++;
+        $by_dept[$dept_id]['value'] += $this->woTotal($wo);
+        $by_dept[$dept_id]['count']++;
       }
     }
-    ksort($by_dept);
+    uasort($by_dept, fn($a, $b) => strcmp($a['label'], $b['label']));
     return $by_dept;
   }
 
   /**
-   * Detailed completions list for a window (deduped by WO, latest completion).
+   * Detailed completions for a window, deduped by WO (latest completion),
+   * warranty-excluded, optionally filtered to one department id.
    */
-  private function completions(int $start, int $end): array {
+  private function completions(int $start, int $end, ?string $dept_filter = NULL): array {
     $ci_ids = $this->etm->getStorage('wo_complete_info')->getQuery()
       ->accessCheck(FALSE)
       ->condition('field_date_completed', $start, '>=')
@@ -187,18 +232,24 @@ final class DailyRecapController extends ControllerBase {
         if (!$wo || (int) ($wo->get('field_status')->target_id ?? 0) === self::STATUS_WARRANTIED) {
           continue;
         }
+        [$dept_id, $dept_label] = $this->resolveDepartment($wo);
+        if ($dept_filter !== NULL && $dept_id !== $dept_filter) {
+          continue;
+        }
+        $value = $this->woTotal($wo);
         $by_wo[$wid] = [
           '_ts' => $ts,
           'wo' => $this->woNumber($wo),
+          'wo_url' => $wo->toUrl()->toString(),
           'service' => $this->serviceLabel($wo),
           'property' => $this->propertyLabel($wo),
-          'dept' => $this->resolveDepartment($wo),
-          'value' => $this->money($this->woTotal($wo)),
+          'dept' => $dept_label,
+          'value' => $this->money($value),
+          'value_raw' => $value,
           'completed_at' => $this->formatDateTimeUs($ts),
         ];
       }
     }
-    // Newest completion first.
     usort($by_wo, fn($a, $b) => $b['_ts'] <=> $a['_ts']);
     foreach ($by_wo as &$r) {
       unset($r['_ts']);
@@ -208,15 +259,29 @@ final class DailyRecapController extends ControllerBase {
 
   /* ---------- resolvers ---------- */
 
-  private function resolveDepartment(EntityInterface $wo): string {
+  /**
+   * @return array{0:string,1:string} [department id ('unassigned' if none), label]
+   */
+  private function resolveDepartment(EntityInterface $wo): array {
     if (!$wo->hasField('field_service') || $wo->get('field_service')->isEmpty()) {
-      return 'Unassigned';
+      return ['unassigned', 'Unassigned'];
     }
     $term = $wo->get('field_service')->entity;
     if (!$term || !$term->hasField('field_department') || $term->get('field_department')->isEmpty()) {
-      return 'Unassigned';
+      return ['unassigned', 'Unassigned'];
     }
     $dept = $term->get('field_department')->entity;
+    if (!$dept) {
+      return ['unassigned', 'Unassigned'];
+    }
+    return [(string) $dept->id(), $dept->label()];
+  }
+
+  private function departmentLabel(string $dept_id): string {
+    if ($dept_id === 'unassigned') {
+      return 'Unassigned';
+    }
+    $dept = $this->etm->getStorage('department')->load($dept_id);
     return $dept ? $dept->label() : 'Unassigned';
   }
 
@@ -252,7 +317,7 @@ final class DailyRecapController extends ControllerBase {
     return '—';
   }
 
-  /* ---------- formatting (BOS US date standard, site tz) ---------- */
+  /* ---------- formatting ---------- */
 
   private function money(float $v): string {
     return '$' . number_format($v, 2);

@@ -56,26 +56,33 @@
   <table class="recap-table recap-table--list">
     <thead>
       <tr>
-        <th>WO</th><th>Service</th><th>Property</th><th>Department</th><th class="num">Value</th><th>Completed</th>
+        <th>WO</th><th>Property</th><th>Department</th><th class="num">Value</th><th>Completed</th>
       </tr>
     </thead>
-    <tbody>
-      {% for c in list_rows %}
-        <tr>
-          <td><a href="{{ c.wo_url }}">{{ c.wo }}</a></td>
-          <td>{{ c.service }}</td>
-          <td>
-            {% if c.nickname %}<span class="recap-nick">{{ c.nickname }}</span><br>{% endif %}
-            <span class="recap-addr">{{ c.property }}</span>
-          </td>
-          <td>{{ c.dept }}</td>
-          <td class="num">{{ c.value }}</td>
-          <td>{{ c.completed_at }}</td>
+    {% for g in list_groups %}
+      <tbody class="recap-group">
+        <tr class="recap-group__head">
+          <th colspan="2">{{ g.service }}</th>
+          <th class="num">{{ g.subtotal }}</th>
+          <th class="num">{{ g.count }}</th>
+          <th></th>
         </tr>
-      {% else %}
-        <tr><td colspan="6" class="recap-empty">No completions.</td></tr>
-      {% endfor %}
-    </tbody>
+        {% for c in g.rows %}
+          <tr>
+            <td><a href="{{ c.wo_url }}">{{ c.wo }}</a></td>
+            <td>
+              {% if c.nickname %}<span class="recap-nick">{{ c.nickname }}</span><br>{% endif %}
+              <span class="recap-addr">{{ c.property }}</span>
+            </td>
+            <td>{{ c.dept }}</td>
+            <td class="num">{{ c.value }}</td>
+            <td>{{ c.completed_at }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {% else %}
+      <tbody><tr><td colspan="5" class="recap-empty">No completions.</td></tr></tbody>
+    {% endfor %}
   </table>
 
   <p class="daily-recap__note">{{ mowing_note }}</p>

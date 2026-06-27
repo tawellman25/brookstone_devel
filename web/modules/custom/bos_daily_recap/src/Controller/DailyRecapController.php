@@ -89,21 +89,36 @@ final class DailyRecapController extends ControllerBase {
       $list_rows = $this->completions($w['start'], $w['end']);
       $list_label = $windows['yesterday']['label'] . ' — all completions';
     }
+    // Group the list by service type, each group with its own subtotal.
+    $groups = [];
     $list_total = 0.0;
-    foreach ($list_rows as &$r) {
+    $list_count = count($list_rows);
+    foreach ($list_rows as $r) {
+      $svc = $r['service'];
+      if (!isset($groups[$svc])) {
+        $groups[$svc] = ['service' => $svc, 'rows' => [], 'subtotal' => 0.0, 'count' => 0];
+      }
+      $groups[$svc]['subtotal'] += $r['value_raw'];
+      $groups[$svc]['count']++;
       $list_total += $r['value_raw'];
       unset($r['value_raw']);
+      $groups[$svc]['rows'][] = $r;
     }
-    unset($r);
+    ksort($groups, SORT_NATURAL | SORT_FLAG_CASE);
+    $list_groups = [];
+    foreach ($groups as $g) {
+      $g['subtotal'] = $this->money($g['subtotal']);
+      $list_groups[] = $g;
+    }
 
     return [
       '#theme' => 'daily_recap',
       '#generated_at' => $this->formatDateTimeUs($this->time->getRequestTime()),
       '#windows' => $window_out,
       '#list_label' => $list_label,
-      '#list_rows' => $list_rows,
+      '#list_groups' => $list_groups,
       '#list_total' => $this->money($list_total),
-      '#list_count' => count($list_rows),
+      '#list_count' => $list_count,
       '#selection_active' => $has_selection,
       '#clear_url' => Url::fromRoute('bos_daily_recap.dashboard')->toString(),
       '#mowing_note' => 'Lawn mowing is contract-billed, so its dollar value is not carried on the work order — the per-department $ shows ~$0 for mowing; use the completions count for mowing volume.',

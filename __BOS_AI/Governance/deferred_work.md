@@ -313,6 +313,18 @@ data cleanup: revert the flag or finalize the WOs.
 
 ---
 
+### 21. Off-server copies of the nightly DB backup
+
+Added 2026-06-27: `web/scripts/bos_db_backup.sh` runs nightly (cron 2:30 AM) and keeps 14
+rotating `drush sql:dump` gzips in `~/db_backups` on live (host backups are unreliable). But
+those dumps live on the **same disk as the DB**, so they only protect against logical loss,
+not a disk/server failure. Follow-up: get copies **off-server** — e.g. a scheduled pull to a
+workstation/NAS (the `dev_scripts/brookstone-sync-db-from-live.sh` path), or push the newest
+dump to S3 from the backup script. Also worth a heartbeat check that the backup actually ran
+(it already emails on failure; a "no backup in 36h" alert would catch a silent cron stall).
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

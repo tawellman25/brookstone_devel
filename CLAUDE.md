@@ -61,7 +61,7 @@ All scripts are in `dev_scripts/`. They require SSH host aliases configured in `
 # Other flags: --skip-composer  --cim  --skip-cr  --no-maintenance  --yes
 ```
 
-The deploy script rsyncs code to live, then runs `composer install --no-dev` and `drush cr` on the remote. Config import (`drush cim`) does **not** run by default — pass `--cim` to enable it. **The DB is never touched by the deploy.** Directories `.vscode/`, `dev_scripts/`, and `__BOS_AI/` are protected from deletion on live even with `--delete`.
+The deploy script rsyncs code to live, then runs `composer install --no-dev` and `drush cr` on the remote. Config import does **not** run by default. ⚠️ **Do NOT pass `--cim`** — it runs a *full* `drush cim`, which would revert ~340 intentionally-drifted configs (see "Configuration Management" below). Import config changes with a **surgical partial-cim** of only the specific files instead. **The DB is never touched by the deploy.** Directories `.vscode/`, `dev_scripts/`, and `__BOS_AI/` are protected from deletion on live even with `--delete`.
 
 ## __BOS_AI Documentation Bundle
 
@@ -517,7 +517,21 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 
 ## Configuration Management
 
-All Drupal config is exported to `config/sync/` and deployed via `drush cim`. The `config_ignore` module excludes environment-specific config (credentials, keys, `stage_file_proxy` origin) from config management. Never commit `settings.php` or `services.yml`.
+> ## ⛔ NEVER run a full `drush cim` (or the deploy's `--cim`) against live
+> `config/sync` is **intentionally drifted** from live's active config — ~340 configs differ
+> (active is the source of truth; BOS evolves config via the UI and deploys do **not** import
+> config). A full `drush cim` would revert all ~340 to the stale sync versions, breaking views,
+> displays, fields, permissions, ECK types, and more. **Always use a surgical partial import**
+> of only the specific new/changed configs:
+> ```bash
+> mkdir -p /tmp/cimstage && cp config/sync/<exact files…> /tmp/cimstage/
+> drush cim --partial --source=/tmp/cimstage -y
+> ```
+> Likewise never run a blind `drush cex` (it dumps the whole drift into sync + mangles ECK
+> exports). Reconciling the drift so `cim` is safe again is a documented future project
+> (`__BOS_AI/Governance/deferred_work.md` #22) — until then, partial-only.
+
+All Drupal config is exported to `config/sync/` and deployed via surgical **partial** `drush cim` (see the warning above). The `config_ignore` module excludes environment-specific config (credentials, keys, `stage_file_proxy` origin) from config management. Never commit `settings.php` or `services.yml`.
 
 ### ECK config file naming (BOS standard)
 

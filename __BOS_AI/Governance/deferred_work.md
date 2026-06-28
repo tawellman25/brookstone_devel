@@ -325,6 +325,24 @@ dump to S3 from the backup script. Also worth a heartbeat check that the backup 
 
 ---
 
+### 22. Reconcile config/sync ↔ active drift (make full `cim` safe again)
+
+Surfaced 2026-06-27. `config/sync` is drifted from live's active config by **~340 configs**
+(all content-diffs; 0 adds/deletes). Active is the source of truth — BOS evolves config via the
+UI and deploys never import config — so a **full `drush cim` would revert all ~340** and break
+things. Current discipline (documented loudly in CLAUDE.md): **never full-`cim`, only surgical
+partial-cim**; never blind `cex`. That neutralizes the risk, so this is **hygiene, not urgent**.
+
+Reconciling (so `cim` is trustworthy + sync is a real config backup + fresh clones get correct
+config) is a focused **1–2 day** careful pass: do it **from live's active**, during a **config
+freeze**, in batches — capture the ~216 low-risk systematic ones first (pathauto.pattern 75,
+auto_entitylabel.settings 53, etc.), review the ~115 substantive ones (views.view 52, field.field
+41, displays 15, user.role 3, ai/ai_agents), and handle the **88 `eck.eck_entity_type`** configs
+specially (the cex exporter bug injects a stray empty-string into the bundles array — each needs a
+manual fix; see the ECK gotcha). Done = `drush cim --diff` comes back clean.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

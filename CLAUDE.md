@@ -567,33 +567,24 @@ The UUID-stripping bug in BOS field-instance configs (CLAUDE.md "Drush cim quirk
 
 ## Patched Contrib Modules
 
-- **`form_mode_control`** — requires a patch to fix a `foreach` on null `$defaults`. Applied via:
-  ```bash
-  sed -i 's/foreach (\$defaults as \$entityTypeId/foreach (\$defaults ?? [] as \$entityTypeId/' web/modules/contrib/form_mode_control/form_mode_control.module
-  ```
-- **`views_bulk_operations`** (4.4.4) — `viewsFormValidate()` crashes with `end(): Argument #1 must be of type array, null given` when `getTriggeringElement()` returns null (e.g., AJAX rebuild after batch step). Patch makes it defensive:
-  ```bash
-  patch -p1 -d web/modules/contrib/views_bulk_operations <<'EOF'
-  --- a/src/Plugin/views/field/ViewsBulkOperationsBulkForm.php
-  +++ b/src/Plugin/views/field/ViewsBulkOperationsBulkForm.php
-  @@ -975,7 +975,12 @@ class ViewsBulkOperationsBulkForm extends FieldPluginBase implements CacheableDe
-     public function viewsFormValidate(array &$form, FormStateInterface $form_state): void {
-       if ($this->options['buttons']) {
-         $trigger = $form_state->getTriggeringElement();
-  -      $action_delta = \end($trigger['#parents']);
-  +      if (!empty($trigger['#parents']) && \is_array($trigger['#parents'])) {
-  +        $action_delta = \end($trigger['#parents']);
-  +      }
-  +      else {
-  +        $action_delta = '';
-  +      }
-         $form_state->setValue('action', $action_delta);
-       }
-       else {
-  EOF
-  ```
+**No manual contrib patches are required anymore** (as of 2026-06-27) — both former ones were
+obsoleted by upstream releases:
 
-NOTE: `contrib/` is excluded from rsync deploy — patches must be re-applied manually on live after `composer update`/`composer install`.
+- **`views_bulk_operations`** — the `viewsFormValidate()` `end(): … null given` crash is **fixed
+  upstream as of 4.4.5** (the installed version: the guarded `if (!empty($trigger['#parents']) && is_array(...))`
+  is now in the module). The old manual patch (written for 4.4.4) is neither applied nor needed.
+- **`form_mode_control`** (8.x-2.6, latest) — the `foreach` on null `$defaults` is guarded
+  **upstream** by an early `if (empty($defaults)) { return; }` before the loop, so `$defaults`
+  can never be null at the `foreach`. The old `?? []` sed patch is redundant. (A harmless
+  leftover `?? []` may persist in an environment's copy until the next module update re-extracts
+  it — no action needed.)
+
+Declared contrib patches (`drupal/core`, `calendar`, `smart_date`, `page_manager`,
+`views_aggregator`) are managed by **`cweagans/composer-patches`** via `composer.json`
+`extra.patches` and applied automatically on every `composer install`. **`contrib/` is
+composer-managed** (installed on each environment by `composer install`, not committed/rsynced),
+so any future contrib patch must be declared in composer-patches — never a one-off manual `sed`,
+which silently vanishes on the next `composer install`/update.
 
 ## BOS Architectural Rules
 
@@ -725,6 +716,8 @@ Key rules:
         node /var/www/html/__BOS_AI/SOPs/[SOP_CODE]/[SOP_CODE]_source.js"
 
 ## Change Log
+
+- **2026-06-27** — Retired **both** manual contrib patches — both obsoleted upstream, so there are no manual `sed`/`patch` steps to maintain or re-apply. `views_bulk_operations`'s `end()`-on-null crash is fixed upstream in **4.4.5** (installed); `form_mode_control`'s foreach-on-null is guarded upstream by an early `if (empty($defaults)) return;` in **8.x-2.6**, making the old `?? []` sed redundant (the leftover edit is harmless and self-clears on the next module update). Did **not** convert form_mode_control to composer-patches (would be maintaining dead code). Updated the "Patched Contrib Modules" section — declared patches (core/calendar/smart_date/page_manager/views_aggregator) remain managed by `cweagans/composer-patches`. Removes the "re-apply patches after every composer install" footgun.
 
 - **2026-06-27** — **Self-managed nightly live DB backup** added (`web/scripts/bos_db_backup.sh`, cron `30 2 * * *`). The host's account backups are unreliable (Hosting.com stops them when the account inode count gets high), so this is our own safety net: a rotating `drush sql:dump --gzip` that keeps the newest **14** dumps in `~/db_backups` and prunes older (≈161M each, ~2.3G total; disk fine — 167G free). Uses the robust Alt-PHP + `vendor/drush/drush.php` invocation (not the global PHAR — same lesson as the WEX cron) and **emails todd@brookstoneoutdoors.com on failure** (self-monitoring). Crontab edited file-based (backup `~/crontab.bak.20260627`); the live crontab now carries DB backup (2:30), WEX fetch (7:00), WEX watcher (7:15). Test run verified (dump created, `gzip -t` valid). **Off-server copies still owed** (these dumps share the DB's disk) — pull via `dev_scripts/brookstone-sync-db-from-live.sh` or push to S3; tracked in `deferred_work.md`.
 - **2026-06-27** — New **`bos_daily_recap`** module shipped to live: admin dashboard at **`/admin/office/daily-recap`** (Office menu, under Calendar). Per-department value + job-count cards for **Yesterday / WTD (Sunday start) / MTD**; click a department total → the list below re-targets to that department + range (query-param driven, bookmarkable) and **groups by service type with subtotals** (subtotals reconcile to the card). Each row: customer (`field_nickname`) + address, WO# linked to the work order, value, completed-at. Completion anchored on `wo_complete_info.field_date_completed` (timestamp; windows in site tz `America/Denver`); revenue = `field_wo_total`; department via `field_service → services → field_department`; **warrantied (1283) excluded, WOs deduped**; In-House-Tasks → "Unassigned". Mowing is contract-billed so it reads $0 + a job count (Option A; per-mow `field_mow_rate` derivation deferred). Permission `view daily recap` granted to administration/supervisor/site_admin/administrator via `hook_install`. Gate 0 feasibility (`__BOS_AI/Reports/daily_recap_feasibility_2026-06-26.md`) + Gate 1 plan (`__BOS_AI/Architecture/daily_recap_dashboard.md`). Branch `feature/daily-recap-dashboard` → `main` → deployed (rsync + `drush en bos_daily_recap`; the install hook grants the perms — no cim of core.extension needed). Verified on live.

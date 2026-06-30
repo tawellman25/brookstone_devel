@@ -750,6 +750,37 @@ data damage. Related: "uncaught exception in a VBO action aborts the whole batch
 
 ---
 
+## VBO `show_select_all: always_hide` does NOT block shift-click range selection
+
+**Symptom:** a billing view hardened with `show_select_all: always_hide` (added after a prior
+select-all mass-action incident) *still* let an office user mark **51 work orders Invoiced in one
+"Apply to selected items"** — they'd intended one.
+
+**Cause:** there are **two independent** multi-select mechanisms in a VBO table, and the guard
+only covers one:
+- `show_select_all: always_hide` hides the **"Select all N results (all pages)"** checkbox — the
+  cross-page select-all link. ✅ covered.
+- **Shift-click range selection** is a *separate* Drupal **core** behavior in
+  `core/misc/tableselect.js` (`if (e.shiftKey && lastChecked …)` selects every checkbox between
+  the anchor click and the Shift-click). VBO attaches `core/drupal.tableselect`
+  (`ViewsBulkOperationsBulkForm.php`), so its checkboxes inherit it. ❌ **not** touched by
+  `show_select_all`. Worse, the billing views use **`pager: none`**, so the entire eligible result
+  set renders on one page — a single Shift-click can range-select dozens of rows at once.
+
+**Tell-tale in the audit trail:** a large contiguous block invoiced in one apply window (51 here),
+`wo_actions` watchdog entries with a `ViewsBulkOperationsBulkForm` stack trace, scattered entity
+IDs (rows are contiguous in the view's *sort order*, not by ID).
+
+**Fix:** add a **confirmation step** — per-action `preconfiguration.add_confirmation: true` on the
+VBO bulk-form field — so any bulk apply shows "you are about to {action} N items" before
+committing. Set it on **every** action in the billing views (not just invoice; un-invoice /
+re-save would mass-apply the same way). This is the real guard against shift-click range; hiding
+select-all is not sufficient. (Deployed 2026-06-30 to the six billing views — see CLAUDE.md
+change log.) Note the prior **eligibility gate** in `MarkWorkOrderInvoicedAction` still limited
+blast radius — only Complete (1097) WOs were invoiced, no pre-completion corruption.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

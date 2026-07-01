@@ -11,4 +11,11 @@ function bos_spray_route_ui_views_pre_render($view) {
   ])) {
     $view->element['#attached']['library'][] = 'bos_spray_route_ui/spray_route';
   }
+
+  // Auto-refresh only the crew-facing route, so completed stops drop down the
+  // list without a manual reload. Kept off the office admin views, where staff
+  // may be actively interacting. Idle-aware (see js/spray-route-autorefresh.js).
+  if ($view->id() === 'teammate_weed_spraying_route') {
+    $view->element['#attached']['library'][] = 'bos_spray_route_ui/auto_refresh';
+  }
 }

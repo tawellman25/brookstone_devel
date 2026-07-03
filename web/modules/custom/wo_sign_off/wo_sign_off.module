@@ -32,6 +32,17 @@ function wo_sign_off_entity_presave(EntityInterface $entity) {
     _wo_sign_off_assert_roster_complete($entity);
   }
 
+  // Phase B guard: hard-block sign-off while any crew member is still clocked
+  // in on this WO (an open wo_time_clock entry — NULL field_end_time),
+  // regardless of the code path (form, REST, VBO, programmatic, or a clock-in
+  // that raced the form between load and submit). Bypassed for cancellations
+  // (field_canceled — a cancel does not require closing clock-ins) and for the
+  // in-flight reconciliation save.
+  $phase_b_canceled = $entity->hasField('field_canceled') && $entity->get('field_canceled')->value;
+  if (!$phase_b_canceled && empty($entity->_signoff_reconciliation_in_progress)) {
+    _wo_sign_off_assert_no_open_clockins($entity);
+  }
+
   // Get the work order ID from the reference field.
   $work_order_id = $entity->get('field_work_order')->target_id ?? NULL;
   if (!$work_order_id) {
@@ -668,6 +679,12 @@ function wo_sign_off_wo_tasks_list_presave(EntityInterface $entity): void {
 
   // Defense-in-depth: assert all roster members have complete entries.
   _wo_sign_off_assert_roster_complete($entity);
+
+  // Phase B guard: hard-block completion while any crew member is still clocked
+  // in on the parent WO (open wo_time_clock entry). Same entity-layer
+  // enforcement as Guard 1 on the wo_complete_info path. The field_completed
+  // and _signoff_reconciliation_in_progress gates above already scope this.
+  _wo_sign_off_assert_no_open_clockins($entity);
 }
 
 /**
@@ -1779,4 +1796,74 @@ function _wo_sign_off_assert_roster_complete(EntityInterface $entity): void {
       implode(', ', $offenders)
     ));
   }
+}
+
+/**
+ * Phase B guard: refuse the sign-off save while any crew member is still
+ * clocked in on the parent WO (an open wo_time_clock entry — NULL
+ * field_end_time).
+ *
+ * Hard entity-layer enforcement, analogous to wo_total_time Guard 6: fires
+ * regardless of the code path that attempted the save (form, REST, VBO,
+ * programmatic, or a clock-in that raced the form between load and submit).
+ * Callers gate the bypasses (cancellation, in-flight reconciliation) before
+ * calling. Works for both sign-off entity types — wo_complete_info and
+ * wo_tasks_list — since both carry field_work_order.
+ *
+ * @throws \Drupal\Core\Entity\EntityStorageException
+ *   When one or more open clock-ins exist. Not caught — aborts the save and
+ *   propagates to the caller.
+ */
+function _wo_sign_off_assert_no_open_clockins(EntityInterface $entity): void {
+  $wo_id = ($entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty())
+    ? (int) $entity->get('field_work_order')->target_id
+    : 0;
+  if ($wo_id <= 0) {
+    return;
+  }
+
+  $names = _wo_sign_off_open_clockin_names($wo_id);
+  if (!empty($names)) {
+    throw new EntityStorageException(sprintf(
+      'Cannot sign off Work Order #%d — the following crew members still have open clock-ins: %s. Close all clock-ins before signing off.',
+      $wo_id,
+      implode(', ', $names)
+    ));
+  }
+}
+
+/**
+ * Display names of teammates holding an open clock-in (NULL field_end_time)
+ * on a WO.
+ *
+ * Resolves the teammate via field_teammate, falling back to the entry owner
+ * (uid) when field_teammate is empty. Deduplicated by uid.
+ *
+ * @return string[]
+ *   Display names (or "uid=N" when the user can't be loaded).
+ */
+function _wo_sign_off_open_clockin_names(int $wo_id): array {
+  $storage = \Drupal::entityTypeManager()->getStorage('wo_time_clock');
+  $ids = $storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $wo_id)
+    ->notExists('field_end_time')
+    ->execute();
+  if (empty($ids)) {
+    return [];
+  }
+
+  $user_storage = \Drupal::entityTypeManager()->getStorage('user');
+  $names = [];
+  foreach ($storage->loadMultiple($ids) as $tc) {
+    $uid = ($tc->hasField('field_teammate') && !$tc->get('field_teammate')->isEmpty())
+      ? (int) $tc->get('field_teammate')->target_id
+      : (int) $tc->getOwnerId();
+    if (isset($names[$uid])) {
+      continue;
+    }
+    $u = $uid ? $user_storage->load($uid) : NULL;
+    $names[$uid] = $u ? $u->getDisplayName() : "uid=$uid";
+  }
+  return array_values($names);
 }

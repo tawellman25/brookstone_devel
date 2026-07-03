@@ -128,23 +128,42 @@ final class WoClockService {
   }
 
   /**
-   * Create + save a new clock-in entry.
+   * Build an OPEN wo_time_clock entry (unsaved), guaranteeing field_end_time
+   * is cleared.
+   *
+   * ⚠ field_end_time carries an instance default_value of "now", so a plain
+   * ->create() AUTO-CLOSES the entry (a subtle, data-corrupting trap — an entry
+   * meant to be open is silently born closed, and open-entry lookups + the
+   * sign-off guards then never see it). Any code that programmatically creates
+   * an intended-open entry MUST clear field_end_time. Route all such creation
+   * through this method so the guarantee lives in exactly one place.
+   *
+   * Returns the entity UNSAVED so callers can add GPS / notes before saving.
+   *
+   * @param array $extra
+   *   Additional field values to merge into create() (e.g. a note).
    */
-  public function clockIn(int $uid, int $woId, ?float $lat = NULL, ?float $lon = NULL, ?string $noteContext = NULL): EntityInterface {
+  public function createOpenEntry(int $uid, int $woId, array $extra = []): EntityInterface {
     $entry = $this->tcStorage()->create([
       'type' => 'entry',
       'field_teammate' => $uid,
       'field_work_order' => $woId,
       'field_start_time' => $this->nowUtc(),
-    ]);
-    // field_end_time has a default_value of "now" on the instance; a plain
-    // create() applies it, which would auto-close the entry. A clock-IN must be
-    // genuinely open, so clear it explicitly.
+    ] + $extra);
+    // The guarantee: never inherit the "now" default on an open entry.
     $entry->set('field_end_time', NULL);
     // Owner mirrors the teammate so downstream owner-based reads agree.
     if ($entry->hasField('uid')) {
       $entry->set('uid', $uid);
     }
+    return $entry;
+  }
+
+  /**
+   * Create + save a new clock-in entry (open, via createOpenEntry()).
+   */
+  public function clockIn(int $uid, int $woId, ?float $lat = NULL, ?float $lon = NULL, ?string $noteContext = NULL): EntityInterface {
+    $entry = $this->createOpenEntry($uid, $woId);
     if ($lat !== NULL && $lon !== NULL) {
       $entry->set('field_clock_in_location', $this->wkt($lat, $lon));
     }

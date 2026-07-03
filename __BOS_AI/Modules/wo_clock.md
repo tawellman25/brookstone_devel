@@ -40,7 +40,8 @@ Transport-agnostic domain service. Datetime storage is UTC `Y-m-d\TH:i:s`.
 |---|---|
 | `getOpenEntriesForUser(int $uid, ?int $excludeWoId = null): array` | Open entries (NULL `field_end_time`) by `field_teammate` or owner uid; oldest-first; optional WO exclusion. |
 | `getCurrentEntryOnWo(int $uid, int $woId): ?entity` | The user's open entry on a WO, or null. |
-| `clockIn(int $uid, int $woId, ?float $lat, ?float $lon, ?string $noteContext): entity` | Creates an **open** entry (start=now, teammate, WO). **Explicitly clears `field_end_time`** — the instance default is `now`, which would auto-close it. Stores GPS if given; prepends a note if given. |
+| `createOpenEntry(int $uid, int $woId, array $extra = []): entity` | Builds an **unsaved** open entry with **`field_end_time` guaranteed cleared**. The single place that owns the open-entry guarantee — any code creating an intended-open entry should use this (see the `field_end_time` default-of-"now" gotcha in `drupal_bos_gotchas.md`). |
+| `clockIn(int $uid, int $woId, ?float $lat, ?float $lon, ?string $noteContext): entity` | Creates an **open** entry via `createOpenEntry()`, then stores GPS / prepends a note if given, and saves. |
 | `clockOut(int $entryId, ?float $lat, ?float $lon): entity` | Sets end=now, stores clock-out GPS. Respects Phase 1 guards (throws propagate). |
 | `closeEntry(int $entryId, ?int $endTimestamp, bool $auditNote): entity` | Retroactive close (now or a timestamp). Prepends `[Closed via intervention MM/DD/YYYY h:i AM/PM by {name}]` when `$auditNote`. Sets the `_signoff_reconciliation` bypass **only when the parent WO is Invoiced/Paid** (matches wo_total_time Phase 1 Guard 4). |
 | `calculateDistanceFeet(...)` | Haversine, Earth radius 20,902,231 ft. Verified: 0.01° lat = 3648 ft; identical points = 0. |

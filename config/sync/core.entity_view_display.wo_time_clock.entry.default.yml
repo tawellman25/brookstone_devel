@@ -4,6 +4,10 @@ status: true
 dependencies:
   config:
     - eck.eck_type.wo_time_clock.entry
+    - field.field.wo_time_clock.entry.field_clock_in_distance_ft
+    - field.field.wo_time_clock.entry.field_clock_in_location
+    - field.field.wo_time_clock.entry.field_clock_out_distance_ft
+    - field.field.wo_time_clock.entry.field_clock_out_location
     - field.field.wo_time_clock.entry.field_closed_signoff_complete
     - field.field.wo_time_clock.entry.field_closed_signoff_tasks
     - field.field.wo_time_clock.entry.field_created_signoff_complete
@@ -12,16 +16,50 @@ dependencies:
     - field.field.wo_time_clock.entry.field_notes
     - field.field.wo_time_clock.entry.field_start_time
     - field.field.wo_time_clock.entry.field_teammate
+    - field.field.wo_time_clock.entry.field_time_limit_override
     - field.field.wo_time_clock.entry.field_total_time
     - field.field.wo_time_clock.entry.field_work_order
   module:
     - datetime
+    - geofield
     - wo_total_time
 id: wo_time_clock.entry.default
 targetEntityType: wo_time_clock
 bundle: entry
 mode: default
 content:
+  field_clock_in_distance_ft:
+    type: number_decimal
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 32
+    region: content
+  field_clock_in_location:
+    type: geofield_default
+    label: inline
+    settings:
+      output_format: wkt
+      output_escape: true
+    third_party_settings: {  }
+    weight: 30
+    region: content
+  field_clock_out_distance_ft:
+    type: number_decimal
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 33
+    region: content
+  field_clock_out_location:
+    type: geofield_default
+    label: inline
+    settings:
+      output_format: wkt
+      output_escape: true
+    third_party_settings: {  }
+    weight: 31
+    region: content
   field_closed_signoff_complete:
     type: entity_reference_label
     label: inline
@@ -98,7 +136,11 @@ content:
 hidden:
   changed: true
   created: true
+  entity_print_view_epub: true
+  entity_print_view_pdf: true
+  entity_print_view_word_docx: true
   field_time_limit_override: true
   field_work_order: true
   title: true
   uid: true
+

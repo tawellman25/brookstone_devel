@@ -1,0 +1,35 @@
+wo_clock.clock_in:
+  path: '/clock/in/{wo_id}'
+  defaults:
+    _controller: '\Drupal\wo_clock\Controller\WoClockController::clockInAction'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'
+    _csrf_request_header_token: 'TRUE'
+
+wo_clock.clock_out:
+  path: '/clock/out/{entry_id}'
+  defaults:
+    _controller: '\Drupal\wo_clock\Controller\WoClockController::clockOutAction'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'
+    _csrf_request_header_token: 'TRUE'
+
+wo_clock.close_entry:
+  path: '/clock/close/{entry_id}'
+  defaults:
+    _controller: '\Drupal\wo_clock\Controller\WoClockController::closeEntryAction'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'
+    _csrf_request_header_token: 'TRUE'
+
+wo_clock.close_with_time:
+  path: '/clock/close/{entry_id}/time'
+  defaults:
+    _controller: '\Drupal\wo_clock\Controller\WoClockController::closeEntryWithTimeAction'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'
+    _csrf_request_header_token: 'TRUE'

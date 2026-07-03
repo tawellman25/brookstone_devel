@@ -3,6 +3,23 @@
 Module: wo_timer_flag_update
 Package: Work Orders
 
+## Deprecation in progress (2026-07-03)
+
+Being replaced by **`wo_clock`** (see `wo_clock.md`), which delivers the clock-in/out
+UX with state awareness, self-service recovery, and silent GPS capture. **This module
+remains fully functional during the transition** — do not remove it. Specifically:
+
+- The `work_order_timer` flag + its `hook_flagging_insert`/`delete` cascade still run.
+- `WOLawnMowingTaskController` and `WOSnowRemovalTaskController` still call
+  `flag()`/`unflag()` internally (their cascade was **not** refactored in Phase A).
+- `wo_clock` hides the flag's on-page render (in code, across all WO bundles) so the
+  two UIs don't duplicate, but leaves the flag field + config intact.
+
+New `wo_time_clock` entries created via `wo_clock` are managed independently of the
+flag lifecycle (no `work_order_timer` flagging), so the cascade correctly finds
+nothing to act on for them. Legacy flag-managed entries keep cascading as before.
+Removal of the flag mechanics is a **later phase**, gated on `wo_clock` validation.
+
 ## Purpose
 
 Owns the bidirectional sync between the `work_order_timer` flag (Drupal Flag module) and `wo_time_clock:entry` records. The flag is the source of truth for "currently clocked in"; this module materializes that state into actual time-clock entries that downstream billing, variance, and audit consumers query.

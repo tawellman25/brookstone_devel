@@ -1,0 +1,271 @@
+<?php
+
+/**
+ * @file
+ * WO Clock — clock-in/out UX with silent GPS capture.
+ *
+ * Replaces the flag-based timer UI on the WO page (the flag path stays
+ * functional during transition — see wo_timer_flag_update). This module owns:
+ *   - hook_theme for the block + alert-entry templates
+ *   - the distance-from-property presave calculation (silent)
+ *   - the WO view integration (hides the timer flag render, renders the clock
+ *     UI inline where the flag was — covers all WO bundles in one place)
+ *
+ * The heavy lifting lives in \Drupal\wo_clock\Service\WoClockService and
+ * \Drupal\wo_clock\Controller\WoClockController.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function wo_clock_theme($existing, $type, $theme, $path) {
+  return [
+    'wo_clock_block' => [
+      'variables' => [
+        'state' => 'a',
+        'wo_id' => 0,
+        'current_entry' => NULL,
+        'open_entries' => [],
+        'urls' => [],
+      ],
+    ],
+    'wo_clock_alert_entry' => [
+      'variables' => [
+        'entry' => [],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for wo_time_clock.
+ *
+ * Silent distance-from-property calculation. When a clock-in/out location and
+ * the parent WO's property geofield are both present, store the Haversine
+ * distance in feet. Any lookup failure leaves the distance null and the save
+ * proceeds — never blocks. (Phase 1 guards run in wo_total_time's presave; if
+ * one throws, the save aborts before this matters.)
+ */
+function wo_clock_wo_time_clock_presave(EntityInterface $entity) {
+  if ($entity->bundle() !== 'entry') {
+    return;
+  }
+  /** @var \Drupal\wo_clock\Service\WoClockService $svc */
+  $svc = \Drupal::service('wo_clock.clock_service');
+
+  $wo_id = ($entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty())
+    ? (int) $entity->get('field_work_order')->target_id : 0;
+  if ($wo_id <= 0) {
+    return;
+  }
+  $prop = $svc->getPropertyLocation($wo_id);
+  if (!$prop) {
+    return;
+  }
+
+  foreach ([
+    'field_clock_in_location' => 'field_clock_in_distance_ft',
+    'field_clock_out_location' => 'field_clock_out_distance_ft',
+  ] as $locField => $distField) {
+    if (!$entity->hasField($locField) || $entity->get($locField)->isEmpty()
+      || !$entity->hasField($distField)) {
+      continue;
+    }
+    $geo = $entity->get($locField)->first()->getValue();
+    if (!isset($geo['lat'], $geo['lon'])) {
+      continue;
+    }
+    try {
+      $feet = $svc->calculateDistanceFeet((float) $geo['lat'], (float) $geo['lon'], $prop['lat'], $prop['lon']);
+      $entity->set($distField, round($feet, 2));
+    }
+    catch (\Throwable $e) {
+      // Silent — leave the distance null.
+      \Drupal::logger('wo_clock')->notice('Distance calc skipped on entry @id: @m', ['@id' => $entity->id() ?? 'new', '@m' => $e->getMessage()]);
+    }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for work_order.
+ *
+ * Coexistence with the flag path: hide the timer-flag render and drop the
+ * clock UI in its place. Done in code so it applies to every WO bundle at once
+ * (rather than editing 36 view-display configs); the flag field + its config
+ * are left intact for the legacy cascade (wo_lawn_mowing / wo_snow_removal).
+ */
+function wo_clock_work_order_view(array &$build, EntityInterface $entity, $display, $view_mode) {
+  // Only on the full page, for authenticated teammates.
+  if ($view_mode !== 'full' && $view_mode !== 'default') {
+    return;
+  }
+  $account = \Drupal::currentUser();
+  if ($account->isAnonymous()) {
+    return;
+  }
+
+  // Hide the legacy flag toggle so the UI isn't duplicated.
+  if (isset($build['flag_work_order_timer'])) {
+    $build['flag_work_order_timer']['#access'] = FALSE;
+  }
+
+  $render = _wo_clock_build_render((int) $entity->id(), $account);
+  if ($render) {
+    // Position where the flag rendered (fall back to a low weight).
+    $render['#weight'] = -50;
+    $build['wo_clock_ui'] = $render;
+  }
+}
+
+/**
+ * Build the clock UI render array for a WO + account.
+ *
+ * Shared by WoClockBlock::build() and the WO view integration so the block
+ * plugin and the inline placement render identically. Returns NULL when there
+ * is no WO context.
+ *
+ * @return array|null
+ */
+function _wo_clock_build_render(int $wo_id, \Drupal\Core\Session\AccountInterface $account): ?array {
+  if ($wo_id <= 0) {
+    return NULL;
+  }
+  /** @var \Drupal\wo_clock\Service\WoClockService $svc */
+  $svc = \Drupal::service('wo_clock.clock_service');
+  $uid = (int) $account->id();
+
+  $current = $svc->getCurrentEntryOnWo($uid, $wo_id);
+  $openElsewhere = $svc->getOpenEntriesForUser($uid, $wo_id);
+
+  if ($current) {
+    $state = 'b';
+  }
+  elseif ($openElsewhere) {
+    $state = 'c';
+  }
+  else {
+    $state = 'a';
+  }
+
+  $currentData = NULL;
+  if ($current) {
+    $start = (string) $current->get('field_start_time')->value;
+    $currentData = [
+      'entry_id' => (int) $current->id(),
+      'start_us' => _wo_clock_fmt_us($start),
+      'elapsed' => _wo_clock_elapsed($start),
+    ];
+  }
+
+  // Each open entry becomes a themed render array (wo_clock_alert_entry) so the
+  // same single-entry template backs the alert region here and any programmatic
+  // render; the JS modal mirrors this markup client-side.
+  $openData = [];
+  foreach ($openElsewhere as $e) {
+    $eWo = $e->get('field_work_order')->entity;
+    $prop = ($eWo && $eWo->hasField('field_property') && !$eWo->get('field_property')->isEmpty())
+      ? $eWo->get('field_property')->entity : NULL;
+    $start = (string) $e->get('field_start_time')->value;
+    $openData[] = [
+      '#theme' => 'wo_clock_alert_entry',
+      '#entry' => [
+        'entry_id' => (int) $e->id(),
+        'wo_id' => $eWo ? (int) $eWo->id() : 0,
+        'property' => $prop ? $prop->label() : ($eWo ? $eWo->label() : 'Work Order'),
+        'start_us' => _wo_clock_fmt_us($start),
+        'ago' => _wo_clock_ago($start),
+      ],
+    ];
+  }
+
+  return [
+    '#theme' => 'wo_clock_block',
+    '#state' => $state,
+    '#wo_id' => $wo_id,
+    '#current_entry' => $currentData,
+    '#open_entries' => $openData,
+    '#attached' => [
+      'library' => ['wo_clock/clock'],
+      'drupalSettings' => [
+        'woClock' => [
+          'woId' => $wo_id,
+          'endpoints' => [
+            'clockIn' => \Drupal\Core\Url::fromRoute('wo_clock.clock_in', ['wo_id' => $wo_id])->toString(),
+          ],
+        ],
+      ],
+    ],
+    '#cache' => [
+      'contexts' => ['user', 'route'],
+      'tags' => ['wo_time_clock_list'],
+      'max-age' => 0,
+    ],
+  ];
+}
+
+/**
+ * Format a UTC datetime storage string as US MM/DD/YYYY h:i AM/PM (site tz).
+ */
+function _wo_clock_fmt_us(?string $utc): string {
+  if (!$utc) {
+    return '';
+  }
+  try {
+    $d = new \DateTime($utc, new \DateTimeZone('UTC'));
+    $d->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+    return $d->format('m/d/Y g:i A');
+  }
+  catch (\Throwable $e) {
+    return '';
+  }
+}
+
+/**
+ * Elapsed "Xh Ym" since a UTC start.
+ */
+function _wo_clock_elapsed(?string $utc): string {
+  if (!$utc) {
+    return '';
+  }
+  try {
+    $s = \Drupal::time()->getRequestTime() - (new \DateTime($utc, new \DateTimeZone('UTC')))->getTimestamp();
+    $s = max(0, $s);
+    $h = intdiv($s, 3600);
+    $m = intdiv($s % 3600, 60);
+    return $h > 0 ? "{$h}h {$m}m" : "{$m}m";
+  }
+  catch (\Throwable $e) {
+    return '';
+  }
+}
+
+/**
+ * Human "3 days ago" / "this morning" for a UTC start.
+ */
+function _wo_clock_ago(?string $utc): string {
+  if (!$utc) {
+    return '';
+  }
+  try {
+    $s = \Drupal::time()->getRequestTime() - (new \DateTime($utc, new \DateTimeZone('UTC')))->getTimestamp();
+    if ($s < 0) {
+      $s = 0;
+    }
+    if ($s < 3600) {
+      return max(1, (int) round($s / 60)) . ' min ago';
+    }
+    if ($s < 43200) {
+      return (int) round($s / 3600) . ' hr ago';
+    }
+    $days = (int) floor($s / 86400);
+    if ($days <= 0) {
+      return 'earlier today';
+    }
+    return $days === 1 ? 'yesterday' : "$days days ago";
+  }
+  catch (\Throwable $e) {
+    return '';
+  }
+}

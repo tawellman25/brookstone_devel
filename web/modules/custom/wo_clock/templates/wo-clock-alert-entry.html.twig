@@ -1,0 +1,27 @@
+{#
+/**
+ * @file
+ * A single open-clock-in row, used inside the alert region (and mirrored by the
+ * JS modal). Reusable across both surfaces.
+ *
+ * Available variables:
+ * - entry: { entry_id, wo_id, property, start_us, ago }
+ */
+#}
+<div class="wo-clock-entry" data-entry-id="{{ entry.entry_id }}">
+  <div class="wo-clock-entry__info">
+    <span class="wo-clock-entry__property">{{ entry.property }}</span>
+    <span class="wo-clock-entry__meta">{{ entry.ago }} · started {{ entry.start_us }}</span>
+  </div>
+  <div class="wo-clock-entry__actions">
+    <button type="button" class="wo-clock-entry__btn wo-clock-entry__btn--close-now"
+            data-wo-clock-action="close" data-entry-id="{{ entry.entry_id }}">Close now</button>
+    <button type="button" class="wo-clock-entry__btn wo-clock-entry__btn--close-time"
+            data-wo-clock-action="close-time" data-entry-id="{{ entry.entry_id }}">Close at specific time</button>
+    <span class="wo-clock-entry__time-picker" hidden>
+      <input type="time" class="wo-clock-entry__time-input" aria-label="Clock-out time">
+      <button type="button" class="wo-clock-entry__btn wo-clock-entry__btn--apply-time"
+              data-wo-clock-action="apply-time" data-entry-id="{{ entry.entry_id }}">Set</button>
+    </span>
+  </div>
+</div>

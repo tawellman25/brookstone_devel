@@ -1,0 +1,8 @@
+services:
+  wo_clock.clock_service:
+    class: Drupal\wo_clock\Service\WoClockService
+    arguments:
+      - '@entity_type.manager'
+      - '@current_user'
+      - '@logger.factory'
+      - '@datetime.time'

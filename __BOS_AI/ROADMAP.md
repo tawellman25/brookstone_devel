@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (**Cowork Connect Gate 1 SHIPPED to live**, SAPI proof passed; postponed multi-consumer keys to LATER; earlier: decisions sweep resolved 6)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (reframed as **Voice-to-Work-Order** & postponed — Gate 1 endpoint shipped/live is the foundation; real goal is voice→transcribe→WO; earlier: decisions sweep resolved 6)
 
 ---
 
@@ -38,7 +38,6 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 ### Other NOW items
 | Item | Area | Tier | Effort | Notes |
 |---|---|---|---|---|
-| **Cowork Connect** — WO-intake REST API | `bos_wo_intake` | T1 | M | External Copilot-Cowork agent creates Work Orders in BOS via a custom **`X-API-KEY`** REST endpoint. **Gate 1 SHIPPED to live 2026-07-04 — SAPI proof PASSED** (`166f573b`; module `bos_wo_intake`, route-scoped key-auth + `POST /api/wo-intake` + `WorkOrderIntakeService` + `system_integration` role + `cowork-connect` account; secret env-only via settings.php putenv, off-git). Verified on live: valid key + bad term → **422 not 401** (header survived LiteSpeed SAPI, zero prod data); no key → 401; `Authorization` ignored. **Gate 2 next (own spec):** natural-language resolution + two-tier dedup + child entities (notes/scheduling). Docs: `__BOS_AI/Integration/work_order_api.md` (Gate 1 as-built). |
 | QuickBooks Desktop IIF export | Billing | T1 | M | Fully scoped. Residential = 1 invoice/WO; Commercial = batched line-items/period; two-bucket on `field_client_type`. |
 | Warranty full-dollar-capture + QB zeroing | `wo_sign_off` / Billing | T2 | M | Sign-off path live (1283); **dollar-capture fields do not exist**. Coupled deploy unit — capture + zeroing ship together or risk billing customers for warranty work. |
 
@@ -99,10 +98,19 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 | First signed backflow test — PDF+S3 smoke test | Parked pending office generating first real signed test. |
 | Property devices EVA card restyle | Match My Schedule card component. |
 
-### Integration — Cowork Connect / WO-intake API (T2/T3, post-Gate-2)
-| Item | Notes |
+### Voice-to-Work-Order (postponed 2026-07-04)
+**The actual goal:** speak into a phone → transcription → a Work Order is created from what was
+said. "Cowork" was only one candidate front-end; the need is the **voice → WO pipeline**, not any
+one product. **Postponed** — the Cowork-agent-via-structured-API path proved heavier/less useful
+than the goal warrants. Gate 1 (below) is already built and is the reusable foundation; pick this
+up when there's appetite to build the transcription + NL-parse front-end.
+
+| Piece | Status / Notes |
 |---|---|
-| Multi-consumer keys + per-consumer attribution | **Postponed 2026-07-04.** Gate 1 ships **one shared `X-API-KEY` → one `cowork-connect` identity** — anyone with the key creates WOs, all attributed to that single service account (can't tell caller A from B). The endpoint is already generic (any HTTPS POST client — curl, Zapier/Make, another app or agent — not just Cowork), and the logic is transport-agnostic (`WorkOrderIntakeService`, reusable by a future MCP tool / drush / internal button). Adding **distinct consumers each with their own key + audit identity** is a clean extension: additional `key` entities + service accounts, auth provider selects the matching account. Build when a **second consumer actually appears** — not before. Depends on Gate 2 (the intake surface maturing first). |
+| **Gate 1** — authenticated WO-intake endpoint | ✅ **SHIPPED & live** (`166f573b`; `bos_wo_intake`, `POST /api/wo-intake`, `X-API-KEY`, `WorkOrderIntakeService`, `system_integration` role + `cowork-connect` account; SAPI proof passed). The durable, swappable-front-end foundation — any client posts to it. Key-gated + dormant (nothing calls it); **safe to leave enabled**, or disable to trim surface. Docs: `__BOS_AI/Integration/work_order_api.md`. |
+| **Gate 2** — natural-language resolution | The bridge from a transcription to a WO: accept a property **name** + service **description** (not raw IDs), resolve them, two-tier duplicate detection, child entities (`wo_notes`, `scheduling`). This is the piece that makes voice→WO actually work. Not started (was to be its own spec). |
+| **Transcription + parse front-end** | Voice → text (phone dictation / Whisper / Cowork), then text → structured fields via an LLM — **BOS already runs `ai_provider_openai`**, so the parser is in-house. Front-end options: a **BOS mobile mic page** (no external dependency, likely simplest), an **iOS Shortcut**, or Cowork. Decide the front-end when resuming. |
+| Multi-consumer keys + per-consumer attribution | One shared key → one `cowork-connect` identity today. Distinct per-consumer keys + audit attribution (additional `key` entities + service accounts; provider selects the match) is a clean extension — build only when a 2nd consumer appears. |
 
 ### Estimating polish (T3, after epic)
 | Item | Notes |

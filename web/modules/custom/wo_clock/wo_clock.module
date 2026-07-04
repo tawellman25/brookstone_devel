@@ -113,8 +113,12 @@ function wo_clock_work_order_view(array &$build, EntityInterface $entity, $displ
 
   $render = _wo_clock_build_render((int) $entity->id(), $account);
   if ($render) {
-    // Position where the flag rendered (fall back to a low weight).
-    $render['#weight'] = -50;
+    // Render exactly where the flag toggle did — same weight/region, per bundle
+    // (weight 9 on landscaping) — so the button lands in the clock cluster
+    // mid-page beside the "last clocked out" text, not at the top of the page.
+    $flag_component = $display->getComponent('flag_work_order_timer');
+    $render['#weight'] = (is_array($flag_component) && isset($flag_component['weight']))
+      ? $flag_component['weight'] : 9;
     $build['wo_clock_ui'] = $render;
   }
 }

@@ -39,7 +39,11 @@
   font-weight: 600;
 }
 
-.wo-clock__working {
+/* Only render (and animate) when NOT hidden — the [hidden] attribute is the
+ * idle state, toggled by JS during AJAX. Without :not([hidden]) this
+ * display rule overrides the attribute's UA display:none and the spinner
+ * shows + pulses on page load. */
+.wo-clock__working:not([hidden]) {
   display: inline-block;
   margin-top: 0.4rem;
   font-size: 0.9rem;

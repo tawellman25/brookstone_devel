@@ -202,6 +202,8 @@ function _wo_clock_build_render(int $wo_id, \Drupal\Core\Session\AccountInterfac
         'wo_url' => $eWo ? $eWo->toUrl()->toString() : '',
         'property' => $prop ? $prop->label() : ($eWo ? $eWo->label() : 'Work Order'),
         'start_us' => _wo_clock_fmt_us($start),
+        'start_local' => _wo_clock_fmt_local($start),
+        'now_local' => _wo_clock_now_local(),
         'ago' => _wo_clock_ago($start),
       ],
     ];
@@ -252,6 +254,36 @@ function _wo_clock_fmt_us(?string $utc): string {
     $d = new \DateTime($utc, new \DateTimeZone('UTC'));
     $d->setTimezone(new \DateTimeZone(date_default_timezone_get()));
     return $d->format('m/d/Y g:i A');
+  }
+  catch (\Throwable $e) {
+    return '';
+  }
+}
+
+/**
+ * Format a UTC storage string as a site-tz value for an <input type="datetime-local">
+ * (Y-m-d\TH:i). Empty string on failure/empty input.
+ */
+function _wo_clock_fmt_local(?string $utc): string {
+  if (!$utc) {
+    return '';
+  }
+  try {
+    $d = new \DateTime($utc, new \DateTimeZone('UTC'));
+    $d->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+    return $d->format('Y-m-d\TH:i');
+  }
+  catch (\Throwable $e) {
+    return '';
+  }
+}
+
+/**
+ * "Now" in site tz as a datetime-local value (Y-m-d\TH:i) — for the picker's max.
+ */
+function _wo_clock_now_local(): string {
+  try {
+    return (new \DateTime('now', new \DateTimeZone(date_default_timezone_get())))->format('Y-m-d\TH:i');
   }
   catch (\Throwable $e) {
     return '';

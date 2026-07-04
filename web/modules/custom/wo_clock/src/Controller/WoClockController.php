@@ -108,7 +108,11 @@ final class WoClockController extends ControllerBase {
   }
 
   /**
-   * POST /clock/close/{entry_id}/time  (body: end_time = "HH:MM" 24h)
+   * POST /clock/close/{entry_id}/time
+   *
+   * body: end_time = a datetime-local value "Y-m-dTH:i" (site tz). A bare "HH:MM"
+   * is still accepted from older cached clients and resolved against the entry's
+   * start / today, as before.
    */
   public function closeEntryWithTimeAction(int $entry_id, Request $request): JsonResponse {
     $entry = $this->loadOwned($entry_id);
@@ -116,13 +120,10 @@ final class WoClockController extends ControllerBase {
       return $entry;
     }
     $body = $this->body($request);
-    $hhmm = isset($body['end_time']) ? (string) $body['end_time'] : '';
-    if (!preg_match('/^([01]?\d|2[0-3]):([0-5]\d)$/', $hhmm, $m)) {
-      return $this->error('Invalid end time — expected HH:MM (24-hour).');
-    }
-    $ts = $this->resolveEndTimestamp($entry, (int) $m[1], (int) $m[2]);
+    $raw = isset($body['end_time']) ? trim((string) $body['end_time']) : '';
+    $ts = $this->resolveEndInput($entry, $raw);
     if ($ts === NULL) {
-      return $this->error('Could not resolve the end time against the entry start.');
+      return $this->error('Invalid end time — pick a date and time at or after the clock-in.');
     }
     try {
       $this->clock->closeEntry($entry_id, $ts, TRUE);
@@ -176,6 +177,45 @@ final class WoClockController extends ControllerBase {
   /**
    * Resolve an HH:MM end time to a Unix timestamp, guarding end-before-start.
    */
+  /**
+   * Resolve the submitted end-time value to a UTC timestamp.
+   *
+   * Accepts a full datetime-local ("Y-m-dTH:i", ":s" optional, space tolerated),
+   * interpreted in site tz — this is what the picker now sends, so a clock-in
+   * closed on a later day records the correct date. Falls back to a bare "HH:MM"
+   * (older cached client) resolved against today / the start day. Returns NULL on
+   * a bad value or an end that precedes the entry's start.
+   */
+  private function resolveEndInput(EntityInterface $entry, string $raw): ?int {
+    $tz = new \DateTimeZone(date_default_timezone_get());
+    if (preg_match('/^(\d{4}-\d{2}-\d{2})[T ]([01]?\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/', $raw, $m)) {
+      try {
+        $dt = new \DateTime($m[1] . ' ' . $m[2] . ':' . $m[3] . ':00', $tz);
+      }
+      catch (\Throwable $e) {
+        return NULL;
+      }
+      return $dt->getTimestamp() >= $this->entryStartTs($entry) ? $dt->getTimestamp() : NULL;
+    }
+    if (preg_match('/^([01]?\d|2[0-3]):([0-5]\d)$/', $raw, $m)) {
+      return $this->resolveEndTimestamp($entry, (int) $m[1], (int) $m[2]);
+    }
+    return NULL;
+  }
+
+  /**
+   * The entry's start as a UTC timestamp (0 if unset).
+   */
+  private function entryStartTs(EntityInterface $entry): int {
+    $startVal = (string) ($entry->get('field_start_time')->value ?? '');
+    try {
+      return $startVal ? (new \DateTime($startVal, new \DateTimeZone('UTC')))->getTimestamp() : 0;
+    }
+    catch (\Throwable $e) {
+      return 0;
+    }
+  }
+
   private function resolveEndTimestamp(EntityInterface $entry, int $hh, int $mm): ?int {
     $tz = new \DateTimeZone(date_default_timezone_get());
     $startVal = (string) ($entry->get('field_start_time')->value ?? '');
@@ -215,6 +255,8 @@ final class WoClockController extends ControllerBase {
       'wo_url' => $wo ? $wo->toUrl()->toString() : '',
       'property' => $prop ? $prop->label() : ($wo ? $wo->label() : 'Work Order'),
       'start_us' => _wo_clock_fmt_us($start),
+      'start_local' => _wo_clock_fmt_local($start),
+      'now_local' => _wo_clock_now_local(),
       'ago' => _wo_clock_ago($start),
     ];
   }

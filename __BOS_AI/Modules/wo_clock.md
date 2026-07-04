@@ -60,7 +60,7 @@ Transport-agnostic domain service. Datetime storage is UTC `Y-m-d\TH:i:s`.
 | `wo_clock.clock_in` | `/clock/in/{wo_id}` | If open entries elsewhere and no `resolved_entries` flag → `{status: intervention_required, open_entries:[…]}`; else create + `{status: clocked_in, entry:{…}}`. Intervention path prepends an audit note to the new entry. |
 | `wo_clock.clock_out` | `/clock/out/{entry_id}` | Ownership-checked; end=now + GPS; `{status: clocked_out}` or `{status: error}` if a guard fires. |
 | `wo_clock.close_entry` | `/clock/close/{entry_id}` | `closeEntry(now, audit)`; `{status: closed, remaining_open:[…]}`. |
-| `wo_clock.close_with_time` | `/clock/close/{entry_id}/time` | Body `end_time` = `HH:MM`; resolved against today, or the entry's start date if today would be before start (end-before-start guard); `{status: closed, remaining_open:[…]}`. |
+| `wo_clock.close_with_time` | `/clock/close/{entry_id}/time` | Body `end_time` = a **datetime-local** value `Y-m-dTH:i` (site tz) — so an entry finally closed on a *later day* records the correct date, not "today". Parsed by `resolveEndInput()` with an end-before-start guard; a bare `HH:MM` is still accepted from older cached clients (resolved against today/start day via `resolveEndTimestamp()`). `{status: closed, remaining_open:[…]}`. |
 
 **Auth:** all routes require `access content`. **uid is taken from the session,
 never the request body**, so a crafted POST can't clock in for someone else.
@@ -77,8 +77,12 @@ max-age 0.
 - **State A** — no open entries anywhere → `[ Clock In ]`.
 - **State B** — clocked in on THIS WO → "Clocked in at … (elapsed)" + `[ Clock Out ]`.
 - **State C** — open entries on OTHER WO(s) → amber alert region (per entry:
-  property, "ago", start, **Close now** / **Close at specific time**) above a
-  `[ Clock In on this WO ]` button.
+  property **linked to that WO** — opens in a new tab, "ago", start,
+  **Close now** / **Close at specific time**) above a `[ Clock In on this WO ]`
+  button. "Close at specific time" opens a **`datetime-local` picker** prefilled
+  to the entry's start date and capped at now, so a forgotten clock-in closed a
+  day or two later records the right date. The same per-entry row markup backs
+  both the on-page alert and the JS recovery modal (`entryRowHtml`).
 
 ## GPS capture + silent fallback
 

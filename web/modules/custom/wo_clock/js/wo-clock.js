@@ -159,7 +159,10 @@
       '<div class="wo-clock-entry__actions">' +
       '<button type="button" class="wo-clock-entry__btn wo-clock-entry__btn--close-now" data-wo-clock-action="close" data-entry-id="' + e.entry_id + '">Close now</button>' +
       '<button type="button" class="wo-clock-entry__btn wo-clock-entry__btn--close-time" data-wo-clock-action="close-time" data-entry-id="' + e.entry_id + '">Close at specific time</button>' +
-      '<span class="wo-clock-entry__time-picker" hidden><input type="time" class="wo-clock-entry__time-input" aria-label="Clock-out time">' +
+      '<span class="wo-clock-entry__time-picker" hidden><input type="datetime-local" class="wo-clock-entry__time-input"' +
+      (e.start_local ? ' value="' + Drupal.checkPlain(e.start_local) + '"' : '') +
+      (e.now_local ? ' max="' + Drupal.checkPlain(e.now_local) + '"' : '') +
+      ' aria-label="Clock-out date and time">' +
       '<button type="button" class="wo-clock-entry__btn wo-clock-entry__btn--apply-time" data-wo-clock-action="apply-time" data-entry-id="' + e.entry_id + '">Set</button></span>' +
       '</div></div>';
   }

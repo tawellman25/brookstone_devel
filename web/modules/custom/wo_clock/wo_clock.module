@@ -199,6 +199,7 @@ function _wo_clock_build_render(int $wo_id, \Drupal\Core\Session\AccountInterfac
       '#entry' => [
         'entry_id' => (int) $e->id(),
         'wo_id' => $eWo ? (int) $eWo->id() : 0,
+        'wo_url' => $eWo ? $eWo->toUrl()->toString() : '',
         'property' => $prop ? $prop->label() : ($eWo ? $eWo->label() : 'Work Order'),
         'start_us' => _wo_clock_fmt_us($start),
         'ago' => _wo_clock_ago($start),

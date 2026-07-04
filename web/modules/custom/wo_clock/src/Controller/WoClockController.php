@@ -212,6 +212,7 @@ final class WoClockController extends ControllerBase {
     return [
       'entry_id' => (int) $entry->id(),
       'wo_id' => $wo ? (int) $wo->id() : 0,
+      'wo_url' => $wo ? $wo->toUrl()->toString() : '',
       'property' => $prop ? $prop->label() : ($wo ? $wo->label() : 'Work Order'),
       'start_us' => _wo_clock_fmt_us($start),
       'ago' => _wo_clock_ago($start),

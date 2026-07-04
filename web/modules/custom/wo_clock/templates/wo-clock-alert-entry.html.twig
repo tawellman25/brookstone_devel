@@ -5,12 +5,16 @@
  * JS modal). Reusable across both surfaces.
  *
  * Available variables:
- * - entry: { entry_id, wo_id, property, start_us, ago }
+ * - entry: { entry_id, wo_id, wo_url, property, start_us, ago }
  */
 #}
 <div class="wo-clock-entry" data-entry-id="{{ entry.entry_id }}">
   <div class="wo-clock-entry__info">
-    <span class="wo-clock-entry__property">{{ entry.property }}</span>
+    {% if entry.wo_url %}
+      <a class="wo-clock-entry__property wo-clock-entry__property--link" href="{{ entry.wo_url }}" target="_blank" rel="noopener">{{ entry.property }}</a>
+    {% else %}
+      <span class="wo-clock-entry__property">{{ entry.property }}</span>
+    {% endif %}
     <span class="wo-clock-entry__meta">{{ entry.ago }} · started {{ entry.start_us }}</span>
   </div>
   <div class="wo-clock-entry__actions">

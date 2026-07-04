@@ -150,8 +150,11 @@
   // -- modal (intervention) -------------------------------------------------
 
   function entryRowHtml(e) {
+    var propHtml = e.wo_url
+      ? '<a class="wo-clock-entry__property wo-clock-entry__property--link" href="' + Drupal.checkPlain(e.wo_url) + '" target="_blank" rel="noopener">' + Drupal.checkPlain(e.property) + '</a>'
+      : '<span class="wo-clock-entry__property">' + Drupal.checkPlain(e.property) + '</span>';
     return '<div class="wo-clock-entry" data-entry-id="' + e.entry_id + '">' +
-      '<div class="wo-clock-entry__info"><span class="wo-clock-entry__property">' + Drupal.checkPlain(e.property) + '</span>' +
+      '<div class="wo-clock-entry__info">' + propHtml +
       '<span class="wo-clock-entry__meta">' + Drupal.checkPlain(e.ago) + ' · started ' + Drupal.checkPlain(e.start_us) + '</span></div>' +
       '<div class="wo-clock-entry__actions">' +
       '<button type="button" class="wo-clock-entry__btn wo-clock-entry__btn--close-now" data-wo-clock-action="close" data-entry-id="' + e.entry_id + '">Close now</button>' +

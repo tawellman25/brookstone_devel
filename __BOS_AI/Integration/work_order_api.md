@@ -130,3 +130,120 @@ The WO is a container; the real data lives in child entities, each referencing t
 - `work_order_status.md` — status lifecycle + role authority
 - `property_detail_entities.md` — the read/write-back property history pattern
 - CLAUDE.md — Work Order section (bundles, fields, status TIDs, child entities)
+
+---
+
+# Build Baseline (Option B — custom key-auth REST over a transport-agnostic service)
+
+> **Gate 0 evidence, 2026-06-29.** READ-ONLY inspection of THIS install. Closes the truncated
+> Task-4 baseline + two open role questions. Transport decided in `transport_decision_mcp_vs_rest.md`
+> (Option B now; service is transport-swappable later). No build performed.
+
+## B1. REST baseline (what's here, what we must write)
+
+- **Core 10.6.12.** `rest`, `serialization`, `jsonapi` (core; jsonapi is `read_only: true`) and
+  `key` are **enabled**. No version drift — they ship with core 10.6.12.
+- **No key-auth provider exists.** `key` is **storage-only** (it holds secrets; it does *not*
+  provide an authentication provider). There is **no `key_auth`, `rest_api_authentication`, or
+  `simple_oauth`** module installed, and **no `authentication_provider`-tagged service** in
+  contrib/custom. → **Option B must ship a small custom authentication provider.**
+  - **Extension point:** a service class implementing
+    `\Drupal\Core\Authentication\AuthenticationProviderInterface` (`applies()` + `authenticate()`),
+    registered in `*.services.yml` with `tags: [{ name: authentication_provider, provider_id: bos_system_key, priority: 100 }]`. Its `authenticate()` reads the API-key header, validates it
+    against a `key` entity, and returns the **System service account user** (so the request runs
+    as that account). The custom REST resource then lists `bos_system_key` in its `authentication`.
+  - Estimated build cost: ~1 small provider class + 1 RestResource plugin + 1 `rest.resource.*`
+    config + the service account/key. No new contrib.
+- **Gotchas (true build cost, made explicit):**
+  1. **Route `_access` ≠ entity access — two distinct gates.** A custom `RestResource` POST route
+     carries its own permission (auto `restful post <plugin_id>`, or a custom `permissions()`),
+     which gates *who may hit the endpoint*. That is a **transport-layer** grant, **separate** from
+     the four entity perms, and the System role **will need it** (see GO/NO-GO). Entity create is a
+     *second* gate the handler must enforce itself (B2).
+  2. **CSRF.** Drupal's `_csrf_request_header_token` requirement applies **only to cookie/session
+     authenticated** unsafe requests. A **stateless custom-key provider is exempt** (core skips
+     CSRF for non-cookie auth) — so **no `X-CSRF-Token` is needed** for Cowork, *provided* our
+     provider is a real non-cookie `authentication_provider` (not a session bolt-on).
+  3. **Formats.** Declare `json`; client sends `Content-Type: application/json` and
+     `?_format=json` (or `Accept`). Emit JSON error bodies with proper 4xx/5xx codes.
+  4. **⚠ Production SAPI / header stripping (evidence-grounded).** Live runs on CloudLinux/cPanel
+     with CGI/LiteSpeed-style PHP (the same SAPI nuance that silently broke the WEX cron — see
+     `drupal_bos_gotchas.md`). The **`Authorization` header is frequently stripped** before it
+     reaches PHP on such stacks. → **Use a custom header (e.g. `X-API-KEY`), not
+     `Authorization: Bearer`**, and verify it survives to PHP in production. Bonus: `X-API-KEY` is
+     exactly the header shape Copilot Cowork's OpenAPI API-key auth expects (B4).
+
+## B2. Access-enforcement intent — do the 4 perms actually bite?
+
+- **BOS programmatic creators bypass entity access.** Every existing path uses raw
+  `Entity::create()->save()` / `$entity->save()`, which does **not** run entity-access checks:
+  e.g. `wo_schedule.module` creates `wo_notes` via `storage->create([...])->save()` (lines
+  276-285), creates+saves a status update (401-409), and does `$work_order->set('field_scheduled',1)->save()`
+  (338/347); `wo_shared.module` re-saves at 121-122. **A bare `->save()` ignores the role.**
+- **Therefore the role is a real least-privilege boundary ONLY if `WorkOrderIntakeService`
+  performs explicit access checks before each write.** Cleanest pattern (standard core API):
+  ```php
+  $ach = $etm->getAccessControlHandler('work_order');
+  if (!$ach->createAccess($bundle, $system, [], TRUE)->isAllowed()) { throw 403; }
+  // then $entity->save();   // raw save is fine AFTER the explicit gate
+  ```
+  Repeat per write: `work_order` (the chosen bundle), `wo_notes` bundle `note`, `scheduling`
+  bundle `work_order`. The ECK access handler honors `create <type> entities` / per-bundle on
+  `createAccess` (proven in `system_integration_role_inspection.md` §0), so these checks enforce
+  exactly the four perms.
+- **Verdict:** the 4 perms are **guards iff the service checks explicitly; decoration otherwise.**
+  The build spec MUST gate each write with `createAccess(...)`. (Core's generic `EntityResource`
+  POST checks access for free — but our **custom** resource does not inherit that; it must check.)
+
+## B3. AEL double-save vs access (does create force edit/view work_order?)
+
+- `wo_shared_work_order_insert()` heals the stuck `%AutoEntityLabel:` sentinel with
+  `$entity->set('title', ''); $entity->save();` (lines 121-122) **inside `hook_entity_insert`** —
+  a **programmatic save, not an access-checked update**. The cascade in `wo_schedule` (status
+  flip to 1091) is likewise programmatic.
+- **Consequence:** create-time intake triggers these internally with **no** edit/view check. The
+  System account needs **NO `edit`/`view` `work_order` permission**. **Role stays create-only.**
+  (Had it been access-checked, it would have forced `edit any work_order entities` — preferred
+  over `own` per the ownership-fragility note in the role inspection — but it is **not** required.)
+
+## B4. Cowork → REST directly? (shim needed?)
+
+- **Product identity not user-confirmed** (candidates: Microsoft **Copilot Cowork** vs **Coworker
+  AI**) — flagged, not guessed. Under **both** readings, direct authenticated REST is supported:
+  - **Copilot Cowork** supports **API plugins defined by an OpenAPI document with API-key auth in
+    a custom header** (`securitySchemes`, `in: header`, `name: X-API-KEY`) — i.e. it can call our
+    key-authenticated HTTPS endpoint **directly**; it also supports OAuth and MCP connectors (with
+    Dynamic Client Registration). [MS Learn: Cowork plugin dev / API-plugin authentication.]
+  - **Coworker AI** advertises **custom integrations via REST API** (plus its own MCP server),
+    OAuth-scoped.
+- **Conclusion: the MCP→REST shim is NOT needed.** Cowork reaches our REST endpoint directly via a
+  connector/API-plugin manifest (an OpenAPI spec with `X-API-KEY` header auth), not a separately
+  hosted proxy. *Caveat:* confirm against the specific Cowork product's connector docs before
+  build; if that exact product turns out to consume **only** MCP tools, a thin MCP→REST wrapper
+  (one tool that forwards to our endpoint) would be the minimal bridge — but available sources
+  indicate that is unlikely.
+
+## GO / NO-GO
+
+- **`create work_order entities`** — ✅ **GO, stays.** Covers all 36 bundles (handler OR-logic).
+- **`create wo_notes entities of bundle note`** — ✅ **GO, stays.**
+- **`create scheduling entities of bundle work_order`** — ✅ **GO, stays.** (Drives WO→1091 via
+  programmatic cascade; needs a date.)
+- **`view any properties entities of bundle property`** — ✅ **GO, stays.** Needed to resolve
+  `field_property`; bites only when the service explicitly checks property view (same pattern as
+  B2) — retain for least-privilege intent + reference-field validation.
+- **Edit/view `work_order`** — ✅ **NO-GO (not added).** B3 proves the AEL double-save + scheduling
+  cascade are programmatic; create-time intake needs neither. **Role stays at the 4 entity perms.**
+- **ADD — one transport-layer grant (not an entity perm):** the custom REST resource's route
+  permission (`restful post <plugin_id>` or a custom `permission()`). Required so the System
+  account may invoke the endpoint; distinct from the 4 entity-access perms (B1 gotcha #1).
+- **Shim:** **NOT needed** — Cowork can call the authenticated REST endpoint directly via a custom
+  `X-API-KEY` header (confirm against the specific product's connector docs).
+
+**Net:** role = **4 entity perms (unchanged) + 1 REST-resource route permission**; build = **1 custom
+auth provider + 1 RestResource + the `WorkOrderIntakeService` (explicit `createAccess` gating, raw
+saves after) + service account/key**. No shim, no new contrib.
+
+*Sources (B4):* [MS Learn — Build plugins for Copilot Cowork](https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development) · [MS Learn — Configure Authentication for plugins in Agents in M365 Copilot](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api-plugin-authentication) · [Coworker AI — Connectors](https://coworker.ai/connectors).
+
+**STOP — Gate 0 baseline complete. Build spec next, after review.**

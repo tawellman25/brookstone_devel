@@ -112,8 +112,17 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
 
     $section_storage = $this->etm->getStorage('contract_sections');
 
+    // Only enqueue sections that carry the core required fields a check-up WO
+    // needs. Without this filter the dispatch fans out to EVERY contract_section
+    // (~95k) and the worker discards ~99.99% one row at a time — which snowballed
+    // the queue to millions (see drupal_bos_gotchas.md). processSection() still
+    // applies the full per-item gates (contract year/status, opt-in, property,
+    // zipcode route day) on this now-tiny set.
     $query = $section_storage->getQuery()
-      ->accessCheck(FALSE);
+      ->accessCheck(FALSE)
+      ->exists('field_check_up_frequency')
+      ->exists('field_service')
+      ->exists('field_contract');
 
     $ids = $query->execute();
     if (!$ids) {

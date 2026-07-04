@@ -233,11 +233,20 @@ function contract_residential_cron(): void {
 function _contract_residential_checkups_enqueue_dispatch(bool $force, string $source): bool {
   $state_key = 'contract_residential.checkups_last_dispatch_date';
   $queue_name = 'contract_residential_checkup_generator';
-  $today = date('Y-m-d');
+  // Site-timezone date — plain date('Y-m-d') follows the ambient (often UTC)
+  // timezone, so a late-evening local run crossed the UTC day boundary and
+  // re-dispatched the "same" day (a driver of the millions-deep runaway).
+  $today = \Drupal::service('date.formatter')->format(\Drupal::time()->getRequestTime(), 'custom', 'Y-m-d');
 
   if (!$force) {
+    // Daily guard: at most one dispatch per (site-tz) day.
     $last_dispatch = (string) \Drupal::state()->get($state_key, '');
     if ($last_dispatch === $today) {
+      return FALSE;
+    }
+    // Anti-pileup guard: never stack a new dispatch while items are still
+    // pending — a slow drain (or the tz bug above) can't snowball the queue.
+    if (\Drupal::queue($queue_name)->numberOfItems() > 0) {
       return FALSE;
     }
   }

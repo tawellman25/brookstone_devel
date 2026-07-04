@@ -48,6 +48,11 @@ the reusable foundation.
 | **Gate 2A** — `createFromText()` resolution brain | ✅ **BUILT (local, 2026-07-04) — 11/11 acceptance green; NOT deployed.** Deterministic parse (no LLM): extract service + name + street + town + complaint; resolve service (synonym map + vocab) and property (nickname-primary, token-order-insensitive, compounding street/town, conflict-flagging); two-tier duplicate guard (active-block / terminal-recent-note), deferring to `weed_spraying`'s guard; create WO + complaint note. Service-layer only — **no UI/route/REST change**. Docs: `work_order_api.md` (Gate 2A as-built). Deploy with Gate 2B. |
 | **Gate 2B** — mobile intake page + menu icon | Later spec — the phone-facing capture surface (mic/dictation → `createFromText` → candidate-tap disambiguation). |
 
+**Gate 2A follow-ups (decided/logged 2026-07-04):**
+- **Ambiguous service phrases stand as-is** — `design` · `spray`/`weed spray` · `lighting` · `cleanup` return candidates (no auto-map), resolved via 2B tap-to-pick. Not a bug.
+- **💡 Seasonal auto-disambiguation (idea, future):** resolve `cleanup` (Fall 413 / Spring 411) — and possibly bare `pruning` (Summer/Winter) — by the **current date/season** instead of returning candidates. A small dated-synonym layer on top of `synonym_map`. Deferred.
+- **🔧 Data fix (safe, pending Todd's OK):** uncheck `field_work_order_service` on the **parent-category** terms **366 "Spraying"** (12 children) and **388 "Pruning"** (2 children). They're grouping nodes mis-flagged as WO-services (hence no/invalid bundle); the reference diagnostic (`web/scripts/wo_intake_term_refs.php`) confirms **0 `field_service` references** anywhere → zero-risk. Removes the two `service_bundle_missing` edge cases from resolution. Leaf children (Weed Control, Summer/Winter Pruning, etc.) are unaffected.
+
 ### Other NOW items
 | Item | Area | Tier | Effort | Notes |
 |---|---|---|---|---|

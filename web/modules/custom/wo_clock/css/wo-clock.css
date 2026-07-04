@@ -3,6 +3,16 @@
  * WO Clock — phone-first clock-in/out styling.
  */
 
+/* Coexistence: hide the legacy flag Clock In/Out toggle on the WO page — the
+ * wo_clock button replaces it. This CSS only loads where the new button renders
+ * (WO pages, via the wo_clock library), so it's scoped there. The flag
+ * mechanics (mowing/snow cascade via flag()/unflag()) are untouched — only the
+ * visual toggle is suppressed, regardless of which render path emitted it
+ * (the field component or the wo_time_clock_buttons EVA). */
+.flag-work-order-timer {
+  display: none !important;
+}
+
 .wo-clock {
   margin: 0 0 1rem;
 }

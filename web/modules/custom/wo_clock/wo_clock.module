@@ -130,7 +130,7 @@ function wo_clock_work_order_view(array &$build, EntityInterface $entity, $displ
 
   // Hide the legacy flag toggle so the UI isn't duplicated.
   if (isset($build['flag_work_order_timer'])) {
-    $build['flag_work_order_timer']['#access'] = FALSE;
+    unset($build['flag_work_order_timer']);
   }
 
   $render = _wo_clock_build_render((int) $entity->id(), $account);

@@ -52,7 +52,7 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 | Estimate board pipeline swimlane rework | `estimate_board` | T2 | M | Build prompt produced; replace single "Active Pipeline" with per-status swimlanes + color. Pending Code execution. |
 | wo_clock — foreman crew-status view + end-of-day notifications (Phase B/C) | `wo_clock` | T2 | M | Phase A shipped (clock-in/out redesign + silent GPS + attribution). Next: foreman "who's still clocked in" view + end-of-day open-clock-in alerting. Flag-path retirement is the winter cleanup (see LATER). |
 | Status-service refactor | `wo_status_updates` | T2 | M | Fixes presave-saves-the-WO coupling. Call sites: `update_spraying_info_from_invoiced_work_order`, `update_work_order_invoiced_action`. **⚠ name: reconcile "WorkOrderStatusService" (June invoicing chat) vs "WorkOrderInvoicingService" (roadmap v1 seed) — decide canonical name before building.** |
-| Fuel surcharge — full build from zero | `wo_sign_off` + 36 bundles | T2 | L | **Live has nothing** (no field, no toggle, no per-zip rates). Locate the branch that claimed "Phase 1 complete" or treat as greenfield. |
+| Fuel surcharge — full build from zero | `wo_sign_off` + 36 bundles | T2 | L | **Greenfield confirmed (2026-07-04).** Exhaustive search found **zero trace** of any "Phase 1": no branch (local/remote), no commit across all refs, no stash/reflog, no design doc, and live has no field/toggle/per-zip rate on zipcodes, business_setting, or any work_order bundle. The 05-04 "Phase 1 complete" was a Chat-side plan that was never coded. Build all of it: per-zip rates + business_setting toggle + 36-bundle fields + sign-off math. |
 | 2 stranded invoiced WOs (In-Progress + `field_invoiced=1`) | Data hygiene | T2 | S | Down from 3. The genuine "invoiced before complete" debt from the June incident. Per-WO decision then correct. |
 | 45-day auto-cancel threshold pressure-test | spray-route-guard | T2 | S | Monthly freq = 35d, only 10d margin. Validate no legit pending sprays exceed 45d before unattended cron. |
 | QuickBooks Invoicing SOP family completion | SOPs / `OFF-QBS-INV` | T3 | S | INV-003 authored & installed; **INV-001 (parent) + INV-002 not yet in `__BOS_AI/SOPs/`** — author + run the docx generator. SOP authoring is Chat's domain (Code installs). |
@@ -127,7 +127,7 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 
 ## Decisions pending — your call, not a build
 
-- **Fuel surcharge:** where is the branch that claimed Phase 1? Locate or declare greenfield.
+- ~~**Fuel surcharge:** where is the branch that claimed Phase 1?~~ **RESOLVED 2026-07-04 — greenfield.** No branch/commit/stash/doc/live-field exists anywhere; the 05-04 "Phase 1 complete" was a never-coded Chat plan. It's now a from-zero build (see NEXT).
 - **Status-service naming:** `WorkOrderStatusService` vs `WorkOrderInvoicingService` — pick canonical.
 - **`scheduling_log` entity:** build it? Three sub-decisions — log route-order changes? `field_change_reason` required or optional? historical backfill vs fresh start?
 - **Snow / `special_mowing` architecture:** design the reconciliation model (fall).

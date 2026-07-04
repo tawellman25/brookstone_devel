@@ -247,3 +247,53 @@ saves after) + service account/key**. No shim, no new contrib.
 *Sources (B4):* [MS Learn — Build plugins for Copilot Cowork](https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development) · [MS Learn — Configure Authentication for plugins in Agents in M365 Copilot](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api-plugin-authentication) · [Coworker AI — Connectors](https://coworker.ai/connectors).
 
 **STOP — Gate 0 baseline complete. Build spec next, after review.**
+
+---
+
+# Gate 1 — AS BUILT (shipped to live 2026-07-04)
+
+Module **`bos_wo_intake`** ("Cowork Connect"). Gate 1 = authenticated transport + bare-WO
+skeleton. Natural-language resolution, two-tier duplicate logic, and child entities
+(notes/scheduling) are **Gate 2** (separate spec).
+
+**Endpoint:** `POST /api/wo-intake?_format=json`
+**Auth:** custom provider `cowork_key` (route-scoped, NOT global — wired via
+`rest.resource.wo_intake` `authentication: [cowork_key]`). Header **`X-API-KEY`** only
+(`Authorization` is ignored — it is stripped by the live LiteSpeed/CGI SAPI). Constant-time
+`hash_equals`. Implements `AuthenticationProviderChallengeInterface` (401 on missing key).
+**Secret:** `key` entity `bos_wo_intake` → `env` provider → env var
+**`BOS_WO_INTAKE_API_KEY`**, exported via `putenv()` in each environment's `settings.php`
+(off-git; born server-side via `openssl rand -hex 32`; never in git/config/chat).
+**Role:** `system_integration` = `create work_order entities` · `create wo_notes entities of
+bundle note` · `create scheduling entities of bundle work_order` · `view any properties
+entities of bundle property` · `restful post wo_intake`. **Service account:** `cowork-connect`
+(active; all writes run as it; subject of the explicit `createAccess()` gate).
+**Config:** ships in the module's `config/install/` → imported by `drush en` (NO `drush cim`).
+
+**Request:** `{ "property_id": <int>, "service_term_id": <int> }`
+**201:** `{ "success": true, "work_order": { "id", "work_order_id", "bundle", "status", "status_tid" } }`
+**Error:** `{ "success": false, "error": { "code", "message" } }`
+
+**Status semantics (verified live):** valid → **201**; missing key → **401**;
+`Authorization`-only → **401** (ignored); wrong key → **403** (core-standard — the 401 challenge
+only fires on *absent* credentials, same as `basic_auth`; not overridden); business rejects →
+**422** (`service_not_work_order`, `service_bundle_missing`, `estimate_bundle_forbidden`,
+`property_not_found`); malformed body / bad ids → **400**.
+
+**SAPI proof (the Gate 1 milestone), live 2026-07-04:** valid `X-API-KEY` + a deliberately
+invalid `service_term_id` → **422, not 401** → the header survived the SAPI and the account
+authenticated, with `work_order` count unchanged (zero prod data). Controls: no key → 401;
+`Authorization: Bearer` → 401.
+
+**`WorkOrderIntakeService::createBareWorkOrder(propertyId, serviceTermId)`** — transport-agnostic
+(reused by Gate 2 + a future MCP tool): validate WO-service → resolve bundle → block `estimate`
+→ validate property → explicit `createAccess()` → create+save (normal path heals the AEL title).
+
+**Known finding (out of scope):** `field_work_order_id` is **not** assigned to newly-created WOs
+by any path (UI, cron, or this API) — it was a one-time legacy backfill (= entity id) on ~30.5k
+older WOs; ~16k recent WOs have none. The API returns the **entity `id`** as the durable handle
+(`work_order_id` is null, consistent with the whole system). Whether new WOs should get a stable
+WO# is a separate, system-wide question.
+
+**Gate 2 scope:** natural-language / name resolution of property + service; two-tier duplicate
+detection; child-entity creation (`wo_notes`, `scheduling`); read-back endpoints if needed.

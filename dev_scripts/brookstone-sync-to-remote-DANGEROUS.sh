@@ -169,6 +169,7 @@ RSYNC_FLAGS=(
 
   # local-only dev directories — exclude from sync entirely (not sent, not deleted on LIVE)
   --exclude ".vscode/"
+  --exclude ".claude/"
   --exclude "dev_scripts/"
   --exclude "__BOS_AI/"
   --exclude "TimeTrax_Hack/"

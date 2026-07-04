@@ -14,11 +14,13 @@ use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 
 $name = 'field_source';
+// Labels are user-facing (shown on the entry view's Source field) — keep them
+// clean, no parenthetical clarifiers.
 $allowed = [
-  'flag' => 'Flag toggle (legacy path)',
-  'wo_clock_button' => 'Clock In/Out button (Phase A)',
-  'wo_clock_intervention' => 'Intervention close (alert region or modal)',
-  'manual' => 'Manually entered (Enter Manually button or admin form)',
+  'flag' => 'Flag toggle',
+  'wo_clock_button' => 'Clock In/Out button',
+  'wo_clock_intervention' => 'Intervention close',
+  'manual' => 'Manually entered',
   'signoff_reconciliation' => 'Sign-off reconciliation',
   'cleanup_script' => 'Data hygiene cleanup script',
 ];

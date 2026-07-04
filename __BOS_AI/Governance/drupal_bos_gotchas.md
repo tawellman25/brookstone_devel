@@ -840,6 +840,37 @@ See `wo_clock.md` → "Attribution scheme". Surfaced 2026-07-03 (Phase A refinem
 
 ---
 
+## Queue dispatch that fans out unfiltered → runaway to millions
+
+**Symptom:** a DatabaseQueue balloons to millions of items (`drush queue:list`), cron never
+catches up, and the DB `queue` table bloats. (`contract_residential_checkup_generator` hit
+**5.1M**.)
+
+**Cause — two compounding bugs in the classic "dispatch → fan-out" pattern:**
+1. **No eligibility filter at enqueue time.** The dispatch worker enqueued **one item per
+   `contract_sections` entity — all ~95,279** — with an unfiltered `getQuery()->execute()`, then
+   the per-item worker discarded ~99.95% (only ~31 truly eligible). So each dispatch = ~95k items
+   of load-and-discard busywork. **Filter at the source**, not one row at a time in the worker.
+2. **Day-guard that isn't timezone-safe.** The "once per day" guard used `date('Y-m-d')`, which
+   follows the ambient (cron = often **UTC**) timezone — so a late-evening local run crossed the
+   UTC midnight and re-dispatched the "same" day (2× on one day; ~3–4× on others), each adding a
+   full fan-out. Anchor day-guards to the **site timezone**
+   (`\Drupal::service('date.formatter')->format($ts,'custom','Y-m-d')`).
+
+**Rules for any dispatch→fan-out queue worker:**
+- **Filter the dispatch query** to the genuinely-eligible set — never "enqueue everything, filter
+  in the worker." A 3,000:1 waste ratio snowballs fast.
+- Make daily/periodic **guards timezone-safe** (site tz, not ambient).
+- Add an **anti-pileup guard**: don't enqueue a new dispatch while items are still pending
+  (`\Drupal::queue($name)->numberOfItems() > 0`) — so a slow drain can't stack dispatches.
+- Ensure the worker **dedups** before creating (here `scheduledWorkOrderExistsForDate`), so a
+  re-run or overlap can't create duplicates.
+- **Draining a runaway:** `drush queue:delete <name>` clears it fast (5.1M in ~43s) and is safe
+  when the items are stale no-ops the fixed dispatch will re-enqueue; then force one dispatch to
+  verify it fans out small. Surfaced 2026-07-03 (`30bcc260`).
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

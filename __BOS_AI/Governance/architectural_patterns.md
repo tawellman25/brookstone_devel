@@ -246,3 +246,72 @@ If those don't hold, stick with Behavior B + safety-net validate. Don't ship Beh
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)
 - Living document — add new patterns as they emerge from project work, with the surfacing commit cited.
+
+---
+
+## Pattern — Structured origin attribution
+
+**Problem.** An entity is created by **many code paths** (UI button, legacy toggle,
+manual form, automated reconciliation, cleanup scripts). "Which path made this row?"
+becomes unanswerable — and a shared field default (`field_notes = "Manually Entered"`)
+silently mislabels everything.
+
+**Approach — a marker field *plus* a note trail:**
+- A **list field** (`field_source` on `wo_time_clock`) gives **queryable** structure:
+  one enum value per creating path, set explicitly by that path. Reports can slice by
+  origin ("all button clocks this week") without parsing free text.
+- An **accumulating structured note** (newline-separated, append-only) gives the
+  **human-readable** trail — start and end can carry *different* attributions on the
+  same row (button start + intervention end), which a single marker can't express.
+- A **catch-all presave** stamps the default value (`manual`) for any insert no known
+  path claimed — so "unattributed" is impossible, but note: a *new* path that forgets
+  to stamp gets silently swept into the default. Pair the marker with a **gotcha** that
+  makes stamping mandatory for every new writer.
+- **No backfill:** legacy rows keep the marker NULL, honestly meaning "created before
+  attribution existed — check notes." Don't fabricate history.
+- **Transient guard flags** (`_wo_clock_write`, `_signoff_reconciliation`) let managed
+  writers tell the catch-all "not a manual save."
+
+Canonical example: `field_source` on `wo_time_clock` (six values across button / flag /
+intervention / manual / sign-off / cleanup). Surfaced 2026-07-03, `wo_clock` Phase A.
+
+---
+
+## Pattern — Silent-fallback capture
+
+**Problem.** Some data is valuable-when-available but must **never** block or
+complicate the primary action — GPS at clock-in is the canonical example: nice as
+dispute evidence, but a teammate clocking in must succeed identically whether they
+granted location, denied it, or their phone timed out.
+
+**Approach.**
+- The capture attempt is time-boxed and **cannot fail the primary action**: request
+  with a short timeout (5s for GPS); grant / deny / timeout **all** fall through to
+  the same next step, with the optional data simply omitted when absent.
+- **No user-facing complaint** about the missing capture — ever. The happy path and
+  the fallback path are indistinguishable to the user.
+- Store the captured value as **optional**; downstream computations (e.g. the
+  distance-from-property presave in `wo_clock`) run only when the input is present
+  and fail silently otherwise, leaving the derived field null.
+
+**Anti-pattern.** Gating the primary action on the capture ("we couldn't get your
+location, try again"), or surfacing enforcement ("you're too far from the property").
+Surfaced 2026-07-03, `wo_clock` (Phase A GPS capture).
+
+## Pattern — Coexistence during migration
+
+**Problem.** Replacing an entrenched mechanism (a UX, a data path) that other systems
+depend on, without a big-bang cutover that risks breaking those dependents.
+
+**Approach.**
+- Ship the replacement **alongside** the legacy mechanism; both remain functional.
+- New activity flows through the new path and is **managed independently** of the
+  legacy lifecycle (e.g. `wo_clock` entries carry no timer flag, so the flag-delete
+  cascade simply finds nothing to act on — correct, not a bug).
+- Suppress the legacy UI in **one reversible place** (code, not N config edits) so
+  the two don't duplicate on screen, while leaving the legacy mechanics + config
+  intact for the systems still riding them (the mowing/snow flag cascade).
+- Cleanup of the legacy mechanism is an **explicit later phase**, gated on
+  validation of the replacement — not bundled into the introduction.
+
+Surfaced 2026-07-03, `wo_clock` coexisting with `wo_timer_flag_update`.

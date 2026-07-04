@@ -1,0 +1,38 @@
+{#
+/**
+ * @file
+ * WO Clock block — renders one of three states.
+ *
+ * Available variables:
+ * - state: 'a' (not clocked in) | 'b' (clocked in here) | 'c' (clocked in elsewhere)
+ * - wo_id: the current work order id
+ * - current_entry: { entry_id, start_us, elapsed } (state b)
+ * - open_entries: list of themed wo_clock_alert_entry render arrays (state c)
+ */
+#}
+<div class="wo-clock" data-wo-id="{{ wo_id }}">
+
+  {% if state == 'c' and open_entries %}
+    <div class="wo-clock__alert" role="alert">
+      <p class="wo-clock__alert-title">Heads up — you're still clocked in elsewhere:</p>
+      {% for entry in open_entries %}
+        {{ entry }}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if state == 'b' and current_entry %}
+    <p class="wo-clock__status">Clocked in at {{ current_entry.start_us }} ({{ current_entry.elapsed }} elapsed)</p>
+    <button type="button" class="wo-clock__btn wo-clock__btn--out"
+            data-wo-clock-action="out" data-entry-id="{{ current_entry.entry_id }}">Clock Out</button>
+  {% elseif state == 'c' %}
+    <button type="button" class="wo-clock__btn wo-clock__btn--in"
+            data-wo-clock-action="in" data-wo-id="{{ wo_id }}">Clock In on this WO</button>
+  {% else %}
+    <button type="button" class="wo-clock__btn wo-clock__btn--in"
+            data-wo-clock-action="in" data-wo-id="{{ wo_id }}">Clock In</button>
+  {% endif %}
+
+  <span class="wo-clock__working" hidden>Working…</span>
+  <div class="wo-clock__error" role="alert" hidden></div>
+</div>

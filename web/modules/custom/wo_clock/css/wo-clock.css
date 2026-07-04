@@ -1,0 +1,155 @@
+/**
+ * @file
+ * WO Clock — phone-first clock-in/out styling.
+ */
+
+/* Coexistence: hide the legacy flag Clock In/Out toggle on the WO page — the
+ * wo_clock button replaces it. This CSS only loads where the new button renders
+ * (WO pages, via the wo_clock library), so it's scoped there. The flag
+ * mechanics (mowing/snow cascade via flag()/unflag()) are untouched — only the
+ * visual toggle is suppressed, regardless of which render path emitted it
+ * (the field component or the wo_time_clock_buttons EVA). */
+.flag-work-order-timer {
+  display: none !important;
+}
+
+.wo-clock {
+  margin: 0 0 1rem;
+}
+
+/* Primary buttons — full width, thumb-friendly. */
+.wo-clock__btn {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+}
+
+.wo-clock__btn--in {
+  background: #2e7d32;
+}
+
+.wo-clock__btn--out {
+  background: #c0392b;
+}
+
+.wo-clock__btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.wo-clock__status {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
+/* Only render (and animate) when NOT hidden — the [hidden] attribute is the
+ * idle state, toggled by JS during AJAX. Without :not([hidden]) this
+ * display rule overrides the attribute's UA display:none and the spinner
+ * shows + pulses on page load. */
+.wo-clock__working:not([hidden]) {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+  color: #555;
+  animation: wo-clock-pulse 1s ease-in-out infinite;
+}
+
+@keyframes wo-clock-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.wo-clock__error {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  background: #fdecea;
+  color: #a12b21;
+  font-size: 0.9rem;
+}
+
+/* Alert region — amber, above the button. */
+.wo-clock__alert {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: #fff9e6;
+  border-left: 4px solid #f5a623;
+  border-radius: 6px;
+}
+
+.wo-clock__alert-title {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+/* A single open-entry row (alert + modal). */
+.wo-clock-entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-top: 1px solid #f0e3bf;
+}
+
+.wo-clock-entry:first-of-type {
+  border-top: 0;
+}
+
+.wo-clock-entry__property {
+  display: block;
+  font-weight: 600;
+}
+
+.wo-clock-entry__meta {
+  display: block;
+  font-size: 0.85rem;
+  color: #6b6b6b;
+}
+
+.wo-clock-entry__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+/* Secondary buttons — smaller than the primary action. */
+.wo-clock-entry__btn {
+  min-height: 36px;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #cbb273;
+  border-radius: 4px;
+  background: #fff;
+  color: #3a3a3a;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.wo-clock-entry__btn--close-now {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+.wo-clock-entry__time-input {
+  min-height: 36px;
+  font-size: 0.9rem;
+}
+
+/* Modal — full-width on phones, scrollable. */
+.wo-clock-modal {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.wo-clock-modal .wo-clock-entry {
+  border-color: #e2e2e2;
+}

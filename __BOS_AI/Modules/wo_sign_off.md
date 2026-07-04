@@ -17,6 +17,13 @@ Owns sign-off-time business logic for work orders:
 
 5. **Phase 2d (planned):** Logging cleanup for the silent-no-op case in `wo_timer_flag_update_flagging_delete`.
 
+> **Origin attribution (2026-07-03):** the reconciliation write paths — create-missing
+> and close-orphan, for both the `wo_complete_info` and `wo_tasks_list:lawn_mowing`
+> forms — now stamp **`field_source = 'signoff_reconciliation'`** on the entry before
+> save. The existing audit notes (`[Created by … at sign-off]` / `[Closed by … at
+> sign-off]`) are unchanged; `field_source` is the structured marker. See
+> `Modules/wo_clock.md` → "Attribution scheme".
+
 ---
 
 ## WoCrewRosterService (Phase 2a)

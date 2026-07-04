@@ -781,6 +781,65 @@ blast radius — only Complete (1097) WOs were invoiced, no pre-completion corru
 
 ---
 
+## `wo_time_clock.field_end_time` has a default of "now" — a plain create() is born CLOSED
+
+**Symptom:** code that programmatically creates a `wo_time_clock:entry` intended to be
+**open** (a clock-in with no clock-out yet) finds the entry is already closed —
+`field_end_time` is populated even though nothing set it. Open-entry lookups
+(`notExists('field_end_time')`), "currently clocked in" detection, and the Phase B
+sign-off guard then all **fail to see the entry**, because to them it isn't open.
+
+**Cause:** the `field_end_time` field **instance** carries
+`default_value: [{ default_date_type: now, default_date: now }]`. Drupal applies
+instance defaults for any field not explicitly set on `create()`, so
+`$storage->create([...])` without `field_end_time` **auto-fills it with the current
+time** — the entry is silently born closed. (The legacy flag path avoided this because
+`wo_timer_flag_update` clears/manages end_time on its own; a naive direct `create()`
+does not.) This is data-corrupting and silent — no error, just an entry that's closed
+when it should be open, throwing off duration math and every open-entry consumer.
+
+**Rule:** **any new code that creates an intended-open `wo_time_clock` entry MUST
+explicitly clear `field_end_time`** — `$entry->set('field_end_time', NULL)` after
+`create()`. Do not rely on "I didn't set it, so it's empty."
+
+**Preferred:** route creation through `WoClockService::createOpenEntry(uid, woId, extra)`
+(the `wo_clock` module), which builds an unsaved entry with `field_end_time` guaranteed
+cleared — one place owns the guarantee. `clockIn()` uses it. Surfaced 2026-07-03 during
+`wo_clock` Phase A validation (open entries were born closed; State-B detection + the
+sign-off guard silently missed them until the explicit clear was added).
+
+> **Companion trap — `field_notes` defaults to "Manually Entered".** The same
+> default-value mechanism bites `wo_time_clock.field_notes`, whose instance default
+> is the literal string **"Manually Entered"**. A plain `create()` stamps every entry
+> "Manually Entered" — this was the root of Phase A button clocks being **mislabeled
+> as manual**. Programmatic non-manual creators must clear it
+> (`$entry->set('field_notes', NULL)`) — `WoClockService::createOpenEntry()` does.
+
+---
+
+## Every wo_time_clock write path must stamp field_source
+
+**Rule:** as of 2026-07-03, `wo_time_clock:entry` carries a `field_source` list marker
+(origin attribution). **Every code path that creates — or materially re-attributes —
+a `wo_time_clock` entry MUST set `field_source`.** An entry that reaches the DB with
+`field_source` unset (NULL) when it *should* have a value is an **attribution bug**.
+
+Known values + their writers: `flag` (wo_timer_flag_update), `wo_clock_button`
+(WoClockService clock-in), `wo_clock_intervention` (WoClockService intervention close),
+`manual` (wo_clock presave catch-all for standard-form saves), `signoff_reconciliation`
+(wo_sign_off reconciliation), `cleanup_script` (hygiene scripts). NULL is reserved for
+**legacy** rows created before the field existed (no backfill).
+
+**The catch-all safety net:** `wo_clock_wo_time_clock_presave()` stamps `manual` on any
+insert with empty `field_source` and neither the `_wo_clock_write` (set by
+WoClockService) nor `_signoff_reconciliation` transient flag. So a *new* write path that
+forgets to stamp will be silently mislabeled **`manual`** — which looks plausible and is
+easy to miss. When adding a creator, set `field_source` explicitly (and, if it's a
+service, set `$entity->_wo_clock_write = TRUE` before save so the catch-all skips it).
+See `wo_clock.md` → "Attribution scheme". Surfaced 2026-07-03 (Phase A refinement).
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

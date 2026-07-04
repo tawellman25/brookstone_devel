@@ -1536,6 +1536,8 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
       if ($parent_id !== NULL) {
         $orphan->set($audit_closed_field, $parent_id);
       }
+      // Structured origin attribution (existing audit note stays as-is).
+      $orphan->set('field_source', 'signoff_reconciliation');
       $orphan->_signoff_reconciliation = TRUE;
       try {
         $orphan->save();
@@ -1594,6 +1596,7 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
 
       $new = $tc_storage->create([
         'type' => 'entry',
+        'field_source' => 'signoff_reconciliation',
         'field_work_order' => $wo_id,
         'field_teammate' => $uid,
         'uid' => $uid,

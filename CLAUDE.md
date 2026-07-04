@@ -77,15 +77,22 @@ The `__BOS_AI/` tree is the authoritative governance documentation for BOS, orga
 
 ### Regenerating the bundle
 
-When `__BOS_AI/` content changes, regenerate the upload bundle:
+**Just run the script** — [`__BOS_AI/bos-ai-sync.sh`](__BOS_AI/bos-ai-sync.sh) does the clean, stage, and verify in one path-independent step (exits non-zero if a duplicate basename slips through or an expected file is missing):
 
 ```bash
-# 1. Clean and re-stage
+./__BOS_AI/bos-ai-sync.sh
+```
+
+> **⚙️ Standing directive (auto-regenerate):** at the **end of any session where `__BOS_AI/` `.md`/`.docx` content changed** (including any [`ROADMAP.md`](__BOS_AI/ROADMAP.md) reconciliation), **run `./__BOS_AI/bos-ai-sync.sh` automatically** so the staged bundle stays current — do not wait to be asked. The staged `_upload_bundle/` is gitignored, so this is a local-only, copy-only artifact refresh (no commit needed for the bundle itself; the source `.md` edits are committed as usual). The user uploads the refreshed bundle to the Claude.ai project; Chat reads `ROADMAP.md` there as the overview (Claude Code is the sole writer of the roadmap — Chat does not edit it once it's in `__BOS_AI/`).
+
+The script keeps the staging rules below in lockstep — if you change the exclude sets or `RENAME` map, update **both** the script and this section. The equivalent inline logic (Python, since `zip` isn't available in WSL by default), for reference:
+
+```bash
+# Clean and re-stage
 rm -rf __BOS_AI/_upload_bundle
 mkdir -p __BOS_AI/_upload_bundle
 ```
 
-Then run the staging logic (Python, since `zip` isn't available in WSL by default):
 
 ```python
 import os, shutil

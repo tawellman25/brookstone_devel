@@ -70,7 +70,7 @@ third_party_settings:
       label: Photos
       parent_name: ''
       region: content
-      weight: 11
+      weight: 13
       format_type: details
       format_settings:
         classes: ''
@@ -95,11 +95,12 @@ third_party_settings:
         description: ''
         required_fields: false
     group_files:
-      children: {  }
+      children:
+        - wo_media_files_entity_view_1
       label: Files
       parent_name: ''
-      region: hidden
-      weight: 20
+      region: content
+      weight: 12
       format_type: details
       format_settings:
         classes: ''
@@ -148,7 +149,7 @@ third_party_settings:
       label: 'Office Administation'
       parent_name: ''
       region: hidden
-      weight: 21
+      weight: 22
       format_type: fieldset
       format_settings:
         classes: ''
@@ -172,6 +173,22 @@ third_party_settings:
         description: ''
         required_fields: false
         open: false
+    group_dumping_of_materials:
+      children:
+        - wo_dump_records_entity_view_1
+      label: 'Dumping of Materials'
+      parent_name: ''
+      region: content
+      weight: 10
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
 id: work_order.misc_services.default
 targetEntityType: work_order
 bundle: misc_services
@@ -200,7 +217,7 @@ content:
   wo_dump_records_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 10
+    weight: 11
     region: content
   wo_hours_grouping_entity_view_1:
     settings: {  }
@@ -211,6 +228,11 @@ content:
     settings: {  }
     third_party_settings: {  }
     weight: 10
+    region: content
+  wo_media_files_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 12
     region: content
   wo_media_photos_entity_view_1:
     settings: {  }
@@ -235,17 +257,12 @@ content:
   wo_sign_off_entity_view_8:
     settings: {  }
     third_party_settings: {  }
-    weight: 12
+    weight: 14
     region: content
   wo_time_clock_buttons_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 4
-    region: content
-  wo_time_clock_buttons_entity_view_2:
-    settings: {  }
-    third_party_settings: {  }
-    weight: 5
+    weight: 10
     region: content
   wo_time_clock_entries_total_entity_view_1:
     settings: {  }
@@ -255,6 +272,9 @@ content:
 hidden:
   changed: true
   created: true
+  entity_print_view_epub: true
+  entity_print_view_pdf: true
+  entity_print_view_word_docx: true
   field_billing_adjustment: true
   field_billing_notes: true
   field_contact: true
@@ -280,3 +300,4 @@ hidden:
   title: true
   uid: true
   wo_current_property_owner_entity_view_1: true
+

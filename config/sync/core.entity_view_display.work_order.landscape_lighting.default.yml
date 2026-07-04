@@ -7,7 +7,25 @@ dependencies:
     - field.field.work_order.landscape_lighting.field_contact
     - field.field.work_order.landscape_lighting.field_estimate
   module:
+    - field_group
     - user
+third_party_settings:
+  field_group:
+    group_scheduling:
+      children: {  }
+      label: Scheduling
+      parent_name: ''
+      region: hidden
+      weight: 20
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        label_as_html: false
+        open: false
+        description: ''
+        required_fields: false
 id: work_order.landscape_lighting.default
 targetEntityType: work_order
 bundle: landscape_lighting
@@ -62,6 +80,11 @@ content:
     third_party_settings: {  }
     weight: 4
     region: content
+  wo_media_files_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
   wo_media_photos_entity_view_1:
     settings: {  }
     third_party_settings: {  }
@@ -80,12 +103,7 @@ content:
   wo_time_clock_buttons_entity_view_1:
     settings: {  }
     third_party_settings: {  }
-    weight: 8
-    region: content
-  wo_time_clock_buttons_entity_view_2:
-    settings: {  }
-    third_party_settings: {  }
-    weight: 9
+    weight: 10
     region: content
   wo_time_clock_entries_total_entity_view_1:
     settings: {  }
@@ -94,5 +112,9 @@ content:
     region: content
 hidden:
   changed: true
+  entity_print_view_epub: true
+  entity_print_view_pdf: true
+  entity_print_view_word_docx: true
   field_contact: true
   field_estimate: true
+

@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-03 (drift sweep: daily-recap + wo-notes restyle confirmed shipped & archived; wo_clock Phase A added)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (cross-checked vs BOS Unfinished Inventory: WEX gate 3b archived as shipped; added Vehicle 77628 review + QB Invoicing SOP family)
 
 ---
 
@@ -55,6 +55,7 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 | Fuel surcharge — full build from zero | `wo_sign_off` + 36 bundles | T2 | L | **Live has nothing** (no field, no toggle, no per-zip rates). Locate the branch that claimed "Phase 1 complete" or treat as greenfield. |
 | 2 stranded invoiced WOs (In-Progress + `field_invoiced=1`) | Data hygiene | T2 | S | Down from 3. The genuine "invoiced before complete" debt from the June incident. Per-WO decision then correct. |
 | 45-day auto-cancel threshold pressure-test | spray-route-guard | T2 | S | Monthly freq = 35d, only 10d margin. Validate no legit pending sprays exceed 45d before unattended cron. |
+| QuickBooks Invoicing SOP family completion | SOPs / `OFF-QBS-INV` | T3 | S | INV-003 authored & installed; **INV-001 (parent) + INV-002 not yet in `__BOS_AI/SOPs/`** — author + run the docx generator. SOP authoring is Chat's domain (Code installs). |
 
 ---
 
@@ -80,10 +81,10 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 ### Fleet / WEX (T3)
 | Item | Notes |
 |---|---|
-| WEX cron wrapper + failure alerting (gate 3b) | IMAP fetch works; needs unattended wrapper + silent-failure alert. |
 | SFTP delivery channel | Superior long-term; awaiting WEX rep. IMAP primary until then. |
 | Fleet Fuel Dashboard | Per-vehicle MPG, monthly rollups, anomaly flags. |
 | Bogus-high odometer guardrail | High reads write through and cap the vehicle permanently. |
+| Vehicle 77628 (Webster) odometer human review | One-time review: stored 81,983 vs the real reading. The 07-03 recon couldn't locate the vehicle record — first confirm it exists, then verify/correct. |
 
 ### Notifications (T3)
 | Item | Notes |
@@ -147,6 +148,8 @@ All modules enabled (estimate_board, estimate_notifications, calendars, scheduli
 **Daily recap dashboard — SHIPPED 2026-06-27** (`bos_daily_recap`, ENABLED on live; `/admin/office/daily-recap`). Per-department value + job-count cards (Yesterday / WTD / MTD), click-through to service-grouped WO list. _(Was still listed as "NEXT — pending build"; confirmed live and archived 2026-07-03.)_
 
 **WO notes restyle — SHIPPED 2026-06-24** (`e684c53c`; live has all 3 structured fields — `field_change_summary` / `field_note_kind` / `field_is_system_note`). Notes render as clickable My-Schedule cards; `wo_schedule` auto-notes restructured into labeled lines; 1,573 legacy notes migrated. _(Was still listed as "NEXT — pending execution"; confirmed live and archived 2026-07-03.)_
+
+**WEX daily-fetch failure alerting (gate 3b) — SHIPPED** (live `web/scripts/wex_alert_check.sh` + 7:15 AM watcher cron; the 7:00 fetch + 2:30 DB-backup crons also confirmed active 2026-07-04). The drush-independent watcher emails on a missed/incomplete 07:00 fetch — the unattended wrapper + silent-failure alert this item asked for. _(Was still listed under Fleet/WEX as pending.)_
 
 _Note: `wo_material_price_sync` is enabled and error-free on live — the "broken on live" concern did not reproduce. Confirm the form-display/view-filter behavior in the app before fully closing._
 

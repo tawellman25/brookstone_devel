@@ -4,6 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **For process discipline and engineering norms when working with Claude on BOS, read [`__BOS_AI/Governance/working_with_claude.md`](__BOS_AI/Governance/working_with_claude.md).** Pause-and-verify pattern, targeted commits, end-to-end verification, recovery-point pushes — required reading before non-trivial work. The companion docs [`drupal_bos_gotchas.md`](__BOS_AI/Governance/drupal_bos_gotchas.md) and [`architectural_patterns.md`](__BOS_AI/Governance/architectural_patterns.md) cover Drupal/BOS-specific traps and reusable patterns. [`deferred_work.md`](__BOS_AI/Governance/deferred_work.md) tracks surfaced-but-deferred items.
 
+> **📍 Roadmap = status-of-record. [`__BOS_AI/ROADMAP.md`](__BOS_AI/ROADMAP.md) is the authoritative tracker of every unfinished BOS initiative** (each row carries Horizon / Tier / Effort / Season; it has its own Maintenance protocol at the bottom). **Keep it in sync as part of every commit/deploy — do not let it drift:**
+> - When a commit or deploy **ships, changes, or obsoletes** a roadmap item, reconcile the affected rows in ROADMAP.md **in the same session** (protocol rule 7 — "end each work session by reconciling the affected rows").
+> - **Move shipped work** to the "✅ Shipped — verified DONE" archive with a commit-hash / live-check anchor; archived items live **one cycle, then drop** — delete old finished references so the archive doesn't accrete.
+> - **Add newly-surfaced initiatives** with at minimum Area + one-line scope + a tier guess (protocol rule 6). No untitled rows.
+> - **Anchor every status to evidence** (commit hash · module · config key · named live check) so the quarterly read-only recon can re-verify it.
+> - If a status here **conflicts** with memory, a chat, or Todoist, **ROADMAP.md wins** — reconcile the others to it.
+> - `deferred_work.md` stays the finer-grained "surfaced-but-deferred" scratch list; ROADMAP.md is the curated, prioritized board. When something graduates from a passing mention to a real initiative, promote it onto the roadmap.
+
 ## Project Identity
 
 This is **BOS** (Brookstone Operating System) — the internal operations platform for Brookstone Outdoors LLC, built on Drupal 10 (Drupal 11 compatible). BOS centralizes operational, client, property, and work order data. It is **not** an ERP in user-facing language.

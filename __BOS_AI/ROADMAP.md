@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (**Cowork Connect Gate 1 built** — `bos_wo_intake`, promoted to NOW/T1, local 6/6 green; earlier: surfaced by name, decisions sweep resolved 6)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (**Cowork Connect Gate 1 SHIPPED to live**, SAPI proof passed; postponed multi-consumer keys to LATER; earlier: decisions sweep resolved 6)
 
 ---
 
@@ -98,6 +98,11 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 |---|---|
 | First signed backflow test — PDF+S3 smoke test | Parked pending office generating first real signed test. |
 | Property devices EVA card restyle | Match My Schedule card component. |
+
+### Integration — Cowork Connect / WO-intake API (T2/T3, post-Gate-2)
+| Item | Notes |
+|---|---|
+| Multi-consumer keys + per-consumer attribution | **Postponed 2026-07-04.** Gate 1 ships **one shared `X-API-KEY` → one `cowork-connect` identity** — anyone with the key creates WOs, all attributed to that single service account (can't tell caller A from B). The endpoint is already generic (any HTTPS POST client — curl, Zapier/Make, another app or agent — not just Cowork), and the logic is transport-agnostic (`WorkOrderIntakeService`, reusable by a future MCP tool / drush / internal button). Adding **distinct consumers each with their own key + audit identity** is a clean extension: additional `key` entities + service accounts, auth provider selects the matching account. Build when a **second consumer actually appears** — not before. Depends on Gate 2 (the intake surface maturing first). |
 
 ### Estimating polish (T3, after epic)
 | Item | Notes |

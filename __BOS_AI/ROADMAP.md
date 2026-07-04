@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (cross-checked vs BOS Unfinished Inventory: WEX gate 3b archived as shipped; added Vehicle 77628 review + QB Invoicing SOP family)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (decisions sweep: 6 pending decisions resolved — fuel-surcharge greenfield, status-service name, no scheduling_log, pruning deferred, 183-anomaly defined, 329-WOs left as-is)
 
 ---
 
@@ -51,7 +51,7 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 | TimeTrax live SQL-read integration | `bos_teammate_operations` | T2 | L | Foundation + swappable `CompensableHoursService` on 8.5hr assumption built. Swap in real SQL Server read (Punch/Employee/EmployeeCards, PunchKey idempotency). Labor-cost accuracy. |
 | Estimate board pipeline swimlane rework | `estimate_board` | T2 | M | Build prompt produced; replace single "Active Pipeline" with per-status swimlanes + color. Pending Code execution. |
 | wo_clock — foreman crew-status view + end-of-day notifications (Phase B/C) | `wo_clock` | T2 | M | Phase A shipped (clock-in/out redesign + silent GPS + attribution). Next: foreman "who's still clocked in" view + end-of-day open-clock-in alerting. Flag-path retirement is the winter cleanup (see LATER). |
-| Status-service refactor | `wo_status_updates` | T2 | M | Fixes presave-saves-the-WO coupling. Call sites: `update_spraying_info_from_invoiced_work_order`, `update_work_order_invoiced_action`. **⚠ name: reconcile "WorkOrderStatusService" (June invoicing chat) vs "WorkOrderInvoicingService" (roadmap v1 seed) — decide canonical name before building.** |
+| Status-service refactor → **`WorkOrderStatusService`** | `wo_status_updates` | T2 | M | Fixes presave-saves-the-WO coupling. Call sites: `update_spraying_info_from_invoiced_work_order`, `update_work_order_invoiced_action`. Canonical name settled 2026-07-04 (`WorkOrderStatusService` — broader than invoicing). |
 | Fuel surcharge — full build from zero | `wo_sign_off` + 36 bundles | T2 | L | **Greenfield confirmed (2026-07-04).** Exhaustive search found **zero trace** of any "Phase 1": no branch (local/remote), no commit across all refs, no stash/reflog, no design doc, and live has no field/toggle/per-zip rate on zipcodes, business_setting, or any work_order bundle. The 05-04 "Phase 1 complete" was a Chat-side plan that was never coded. Build all of it: per-zip rates + business_setting toggle + 36-bundle fields + sign-off math. |
 | 2 stranded invoiced WOs (In-Progress + `field_invoiced=1`) | Data hygiene | T2 | S | Down from 3. The genuine "invoiced before complete" debt from the June incident. Per-WO decision then correct. |
 | 45-day auto-cancel threshold pressure-test | spray-route-guard | T2 | S | Monthly freq = 35d, only 10d margin. Validate no legit pending sprays exceed 45d before unattended cron. |
@@ -110,6 +110,7 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 |---|---|
 | Inert `hook_entity_validate` convention (system-wide) | No invoker anywhere — `*_entity_validate` guards silently inert. Own diagnostic thread. |
 | Dedicated code-quality audit pass | 5+ latent issues surfaced; no test tooling. Fall 2026. |
+| Time-clock anomaly cleanup (182 historical) | The 5 `AnomalyDetectionService` types: **103** negative-hours + **77** implausible-long (>16h) + **2** stale-open; 0 future/time-travel (live 2026-07-04). Mostly historical bad clock data — correct/annotate. Non-blocking; the 2 stale-open may already be closing under wo_clock. |
 | Branch strategy review | `drupal-update-20251206` stale; `main` is live reference (rsync deploy, live `.git` stale at 9c239ff). |
 | Retire `wo_clock` flag-based timer path | `wo_clock` coexists with the legacy flag timer during migration. Once the button path is trusted in the field, retire the flag path (`wo_timer_flag_update`) and remove the coexistence code. Off-season. |
 | Retire `CreateAndScheduleSprinklerCheckUpWorkOrdersAction` VBO | Off-season. |
@@ -125,15 +126,18 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 
 ---
 
-## Decisions pending — your call, not a build
+## Decisions — resolved in the 2026-07-04 sweep
 
-- ~~**Fuel surcharge:** where is the branch that claimed Phase 1?~~ **RESOLVED 2026-07-04 — greenfield.** No branch/commit/stash/doc/live-field exists anywhere; the 05-04 "Phase 1 complete" was a never-coded Chat plan. It's now a from-zero build (see NEXT).
-- **Status-service naming:** `WorkOrderStatusService` vs `WorkOrderInvoicingService` — pick canonical.
-- **`scheduling_log` entity:** build it? Three sub-decisions — log route-order changes? `field_change_reason` required or optional? historical backfill vs fresh start?
-- **Snow / `special_mowing` architecture:** design the reconciliation model (fall).
-- **Pruning taxonomy split:** taxonomy-only vs separate WO bundles for Winter Tree / Fruit Tree / Summer under a "Pruning" parent.
-- **"183 anomaly" metric:** define it so Code can match (read-only proxy = 3 open clock-ins).
-- **329 canceled-but-invoiced WOs (status 1098):** legitimate (invoiced then canceled) or drift? Decide before any cleanup.
+- **Fuel surcharge** → **greenfield.** No branch/commit/stash/doc/live-field exists anywhere; the 05-04 "Phase 1 complete" was a never-coded Chat plan. Now a from-zero build (see NEXT).
+- **Status-service naming** → **`WorkOrderStatusService`** (broader than invoicing; future-proof as more call sites move onto it). NEXT row updated.
+- **`scheduling_log` entity** → **not building.** `wo_schedule` already auto-logs every schedule/reschedule as a structured WO note (date/crew/note, old→new), which covers the audit-history need. Revisit only if queryable cross-WO reschedule analytics are ever required.
+- **Pruning taxonomy split** → **deferred to off-season** (T3). Existing `winter_pruning`/`summer_pruning` bundles stay as-is; revisit the "Pruning" parent (Winter Tree / Fruit Tree / Summer) in winter.
+- **"183 anomaly" metric** → **defined** = the 5 canonical `AnomalyDetectionService` types (negative hours · implausible-long >16h · future start · forgotten clock-out >7d · end-before-start). Live count **182** (103 + 77 + 2; 0 future/time-travel), overwhelmingly historical. Cleanup is its own LATER item.
+- **329 canceled-but-invoiced WOs (status 1098)** → **leave as-is** (legitimate migrated/historical: 81% sprinkler, NULL WO#, already excluded from billing by the `IN(1097,1281)` floor). No cleanup.
+
+## Decisions still open
+
+- **Snow / `special_mowing` reconciliation architecture** — design the clocked-labor-vs-recorded-work model (same class as WO#49698). Season-gated: settle in **fall 2026**, before snow season. Builds live in LATER → Season-gated.
 
 ---
 

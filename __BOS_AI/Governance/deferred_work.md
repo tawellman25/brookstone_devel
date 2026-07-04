@@ -343,6 +343,24 @@ manual fix; see the ECK gotcha). Done = `drush cim --diff` comes back clean.
 
 ---
 
+### 23. Stale `drupal/calendar` composer-patch fails on every `composer install`
+
+Surfaced 2026-07-04 (noticed during the wo_clock deploy). The declared patch
+`drupal/calendar` → `3177761-6.calendar.Support-for-Smart-Date.patch` (composer.json
+`extra.patches`) **fails to apply** — every `composer install` prints "Removing package
+drupal/calendar so that it can be re-installed and re-patched" then "Could not apply patch!
+Skipping." Confirmed **environment-agnostic**: local DDEV and live both fail it identically,
+and both run calendar **vanilla beta5, unpatched** (0 `smart_date` refs in
+`web/modules/contrib/calendar/src` on either). **Zero operational impact** — BOS scheduling
+uses `fullcalendar`/`admin_calendar`/`business_calendar`, not the calendar+smart_date combo
+the patch enables; no runtime errors, front page 200 post-deploy. `composer-patches` is
+skip-on-failure so installs still complete. **Cleanup:** either drop the (and the paired
+`smart_date` → `3177760-13`) patch from `composer.json` if the smart_date-in-calendar feature
+is genuinely unused, or refresh to a patch revision that applies to the installed calendar
+version. Hygiene only — removes noisy remove/reinstall churn from every deploy.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

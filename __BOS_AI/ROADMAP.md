@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (surfaced **Cowork Connect** by name in NEXT + committed its Gate 0 docs; earlier: decisions sweep resolved 6 pending decisions)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (**Cowork Connect Gate 1 built** — `bos_wo_intake`, promoted to NOW/T1, local 6/6 green; earlier: surfaced by name, decisions sweep resolved 6)
 
 ---
 
@@ -38,6 +38,7 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 ### Other NOW items
 | Item | Area | Tier | Effort | Notes |
 |---|---|---|---|---|
+| **Cowork Connect** — WO-intake REST API | `bos_wo_intake` | T1 | M | External Copilot-Cowork agent creates Work Orders in BOS via a custom **`X-API-KEY`** REST endpoint. **Gate 1 BUILT** (module `bos_wo_intake`: route-scoped key-auth provider + `RestResource /api/wo-intake` + `WorkOrderIntakeService` + `system_integration` role + `cowork-connect` service account; **local acceptance 6/6 green**). Deploy for the live LiteSpeed SAPI auth proof (422-not-401). **Gate 2 next:** natural-language resolution + two-tier dedup + child entities (notes/scheduling). Docs: `__BOS_AI/Integration/`. |
 | QuickBooks Desktop IIF export | Billing | T1 | M | Fully scoped. Residential = 1 invoice/WO; Commercial = batched line-items/period; two-bucket on `field_client_type`. |
 | Warranty full-dollar-capture + QB zeroing | `wo_sign_off` / Billing | T2 | M | Sign-off path live (1283); **dollar-capture fields do not exist**. Coupled deploy unit — capture + zeroing ship together or risk billing customers for warranty work. |
 
@@ -47,7 +48,6 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 
 | Item | Area | Tier | Effort | Notes |
 |---|---|---|---|---|
-| **Cowork Connect** — WO-intake REST API (Gate 1 → build) | `WorkOrderIntakeService` + custom key-auth REST | T2 | M | The **Cowork integration** — an external Copilot-Cowork agent creates Work Orders in BOS over an API. **Gate 0 done** (`__BOS_AI/Integration/`: briefing `work_order_api.md`, `system_integration_role_inspection.md`, `transport_decision_mcp_vs_rest.md`). Architecture locked: **Option B** custom key-auth REST, **`X-API-KEY`** header (not `Authorization` — stripped on CloudLinux/cPanel), `system_integration` role enforced by **explicit access checks in the service** (bare `->save()` bypasses role), dedupe. **Next:** write the Gate 1 build spec → build (custom auth provider + RestResource + `WorkOrderIntakeService` + key/service-account). Open: read+write vs write-only · error-surfacing shape · Cowork-direct vs shim (briefing B4). _Tier: inventory rated P1 — revisit T1 vs T2 when scheduling._ |
 | TimeTrax live SQL-read integration | `bos_teammate_operations` | T2 | L | Foundation + swappable `CompensableHoursService` on 8.5hr assumption built. Swap in real SQL Server read (Punch/Employee/EmployeeCards, PunchKey idempotency). Labor-cost accuracy. |
 | Estimate board pipeline swimlane rework | `estimate_board` | T2 | M | Build prompt produced; replace single "Active Pipeline" with per-status swimlanes + color. Pending Code execution. |
 | wo_clock — foreman crew-status view + end-of-day notifications (Phase B/C) | `wo_clock` | T2 | M | Phase A shipped (clock-in/out redesign + silent GPS + attribution). Next: foreman "who's still clocked in" view + end-of-day open-clock-in alerting. Flag-path retirement is the winter cleanup (see LATER). |

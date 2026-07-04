@@ -1,0 +1,27 @@
+services:
+  # Custom key-auth provider. provider_id 'cowork_key' is what
+  # rest.resource.wo_intake lists under `authentication`.
+  bos_wo_intake.auth.cowork_key:
+    class: Drupal\bos_wo_intake\Authentication\Provider\CoworkKeyAuthProvider
+    arguments:
+      - '@entity_type.manager'
+      - '@key.repository'
+      - '@logger.channel.bos_wo_intake'
+    # NOT global — the provider is wired to the wo-intake route via the
+    # rest.resource `authentication: [cowork_key]` list, so X-API-KEY is only
+    # evaluated on that endpoint (not every site route). Route-scoped auth also
+    # makes the challenge (401) fire correctly for both wrong and missing keys.
+    tags:
+      - { name: authentication_provider, provider_id: cowork_key, priority: 100 }
+
+  # Transport-agnostic intake logic. Reused by the REST resource now and by
+  # Gate 2 / a future MCP tool later.
+  bos_wo_intake.intake:
+    class: Drupal\bos_wo_intake\Service\WorkOrderIntakeService
+    arguments:
+      - '@entity_type.manager'
+      - '@logger.channel.bos_wo_intake'
+
+  logger.channel.bos_wo_intake:
+    parent: logger.channel_base
+    arguments: ['bos_wo_intake']

@@ -1,0 +1,112 @@
+# Cowork Connect / Voice-to-WO text-resolution settings (Gate 2A).
+# duplicate_window_days: terminal WOs completed/updated within this many days
+# trigger a "recent prior WO" flag note (but still create). Default 3.
+duplicate_window_days: 3
+
+# Spoken/typed phrase (normalized: lowercase, punctuation stripped) -> services term id.
+# UNAMBIGUOUS boosts only. Genuinely ambiguous phrases (design, spray, lighting, cleanup,
+# bare "pruning") are intentionally OMITTED so they fall through to an ambiguous(service)
+# result with candidates — the correct behavior for tap-to-pick disambiguation.
+# Seeded 2026-07-04 from the live WO-service term list; flagged ambiguities left for Todd.
+synonym_map:
+  aeration: 389
+  aerate: 389
+  aerating: 389
+  'aspen twig gall': 399
+  'aspen gall': 399
+  backflow: 1649
+  'backflow test': 1649
+  'backflow testing': 1649
+  checkup: 393
+  'check up': 393
+  'sprinkler checkup': 393
+  'sprinkler check up': 393
+  'cooley spruce': 407
+  'cooley gall': 407
+  'cooley spruce gall': 407
+  'deciduous bore': 406
+  deer: 409
+  'deer wire': 409
+  'deer prevention': 409
+  dethatch: 404
+  dethatching: 404
+  'dormant oil': 401
+  'fall cleanup': 413
+  'fall clean up': 413
+  grub: 408
+  grubs: 408
+  'grub prevention': 408
+  'holiday decorations': 396
+  christmas: 396
+  'christmas decorations': 396
+  'holiday lights': 396
+  'in house task': 403
+  'in-house task': 403
+  installation: 392
+  install: 392
+  'sprinkler install': 392
+  'sprinkler installation': 392
+  landscaping: 364
+  landscape: 364
+  'special mowing': 395
+  'special mow': 395
+  misc: 390
+  miscellaneous: 390
+  'misc services': 390
+  pinyon: 400
+  'pinyon pine': 400
+  'ips beetle': 400
+  'pine beetle': 400
+  'pre emergent': 410
+  preemergent: 410
+  repair: 368
+  'sprinkler repair': 368
+  'fix sprinkler': 368
+  snow: 373
+  'snow removal': 373
+  plow: 373
+  plowing: 373
+  'spring cleanup': 411
+  'spring clean up': 411
+  'start up': 375
+  startup: 375
+  'spring start up': 375
+  'turn on': 375
+  'sprinkler start up': 375
+  'summer pruning': 412
+  'trees and shrubs': 417
+  'shrub fertilizing': 417
+  'tree and shrub fertilizing': 417
+  'trunk bore': 405
+  'weed pulling': 416
+  'pull weeds': 416
+  mow: 377
+  mowing: 377
+  'lawn mowing': 377
+  'weekly mowing': 377
+  'winter pruning': 1650
+  winterize: 369
+  winterizing: 369
+  'blow out': 369
+  blowout: 369
+  'sprinkler winterizing': 369
+
+# Street-suffix abbreviation -> canonical full form. Applied to BOTH stored street and
+# the extracted fragment so "ln" matches "lane", etc. Extendable.
+street_suffix_map:
+  ln: lane
+  dr: drive
+  st: street
+  rd: road
+  ct: court
+  ave: avenue
+  av: avenue
+  cir: circle
+  hwy: highway
+  blvd: boulevard
+  pl: place
+  ter: terrace
+  pkwy: parkway
+  trl: trail
+  loop: loop
+  way: way

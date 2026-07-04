@@ -297,3 +297,63 @@ WO# is a separate, system-wide question.
 
 **Gate 2 scope:** natural-language / name resolution of property + service; two-tier duplicate
 detection; child-entity creation (`wo_notes`, `scheduling`); read-back endpoints if needed.
+
+---
+
+# Gate 2A — AS BUILT (local, 2026-07-04; not deployed)
+
+`WorkOrderIntakeService::createFromText(string $text, AccountInterface $actor, array $options = [])`
+— **deterministic** (no LLM) parse + resolution of a spoken/typed command into a WO + complaint
+note. Service-layer only: **no route/REST/UI change** (Gate 2B adds the mobile page). Proven via
+`drush php:script web/scripts/wo_intake_2a_acceptance.php` against a prod-synced DB — 11/11.
+
+**Options:** `allow_duplicate` (bool, default FALSE) · `property_id` / `service_term_id` (ints —
+supplied → SKIP that resolution; this is the 2B candidate-tap resubmission path).
+
+**Result contract** — `status`: `created | ambiguous | blocked | error` (+ `http`):
+- `created`: `work_order` (id, work_order_id [may be null — system-wide], bundle, status/tid),
+  `note_ids[]`, `flags[]`, `extracted{}`.
+- `ambiguous`: `piece` (`property|service`), `candidates[]`, `extracted{}`, optional `conflict`.
+- `blocked`: `existing` WO summary + `reason` (`active_duplicate`).
+- `error`: `error{code,message}` (reuses Gate 1 slugs).
+
+**Extraction (deterministic):** complaint = trailing clause after the first period, or a comma-led
+`they/there/it…` clause (verbatim, original case). Command is lowercased, filler-stripped
+(`create/a/the/work order/wo/on/in/at/for`). Longest known service phrase plucked out; remainder
+split into name / street / town by prepositions (`for`/`on`·`at`/`in`), with a no-preposition
+fallback that carves a street off the tail via a house number or a trailing street-suffix token.
+
+**Service resolution:** `bos_wo_intake.settings.synonym_map` (phrase → term id, unambiguous only)
+then WO-service term-name match. 0 or ≥2 → `ambiguous(service)` with candidates. Bundle checks
+reuse Gate 1 (`estimate_bundle_forbidden`, `service_bundle_missing`).
+
+**Property resolution (nickname-primary):** normalize identically (lowercase, punctuation incl.
+commas stripped, street-suffix equivalence via `street_suffix_map`). **Nickname = token-order-
+insensitive**: every extracted name token must substring-match `field_nickname` in any order — one
+rule covers `"Smith, John"` and `"Walmart Delta"`. Street compounds against `field_street_address`;
+town against `field_zipcode_reference → zipcodes.field_city` (fallback: `field_full_address`).
+Exactly 1 full match → resolved; >1 → ambiguous (≤8 candidates, ranked nickname>street>town); 0 →
+**conflict rule**: if dropping town yields a unique name+street match, return it flagged
+`conflict{field:town, expected, actual}` — never silently drop a user fragment.
+
+**Duplicate tiers** (same property + service term; skipped on `allow_duplicate`): **guarded bundles
+defer** — `weed_spraying` → `_wo_weed_spraying_find_active_open_wo()` (the only such bundle, per
+Phase 0). Generic: **active** (status 1089/1090/1091/1092, any age) → `blocked`; **terminal-recent**
+(1097/1281/1283/1504 within `duplicate_window_days`, default 3) → **create** + a system flag note
+(`field_is_system_note=TRUE`); canceled (1098) / older terminal → ignore.
+
+**Create sequence:** explicit `createAccess()` gate on `work_order` (and again on `wo_notes` before
+each note — bare `->save()` bypasses the role) → create WO (status 1089, normal save heals AEL) →
+complaint note (`field_note_text` verbatim, `field_is_system_note=FALSE`, `field_note_kind=manual`,
+authored as `$actor`) → recent-terminal flag note when the tier fires. No scheduling/execution in 2A.
+
+**Config:** `bos_wo_intake.settings` (config/install + schema): `duplicate_window_days`,
+`synonym_map` (81 seeds), `street_suffix_map` (16). **Synonym ambiguities left for Todd** (omitted
+so they return candidates): `design` (Landscaping 370 / Sprinkler 371), `spray`/`weed spray`
+(Landscape Beds 414 / Weed Control 1277), `lighting` (1648/1647), `cleanup` (Fall 413 / Spring 411).
+**Data flags:** term **388 "Pruning"** has an empty bundle; term **366 "Spraying"** maps to a
+non-existent WO bundle — both are WO-service-flagged but unbuildable (surface a `service_bundle_missing`
+/ create error). Should be fixed or de-flagged as WO-services.
+
+**Gate 2B scope:** mobile intake page + menu icon (mic/dictation → `createFromText` → candidate-tap
+disambiguation using the `property_id`/`service_term_id` options), date grammar → scheduling.

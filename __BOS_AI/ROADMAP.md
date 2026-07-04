@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (reframed as **Voice-to-Work-Order** & postponed — Gate 1 endpoint shipped/live is the foundation; real goal is voice→transcribe→WO; earlier: decisions sweep resolved 6)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (**Voice-to-Work-Order un-postponed → active**; Gate 2A `createFromText()` deterministic resolution in progress; Gate 1 endpoint is the live foundation)
 
 ---
 
@@ -34,6 +34,19 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 | 4a | Branch: recurring → Contract | `estimate` | Mow/spray/pre-emergent/check-ups: accepted estimate creates a **contract section**, not a WO. |
 | 4b | Branch: design-build → deposit → WO | `WorkOrderConverter` | Wire the existing converter to the acceptance trigger; deposit path. |
 | 5 | Estimator + client notifications | `estimate_notifications` | Module exists; complete the set (estimator on assign, client on ready). Depends on SMTP being live — verified DONE. |
+
+### ⭐ Voice-to-Work-Order — the actual goal (T1/T2, active)
+Speak into a phone → phone dictation transcribes → BOS creates a Work Order from the text.
+**Deterministic** text resolution (no LLM) — parse the utterance, resolve the property by
+**nickname** (token-order-insensitive) + service by vocab term, create the WO. Cowork was one
+candidate front-end and proved less useful than this in-house path; the endpoint built for it is
+the reusable foundation.
+
+| Gate | Status |
+|---|---|
+| **Gate 1** — authenticated WO-intake endpoint | ✅ **SHIPPED & live** (`166f573b`; `bos_wo_intake`, `POST /api/wo-intake`, X-API-KEY, `system_integration` role + `cowork-connect` account). The durable foundation. |
+| **Gate 2A** — `createFromText()` resolution brain | ✅ **BUILT (local, 2026-07-04) — 11/11 acceptance green; NOT deployed.** Deterministic parse (no LLM): extract service + name + street + town + complaint; resolve service (synonym map + vocab) and property (nickname-primary, token-order-insensitive, compounding street/town, conflict-flagging); two-tier duplicate guard (active-block / terminal-recent-note), deferring to `weed_spraying`'s guard; create WO + complaint note. Service-layer only — **no UI/route/REST change**. Docs: `work_order_api.md` (Gate 2A as-built). Deploy with Gate 2B. |
+| **Gate 2B** — mobile intake page + menu icon | Later spec — the phone-facing capture surface (mic/dictation → `createFromText` → candidate-tap disambiguation). |
 
 ### Other NOW items
 | Item | Area | Tier | Effort | Notes |
@@ -98,19 +111,10 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 | First signed backflow test — PDF+S3 smoke test | Parked pending office generating first real signed test. |
 | Property devices EVA card restyle | Match My Schedule card component. |
 
-### Voice-to-Work-Order (postponed 2026-07-04)
-**The actual goal:** speak into a phone → transcription → a Work Order is created from what was
-said. "Cowork" was only one candidate front-end; the need is the **voice → WO pipeline**, not any
-one product. **Postponed** — the Cowork-agent-via-structured-API path proved heavier/less useful
-than the goal warrants. Gate 1 (below) is already built and is the reusable foundation; pick this
-up when there's appetite to build the transcription + NL-parse front-end.
-
-| Piece | Status / Notes |
+### Multi-consumer keys + per-consumer attribution (T3, when a 2nd consumer appears)
+| Item | Notes |
 |---|---|
-| **Gate 1** — authenticated WO-intake endpoint | ✅ **SHIPPED & live** (`166f573b`; `bos_wo_intake`, `POST /api/wo-intake`, `X-API-KEY`, `WorkOrderIntakeService`, `system_integration` role + `cowork-connect` account; SAPI proof passed). The durable, swappable-front-end foundation — any client posts to it. Key-gated + dormant (nothing calls it); **safe to leave enabled**, or disable to trim surface. Docs: `__BOS_AI/Integration/work_order_api.md`. |
-| **Gate 2** — natural-language resolution | The bridge from a transcription to a WO: accept a property **name** + service **description** (not raw IDs), resolve them, two-tier duplicate detection, child entities (`wo_notes`, `scheduling`). This is the piece that makes voice→WO actually work. Not started (was to be its own spec). |
-| **Transcription + parse front-end** | Voice → text (phone dictation / Whisper / Cowork), then text → structured fields via an LLM — **BOS already runs `ai_provider_openai`**, so the parser is in-house. Front-end options: a **BOS mobile mic page** (no external dependency, likely simplest), an **iOS Shortcut**, or Cowork. Decide the front-end when resuming. |
-| Multi-consumer keys + per-consumer attribution | One shared key → one `cowork-connect` identity today. Distinct per-consumer keys + audit attribution (additional `key` entities + service accounts; provider selects the match) is a clean extension — build only when a 2nd consumer appears. |
+| Per-consumer keys + audit identity | One shared `X-API-KEY` → one `cowork-connect` identity today. Distinct per-consumer keys + attribution (additional `key` entities + service accounts; provider selects the match) — build only when a 2nd consumer actually appears. |
 
 ### Estimating polish (T3, after epic)
 | Item | Notes |

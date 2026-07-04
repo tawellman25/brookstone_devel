@@ -58,6 +58,8 @@ function wo_timer_flag_update_flagging_insert(FlaggingInterface $flagging) {
         ->getStorage('wo_time_clock')
         ->create([
           'type' => 'entry',
+          // Coexistence attribution — created by the legacy flag path.
+          'field_source' => 'flag',
           'field_work_order' => $flagging->getFlaggable()->id(),
           'field_notes' => 'Start time entered through system',
           'field_start_time' => DrupalDateTime::createFromTimestamp(time(), new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s'),

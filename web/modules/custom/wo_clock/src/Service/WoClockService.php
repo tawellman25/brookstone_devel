@@ -41,6 +41,14 @@ final class WoClockService {
    */
   private const EARTH_RADIUS_FEET = 20902231.0;
 
+  /**
+   * Structured note formats (sprintf). Timestamps are site-tz MM/DD/YYYY h:i AM/PM.
+   * Notes accumulate newline-separated across a start and a later end.
+   */
+  public const NOTE_BUTTON_START = '[Start: Button %s]';
+  public const NOTE_BUTTON_END = '[End: Button %s]';
+  public const NOTE_INTERVENTION_END = '[End: Intervention %s by %s]';
+
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
     private readonly AccountProxyInterface $currentUser,
@@ -152,10 +160,19 @@ final class WoClockService {
     ] + $extra);
     // The guarantee: never inherit the "now" default on an open entry.
     $entry->set('field_end_time', NULL);
+    // Clear the field_notes default of "Manually Entered" — this is a BUTTON
+    // clock-in, not a manual entry; the structured note below is the real
+    // attribution. (This default is the source of the "Manually Entered"
+    // mislabel — same default-value trap as field_end_time's "now".)
+    $entry->set('field_notes', NULL);
     // Owner mirrors the teammate so downstream owner-based reads agree.
     if ($entry->hasField('uid')) {
       $entry->set('uid', $uid);
     }
+    // Origin attribution: a button clock-in, with a structured start note.
+    $entry->set('field_source', 'wo_clock_button');
+    $this->appendNote($entry, sprintf(self::NOTE_BUTTON_START, $this->usDisplay($this->time->getRequestTime())));
+    $entry->_wo_clock_write = TRUE;
     return $entry;
   }
 
@@ -168,7 +185,7 @@ final class WoClockService {
       $entry->set('field_clock_in_location', $this->wkt($lat, $lon));
     }
     if ($noteContext !== NULL && $noteContext !== '') {
-      $entry->set('field_notes', $this->prependNote($entry, $noteContext));
+      $this->appendNote($entry, $noteContext);
     }
     $entry->save();
     return $entry;
@@ -185,6 +202,9 @@ final class WoClockService {
     if ($lat !== NULL && $lon !== NULL) {
       $entry->set('field_clock_out_location', $this->wkt($lat, $lon));
     }
+    // field_source stays as set at clock-in; record the button clock-out.
+    $this->appendNote($entry, sprintf(self::NOTE_BUTTON_END, $this->usDisplay($this->time->getRequestTime())));
+    $entry->_wo_clock_write = TRUE;
     $entry->save();
     return $entry;
   }
@@ -202,12 +222,15 @@ final class WoClockService {
     $end = $endTimestamp !== NULL ? $this->tsUtc($endTimestamp) : $this->nowUtc();
     $entry->set('field_end_time', $end);
 
+    // The intervention is now the defining attribution — the end time is
+    // retroactive — so it overrides the original wo_clock_button value.
+    $entry->set('field_source', 'wo_clock_intervention');
     if ($auditNote) {
-      $who = $this->currentUser->getDisplayName();
+      // Stamp reflects the resolved end time, not the moment of close.
       $stamp = $this->usDisplay($endTimestamp ?? $this->time->getRequestTime());
-      $note = sprintf('[Closed via intervention %s by %s]', $stamp, $who);
-      $entry->set('field_notes', $this->prependNote($entry, $note));
+      $this->appendNote($entry, sprintf(self::NOTE_INTERVENTION_END, $stamp, $this->currentUser->getDisplayName()));
     }
+    $entry->_wo_clock_write = TRUE;
 
     // Bypass the Phase 1 wo_time_clock guards ONLY when the parent WO is
     // locked (Invoiced/Paid) — a legitimate office correction on billed work.
@@ -270,9 +293,14 @@ final class WoClockService {
     return sprintf('POINT (%F %F)', $lon, $lat);
   }
 
-  private function prependNote(EntityInterface $entry, string $prefix): string {
+  /**
+   * Append a structured note line to field_notes, newline-separated. Notes
+   * accumulate across a start and a later end — existing content is never
+   * replaced.
+   */
+  private function appendNote(EntityInterface $entry, string $line): void {
     $existing = (string) ($entry->get('field_notes')->value ?? '');
-    return $existing === '' ? $prefix : $prefix . ' ' . $existing;
+    $entry->set('field_notes', $existing === '' ? $line : $existing . "\n" . $line);
   }
 
   private function usDisplay(int $timestamp): string {

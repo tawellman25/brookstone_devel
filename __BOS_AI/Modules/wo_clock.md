@@ -109,6 +109,58 @@ bundles at once); the flag field + config are left intact for the cascade.
 > **Deviation:** hiding the flag in `hook_ENTITY_TYPE_view` rather than editing 36
 > per-bundle view-display configs — one reversible place, no 36-file config churn.
 
+## Attribution scheme (field_source + structured notes)
+
+Every `wo_time_clock` entry records its origin two ways: a queryable `field_source`
+list marker **and** an accumulating human-readable trail in `field_notes`. This
+replaces the old behavior where button clocks fell back to the `field_notes`
+default of **"Manually Entered"** (the mislabel bug) — button entries now clear
+that default and carry only structured notes.
+
+**`field_source`** — `list_string`, single-value, optional, hidden on the form,
+visible on the view display (weight 5). Six enum values, each written by exactly
+one code path:
+
+| Value | Meaning | Written by |
+|---|---|---|
+| `flag` | Legacy flag toggle | `wo_timer_flag_update` flagging_insert |
+| `wo_clock_button` | Clock In/Out button (Phase A) | `WoClockService::createOpenEntry()` (clock-in) |
+| `wo_clock_intervention` | Alert/modal intervention close | `WoClockService::closeEntry()` (overrides the button value — the retroactive end is now the defining attribution) |
+| `manual` | Enter-Manually button / admin add form | `wo_clock_wo_time_clock_presave()` catch-all (empty source, no managed-path flag, on insert) |
+| `signoff_reconciliation` | Sign-off create-missing / close-orphan | `wo_sign_off` reconciliation |
+| `cleanup_script` | Data-hygiene scripts | (reserved for cleanup scripts) |
+| *(NULL)* | **Legacy** — created before attribution existed | — (no backfill; check `field_notes` for context) |
+
+**Structured note formats** (constants on `WoClockService`; timestamps are site-tz
+`MM/DD/YYYY h:i AM/PM`; notes accumulate **newline-separated**, never replaced):
+
+- Button start — `[Start: Button {ts}]`
+- Button end — `[End: Button {ts}]`
+- Intervention end — `[End: Intervention {resolved_end_ts} by {name}]` (stamp is the
+  resolved end time, not the moment of close)
+- Manual (presave) — `[Start: Manual {start_ts} by {name}]` / `[End: Manual {end_ts} by {name}]`
+- Flag / sign-off: **no** new structured note — their existing human notes
+  ("Start time entered through system", "[Created/Closed by … at sign-off]") stay
+  as the trail; `field_source` is the structured marker.
+
+**Sample `field_notes` accumulation:**
+
+- Clean button in→out: `[Start: Button 07/03/2026 8:48 PM]` ⏎ `[End: Button 07/03/2026 8:48 PM]`
+- Button in + intervention out: `[Start: Button …]` ⏎ `[End: Intervention 07/03/2026 7:48 PM by Jane Doe]`
+- Modal auto-clock-in: `[Start: Button …]` ⏎ `[Auto-created after resolving 2 open entries. …]`
+- Manual: `Manually Entered` ⏎ `[Start: Manual … by Jane Doe]` ⏎ `[End: Manual … by Jane Doe]`
+- Flag: `Start time entered through system`
+- Sign-off reconciliation: `[Created by Jane Doe at sign-off, …]`
+
+**`_wo_clock_write` marker.** `WoClockService` sets a transient `$entity->_wo_clock_write
+= TRUE` before saving its entries; the manual-detection presave treats an insert with
+empty `field_source` and neither `_wo_clock_write` nor `_signoff_reconciliation` as a
+hand save. **New rule:** every code path that creates or materially modifies a
+`wo_time_clock` entry MUST stamp `field_source` (see `drupal_bos_gotchas.md`).
+
+**Legacy queries:** treat `field_source IS NULL` as "created before structured
+attribution (pre-2026-07-03) — consult notes." No backfill was performed.
+
 ## Migration plan
 
 1. **Now (Phase A):** run `wo_clock` alongside the flag path; validate on live with

@@ -14,6 +14,12 @@ remains fully functional during the transition** — do not remove it. Specifica
   `flag()`/`unflag()` internally (their cascade was **not** refactored in Phase A).
 - `wo_clock` hides the flag's on-page render (in code, across all WO bundles) so the
   two UIs don't duplicate, but leaves the flag field + config intact.
+- **Coexistence tracking (2026-07-03):** `flagging_insert` now stamps the created
+  entry with **`field_source = 'flag'`** so flag-created entries are queryable apart
+  from `wo_clock_button` entries during the transition. `flagging_delete` does not
+  change `field_source` (already set at insert). The legacy `field_notes` text
+  ("Start time entered through system") is left unchanged. See `wo_clock.md` →
+  "Attribution scheme".
 
 New `wo_time_clock` entries created via `wo_clock` are managed independently of the
 flag lifecycle (no `work_order_timer` flagging), so the cascade correctly finds

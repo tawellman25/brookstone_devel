@@ -14,6 +14,7 @@ dependencies:
     - field.field.wo_time_clock.entry.field_created_signoff_tasks
     - field.field.wo_time_clock.entry.field_end_time
     - field.field.wo_time_clock.entry.field_notes
+    - field.field.wo_time_clock.entry.field_source
     - field.field.wo_time_clock.entry.field_start_time
     - field.field.wo_time_clock.entry.field_teammate
     - field.field.wo_time_clock.entry.field_time_limit_override
@@ -22,6 +23,7 @@ dependencies:
   module:
     - datetime
     - geofield
+    - options
     - wo_total_time
 id: wo_time_clock.entry.default
 targetEntityType: wo_time_clock
@@ -108,6 +110,13 @@ content:
       link_to_entity: false
     third_party_settings: {  }
     weight: 3
+    region: content
+  field_source:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 5
     region: content
   field_start_time:
     type: datetime_default

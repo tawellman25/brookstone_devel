@@ -249,6 +249,34 @@ If those don't hold, stick with Behavior B + safety-net validate. Don't ship Beh
 
 ---
 
+## Pattern — Structured origin attribution
+
+**Problem.** An entity is created by **many code paths** (UI button, legacy toggle,
+manual form, automated reconciliation, cleanup scripts). "Which path made this row?"
+becomes unanswerable — and a shared field default (`field_notes = "Manually Entered"`)
+silently mislabels everything.
+
+**Approach — a marker field *plus* a note trail:**
+- A **list field** (`field_source` on `wo_time_clock`) gives **queryable** structure:
+  one enum value per creating path, set explicitly by that path. Reports can slice by
+  origin ("all button clocks this week") without parsing free text.
+- An **accumulating structured note** (newline-separated, append-only) gives the
+  **human-readable** trail — start and end can carry *different* attributions on the
+  same row (button start + intervention end), which a single marker can't express.
+- A **catch-all presave** stamps the default value (`manual`) for any insert no known
+  path claimed — so "unattributed" is impossible, but note: a *new* path that forgets
+  to stamp gets silently swept into the default. Pair the marker with a **gotcha** that
+  makes stamping mandatory for every new writer.
+- **No backfill:** legacy rows keep the marker NULL, honestly meaning "created before
+  attribution existed — check notes." Don't fabricate history.
+- **Transient guard flags** (`_wo_clock_write`, `_signoff_reconciliation`) let managed
+  writers tell the catch-all "not a manual save."
+
+Canonical example: `field_source` on `wo_time_clock` (six values across button / flag /
+intervention / manual / sign-off / cleanup). Surfaced 2026-07-03, `wo_clock` Phase A.
+
+---
+
 ## Pattern — Silent-fallback capture
 
 **Problem.** Some data is valuable-when-available but must **never** block or

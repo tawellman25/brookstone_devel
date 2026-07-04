@@ -52,6 +52,28 @@ function wo_clock_wo_time_clock_presave(EntityInterface $entity) {
   if ($entity->bundle() !== 'entry') {
     return;
   }
+
+  // Manual attribution catch-all. A NEW entry created via the standard entity
+  // form — the "Enter Manually" button (/wo_time_clock/add/entry) or the admin
+  // add form — that no known code path stamped is a manual entry. Every managed
+  // path sets field_source first (flag / wo_clock_button / signoff_reconciliation)
+  // or a transient marker (_wo_clock_write from WoClockService,
+  // _signoff_reconciliation from sign-off), so an empty field_source with none
+  // of those flags on an insert can only be a hand save.
+  if ($entity->isNew()
+    && $entity->hasField('field_source') && $entity->get('field_source')->isEmpty()
+    && empty($entity->_wo_clock_write)
+    && empty($entity->_signoff_reconciliation)) {
+    $entity->set('field_source', 'manual');
+    $who = \Drupal::currentUser()->getDisplayName();
+    if ($entity->hasField('field_start_time') && !$entity->get('field_start_time')->isEmpty()) {
+      _wo_clock_append_note($entity, sprintf('[Start: Manual %s by %s]', _wo_clock_fmt_us($entity->get('field_start_time')->value), $who));
+    }
+    if ($entity->hasField('field_end_time') && !$entity->get('field_end_time')->isEmpty()) {
+      _wo_clock_append_note($entity, sprintf('[End: Manual %s by %s]', _wo_clock_fmt_us($entity->get('field_end_time')->value), $who));
+    }
+  }
+
   /** @var \Drupal\wo_clock\Service\WoClockService $svc */
   $svc = \Drupal::service('wo_clock.clock_service');
 
@@ -207,6 +229,15 @@ function _wo_clock_build_render(int $wo_id, \Drupal\Core\Session\AccountInterfac
       'max-age' => 0,
     ],
   ];
+}
+
+/**
+ * Append a structured note line to a wo_time_clock entity's field_notes,
+ * newline-separated (accumulates; never replaces existing content).
+ */
+function _wo_clock_append_note(EntityInterface $entity, string $line): void {
+  $existing = (string) ($entity->get('field_notes')->value ?? '');
+  $entity->set('field_notes', $existing === '' ? $line : $existing . "\n" . $line);
 }
 
 /**

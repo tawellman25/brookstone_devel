@@ -1,0 +1,40 @@
+uuid: 1cf6c8d5-3b62-43b0-8d7d-4522256af7b3
+langcode: en
+status: true
+dependencies:
+  module:
+    - eck
+    - options
+id: wo_time_clock.field_source
+field_name: field_source
+entity_type: wo_time_clock
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: flag
+      label: 'Flag toggle (legacy path)'
+    -
+      value: wo_clock_button
+      label: 'Clock In/Out button (Phase A)'
+    -
+      value: wo_clock_intervention
+      label: 'Intervention close (alert region or modal)'
+    -
+      value: manual
+      label: 'Manually entered (Enter Manually button or admin form)'
+    -
+      value: signoff_reconciliation
+      label: 'Sign-off reconciliation'
+    -
+      value: cleanup_script
+      label: 'Data hygiene cleanup script'
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false
+

@@ -8,8 +8,6 @@ use Drupal\bos_wo_intake\Service\WorkOrderIntakeService;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Session\AccountProxyInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Gate 2B — the /wo-intake page. A thin, stateless consumer of 2A's
@@ -20,22 +18,26 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 final class WoIntakeForm extends FormBase {
 
-  public function __construct(
-    private readonly WorkOrderIntakeService $intake,
-    private readonly AccountProxyInterface $currentUser,
-    private readonly EntityTypeManagerInterface $entityTypeManager,
-  ) {}
-
-  public static function create(ContainerInterface $container): self {
-    return new self(
-      $container->get('bos_wo_intake.intake'),
-      $container->get('current_user'),
-      $container->get('entity_type.manager'),
-    );
-  }
-
   public function getFormId(): string {
     return 'bos_wo_intake_form';
+  }
+
+  /**
+   * Services are fetched lazily (not constructor-injected) on purpose. A form
+   * with #ajax is serialized into the form cache and restored on every rebuild
+   * submit; DependencySerializationTrait's ReverseContainer does NOT reliably
+   * re-inject a custom service, so an injected $intake comes back uninitialized
+   * ("must not be accessed before initialization") on the 2nd+ ajax submit —
+   * which is exactly why tapping a candidate created nothing. Lazy
+   * \Drupal::service() calls are always safe across rebuilds. currentUser() is
+   * inherited from FormBase (also lazy).
+   */
+  private function intake(): WorkOrderIntakeService {
+    return \Drupal::service('bos_wo_intake.intake');
+  }
+
+  private function etm(): EntityTypeManagerInterface {
+    return \Drupal::service('entity_type.manager');
   }
 
   public function buildForm(array $form, FormStateInterface $form_state): array {
@@ -127,7 +129,7 @@ final class WoIntakeForm extends FormBase {
       $result = ['status' => 'error', 'error' => ['code' => 'empty', 'message' => (string) $this->t('Say or type a command first.')]];
     }
     else {
-      $result = $this->intake->createFromText($command, $this->currentUser, $callOpts);
+      $result = $this->intake()->createFromText($command, $this->currentUser(), $callOpts);
     }
 
     // A fresh create clears any prior resolved ids; a successful create clears
@@ -219,7 +221,7 @@ final class WoIntakeForm extends FormBase {
   }
 
   private function createdCard(array $r): array {
-    $wo = $this->entityTypeManager->getStorage('work_order')->load($r['work_order']['id']);
+    $wo = $this->etm()->getStorage('work_order')->load($r['work_order']['id']);
     $nickname = $wo && !$wo->get('field_property')->isEmpty() && $wo->get('field_property')->entity
       ? (string) $wo->get('field_property')->entity->get('field_nickname')->value : '';
     $serviceLbl = $wo && !$wo->get('field_service')->isEmpty() && $wo->get('field_service')->entity
@@ -251,7 +253,7 @@ final class WoIntakeForm extends FormBase {
 
   private function blockedCard(array $r): array {
     $e = $r['existing'];
-    $woEntity = $this->entityTypeManager->getStorage('work_order')->load($e['id']);
+    $woEntity = $this->etm()->getStorage('work_order')->load($e['id']);
     $label = $e['work_order_id'] ? ('#' . $e['work_order_id']) : ('#' . $e['id']);
     $card = ['#type' => 'container', '#attributes' => ['class' => ['wo-intake-card', 'wo-intake-card--blocked']]];
     $card['badge'] = ['#markup' => '<div class="wo-intake-card__badge wo-intake-card__badge--blocked">' . $this->t('Already open') . '</div>'];
@@ -320,7 +322,7 @@ final class WoIntakeForm extends FormBase {
    * The zero-candidate hard case: the full, client-filterable service picker.
    */
   private function servicePicker(): array {
-    $ts = $this->entityTypeManager->getStorage('taxonomy_term');
+    $ts = $this->etm()->getStorage('taxonomy_term');
     $ids = $ts->getQuery()->accessCheck(FALSE)->condition('vid', 'services')
       ->condition('field_work_order_service', 1)->sort('name')->execute();
     $wrap = ['#type' => 'container', '#attributes' => ['class' => ['wo-intake-candidates', 'wo-intake-picker']]];

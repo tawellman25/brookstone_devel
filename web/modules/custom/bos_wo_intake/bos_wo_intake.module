@@ -8,6 +8,7 @@
  * Gate 2B: the /wo-intake page + top-level toolbar icon (this file's concern).
  */
 
+use Drupal\Component\Serialization\Json;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Url;
 
@@ -33,10 +34,17 @@ function bos_wo_intake_toolbar(): array {
       '#url' => Url::fromRoute('bos_wo_intake.intake_page'),
       '#attributes' => [
         'title' => t('Create a Work Order from a spoken or typed command'),
-        'class' => ['toolbar-icon', 'toolbar-icon-bos-wo-intake'],
+        'class' => ['toolbar-icon', 'toolbar-icon-bos-wo-intake', 'use-ajax'],
+        // Open the form in a modal overlay — no full page load.
+        'data-dialog-type' => 'modal',
+        'data-dialog-options' => Json::encode([
+          'width' => 620,
+          'dialogClass' => 'wo-intake-dialog',
+          'title' => (string) t('New Work Order'),
+        ]),
       ],
     ],
-    '#attached' => ['library' => ['bos_wo_intake/toolbar_icon']],
+    '#attached' => ['library' => ['bos_wo_intake/toolbar_icon', 'core/drupal.dialog.ajax']],
   ];
   return $items;
 }

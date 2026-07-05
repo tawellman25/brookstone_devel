@@ -184,17 +184,27 @@ final class WorkOrderIntakeService {
   private function extractFragments(string $text): array {
     $original = trim($text);
 
-    // Complaint = trailing clause after the first sentence period, else a comma-led
-    // clause that starts like a report ("they have…", "there's a break…").
+    // Complaint (verbatim, original case) = the trailing clause after the first
+    // sentence period, OR the LAST comma-segment when it reads like a problem
+    // report. The indicator list keeps a name-comma ("Smith, John") from being
+    // mistaken for a complaint while still catching "…, the pump isn't working".
     $complaint = '';
     $command = $original;
+    $indicators = '/(isn.?t|aren.?t|wasn.?t|weren.?t|won.?t|can.?t|couldn.?t|doesn.?t|don.?t|didn.?t|\bnot\b|no longer|broken|\bbroke\b|leak|leaking|working|stopped|stuck|dead|\bdown\b|\bout\b|needs?\b|need to|problem|issue|damaged|cracked|clogged|won.?t work)/i';
     if (preg_match('/^(.*?[a-z0-9\)])\.\s+(\S.*)$/is', $original, $m)) {
       $command = $m[1];
       $complaint = trim($m[2]);
     }
-    elseif (preg_match('/^(.*?),\s+((?:they|there|it|has|have|its|it\'s)\b.*)$/is', $original, $m)) {
-      $command = $m[1];
-      $complaint = trim($m[2]);
+    else {
+      $segments = preg_split('/\s*,\s*/', $original);
+      if (count($segments) > 1) {
+        $last = trim((string) end($segments));
+        if ($last !== '' && preg_match($indicators, $last)) {
+          $complaint = $last;
+          array_pop($segments);
+          $command = implode(', ', $segments);
+        }
+      }
     }
 
     // Normalize the command for structural parsing; strip command filler.
@@ -202,6 +212,7 @@ final class WorkOrderIntakeService {
     $norm = preg_replace('/\b(create|make|new|open|please|generate|add)\b/', ' ', $norm);
     $norm = preg_replace('/\bwork order\b/', ' ', $norm);
     $norm = preg_replace('/\bwo\b/', ' ', $norm);
+    $norm = preg_replace('/\b(properties|property|place)\b/', ' ', $norm);
     $norm = preg_replace('/\b(an?|the)\b/', ' ', $norm);
     $norm = trim(preg_replace('/\s+/', ' ', $norm));
 
@@ -385,7 +396,8 @@ final class WorkOrderIntakeService {
   // ==========================================================================
 
   private function resolvePropertyByFragments(string $name, string $street, string $town): array {
-    $nameTokens = array_values(array_filter(explode(' ', $this->normalizeText($name)), fn($t) => $t !== ''));
+    // Drop 1-char stray tokens (the "s" left by "Bynum's" → "bynum s", etc.).
+    $nameTokens = array_values(array_filter(explode(' ', $this->normalizeText($name)), fn($t) => strlen($t) >= 2));
     $streetN = $street === '' ? '' : $this->normalizeStreet($street);
     $townN = $town === '' ? '' : $this->normalizeText($town);
 

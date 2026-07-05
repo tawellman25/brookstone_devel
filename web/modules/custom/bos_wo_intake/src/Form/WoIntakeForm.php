@@ -57,7 +57,16 @@ final class WoIntakeForm extends FormBase {
       ],
     ];
 
+    // Result region sits BETWEEN the textarea and the button so candidates/cards
+    // are immediately visible after submit (not below the fold in the modal).
+    $form['result'] = [
+      '#type' => 'container',
+      '#weight' => 5,
+      '#attributes' => ['id' => 'wo-intake-result', 'class' => ['wo-intake-result']],
+    ];
+
     $form['actions']['#type'] = 'actions';
+    $form['actions']['#weight'] = 10;
     $form['actions']['create'] = [
       '#type' => 'submit',
       '#value' => $this->t('Create Work Order'),
@@ -65,11 +74,6 @@ final class WoIntakeForm extends FormBase {
       '#submit' => ['::submitIntake'],
       '#attributes' => ['class' => ['wo-intake-create']],
       '#ajax' => ['callback' => '::ajaxResult', 'wrapper' => 'wo-intake-result'],
-    ];
-
-    $form['result'] = [
-      '#type' => 'container',
-      '#attributes' => ['id' => 'wo-intake-result', 'class' => ['wo-intake-result']],
     ];
     if (!empty($storage['result'])) {
       $form['result']['content'] = $this->renderResult($storage['result']);

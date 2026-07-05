@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * @file
+ * Install/update hooks for bos_wo_intake.
+ *
+ * Deploy gotcha (Gate 2B Phase 0b): the module was already enabled on live before
+ * the 2A settings config existed, so `config/install` will NOT re-import it. The
+ * update hook lands the config + grants the page permission on existing installs.
+ */
+
+use Drupal\user\Entity\Role;
+use Symfony\Component\Yaml\Yaml;
+
+/**
+ * Grant the WO-intake page permission to the v1 office/admin roles.
+ */
+function _bos_wo_intake_grant_page_perm(): void {
+  foreach (['administration', 'supervisor', 'site_admin', 'administrator'] as $rid) {
+    $role = Role::load($rid);
+    if ($role) {
+      $role->grantPermission('use work order intake')->save();
+    }
+  }
+}
+
+/**
+ * Implements hook_install().
+ *
+ * Fresh installs get the settings via config/install automatically; this grants
+ * the page permission (permissions.yml only defines it).
+ */
+function bos_wo_intake_install(): void {
+  _bos_wo_intake_grant_page_perm();
+}
+
+/**
+ * Gate 2A+2B: import bos_wo_intake.settings (config/install won't re-import on an
+ * already-enabled module) and grant "use work order intake" to office/admin roles.
+ */
+function bos_wo_intake_update_10001(): string {
+  $module_path = \Drupal::service('extension.list.module')->getPath('bos_wo_intake');
+  $file = $module_path . '/config/install/bos_wo_intake.settings.yml';
+  $imported = 'settings already present';
+  if (is_readable($file)) {
+    $data = Yaml::parse(file_get_contents($file));
+    $config = \Drupal::configFactory()->getEditable('bos_wo_intake.settings');
+    // Only write if absent/empty — never clobber live-tuned values on re-run.
+    if ($config->get('duplicate_window_days') === NULL) {
+      $config->setData($data)->save();
+      $imported = 'imported bos_wo_intake.settings (' . count($data['synonym_map'] ?? []) . ' synonyms)';
+    }
+  }
+  _bos_wo_intake_grant_page_perm();
+  return "$imported; granted 'use work order intake' to administration/supervisor/site_admin/administrator.";
+}

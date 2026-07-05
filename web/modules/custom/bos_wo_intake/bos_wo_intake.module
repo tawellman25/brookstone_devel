@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * @file
+ * BOS WO Intake (Cowork Connect / Voice-to-WO) — module hooks.
+ *
+ * Gate 1: REST endpoint (config-driven). Gate 2A: createFromText resolution.
+ * Gate 2B: the /wo-intake page + top-level toolbar icon (this file's concern).
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_page_attachments().
+ *
+ * Give the top-level "New Work Order" toolbar item its icon — but only for users
+ * who can use the page (no point styling a link they can't see).
+ */
+function bos_wo_intake_page_attachments(array &$attachments): void {
+  if (\Drupal::currentUser()->hasPermission('use work order intake')) {
+    $attachments['#attached']['library'][] = 'bos_wo_intake/toolbar_icon';
+  }
+}
+
+/**
+ * Implements hook_help().
+ */
+function bos_wo_intake_help($route_name, RouteMatchInterface $route_match): string {
+  if ($route_name === 'help.page.bos_wo_intake') {
+    return '<p>' . t('Create Work Orders from a spoken or typed command at <a href=":u">/wo-intake</a>. Say or type the service, who it is for, and the problem — e.g. "Repair WO for Smith, John on Brookdale — broken sprinkler".', [':u' => '/wo-intake']) . '</p>';
+  }
+  return '';
+}

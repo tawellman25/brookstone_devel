@@ -1,0 +1,155 @@
+/**
+ * Gate 2B — /wo-intake page. Mobile-first; cards follow the My Schedule
+ * precedent (white card, 2px #ddd border, 6px radius, left status-accent bar).
+ */
+
+.wo-intake-form {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0.5rem;
+}
+
+.wo-intake-textarea {
+  width: 100%;
+  font-size: 1.15rem;
+  line-height: 1.4;
+  padding: 0.75rem;
+  border: 2px solid #cbd5cb;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.wo-intake-create {
+  width: 100%;
+  min-height: 52px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: #1a6d1a;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  cursor: pointer;
+}
+.wo-intake-create:hover,
+.wo-intake-create:focus {
+  background: #0f4d0f;
+}
+
+.wo-intake-result {
+  margin-top: 1rem;
+}
+
+.wo-intake-heard {
+  font-size: 0.9rem;
+  color: #555;
+  background: #f4f6f4;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  margin: 0 0 0.75rem;
+}
+
+/* Cards */
+.wo-intake-card {
+  background: #fff;
+  border: 2px solid #ddd;
+  border-left-width: 5px;
+  border-radius: 6px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+.wo-intake-card--created { border-left-color: #1a6d1a; }
+.wo-intake-card--blocked { border-left-color: #c0392b; }
+.wo-intake-card--error { border-left-color: #c0392b; }
+
+.wo-intake-card__badge {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: #1a6d1a;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+.wo-intake-card__badge--blocked { color: #c0392b; }
+.wo-intake-card__title { font-weight: 700; font-size: 1.05rem; }
+.wo-intake-card__meta { color: #555; font-size: 0.9rem; margin-top: 0.15rem; }
+.wo-intake-card__warn {
+  margin-top: 0.5rem;
+  background: #fff6e5;
+  border: 1px solid #e6c200;
+  border-radius: 5px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+}
+.wo-intake-card__link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+
+/* Candidate / picker buttons */
+.wo-intake-candidates__label {
+  font-weight: 700;
+  margin: 0.25rem 0 0.5rem;
+}
+.wo-intake-candidate__wrap {
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  margin-bottom: 0.5rem;
+  background: #fff;
+}
+.wo-intake-candidate {
+  display: block;
+  width: 100%;
+  text-align: left;
+  min-height: 44px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  padding: 0.15rem 0;
+  cursor: pointer;
+  color: #1a4d7a;
+}
+.wo-intake-candidate__sub { color: #555; font-size: 0.9rem; }
+.wo-intake-candidate__conflict {
+  color: #b23; font-size: 0.85rem; margin-top: 0.2rem;
+}
+
+/* Full service picker */
+.wo-intake-filter {
+  width: 100%;
+  font-size: 1.05rem;
+  padding: 0.6rem;
+  border: 2px solid #cbd5cb;
+  border-radius: 8px;
+  box-sizing: border-box;
+  margin-bottom: 0.5rem;
+}
+.wo-intake-picker__options {
+  max-height: 55vh;
+  overflow-y: auto;
+}
+.wo-intake-picker .wo-intake-candidate {
+  border: 1px solid #e2e2e2;
+  border-radius: 6px;
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.35rem;
+}
+
+/* "Create anyway" — deliberate secondary action, not the primary button. */
+.wo-intake-anyway {
+  display: inline-block;
+  margin-top: 0.6rem;
+  min-height: 44px;
+  background: #fff;
+  color: #c0392b;
+  border: 2px solid #c0392b;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 0 1rem;
+  cursor: pointer;
+}
+.wo-intake-anyway:hover { background: #fdECEA; }

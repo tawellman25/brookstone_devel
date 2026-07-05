@@ -315,7 +315,10 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
   protected function renderWoEntriesExpansion(array $entries): string {
     $html = '<table class="bos-wo-subtable">';
     $html .= '<thead><tr>'
-      . '<th>WO</th><th>Title</th><th>Start</th><th>End</th><th>Hrs</th><th>Anomaly</th>'
+      . '<th>WO</th><th>Title</th><th>Start</th><th>End</th><th>Hrs</th>'
+      . '<th title="Distance from the property at clock-in">In 📍</th>'
+      . '<th title="Distance from the property at clock-out">Out 📍</th>'
+      . '<th>Anomaly</th>'
       . '</tr></thead><tbody>';
     foreach ($entries as $entry) {
       $html .= '<tr>' . $this->buildWoEntryRowCells($entry) . '</tr>';
@@ -358,7 +361,49 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
       . '<td>' . $start . '</td>'
       . '<td>' . $end . '</td>'
       . '<td class="bos-numeric">' . $total . '</td>'
+      . '<td class="bos-numeric">' . $this->fmtGps($entry, 'in') . '</td>'
+      . '<td class="bos-numeric">' . $this->fmtGps($entry, 'out') . '</td>'
       . '<td>' . $anomalyText . '</td>';
+  }
+
+  /**
+   * Render the GPS distance-from-property for a clock-in or clock-out punch,
+   * linked to the actual coordinates on Google Maps when available.
+   *
+   * Supervisor-only surface (the crew self-view never shows GPS). A distance
+   * at/over 500 ft is flagged — a punch that far from the property may mean the
+   * crew member wasn't actually on site.
+   *
+   * @param string $which
+   *   'in' or 'out'.
+   */
+  protected function fmtGps(EntityInterface $entry, string $which): string {
+    $distField = 'field_clock_' . $which . '_distance_ft';
+    $locField = 'field_clock_' . $which . '_location';
+
+    if (!$entry->hasField($distField) || $entry->get($distField)->isEmpty()) {
+      return '<span class="bos-gps-none" title="No location captured">—</span>';
+    }
+    $ft = (float) $entry->get($distField)->value;
+    $label = number_format($ft, 0) . ' ft';
+    $farClass = $ft >= 500 ? ' bos-gps-far' : '';
+
+    // Build a maps link from the geofield WKT "POINT (lon lat)".
+    $href = NULL;
+    if ($entry->hasField($locField) && !$entry->get($locField)->isEmpty()) {
+      $item = $entry->get($locField)->first();
+      $wkt = $item ? (string) $item->get('value')->getValue() : '';
+      if (preg_match('/POINT\s*\(\s*(-?[0-9.]+)\s+(-?[0-9.]+)\s*\)/i', $wkt, $m)) {
+        $href = 'https://www.google.com/maps?q=' . $m[2] . ',' . $m[1];
+      }
+    }
+
+    if ($href) {
+      return '<a class="bos-gps-link' . $farClass . '" href="' . htmlspecialchars($href)
+        . '" target="_blank" rel="noopener" title="View the ' . $which . '-punch location on a map">'
+        . $label . '</a>';
+    }
+    return '<span class="bos-gps' . $farClass . '">' . $label . '</span>';
   }
 
   /** Yields each Y-m-d date string from start to end (inclusive). */

@@ -255,6 +255,13 @@ final class WoIntakeForm extends FormBase {
   }
 
   private function propertyCandidates(array $candidates): array {
+    if (!$candidates) {
+      return $this->messageCard(
+        $this->t('No matching property'),
+        $this->t('Couldn’t find a property for that name. Try a last name with fewer extra words, check the spelling, or add the town — then Create again.'),
+        'error'
+      );
+    }
     $wrap = ['#type' => 'container', '#attributes' => ['class' => ['wo-intake-candidates']]];
     $wrap['label'] = ['#markup' => '<div class="wo-intake-candidates__label">' . $this->t('Which property?') . '</div>'];
     foreach (array_slice($candidates, 0, 8) as $i => $c) {

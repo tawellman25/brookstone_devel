@@ -398,14 +398,18 @@ final class WorkOrderIntakeService {
     $storage = $this->entityTypeManager->getStorage('properties');
     $q = $storage->getQuery()->accessCheck(FALSE)->condition('type', 'property');
     if ($nameTokens) {
-      $longest = '';
-      foreach ($nameTokens as $t) {
-        if (strlen($t) > strlen($longest)) { $longest = $t; }
+      // Prefilter on the TWO longest tokens (stemmed), OR'd — one plural/typo or a
+      // single common word can't poison the whole net.
+      $byLen = $nameTokens;
+      usort($byLen, fn($a, $b) => strlen($b) <=> strlen($a));
+      $seed = array_slice(array_values(array_unique(array_map([$this, 'stem'], $byLen))), 0, 2);
+      $or = $q->orConditionGroup();
+      foreach ($seed as $tok) {
+        $or->condition('field_nickname', $tok, 'CONTAINS');
       }
-      $q->condition('field_nickname', $longest, 'CONTAINS');
+      $q->condition($or);
     }
     elseif ($streetN !== '') {
-      // prefilter by first street token (usually the number or road word)
       $first = explode(' ', $streetN)[0];
       $q->condition('field_street_address', $first, 'CONTAINS');
     }
@@ -414,16 +418,21 @@ final class WorkOrderIntakeService {
       return ['status' => 'ambiguous', 'candidates' => []];
     }
 
+    $tokenCount = count($nameTokens);
     $scored = [];
     foreach ($storage->loadMultiple($ids) as $p) {
       $nick = $this->normalizeText((string) ($p->get('field_nickname')->value ?? ''));
-      $nameHit = TRUE;
+      $matched = 0;
       foreach ($nameTokens as $t) {
-        if (!str_contains($nick, $t)) { $nameHit = FALSE; break; }
+        if ($this->tokenMatches($nick, $t)) {
+          $matched++;
+        }
       }
-      if ($nameTokens && !$nameHit) {
+      // A name was given but this row shares none of it → not a candidate.
+      if ($tokenCount > 0 && $matched === 0) {
         continue;
       }
+      $nameAll = ($tokenCount === 0) ? NULL : ($matched === $tokenCount);
       $streetVal = $this->normalizeStreet((string) ($p->get('field_street_address')->value ?? ''));
       $streetHit = $streetN === '' ? NULL : str_contains($streetVal, $streetN);
       $townVal = $this->propertyTown($p);
@@ -431,34 +440,34 @@ final class WorkOrderIntakeService {
 
       $scored[] = [
         'p' => $p,
-        'name_hit' => $nameTokens ? $nameHit : NULL,
+        'matched' => $matched,
+        'name_all' => $nameAll,
         'street_hit' => $streetHit,
         'town_hit' => $townHit,
         'town_val' => $townVal,
-        'score' => ($nameHit ? 100 : 0) + ($streetHit === TRUE ? 10 : 0) + ($townHit === TRUE ? 1 : 0),
+        'score' => $matched * 100 + ($streetHit === TRUE ? 10 : 0) + ($townHit === TRUE ? 1 : 0),
       ];
     }
     if (!$scored) {
       return ['status' => 'ambiguous', 'candidates' => []];
     }
 
-    // Full-match set: every PROVIDED fragment hits.
-    $full = array_filter($scored, function ($r) {
-      return ($r['street_hit'] !== FALSE) && ($r['town_hit'] !== FALSE);
-    });
-    $full = array_values($full);
-
+    // Full-match set: ALL name tokens matched AND street/town not contradicted.
+    $full = array_values(array_filter($scored, function ($r) {
+      return ($r['name_all'] !== FALSE) && ($r['street_hit'] !== FALSE) && ($r['town_hit'] !== FALSE);
+    }));
     if (count($full) === 1) {
       return ['status' => 'resolved', 'property_id' => (int) $full[0]['p']->id()];
     }
     if (count($full) > 1) {
+      usort($full, fn($a, $b) => $b['score'] <=> $a['score']);
       return ['status' => 'ambiguous', 'candidates' => $this->propertyCandidates($full)];
     }
 
-    // Zero full matches. Conflict rule: dropping town yields a unique name+street match
-    // whose town differs from the one asked for — surface it, flagged, never dropped.
+    // Zero full matches. Conflict rule: dropping town yields a unique all-name+street
+    // match whose town differs — surface it flagged, never silently drop a fragment.
     if ($townN !== '') {
-      $nameStreet = array_values(array_filter($scored, fn($r) => $r['street_hit'] !== FALSE));
+      $nameStreet = array_values(array_filter($scored, fn($r) => $r['name_all'] !== FALSE && $r['street_hit'] !== FALSE));
       if (count($nameStreet) === 1) {
         $c = $this->propertyCandidates($nameStreet)[0];
         $c['conflict'] = ['field' => 'town', 'expected' => $townN, 'actual' => $nameStreet[0]['town_val']];
@@ -466,9 +475,31 @@ final class WorkOrderIntakeService {
       }
     }
 
-    // Otherwise return the best near-matches (name hits), ranked.
+    // Partial fallback: no full match, but surface the best partial matches (most
+    // name tokens hit) so the user can always tap something — never a dead end.
     usort($scored, fn($a, $b) => $b['score'] <=> $a['score']);
-    return ['status' => 'ambiguous', 'candidates' => $this->propertyCandidates(array_slice($scored, 0, 8))];
+    $best = $scored[0]['matched'];
+    $cands = array_values(array_filter($scored, fn($r) => $r['matched'] >= $best));
+    return ['status' => 'ambiguous', 'candidates' => $this->propertyCandidates(array_slice($cands, 0, 8))];
+  }
+
+  /**
+   * Does a name token appear in the (normalized) nickname? Substring match, plus
+   * a possessive/plural stem so "bynums"→"bynum" and "todds"→"todd" still hit.
+   */
+  private function tokenMatches(string $nick, string $token): bool {
+    if (str_contains($nick, $token)) {
+      return TRUE;
+    }
+    $stem = $this->stem($token);
+    return $stem !== $token && str_contains($nick, $stem);
+  }
+
+  /**
+   * Strip a single trailing possessive/plural "s" from a meaningful-length token.
+   */
+  private function stem(string $t): string {
+    return (strlen($t) > 3 && substr($t, -1) === 's') ? substr($t, 0, -1) : $t;
   }
 
   private function propertyCandidates(array $rows): array {

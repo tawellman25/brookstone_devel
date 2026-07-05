@@ -35,18 +35,24 @@ This is the single highest-leverage cluster in the system. The pieces exist but 
 | 4b | Branch: design-build → deposit → WO | `WorkOrderConverter` | Wire the existing converter to the acceptance trigger; deposit path. |
 | 5 | Estimator + client notifications | `estimate_notifications` | Module exists; complete the set (estimator on assign, client on ready). Depends on SMTP being live — verified DONE. |
 
-### ⭐ Voice-to-Work-Order — the actual goal (T1/T2, active)
+### ⭐ Voice-to-Work-Order — CORE SHIPPED 2026-07-04 (T1/T2)
 Speak into a phone → phone dictation transcribes → BOS creates a Work Order from the text.
 **Deterministic** text resolution (no LLM) — parse the utterance, resolve the property by
-**nickname** (token-order-insensitive) + service by vocab term, create the WO. Cowork was one
-candidate front-end and proved less useful than this in-house path; the endpoint built for it is
-the reusable foundation.
+**nickname** (token-order-insensitive) + service by vocab term, create the WO. **Gates 1–2B are
+live.** Remaining work is polish (see LATER). Cowork was one candidate front-end and proved less
+useful than this in-house path; the endpoint built for it is the reusable foundation.
 
 | Gate | Status |
 |---|---|
-| **Gate 1** — authenticated WO-intake endpoint | ✅ **SHIPPED & live** (`166f573b`; `bos_wo_intake`, `POST /api/wo-intake`, X-API-KEY, `system_integration` role + `cowork-connect` account). The durable foundation. |
-| **Gate 2A** — `createFromText()` resolution brain | ✅ **BUILT (local, 2026-07-04) — 11/11 acceptance green; NOT deployed.** Deterministic parse (no LLM): extract service + name + street + town + complaint; resolve service (synonym map + vocab) and property (nickname-primary, token-order-insensitive, compounding street/town, conflict-flagging); two-tier duplicate guard (active-block / terminal-recent-note), deferring to `weed_spraying`'s guard; create WO + complaint note. Service-layer only — **no UI/route/REST change**. Docs: `work_order_api.md` (Gate 2A as-built). Deploy with Gate 2B. |
-| **Gate 2B** — mobile intake page + menu icon | Later spec — the phone-facing capture surface (mic/dictation → `createFromText` → candidate-tap disambiguation). |
+| **Gate 1** — authenticated WO-intake endpoint | ✅ **SHIPPED & live** (`166f573b`; `POST /api/wo-intake`, X-API-KEY, `system_integration` + `cowork-connect`). The durable REST foundation. |
+| **Gate 2A** — `createFromText()` resolution brain | ✅ **SHIPPED to live 2026-07-04** (`b17c4d27`; deterministic parse + nickname/service resolution + two-tier duplicate guard + complaint note; 11/11 acceptance). Config landed via `hook_update_10001` (81 synonyms). |
+| **Gate 2B** — mobile intake page + toolbar icon | ✅ **SHIPPED to live 2026-07-04** (`b17c4d27`; `/wo-intake`, `use work order intake` perm → office/admin roles, AJAX Form, four result states + 37-term picker, candidate-tap resubmit, authored by the logged-in human). Docs: `work_order_api.md` (2A+2B as-built). **Owed: Todd's phone test 10** (parking-lot-to-WO on the real device). |
+
+**Voice-to-WO — remaining (all LATER polish):**
+- **Scheduling / date grammar** — parse a date from the command → wire the scheduling cascade (2A deliberately omitted it).
+- **Crew rollout** — tick `teammates` on `use work order intake` (they already hold entity perms). Not a build.
+- **Seasonal date-default** — resolve `cleanup` (Fall/Spring) and bare `pruning` (Summer/Winter) by current season instead of candidates.
+- **Parent-category word → child candidates** — a phrase matching a category name (`pruning`, `spraying`) offers its WO-service children as candidates instead of an empty `ambiguous(service)`.
 
 **Gate 2A follow-ups (decided/logged 2026-07-04):**
 - **Ambiguous service phrases stand as-is** — `design` · `spray`/`weed spray` · `lighting` · `cleanup` return candidates (no auto-map), resolved via 2B tap-to-pick. Not a bug.

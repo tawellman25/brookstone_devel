@@ -357,3 +357,45 @@ non-existent WO bundle — both are WO-service-flagged but unbuildable (surface 
 
 **Gate 2B scope:** mobile intake page + menu icon (mic/dictation → `createFromText` → candidate-tap
 disambiguation using the `property_id`/`service_term_id` options), date grammar → scheduling.
+
+---
+
+# Gate 2B — AS BUILT (shipped to live 2026-07-04)
+
+The human front door. Thin, **stateless** consumer of 2A's `createFromText` — no service-logic
+change. Deployed as the coupled 2A+2B unit (this took 2A live for the first time).
+
+**Route:** `/wo-intake` (`_form: WoIntakeForm`, `_admin_route`, mobile-first).
+**Permission:** **`use work order intake`** gates both the route and the menu link. **Granted to
+`administration`, `supervisor`, `site_admin`, `administrator`** (v1 — office/admin). Crew rollout
+later = tick `teammates` (they already hold the entity perms). NOTE: this is a *separate* lock
+from the entity perms — a user with the page perm but without `create work_order entities` gets a
+clean `access_denied` (two real locks; verified).
+**Actor = the logged-in human** (`current_user`), never `cowork-connect` — the WO and complaint
+note are owned by the person who spoke them.
+**UI:** one textarea (Android keyboard mic = dictation; no voice code), a Create button, an AJAX
+result region. Form API + AJAX (session CSRF; no new REST surface). Menu: top-level admin-toolbar
+"New Work Order" + icon (CSS by href, since BOS menu links carry no icon in YAML).
+
+**Result rendering (the four 2A states, in-page, no reload):** always echoes parsed fragments
+("Understood: …"). `created` → success card (service — nickname, WO link, recent-terminal warning
+if flagged). `ambiguous(property)` → up to 8 candidate cards (nickname/street/town; conflict line
+where flagged); tap resubmits ORIGINAL text + `property_id`. `ambiguous(service)` with candidates
+→ term cards; tap → `service_term_id`. **`ambiguous(service)` with ZERO candidates → the full,
+client-filterable 37-term service picker** (the "pruning" case — never a dead end). `blocked` →
+existing-WO card + a deliberate secondary **"Create anyway"** (resubmits `allow_duplicate`).
+`error` → plain contract message. **All candidate-tap state rides the resubmit client-side** —
+stateless server.
+
+**Deploy gotcha (Phase 0b, generalizable):** `config/install` does **not** re-import on an
+already-enabled module, so 2A's `bos_wo_intake.settings` (added after the module was enabled on
+live) needed a **`hook_update_N`** to land — `bos_wo_intake_update_10001` imports it (idempotent)
+and grants the page perm. `drush updb`, no cim. See `drupal_bos_gotchas.md`.
+
+**Local acceptance:** perm gate (anon/no-perm 403, with-perm 200), authoring (WO+note owned by the
+office user), all four render states + 37-picker + filter, conflict line, tap-property / tap-service
+/ create-anyway resubmit, two-locks access gate. Scripts: `web/scripts/wo_intake_2b_*.php`.
+**Live:** config landed (81 synonyms via updb), route + perms live, anon 403, authed 200 + textarea.
+
+**Still LATER:** scheduling/date grammar, crew rollout (tick `teammates`), cleanup/pruning
+seasonal date-default, parent-category-word → child candidates.

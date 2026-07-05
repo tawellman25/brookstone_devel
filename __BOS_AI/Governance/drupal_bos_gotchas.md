@@ -871,6 +871,36 @@ catches up, and the DB `queue` table bloats. (`contract_residential_checkup_gene
 
 ---
 
+## `config/install` does NOT re-import on an already-enabled module — use `hook_update_N`
+
+**Symptom:** you add a new config file to a module's `config/install/` and ship it, but the
+config never appears on an environment where the module was **already enabled**. (Gate 2A's
+`bos_wo_intake.settings` was added after `bos_wo_intake` was already live from Gate 1 → it was
+absent on live; `\Drupal::config('…')->get('…')` returned NULL.)
+
+**Cause:** `config/install/*.yml` is imported **once, at module-install time** (`drush en`). It is
+not re-read on `composer install`, `cr`, or a code deploy. So config added to an already-installed
+module after its initial enable lands on **fresh** installs (new clones/`drush en`) but **never**
+on existing ones.
+
+**Fix — a `hook_update_N`** that writes the config, run via `drush updb` on deploy:
+```php
+function mymodule_update_10001() {
+  $file = \Drupal::service('extension.list.module')->getPath('mymodule') . '/config/install/mymodule.settings.yml';
+  $data = \Symfony\Component\Yaml\Yaml::parse(file_get_contents($file));
+  $config = \Drupal::configFactory()->getEditable('mymodule.settings');
+  if ($config->get('some_key') === NULL) {        // idempotent — never clobber live-tuned values
+    $config->setData($data)->save();
+  }
+}
+```
+Same pattern for **granting permissions to existing roles** (`$role->grantPermission(...)->save()`
+in the update hook) — `permissions.yml` only *defines* a permission; it does not assign it. Put
+the grant in `hook_install()` (fresh) **and** `hook_update_N()` (existing) so both paths get it.
+NOT a `cim` (BOS never full-cims). Surfaced 2026-07-04 (`bos_wo_intake` Gate 2B).
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

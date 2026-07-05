@@ -105,8 +105,8 @@ These IDs are referenced directly in `wo_*` module hook guards. If the status ta
 | `wo_weed_spraying` | `weed_spraying` | Reads/writes `property_spraying_info:weed_spraying`. Presave guard blocks duplicate open WOs per property. Form alter redirects crew roles to existing open WO if one exists. |
 | `wo_winter_pruning` | `winter_pruning` | |
 | `wo_backflow_testing` | `backflow_testing` | Labor: `field_sprinkler_technician_rate`; TODO: write last test date to `property_sprinkler_system:system` once field exists |
-| `wo_landscape_lighting` | `landscape_lighting` | Labor: `field_maintenance_crew_labor`; no property detail write-back |
-| `wo_exterior_lighting` | `exterior_lighting` | Labor: `field_maintenance_crew_labor`; no property detail write-back |
+| `wo_landscape_lighting` | `landscape_lighting` | Mirrors `wo_sprinkler_repair`: labor (dedicated `field_lighting_technician_rate` / `field_lighting_tech_minimum`) + materials + trip + rentals + adjustment. Labor skipped while the rate is empty. No property detail write-back. |
+| `wo_exterior_lighting` | `exterior_lighting` | Mirrors `wo_sprinkler_repair`: labor (dedicated `field_lighting_technician_rate` / `field_lighting_tech_minimum`) + materials + trip + rentals + adjustment. Labor skipped while the rate is empty. No property detail write-back. |
 
 Bundles without a dedicated module: `estimate` — relies on cross-cutting modules; not yet fully implemented as a billable service type.
 

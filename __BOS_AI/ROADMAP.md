@@ -145,7 +145,6 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 | Retire `CreateAndScheduleSprinklerCheckUpWorkOrdersAction` VBO | Off-season. |
 | Refactor `field_estimate_type` | Off-season. |
 | `irrigation_crew` default truck count (1 → NULL?) | Off-season. |
-| Lighting `wo_*` billing modules | The `landscape_lighting` / `exterior_lighting` bundles were built out (2026-07-05) to full WO bundles — creation + scheduling work. But they have **no per-bundle `wo_*` module** (like `wo_sprinkler_repair`), so completion **won't auto-calculate billing totals** — office bills manually. Build `wo_landscape_lighting` / `wo_exterior_lighting` following the established per-bundle pattern **when lighting volume warrants it**. |
 
 ### Scheduling (T2–T3)
 | Item | Notes |
@@ -184,6 +183,8 @@ All modules enabled (estimate_board, estimate_notifications, calendars, scheduli
 **WO notes restyle — SHIPPED 2026-06-24** (`e684c53c`; live has all 3 structured fields — `field_change_summary` / `field_note_kind` / `field_is_system_note`). Notes render as clickable My-Schedule cards; `wo_schedule` auto-notes restructured into labeled lines; 1,573 legacy notes migrated. _(Was still listed as "NEXT — pending execution"; confirmed live and archived 2026-07-03.)_
 
 **WEX daily-fetch failure alerting (gate 3b) — SHIPPED** (live `web/scripts/wex_alert_check.sh` + 7:15 AM watcher cron; the 7:00 fetch + 2:30 DB-backup crons also confirmed active 2026-07-04). The drush-independent watcher emails on a missed/incomplete 07:00 fetch — the unattended wrapper + silent-failure alert this item asked for. _(Was still listed under Fleet/WEX as pending.)_
+
+**Lighting `wo_*` billing modules — SHIPPED 2026-07-05.** `wo_landscape_lighting` / `wo_exterior_lighting` (already-enabled since 05-28) **rewritten** to mirror `wo_sprinkler_repair`: on Complete (1097) → labor (clocked hrs × the new dedicated lighting rate w/ increment + minimum) + materials (w/ markup) + trip + rentals + billing adjustment → `field_wo_total`. New **dedicated** `business_setting` rate fields `field_lighting_technician_rate` + `field_lighting_tech_minimum` (Option B — separate from the maintenance/sprinkler rates), created via `web/scripts/add_lighting_rate_fields.php` and left **EMPTY** for the office to set after competitive-rate analysis (labor is skipped until a rate is entered — no bogus totals). Local billing test: 2 hrs @ temp $65 → $130. ⚠ **Owed: office sets the real lighting rate** on the Business Settings page.
 
 _Note: `wo_material_price_sync` is enabled and error-free on live — the "broken on live" concern did not reproduce. Confirm the form-display/view-filter behavior in the app before fully closing._
 

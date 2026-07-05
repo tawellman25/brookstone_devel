@@ -4,18 +4,19 @@ use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Implements hook_entity_presave().
+ *
+ * On completion of a exterior lighting Work Order, calculate the billing
+ * totals (labor + materials + trip + rental + adjustment) — mirrors the
+ * sprinkler_repair pattern but bills labor at the dedicated lighting rate
+ * (field_lighting_technician_rate / field_lighting_tech_minimum).
  */
 function wo_exterior_lighting_entity_presave(EntityInterface $entity) {
-    // Initialize $grand_total at the start.
     $grand_total = 0;
     $labor_subtotal = 0;
-    $totalTrip = 0;
-    $totalDump = 0;
 
-    // Check if it's a Work Order entity of the 'exterior_lighting' bundle.
     if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'exterior_lighting') {
 
-        // Check if the Work Order is marked as 'Complete'.
+        // Only when the Work Order is Complete (1097).
         $statusTermId = $entity->get('field_status')->target_id ?? 0;
         if ($statusTermId != 1097) {
             return;
@@ -25,48 +26,50 @@ function wo_exterior_lighting_entity_presave(EntityInterface $entity) {
         $business_settings = $config_pages_loader->load('business_setting');
 
         if ($business_settings) {
-            $hourlyRate = $business_settings->get('field_maintenance_crew_labor')->value;
+            $hourlyRate = $business_settings->get('field_lighting_technician_rate')->value;
             $hourlyBillingIncrement = $business_settings->get('field_hour_billing_increment')->value;
-            $hourlyMinimum = $business_settings->get('field_cleanup_labor_minimum')->value;
+            $hourlyMinimum = $business_settings->get('field_lighting_tech_minimum')->value;
 
-            $totalTime = $entity->get('field_total_time')->value;
+            $totalTime = get_hours_for_exterior_lighting($entity->id());
 
-            if ($totalTime > $hourlyMinimum) {
-                $totalMinutes = $totalTime * 60;
-                $totalTimeIncrements = ceil($totalMinutes / $hourlyBillingIncrement);
-                $hourlyIncrement = $hourlyBillingIncrement / 60;
-                $hourlyRateIncrement = $hourlyRate * $hourlyIncrement;
-                $labor_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
-            } else {
-                $labor_subtotal = $hourlyRate;
+            // Rate not yet set (empty) — skip labor rather than compute a bogus total.
+            if ($hourlyRate > 0 && $hourlyBillingIncrement > 0) {
+                if ($totalTime > $hourlyMinimum) {
+                    $totalMinutes = $totalTime * 60;
+                    $totalTimeIncrements = ceil($totalMinutes / $hourlyBillingIncrement);
+                    $hourlyIncrement = $hourlyBillingIncrement / 60;
+                    $hourlyRateIncrement = $hourlyRate * $hourlyIncrement;
+                    $labor_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
+                }
+                else {
+                    $labor_subtotal = $hourlyRate * $hourlyMinimum;
+                }
             }
 
+            $entity->set('field_total_time', $totalTime);
             $entity->set('field_labor_total', $labor_subtotal);
         }
 
         $workOrderId = $entity->id();
 
-        // NO NEED TO UPDATE PROPERTY INFO FROM SIGN OFF
-
-        // Labor from above
         if ($labor_subtotal > 0) {
             $grand_total += $labor_subtotal;
         }
 
-        // Trip Fee calculated by wo_sign_off and written to field_trip_fee.
+        // Materials (with markup) from related material lists.
+        $material_subtotal = get_total_exterior_lighting_material_list_price($workOrderId);
+        if ($material_subtotal > 0) {
+            $entity->set('field_material_chemical_total', $material_subtotal);
+            $grand_total += $material_subtotal;
+        }
+
+        // Trip fee — calculated by wo_sign_off, stored on field_trip_fee.
         $totalTrip = $entity->get('field_trip_fee')->value;
         if ($totalTrip > 0) {
             $grand_total += $totalTrip;
         }
 
-        // Dump Fees from related 'wo_material_dumping' entities.
-        $dumpTotal = get_exterior_lighting_total_dump_fees($entity->id());
-        if ($dumpTotal > 0) {
-            $entity->set('field_dump_fee_total', $dumpTotal);
-            $grand_total += $dumpTotal;
-        }
-
-        // Rental Fees from related 'wo_rental_equipment' entities.
+        // Rental equipment fees.
         $rental_fee_total = get_exterior_lighting_total_rental_fees($workOrderId);
         if ($rental_fee_total > 0) {
             $entity->set('field_rental_total', $rental_fee_total);
@@ -84,31 +87,54 @@ function wo_exterior_lighting_entity_presave(EntityInterface $entity) {
 }
 
 /**
- * Calculates the total Dump fees for a given Work Order.
+ * Total materials (with markup) for a Work Order.
  */
-function get_exterior_lighting_total_dump_fees($workOrderId) {
+function get_total_exterior_lighting_material_list_price($workOrderId) {
     $database = \Drupal::database();
-
-    $query = $database->select('wo_material_dumping__field_dump_total', 'dump_fees');
-    $query->join('wo_material_dumping__field_work_order', 'work_order', 'dump_fees.entity_id = work_order.entity_id');
+    $query = $database->select('wo_material_list_item__field_subtotal_w_markup', 'subtotal');
+    $query->join('wo_material_list_item', 'items', 'subtotal.entity_id = items.id');
+    $query->join('wo_material_list_item__field_list_id', 'list_id', 'items.id = list_id.entity_id');
+    $query->join('wo_material_list__field_work_order', 'work_order', 'list_id.field_list_id_target_id = work_order.entity_id');
     $query->condition('work_order.field_work_order_target_id', $workOrderId);
-    $query->addExpression('SUM(dump_fees.field_dump_total_value)', 'total_dump_fee');
+    $query->addExpression('SUM(subtotal.field_subtotal_w_markup_value)', 'total_subtotal_w_markup');
     $result = $query->execute()->fetchField();
-
     return $result ? $result : 0;
 }
 
 /**
- * Calculates the total Rental Equipment fees for a given Work Order.
+ * Total rented-equipment fees for a Work Order.
  */
 function get_exterior_lighting_total_rental_fees($workOrderId) {
     $database = \Drupal::database();
-
-    $query = $database->select('wo_rental_equipment__field_receipt_total_cost', 'rental_fees');
-    $query->join('wo_rental_equipment__field_rented_for', 'work_order', 'rental_fees.entity_id = work_order.entity_id');
-    $query->condition('work_order.field_rented_for_target_id', $workOrderId);
-    $query->addExpression('SUM(rental_fees.field_receipt_total_cost_value)', 'total_rental_fee');
+    $query = $database->select('wo_rental_equipment__field_rented_for', 'wrf');
+    $query->condition('wrf.field_rented_for_target_id', $workOrderId);
+    $query->condition('wrf.deleted', 0);
+    $query->leftJoin('wo_rental_equipment__field_hourly_rate', 'hr', 'hr.entity_id = wrf.entity_id AND hr.deleted = 0');
+    $query->leftJoin('wo_rental_equipment__field_hours', 'h', 'h.entity_id = wrf.entity_id AND h.deleted = 0');
+    $query->leftJoin('wo_rental_equipment__field_receipt_total_cost', 'rtc', 'rtc.entity_id = wrf.entity_id AND rtc.deleted = 0');
+    $query->addExpression(
+        'SUM(COALESCE(rtc.field_receipt_total_cost_value, hr.field_hourly_rate_value * h.field_hours_value, 0))',
+        'total_rental_fee'
+    );
     $result = $query->execute()->fetchField();
+    return $result ? (float) $result : 0.0;
+}
 
-    return $result ? $result : 0;
+/**
+ * Total clocked hours for a Work Order (sum of wo_time_clock entries).
+ */
+function get_hours_for_exterior_lighting($workOrderId) {
+    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
+        return 0;
+    }
+    $hoursSpent = 0;
+    $entries = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
+        'field_work_order' => $workOrderId,
+    ]);
+    foreach ($entries as $entry) {
+        if ($entry->bundle() === 'entry') {
+            $hoursSpent += (float) $entry->get('field_total_time')->value;
+        }
+    }
+    return $hoursSpent;
 }

@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Drupal\bos_wo_intake\Form;
 
 use Drupal\bos_wo_intake\Service\WorkOrderIntakeService;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountProxyInterface;
-use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -142,29 +143,26 @@ final class WoIntakeForm extends FormBase {
   }
 
   /**
-   * AJAX callback — replace the result region.
+   * AJAX callback — replace the result region in place.
+   *
+   * Returns an EXPLICIT AjaxResponse (not a render array). This is what makes it
+   * work inside a modal: a render-array return gets re-wrapped by the modal
+   * content renderer into a NEW dialog (results land behind the modal), whereas
+   * an explicit AjaxResponse is used as-is — the ReplaceCommand simply swaps
+   * #wo-intake-result wherever it lives (in the dialog). No url/wrapper-format
+   * juggling needed.
    */
-  public function ajaxResult(array &$form, FormStateInterface $form_state): array {
-    return $form['result'];
+  public function ajaxResult(array &$form, FormStateInterface $form_state): AjaxResponse {
+    $response = new AjaxResponse();
+    $response->addCommand(new ReplaceCommand('#wo-intake-result', $form['result']));
+    return $response;
   }
 
   /**
-   * #ajax settings for the in-form buttons.
-   *
-   * CRITICAL: force the submit URL to the plain route with the `drupal_ajax`
-   * wrapper. When the form is opened in a modal it otherwise inherits
-   * `_wrapper_format=drupal_modal` + `dialogType: ajax`, so every submit
-   * re-renders as a NEW dialog and the result lands outside the modal instead of
-   * replacing #wo-intake-result in place.
+   * #ajax settings shared by every in-form button.
    */
   private function ajaxOpts(): array {
-    return [
-      'callback' => '::ajaxResult',
-      'wrapper' => 'wo-intake-result',
-      'url' => Url::fromRoute('bos_wo_intake.intake_page', [], [
-        'query' => ['ajax_form' => 1, '_wrapper_format' => 'drupal_ajax'],
-      ]),
-    ];
+    return ['callback' => '::ajaxResult'];
   }
 
   // ==========================================================================

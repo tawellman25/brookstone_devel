@@ -145,6 +145,7 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 | Retire `CreateAndScheduleSprinklerCheckUpWorkOrdersAction` VBO | Off-season. |
 | Refactor `field_estimate_type` | Off-season. |
 | `irrigation_crew` default truck count (1 → NULL?) | Off-season. |
+| Lighting `wo_*` billing modules | The `landscape_lighting` / `exterior_lighting` bundles were built out (2026-07-05) to full WO bundles — creation + scheduling work. But they have **no per-bundle `wo_*` module** (like `wo_sprinkler_repair`), so completion **won't auto-calculate billing totals** — office bills manually. Build `wo_landscape_lighting` / `wo_exterior_lighting` following the established per-bundle pattern **when lighting volume warrants it**. |
 
 ### Scheduling (T2–T3)
 | Item | Notes |

@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Drupal\bos_wo_intake\Form;
 
 use Drupal\bos_wo_intake\Service\WorkOrderIntakeService;
-use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -143,26 +141,24 @@ final class WoIntakeForm extends FormBase {
   }
 
   /**
-   * AJAX callback — replace the result region in place.
+   * AJAX callback — replace the #wo-intake-result region in place.
    *
-   * Returns an EXPLICIT AjaxResponse (not a render array). This is what makes it
-   * work inside a modal: a render-array return gets re-wrapped by the modal
-   * content renderer into a NEW dialog (results land behind the modal), whereas
-   * an explicit AjaxResponse is used as-is — the ReplaceCommand simply swaps
-   * #wo-intake-result wherever it lives (in the dialog). No url/wrapper-format
-   * juggling needed.
+   * Standard render-array return (the form-ajax pipeline builds the ReplaceCommand
+   * and re-attaches behaviors, keeping button ajax-settings keys in sync with the
+   * rendered selectors). The result-region buttons carry EXPLICIT #ids
+   * (wo-svc-opt-*, wo-prop-opt-*, wo-create-anyway) — without them the ajax
+   * rebuild appends a unique suffix to the settings key but not the button's
+   * data-drupal-selector, desyncing them so a tap has no handler.
    */
-  public function ajaxResult(array &$form, FormStateInterface $form_state): AjaxResponse {
-    $response = new AjaxResponse();
-    $response->addCommand(new ReplaceCommand('#wo-intake-result', $form['result']));
-    return $response;
+  public function ajaxResult(array &$form, FormStateInterface $form_state): array {
+    return $form['result'];
   }
 
   /**
    * #ajax settings shared by every in-form button.
    */
   private function ajaxOpts(): array {
-    return ['callback' => '::ajaxResult'];
+    return ['callback' => '::ajaxResult', 'wrapper' => 'wo-intake-result'];
   }
 
   // ==========================================================================
@@ -267,6 +263,8 @@ final class WoIntakeForm extends FormBase {
     $card['anyway'] = [
       '#type' => 'submit',
       '#value' => $this->t('Create anyway'),
+      '#name' => 'wo_create_anyway',
+      '#id' => 'wo-create-anyway',
       '#wo_action' => 'create_anyway',
       '#submit' => ['::submitIntake'],
       '#limit_validation_errors' => [],
@@ -295,6 +293,7 @@ final class WoIntakeForm extends FormBase {
         '#type' => 'submit',
         '#value' => $c['name'],
         '#name' => 'pick_property_' . $c['id'],
+        '#id' => 'wo-prop-opt-' . $c['id'],
         '#wo_action' => 'pick_property',
         '#wo_property_id' => $c['id'],
         '#submit' => ['::submitIntake'],
@@ -349,6 +348,7 @@ final class WoIntakeForm extends FormBase {
       '#type' => 'submit',
       '#value' => $name,
       '#name' => 'pick_service_' . $tid,
+      '#id' => 'wo-svc-opt-' . $tid,
       '#wo_action' => 'pick_service',
       '#wo_service_term_id' => $tid,
       '#submit' => ['::submitIntake'],

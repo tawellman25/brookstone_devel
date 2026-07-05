@@ -9,17 +9,36 @@
  */
 
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
 
 /**
- * Implements hook_page_attachments().
+ * Implements hook_toolbar().
  *
- * Give the top-level "New Work Order" toolbar item its icon — but only for users
- * who can use the page (no point styling a link they can't see).
+ * A real top-level toolbar tab (icon) that links straight to /wo-intake — the
+ * two-tap mobile goal. A menu link under menu_name:admin does NOT render as a
+ * standalone toolbar icon (it lands inside the "Manage" flyout); hook_toolbar()
+ * is the correct mechanism. Gated by the page permission.
  */
-function bos_wo_intake_page_attachments(array &$attachments): void {
-  if (\Drupal::currentUser()->hasPermission('use work order intake')) {
-    $attachments['#attached']['library'][] = 'bos_wo_intake/toolbar_icon';
+function bos_wo_intake_toolbar(): array {
+  $items = [];
+  if (!\Drupal::currentUser()->hasPermission('use work order intake')) {
+    return $items;
   }
+  $items['bos_wo_intake'] = [
+    '#type' => 'toolbar_item',
+    '#weight' => -15,
+    'tab' => [
+      '#type' => 'link',
+      '#title' => t('New WO'),
+      '#url' => Url::fromRoute('bos_wo_intake.intake_page'),
+      '#attributes' => [
+        'title' => t('Create a Work Order from a spoken or typed command'),
+        'class' => ['toolbar-icon', 'toolbar-icon-bos-wo-intake'],
+      ],
+    ],
+    '#attached' => ['library' => ['bos_wo_intake/toolbar_icon']],
+  ];
+  return $items;
 }
 
 /**

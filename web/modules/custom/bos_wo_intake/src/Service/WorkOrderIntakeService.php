@@ -147,11 +147,14 @@ final class WorkOrderIntakeService {
     $noteIds = [];
     $flags = [];
 
+    // The spoken description (+ any recent-terminal system flag) is appended to
+    // the WO's "Work To Be Done" (field_work_todo_description), on new lines
+    // after the per-service default — NOT a wo_notes entity. wo_notes are for
+    // things noted AFTER creation. (Falls back to a note only if a bundle lacks
+    // the description field.)
+    $descLines = [];
     if (trim((string) $frag['complaint']) !== '') {
-      $n = $this->createNote($wo, $actor, $frag['complaint'], FALSE, 'manual');
-      if ($n) {
-        $noteIds[] = (int) $n->id();
-      }
+      $descLines[] = trim((string) $frag['complaint']);
     }
     if ($dupFlag) {
       $prior = $dupFlag['prior'];
@@ -159,12 +162,19 @@ final class WorkOrderIntakeService {
         ? $prior->get('field_work_order_id')->value : $prior->id();
       $when = $this->fmtDate($prior->getChangedTime());
       $statusLbl = $this->statusLabel($prior);
-      $body = "System: WO {$priorId} ({$svc['term_name']}) for this property was {$statusLbl} on {$when} — verify this is a new issue, not a callback.";
-      $n = $this->createNote($wo, $actor, $body, TRUE, NULL);
-      if ($n) {
-        $noteIds[] = (int) $n->id();
-      }
+      $descLines[] = "⚠ System: WO {$priorId} ({$svc['term_name']}) for this property was {$statusLbl} on {$when} — verify this is a new issue, not a callback.";
       $flags[] = 'recent_terminal_noted';
+    }
+    if ($descLines) {
+      if (!$this->appendToDescription($wo, $descLines)) {
+        // Bundle has no description field — fall back to a note so nothing is lost.
+        foreach ($descLines as $line) {
+          $n = $this->createNote($wo, $actor, $line, str_starts_with($line, '⚠ System:'), 'manual');
+          if ($n) {
+            $noteIds[] = (int) $n->id();
+          }
+        }
+      }
     }
 
     return [
@@ -612,6 +622,46 @@ final class WorkOrderIntakeService {
       return NULL;
     }
     return $this->entityTypeManager->getStorage('work_order')->loadUnchanged($wo->id());
+  }
+
+  /**
+   * Append lines to the WO's "Work To Be Done" (field_work_todo_description),
+   * each on a new line after any existing/default content. Returns FALSE if the
+   * bundle has no such field (caller falls back to a note).
+   */
+  private function appendToDescription(EntityInterface $wo, array $lines): bool {
+    if (!$wo->hasField('field_work_todo_description')) {
+      return FALSE;
+    }
+    $lines = array_values(array_filter(
+      array_map(fn($l) => trim((string) $l), $lines),
+      fn($l) => $l !== ''
+    ));
+    if (!$lines) {
+      return TRUE;
+    }
+    $item = $wo->get('field_work_todo_description')->first();
+    $existing = $item ? rtrim((string) $item->value) : '';
+    $format = ($item && $item->format) ? $item->format : 'basic_html';
+    // For HTML formats wrap each line in a paragraph so it renders as a clean new
+    // block after the default; otherwise a plain newline.
+    if (stripos($format, 'html') !== FALSE) {
+      $addition = implode('', array_map(fn($l) => '<p>' . htmlspecialchars($l) . '</p>', $lines));
+    }
+    else {
+      $addition = implode("\n", $lines);
+    }
+    $value = $existing !== '' ? ($existing . "\n" . $addition) : $addition;
+    try {
+      $wo->set('field_work_todo_description', ['value' => $value, 'format' => $format]);
+      $wo->_skip_invoiced_guard = TRUE;
+      $wo->save();
+    }
+    catch (\Throwable $e) {
+      $this->logger->error('WO-intake: description append failed on WO @id: @m', ['@id' => $wo->id(), '@m' => $e->getMessage()]);
+      return FALSE;
+    }
+    return TRUE;
   }
 
   private function createNote(EntityInterface $wo, AccountInterface $actor, string $body, bool $isSystem, ?string $kind): ?EntityInterface {

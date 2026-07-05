@@ -36,11 +36,13 @@ $switcher->switchBack();
 if (($r['status'] ?? '') === 'created') {
   $wo = $ws->loadUnchanged($r['work_order']['id']);
   $woUid = (int) $wo->getOwnerId();
-  $note = $r['note_ids'] ? $ns->load($r['note_ids'][0]) : NULL;
-  $noteUid = $note ? (int) $note->getOwnerId() : 0;
-  printf("  [%s] authoring: office uid=%d  WO owner=%d  note owner=%d  (both should equal %d)\n",
-    ($woUid === (int) $uid && $noteUid === (int) $uid) ? 'PASS' : 'FAIL', $uid, $woUid, $noteUid, $uid);
-  printf("       note text: \"%s\"  (verbatim complaint)\n", trim(strip_tags($note ? $note->get('field_note_text')->value : '')));
+  // Complaint now lands in the WO's "Work To Be Done" description, not a note.
+  $desc = strip_tags((string) $wo->get('field_work_todo_description')->value);
+  $inDesc = str_contains($desc, 'leaking head');
+  $noNotes = (int) $ns->getQuery()->accessCheck(FALSE)->condition('field_work_order', $wo->id())->count()->execute() === 0;
+  printf("  [%s] authoring: office uid=%d  WO owner=%d  complaint-in-description=%s  zero-notes=%s\n",
+    ($woUid === (int) $uid && $inDesc && $noNotes) ? 'PASS' : 'FAIL', $uid, $woUid, $inDesc ? 'Y' : 'N', $noNotes ? 'Y' : 'N');
+  printf("       description tail: \"%s\"\n", trim(substr($desc, -60)));
   $del($wo->id());
 }
 else {

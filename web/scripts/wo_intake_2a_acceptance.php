@@ -51,9 +51,9 @@ $cmd = "Create a repair work order for Jim Lyman on Willow Dr. They have a broke
 $r = $svc->createFromText($cmd, $actor); $note($r);
 $woA = $r['work_order']['id'] ?? NULL;
 $propOk = $woA ? ((int) $woStorage->loadUnchanged($woA)->get('field_property')->target_id === $P) : FALSE;
-$noteBody = ($r['note_ids'] ?? []) ? $noteStorage->load($r['note_ids'][0])->get('field_note_text')->value : '';
+$descBody = $woA ? strip_tags((string) $woStorage->loadUnchanged($woA)->get('field_work_todo_description')->value) : '';
 $line("1  cmd: $cmd");
-$line("   " . $brief($r) . " | property==$P? " . ($propOk ? 'YES' : 'NO') . " | complaint_note=\"" . trim(strip_tags($noteBody)) . "\"");
+$line("   " . $brief($r) . " | property==$P? " . ($propOk ? 'YES' : 'NO') . " | in-description=\"" . trim(substr($descBody, -45)) . "\"");
 
 // clean slate before #2
 if ($woA) { _wo2a_del($woA, $woStorage, $noteStorage); $createdWo = array_diff($createdWo, [$woA]); }
@@ -127,15 +127,11 @@ if ($woDup) {
 }
 $r = $svc->createFromText("repair for jim lyman on willow dr", $actor); $note($r);
 $w9 = $r['work_order']['id'] ?? NULL;
-$sysNote = '';
-foreach (($r['note_ids'] ?? []) as $nid) {
-  $nn = $noteStorage->load($nid);
-  if ($nn && (bool) $nn->get('field_is_system_note')->value) {
-    $sysNote = trim(strip_tags($nn->get('field_note_text')->value));
-  }
-}
+// The recent-terminal system flag now lands in the description, not a note.
+$desc9 = $w9 ? strip_tags((string) $woStorage->loadUnchanged($w9)->get('field_work_todo_description')->value) : '';
+$hasFlag = str_contains($desc9, 'System:') && str_contains($desc9, 'callback');
 $line("9  complete the prior WO, re-run repair for jim lyman");
-$line("   " . $brief($r) . " | system_flag_note=\"" . $sysNote . "\"");
+$line("   " . $brief($r) . " | system-flag-in-description=" . ($hasFlag ? 'YES' : 'NO'));
 if ($w9) { _wo2a_del($w9, $woStorage, $noteStorage); $createdWo = array_diff($createdWo, [$w9]); }
 if ($woDup2) { _wo2a_del($woDup2, $woStorage, $noteStorage); $createdWo = array_diff($createdWo, [$woDup2]); }
 if ($woDup) { _wo2a_del($woDup, $woStorage, $noteStorage); $createdWo = array_diff($createdWo, [$woDup]); }

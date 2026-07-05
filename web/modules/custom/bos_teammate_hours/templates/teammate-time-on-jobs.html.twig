@@ -1,0 +1,67 @@
+{#
+/**
+ * @file
+ * "Time on Jobs" — a teammate's own clocked WO hours for a calendar week.
+ * Deliberately shows no GPS and no dollar figures.
+ *
+ * Available variables:
+ * - days: list of { date_label, total, has_open, entries: [ { wo_id, wo_url,
+ *   property, start, end, duration, open } ] }
+ * - week_total, week_label, is_current_week, prev_url, next_url, today_url
+ */
+#}
+<div class="toj-wrap">
+
+  <div class="toj-nav">
+    <a class="toj-nav-btn" href="{{ prev_url }}">‹ Prev</a>
+    <div class="toj-week">
+      <div class="toj-week-label">{{ week_label }}</div>
+      <div class="toj-week-total"><strong>{{ week_total }}</strong> hrs{{ is_current_week ? ' this week' : '' }}</div>
+    </div>
+    {% if next_url %}
+      <a class="toj-nav-btn" href="{{ next_url }}">Next ›</a>
+    {% else %}
+      <span class="toj-nav-btn toj-nav-disabled">Next ›</span>
+    {% endif %}
+  </div>
+
+  {% if today_url %}
+    <a class="toj-today-link" href="{{ today_url }}">Jump to this week</a>
+  {% endif %}
+
+  {% if days is empty %}
+    <div class="toj-empty">No hours clocked{{ is_current_week ? ' yet this week' : ' this week' }}.</div>
+  {% else %}
+    <div class="toj-list">
+      {% for day in days %}
+        <div class="toj-day-card">
+          <div class="toj-day-header">
+            <span class="toj-day-date">{{ day.date_label }}</span>
+            <span class="toj-day-total">{{ day.total }} hrs{{ day.has_open ? ' +' : '' }}</span>
+          </div>
+          {% for e in day.entries %}
+            <div class="toj-entry{{ e.open ? ' toj-entry--open' : '' }}">
+              <div class="toj-entry-job">
+                {% if e.wo_url %}
+                  <a href="{{ e.wo_url }}">WO #{{ e.wo_id }}</a>
+                {% else %}
+                  WO #{{ e.wo_id }}
+                {% endif %}
+                {% if e.property %}<span class="toj-entry-prop">— {{ e.property }}</span>{% endif %}
+              </div>
+              <div class="toj-entry-time">
+                {% if e.open %}
+                  <span class="toj-badge toj-badge--open">In progress</span>
+                  <span class="toj-since">since {{ e.start }}</span>
+                {% else %}
+                  {{ e.start }}–{{ e.end }} · <strong>{{ e.duration }} hrs</strong>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+</div>

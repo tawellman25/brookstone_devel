@@ -1,0 +1,174 @@
+/**
+ * Time on Jobs — teammate self-service clocked-hours widget.
+ * Mirrors the My Schedule crew-card tokens (bos_scheduling/my_schedule.css).
+ */
+
+.toj-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0.5rem 0.75rem 2rem;
+}
+
+/* ── Week navigation + total ───────────────────────────────────── */
+.toj-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.toj-week {
+  flex: 1;
+  text-align: center;
+}
+
+.toj-week-label {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.toj-week-total {
+  font-size: 1.25rem;
+  color: #1a1a1a;
+}
+
+.toj-week-total strong {
+  color: #1a5276;
+}
+
+.toj-nav-btn {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  background: #1a5276;
+  color: #fff !important;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  min-width: 70px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.toj-nav-btn:hover {
+  background: #154360;
+}
+
+.toj-nav-disabled {
+  background: #ccc;
+  color: #888 !important;
+  cursor: default;
+}
+
+.toj-today-link {
+  display: block;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #1a5276;
+  margin-bottom: 1rem;
+  text-decoration: none;
+}
+
+/* ── Empty state ───────────────────────────────────────────────── */
+.toj-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #666;
+  font-size: 1.05rem;
+}
+
+/* ── Day cards ─────────────────────────────────────────────────── */
+.toj-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.toj-day-card {
+  background: #fff;
+  border: 2px solid #ddd;
+  border-left: 5px solid #1a5276;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
+.toj-day-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.4rem;
+}
+
+.toj-day-date {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.toj-day-total {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a5276;
+  white-space: nowrap;
+}
+
+/* ── Entry rows ────────────────────────────────────────────────── */
+.toj-entry {
+  padding: 0.4rem 0;
+}
+
+.toj-entry + .toj-entry {
+  border-top: 1px solid #f0f0f0;
+}
+
+.toj-entry-job {
+  font-size: 0.95rem;
+  color: #1a1a1a;
+}
+
+.toj-entry-job a {
+  color: #1a5276;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.toj-entry-job a:hover {
+  text-decoration: underline;
+}
+
+.toj-entry-prop {
+  color: #555;
+}
+
+.toj-entry-time {
+  font-size: 0.9rem;
+  color: #444;
+  margin-top: 0.1rem;
+}
+
+.toj-entry--open .toj-entry-time {
+  color: #7a5200;
+}
+
+.toj-badge {
+  display: inline-block;
+  border-radius: 3px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.toj-badge--open {
+  background: #f0c040;
+  color: #4a3800;
+}
+
+.toj-since {
+  color: #7a5200;
+}

@@ -9,6 +9,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -73,7 +74,7 @@ final class WoIntakeForm extends FormBase {
       '#wo_action' => 'create',
       '#submit' => ['::submitIntake'],
       '#attributes' => ['class' => ['wo-intake-create']],
-      '#ajax' => ['callback' => '::ajaxResult', 'wrapper' => 'wo-intake-result'],
+      '#ajax' => $this->ajaxOpts(),
     ];
     if (!empty($storage['result'])) {
       $form['result']['content'] = $this->renderResult($storage['result']);
@@ -145,6 +146,25 @@ final class WoIntakeForm extends FormBase {
    */
   public function ajaxResult(array &$form, FormStateInterface $form_state): array {
     return $form['result'];
+  }
+
+  /**
+   * #ajax settings for the in-form buttons.
+   *
+   * CRITICAL: force the submit URL to the plain route with the `drupal_ajax`
+   * wrapper. When the form is opened in a modal it otherwise inherits
+   * `_wrapper_format=drupal_modal` + `dialogType: ajax`, so every submit
+   * re-renders as a NEW dialog and the result lands outside the modal instead of
+   * replacing #wo-intake-result in place.
+   */
+  private function ajaxOpts(): array {
+    return [
+      'callback' => '::ajaxResult',
+      'wrapper' => 'wo-intake-result',
+      'url' => Url::fromRoute('bos_wo_intake.intake_page', [], [
+        'query' => ['ajax_form' => 1, '_wrapper_format' => 'drupal_ajax'],
+      ]),
+    ];
   }
 
   // ==========================================================================
@@ -253,7 +273,7 @@ final class WoIntakeForm extends FormBase {
       '#submit' => ['::submitIntake'],
       '#limit_validation_errors' => [],
       '#attributes' => ['class' => ['wo-intake-anyway']],
-      '#ajax' => ['callback' => '::ajaxResult', 'wrapper' => 'wo-intake-result'],
+      '#ajax' => $this->ajaxOpts(),
     ];
     return $card;
   }
@@ -284,7 +304,7 @@ final class WoIntakeForm extends FormBase {
         '#attributes' => ['class' => ['wo-intake-candidate'], 'data-sub' => $sub],
         '#prefix' => '<div class="wo-intake-candidate__wrap">',
         '#suffix' => '<div class="wo-intake-candidate__sub">' . $sub . '</div>' . $conflict . '</div>',
-        '#ajax' => ['callback' => '::ajaxResult', 'wrapper' => 'wo-intake-result'],
+        '#ajax' => $this->ajaxOpts(),
       ];
     }
     return $wrap;
@@ -336,7 +356,7 @@ final class WoIntakeForm extends FormBase {
       '#submit' => ['::submitIntake'],
       '#limit_validation_errors' => [],
       '#attributes' => $attrs,
-      '#ajax' => ['callback' => '::ajaxResult', 'wrapper' => 'wo-intake-result'],
+      '#ajax' => $this->ajaxOpts(),
     ];
   }
 

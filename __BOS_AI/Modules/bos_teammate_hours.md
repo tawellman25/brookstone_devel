@@ -28,8 +28,13 @@ self-service surface over the `wo_time_clock` data that `wo_clock` captures.
 ## Deliberate scope / non-goals
 
 - **Self-only by construction.** The block reads `current_user`; there is no
-  way to view another teammate's hours through it. (Supervisor/office
-  "view anyone's hours" is a separate, deferred surface — see ROADMAP.)
+  way to view another teammate's hours through it. The **supervisor** "view
+  anyone's hours" counterpart lives in `bos_teammate_operations` — the
+  per-teammate variance detail page
+  (`/admin/office/operations/teammates/variance/{user}`), which shows the same
+  per-day WO entries **plus GPS distance-from-property** (`In 📍` / `Out 📍`,
+  Google-Maps-linked, ≥500 ft flagged) over an adjustable date range. GPS
+  appears only there, never on this crew self-view.
 - **No GPS.** The `field_clock_in_location` / `field_clock_out_location` /
   `field_*_distance_ft` data is intentionally **not** rendered here — GPS stays
   an admin/supervisor-only signal (per the `wo_clock` design). It is still

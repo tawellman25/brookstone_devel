@@ -1,0 +1,46 @@
+{#
+/**
+ * @file
+ * Slim property card for the crew /teammates/properties list. Read-only:
+ * no Edit / contact / Add Work Order / contract — just what a crew member needs
+ * to find and navigate to a property. Rendered from `property_card` computed in
+ * properties_preprocess_views_view_fields().
+ */
+#}
+{% set c = property_card %}
+{% if not c %}
+  {# No card (e.g. the map display's marker popups) — render fields as usual. #}
+  {% for field in fields %}{{ field.separator }}{{ field.wrapper_prefix }}{{ field.label_html }}{{ field.content }}{{ field.wrapper_suffix }}{% endfor %}
+{% else %}
+  <div class="prop-card prop-card--crew">
+
+    <div class="prop-card__header">
+      <a class="prop-card__name" href="{{ c.view_url }}">{{ c.nickname }}</a>
+      {% if c.flags %}
+        <div class="prop-card__flags">
+          {% for f in c.flags %}
+            <span class="prop-flag prop-flag--{{ f.class }}">{{ f.label }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    {% if c.address %}
+      <div class="prop-card__addr">{{ c.address }}</div>
+    {% endif %}
+
+    {% if c.contact_name %}
+      <div class="prop-card__contact">
+        {{ c.contact_name }}{% if c.contact_is_owner %} <span class="prop-card__contact-src">(owner)</span>{% endif %}{% if c.contact_phone %} · <a href="tel:{{ c.contact_phone }}">{{ c.contact_phone }}</a>{% endif %}
+      </div>
+    {% endif %}
+
+    {% if c.mow_day or c.gps_url %}
+      <div class="prop-card__meta">
+        {% if c.mow_day %}<span class="prop-card__mow">Mow&nbsp;Day: <strong>{{ c.mow_day }}</strong></span>{% endif %}
+        {% if c.gps_url %}<a class="prop-card__gps" href="{{ c.gps_url }}" target="_blank" rel="noopener">📍 Directions</a>{% endif %}
+      </div>
+    {% endif %}
+
+  </div>
+{% endif %}

@@ -226,7 +226,14 @@ function _properties_owner_fallback_set_button(int $property_id): string {
  */
 function properties_theme($existing, $type, $theme, $path): array {
   return [
+    // Full card: /admin/properties.
     'views_view_fields__properties' => [
+      'base hook' => 'views_view_fields',
+    ],
+    // Slim card: the crew /teammates/properties list. View-level suggestion;
+    // the template falls back to default field output when no card is set
+    // (e.g. the map display's marker popups), so only page_1 rows become cards.
+    'views_view_fields__teammate_properties' => [
       'base hook' => 'views_view_fields',
     ],
   ];
@@ -235,36 +242,98 @@ function properties_theme($existing, $type, $theme, $path): array {
 /**
  * Implements hook_views_pre_render().
  *
- * Attaches the property-card CSS/JS to the Properties admin view.
+ * Attaches the property-card CSS/JS and prefetches mow days (one query instead
+ * of one-per-row) for the Properties admin view and the crew list.
  */
 function properties_views_pre_render($view): void {
-  if ($view->id() === 'properties') {
+  $id = $view->id();
+  $is_admin = ($id === 'properties');
+  $is_crew_list = ($id === 'teammate_properties' && ($view->current_display ?? '') === 'page_1');
+  if ($is_admin || $is_crew_list) {
     $view->element['#attached']['library'][] = 'properties/property_cards';
+    _properties_prefetch_mow_days($view);
+    _properties_prefetch_contacts($view);
   }
 }
 
 /**
  * Implements hook_preprocess_HOOK() for views_view_fields.
  *
- * Computes the card data for each Properties admin-view row from the property
- * entity, so the row template can render a card. All logic lives here (PHP).
+ * Computes the card data for each property row. The admin view gets the full
+ * card; the crew list gets a slim card (no edit / contact / add-WO / contract).
  */
 function properties_preprocess_views_view_fields(array &$variables): void {
   $view = $variables['view'] ?? NULL;
-  if (!$view || $view->id() !== 'properties') {
+  if (!$view) {
+    return;
+  }
+  $id = $view->id();
+  // [with_contact, with_office]. Both cards show contact; only the admin card
+  // shows office bits (contract status + Add Work Order) and action buttons.
+  $mode = NULL;
+  if ($id === 'properties') {
+    $mode = [TRUE, TRUE];
+  }
+  elseif ($id === 'teammate_properties' && ($view->current_display ?? '') === 'page_1') {
+    $mode = [TRUE, FALSE];
+  }
+  if ($mode === NULL) {
     return;
   }
   $entity = $variables['row']->_entity ?? NULL;
   if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'properties') {
     return;
   }
-  $variables['property_card'] = _properties_build_card($entity);
+  $variables['property_card'] = _properties_build_card($entity, $mode[0], $mode[1]);
 }
 
 /**
- * Builds the card data array for one property row on the admin view.
+ * Prefetch mow days for every property in the view result in a single query,
+ * so the per-row card builder does not issue one query per property.
  */
-function _properties_build_card(EntityInterface $property): array {
+function _properties_prefetch_mow_days($view): void {
+  $pids = [];
+  foreach ($view->result as $row) {
+    $e = $row->_entity ?? NULL;
+    if ($e instanceof EntityInterface && $e->getEntityTypeId() === 'properties') {
+      $pids[] = (int) $e->id();
+    }
+  }
+  if (!$pids) {
+    return;
+  }
+  $map = &drupal_static('properties_mow_day_prefetch', []);
+  $storage = \Drupal::entityTypeManager()->getStorage('property_lawn_maintenance');
+  $ids = $storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_property', $pids, 'IN')
+    ->exists('field_mowing_weekday')
+    ->execute();
+  foreach ($storage->loadMultiple($ids) as $lm) {
+    $pid = (int) $lm->get('field_property')->target_id;
+    $wd = (string) ($lm->get('field_mowing_weekday')->value ?? '');
+    if ($wd !== '' && !isset($map[$pid])) {
+      $map[$pid] = ucwords($wd);
+    }
+  }
+  // Resolve the rest to empty so the builder skips a per-row query.
+  foreach ($pids as $pid) {
+    if (!array_key_exists($pid, $map)) {
+      $map[$pid] = '';
+    }
+  }
+}
+
+/**
+ * Builds the card data array for one property row.
+ *
+ * @param bool $with_contact
+ *   Include primary-contact + phone (with owner fallback). Both cards want it.
+ * @param bool $with_office
+ *   Include office-only bits: current-year contract status + the Add Work Order
+ *   service picker (admin card only; the crew card omits these + all actions).
+ */
+function _properties_build_card(EntityInterface $property, bool $with_contact = TRUE, bool $with_office = TRUE): array {
   $etm = \Drupal::entityTypeManager();
   $pid = (int) $property->id();
 
@@ -307,22 +376,39 @@ function _properties_build_card(EntityInterface $property): array {
   }
 
   // Primary contact + phone — with owner fallback (mirrors the property_contacts
-  // view: when no Primary Contact is set, show the current owner).
-  [$contact_name, $contact_phone, $contact_is_owner] = _properties_card_contact($property, $pid);
+  // view: when no Primary Contact is set, show the current owner). Admin only.
+  $contact_name = '';
+  $contact_phone = '';
+  $contact_is_owner = FALSE;
+  if ($with_contact) {
+    $cstore = &drupal_static('properties_contact_prefetch', []);
+    if (array_key_exists($pid, $cstore)) {
+      [$contact_name, $contact_phone, $contact_is_owner] = $cstore[$pid];
+    }
+    else {
+      [$contact_name, $contact_phone, $contact_is_owner] = _properties_card_contact($property, $pid);
+    }
+  }
 
-  // Mow day (from the lawn-maintenance sub-entity).
+  // Mow day (from the lawn-maintenance sub-entity) — prefetched when available.
   $mow_day = '';
-  $lm_ids = $etm->getStorage('property_lawn_maintenance')->getQuery()
-    ->accessCheck(FALSE)
-    ->condition('field_property', $pid)
-    ->exists('field_mowing_weekday')
-    ->range(0, 1)
-    ->execute();
-  if ($lm_ids) {
-    $lm = $etm->getStorage('property_lawn_maintenance')->load(reset($lm_ids));
-    $val = (string) ($lm->get('field_mowing_weekday')->value ?? '');
-    if ($val !== '') {
-      $mow_day = ucwords($val);
+  $prefetch = &drupal_static('properties_mow_day_prefetch', []);
+  if (array_key_exists($pid, $prefetch)) {
+    $mow_day = $prefetch[$pid];
+  }
+  else {
+    $lm_ids = $etm->getStorage('property_lawn_maintenance')->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_property', $pid)
+      ->exists('field_mowing_weekday')
+      ->range(0, 1)
+      ->execute();
+    if ($lm_ids) {
+      $lm = $etm->getStorage('property_lawn_maintenance')->load(reset($lm_ids));
+      $val = (string) ($lm->get('field_mowing_weekday')->value ?? '');
+      if ($val !== '') {
+        $mow_day = ucwords($val);
+      }
     }
   }
 
@@ -337,16 +423,16 @@ function _properties_build_card(EntityInterface $property): array {
     }
   }
 
-  // Current-year residential contract (one-per-property-per-year).
+  // Current-year residential contract (one-per-property-per-year). Admin only.
   $contract = NULL;
   $year = (new \DateTime('now', new \DateTimeZone(date_default_timezone_get())))->format('Y');
-  $c_ids = $etm->getStorage('contracts')->getQuery()
+  $c_ids = $with_office ? $etm->getStorage('contracts')->getQuery()
     ->accessCheck(FALSE)
     ->condition('type', 'residential')
     ->condition('field_property', $pid)
     ->condition('field_contract_year', $year)
     ->range(0, 1)
-    ->execute();
+    ->execute() : [];
   if ($c_ids) {
     $ct = $etm->getStorage('contracts')->load(reset($c_ids));
     $status = '';
@@ -377,9 +463,150 @@ function _properties_build_card(EntityInterface $property): array {
     'gps_url' => $gps_url,
     'contract' => $contract,
     'add_contract_url' => '/residential_contract/create/' . $pid,
-    'wo_options' => _properties_wo_bundle_options(),
+    'wo_options' => $with_office ? _properties_wo_bundle_options() : [],
     'wo_add_base' => '/admin/content/work_order/add/',
   ];
+}
+
+/**
+ * Batch-prefetch each property's card contact (primary contact, else current
+ * owner) for the whole view result, so the per-row builder issues no queries.
+ * Populates the 'properties_contact_prefetch' static as pid => [name, phone,
+ * is_owner].
+ */
+function _properties_prefetch_contacts($view): void {
+  $etm = \Drupal::entityTypeManager();
+  $store = &drupal_static('properties_contact_prefetch', []);
+
+  $primary = [];
+  $need_owner = [];
+  foreach ($view->result as $row) {
+    $p = $row->_entity ?? NULL;
+    if (!$p instanceof EntityInterface || $p->getEntityTypeId() !== 'properties') {
+      continue;
+    }
+    $pid = (int) $p->id();
+    if (array_key_exists($pid, $store)) {
+      continue;
+    }
+    if ($p->hasField('field_primary_contact_ref') && !$p->get('field_primary_contact_ref')->isEmpty()) {
+      $primary[$pid] = (int) $p->get('field_primary_contact_ref')->target_id;
+    }
+    else {
+      $need_owner[$pid] = $pid;
+    }
+  }
+
+  // --- Explicit primary contacts: batch-load contacts + their phones. ---
+  if ($primary) {
+    $contacts = $etm->getStorage('contacts')->loadMultiple(array_values(array_unique($primary)));
+    $phone_ref = [];
+    foreach ($contacts as $cid => $c) {
+      if ($c->hasField('field_phone_number') && !$c->get('field_phone_number')->isEmpty()) {
+        $phone_ref[$cid] = (int) $c->get('field_phone_number')->target_id;
+      }
+    }
+    $phones = $phone_ref ? $etm->getStorage('phone_number')->loadMultiple(array_values(array_unique($phone_ref))) : [];
+    foreach ($primary as $pid => $cid) {
+      $name = '';
+      $phone = '';
+      if (isset($contacts[$cid])) {
+        $name = (string) $contacts[$cid]->label();
+        if (strpos($name, ' — ') !== FALSE) {
+          $name = trim(explode(' — ', $name)[0]);
+        }
+        if (isset($phone_ref[$cid], $phones[$phone_ref[$cid]])) {
+          $phone = trim((string) ($phones[$phone_ref[$cid]]->get('field_phone_number')->value ?? ''));
+        }
+      }
+      $store[$pid] = [$name, $phone, FALSE];
+    }
+  }
+
+  // --- Owner fallback: most-recent ownership_record per property, batched. ---
+  if ($need_owner) {
+    $or_storage = $etm->getStorage('ownership_record');
+    $or_ids = $or_storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_property_reference', array_values($need_owner), 'IN')
+      ->sort('created', 'DESC')
+      ->execute();
+    $owner_by_pid = [];
+    if ($or_ids) {
+      $records = $or_storage->loadMultiple($or_ids);
+      // Preserve the created-DESC order from the query (loadMultiple re-keys).
+      foreach ($or_ids as $oid) {
+        $rec = $records[$oid] ?? NULL;
+        if (!$rec) {
+          continue;
+        }
+        $pid = (int) $rec->get('field_property_reference')->target_id;
+        if (isset($owner_by_pid[$pid])) {
+          continue;
+        }
+        if ($rec->hasField('field_property_owner') && !$rec->get('field_property_owner')->isEmpty()) {
+          $owner_by_pid[$pid] = (int) $rec->get('field_property_owner')->target_id;
+        }
+      }
+    }
+
+    $uids = array_values(array_unique(array_filter($owner_by_pid)));
+    $users = $uids ? $etm->getStorage('user')->loadMultiple($uids) : [];
+
+    // Names from customer_profile.
+    $name_by_uid = [];
+    if ($uids) {
+      $prof_storage = $etm->getStorage('profile');
+      $prof_ids = $prof_storage->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('type', 'customer_profile')
+        ->condition('uid', $uids, 'IN')
+        ->execute();
+      foreach ($prof_storage->loadMultiple($prof_ids) as $prof) {
+        $uid = (int) $prof->getOwnerId();
+        if (isset($name_by_uid[$uid])) {
+          continue;
+        }
+        $first = $prof->hasField('field_first_name') ? trim((string) ($prof->get('field_first_name')->value ?? '')) : '';
+        $last = $prof->hasField('field_last_name') ? trim((string) ($prof->get('field_last_name')->value ?? '')) : '';
+        $nm = trim($first . ' ' . $last);
+        if ($nm !== '') {
+          $name_by_uid[$uid] = $nm;
+        }
+      }
+    }
+
+    // First phone per uid.
+    $phone_by_uid = [];
+    if ($uids) {
+      $pn_storage = $etm->getStorage('phone_number');
+      $pn_ids = $pn_storage->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('type', 'profile_phone_numbers')
+        ->condition('field_user', $uids, 'IN')
+        ->execute();
+      foreach ($pn_storage->loadMultiple($pn_ids) as $pn) {
+        $uid = (int) $pn->get('field_user')->target_id;
+        if (isset($phone_by_uid[$uid])) {
+          continue;
+        }
+        if ($pn->hasField('field_phone_number') && !$pn->get('field_phone_number')->isEmpty()) {
+          $phone_by_uid[$uid] = trim((string) $pn->get('field_phone_number')->value);
+        }
+      }
+    }
+
+    foreach ($need_owner as $pid) {
+      $uid = $owner_by_pid[$pid] ?? 0;
+      $name = '';
+      $phone = '';
+      if ($uid) {
+        $name = $name_by_uid[$uid] ?? (isset($users[$uid]) ? (string) $users[$uid]->getDisplayName() : '');
+        $phone = $phone_by_uid[$uid] ?? '';
+      }
+      $store[$pid] = [$name, $phone, TRUE];
+    }
+  }
 }
 
 /**

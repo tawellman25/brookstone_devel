@@ -145,6 +145,7 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 | Retire `CreateAndScheduleSprinklerCheckUpWorkOrdersAction` VBO | Off-season. |
 | Refactor `field_estimate_type` | Off-season. |
 | `irrigation_crew` default truck count (1 → NULL?) | Off-season. |
+| **Rework the teammate profile page views** | Reimagine the whole `/user/{uid}` (aliased `/teammates/{name}`) teammate profile — the blocks/views shown, layout, and what a crew member vs. a supervisor sees. Surfaced 2026-07-05: several existing profile blocks (`teammate_profile_wo_by_teammate`, `teammate_properties`, …) carry a **dead `request_path: /teammates`** visibility (no bare `/teammates` page exists — see gotcha) so they likely render nowhere; the new `bos_teammate_hours` "Time on Jobs" card is correctly on `/user/*`. Audit all profile-page blocks, fix/retire the dead ones, and design a coherent profile. Deferred by Todd — "leave it for now." |
 
 ### Scheduling (T2–T3)
 | Item | Notes |

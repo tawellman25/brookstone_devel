@@ -608,7 +608,7 @@ obsoleted by upstream releases:
   leftover `?? []` may persist in an environment's copy until the next module update re-extracts
   it — no action needed.)
 
-Declared contrib patches (`drupal/core`, `calendar`, `smart_date`, `page_manager`,
+Declared contrib patches (`drupal/core`, `smart_date`, `page_manager`,
 `views_aggregator`) are managed by **`cweagans/composer-patches`** via `composer.json`
 `extra.patches` and applied automatically on every `composer install`. **`contrib/` is
 composer-managed** (installed on each environment by `composer install`, not committed/rsynced),
@@ -745,6 +745,8 @@ Key rules:
         node /var/www/html/__BOS_AI/SOPs/[SOP_CODE]/[SOP_CODE]_source.js"
 
 ## Change Log
+
+- **2026-07-06** — **Removed the obsolete `drupal/calendar` composer patch** (deferred #23). The declared patch `3177761-6 "Support for Smart Date"` (2022) targets a line in `calendar/src/Plugin/views/row/Calendar.php` that **no longer exists** — beta5 rewrote that method (now a `datetime_type` match) and handles smart_date fields **natively**. So the patch has been **silently failing to apply on every deploy** ("Could not apply patch! Skipping"), and composer-patches was removing+reinstalling calendar each time to retry — creating a brief window where `calendar.theme.inc` is missing (the transient warning behind a "wall of admin messages" if you browse mid-deploy). Confirmed the smart_date calendar (`teammate_properties`/`work_order_teammate_calendar`, plotting `scheduling.field_scheduled_date_and_time`) renders **571 events with the patch NOT applied**, so removing it is a runtime no-op — it just stops the churn/warnings. Removed the `drupal/calendar` block from `composer.json` `extra.patches`; `composer update drupal/calendar` refreshed the lock (content-hash only). The **companion `drupal/smart_date` "Support Calendar module" patch stays** (it applies cleanly and is the load-bearing half). Deploys are now quiet on calendar. **Note:** the two view scripts (`properties_view_to_cards.php`, `teammate_properties_split.php`) are **not re-run by deploys** — they're one-time per env, already applied.
 
 - **2026-07-05** — **Property search — one box, all-words, name + address (+ ID on admin).** Both the crew (`/teammates/properties`) and admin (`/admin/properties`) card views now use a single **"Search properties"** box backed by a Views **`combine`** filter with the **`allwords`** operator: each space-separated word must appear somewhere across the combined fields, in **any order** (e.g. `680 Delta` == `Delta 680` → 680-numbered properties in Delta). Crew combines **`field_nickname` + `field_full_address`**; admin adds **`id`** so a bare **Property ID** (e.g. `27000` → 1 card) also matches — folding the earlier "should IDs stay visible?" concern into the search. On admin this **replaced** the four separate exposed filters (nickname / street / city / id). `field_full_address` (and `id` on admin) are added as **excluded** fields so `combine` can reach them. Identifier is `search` (**not** the reserved `q`, which 403s). Applied via the idempotent view scripts (`properties_view_to_cards.php`, `teammate_properties_split.php`); verified live on both views.
 

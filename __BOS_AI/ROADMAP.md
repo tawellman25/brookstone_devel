@@ -92,6 +92,8 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 | `special_mowing` reconciliation bundle | special_mowing | T2 | M | Same reconciliation pattern. Early fall. |
 
 ### Supplier pricing pipeline (ongoing sub-project, T2/T3)
+**Core pipeline SHIPPED & live** (`supplier_price_ingest`, enabled on live; Phases 3.1–3.7, commits `05-25`…`05-31`): materials intake = **parse → match → dry-run report → approve → commit**, with a tiered matcher (Tier 1/2 exact + SKU-normalized/prefix, Tier 1.5 title-substring, Tier 3 fuzzy), a Discovery Queue + resolve forms, and office-manager dashboards. `wo_material_price_sync`, `material`, `material_supplier` all on. Docs: `Modules/supplier_pricing_pipeline_phase3_sequencing.md`. The rows below are the **remaining tuning/backfill/authoring** work, not a from-zero build.
+
 | Item | Status | Notes |
 |---|---|---|
 | Rain Bird MEDIUM-tier backfill (71 rows) | In Progress | Backfill mfr item numbers to raise Tier 1 rate. |

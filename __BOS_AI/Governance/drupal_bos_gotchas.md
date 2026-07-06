@@ -901,6 +901,22 @@ NOT a `cim` (BOS never full-cims). Surfaced 2026-07-04 (`bos_wo_intake` Gate 2B)
 
 ---
 
+## There is no bare `/teammates` page — a teammate's profile is `/user/{uid}`
+
+Several teammate-profile blocks (`teammate_profile_wo_by_teammate`,
+`teammate_properties`, …) carry `visibility: request_path: /teammates`. **That
+path does not exist as a page.** In BOS a teammate's profile is the user
+canonical page `/user/{uid}`, aliased `/teammates/{name}` (e.g.
+`/teammates/sam-more` → `/user/8532`); the `/teammates/*` namespace is all
+sub-pages (`/teammates/calendar`, `/teammates/work-orders/…`, `/teammates/training`).
+A `request_path` pattern of `/teammates` (no `*`) matches **only** the exact
+non-existent path, so those blocks render nowhere — a latent bug that's easy to
+copy. To show a block on teammate profiles, use `request_path: /user/*` and
+guard in code to `entity.user.canonical` + a `teammates` page-owner (read the
+route `user` param, not `current_user`, so a supervisor viewing a teammate sees
+that teammate's data). Surfaced 2026-07-05 building `bos_teammate_hours`
+(commit `d3e4de21`).
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

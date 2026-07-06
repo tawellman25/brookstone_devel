@@ -17,18 +17,29 @@ self-service surface over the `wo_time_clock` data that `wo_clock` captures.
 
 - A single Block plugin, `teammate_time_on_jobs`
   (`src/Plugin/Block/TeammateTimeOnJobsBlock.php`).
-- Placed on the **`/teammates`** crew landing page in the **`brookstone_olivero`**
-  theme, region `content`, weight `-17` (top), via `config/install`
-  (imported on `drush en`). Mirrors the existing `teammate_profile_*` block
-  placements.
+- Renders on the **teammate profile page** — the user canonical page
+  `/user/{uid}` (aliased **`/teammates/{name}`**, e.g. `/teammates/sam-more`).
+  Placed in the **`brookstone_olivero`** theme, region `content`, weight `-17`
+  (top), visibility `request_path: /user/*`. The build() short-circuits unless
+  the route is `entity.user.canonical` **and** the page-owner has the
+  `teammates` role, so it never appears on office/admin user pages.
+  > **Note:** there is **no bare `/teammates` page** in BOS — a teammate's
+  > profile is `/user/{uid}`, aliased `/teammates/{name}`. An earlier build
+  > targeted `request_path: /teammates` (copied from the existing
+  > `teammate_profile_*` blocks, which carry the same dead visibility) and so
+  > rendered nowhere. Target `/user/*`, not `/teammates`.
 - Styled to match the My Schedule crew-card pattern
   (`bos_scheduling/css/my_schedule.css`): white card, 2px `#ddd` border, 6px
   radius, left accent bar.
 
 ## Deliberate scope / non-goals
 
-- **Self-only by construction.** The block reads `current_user`; there is no
-  way to view another teammate's hours through it. The **supervisor** "view
+- **Reads the page-owner, not the viewer.** The block shows the hours of the
+  teammate **whose profile is being viewed** (the route `user` param). On a
+  teammate's own page that's their own hours; teammates can't reach other
+  teammates' profiles (`access user profiles` permission), so it stays
+  effectively self-only for crew, while supervisors/office viewing a teammate
+  see that teammate's hours. The **supervisor** "view
   anyone's hours" counterpart lives in `bos_teammate_operations` — the
   per-teammate variance detail page
   (`/admin/office/operations/teammates/variance/{user}`), which shows the same

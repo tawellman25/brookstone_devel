@@ -218,6 +218,270 @@ function _properties_owner_fallback_set_button(int $property_id): string {
 }
 
 /**
+ * Implements hook_theme().
+ *
+ * Registers the Properties admin view row suggestion so this module's
+ * templates/views-view-fields--properties.html.twig renders each row as a
+ * status-style card (UI-patterns status-card; mirrors backflow_device).
+ */
+function properties_theme($existing, $type, $theme, $path): array {
+  return [
+    'views_view_fields__properties' => [
+      'base hook' => 'views_view_fields',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * Attaches the property-card CSS/JS to the Properties admin view.
+ */
+function properties_views_pre_render($view): void {
+  if ($view->id() === 'properties') {
+    $view->element['#attached']['library'][] = 'properties/property_cards';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views_view_fields.
+ *
+ * Computes the card data for each Properties admin-view row from the property
+ * entity, so the row template can render a card. All logic lives here (PHP).
+ */
+function properties_preprocess_views_view_fields(array &$variables): void {
+  $view = $variables['view'] ?? NULL;
+  if (!$view || $view->id() !== 'properties') {
+    return;
+  }
+  $entity = $variables['row']->_entity ?? NULL;
+  if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'properties') {
+    return;
+  }
+  $variables['property_card'] = _properties_build_card($entity);
+}
+
+/**
+ * Builds the card data array for one property row on the admin view.
+ */
+function _properties_build_card(EntityInterface $property): array {
+  $etm = \Drupal::entityTypeManager();
+  $pid = (int) $property->id();
+
+  // Nickname + view / edit links.
+  $nickname = trim((string) ($property->get('field_nickname')->value ?? '')) ?: (string) $property->label();
+  try {
+    $view_url = $property->toUrl()->toString();
+  }
+  catch (\Throwable $e) {
+    $view_url = '/properties/' . $pid;
+  }
+  try {
+    $edit_url = $property->toUrl('edit-form')->toString();
+  }
+  catch (\Throwable $e) {
+    $edit_url = '/properties/' . $pid . '/edit';
+  }
+
+  // Compact address: street + city, parsed from the computed full address.
+  $address = '';
+  if ($property->hasField('field_full_address') && !$property->get('field_full_address')->isEmpty()) {
+    $parts = array_map('trim', explode(',', (string) $property->get('field_full_address')->value));
+    $street = $parts[0] ?? '';
+    $city = $parts[1] ?? '';
+    $address = trim($street . ($city !== '' ? ' · ' . $city : ''));
+  }
+
+  // Operational-flag badges (only the TRUE ones).
+  $flag_defs = [
+    'field_call_ahead' => ['Call Ahead', 'call-ahead'],
+    'field_cod_customer' => ['COD', 'cod'],
+    'field_no_services' => ['No Services', 'no-services'],
+    'field_must_use_client_app' => ['Client App', 'client-app'],
+  ];
+  $flags = [];
+  foreach ($flag_defs as $f => [$label, $cls]) {
+    if ($property->hasField($f) && (bool) $property->get($f)->value) {
+      $flags[] = ['label' => $label, 'class' => $cls];
+    }
+  }
+
+  // Primary contact + phone — with owner fallback (mirrors the property_contacts
+  // view: when no Primary Contact is set, show the current owner).
+  [$contact_name, $contact_phone, $contact_is_owner] = _properties_card_contact($property, $pid);
+
+  // Mow day (from the lawn-maintenance sub-entity).
+  $mow_day = '';
+  $lm_ids = $etm->getStorage('property_lawn_maintenance')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_property', $pid)
+    ->exists('field_mowing_weekday')
+    ->range(0, 1)
+    ->execute();
+  if ($lm_ids) {
+    $lm = $etm->getStorage('property_lawn_maintenance')->load(reset($lm_ids));
+    $val = (string) ($lm->get('field_mowing_weekday')->value ?? '');
+    if ($val !== '') {
+      $mow_day = ucwords($val);
+    }
+  }
+
+  // GPS → Google Maps link (only when set).
+  $gps_url = '';
+  if ($property->hasField('field_geofield') && !$property->get('field_geofield')->isEmpty()) {
+    $g = $property->get('field_geofield')->first();
+    $lat = $g?->get('lat')->getValue();
+    $lon = $g?->get('lon')->getValue();
+    if ($lat !== NULL && $lon !== NULL && $lat !== '' && $lon !== '') {
+      $gps_url = 'https://www.google.com/maps?q=' . $lat . ',' . $lon;
+    }
+  }
+
+  // Current-year residential contract (one-per-property-per-year).
+  $contract = NULL;
+  $year = (new \DateTime('now', new \DateTimeZone(date_default_timezone_get())))->format('Y');
+  $c_ids = $etm->getStorage('contracts')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'residential')
+    ->condition('field_property', $pid)
+    ->condition('field_contract_year', $year)
+    ->range(0, 1)
+    ->execute();
+  if ($c_ids) {
+    $ct = $etm->getStorage('contracts')->load(reset($c_ids));
+    $status = '';
+    if ($ct->hasField('field_contract_status') && !$ct->get('field_contract_status')->isEmpty()
+        && ($t = $ct->get('field_contract_status')->entity)) {
+      $status = (string) $t->label();
+    }
+    try {
+      $curl = $ct->toUrl()->toString();
+    }
+    catch (\Throwable $e) {
+      $curl = '';
+    }
+    $contract = ['status' => $status ?: 'Active', 'url' => $curl];
+  }
+
+  return [
+    'property_id' => $pid,
+    'nickname' => $nickname,
+    'view_url' => $view_url,
+    'edit_url' => $edit_url,
+    'address' => $address,
+    'flags' => $flags,
+    'contact_name' => $contact_name,
+    'contact_phone' => $contact_phone,
+    'contact_is_owner' => $contact_is_owner,
+    'mow_day' => $mow_day,
+    'gps_url' => $gps_url,
+    'contract' => $contract,
+    'add_contract_url' => '/residential_contract/create/' . $pid,
+    'wo_options' => _properties_wo_bundle_options(),
+    'wo_add_base' => '/admin/content/work_order/add/',
+  ];
+}
+
+/**
+ * Resolve a property's best-available contact for the card.
+ *
+ * Prefers the set Primary Contact; falls back to the current owner (same
+ * source the property_contacts view uses when no Primary Contact is set).
+ *
+ * @return array
+ *   [name, phone, is_owner_fallback].
+ */
+function _properties_card_contact(EntityInterface $property, int $pid): array {
+  // 1) Explicit Primary Contact.
+  if ($property->hasField('field_primary_contact_ref') && !$property->get('field_primary_contact_ref')->isEmpty()
+      && ($c = $property->get('field_primary_contact_ref')->entity)) {
+    $name = (string) $c->label();
+    // Some contact labels embed the phone as "Name — 970.555.1234".
+    if (strpos($name, ' — ') !== FALSE) {
+      $name = trim(explode(' — ', $name)[0]);
+    }
+    $phone = '';
+    if ($c->hasField('field_phone_number') && !$c->get('field_phone_number')->isEmpty()
+        && ($pe = $c->get('field_phone_number')->entity)) {
+      $phone = trim((string) ($pe->get('field_phone_number')->value ?? ''));
+    }
+    return [$name, $phone, FALSE];
+  }
+
+  // 2) Owner fallback — most recent ownership_record → user → profile name + phone.
+  $etm = \Drupal::entityTypeManager();
+  $or_ids = $etm->getStorage('ownership_record')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_property_reference', $pid)
+    ->sort('created', 'DESC')
+    ->range(0, 1)
+    ->execute();
+  if (!$or_ids) {
+    return ['', '', FALSE];
+  }
+  $record = $etm->getStorage('ownership_record')->load(reset($or_ids));
+  if (!$record || !$record->hasField('field_property_owner') || $record->get('field_property_owner')->isEmpty()) {
+    return ['', '', FALSE];
+  }
+  $owner_uid = (int) $record->get('field_property_owner')->target_id;
+  $user = $owner_uid > 0 ? $etm->getStorage('user')->load($owner_uid) : NULL;
+  if (!$user) {
+    return ['', '', FALSE];
+  }
+
+  // Name from customer_profile, else the user label.
+  $name = '';
+  $profile_ids = $etm->getStorage('profile')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'customer_profile')
+    ->condition('uid', $owner_uid)
+    ->range(0, 1)
+    ->execute();
+  if ($profile_ids && ($profile = $etm->getStorage('profile')->load(reset($profile_ids)))) {
+    $first = $profile->hasField('field_first_name') ? trim((string) ($profile->get('field_first_name')->value ?? '')) : '';
+    $last = $profile->hasField('field_last_name') ? trim((string) ($profile->get('field_last_name')->value ?? '')) : '';
+    $name = trim($first . ' ' . $last);
+  }
+  if ($name === '') {
+    $name = (string) ($user->getDisplayName() ?? '');
+  }
+
+  // First owner phone from phone_number.profile_phone_numbers.
+  $phone = '';
+  $phone_ids = $etm->getStorage('phone_number')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'profile_phone_numbers')
+    ->condition('field_user', $owner_uid)
+    ->range(0, 1)
+    ->execute();
+  if ($phone_ids && ($pn = $etm->getStorage('phone_number')->load(reset($phone_ids)))) {
+    if ($pn->hasField('field_phone_number') && !$pn->get('field_phone_number')->isEmpty()) {
+      $phone = trim((string) $pn->get('field_phone_number')->value);
+    }
+  }
+
+  return [$name, $phone, TRUE];
+}
+
+/**
+ * All work_order bundle labels (minus the legacy 'estimate'), for the
+ * per-card "Add Work Order" service picker. Statically cached.
+ */
+function _properties_wo_bundle_options(): array {
+  $opts = &drupal_static(__FUNCTION__);
+  if ($opts === NULL) {
+    $bundles = \Drupal::service('entity_type.bundle.info')->getBundleInfo('work_order');
+    unset($bundles['estimate']);
+    $opts = [];
+    foreach ($bundles as $key => $info) {
+      $opts[$key] = (string) $info['label'];
+    }
+    asort($opts);
+  }
+  return $opts;
+}
+
+/**
  * Ensure a property_sprinkler_info entity exists for the given Properties entity.
  *
  * Entity type: property_sprinkler_info

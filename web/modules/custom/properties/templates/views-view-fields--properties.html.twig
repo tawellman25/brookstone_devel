@@ -1,0 +1,58 @@
+{#
+/**
+ * @file
+ * Property card row for the /admin/properties view. Rendered from
+ * `property_card` computed in properties_preprocess_views_view_fields().
+ */
+#}
+{% set c = property_card %}
+{% if c %}
+  <div class="prop-card">
+
+    <div class="prop-card__header">
+      <a class="prop-card__name" href="{{ c.view_url }}">{{ c.nickname }}</a>
+      {% if c.flags %}
+        <div class="prop-card__flags">
+          {% for f in c.flags %}
+            <span class="prop-flag prop-flag--{{ f.class }}">{{ f.label }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    {% if c.address %}
+      <div class="prop-card__addr">{{ c.address }}</div>
+    {% endif %}
+
+    {% if c.contact_name %}
+      <div class="prop-card__contact">
+        {{ c.contact_name }}{% if c.contact_is_owner %} <span class="prop-card__contact-src">(owner)</span>{% endif %}{% if c.contact_phone %} · <a href="tel:{{ c.contact_phone }}">{{ c.contact_phone }}</a>{% endif %}
+      </div>
+    {% endif %}
+
+    <div class="prop-card__meta">
+      {% if c.mow_day %}<span class="prop-card__mow">Mow&nbsp;Day: <strong>{{ c.mow_day }}</strong></span>{% endif %}
+      {% if c.contract %}
+        <span class="prop-card__contract">Contract: {% if c.contract.url %}<a href="{{ c.contract.url }}">{{ c.contract.status }}</a>{% else %}{{ c.contract.status }}{% endif %}</span>
+      {% endif %}
+      {% if c.gps_url %}<a class="prop-card__gps" href="{{ c.gps_url }}" target="_blank" rel="noopener">📍 GPS ✓</a>{% endif %}
+    </div>
+
+    <div class="prop-card__actions">
+      <a class="button button--small" href="{{ c.edit_url }}">Edit</a>
+      {% if not c.contract %}
+        <a class="button button--small" href="{{ c.add_contract_url }}">Add Contract</a>
+      {% endif %}
+      <span class="prop-card-wo">
+        <select class="prop-card-wo__select form-element form-select">
+          <option value="">＋ Work Order…</option>
+          {% for key, label in c.wo_options %}
+            <option value="{{ key }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button type="button" class="button button--small button--primary prop-card-wo__go" data-property="{{ c.property_id }}" data-base="{{ c.wo_add_base }}">Add</button>
+      </span>
+    </div>
+
+  </div>
+{% endif %}

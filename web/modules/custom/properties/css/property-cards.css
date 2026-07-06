@@ -1,0 +1,135 @@
+/**
+ * Property admin-view cards (/admin/properties).
+ * Mirrors the My Schedule crew-card tokens (bos_scheduling/my_schedule.css).
+ */
+
+/* Lay the unformatted rows out as a responsive card grid. */
+.view-properties .view-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 0.85rem;
+}
+.view-properties .views-row {
+  margin: 0;
+}
+
+/* ── Card ──────────────────────────────────────────────────────── */
+.prop-card {
+  background: #fff;
+  border: 2px solid #ddd;
+  border-left: 5px solid #1a5276;
+  border-radius: 6px;
+  padding: 0.75rem 0.9rem;
+  height: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.prop-card:hover {
+  border-color: #1a5276;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Header: nickname + flag badges ───────────────────────────── */
+.prop-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+.prop-card__name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-decoration: none;
+  line-height: 1.2;
+}
+.prop-card__name:hover {
+  color: #1a5276;
+  text-decoration: underline;
+}
+.prop-card__flags {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+.prop-flag {
+  border-radius: 3px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: #fff;
+  background: #607d8b;
+}
+.prop-flag--call-ahead { background: #e74c3c; }
+.prop-flag--cod        { background: #d35400; }
+.prop-flag--no-services{ background: #7f8c8d; }
+.prop-flag--client-app { background: #8e44ad; }
+
+/* ── Address / contact ─────────────────────────────────────────── */
+.prop-card__addr {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.2rem;
+}
+.prop-card__contact {
+  font-size: 0.85rem;
+  color: #444;
+  margin-bottom: 0.35rem;
+}
+.prop-card__contact a { color: #1a5276; text-decoration: none; }
+.prop-card__contact a:hover { text-decoration: underline; }
+
+/* ── Meta row: mow day / contract / gps ───────────────────────── */
+.prop-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.9rem;
+  font-size: 0.85rem;
+  color: #444;
+  padding: 0.35rem 0;
+  border-top: 1px solid #f0f0f0;
+  margin-bottom: 0.4rem;
+}
+.prop-card__mow strong { color: #1a5276; }
+.prop-card__contract a { color: #1a5276; text-decoration: none; }
+.prop-card__contract a:hover { text-decoration: underline; }
+.prop-card__gps {
+  color: #1a7a3a;
+  text-decoration: none;
+  font-weight: 600;
+}
+.prop-card__gps:hover { text-decoration: underline; }
+
+/* ── Actions ───────────────────────────────────────────────────── */
+.prop-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.prop-card__actions .button {
+  margin: 0;
+}
+.prop-card-wo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+.prop-card-wo__select {
+  max-width: 11rem;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.4rem;
+  height: auto;
+}
+
+.prop-card__contact-src {
+  color: #999;
+  font-size: 0.78rem;
+  font-style: italic;
+}

@@ -5,21 +5,29 @@ namespace Drupal\bos_teammate_hours\Plugin\Block;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * "Time on Jobs" — the viewing teammate's own clocked WO hours.
+ * "Time on Jobs" — a teammate's own clocked WO hours on their profile page.
  *
- * Self-only by construction: it always reads the CURRENT user's
- * `wo_time_clock` entries for the selected calendar week (Sunday–Saturday).
+ * Renders on the user canonical page (`/user/{uid}`, aliased `/teammates/{name}`)
+ * and shows the PAGE-OWNER's `wo_time_clock` hours for the selected calendar
+ * week (Sunday–Saturday). On a teammate's own page that's their own hours;
+ * teammates can't reach other teammates' profiles, so it stays effectively
+ * self-only for crew, while supervisors/office (who can view profiles) see the
+ * page-owner's hours.
+ *
  * Deliberately shows NO GPS location/distance and NO dollar figures — just
- * hours on jobs, grouped by day, with a week total.
+ * hours on jobs, grouped by day, with a week total. (GPS lives only on the
+ * supervisor per-teammate detail page in bos_teammate_operations.)
  *
  * @Block(
  *   id = "teammate_time_on_jobs",
- *   admin_label = @Translation("Teammate — Time on Jobs (my clocked hours)"),
+ *   admin_label = @Translation("Teammate — Time on Jobs (profile-page hours)"),
  *   category = @Translation("BOS Teammates"),
  * )
  */
@@ -47,6 +55,13 @@ class TeammateTimeOnJobsBlock extends BlockBase implements ContainerFactoryPlugi
   protected $requestStack;
 
   /**
+   * The current route match.
+   *
+   * @var \Drupal\Core\Routing\RouteMatchInterface
+   */
+  protected $routeMatch;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
@@ -54,6 +69,7 @@ class TeammateTimeOnJobsBlock extends BlockBase implements ContainerFactoryPlugi
     $instance->entityTypeManager = $container->get('entity_type.manager');
     $instance->currentUser = $container->get('current_user');
     $instance->requestStack = $container->get('request_stack');
+    $instance->routeMatch = $container->get('current_route_match');
     return $instance;
   }
 
@@ -61,7 +77,20 @@ class TeammateTimeOnJobsBlock extends BlockBase implements ContainerFactoryPlugi
    * {@inheritdoc}
    */
   public function build() {
-    $uid = (int) $this->currentUser->id();
+    // Only on a user's canonical profile page, for a teammate page-owner.
+    $owner = $this->routeMatch->getParameter('user');
+    if (is_scalar($owner)) {
+      $owner = $this->entityTypeManager->getStorage('user')->load($owner);
+    }
+    if (
+      $this->routeMatch->getRouteName() !== 'entity.user.canonical'
+      || !$owner instanceof UserInterface
+      || !$owner->hasRole('teammates')
+    ) {
+      // Nothing to show here — empty build renders no block.
+      return ['#cache' => ['contexts' => ['route']]];
+    }
+    $uid = (int) $owner->id();
 
     // Which week? `?week=-1` = last week, `?week=1` = next week, default 0.
     $request = $this->requestStack->getCurrentRequest();
@@ -156,7 +185,8 @@ class TeammateTimeOnJobsBlock extends BlockBase implements ContainerFactoryPlugi
       '#today_url' => ($offset !== 0) ? '?week=0' : NULL,
       '#attached' => ['library' => ['bos_teammate_hours/time_on_jobs']],
       '#cache' => [
-        'contexts' => ['user', 'url.query_args:week'],
+        // Keyed to the profile being viewed (route) + the week arg.
+        'contexts' => ['route', 'url.query_args:week'],
         'tags' => ['wo_time_clock_list'],
         // Totals shift as the day progresses / entries close; keep it short.
         'max-age' => 300,

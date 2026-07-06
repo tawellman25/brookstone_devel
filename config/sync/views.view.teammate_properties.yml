@@ -3,6 +3,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - field.storage.properties.field_full_address
     - field.storage.properties.field_geofield
     - field.storage.properties.field_nickname
     - system.menu.teammate-navigation
@@ -685,6 +686,34 @@ display:
           multi_type: separator
           separator: ', '
           field_api_classes: false
+        field_full_address:
+          id: field_full_address
+          table: properties__field_full_address
+          field: field_full_address
+          relationship: none
+          group_type: group
+          admin_label: ''
+          entity_type: properties
+          entity_field: field_full_address
+          plugin_id: field
+          label: ''
+          exclude: true
+          element_type: ''
+          element_class: ''
+          element_label_type: ''
+          element_label_class: ''
+          element_label_colon: false
+          element_wrapper_type: ''
+          element_wrapper_class: ''
+          element_default_classes: true
+          empty: ''
+          hide_empty: false
+          empty_zero: false
+          hide_alter_empty: true
+          click_sort_column: value
+          type: string
+          settings:
+            link_to_entity: false
       pager:
         type: full
         options:
@@ -718,26 +747,24 @@ display:
           sort_asc_label: Asc
           sort_desc_label: Desc
       filters:
-        field_nickname:
-          id: field_nickname
-          table: properties__field_nickname
-          field: field_nickname_value
+        combine:
+          id: combine
+          table: views
+          field: combine
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: properties
-          entity_field: field_nickname
-          plugin_id: string
+          plugin_id: combine
           operator: contains
           value: ''
           group: 1
           exposed: true
           expose:
-            operator_id: field_nickname_op
+            operator_id: ''
             label: 'Search properties'
             description: ''
             use_operator: false
-            operator: field_nickname_op
+            operator: combine_op
             operator_limit_selection: false
             operator_list: {  }
             identifier: search
@@ -746,7 +773,7 @@ display:
             multiple: false
             remember_roles:
               authenticated: authenticated
-            placeholder: 'Property name…'
+            placeholder: 'Name or address…'
           is_grouped: false
           group_info:
             label: ''
@@ -759,6 +786,9 @@ display:
             default_group: All
             default_group_multiple: {  }
             group_items: {  }
+          fields:
+            field_nickname: field_nickname
+            field_full_address: field_full_address
       filter_groups:
         operator: AND
         groups:
@@ -802,6 +832,7 @@ display:
         - url.query_args
         - user.roles
       tags:
+        - 'config:field.storage.properties.field_full_address'
         - 'config:field.storage.properties.field_nickname'
   page_map:
     id: page_map

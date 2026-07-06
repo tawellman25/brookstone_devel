@@ -50,8 +50,38 @@ $display['page_1']['display_options']['row'] = [
     'hide_empty' => FALSE,
   ],
 ];
+// field_nickname is the row anchor; field_full_address is added (excluded from
+// display) only so the combine search filter can reach it.
 $display['page_1']['display_options']['fields'] = [
   'field_nickname' => $display['default']['display_options']['fields']['field_nickname'],
+  'field_full_address' => [
+    'id' => 'field_full_address',
+    'table' => 'properties__field_full_address',
+    'field' => 'field_full_address',
+    'relationship' => 'none',
+    'group_type' => 'group',
+    'admin_label' => '',
+    'label' => '',
+    'exclude' => TRUE,
+    'element_type' => '',
+    'element_class' => '',
+    'element_label_type' => '',
+    'element_label_class' => '',
+    'element_label_colon' => FALSE,
+    'element_wrapper_type' => '',
+    'element_wrapper_class' => '',
+    'element_default_classes' => TRUE,
+    'empty' => '',
+    'hide_empty' => FALSE,
+    'empty_zero' => FALSE,
+    'hide_alter_empty' => TRUE,
+    'click_sort_column' => 'value',
+    'type' => 'string',
+    'settings' => ['link_to_entity' => FALSE],
+    'plugin_id' => 'field',
+    'entity_type' => 'properties',
+    'entity_field' => 'field_full_address',
+  ],
 ];
 
 // Pager (50/page) so the crew list loads fast instead of all ~2,500 at once.
@@ -94,11 +124,15 @@ $display['page_1']['display_options']['exposed_form'] = [
     'sort_desc_label' => 'Desc',
   ],
 ];
+$display['page_1']['display_options']['filter_groups'] = [
+  'operator' => 'AND',
+  'groups' => [1 => 'AND'],
+];
 $display['page_1']['display_options']['filters'] = [
-  'field_nickname' => [
-    'id' => 'field_nickname',
-    'table' => 'properties__field_nickname',
-    'field' => 'field_nickname_value',
+  'combine' => [
+    'id' => 'combine',
+    'table' => 'views',
+    'field' => 'combine',
     'relationship' => 'none',
     'group_type' => 'group',
     'admin_label' => '',
@@ -107,11 +141,11 @@ $display['page_1']['display_options']['filters'] = [
     'group' => 1,
     'exposed' => TRUE,
     'expose' => [
-      'operator_id' => 'field_nickname_op',
+      'operator_id' => '',
       'label' => 'Search properties',
       'description' => '',
       'use_operator' => FALSE,
-      'operator' => 'field_nickname_op',
+      'operator' => 'combine_op',
       'operator_limit_selection' => FALSE,
       'operator_list' => [],
       'identifier' => 'search',
@@ -119,7 +153,7 @@ $display['page_1']['display_options']['filters'] = [
       'remember' => FALSE,
       'multiple' => FALSE,
       'remember_roles' => ['authenticated' => 'authenticated'],
-      'placeholder' => 'Property name…',
+      'placeholder' => 'Name or address…',
     ],
     'is_grouped' => FALSE,
     'group_info' => [
@@ -134,9 +168,11 @@ $display['page_1']['display_options']['filters'] = [
       'default_group_multiple' => [],
       'group_items' => [],
     ],
-    'plugin_id' => 'string',
-    'entity_type' => 'properties',
-    'entity_field' => 'field_nickname',
+    'fields' => [
+      'field_nickname' => 'field_nickname',
+      'field_full_address' => 'field_full_address',
+    ],
+    'plugin_id' => 'combine',
   ],
 ];
 

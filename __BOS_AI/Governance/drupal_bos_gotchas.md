@@ -917,6 +917,27 @@ route `user` param, not `current_user`, so a supervisor viewing a teammate sees
 that teammate's data). Surfaced 2026-07-05 building `bos_teammate_hours`
 (commit `d3e4de21`).
 
+## A child Views display ignores its `display_options` overrides unless `defaults[<opt>]` is FALSE
+
+Editing a non-default display (e.g. `page_1`) programmatically by setting
+`$display['page_1']['display_options']['style'] = [...]` (or `pager`, `fields`,
+`filters`, `exposed_form`, …) does **nothing** on its own. Each child display
+carries `display_options['defaults']`, a map of `option => bool`; when the flag
+is `TRUE` (the default) the display **inherits the default display** for that
+option and ignores its own override. You must also set the flag `FALSE`:
+```php
+foreach (['style','row','fields','pager','filters','filter_groups','exposed_form'] as $o) {
+  $display['page_1']['display_options']['defaults'][$o] = FALSE;
+}
+```
+Symptom: your override saves into config but the page still renders the default
+(e.g. a card style silently falls back to the default HTML table, or a pager
+reads `items_per_page: 0`). Editing the **default** display has no such flag, so
+this only bites child displays. Surfaced 2026-07-05 splitting the
+`teammate_properties` view (commit `78b7ec10`). Related: an exposed-filter
+`identifier` of **`q`** collides with Drupal's reserved query param and throws a
+`CacheableAccessDeniedHttpException` (403) on submit — use any other identifier.
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

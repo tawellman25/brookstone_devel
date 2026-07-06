@@ -343,7 +343,17 @@ manual fix; see the ECK gotcha). Done = `drush cim --diff` comes back clean.
 
 ---
 
-### 23. Stale `drupal/calendar` composer-patch fails on every `composer install`
+### 23. Stale `drupal/calendar` composer-patch fails on every `composer install` — ✅ RESOLVED 2026-07-06
+
+**RESOLVED 2026-07-06** — removed the `drupal/calendar` patch from `composer.json` `extra.patches`
+(commit on `main`, deployed). The patch targets a line in `Calendar.php` that **beta5 rewrote**
+(now a `datetime_type` match handling smart_date **natively**), so it never applied. **Correction
+to the note below:** the calendar+smart_date combo is **NOT unused** — the `teammate_properties` /
+`work_order_teammate_calendar` views plot `scheduling.field_scheduled_date_and_time` (a smart_date
+field) and render **571 events with the patch NOT applied**, confirming beta5 handles it natively.
+So removal was a runtime no-op that just ends the remove/reinstall churn + the transient
+`calendar.theme.inc`-missing warning. The paired **`smart_date` → `3177760-13` patch was KEPT** (it
+applies cleanly). Deploys now quiet on calendar. Original write-up:
 
 Surfaced 2026-07-04 (noticed during the wo_clock deploy). The declared patch
 `drupal/calendar` → `3177761-6.calendar.Support-for-Smart-Date.patch` (composer.json

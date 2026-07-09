@@ -77,8 +77,28 @@ final class WoClockController extends ControllerBase {
     }
     $body = $this->body($request);
     [$lat, $lon] = $this->latLon($body);
+    $override = !empty($body['override']);
+
+    // Over the single-entry cap and not yet confirmed → ask the crew to confirm
+    // the long entry rather than dead-ending (the override box isn't reachable
+    // from the button).
+    if (!$override) {
+      $exceed = $this->clock->capExceedanceHours($entry);
+      if ($exceed !== NULL) {
+        $h = rtrim(rtrim(number_format($exceed['hours'], 2), '0'), '.');
+        $cap = rtrim(rtrim(number_format($exceed['cap'], 2), '0'), '.');
+        return new JsonResponse([
+          'status' => 'confirm_long',
+          'hours' => $exceed['hours'],
+          'cap' => $exceed['cap'],
+          'message' => "This is a long entry — {$h} hours, over the {$cap}-hour limit for this service. "
+            . "If that's correct, tap OK to clock out anyway. Otherwise tap Cancel and have the office fix the time.",
+        ]);
+      }
+    }
+
     try {
-      $entry = $this->clock->clockOut($entry_id, $lat, $lon);
+      $entry = $this->clock->clockOut($entry_id, $lat, $lon, $override);
     }
     catch (\Throwable $e) {
       // Phase 1 guard (or any) fired — no data change beyond the rejected save.

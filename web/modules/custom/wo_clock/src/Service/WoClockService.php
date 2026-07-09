@@ -196,17 +196,52 @@ final class WoClockService {
    *
    * Respects Phase 1 guards — a guard throw propagates to the caller.
    */
-  public function clockOut(int $entryId, ?float $lat = NULL, ?float $lon = NULL): EntityInterface {
+  public function clockOut(int $entryId, ?float $lat = NULL, ?float $lon = NULL, bool $override = FALSE): EntityInterface {
     $entry = $this->loadEntry($entryId);
     $entry->set('field_end_time', $this->nowUtc());
     if ($lat !== NULL && $lon !== NULL) {
       $entry->set('field_clock_out_location', $this->wkt($lat, $lon));
+    }
+    // Crew confirmed a genuinely-long entry — set the override so Guard 6
+    // accepts it (and stamps its own audit note attributing the confirmer).
+    if ($override && $entry->hasField('field_time_limit_override')) {
+      $entry->set('field_time_limit_override', TRUE);
     }
     // field_source stays as set at clock-in; record the button clock-out.
     $this->appendNote($entry, sprintf(self::NOTE_BUTTON_END, $this->usDisplay($this->time->getRequestTime())));
     $entry->_wo_clock_write = TRUE;
     $entry->save();
     return $entry;
+  }
+
+  /**
+   * If clocking out NOW would push this entry over its bundle's single-entry
+   * cap (wo_total_time Guard 6), return ['hours' => float, 'cap' => float];
+   * otherwise NULL. Lets the button ask the crew to confirm a long entry
+   * instead of dead-ending, since the override checkbox isn't on the button.
+   */
+  public function capExceedanceHours(EntityInterface $entry): ?array {
+    if ($entry->get('field_start_time')->isEmpty()) {
+      return NULL;
+    }
+    try {
+      $start = new \DateTime($entry->get('field_start_time')->value, new \DateTimeZone('UTC'));
+    }
+    catch (\Throwable $e) {
+      return NULL;
+    }
+    $hours = ($this->time->getRequestTime() - $start->getTimestamp()) / 3600;
+    if ($hours <= 0) {
+      return NULL;
+    }
+    $wo = $entry->get('field_work_order')->entity;
+    if (!$wo) {
+      return NULL;
+    }
+    $cap = function_exists('_wo_total_time_get_max_entry_hours')
+      ? (float) _wo_total_time_get_max_entry_hours($wo->bundle())
+      : 4.0;
+    return $hours > $cap ? ['hours' => round($hours, 2), 'cap' => $cap] : NULL;
   }
 
   /**

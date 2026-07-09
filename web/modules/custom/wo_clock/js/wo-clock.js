@@ -115,13 +115,21 @@
     });
   }
 
-  function doClockOut(root, entryId) {
+  function doClockOut(root, entryId, override) {
     setBusy(root, true);
     getGps().then(function (gps) {
-      post(Drupal.url('clock/out/' + entryId), gps || {}).then(function (res) {
+      var body = Object.assign({}, gps || {});
+      if (override) { body.override = 1; }
+      post(Drupal.url('clock/out/' + entryId), body).then(function (res) {
         setBusy(root, false);
         if (res.status === 'clocked_out') {
           toStateClockedOut(root);
+        } else if (res.status === 'confirm_long') {
+          // Over the single-entry cap — confirm the long entry, then re-submit
+          // with the override so the guard accepts it.
+          if (window.confirm(res.message)) {
+            doClockOut(root, entryId, true);
+          }
         } else {
           showError(root, res.message);
         }

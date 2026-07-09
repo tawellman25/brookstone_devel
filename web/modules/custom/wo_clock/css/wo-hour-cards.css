@@ -68,13 +68,24 @@
 }
 
 .wo-hour-card__notes {
-  margin-top: 0.2rem;
-  padding-top: 0.2rem;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
   border-top: 1px solid #f0f0f0;
-  font-size: 0.68rem;
-  line-height: 1.2;
-  color: #888;
+  font-size: 0.82rem;
+  color: #555;
   white-space: normal;
+}
+
+/* On phones the multi-line notes eat a lot of vertical space — condense them
+   there only; desktop stays as-is. */
+@media (max-width: 640px) {
+  .wo-hour-card__notes {
+    margin-top: 0.2rem;
+    padding-top: 0.2rem;
+    font-size: 0.68rem;
+    line-height: 1.2;
+    color: #888;
+  }
 }
 
 /* Per-teammate subtotal (view footer). */

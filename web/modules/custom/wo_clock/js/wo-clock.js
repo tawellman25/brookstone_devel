@@ -57,6 +57,12 @@
     });
   }
 
+  function reloadWo() {
+    // Refresh the WO page so the new time entry + updated total appear in the
+    // Hours breakdown. Brief delay lets the button's state flip show first.
+    setTimeout(function () { window.location.reload(); }, 500);
+  }
+
   function setBusy(root, busy) {
     root.querySelectorAll('button').forEach(function (b) { b.disabled = busy; });
     var w = root.querySelector('.wo-clock__working');
@@ -108,6 +114,7 @@
           openModal(root, woId, res.open_entries || []);
         } else if (res.status === 'clocked_in') {
           toStateClockedIn(root, res.entry);
+          reloadWo();
         } else {
           showError(root, res.message);
         }
@@ -124,6 +131,7 @@
         setBusy(root, false);
         if (res.status === 'clocked_out') {
           toStateClockedOut(root);
+          reloadWo();
         } else if (res.status === 'confirm_long') {
           // Over the single-entry cap — confirm the long entry, then re-submit
           // with the override so the guard accepts it.

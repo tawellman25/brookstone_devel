@@ -1,0 +1,96 @@
+/**
+ * Time-entry cards for the WO Hours breakdown. Mirrors the My Schedule
+ * crew-card tokens (bos_scheduling/my_schedule.css).
+ */
+
+.wo-hour-card {
+  display: block;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-left: 5px solid #1a5276;
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  margin: 0 0 0.5rem;
+  text-decoration: none;
+  color: #1a1a1a;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.wo-hour-card:hover {
+  border-color: #1a5276;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.wo-hour-card--open {
+  border-left-color: #e67e22;
+}
+
+.wo-hour-card__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.wo-hour-card__time {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.wo-hour-card__inprogress {
+  color: #b9770e;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.wo-hour-card__total {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a5276;
+  white-space: nowrap;
+}
+
+.wo-hour-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.75rem;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: #666;
+}
+.wo-hour-card__src {
+  background: #eef2f5;
+  border-radius: 3px;
+  padding: 0.02rem 0.35rem;
+  font-weight: 600;
+}
+.wo-hour-card__edit {
+  margin-left: auto;
+  color: #1a5276;
+  font-weight: 600;
+}
+
+.wo-hour-card__notes {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid #f0f0f0;
+  font-size: 0.82rem;
+  color: #555;
+  white-space: normal;
+}
+
+/* Per-teammate subtotal (view footer). */
+.wo-hour-subtotal {
+  font-size: 0.9rem;
+  color: #333;
+  padding: 0.15rem 0 0.6rem;
+}
+.wo-hour-subtotal strong {
+  color: #1a5276;
+}
+.wo-hour-subtotal__open {
+  color: #b9770e;
+  font-size: 0.8rem;
+}
+
+/* Non-editable (crew) card: no link affordance. */
+.wo-hour-card--static { cursor: default; }
+.wo-hour-card--static:hover { border-color: #ddd; box-shadow: none; }
+.wo-hour-card--static.wo-hour-card--open:hover { border-left-color: #e67e22; }

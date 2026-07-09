@@ -36,6 +36,11 @@ function wo_clock_theme($existing, $type, $theme, $path) {
         'entry' => [],
       ],
     ],
+    // Card row for the per-teammate time-entry breakdown (wo_time_clock_entries,
+    // embedded per teammate by wo_hours_grouping on the WO page).
+    'views_view_fields__wo_time_clock_entries' => [
+      'base hook' => 'views_view_fields',
+    ],
   ];
 }
 
@@ -143,6 +148,148 @@ function wo_clock_work_order_view(array &$build, EntityInterface $entity, $displ
       ? $flag_component['weight'] : 9;
     $build['wo_clock_ui'] = $render;
   }
+
+  // The Hours-group time-entry cards (rendered by the embedded
+  // wo_time_clock_entries view) + the modal edit link need these on the page.
+  $build['#attached']['library'][] = 'wo_clock/hour_cards';
+  $build['#attached']['library'][] = 'core/drupal.dialog.ajax';
+}
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * Attaches the hour-card CSS + modal library to the per-teammate time-entry
+ * view (also covered by the WO-view hook above; harmless if doubled).
+ */
+function wo_clock_views_pre_render($view) {
+  if ($view->id() === 'wo_time_clock_entries') {
+    $view->element['#attached']['library'][] = 'wo_clock/hour_cards';
+    $view->element['#attached']['library'][] = 'core/drupal.dialog.ajax';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views_view_fields.
+ *
+ * Builds the time-entry card for each wo_time_clock_entries row so the row
+ * template can render a clickable card (opens the entry edit form in a modal).
+ */
+function wo_clock_preprocess_views_view_fields(array &$variables) {
+  $view = $variables['view'] ?? NULL;
+  if (!$view || $view->id() !== 'wo_time_clock_entries') {
+    return;
+  }
+  $entry = $variables['row']->_entity ?? NULL;
+  if (!$entry instanceof EntityInterface || $entry->getEntityTypeId() !== 'wo_time_clock') {
+    return;
+  }
+  $variables['wo_hour_card'] = _wo_clock_entry_card($entry);
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views_view.
+ *
+ * Adds a per-teammate subtotal footer to the time-entry breakdown (the
+ * views_aggregator SUM row is lost when the style switches to card/unformatted).
+ */
+function wo_clock_preprocess_views_view(array &$variables) {
+  $view = $variables['view'] ?? NULL;
+  if (!$view || $view->id() !== 'wo_time_clock_entries') {
+    return;
+  }
+  $sum = 0.0;
+  $closed = 0;
+  $hasOpen = FALSE;
+  foreach ($view->result as $row) {
+    $e = $row->_entity ?? NULL;
+    if (!$e instanceof EntityInterface) {
+      continue;
+    }
+    if ($e->get('field_end_time')->isEmpty()) {
+      $hasOpen = TRUE;
+      continue;
+    }
+    $sum += (float) $e->get('field_total_time')->value;
+    $closed++;
+  }
+  if ($closed > 0 || $hasOpen) {
+    $label = rtrim(rtrim(number_format($sum, 2), '0'), '.');
+    $variables['footer'] = [
+      '#markup' => '<div class="wo-hour-subtotal">Total: <strong>' . $label . ' hrs</strong>'
+        . ($hasOpen ? ' <span class="wo-hour-subtotal__open">+ open entry</span>' : '') . '</div>',
+      '#allowed_tags' => ['div', 'strong', 'span'],
+    ];
+  }
+}
+
+/**
+ * Build the card data for one wo_time_clock entry.
+ */
+function _wo_clock_entry_card(EntityInterface $entry): array {
+  $tz = new \DateTimeZone(date_default_timezone_get());
+  $utc = new \DateTimeZone('UTC');
+  $id = (int) $entry->id();
+
+  $fmt = function (?string $raw, string $format) use ($tz, $utc): string {
+    if (!$raw) {
+      return '';
+    }
+    try {
+      $d = new \DateTime($raw, $utc);
+      $d->setTimezone($tz);
+      return $d->format($format);
+    }
+    catch (\Throwable $e) {
+      return '';
+    }
+  };
+
+  $startRaw = $entry->get('field_start_time')->value;
+  $endRaw = $entry->get('field_end_time')->value;
+  $open = empty($endRaw);
+
+  // Source → friendly label.
+  $srcMap = [
+    'flag' => 'Flag',
+    'wo_clock_button' => 'Button',
+    'wo_clock_intervention' => 'Office',
+    'manual' => 'Manual',
+    'signoff_reconciliation' => 'Sign-off',
+    'cleanup_script' => 'Cleanup',
+  ];
+  $source = $entry->hasField('field_source') && !$entry->get('field_source')->isEmpty()
+    ? (string) $entry->get('field_source')->value : '';
+
+  // Edit form in a modal, returning to the WO page on save.
+  $dest = '';
+  if (($wo = $entry->get('field_work_order')->entity)) {
+    try {
+      $dest = $wo->toUrl()->toString();
+    }
+    catch (\Throwable $e) {
+      $dest = '/work_order/' . $wo->id();
+    }
+  }
+  $edit_url = \Drupal\Core\Url::fromRoute(
+    'entity.wo_time_clock.edit_form',
+    ['wo_time_clock' => $id],
+    ['query' => $dest !== '' ? ['destination' => $dest] : []]
+  )->toString();
+
+  return [
+    'id' => $id,
+    'date' => $fmt($startRaw, 'D m/d'),
+    'start' => $fmt($startRaw, 'g:i A'),
+    'end' => $open ? '' : $fmt($endRaw, 'g:i A'),
+    'open' => $open,
+    'total' => $open ? '' : rtrim(rtrim(number_format((float) $entry->get('field_total_time')->value, 2), '0'), '.'),
+    'notes' => trim((string) ($entry->get('field_notes')->value ?? '')),
+    'source_label' => $srcMap[$source] ?? '',
+    'edit_url' => $edit_url,
+    // Only office/supervisor (edit access) get the click-to-edit modal link;
+    // crew see a plain, non-clickable card.
+    'editable' => $entry->access('update'),
+  ];
 }
 
 /**

@@ -1,0 +1,40 @@
+{#
+/**
+ * @file
+ * Time-entry card for the WO Hours breakdown (wo_time_clock_entries, embedded
+ * per teammate). For users who can edit, the whole card is a modal link to the
+ * entry's edit form (on save it returns to the WO page, refreshing entries +
+ * total); others see a plain card. Data from
+ * wo_clock_preprocess_views_view_fields().
+ */
+#}
+{% set c = wo_hour_card %}
+{% if c %}
+  {% set body %}
+    <div class="wo-hour-card__top">
+      <span class="wo-hour-card__time">
+        {% if c.open %}
+          {{ c.start }} <span class="wo-hour-card__inprogress">· In progress</span>
+        {% else %}
+          {{ c.start }} – {{ c.end }}
+        {% endif %}
+      </span>
+      {% if not c.open %}<span class="wo-hour-card__total">{{ c.total }} hrs</span>{% endif %}
+    </div>
+    <div class="wo-hour-card__meta">
+      {% if c.date %}<span class="wo-hour-card__date">{{ c.date }}</span>{% endif %}
+      {% if c.source_label %}<span class="wo-hour-card__src">{{ c.source_label }}</span>{% endif %}
+      {% if c.editable %}<span class="wo-hour-card__edit">✎ Edit</span>{% endif %}
+    </div>
+    {% if c.notes %}<div class="wo-hour-card__notes">{{ c.notes|nl2br }}</div>{% endif %}
+  {% endset %}
+
+  {% if c.editable %}
+    <a class="wo-hour-card use-ajax{{ c.open ? ' wo-hour-card--open' : '' }}"
+       href="{{ c.edit_url }}"
+       data-dialog-type="modal"
+       data-dialog-options='{"width":640,"title":"Edit Time Entry"}'>{{ body }}</a>
+  {% else %}
+    <div class="wo-hour-card wo-hour-card--static{{ c.open ? ' wo-hour-card--open' : '' }}">{{ body }}</div>
+  {% endif %}
+{% endif %}

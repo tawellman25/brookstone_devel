@@ -106,3 +106,27 @@
 .wo-hour-card--static { cursor: default; }
 .wo-hour-card--static:hover { border-color: #ddd; box-shadow: none; }
 .wo-hour-card--static.wo-hour-card--open:hover { border-left-color: #e67e22; }
+
+/* Edit Time Entry modal — shrink the oversized admin-theme buttons and tighten
+   the multi-value notes widget on phones (desktop unaffected). */
+@media (max-width: 700px) {
+  .ui-dialog.wo-time-entry-dialog .button,
+  .ui-dialog.wo-time-entry-dialog .form-submit {
+    font-size: 0.9rem !important;
+    padding: 0.4rem 0.8rem !important;
+    min-height: 0 !important;
+    line-height: 1.25 !important;
+    margin: 0.2rem 0.3rem 0.2rem 0 !important;
+  }
+  /* Condense the multiple-value Notes widget rows (drag handle + Remove). */
+  .ui-dialog.wo-time-entry-dialog .field-multiple-table td,
+  .ui-dialog.wo-time-entry-dialog .field-multiple-table th {
+    padding: 0.15rem 0.25rem !important;
+  }
+  .ui-dialog.wo-time-entry-dialog .tabledrag-handle {
+    padding: 0 0.3rem !important;
+  }
+  .ui-dialog.wo-time-entry-dialog .ui-dialog-content {
+    padding: 0.5rem 0.75rem !important;
+  }
+}

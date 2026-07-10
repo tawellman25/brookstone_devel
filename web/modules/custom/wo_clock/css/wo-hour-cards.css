@@ -130,3 +130,18 @@
     padding: 0.5rem 0.75rem !important;
   }
 }
+
+/* Edit Time Entry modal button row: the Notes "Add a note" button is a
+   .form-actions submit, so the dialog moves it into the button pane next to
+   Save/Delete. Push it to the far right, away from the primary actions. */
+.ui-dialog.wo-time-entry-dialog .ui-dialog-buttonset {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.ui-dialog.wo-time-entry-dialog .ui-dialog-buttonset .field-add-more-submit {
+  order: 99;
+  margin-left: auto;
+}

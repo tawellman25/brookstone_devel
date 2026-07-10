@@ -39,7 +39,7 @@ third_party_settings:
       label: 'Office Administation'
       region: content
       parent_name: ''
-      weight: 5
+      weight: 6
       format_type: details
       format_settings:
         classes: ''
@@ -47,6 +47,21 @@ third_party_settings:
         id: ''
         open: false
         description: ''
+        required_fields: true
+    group_entry_notes:
+      children:
+        - field_notes
+      label: Notes
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: 'Expand to add or edit a note on this time entry.'
         required_fields: true
 id: wo_time_clock.entry.default
 targetEntityType: wo_time_clock
@@ -67,7 +82,7 @@ content:
     third_party_settings: {  }
   field_notes:
     type: string_textfield
-    weight: 4
+    weight: 0
     region: content
     settings:
       size: 60
@@ -91,7 +106,7 @@ content:
     third_party_settings: {  }
   field_time_limit_override:
     type: boolean_checkbox
-    weight: 5
+    weight: 4
     region: content
     settings:
       display_label: true

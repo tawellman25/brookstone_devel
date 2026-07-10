@@ -18,6 +18,23 @@
 use Drupal\Core\Entity\EntityInterface;
 
 /**
+ * Implements hook_form_alter().
+ *
+ * On the wo_time_clock entry add/edit forms (the WO-page "Edit Time Entry"
+ * modal), relabel the multi-value Notes "Add another item" button to "Add a
+ * note". The generic label — sitting near Save/Delete — reads like "add another
+ * time entry", which confused foremen; "Add a note" makes it unambiguous.
+ */
+function wo_clock_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, string $form_id) {
+  $obj = $form_state->getFormObject();
+  if ($obj instanceof \Drupal\Core\Entity\EntityFormInterface
+      && $obj->getEntity()->getEntityTypeId() === 'wo_time_clock'
+      && isset($form['field_notes']['widget']['add_more'])) {
+    $form['field_notes']['widget']['add_more']['#value'] = t('Add a note');
+  }
+}
+
+/**
  * Implements hook_theme().
  */
 function wo_clock_theme($existing, $type, $theme, $path) {

@@ -72,6 +72,7 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 
 | Item | Area | Tier | Effort | Notes |
 |---|---|---|---|---|
+| **⭐ Material price scraping — first real SiteOne end-to-end run** | `supplier_price_ingest` | T2 | M | The ingest pipeline is **built + live** but has **never been run against a real full SiteOne catalog** — that's the missing step. **3.10 (DDEV):** acquire a SiteOne catalog scrape (Claude-in-Chrome → CSV; first pass = irrigation + pvc + brass + galv), create the SiteOne `supplier_ingest_config` column mapping, run parse→match→dry-run→approve→commit, log + fix bugs. **3.11 (prod):** live DB snapshot → deploy fixes → first real ingest → verify (`material_suppliers`, `material_price_history`, `/admin/materials/price-review`) → 48-hr watch. **Then automate:** replace the manual Claude-in-Chrome scrape with the **Lever 3 Python/Playwright scraper** (after the Lever 2 family map). Full detail: `Architecture/supplier_pricing_pipeline_phase3_sequencing.md` §3.10–3.11; family rules in `Extraction/siteone_families.md`. |
 | TimeTrax live SQL-read integration | `bos_teammate_operations` | T2 | L | Foundation + swappable `CompensableHoursService` on 8.5hr assumption built. Swap in real SQL Server read (Punch/Employee/EmployeeCards, PunchKey idempotency). Labor-cost accuracy. |
 | Estimate board pipeline swimlane rework | `estimate_board` | T2 | M | Build prompt produced; replace single "Active Pipeline" with per-status swimlanes + color. Pending Code execution. |
 | wo_clock — foreman crew-status view + end-of-day notifications (Phase B/C) | `wo_clock` | T2 | M | Phase A shipped (clock-in/out redesign + silent GPS + attribution). Next: foreman "who's still clocked in" view + end-of-day open-clock-in alerting. Flag-path retirement is the winter cleanup (see LATER). |
@@ -98,8 +99,9 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 |---|---|---|
 | Rain Bird MEDIUM-tier backfill (71 rows) | In Progress | Backfill mfr item numbers to raise Tier 1 rate. |
 | Hunter backfill (~67) | In Progress | Smaller-scope backfill. |
+| **First real SiteOne end-to-end run (Phase 3.10 → 3.11)** | **Promoted to NEXT** | The actionable scraping milestone — run the built pipeline against a real SiteOne scrape (manual Claude-in-Chrome → CSV) in DDEV, then production. See the NEXT row. |
 | Matcher: supplier-alias table + Tier 3 fuzzy tuning | Idea (T2) | Tier 3 catching 0; cross-supplier SKU alias map + threshold tuning. |
-| SiteOne standalone scraper (Lever 3) | Idea | Python/Playwright + manual cookie. Build after family map (Lever 2). |
+| SiteOne standalone scraper automation (Lever 3) | Idea | Automate the scrape itself: Python/Playwright + manual cookie, replacing the Claude-in-Chrome step. Build **after** the first manual end-to-end run (NEXT) + the Lever 2 family map. |
 | Tier 1.5 confidence bump 85→90 | Idea | Validate zero false positives over 2–3 batches first. |
 | Bulk-rerun batches 205/276; Bulk Confirm/Send-to-Discovery VBO; Spears CSV relocation | Idea | Held until manual pain is felt. |
 | Eight Phase 3.12 supplier SOPs | Scoped | Authoring pending. |

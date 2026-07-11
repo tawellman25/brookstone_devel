@@ -26,6 +26,14 @@ export LC_ALL=C
 REMOTE_HOST="brookstone"
 REMOTE_ROOT="/home/brookstoneadmin/brookstone"
 
+# Remote drush invocation. The global `drush` / vendor/bin/drush wrapper re-execs
+# through the CloudLinux PHP wrapper and has been OOM-KILLED by the shared host
+# mid-deploy (2026-07-11 — killed while entering maintenance mode, which stranded
+# LIVE in maintenance). Invoke the Alt-PHP CLI + an explicit memory cap directly
+# (same fix as the WEX cron): a controlled process that won't balloon into an
+# OOM kill. All remote drush calls below use this.
+REMOTE_DRUSH="/opt/alt/php83/usr/bin/php -d memory_limit=768M vendor/drush/drush/drush.php"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
@@ -96,7 +104,7 @@ cleanup() {
     log "DEPLOY FAILED — leaving LIVE in maintenance mode."
     cleanup_script="cd '${REMOTE_ROOT}' && rm -f '${LOCK_NAME}'"
   elif [[ "$USE_MAINTENANCE" -eq 1 ]]; then
-    cleanup_script="cd '${REMOTE_ROOT}' && drush sset system.maintenance_mode 0 -y && drush cr -y && rm -f '${LOCK_NAME}'"
+    cleanup_script="cd '${REMOTE_ROOT}' && ${REMOTE_DRUSH} sset system.maintenance_mode 0 -y && ${REMOTE_DRUSH} cr -y && rm -f '${LOCK_NAME}'"
   else
     cleanup_script="cd '${REMOTE_ROOT}' && rm -f '${LOCK_NAME}'"
   fi
@@ -120,7 +128,8 @@ command -v rsync >/dev/null 2>&1 || die "rsync not found"
 remote_script <<EOF || die "Remote preflight failed (see error above)."
 set -e
 cd "${REMOTE_ROOT}" || { echo "FAIL: cannot cd to ${REMOTE_ROOT}" >&2; exit 1; }
-command -v drush >/dev/null || { echo "FAIL: drush not found on remote PATH" >&2; exit 1; }
+test -x /opt/alt/php83/usr/bin/php || { echo "FAIL: /opt/alt/php83/usr/bin/php (Alt-PHP CLI) not found on remote" >&2; exit 1; }
+test -f vendor/drush/drush/drush.php || { echo "FAIL: vendor/drush/drush/drush.php not found on remote (run composer install)" >&2; exit 1; }
 $( [[ "$RUN_COMPOSER" -eq 1 ]] && echo 'command -v composer >/dev/null || { echo "FAIL: composer not found on remote PATH" >&2; exit 1; }' )
 grep -q 'brookstoneadmin_bos_prod' web/sites/default/settings.php \
   || { echo "FAIL: web/sites/default/settings.php does not contain expected database name 'brookstoneadmin_bos_prod'. Refusing to deploy." >&2; exit 1; }
@@ -142,8 +151,8 @@ set -e
 cd "${REMOTE_ROOT}"
 test ! -e "${LOCK_NAME}" || { echo "FAIL: deploy lock '${LOCK_NAME}' already exists — another deploy may be in progress, or the previous deploy's cleanup didn't finish. Remove it manually if you've verified no other deploy is running." >&2; exit 1; }
 echo 'locked' > "${LOCK_NAME}"
-drush sset system.maintenance_mode 1 -y
-drush cr -y
+${REMOTE_DRUSH} sset system.maintenance_mode 1 -y
+${REMOTE_DRUSH} cr -y
 EOF
 else
   remote_script <<EOF
@@ -239,9 +248,9 @@ cd '${REMOTE_ROOT}'
 "
 [[ "$RUN_COMPOSER" -eq 1 ]] && post_rsync_script+="composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --ignore-platform-req=ext-redis
 "
-[[ "$RUN_CIM" -eq 1 ]] && post_rsync_script+="drush cim -y
+[[ "$RUN_CIM" -eq 1 ]] && post_rsync_script+="${REMOTE_DRUSH} cim -y
 "
-[[ "$RUN_CR" -eq 1 ]] && post_rsync_script+="drush cr -y
+[[ "$RUN_CR" -eq 1 ]] && post_rsync_script+="${REMOTE_DRUSH} cr -y
 "
 remote_script <<EOF
 ${post_rsync_script}

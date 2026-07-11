@@ -58,12 +58,15 @@ dependencies:
     - field.field.config_pages.business_setting.field_labor_cost_snow_removal
     - field.field.config_pages.business_setting.field_labor_cost_spray_crew
     - field.field.config_pages.business_setting.field_landscape_labor_rate
-    - field.field.config_pages.business_setting.field_lighting_crew_labor_rate
+    - field.field.config_pages.business_setting.field_lighting_tech_minimum
+    - field.field.config_pages.business_setting.field_lighting_technician_rate
     - field.field.config_pages.business_setting.field_long_shift_hours
     - field.field.config_pages.business_setting.field_mag_chloride_rate
     - field.field.config_pages.business_setting.field_mag_minimum_gallons
     - field.field.config_pages.business_setting.field_maintenance_crew_labor
     - field.field.config_pages.business_setting.field_markup
+    - field.field.config_pages.business_setting.field_max_entry_hours
+    - field.field.config_pages.business_setting.field_max_entry_hours_long
     - field.field.config_pages.business_setting.field_min_bag_increment
     - field.field.config_pages.business_setting.field_minimum_spray_fee
     - field.field.config_pages.business_setting.field_mobilization_deposit_pct
@@ -99,6 +102,7 @@ dependencies:
     - field.field.config_pages.business_setting.field_winterizing_pump_fee
     - field.field.config_pages.business_setting.field_winterizing_zone_limit
   module:
+    - datetime
     - text
 id: config_pages.business_setting.default
 targetEntityType: config_pages
@@ -655,17 +659,6 @@ content:
     third_party_settings: {  }
     weight: 3
     region: content
-  field_lighting_crew_labor_rate:
-    type: number_decimal
-    label: above
-    settings:
-      thousand_separator: ''
-      decimal_separator: .
-      scale: 2
-      prefix_suffix: true
-    third_party_settings: {  }
-    weight: 83
-    region: content
   field_long_shift_hours:
     type: number_decimal
     label: above
@@ -1045,10 +1038,16 @@ content:
     weight: 8
     region: content
 hidden:
+  entity_print_view_epub: true
+  entity_print_view_pdf: true
+  entity_print_view_word_docx: true
   field_backflow_testing_rate: true
   field_change_order_threshold_pct: true
+  field_lighting_tech_minimum: true
+  field_lighting_technician_rate: true
   field_max_entry_hours: true
   field_max_entry_hours_long: true
   field_mobilization_deposit_pct: true
   field_mow_rate_per_sq_ft: true
   field_signing_deposit_amount: true
+

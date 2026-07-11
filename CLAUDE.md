@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **New to BOS? Start with [`__BOS_AI/Governance/onboarding.md`](__BOS_AI/Governance/onboarding.md)** — the day-one map: the Intent-vs-Execution spine, the four audiences (public / client / teammates / office-admin), the ~7 functional domains with hand-off risk, the house rules, and a first-week path.
+>
 > **For process discipline and engineering norms when working with Claude on BOS, read [`__BOS_AI/Governance/working_with_claude.md`](__BOS_AI/Governance/working_with_claude.md).** Pause-and-verify pattern, targeted commits, end-to-end verification, recovery-point pushes — required reading before non-trivial work. The companion docs [`drupal_bos_gotchas.md`](__BOS_AI/Governance/drupal_bos_gotchas.md) and [`architectural_patterns.md`](__BOS_AI/Governance/architectural_patterns.md) cover Drupal/BOS-specific traps and reusable patterns. [`deferred_work.md`](__BOS_AI/Governance/deferred_work.md) tracks surfaced-but-deferred items.
 
 > **📍 Roadmap = status-of-record. [`__BOS_AI/ROADMAP.md`](__BOS_AI/ROADMAP.md) is the authoritative tracker of every unfinished BOS initiative** (each row carries Horizon / Tier / Effort / Season; it has its own Maintenance protocol at the bottom). **Keep it in sync as part of every commit/deploy — do not let it drift:**

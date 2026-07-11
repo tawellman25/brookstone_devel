@@ -165,6 +165,37 @@ hand save. **New rule:** every code path that creates or materially modifies a
 **Legacy queries:** treat `field_source IS NULL` as "created before structured
 attribution (pre-2026-07-03) — consult notes." No backfill was performed.
 
+## WO Hours breakdown — time-entry cards + edit modal (2026-07-09/10)
+
+The per-teammate hours breakdown on the WO page (the `wo_hours_grouping` EVA,
+which embeds `wo_time_clock_entries` per teammate via `views_field_view`) renders
+each time entry as a **status card** instead of a views_aggregator table row.
+
+- **Cards:** `wo_clock_theme()` registers `views_view_fields__wo_time_clock_entries`;
+  `wo_clock_preprocess_views_view_fields()` builds card data (`_wo_clock_entry_card()`
+  — start–end, hours, source label, notes, edit URL, `editable`);
+  `wo_clock_preprocess_views_view()` re-adds the **per-teammate subtotal** as a
+  view footer (the aggregator SUM is lost with the card style). Row template:
+  `templates/views-view-fields--wo-time-clock-entries.html.twig`. CSS:
+  `css/wo-hour-cards.css` (My Schedule tokens). Library `wo_clock/hour_cards`
+  attached via `wo_clock_views_pre_render()` **and** `wo_clock_work_order_view()`
+  (which also attaches `core/drupal.dialog.ajax`). View style flipped to
+  unformatted via `web/scripts/wo_time_clock_entries_to_cards.php` (idempotent).
+- **Click-to-edit modal:** for users with `update` access each card is a
+  `use-ajax` modal link to `entity.wo_time_clock.edit_form` with
+  `?destination=<WO alias>` — on save it redirects back to the WO and reloads,
+  which recomputes `field_total_time` server-side. Crew without edit access get a
+  plain, non-clickable card. Modal width `min(100%, 640px)` (mobile-safe),
+  `dialogClass: wo-time-entry-dialog`.
+- **Green button refresh:** `wo-clock.js` `reloadWo()` (500ms → `location.reload()`)
+  after a successful clock in/out so the new entry + total appear.
+- **Leaned edit form** (`web/scripts/wo_time_clock_form_leanup.php`): Teammate +
+  Start + End + time-limit override visible (Teammate up top for foreman manual
+  entry); Notes in a **collapsed `group_entry_notes`** group; Office Admin group
+  unchanged. The multi-value Notes add button is relabeled **"Add a note"**
+  (`wo_clock_form_alter`) and right-justified in the modal button pane (it's a
+  `.form-actions` submit the dialog hoists next to Save/Delete).
+
 ## Migration plan
 
 1. **Now (Phase A):** run `wo_clock` alongside the flag path; validate on live with

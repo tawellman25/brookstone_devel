@@ -178,7 +178,18 @@ separate entries.
   **14**, long-job bundles). Resolver: `_wo_total_time_get_max_entry_hours($wo_bundle)`,
   with code-default constants when the config field is empty.
 - Long-job bundles (hardcoded `WO_TOTAL_TIME_LONG_JOB_BUNDLES`):
-  `landscaping`, `sprinkler_repair`, `sprinkler_installation`.
+  `landscaping`, `sprinkler_repair`, `sprinkler_installation`,
+  **`summer_pruning`** (added 2026-07-09 — pruning crews work a full day on
+  one WO).
+- **Green-button over-cap confirm (2026-07-09):** the `wo_clock` clock-out
+  button can't reach the `field_time_limit_override` checkbox, so an over-cap
+  punch used to dead-end. `WoClockController::clockOutAction` now pre-checks the
+  cap (`WoClockService::capExceedanceHours()`, which calls this resolver) and
+  returns `status:'confirm_long'`; the button shows a `confirm()` and, on OK,
+  re-submits with `override` → `clockOut(...,$override=TRUE)` sets
+  `field_time_limit_override` so Guard 6 accepts it (and stamps its audit note
+  naming the confirming crew member). Cancel leaves the entry open for the
+  office. See `wo_clock.md`.
 - Deliberately does **not** honor the `_signoff_reconciliation`
   bypass — the Task List silent-close path must be subject to the cap
   (that path produced the WO 49723 / Tanner-style runaway entries).

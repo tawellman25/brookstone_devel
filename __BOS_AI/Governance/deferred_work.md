@@ -305,7 +305,7 @@ of scope for the spray-route guard (year-scoped + invoiced-guarded, so never tou
 worth understanding: why did invoiced WOs land in "Active," and should 1301 be folded into
 the done-set / corrected? Data hygiene, not urgent.
 
-### 20. Old stranded `field_invoiced` flags (pre-completion status)
+### 20. Old stranded `field_invoiced` flags (pre-completion status) — ✅ RESOLVED 2026-07-11
 
 Surfaced 2026-06-25 (billing-crash investigation). Three WOs carried `field_invoiced = 1` while in
 a pre-completion status (In Progress): **45301 / 49668 / 50078** — same orphan pattern the
@@ -315,9 +315,9 @@ already-invoiced WO back to In Progress).
 **Live-verified 2026-07-11:**
 - **45301** (sprinkler_winterizing, $90) — ✅ **RESOLVED 2026-07-11**: restored to **Invoiced** (status 1281) via the documented `$wo->_skip_invoiced_guard` bypass (it had a `wo_complete_info` and `field_invoiced=1`; no billing recompute, $90 preserved).
 - **49668** (landscaping, $2,714) — already **Invoiced**; the office fixed it earlier. Not stranded (this is the one that made the roadmap read "down from 3").
-- **50078** (landscaping, $386.70) — **still stranded** (In Progress + `field_invoiced=1`, 0 open clock-ins). Same benign case; fix = restore to Invoiced the same way.
+- **50078** (landscaping, $386.70) — ✅ **RESOLVED 2026-07-11**: restored to Invoiced the same way (had a `wo_complete_info`, 0 open clock-ins; `_skip_invoiced_guard`, no billing recompute).
 
-**Remaining: 1 (50078).**
+**Remaining: 0 — fully resolved; archive next cycle.**
 
 ↔ **ROADMAP:** NEXT — "stranded invoiced WO(s) (In-Progress + `field_invoiced=1`)".
 

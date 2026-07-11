@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-11 (Enablement lane added; office-owed items cleared/relocated)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-11 (deferred_work.md reconciled + linked; off-server-backup + config-drift promoted)
 
 ---
 
@@ -73,6 +73,7 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 | Item | Area | Tier | Effort | Notes |
 |---|---|---|---|---|
 | **⭐ Material price scraping — first real SiteOne end-to-end run** | `supplier_price_ingest` | T2 | M | The ingest pipeline is **built + live** but has **never been run against a real full SiteOne catalog** — that's the missing step. **3.10 (DDEV):** acquire a SiteOne catalog scrape (Claude-in-Chrome → CSV; first pass = irrigation + pvc + brass + galv), create the SiteOne `supplier_ingest_config` column mapping, run parse→match→dry-run→approve→commit, log + fix bugs. **3.11 (prod):** live DB snapshot → deploy fixes → first real ingest → verify (`material_suppliers`, `material_price_history`, `/admin/materials/price-review`) → 48-hr watch. **Then automate:** replace the manual Claude-in-Chrome scrape with the **Lever 3 Python/Playwright scraper** (after the Lever 2 family map). Full detail: `Architecture/supplier_pricing_pipeline_phase3_sequencing.md` §3.10–3.11; family rules in `Extraction/siteone_families.md`. |
+| **Off-server DB backup copies** | Infra / DR | T1 | S | Business continuity. Nightly `bos_db_backup.sh` keeps 14 rotating dumps in `~/db_backups` on live but **same-disk as the DB** — protects logical loss, not disk/server failure. Push the newest off-server (S3, or a scheduled pull to a workstation/NAS via `dev_scripts/brookstone-sync-db-from-live.sh`) + a "no backup in 36h" heartbeat alert. Detail: `deferred_work.md` #21. |
 | TimeTrax live SQL-read integration | `bos_teammate_operations` | T2 | L | Foundation + swappable `CompensableHoursService` on 8.5hr assumption built. Swap in real SQL Server read (Punch/Employee/EmployeeCards, PunchKey idempotency). Labor-cost accuracy. |
 | Estimate board pipeline swimlane rework | `estimate_board` | T2 | M | Build prompt produced; replace single "Active Pipeline" with per-status swimlanes + color. Pending Code execution. |
 | wo_clock — foreman crew-status view + end-of-day notifications (Phase B/C) | `wo_clock` | T2 | M | Phase A shipped (clock-in/out redesign + silent GPS + attribution). Next: foreman "who's still clocked in" view + end-of-day open-clock-in alerting. Flag-path retirement is the winter cleanup (see LATER). |
@@ -116,6 +117,7 @@ These are shipped, live systems whose only blocker is human adoption, not engine
 | Tier 1.5 confidence bump 85→90 | Idea | Validate zero false positives over 2–3 batches first. |
 | Bulk-rerun batches 205/276; Bulk Confirm/Send-to-Discovery VBO; Spears CSV relocation | Idea | Held until manual pain is felt. |
 | Eight Phase 3.12 supplier SOPs | Scoped | Authoring pending. |
+| **Apprentice onboarding** (pointer) | Idea | Guide + catalog-cleanup checklist + Claude working guidelines for the apprentice — catalog cleanup feeds the SiteOne run, hence the placement here. Detail: `deferred_work.md` #13–#15. |
 
 ### Fleet / equipment tracking (T3)
 **WEX fuel + mileage core SHIPPED & live** (`bos_wex_import`): automated **daily 7am IMAP fetch** of WEX fuel-card transactions + a drush-independent **failure watcher** (emails on a missed/incomplete fetch), driver resolution (`teammate_profile.field_wex_driver_prompt_id`), vehicle resolution (`field_vehicle_number`), idempotent re-imports, and **vehicle mileage auto-update** from odometer reads. ~388+ transactions across 21 vehicles. Docs: `bos_wex_import.md`, `wex_fuel_import_workflow.md`. _(No live GPS/telematics — "tracking" = fuel/mileage/inspection/maintenance records, not real-time vehicle location.)_
@@ -157,6 +159,7 @@ These are shipped, live systems whose only blocker is human adoption, not engine
 | Dedicated code-quality audit pass | 5+ latent issues surfaced; no test tooling. Fall 2026. |
 | Time-clock anomaly cleanup (182 historical) | The 5 `AnomalyDetectionService` types: **103** negative-hours + **77** implausible-long (>16h) + **2** stale-open; 0 future/time-travel (live 2026-07-04). Mostly historical bad clock data — correct/annotate. Non-blocking; the 2 stale-open may already be closing under wo_clock. |
 | Branch strategy review | `drupal-update-20251206` stale; `main` is live reference (rsync deploy, live `.git` stale at 9c239ff). |
+| Reconcile `config/sync` ↔ active drift (make full `cim` safe) | `config/sync` is drifted ~340 configs from live's active (all content-diffs, 0 adds/deletes); a full `cim` would revert live, so discipline is **surgical partial-cim only**. Reconciling (so `cim` is trustworthy + `config/sync` is a real config backup) = a focused **1–2 day** pass **from live's active**, during a **config freeze**, in batches — capture the ~216 low-risk systematic ones first, review the ~115 substantive, and handle the **88 `eck.eck_entity_type`** configs specially (cex exporter-bug injects a stray empty string — see the ECK gotcha). Done = `drush cim --diff` clean. Related: "Branch strategy review". Detail: `deferred_work.md` #22. |
 | Retire `wo_clock` flag-based timer path | `wo_clock` coexists with the legacy flag timer during migration. Once the button path is trusted in the field, retire the flag path (`wo_timer_flag_update`) and remove the coexistence code. Off-season. |
 | Retire `CreateAndScheduleSprinklerCheckUpWorkOrdersAction` VBO | Off-season. |
 | Refactor `field_estimate_type` | Off-season. |
@@ -215,7 +218,7 @@ _Note: `wo_material_price_sync` is enabled and error-free on live — the "broke
 
 ## Maintenance protocol
 
-1. This file is the status-of-record. If it conflicts with memory, Todoist, or a chat, **this wins** — reconcile the others.
+1. This file is the status-of-record. If it conflicts with memory, Todoist, a chat, or **[`deferred_work.md`](Governance/deferred_work.md)** (its reconciled engineering-detail sibling), **this wins** — reconcile the others. The engineering hygiene / code-quality / small-fix backlog lives in `deferred_work.md`; **reconcile it at each recon** (dedup vs the NEXT/LATER rows, carry `↔ ROADMAP:` cross-refs).
 2. **Anchor every status to evidence** — commit hash, module name, config key, or a named live check. No unverifiable rows.
 3. **Re-run the read-only recon at each seasonal boundary** (or quarterly). It mechanically resolves most rows and catches drift before it compounds — the way the check-up queue did.
 4. Status changes require a next-step or blocker note. Never leave a change unexplained.

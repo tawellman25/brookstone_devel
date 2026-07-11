@@ -4,6 +4,8 @@ Items surfaced during recent BOS work but deliberately deferred. Mirror to Todoi
 
 Each entry cites the surfacing commit (or session) so readers can dig into git history for the full context.
 
+> **Relationship to the roadmap:** this file is the **engineering-detail tracker** (code-quality, hygiene, small fixes, with commit provenance) and is **subordinate to [`__BOS_AI/ROADMAP.md`](../ROADMAP.md)** — the strategic status-of-record and tie-breaker. Items tracked in both must agree; **ROADMAP wins on conflict.** Items also on the roadmap carry a `↔ ROADMAP:` pointer to the section that owns them.
+
 ---
 
 ## Code quality follow-ups
@@ -62,7 +64,7 @@ Investigate. If the cleanup was intentional and reverted by accident, re-apply. 
 
 ---
 
-### 16. Pre-boundary `wo_time_clock` dual-field drift backfill (deferred)
+### 24. Pre-boundary `wo_time_clock` dual-field drift backfill (deferred)
 
 The dual-field drift pattern (`uid` populated, `field_teammate` empty on the same entry) affected 9,118 wo_time_clock entries at time of discovery. The reverse-sync guard added to `wo_total_time` corrects new writes going forward, and 72 of 74 post-boundary affected entries were backfilled (2 blocked by pre-existing `time_travel` data corruption). The remaining **9,043 pre-boundary entries** were left as-is.
 
@@ -147,6 +149,8 @@ Decision points for fall 2026 design pass:
 
 Examine actual snow season usage (2026-2027 season data) before deciding.
 
+↔ **ROADMAP:** LATER / Season-gated — "Snow removal architecture + reconciliation bundle".
+
 **Surfaced during Phase 2 design.**
 
 ---
@@ -162,6 +166,8 @@ Revisit if:
 - Operational pattern stabilizes around scheduled per-property mowing rather than ad-hoc requests
 
 Implementation note: `wo_special_mowing` has `hook_entity_presave` only — no cascade hook on `wo_tasks_list:special_mowing` like wo_lawn_mowing has. Reconciliation pattern would need adaptation, possibly intercepting at the wo_complete_info path instead.
+
+↔ **ROADMAP:** LATER / Season-gated — "`special_mowing` reconciliation bundle".
 
 **Surfaced during Phase 2 diagnostic, before commit `ae59a12c`.**
 
@@ -188,6 +194,8 @@ A dedicated audit pass through `web/modules/custom/` looking for:
 
 Static analysis tools would catch a substantial subset; manual review needed for the rest.
 
+↔ **ROADMAP:** LATER / Governance — "Dedicated code-quality audit pass".
+
 **Surfaced as pattern across multiple commits in spring 2026.**
 
 ---
@@ -202,6 +210,8 @@ Decide on either:
 - Branch model that prevents this kind of drift (trunk-based development, short-lived feature branches, or formalized long-lived release branch)
 
 The current state isn't broken — origin tracks the full history, recovery is possible — but the longer the drift, the harder the eventual reconciliation. Worth a strategic decision before adding another 100 commits.
+
+↔ **ROADMAP:** LATER / Governance — "Branch strategy review".
 
 **Surfaced during Phase 2 final report.**
 
@@ -277,16 +287,6 @@ Explicitly scoped OUT of the cap work — separate initiative, separate decision
 
 ---
 
-### 17. Finalize weed-spray WO #49698 — mostly resolved
-
-Surfaced 2026-06-25 (spray-route-guard investigation). #49698 (19988 Iris Rd) is a real
-spray ($183, completed 05-12) that was **resurrected** to In Progress by a stray clock-in.
-The new housekeeping **flags** resurrected WOs rather than auto-fixing them (auto-restore
-could corrupt spray history on older ones). **Update (06-25):** the office set #49698 back
-to **Complete** by hand, so it's no longer stuck/trapping. Remaining: invoice it in the
-normal billing flow, and note it carries 5 time-clock entries vs one recorded spray —
-reconcile the extra time if any of it is real later work.
-
 ### 18. Weed-spray stale-cancel threshold tuning
 
 The abandoned-WO sweep cancels stale-empty WOs at **>45 days**. As of 2026-06-25, 49903
@@ -294,6 +294,8 @@ and 49906 (43 days, zero work) sit just under the line and aren't swept yet. 45 
 past even a monthly cycle (35d), so it's deliberately conservative; revisit if the office
 wants empty WOs cleaned sooner (could be made frequency-relative). Branch
 `feature/spray-route-guard`.
+
+↔ **ROADMAP:** NEXT — "45-day auto-cancel threshold pressure-test".
 
 ### 19. Legacy 2024 weed_spraying WOs stuck in status 1301 "Active"
 
@@ -310,6 +312,12 @@ while in a pre-completion status (In Progress): ids **45301 / 49668 / 50078** (c
 2026-04-20 / 05-26 / 06-05). They predate the 06-24 batch crash (unrelated) and are the
 same orphan pattern the 2026-06-20 remediation reverted for three other WOs. Optional
 data cleanup: revert the flag or finalize the WOs.
+
+**Reconcile with ROADMAP:** the roadmap NEXT row says **2 remaining** ("down from 3"), but this
+list still names all three (45301 / 49668 / 50078) — one has apparently cleared since. Not
+guessing which. **Live-verify which id resolved, then correct this list.**
+
+↔ **ROADMAP:** NEXT — "2 stranded invoiced WOs (In-Progress + `field_invoiced=1`)".
 
 ---
 
@@ -343,6 +351,20 @@ manual fix; see the ECK gotcha). Done = `drush cim --diff` comes back clean.
 
 ---
 
+## Resolved — archive next cycle
+
+### 17. Finalize weed-spray WO #49698 — ✅ RESOLVED (SHIPPED/verified 2026-07-03)
+
+**RESOLVED** — the roadmap archives this as SHIPPED / verified 2026-07-03. #49698 (19988 Iris Rd) —
+a real spray ($183, completed 05-12) that a stray clock-in **resurrected** to In Progress — was set
+back to **Complete** by the office (06-25), so it's no longer stuck/trapping; the spray-route guard
+now **flags** resurrected WOs rather than auto-fixing them (auto-restore could corrupt spray history).
+The original follow-ups (invoice it in the normal billing flow; reconcile its 5 time-clock entries vs
+the one recorded spray if any of the extra time is real later work) fold into normal billing / data
+hygiene.
+
+Surfaced 2026-06-25 (spray-route-guard investigation).
+
 ### 23. Stale `drupal/calendar` composer-patch fails on every `composer install` — ✅ RESOLVED 2026-07-06
 
 **RESOLVED 2026-07-06** — removed the `drupal/calendar` patch from `composer.json` `extra.patches`
@@ -373,6 +395,7 @@ version. Hygiene only — removes noisy remove/reinstall churn from every deploy
 
 ## Status
 
+- **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)
 - Living document — append new deferred items as they emerge from project work, with the surfacing commit cited.
 - Items 1-12 are technical work tracked here for context; mirror to Todoist if you want them in your active queue.

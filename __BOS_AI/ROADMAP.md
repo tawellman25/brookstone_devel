@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-04 (**Voice-to-Work-Order un-postponed → active**; Gate 2A `createFromText()` deterministic resolution in progress; Gate 1 endpoint is the live foundation)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-11 (Enablement lane added; office-owed items cleared/relocated)
 
 ---
 
@@ -46,7 +46,7 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 |---|---|
 | **Gate 1** — authenticated WO-intake endpoint | ✅ **SHIPPED & live** (`166f573b`; `POST /api/wo-intake`, X-API-KEY, `system_integration` + `cowork-connect`). The durable REST foundation. |
 | **Gate 2A** — `createFromText()` resolution brain | ✅ **SHIPPED to live 2026-07-04** (`b17c4d27`; deterministic parse + nickname/service resolution + two-tier duplicate guard + complaint note; 11/11 acceptance). Config landed via `hook_update_10001` (81 synonyms). |
-| **Gate 2B** — mobile intake page + toolbar icon | ✅ **SHIPPED to live 2026-07-04** (`b17c4d27`; `/wo-intake`, `use work order intake` perm → office/admin roles, AJAX Form, four result states + 37-term picker, candidate-tap resubmit, authored by the logged-in human). Docs: `work_order_api.md` (2A+2B as-built). **Owed: Todd's phone test 10** (parking-lot-to-WO on the real device). |
+| **Gate 2B** — mobile intake page + toolbar icon | ✅ **SHIPPED to live 2026-07-04** (`b17c4d27`; `/wo-intake`, `use work order intake` perm → office/admin roles, AJAX Form, four result states + 37-term picker, candidate-tap resubmit, authored by the logged-in human). Docs: `work_order_api.md` (2A+2B as-built). **Phone test passed 2026-07-06** — parking-lot-to-WO confirmed on-device; refinements tracked under the LATER polish rows. |
 
 **Voice-to-WO — remaining (all LATER polish):**
 - **Scheduling / date grammar** — parse a date from the command → wire the scheduling cascade (2A deliberately omitted it).
@@ -84,6 +84,17 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 
 ---
 
+## Enablement — built, awaiting adoption
+
+These are shipped, live systems whose only blocker is human adoption, not engineering — tracked separately so trapped value stays visible and self-verifies at each recon.
+
+| System | Backing build | Owner | Done-signal (re-runnable) | Notes |
+|---|---|---|---|---|
+| Equipment inspection / defect / maintenance | enabled & live (entities + `equipment_inspection_workflow`; 6 checklists, 18 defect-auto rules) | Foremen (Herbert — landscape) | inspection record count > 0 and accruing across trucks — `drush php:eval "print \Drupal::entityQuery('equipment_inspection')->accessCheck(FALSE)->count()->execute();"` | Currently 0 records. Needs crews trained + required to submit before the automation produces value. |
+| First signed backflow test (PDF + S3) | Backflow Device Management System, Gates 1–4, live | Office | first signed-test PDF exists — `drush php:eval "print \Drupal::entityQuery('wo_tasks_list')->accessCheck(FALSE)->condition('type','backflow_testing')->exists('field_report_pdf')->count()->execute();"` (≥1 `wo_tasks_list:backflow_testing` with a generated `field_report_pdf`; production files land on S3) | Was previously filed as an engineering "smoke test"; the real blocker is the office running one real signed test. |
+
+---
+
 ## LATER — off-season, season-gated, or hygiene
 
 ### Season-gated (build early fall 2026)
@@ -111,7 +122,6 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 
 | Item | Status | Notes |
 |---|---|---|
-| **Equipment inspection / defect / maintenance — field rollout** | Built, **not adopted** | Entities + `equipment_inspection_workflow` are **enabled & live** (6 inspection checklists; defect auto-creation on approval — 18 rules; maintenance-event defect closure; out-of-service status sync) but **0 inspection/defect/maintenance records** exist — crews aren't submitting inspections yet. Needs a rollout (train + require inspections) before the automation produces value. Docs: `equipment_inspection.md`, `equipment_defect.md`, `equipment_maintenance_event.md`, `equipment_inspection_workflow.md`. |
 | Bogus-high odometer guardrail | Idea (real risk) | A wildly-high odometer read writes through and **permanently caps** the vehicle's mileage. Add a sanity guardrail (reject/flag reads that jump implausibly). |
 | Fleet Fuel Dashboard | Idea | Per-vehicle MPG, monthly rollups, anomaly flags. |
 | Vehicle 77628 (Webster) odometer human review | Idea (S) | One-time review: stored 81,983 vs the real reading. The 07-03 recon couldn't locate the vehicle record — first confirm it exists, then verify/correct. |
@@ -127,7 +137,6 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 ### Backflow (T3)
 | Item | Notes |
 |---|---|
-| First signed backflow test — PDF+S3 smoke test | Parked pending office generating first real signed test. |
 | Property devices EVA card restyle | Match My Schedule card component. |
 
 ### Multi-consumer keys + per-consumer attribution (T3, when a 2nd consumer appears)
@@ -198,7 +207,7 @@ All modules enabled (estimate_board, estimate_notifications, calendars, scheduli
 
 **Teammate "Time on Jobs" profile-page hours — SHIPPED 2026-07-05.** New `bos_teammate_hours` module (Block `teammate_time_on_jobs` on the **teammate profile page** = `/user/{uid}`, aliased `/teammates/{name}`; `brookstone_olivero`, visibility `/user/*`, guarded to a `teammates` page-owner). Shows the page-owner's `wo_time_clock` hours for a calendar week (Sun–Sat), grouped by day with per-day + week totals; each entry links its WO + property. Reads the **page-owner** (teammates can't view others' profiles → effectively self-only for crew), **no GPS**, **no dollar figures** (WO clocked hours ≠ billable ≠ compensable). _(Placement fix: first pointed at `/teammates` — which isn't a real page in BOS — then retargeted to `/user/*`; verified live on a real teammate profile.)_ Open entries flagged + excluded from totals; prev/next week nav. Deployed via `drush en` (config/install block); verified live (real crew week, 15.63 hrs). Docs: `bos_teammate_hours.md`. **Supervisor counterpart — SHIPPED same day:** the per-teammate variance detail page (`/admin/office/operations/teammates/variance/{user}`) now shows clock-in/out **GPS distance-from-property** (`In 📍`/`Out 📍`, Maps-linked, ≥500 ft flagged) in its per-day WO-entry sub-table; expanded date range was already there. GPS shows for supervisors only (never the crew self-view). Few punches carry GPS yet — expected, since `wo_clock` only shipped 07-03 and location is captured only on button punches (historical/legacy-flag entries have none); the cells show `—` where absent and accrue naturally.
 
-**Lighting `wo_*` billing modules — SHIPPED 2026-07-05.** `wo_landscape_lighting` / `wo_exterior_lighting` (already-enabled since 05-28) **rewritten** to mirror `wo_sprinkler_repair`: on Complete (1097) → labor (clocked hrs × the new dedicated lighting rate w/ increment + minimum) + materials (w/ markup) + trip + rentals + billing adjustment → `field_wo_total`. New **dedicated** `business_setting` rate fields `field_lighting_technician_rate` + `field_lighting_tech_minimum` (Option B — separate from the maintenance/sprinkler rates), created via `web/scripts/add_lighting_rate_fields.php` and left **EMPTY** for the office to set after competitive-rate analysis (labor is skipped until a rate is entered — no bogus totals). Local billing test: 2 hrs @ temp $65 → $130. ⚠ **Owed: office sets the real lighting rate** on the Business Settings page.
+**Lighting `wo_*` billing modules — SHIPPED 2026-07-05.** `wo_landscape_lighting` / `wo_exterior_lighting` (already-enabled since 05-28) **rewritten** to mirror `wo_sprinkler_repair`: on Complete (1097) → labor (clocked hrs × the new dedicated lighting rate w/ increment + minimum) + materials (w/ markup) + trip + rentals + billing adjustment → `field_wo_total`. New **dedicated** `business_setting` rate fields `field_lighting_technician_rate` + `field_lighting_tech_minimum` (Option B — separate from the maintenance/sprinkler rates), created via `web/scripts/add_lighting_rate_fields.php` and left **EMPTY** for the office to set after competitive-rate analysis (labor is skipped until a rate is entered — no bogus totals). Local billing test: 2 hrs @ temp $65 → $130. **Resolved:** rate set to **$75/hr** and minimum to **0.5 hr** on the Business Settings page — labor now computes with a **$37.50 per-visit floor**. Item fully closed.
 
 _Note: `wo_material_price_sync` is enabled and error-free on live — the "broken on live" concern did not reproduce. Confirm the form-display/view-filter behavior in the app before fully closing._
 

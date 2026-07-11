@@ -106,13 +106,16 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 | Bulk-rerun batches 205/276; Bulk Confirm/Send-to-Discovery VBO; Spears CSV relocation | Idea | Held until manual pain is felt. |
 | Eight Phase 3.12 supplier SOPs | Scoped | Authoring pending. |
 
-### Fleet / WEX (T3)
-| Item | Notes |
-|---|---|
-| SFTP delivery channel | Superior long-term; awaiting WEX rep. IMAP primary until then. |
-| Fleet Fuel Dashboard | Per-vehicle MPG, monthly rollups, anomaly flags. |
-| Bogus-high odometer guardrail | High reads write through and cap the vehicle permanently. |
-| Vehicle 77628 (Webster) odometer human review | One-time review: stored 81,983 vs the real reading. The 07-03 recon couldn't locate the vehicle record — first confirm it exists, then verify/correct. |
+### Fleet / equipment tracking (T3)
+**WEX fuel + mileage core SHIPPED & live** (`bos_wex_import`): automated **daily 7am IMAP fetch** of WEX fuel-card transactions + a drush-independent **failure watcher** (emails on a missed/incomplete fetch), driver resolution (`teammate_profile.field_wex_driver_prompt_id`), vehicle resolution (`field_vehicle_number`), idempotent re-imports, and **vehicle mileage auto-update** from odometer reads. ~388+ transactions across 21 vehicles. Docs: `bos_wex_import.md`, `wex_fuel_import_workflow.md`. _(No live GPS/telematics — "tracking" = fuel/mileage/inspection/maintenance records, not real-time vehicle location.)_
+
+| Item | Status | Notes |
+|---|---|---|
+| **Equipment inspection / defect / maintenance — field rollout** | Built, **not adopted** | Entities + `equipment_inspection_workflow` are **enabled & live** (6 inspection checklists; defect auto-creation on approval — 18 rules; maintenance-event defect closure; out-of-service status sync) but **0 inspection/defect/maintenance records** exist — crews aren't submitting inspections yet. Needs a rollout (train + require inspections) before the automation produces value. Docs: `equipment_inspection.md`, `equipment_defect.md`, `equipment_maintenance_event.md`, `equipment_inspection_workflow.md`. |
+| Bogus-high odometer guardrail | Idea (real risk) | A wildly-high odometer read writes through and **permanently caps** the vehicle's mileage. Add a sanity guardrail (reject/flag reads that jump implausibly). |
+| Fleet Fuel Dashboard | Idea | Per-vehicle MPG, monthly rollups, anomaly flags. |
+| Vehicle 77628 (Webster) odometer human review | Idea (S) | One-time review: stored 81,983 vs the real reading. The 07-03 recon couldn't locate the vehicle record — first confirm it exists, then verify/correct. |
+| SFTP delivery channel | Idea | Superior long-term; awaiting WEX rep. IMAP primary until then. |
 
 ### Notifications (T3)
 | Item | Notes |

@@ -18,10 +18,41 @@ function wo_status_updates_entity_presave(EntityInterface $entity) {
       // Load the 'work_order' entity referenced by the 'field_status_of_wo'.
       $work_order = \Drupal::entityTypeManager()->getStorage('work_order')->load($work_order_id);
       if ($work_order && $wo_status_updates_status_tid) {
-        // Update the 'work_order' entity with the new status.
-        $work_order->set('field_status', $wo_status_updates_status_tid);
-        // Save the 'work_order' entity.
-        $work_order->save();
+        // Resurrection guard (path-INDEPENDENT). A status-update record must
+        // never silently reopen a billed/closed WO back to In Progress (1092).
+        // This is the single chokepoint every status-update record flows
+        // through, so it covers EVERY creator — the legacy flag path, the
+        // wo_clock button, VBO, and any future path — in one place, not just
+        // the flag creator (which carries its own guard as a first line).
+        //
+        // Historically two invoiced WOs (45301 on 2025-10-14, 50078 on
+        // 2026-06-05) were bounced to In Progress by a stray "Teammate Clocked
+        // In" record before the flag-path guard existed. Terminal set matches
+        // wo_timer_flag_update: Complete 1097, Warrantied 1283, Invoiced 1281,
+        // Paid 1504, Canceled 1098.
+        //
+        // The one legitimate terminal->1092 transition — the un-sign-off
+        // revert in wo_sign_off_entity_delete — performs its OWN direct
+        // $work_order->save() with 1092 (that path does not depend on this
+        // record-driven write), so suppressing HERE does not break it.
+        $terminal_statuses = [1097, 1283, 1281, 1504, 1098];
+        $persisted = \Drupal::entityTypeManager()
+          ->getStorage('work_order')
+          ->loadUnchanged($work_order_id);
+        $persisted_status = $persisted ? (int) ($persisted->get('field_status')->target_id ?? 0) : 0;
+        if ((int) $wo_status_updates_status_tid === 1092
+          && in_array($persisted_status, $terminal_statuses, TRUE)) {
+          \Drupal::logger('wo_status_updates')->warning(
+            'Suppressed reopen of billed/closed WO @id (status @s) to In Progress from status-update record @r.',
+            ['@id' => $work_order_id, '@s' => $persisted_status, '@r' => $entity->id() ?: '(new)']
+          );
+        }
+        else {
+          // Update the 'work_order' entity with the new status.
+          $work_order->set('field_status', $wo_status_updates_status_tid);
+          // Save the 'work_order' entity.
+          $work_order->save();
+        }
       }
     }
   }

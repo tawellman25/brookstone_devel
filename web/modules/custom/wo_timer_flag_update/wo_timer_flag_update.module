@@ -20,6 +20,20 @@ function wo_timer_flag_update_flagging_insert(FlaggingInterface $flagging) {
       // loaded by the flag system at clock-in time — not a stale form value).
       $current_status = (int) $work_order->get('field_status')->target_id;
 
+      // Billed/closed WOs (Invoiced 1281 / Paid 1504) are closed to time entry
+      // on EVERY path — mirrors the wo_clock button block. Do not create a
+      // time-clock entry and do not flip status: a crew member cannot clock
+      // back in on an invoiced work order. (Complete 1097 / Warrantied 1283 /
+      // Canceled 1098 still permit a forgotten entry to be added below; only
+      // the status flip is suppressed for those — see the terminal set later.)
+      if (in_array($current_status, [1281, 1504], TRUE)) {
+        \Drupal::logger('wo_timer_flag_update')->notice(
+          'Clock-in blocked on billed WO @id (status @s) via flag path — no time entry created.',
+          ['@id' => $work_order->id(), '@s' => $current_status]
+        );
+        return;
+      }
+
       // Governance immutability rule: a clock-in must NOT silently revert a
       // closed/terminal Work Order back to In Progress. Crew clock back in to
       // add a forgotten time/material entry after sign-off — that entry must

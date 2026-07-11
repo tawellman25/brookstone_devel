@@ -180,6 +180,12 @@ final class WoClockService {
    * Create + save a new clock-in entry (open, via createOpenEntry()).
    */
   public function clockIn(int $uid, int $woId, ?float $lat = NULL, ?float $lon = NULL, ?string $noteContext = NULL): EntityInterface {
+    // Billed/closed WOs (Invoiced 1281 / Paid 1504) are closed to time entry:
+    // no one may clock back in on any path. A forgotten-entry correction on a
+    // billed WO is an office action (reconciliation), not a crew clock-in.
+    if ($this->woIsLocked($woId)) {
+      throw new \RuntimeException('This work order has already been invoiced and is closed to time entry. If a time correction is needed, please contact the office.');
+    }
     $entry = $this->createOpenEntry($uid, $woId);
     if ($lat !== NULL && $lon !== NULL) {
       $entry->set('field_clock_in_location', $this->wkt($lat, $lon));
@@ -342,6 +348,21 @@ final class WoClockService {
     $dt = new \DateTime('@' . $timestamp);
     $dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
     return $dt->format('m/d/Y g:i A');
+  }
+
+  /**
+   * TRUE when a WO (by id) is in a billed/locked status (Invoiced 1281 /
+   * Paid 1504) that is closed to any new time entry — no clock-in allowed.
+   */
+  public function woIsLocked(int $woId): bool {
+    if ($woId <= 0) {
+      return FALSE;
+    }
+    $wo = $this->entityTypeManager->getStorage('work_order')->load($woId);
+    if (!$wo || !$wo->hasField('field_status')) {
+      return FALSE;
+    }
+    return in_array((int) $wo->get('field_status')->target_id, self::LOCKED_STATUSES, TRUE);
   }
 
   private function parentWoIsLocked(EntityInterface $entry): bool {

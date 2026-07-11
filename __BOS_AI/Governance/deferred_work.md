@@ -307,17 +307,19 @@ the done-set / corrected? Data hygiene, not urgent.
 
 ### 20. Old stranded `field_invoiced` flags (pre-completion status)
 
-Surfaced 2026-06-25 (billing-crash investigation). Three WOs carry `field_invoiced = 1`
-while in a pre-completion status (In Progress): ids **45301 / 49668 / 50078** (changed
-2026-04-20 / 05-26 / 06-05). They predate the 06-24 batch crash (unrelated) and are the
-same orphan pattern the 2026-06-20 remediation reverted for three other WOs. Optional
-data cleanup: revert the flag or finalize the WOs.
+Surfaced 2026-06-25 (billing-crash investigation). Three WOs carried `field_invoiced = 1` while in
+a pre-completion status (In Progress): **45301 / 49668 / 50078** — same orphan pattern the
+2026-06-20 remediation reverted for three other WOs (an accidental clock-in bounces an
+already-invoiced WO back to In Progress).
 
-**Reconcile with ROADMAP:** the roadmap NEXT row says **2 remaining** ("down from 3"), but this
-list still names all three (45301 / 49668 / 50078) — one has apparently cleared since. Not
-guessing which. **Live-verify which id resolved, then correct this list.**
+**Live-verified 2026-07-11:**
+- **45301** (sprinkler_winterizing, $90) — ✅ **RESOLVED 2026-07-11**: restored to **Invoiced** (status 1281) via the documented `$wo->_skip_invoiced_guard` bypass (it had a `wo_complete_info` and `field_invoiced=1`; no billing recompute, $90 preserved).
+- **49668** (landscaping, $2,714) — already **Invoiced**; the office fixed it earlier. Not stranded (this is the one that made the roadmap read "down from 3").
+- **50078** (landscaping, $386.70) — **still stranded** (In Progress + `field_invoiced=1`, 0 open clock-ins). Same benign case; fix = restore to Invoiced the same way.
 
-↔ **ROADMAP:** NEXT — "2 stranded invoiced WOs (In-Progress + `field_invoiced=1`)".
+**Remaining: 1 (50078).**
+
+↔ **ROADMAP:** NEXT — "stranded invoiced WO(s) (In-Progress + `field_invoiced=1`)".
 
 ---
 

@@ -41,7 +41,8 @@ Transport-agnostic domain service. Datetime storage is UTC `Y-m-d\TH:i:s`.
 | `getOpenEntriesForUser(int $uid, ?int $excludeWoId = null): array` | Open entries (NULL `field_end_time`) by `field_teammate` or owner uid; oldest-first; optional WO exclusion. |
 | `getCurrentEntryOnWo(int $uid, int $woId): ?entity` | The user's open entry on a WO, or null. |
 | `createOpenEntry(int $uid, int $woId, array $extra = []): entity` | Builds an **unsaved** open entry with **`field_end_time` guaranteed cleared**. The single place that owns the open-entry guarantee — any code creating an intended-open entry should use this (see the `field_end_time` default-of-"now" gotcha in `drupal_bos_gotchas.md`). |
-| `clockIn(int $uid, int $woId, ?float $lat, ?float $lon, ?string $noteContext): entity` | Creates an **open** entry via `createOpenEntry()`, then stores GPS / prepends a note if given, and saves. |
+| `clockIn(int $uid, int $woId, ?float $lat, ?float $lon, ?string $noteContext): entity` | **Refuses (throws) if the WO is billed — `woIsLocked()` true (Invoiced 1281 / Paid 1504)** — a billed WO is closed to time entry; corrections are an office action. Otherwise creates an **open** entry via `createOpenEntry()`, then stores GPS / prepends a note if given, and saves. |
+| `woIsLocked(int $woId): bool` | TRUE when the WO is in a billed/locked status (**Invoiced 1281 / Paid 1504** — `LOCKED_STATUSES`) that is closed to any new clock-in. Added 2026-07-11 (`cc2ffb38`). |
 | `clockOut(int $entryId, ?float $lat, ?float $lon): entity` | Sets end=now, stores clock-out GPS. Respects Phase 1 guards (throws propagate). |
 | `closeEntry(int $entryId, ?int $endTimestamp, bool $auditNote): entity` | Retroactive close (now or a timestamp). Prepends `[Closed via intervention MM/DD/YYYY h:i AM/PM by {name}]` when `$auditNote`. Sets the `_signoff_reconciliation` bypass **only when the parent WO is Invoiced/Paid** (matches wo_total_time Phase 1 Guard 4). |
 | `calculateDistanceFeet(...)` | Haversine, Earth radius 20,902,231 ft. Verified: 0.01° lat = 3648 ft; identical points = 0. |
@@ -57,7 +58,7 @@ Transport-agnostic domain service. Datetime storage is UTC `Y-m-d\TH:i:s`.
 
 | Route | Path | Action |
 |---|---|---|
-| `wo_clock.clock_in` | `/clock/in/{wo_id}` | If open entries elsewhere and no `resolved_entries` flag → `{status: intervention_required, open_entries:[…]}`; else create + `{status: clocked_in, entry:{…}}`. Intervention path prepends an audit note to the new entry. |
+| `wo_clock.clock_in` | `/clock/in/{wo_id}` | If open entries elsewhere and no `resolved_entries` flag → `{status: intervention_required, open_entries:[…]}`; else create + `{status: clocked_in, entry:{…}}`. Intervention path prepends an audit note to the new entry. **Billed WO (Invoiced/Paid):** `clockIn()` throws → the controller catch returns `{status: error, message}` → `wo-clock.js doClockIn` else-branch shows the crew *"…closed to time entry, contact the office"* message. No entry created. |
 | `wo_clock.clock_out` | `/clock/out/{entry_id}` | Ownership-checked; end=now + GPS; `{status: clocked_out}` or `{status: error}` if a guard fires. |
 | `wo_clock.close_entry` | `/clock/close/{entry_id}` | `closeEntry(now, audit)`; `{status: closed, remaining_open:[…]}`. |
 | `wo_clock.close_with_time` | `/clock/close/{entry_id}/time` | Body `end_time` = a **datetime-local** value `Y-m-dTH:i` (site tz) — so an entry finally closed on a *later day* records the correct date, not "today". Parsed by `resolveEndInput()` with an end-before-start guard; a bare `HH:MM` is still accepted from older cached clients (resolved against today/start day via `resolveEndTimestamp()`). `{status: closed, remaining_open:[…]}`. |

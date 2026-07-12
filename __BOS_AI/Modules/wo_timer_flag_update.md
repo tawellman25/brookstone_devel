@@ -32,7 +32,7 @@ Owns the bidirectional sync between the `work_order_timer` flag (Drupal Flag mod
 
 Three hook implementations:
 
-- `hook_flagging_insert()` — clock-in. Creates a new `wo_time_clock:entry` with `field_start_time = now`, `field_end_time = NULL`, owner = current user. Stores the new entry's ID on the flagging entity's `field_wo_timer_entered` field for later lookup.
+- `hook_flagging_insert()` — clock-in. Creates a new `wo_time_clock:entry` with `field_start_time = now`, `field_end_time = NULL`, owner = current user. Stores the new entry's ID on the flagging entity's `field_wo_timer_entered` field for later lookup. **Billed-WO block (2026-07-11):** if the WO is **Invoiced (1281) / Paid (1504)** the hook returns early — **no entry is created and no status flips** (mirrors the wo_clock button's `woIsLocked()` refusal; a billed WO is closed to clock-in on every path). Complete (1097) / Warrantied (1283) / Canceled (1098) still create the entry with the status-flip suppressed (the 2026-06-19 terminal-guard behavior, unchanged).
 
 - `hook_flagging_delete()` — clock-out. Loads the `wo_time_clock` referenced by `field_wo_timer_entered` and writes `field_end_time = now`. Defensive: skips the write if the entry is already closed (Phase 2c reconciliation may have pre-closed it before the cascade fired).
 
@@ -125,5 +125,7 @@ No service classes. All logic lives in the .module hook implementations.
 - Pre-Phase-2c (`92c9484f`): defensive skip on pre-closed entries + correct field_notes append
 - Phase 2d (`ae59a12c`): silent-no-op visibility logging on clock-out
 - 2026-05-16: two-row notes, smart clock-out button, flag-off-on-close, defensive flagging_delete (see above)
+- 2026-06-19 (`5e76da8a`): terminal-status guard — clock-in on a closed WO records the entry but suppresses the status flip
+- 2026-07-11 (`cc2ffb38`): **Invoiced/Paid closed to clock-in entirely** — flag path creates no entry on billed WOs (parallels the wo_clock button block + the path-independent `wo_status_updates` resurrection guard)
 
-Updated: 2026-05-16
+Updated: 2026-07-11

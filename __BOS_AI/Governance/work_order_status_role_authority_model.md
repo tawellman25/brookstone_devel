@@ -126,6 +126,15 @@ Cancellation represents two distinct realities, even if stored as one status:
   Invoiced (1281), Paid (1504), or Canceled (1098). Re-clocking-in on a closed
   WO records the time entry but does not revert status. (wo_timer_flag_update,
   commit 5e76da8a, 2026-06-19.)
+- **Billed WOs are fully closed to clock-in (2026-07-11, commit cc2ffb38).** On
+  **Invoiced (1281) / Paid (1504)** a clock-in is refused on every path — the
+  wo_clock button and the legacy flag path both create **no** time entry (a
+  correction on a billed WO is an office reconciliation action, not a crew
+  clock-in). A path-independent guard at the `wo_status_updates` propagation
+  chokepoint additionally prevents *any* status-update record from reopening a
+  terminal WO to In Progress; the legitimate un-sign-off revert is unaffected
+  (it saves the WO directly). Complete/Warrantied/Canceled keep the 2026-06-19
+  record-but-don't-revert behavior.
 - **In Progress → Complete** on creation of `wo_complete_info` (sign-off entity)
 
 **Manual transitions (no automation):**

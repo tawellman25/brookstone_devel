@@ -242,6 +242,28 @@ Automatic transitions:
   Invoiced (1281), Paid (1504), or Canceled (1098). Re-clocking-in on a closed
   WO records the time entry but does not revert status. (wo_timer_flag_update,
   commit 5e76da8a, 2026-06-19.)
+- **Billed WOs are fully closed to clock-in (2026-07-11, commit cc2ffb38).**
+  On **Invoiced (1281) / Paid (1504)** a clock-in is *refused outright* — no
+  time entry is created on any path (the wo_clock green button throws a
+  crew-facing "closed to time entry, contact the office" message via
+  `WoClockService::woIsLocked()`; the legacy flag path creates no entry). This
+  is stricter than the 2026-06-19 rule (which recorded the entry but suppressed
+  the status flip): once a WO is billed, a correction is an office
+  reconciliation action, not a crew clock-in. Complete (1097) / Warrantied
+  (1283) / Canceled (1098) keep the 2026-06-19 behavior — a forgotten entry may
+  still be added, only the status flip is suppressed.
+- **Path-independent resurrection guard (2026-07-11, commit cc2ffb38).** The
+  single `wo_status_updates` propagation chokepoint
+  (`wo_status_updates_entity_presave`) refuses to write In Progress (1092) onto
+  a WO whose persisted status is terminal (1097/1283/1281/1504/1098),
+  regardless of which path created the status-update record (flag, button, VBO,
+  future). This is the belt to the flag-path guard's suspenders — it caught the
+  stranded WOs `45301`/`50078`, both reopened by stray "Teammate Clocked In"
+  records *before* the 2026-06-19 guard existed. The one legitimate
+  terminal→1092 flow — the un-sign-off revert
+  (`wo_sign_off_entity_delete` → `update_work_order_status`) — is unaffected
+  because it performs its own direct `$work_order->save()` and does not depend
+  on the record-driven write.
 - In Progress → Complete on creation of `wo_complete_info` referencing the WO
 
 Manual transitions:

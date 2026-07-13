@@ -48,8 +48,8 @@ case "$HEADER" in
     ;;
 esac
 
-if printf '%s' "$BLOCK" | grep -q 'fetch-email complete'; then
-  exit 0   # healthy, including clean "0 UNSEEN" days
+if printf '%s' "$BLOCK" | grep -qE 'fetch-email complete|No UNSEEN WEX messages found'; then
+  exit 0   # healthy, including clean "0 UNSEEN" and no-email days
 fi
 
 send_alert "$(printf 'WEX daily fuel import did NOT complete cleanly on %s (cron fired but the fetch failed).\nCheck %s — likely the drush invocation regressed again.\n\n--- latest log block ---\n%s' "$HOST" "$LOG" "$(printf '%s' "$BLOCK" | head -40)")"

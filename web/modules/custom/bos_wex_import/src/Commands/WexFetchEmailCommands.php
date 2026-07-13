@@ -181,6 +181,20 @@ final class WexFetchEmailCommands extends DrushCommands {
       $this->output()->writeln($msg);
       $logger->info($msg);
       $this->safelyDisconnect($client);
+      // Emit the completion sentinel even on a no-work run so the failure
+      // watcher (wex_alert_check.sh greps for "fetch-email complete") reads a
+      // quiet no-email day as HEALTHY instead of firing a false-positive
+      // "import failed" alert. Previously this branch returned before the
+      // grand-summary line below, so every day WEX sent no email tripped the
+      // 07:15 watcher (2026-07-12 / 07-13). All counters are zero — there was
+      // simply nothing to import.
+      $complete = 'WEX fetch-email complete — processed=0, no_url=0, fetch_failed=0, '
+        . 'file_level_errors=0, empty_windows=0. Rows: total=0, imported=0, dupes=0, errors=0. '
+        . 'Match: matched=0, unmatched_driver=0, unmatched_vehicle=0, unmatched_both=0. '
+        . '(No UNSEEN WEX messages — nothing to import.)';
+      $this->output()->writeln('');
+      $this->output()->writeln($complete);
+      $logger->info($complete);
       return self::EXIT_SUCCESS;
     }
 

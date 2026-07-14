@@ -221,9 +221,17 @@ Features:
 - Sticky filter bar with mobile collapse toggle
 - Tabs: Dispatch | Calendar | My Schedule (Drupal local tasks)
 
-Timezone: America/Denver
-UTC conversion: CONVERT_TZ(FROM_UNIXTIME(ts), @@session.time_zone, '+00:00')
-All-day detection: smartdate duration >= 1365 && <= 1440 minutes
+Timezone: America/Denver (FullCalendar `timeZone` = `date_default_timezone_get()`)
+UTC conversion: **in PHP** — `(new \DateTime('@'.$ts, $site_tz))->setTimezone($site_tz)`.
+  Do **NOT** use `FROM_UNIXTIME` for event start/end: MariaDB's session timezone
+  on live is **`SYSTEM` = UTC−7** (not America/Denver = UTC−6 in summer), so it
+  renders an hour early during Daylight Time. Both branches emit site-local
+  wall-clock strings computed in PHP; FullCalendar interprets the tz-less
+  strings in its `America/Denver` timeZone. (Fixed 2026-07-14, commits
+  `fdf68a2f` + `775873f2` — see the fix note at the bottom of this file.)
+All-day detection: smartdate duration in minutes — all-day when total ≥ 1 day
+  AND `duration % 1440` is 0 or ≥ 1365 (covers single **and** multi-day spans).
+  All-day `end` is FullCalendar-EXCLUSIVE: `start + ceil(minutes/1440)` days.
 
 Active status TIDs shown on calendar:
 1089 Open, 1099 Needs Confirmed, 1095 Waiting, 1503 Accepted,
@@ -313,8 +321,11 @@ Planned tools (not yet built):
 ### Timezone Handling
 All scheduling controllers use `date_default_timezone_get()` instead of
 hardcoded 'America/Denver'. This reads Drupal's system.date config.
-All-day event dates are converted in PHP from Unix timestamps using the
-site timezone, bypassing FROM_UNIXTIME server-timezone dependency.
+**Both** all-day and timed event dates are converted in PHP from the raw
+Unix timestamps using the site timezone, bypassing the `FROM_UNIXTIME`
+server-timezone dependency entirely (MariaDB session tz on live is
+`SYSTEM` = UTC−7, which renders an hour early during Daylight Time — the
+timed branch relied on it until the 2026-07-14 fix below).
 
 ## 2026-05-16 changes (wo_schedule module)
 
@@ -362,3 +373,37 @@ Prior: April 2026
 Commit: `366c9014`.
 
 Updated: 2026-05-20
+
+## 2026-07-14 fix (admin_calendar — timezone / multi-day)
+
+Two related month-view rendering bugs in `AdminCalendarEventsController`, same
+root cause: the event feed built start/end from `FROM_UNIXTIME(field_date_*)`,
+which renders in **MariaDB's session timezone = `SYSTEM` = UTC−7 on live** (not
+America/Denver = UTC−6 in summer).
+
+1. **Multi-day WOs rendered a day early** (`fdf68a2f`). A WO scheduled across
+   >1 day (e.g. WO 50485, 07-16→07-17, duration 2879 min) failed the old
+   all-day detector (only matched single-day 1365–1440) and fell to the timed
+   branch, where the UTC−7 rendering turned the 07-16 00:00 MT start into
+   07-15 23:00 → FullCalendar drew a timed bar starting on the 15th. Fix:
+   detect multi-day all-day spans (total ≥ 1 day AND `duration % 1440` is 0 or
+   ≥ 1365) and emit FullCalendar's EXCLUSIVE all-day end = `start +
+   ceil(minutes/1440)` days, computed in site tz from the timestamp.
+
+2. **Timed events rendered an hour early during DST** (`775873f2`). The timed
+   branch's `FROM_UNIXTIME` strings were UTC−7, an hour behind Denver's UTC−6
+   from ~mid-March to early November (in winter the two coincide, so it was
+   seasonal/intermittent). Fix: emit both branches from the raw UTC timestamps
+   converted to the site tz in PHP; dropped the `date_start`/`date_end`
+   `FROM_UNIXTIME` query expressions and added `field_date_end_value`
+   (`date_end_ts`). FullCalendar `timeZone` = America/Denver interprets the
+   tz-less wall-clock strings as site-local.
+
+Both deployed to live via `scp` + safe `cr` (no maintenance mode, no cim/DB).
+Verified on live: WO 50485 → 07-16..07-17; sampled timed events shift +1h to
+the correct Denver time. See `drupal_bos_gotchas.md`
+("FROM_UNIXTIME uses MariaDB session tz").
+
+Commits: `fdf68a2f`, `775873f2`.
+
+Updated: 2026-07-14

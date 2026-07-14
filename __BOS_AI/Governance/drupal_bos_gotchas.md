@@ -237,6 +237,8 @@ PHP timezone is `America/Denver` (which DOES observe DST). The mismatch can prod
 
 **Always use `date_default_timezone_get()`** rather than hardcoded timezone strings. Use Drupal's `\Drupal\Core\Datetime\DrupalDateTime` for any time math; it respects the configured site timezone correctly.
 
+**`FROM_UNIXTIME()` in a query renders in the MariaDB session tz — do NOT use it to format event/display times.** On live `@@session.time_zone = SYSTEM` = a fixed **UTC−7** (MST, no DST). So `FROM_UNIXTIME(ts)` is an hour behind `America/Denver` from ~mid-March to early November, and dead-on in winter — a *seasonal, intermittent* off-by-one-hour that's easy to miss in testing. It bit the scheduling calendar twice (2026-07-14): timed events rendered an hour early during DST, and a 2-day all-day WO's midnight start rendered at 11 pm the prior day, drawing it a day early. **Fix pattern:** select the raw Unix timestamp and convert in PHP — `(new \DateTime('@'.$ts, $site_tz))->setTimezone($site_tz)->format(...)` with `$site_tz = new \DateTimeZone(date_default_timezone_get())`. Never `CONVERT_TZ`/`FROM_UNIXTIME` for values that reach a user-facing time. (See `Entities/scheduling.md` → "2026-07-14 fix".)
+
 ### Drush command prefix differs
 
 - Local: `ddev drush ...`

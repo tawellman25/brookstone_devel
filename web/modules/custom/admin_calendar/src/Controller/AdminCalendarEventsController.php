@@ -168,14 +168,15 @@ class AdminCalendarEventsController extends ControllerBase {
       'sdt',
       's.id = sdt.entity_id AND sdt.deleted = 0'
     );
-    // Smartdate stores timestamps that FROM_UNIXTIME converts using
-    // MariaDB's session timezone (America/Denver in DDEV and on live).
-    // No CONVERT_TZ needed — output is already in site-local time.
-    // FullCalendar timeZone is set to match, so times render correctly.
-    $query->addExpression("DATE_FORMAT(FROM_UNIXTIME(sdt.field_date_value), :fmt_start)", 'date_start', [':fmt_start' => '%Y-%m-%dT%H:%i:%s']);
-    $query->addExpression("DATE_FORMAT(FROM_UNIXTIME(sdt.field_date_end_value), :fmt_end)", 'date_end', [':fmt_end' => '%Y-%m-%dT%H:%i:%s']);
+    // Select the RAW UTC timestamps (start + end) and let PHP convert them to
+    // the site timezone below. We deliberately do NOT use FROM_UNIXTIME: it
+    // renders in MariaDB's session timezone, which is SYSTEM = UTC−7 on live
+    // (NOT America/Denver = UTC−6 in summer), so every timed event came back an
+    // hour early. FullCalendar's timeZone is America/Denver, so both the all-day
+    // and timed branches emit site-local wall-clock strings computed in PHP.
     $query->addField('sdt', 'field_date_duration', 'date_duration');
     $query->addField('sdt', 'field_date_value', 'date_ts');
+    $query->addField('sdt', 'field_date_end_value', 'date_end_ts');
 
     // Convert FullCalendar ISO range params to Unix timestamps for comparison.
     $site_tz  = new \DateTimeZone(date_default_timezone_get());
@@ -421,17 +422,18 @@ class AdminCalendarEventsController extends ControllerBase {
       $day_rem = $duration % 1440;
       $is_all_day = ($duration >= 1365) && ($day_rem === 0 || $day_rem >= 1365);
 
+      // Both branches convert the raw UTC timestamps to site-local wall-clock
+      // in PHP (FullCalendar timeZone = America/Denver interprets tz-less
+      // strings as site-local). This bypasses the FROM_UNIXTIME session-tz bug
+      // (SYSTEM = UTC−7 on live) that drew all-day multi-day WOs a day early and
+      // timed events an hour early.
+      $site_tz  = new \DateTimeZone(date_default_timezone_get());
+      $start_dt = (new \DateTime('@' . $row->date_ts, $site_tz))->setTimezone($site_tz);
+      $end_dt   = (new \DateTime('@' . $row->date_end_ts, $site_tz))->setTimezone($site_tz);
+
       // For all-day events send date only (no time) — FullCalendar renders
       // these as all-day blocks. For timed events send full ISO datetime.
       if ($is_all_day) {
-        // Compute dates in site tz straight from the UTC timestamp — do NOT
-        // use the FROM_UNIXTIME strings (date_start/date_end), which render in
-        // MariaDB's session timezone (SYSTEM = UTC−7 on live, not
-        // America/Denver = UTC−6 in summer). That pushed a 2-day WO's midnight
-        // start back to 11pm the PRIOR day, so FullCalendar drew it starting a
-        // day early (WO 50485, scheduled 07-16→07-17, was showing on 07-15).
-        $site_tz  = new \DateTimeZone(date_default_timezone_get());
-        $start_dt = (new \DateTime('@' . $row->date_ts, $site_tz))->setTimezone($site_tz);
         // FullCalendar's all-day `end` is EXCLUSIVE — it must be the day AFTER
         // the last covered day. Covered days = ceil(minutes / 1440); a single
         // day gives +1 (end == start+1), which FC renders as one all-day cell.
@@ -440,8 +442,8 @@ class AdminCalendarEventsController extends ControllerBase {
         $fc_end   = (clone $start_dt)->modify("+{$days} day")->format('Y-m-d');
       }
       else {
-        $fc_start = $row->date_start;
-        $fc_end   = $row->date_end;
+        $fc_start = $start_dt->format('Y-m-d\TH:i:s');
+        $fc_end   = $end_dt->format('Y-m-d\TH:i:s');
       }
 
       $events[] = [

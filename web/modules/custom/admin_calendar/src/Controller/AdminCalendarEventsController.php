@@ -409,23 +409,35 @@ class AdminCalendarEventsController extends ControllerBase {
         $desc_parts[] = $row->scheduling_note;
       }
 
-      // For all-day events, omit end or set equal to start to prevent
-      // FullCalendar's exclusive end date from spanning an extra day.
-      // All-day detection: smartdate stores duration in minutes.
-      // Duration 1365-1440 = all-day patterns (24h, 23h59m, 23h45m, UTC offsets).
+      // All-day detection: Smart Date stores duration in minutes as whole
+      // local days. Single day ≈ 1439/1440 min; a MULTI-day all-day span is a
+      // near-multiple of a day (N days ≈ N*1440, or N*1440−1 — e.g. 2 days =
+      // 2879). So an event is all-day when its total is ≥ one day AND the
+      // remainder after whole days is 0 or ≥1365 (the offset slack). Anything
+      // else is a genuinely timed job.
+      // (Previously this only matched 1365–1440, so a 2-day WO fell through to
+      // the timed branch below and rendered a day early — see the fc_end note.)
       $duration = (int) ($row->date_duration ?? 0);
-      $is_all_day = ($duration >= 1365 && $duration <= 1440);
+      $day_rem = $duration % 1440;
+      $is_all_day = ($duration >= 1365) && ($day_rem === 0 || $day_rem >= 1365);
 
       // For all-day events send date only (no time) — FullCalendar renders
       // these as all-day blocks. For timed events send full ISO datetime.
       if ($is_all_day) {
-        // Use PHP to convert timestamp to date in site timezone.
-        // Avoids FROM_UNIXTIME server-timezone dependency.
+        // Compute dates in site tz straight from the UTC timestamp — do NOT
+        // use the FROM_UNIXTIME strings (date_start/date_end), which render in
+        // MariaDB's session timezone (SYSTEM = UTC−7 on live, not
+        // America/Denver = UTC−6 in summer). That pushed a 2-day WO's midnight
+        // start back to 11pm the PRIOR day, so FullCalendar drew it starting a
+        // day early (WO 50485, scheduled 07-16→07-17, was showing on 07-15).
         $site_tz  = new \DateTimeZone(date_default_timezone_get());
-        $fc_start = (new \DateTime('@' . $row->date_ts, $site_tz))
-          ->setTimezone($site_tz)
-          ->format('Y-m-d');
-        $fc_end   = $fc_start;
+        $start_dt = (new \DateTime('@' . $row->date_ts, $site_tz))->setTimezone($site_tz);
+        // FullCalendar's all-day `end` is EXCLUSIVE — it must be the day AFTER
+        // the last covered day. Covered days = ceil(minutes / 1440); a single
+        // day gives +1 (end == start+1), which FC renders as one all-day cell.
+        $days     = max(1, (int) ceil($duration / 1440));
+        $fc_start = $start_dt->format('Y-m-d');
+        $fc_end   = (clone $start_dt)->modify("+{$days} day")->format('Y-m-d');
       }
       else {
         $fc_start = $row->date_start;

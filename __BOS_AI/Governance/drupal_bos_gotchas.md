@@ -940,6 +940,33 @@ this only bites child displays. Surfaced 2026-07-05 splitting the
 `identifier` of **`q`** collides with Drupal's reserved query param and throws a
 `CacheableAccessDeniedHttpException` (403) on submit — use any other identifier.
 
+## A VBO confirm form is replayable via the browser Back button
+
+Views Bulk Operations bakes the selected-entity list into the confirm form's
+**cached `form_state`** (`$form_state->get('views_bulk_operations')['list']`), and
+executes from *that*, not from the tempstore — `ConfirmAction::submitForm()` even
+calls `deleteTempstoreData()` before running the batch. Consequence: a confirm
+page built for selection X stays **submittable from browser history** even after
+the user has moved on to a different selection. On 2026-07-14 this mass-invoiced
+**82 WOs** — the office manager reached a confirm for an 82-row select-all, moved
+on to a 1-row selection and submitted that, then hit **Back** and re-submitted the
+stale 82-row confirm, which executed its original 82 rows. Neither a confirmation
+step (`add_confirmation`) nor an eligibility gate catches this: it's a
+*first-and-only* submit of a stale-but-valid form, not a duplicate.
+
+**Fix pattern (commit `b4317ee8`, `wo_actions`):** a `hook_form_FORM_ID_alter` on
+`views_bulk_operations_confirm_action` prepends a **validate** handler that
+requires the confirm form's baked-in selection to still match the user's **live
+tempstore** (`tempstore.private` → `views_bulk_operations_{view}_{display}` →
+uid). Validate runs *before* VBO's submit clears the tempstore, so a legitimate
+submit always matches and a stale/replayed one does not → block with
+`setErrorByName('')`. Compare a normalized signature (sorted `list` keys +
+`exclude_mode` + `total_results`), not the raw array, because `addListData()`
+adds label/count fields at build time. Same guard also stops a double-click
+double-submit (second pass sees an already-cleared tempstore). Scope the guard to
+the high-stakes actions by `action_id` — the mechanism is safe to apply broadly
+(legit flow always matches) but blast radius is smallest when targeted.
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

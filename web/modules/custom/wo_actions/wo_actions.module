@@ -1,6 +1,7 @@
 <?php
 
 use Drupal\Core\Asset\LibraryDiscoveryInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Implements hook_page_attachments_alter().
@@ -10,4 +11,85 @@ function wo_actions_page_attachments_alter(array &$attachments) {
   if (!empty($attachments['#children']) && strpos($attachments['#children'], 'views-bulk-operations-form') !== FALSE) {
     $attachments['#attached']['library'][] = 'wo_actions/custom_vbo_modal';
   }
+}
+
+/**
+ * High-stakes VBO actions guarded against stale-selection / browser-Back replay.
+ *
+ * @see wo_actions_vbo_confirm_selection_guard()
+ */
+const WO_ACTIONS_REPLAY_GUARDED = [
+  'mark_work_order_invoiced_action',
+  'mark_work_order_not_invoiced_action',
+];
+
+/**
+ * Implements hook_form_FORM_ID_alter() for views_bulk_operations_confirm_action.
+ *
+ * Anti-replay guard for financial WO bulk actions. On 2026-07-14 the office
+ * accidentally invoiced 82 WOs: a confirm page built for an 82-row selection
+ * was submitted via the browser Back button *after* the user had moved on to a
+ * different selection. VBO bakes the selection into the cached form_state, so
+ * the stale confirm still executed its original 82 rows even though the live
+ * tempstore had changed. The existing confirmation step and eligibility gate
+ * could not catch it (a first-and-only submit of a stale-but-valid form).
+ *
+ * Fix: at validate time — which runs BEFORE VBO's submit handler clears the
+ * tempstore — require the confirm form's baked-in selection to still match the
+ * user's LIVE tempstore selection for that view/display. A legitimate submit
+ * always matches (tempstore is intact until submit); a stale/replayed confirm
+ * does not (the tempstore was cleared or changed by the intervening action), so
+ * it is blocked with a friendly message and nothing executes. Also blocks a
+ * double-click double-submit (second pass sees an already-cleared tempstore).
+ */
+function wo_actions_form_views_bulk_operations_confirm_action_alter(array &$form, FormStateInterface $form_state, $form_id) {
+  // Prepend so the guard runs before any other validation.
+  array_unshift($form['#validate'], 'wo_actions_vbo_confirm_selection_guard');
+}
+
+/**
+ * Validate: block a confirm whose selection no longer matches live tempstore.
+ */
+function wo_actions_vbo_confirm_selection_guard(array &$form, FormStateInterface $form_state) {
+  $data = $form_state->get('views_bulk_operations');
+  if (empty($data['action_id']) || !in_array($data['action_id'], WO_ACTIONS_REPLAY_GUARDED, TRUE)) {
+    return;
+  }
+
+  $view_id = $data['view_id'] ?? '';
+  $display_id = $data['display_id'] ?? '';
+  $uid = (string) \Drupal::currentUser()->id();
+
+  // Live tempstore selection (VBO clears it in its submit handler, which runs
+  // AFTER this validate handler — so at validate it still reflects the user's
+  // current selection).
+  $live = \Drupal::service('tempstore.private')
+    ->get('views_bulk_operations_' . $view_id . '_' . $display_id)
+    ->get($uid);
+
+  if (_wo_actions_vbo_selection_sig($data) !== _wo_actions_vbo_selection_sig($live)) {
+    $count = isset($data['list']) && is_array($data['list']) ? count($data['list']) : 0;
+    $form_state->setErrorByName('', t('This confirmation is out of date — your current selection has changed, or this action was already submitted (for example, by using the browser Back button). Nothing was changed. Please return to the list, select the work orders again, and re-run the action.'));
+    \Drupal::logger('wo_actions')->warning(
+      'Blocked stale/replayed VBO confirm for @action (uid @uid, @n items) on @view:@display — baked selection did not match the live tempstore.',
+      ['@action' => $data['action_id'], '@uid' => $uid, '@n' => $count, '@view' => $view_id, '@display' => $display_id]
+    );
+  }
+}
+
+/**
+ * Stable signature of a VBO selection (entity keys + exclude mode + total),
+ * independent of the derived label/count fields addListData() adds.
+ */
+function _wo_actions_vbo_selection_sig(?array $data): string {
+  if ($data === NULL) {
+    return '';
+  }
+  $keys = array_keys(($data['list'] ?? []));
+  sort($keys);
+  return hash('sha256', json_encode([
+    'keys' => $keys,
+    'exclude' => !empty($data['exclude_mode']),
+    'total' => $data['total_results'] ?? NULL,
+  ]));
 }

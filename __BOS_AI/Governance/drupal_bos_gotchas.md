@@ -940,6 +940,31 @@ this only bites child displays. Surfaced 2026-07-05 splitting the
 `identifier` of **`q`** collides with Drupal's reserved query param and throws a
 `CacheableAccessDeniedHttpException` (403) on submit — use any other identifier.
 
+## A VBO bulk action with `add_confirmation: false` is a select-all footgun
+
+`show_select_all: always_hide` only hides VBO's **cross-page** "select all N
+results" link. Core `tableselect`'s **per-page header checkbox** still selects
+every visible row (and shift-click still range-selects), so on a view with no
+pager — or one page of rows — a single misclick selects everything. If the
+action then has **`add_confirmation: false`**, clicking it applies to every
+selected row *instantly*, with no count shown and nothing to catch the mistake.
+
+This has now bitten BOS twice, both times on a bulk action the office manager
+uses daily: the 2026-06-29 accidental mass-invoice (51 WOs → confirmation added
+to the six billing views on 06-30) and the 2026-07-15 contract-section
+`Mark "Yes"` that set **all 23 sections** of contract #4700 to Yes (commit
+`85f7bf11`). **Any VBO action that mutates money or client intent must carry
+`add_confirmation: true`** — the count in the prompt ("perform X on 23
+entities?") is the only thing that catches a *fresh* select-all mistake; the
+Back-button replay guard below cannot, because a select-all is a first-and-only
+submit, not a replay. Audit before adding a new bulk action:
+`grep -n "add_confirmation" config/sync/views.view.<id>.yml`.
+
+Note: `contract_sections_audit` records **which field changed**, the actor and
+the timestamp — **not old→new values** — so an audit record proves *that* a
+mass-change happened but not what each value became; reconstruct that from the
+corrective batch plus current state.
+
 ## A VBO confirm form is replayable via the browser Back button
 
 Views Bulk Operations bakes the selected-entity list into the confirm form's

@@ -16,11 +16,24 @@ function wo_actions_page_attachments_alter(array &$attachments) {
 /**
  * High-stakes VBO actions guarded against stale-selection / browser-Back replay.
  *
+ * The guard is entity-agnostic — it only compares the confirm form's baked-in
+ * selection against the live tempstore for that view/display — so actions from
+ * other modules can be listed here too.
+ *
  * @see wo_actions_vbo_confirm_selection_guard()
  */
 const WO_ACTIONS_REPLAY_GUARDED = [
+  // Financial: billing views (2026-07-14 accidental mass-invoice of 82 WOs).
   'mark_work_order_invoiced_action',
   'mark_work_order_not_invoiced_action',
+  // Contract intent: the contract_sections_admin_table "Mark Yes / Mark No /
+  // Request Quote" buttons (2026-07-15 — a select-all + Mark "Yes" set every
+  // section on contract #4700 to Yes). These mutate field_do_you_want, which
+  // drives what the client is contracted for and what WOs get generated, so
+  // they get the same replay protection as invoicing.
+  'contract_section_set_do_you_want_yes',
+  'contract_section_set_do_you_want_no',
+  'contract_section_set_do_you_want_request_quote',
 ];
 
 /**

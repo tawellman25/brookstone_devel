@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-11 (deferred_work.md reconciled + linked; off-server-backup + config-drift promoted)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-07-30 (Estimating epic phases 1/2/4a/4b/5 updated to reflect April 2026 estimate board rebuild — verified against live; Convert to Contract added to NEXT; swimlane rebuild archived)
 
 ---
 
@@ -24,16 +24,16 @@ Every item carries three dimensions so priority resolves honestly instead of a f
 ## NOW — revenue-blocking or in-season
 
 ### ⭐ Estimating epic — the revenue-conversion pipeline (T1, Effort L)
-This is the single highest-leverage cluster in the system. The pieces exist but nothing drives the chain end to end — "engine built, cockpit missing." It's how sold work becomes scheduled, billable work. Do this before anything else on the board. Ordered by dependency:
+This is the single highest-leverage cluster in the system. Substantially built April 2026. Pipeline board, status transitions, and acceptance auto-update are live. Two genuine gaps remain: client acceptance flow (Phase 3, deferred) and Convert to Contract button (Phase 4a, backlog). The "engine built, cockpit missing" description no longer applies. Ordered by dependency:
 
-| # | Phase | Module | Notes |
-|---|---|---|---|
-| 1 | Estimate creation from a Request | `estimate` | Estimator opens request → create estimate entity; bundle inferred from `field_service`. |
-| 2 | Estimate request status transitions | `estimate` | New → Assigned → In Progress → Pending Client Review → Accepted/Declined. Nothing drives stages today; sits at New. |
-| 3 | Client acceptance flow | `estimate` | Checkbox + e-signature capture + print/PDF fallback for older clients. |
-| 4a | Branch: recurring → Contract | `estimate` | Mow/spray/pre-emergent/check-ups: accepted estimate creates a **contract section**, not a WO. |
-| 4b | Branch: design-build → deposit → WO | `WorkOrderConverter` | Wire the existing converter to the acceptance trigger; deposit path. |
-| 5 | Estimator + client notifications | `estimate_notifications` | Module exists; complete the set (estimator on assign, client on ready). Depends on SMTP being live — verified DONE. |
+| # | Phase | Module | Status | Notes |
+|---|---|---|---|---|
+| 1 | Estimate creation from a Request | `estimate_intake` | ✅ BUILT | `estimate_intake` module auto-creates estimate entities on request save for services where `field_estimate_service = TRUE`. Estimator fills in line items manually. |
+| 2 | Estimate request status transitions | `estimate_board` | ✅ BUILT | Full pipeline board built April 2026: New — Gathering Info → Ready to Estimate → Estimating → Send Estimate → Waiting on Customer. AJAX one-click advancement, swimlane board, Needs Follow-Up section, On Hold feature, Accepted/Declined tabs. |
+| 3 | Client acceptance flow | `estimate` | ❌ NOT BUILT | No client-facing portal, e-signature capture, or acceptance email link. Verbal acceptance recorded manually in BOS. Significant build — deferred. |
+| 4a | Branch: recurring → Contract section | `estimate` / `estimate_board` | ⚠ PARTIAL | On estimate stage → Accepted (TID 1418): `estimate_entity_update` → `_estimate_update_contract_section_on_acceptance()` auto-sets the linked `contract_section.field_do_you_want = '4'` (Accepted/Price Confirmed) and copies the estimate total into the section's `field_estimate`. "Convert to Contract" button (full contract + sections from scratch) still on backlog. |
+| 4b | Branch: design-build → deposit → WO | `wo_project_pipeline` | ✅ BUILT | Deposit path fires WO auto-creation (via `hook_entity_insert`/`update` → `createWorkOrderFromEstimate()`): sprinkler-install gated on `field_contract_signed` + `field_signing_deposit_received`; landscaping/project container gated on `field_mobil_deposit_received`. Already live. |
+| 5 | Estimator notifications | `estimate_notifications` | ✅ BUILT | `assignment_notification` email fires when `field_assigned_to` is set. Client notification on estimate delivery not built. |
 
 ### ⭐ Voice-to-Work-Order — CORE SHIPPED 2026-07-04 (T1/T2)
 Speak into a phone → phone dictation transcribes → BOS creates a Work Order from the text.
@@ -74,8 +74,8 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 |---|---|---|---|---|
 | **⭐ Material price scraping — first real SiteOne end-to-end run** | `supplier_price_ingest` | T2 | M | The ingest pipeline is **built + live** but has **never been run against a real full SiteOne catalog** — that's the missing step. **3.10 (DDEV):** acquire a SiteOne catalog scrape (Claude-in-Chrome → CSV; first pass = irrigation + pvc + brass + galv), create the SiteOne `supplier_ingest_config` column mapping, run parse→match→dry-run→approve→commit, log + fix bugs. **3.11 (prod):** live DB snapshot → deploy fixes → first real ingest → verify (`material_suppliers`, `material_price_history`, `/admin/materials/price-review`) → 48-hr watch. **Then automate:** replace the manual Claude-in-Chrome scrape with the **Lever 3 Python/Playwright scraper** (after the Lever 2 family map). Full detail: `Architecture/supplier_pricing_pipeline_phase3_sequencing.md` §3.10–3.11; family rules in `Extraction/siteone_families.md`. |
 | **Off-server DB backup copies** | Infra / DR | T1 | S | Business continuity. Nightly `bos_db_backup.sh` keeps 14 rotating dumps in `~/db_backups` on live but **same-disk as the DB** — protects logical loss, not disk/server failure. Push the newest off-server (S3, or a scheduled pull to a workstation/NAS via `dev_scripts/brookstone-sync-db-from-live.sh`) + a "no backup in 36h" heartbeat alert. Detail: `deferred_work.md` #21. |
+| Convert to Contract action (recurring services) | `estimate` | T1 | M | When estimate request accepted: button creates/links a residential Contract, creates Contract Sections per accepted estimate (populated with pricing + scope), sets request to Converted. Services: mowing, spraying, pre-emergent, check-ups, cleanup, snow, etc. Design-build keeps deposit-based WO path. See `estimate.md` for full spec. Idempotency required. Completes Estimating epic Phase 4a (the current partial only auto-flips an already-linked section to Accepted). |
 | TimeTrax live SQL-read integration | `bos_teammate_operations` | T2 | L | Foundation + swappable `CompensableHoursService` on 8.5hr assumption built. Swap in real SQL Server read (Punch/Employee/EmployeeCards, PunchKey idempotency). Labor-cost accuracy. |
-| Estimate board pipeline swimlane rework | `estimate_board` | T2 | M | Build prompt produced; replace single "Active Pipeline" with per-status swimlanes + color. Pending Code execution. |
 | wo_clock — foreman crew-status view + end-of-day notifications (Phase B/C) | `wo_clock` | T2 | M | Phase A shipped (clock-in/out redesign + silent GPS + attribution). Next: foreman "who's still clocked in" view + end-of-day open-clock-in alerting. Flag-path retirement is the winter cleanup (see LATER). |
 | Status-service refactor → **`WorkOrderStatusService`** | `wo_status_updates` | T2 | M | Fixes presave-saves-the-WO coupling. Call sites: `update_spraying_info_from_invoiced_work_order`, `update_work_order_invoiced_action`. Canonical name settled 2026-07-04 (`WorkOrderStatusService` — broader than invoicing). |
 | Fuel surcharge — full build from zero | `wo_sign_off` + 36 bundles | T2 | L | **Greenfield confirmed (2026-07-04).** Exhaustive search found **zero trace** of any "Phase 1": no branch (local/remote), no commit across all refs, no stash/reflog, no design doc, and live has no field/toggle/per-zip rate on zipcodes, business_setting, or any work_order bundle. The 05-04 "Phase 1 complete" was a Chat-side plan that was never coded. Build all of it: per-zip rates + business_setting toggle + 36-bundle fields + sign-off math. |
@@ -190,6 +190,8 @@ These are shipped, live systems whose only blocker is human adoption, not engine
 ---
 
 ## ✅ Shipped — verified DONE 2026-07-03 (archive next cycle)
+
+**Estimate board full rebuild — SHIPPED April 2026.** `estimate_board` module rebuilt end-to-end: single-pipeline per-status swimlanes (New — Gathering Info / Ready to Estimate / Estimating / Send Estimate / Waiting on Customer), AJAX ← Back / Next → / ✕ Decline buttons per row, On Hold flag + date + auto-lift, Needs Follow-Up section, Accepted and Declined tabs, filter bar, row limit, collapsible swimlanes with localStorage persistence, pipeline help modal, My Estimates swimlane board for estimators with stage advancement, + New Request inline form tab. Scope summary validation: blocks In Preparation → Under Review if placeholder text; does not fire if In Preparation skipped. _(Verified 2026-07-30 against live: module enabled; stage TIDs 1652/1654/1655/1810/1656 + swimlane/On-Hold/My-Estimates code present.)_
 
 All modules enabled (estimate_board, estimate_notifications, calendars, scheduling, teammate-ops, WEX, price-sync/ingest, backflow, sign-off/notes/schedule/sprinkler-checkup, SMTP/Symfony Mailer stack) · commits 5e76da8a, 7c8c2334, 8cc2b0f4, 8a72d4ae, 0a943fcf · warranty sign-off path (175ea571, status 1283) · billing status floor IN(1097,1281) on 5 crew views · select-all disabled on all 6 billing views · weed-pulling "Bucket or Less" / "2-3 Buckets" · David Garcia teammate_profile + WEX prompt (1225) · WEX odometer/driver cleanup · WO#49698 reconciliation · migrate_devel removed from core.extension · no recent errors for checkup / sprinkler-checkup-date / material-price-sync.
 

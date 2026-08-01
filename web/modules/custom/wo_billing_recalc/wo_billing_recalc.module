@@ -1,0 +1,154 @@
+<?php
+
+/**
+ * @file
+ * Auto-recompute WO billing totals when a billing child record changes.
+ *
+ * Problem this solves: the per-bundle wo_* modules recompute a Work Order's
+ * billing totals (materials, rentals, chemicals, dump, labor) in their
+ * hook_entity_presave — but ONLY when the work_order itself is saved while
+ * Complete (1097). So when the office fixes a material or adds an equipment
+ * rental AFTER a WO is signed off, the totals go stale until someone manually
+ * re-opens the sign-off form and re-saves it just to trigger the recalc.
+ *
+ * This module removes that manual step: when a billing child entity is
+ * inserted, updated, or deleted, it re-saves the parent Work Order, which
+ * cascades through the existing wo_* presave logic and refreshes the totals.
+ *
+ * Deliberately gated to Complete (1097) ONLY. Once a WO is Invoiced (1281),
+ * Paid (1504), Warrantied (1283), or Canceled (1098), its totals are frozen —
+ * a child edit does NOT silently move a number that may already be in
+ * QuickBooks. To revise a historical (billed) WO, the office deliberately moves
+ * it back to Complete first (a tracked status-update action); the edits then
+ * auto-recalc while it's Complete, and it gets re-invoiced. Several purposeful,
+ * logged actions — by design.
+ *
+ * Time-clock entries (wo_time_clock) are intentionally NOT handled here — they
+ * already auto-recalc via wo_total_time's _wo_total_time_trigger_wo_recalc().
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Billing child entity types whose changes should refresh the parent WO.
+ */
+const WO_BILLING_RECALC_CHILD_TYPES = [
+  'wo_material_list',
+  'wo_material_list_item',
+  'wo_rental_equipment',
+  'wo_chemicals_used',
+  'wo_material_dumping',
+];
+
+/**
+ * The only status at which a child change triggers a recompute. Complete.
+ * (In Progress needs no recompute — totals aren't final until sign-off; billed
+ * statuses stay frozen.)
+ */
+const WO_BILLING_RECALC_STATUS = 1097;
+
+/**
+ * Implements hook_entity_insert().
+ */
+function wo_billing_recalc_entity_insert(EntityInterface $entity) {
+  _wo_billing_recalc_from_child($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function wo_billing_recalc_entity_update(EntityInterface $entity) {
+  _wo_billing_recalc_from_child($entity);
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function wo_billing_recalc_entity_delete(EntityInterface $entity) {
+  _wo_billing_recalc_from_child($entity);
+}
+
+/**
+ * Re-save the parent WO (if Complete) so its billing totals recompute.
+ */
+function _wo_billing_recalc_from_child(EntityInterface $entity): void {
+  if (!in_array($entity->getEntityTypeId(), WO_BILLING_RECALC_CHILD_TYPES, TRUE)) {
+    return;
+  }
+
+  $wo_id = _wo_billing_recalc_resolve_wo_id($entity);
+  if ($wo_id <= 0) {
+    return;
+  }
+
+  // Loop guard: the WO re-save below does not save any of these child types
+  // (the wo_* presave only READS them), but guard defensively against re-entry.
+  static $processing = [];
+  if (isset($processing[$wo_id])) {
+    return;
+  }
+
+  $wo = \Drupal::entityTypeManager()->getStorage('work_order')->load($wo_id);
+  if (!$wo || !$wo->hasField('field_status')) {
+    return;
+  }
+
+  // Only recompute while Complete. Billed/closed WOs stay frozen — see the
+  // file header for the deliberate-revision path.
+  if ((int) ($wo->get('field_status')->target_id ?? 0) !== WO_BILLING_RECALC_STATUS) {
+    return;
+  }
+
+  $processing[$wo_id] = TRUE;
+  try {
+    // Cascades through the bundle's wo_* hook_entity_presave, which recomputes
+    // field_material_chemical_total / field_rental_total / field_dump_fee_total
+    // / field_wo_total from the current child records.
+    $wo->save();
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('wo_billing_recalc')->error(
+      'Auto-recalc save failed for WO @id after a @type change: @msg',
+      ['@id' => $wo_id, '@type' => $entity->getEntityTypeId(), '@msg' => $e->getMessage()]
+    );
+  }
+  finally {
+    unset($processing[$wo_id]);
+  }
+}
+
+/**
+ * Resolve the parent work_order id from a billing child entity.
+ *
+ * Link chains (verified against the wo_* billing queries):
+ *   - wo_chemicals_used / wo_material_dumping / wo_material_list → field_work_order
+ *   - wo_rental_equipment → field_rented_for
+ *   - wo_material_list_item → field_list_id → wo_material_list → field_work_order
+ */
+function _wo_billing_recalc_resolve_wo_id(EntityInterface $entity): int {
+  $type = $entity->getEntityTypeId();
+
+  if (in_array($type, ['wo_chemicals_used', 'wo_material_dumping', 'wo_material_list'], TRUE)) {
+    return ($entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty())
+      ? (int) $entity->get('field_work_order')->target_id
+      : 0;
+  }
+
+  if ($type === 'wo_rental_equipment') {
+    return ($entity->hasField('field_rented_for') && !$entity->get('field_rented_for')->isEmpty())
+      ? (int) $entity->get('field_rented_for')->target_id
+      : 0;
+  }
+
+  if ($type === 'wo_material_list_item') {
+    if ($entity->hasField('field_list_id') && !$entity->get('field_list_id')->isEmpty()) {
+      $list = $entity->get('field_list_id')->entity;
+      if ($list && $list->hasField('field_work_order') && !$list->get('field_work_order')->isEmpty()) {
+        return (int) $list->get('field_work_order')->target_id;
+      }
+    }
+    return 0;
+  }
+
+  return 0;
+}

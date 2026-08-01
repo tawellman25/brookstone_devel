@@ -588,6 +588,12 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
     array_unshift($form['#validate'], '_wo_sign_off_assert_mowing_roster_populated');
   }
   $form['#validate'][] = '_wo_sign_off_reconciliation_validate';
+  // Graceful form-layer counterpart to the entity-presave open-clock-in guard
+  // (_wo_sign_off_assert_no_open_clockins). Runs AFTER reconciliation validate
+  // so it only flags open clock-ins the reconciliation will NOT close (crew who
+  // aren't on the roster). Turns the fatal EntityStorageException into a clean
+  // inline error. The presave guard stays as the backstop for non-form paths.
+  $form['#validate'][] = '_wo_sign_off_open_clockin_form_guard';
   if (isset($form['actions']['submit']['#submit'])) {
     array_unshift($form['actions']['submit']['#submit'], '_wo_sign_off_reconciliation_submit');
   }
@@ -1846,6 +1852,18 @@ function _wo_sign_off_assert_no_open_clockins(EntityInterface $entity): void {
  *   Display names (or "uid=N" when the user can't be loaded).
  */
 function _wo_sign_off_open_clockin_names(int $wo_id): array {
+  return array_values(_wo_sign_off_open_clockin_map($wo_id));
+}
+
+/**
+ * Open clock-ins on a WO, keyed by teammate uid → display name.
+ *
+ * An "open" entry is a wo_time_clock with no field_end_time (still clocked in).
+ * Shared by the entity-presave guard (names only) and the form-layer guard
+ * (which needs the uids to exclude crew who are on the submitted roster and so
+ * will be closed by reconciliation).
+ */
+function _wo_sign_off_open_clockin_map(int $wo_id): array {
   $storage = \Drupal::entityTypeManager()->getStorage('wo_time_clock');
   $ids = $storage->getQuery()
     ->accessCheck(FALSE)
@@ -1868,5 +1886,70 @@ function _wo_sign_off_open_clockin_names(int $wo_id): array {
     $u = $uid ? $user_storage->load($uid) : NULL;
     $names[$uid] = $u ? $u->getDisplayName() : "uid=$uid";
   }
-  return array_values($names);
+  return $names;
+}
+
+/**
+ * Form-layer validate: graceful "still clocked in" message on the sign-off
+ * form, so the office sees a clean inline error instead of the fatal
+ * EntityStorageException the entity-presave guard throws.
+ *
+ * Only flags open clock-ins the save will NOT resolve — i.e. crew who are still
+ * clocked in but are NOT on the roster being submitted. Roster members with an
+ * open entry are handled by the reconciliation flow (their entries are closed
+ * at submit), so they are excluded here to avoid blocking the normal path.
+ * Cancellations are skipped, mirroring the presave guard.
+ */
+function _wo_sign_off_open_clockin_form_guard(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof EntityFormInterface) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  $entity_type = $entity->getEntityTypeId();
+  if ($entity_type !== 'wo_complete_info' && $entity_type !== 'wo_tasks_list') {
+    return;
+  }
+  /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
+  $svc = \Drupal::service('wo_sign_off.crew_roster');
+  if (!$svc->isInScope($entity_type, $entity->bundle())) {
+    return;
+  }
+
+  $values = $form_state->getValues();
+
+  // Cancellations don't require closing clock-ins (matches the presave guard).
+  if ($entity->hasField('field_canceled') && !empty($values['field_canceled'][0]['value'])) {
+    return;
+  }
+
+  $wo_id = (int) ($values['field_work_order'][0]['target_id'] ?? $entity->get('field_work_order')->target_id ?? 0);
+  if ($wo_id <= 0) {
+    return;
+  }
+
+  $open = _wo_sign_off_open_clockin_map($wo_id);
+  if (empty($open)) {
+    return;
+  }
+
+  // Crew on the submitted roster will have their open entries closed by the
+  // reconciliation submit handler — exclude them so we only surface the ones
+  // that would still be open (and would trip the entity-presave guard).
+  $roster_uids = $svc->normalizeRosterFromFormState($values, $entity_type, $entity->bundle());
+  foreach (array_keys($open) as $uid) {
+    if (in_array((int) $uid, $roster_uids, TRUE)) {
+      unset($open[$uid]);
+    }
+  }
+  if (empty($open)) {
+    return;
+  }
+
+  $names = implode(', ', array_values($open));
+  $is_are = count($open) === 1 ? 'is' : 'are';
+  $form_state->setErrorByName('', t('This work order can’t be signed off yet — @names @isare still clocked in and not on the crew list. Add them to the crew (their time will be recorded and closed) or have them clock out, then sign off again.', [
+    '@names' => $names,
+    '@isare' => $is_are,
+  ]));
 }

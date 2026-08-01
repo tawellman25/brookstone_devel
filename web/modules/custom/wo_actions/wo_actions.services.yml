@@ -1,0 +1,12 @@
+services:
+  # Redirects the VBO confirm page to the list when the selection is empty,
+  # instead of letting contrib VBO fatal with a TypeError (getFormData ->
+  # addListData(null)). See src/EventSubscriber/VboConfirmGuardSubscriber.php.
+  wo_actions.vbo_confirm_guard:
+    class: Drupal\wo_actions\EventSubscriber\VboConfirmGuardSubscriber
+    arguments:
+      - '@tempstore.private'
+      - '@current_user'
+      - '@messenger'
+    tags:
+      - { name: event_subscriber }

@@ -965,6 +965,32 @@ the timestamp — **not old→new values** — so an audit record proves *that* 
 mass-change happened but not what each value became; reconstruct that from the
 corrective batch plus current state.
 
+## A VBO confirm page fatals (WSOD) when loaded with an empty selection
+
+Contrib VBO's confirm form crashes with a fatal `TypeError` when the page is
+built with no live selection: `ConfirmAction::getFormData()` reads a **NULL**
+tempstore and passes it straight to `addListData(array $form_data)` →
+*"Argument #1 ($form_data) must be of type array, null given"* (VBO 4.4.5). The
+office hit this white-screen (2026-07-31) by loading the billing confirm URL
+after their batch had already run — **browser Back to the confirm page, or a
+refresh** — so the tempstore had been cleared. Nothing was actually wrong (the
+invoices went through); it's purely a build-time crash on an empty selection.
+
+The fatal is in contrib code during form **BUILD**, before any
+`hook_form_alter`, so it **cannot** be caught with a form alter or a validate
+handler. Fix pattern (commit `a319f234`, `wo_actions`): a **`kernel.request`
+event subscriber** at **priority 30** (after Symfony's RouterListener at 32 sets
+the `view_id`/`display_id` route params, before the controller/form is built)
+that targets only the `views_bulk_operations.confirm` route, checks the user's
+live tempstore (`views_bulk_operations_{view}_{display}` → uid), and on an empty
+selection sets a `RedirectResponse` to the view list
+(`view.{view_id}.{display_id}`, access-checked) with a friendly message instead
+of letting the form build and fatal. A live selection is left untouched.
+
+This is the load-side companion to the submit-side replay guard below — same
+root behavior (stale/absent selection reaching the confirm step), two entry
+points.
+
 ## A VBO confirm form is replayable via the browser Back button
 
 Views Bulk Operations bakes the selected-entity list into the confirm form's

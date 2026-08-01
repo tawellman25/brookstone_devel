@@ -236,6 +236,30 @@ Long-standing bug closed by Phase 2c: an empty `field_mowing_who_on_site` makes 
 
 Catches programmatic writes that bypass the form layer. Same `_wo_sign_off_assert_roster_complete()` helper as the Phase 2b guard — that helper is polymorphic across both entity types via the WoCrewRosterService.
 
+### Open-clock-in guard — graceful form message + presave backstop (2026-08-01)
+
+Sign-off is refused while any crew member is still clocked in (an open
+`wo_time_clock` entry — no `field_end_time`) on the WO. Two layers:
+
+- **Form layer (graceful):** `_wo_sign_off_open_clockin_form_guard()`, a
+  `#validate` handler registered in `wo_sign_off_form_alter` after the
+  reconciliation validate, sets a clean inline error. It flags **only** open
+  clock-ins that the save will not resolve — crew still clocked in who are **not
+  on the submitted roster**. Roster members with an open entry are closed by the
+  reconciliation submit, so they're excluded here (otherwise the normal flow
+  would be blocked). Cancellations skipped. Message tells the office to add the
+  person to the crew (records + closes their time) or have them clock out.
+- **Presave backstop:** `_wo_sign_off_assert_no_open_clockins()` (called from
+  `wo_sign_off_entity_presave`, and mirrored for `wo_tasks_list`) throws
+  `EntityStorageException` on **any** open clock-in, catching non-form paths
+  (REST/VBO/programmatic). Bypassed for cancellations and the in-flight
+  reconciliation save (`_signoff_reconciliation_in_progress`).
+
+Before 2026-08-01 the presave throw was the only layer, so a foreman signing off
+with someone still clocked in (WO #50967 — "Kyle McElhaney") got a Drupal WSOD
+instead of a message. Both layers share `_wo_sign_off_open_clockin_map($wo_id)`
+(uid→name); `_wo_sign_off_open_clockin_names()` delegates to it.
+
 ## Existing presave / update / delete behavior (pre-Phase 2)
 
 ### `hook_entity_presave` for wo_complete_info

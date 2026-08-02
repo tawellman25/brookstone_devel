@@ -48,15 +48,31 @@ writes them to S3**; unique paths, no risk to existing files.
 > `fgetcsv` enclosure on the header's first cell — headers are normalized
 > (strip BOM + stray quotes) so `Type` matches.
 
-## Gallery — `bos_property_gallery`
+## Gallery — Views (built by `web/scripts/build_gallery_views.php`)
 
-- **Staff "Gallery" tab** (`/properties/{properties}/gallery`, local task beside
-  Work Orders; staff-role access) — a controller renders **all** gallery media
-  for the property in the `gallery` view mode, each with a Public / Not-public
-  badge + edit-to-toggle link.
-- **Public gallery** — `hook_ENTITY_TYPE_view` (properties, `full` mode) appends
-  the gallery of `field_public_ok = 1` + published media. The property default
-  display is not Layout Builder, so the hook renders. Colorbox + SEO alt/captions.
+**Both galleries are Drupal Views** so the office can adjust filters/sorting/
+columns in the Views UI (a first controller/hook build was replaced per the
+"list UIs must be Views" rule — see `feedback_prefer_views_ask_before_bespoke`).
+
+- **`property_photos`** — STAFF "Gallery" tab: a **page display + local task** at
+  `properties/%properties/gallery` (beside Work Orders/Contracts/Estimates),
+  staff-role access. Contextual filter on `media.field_property` (from the URL).
+  Shows **all** photo media for the property (archive + WO, public + held) as a
+  flat responsive grid, newest first, with a **Public/Held** badge + edit
+  operation per item so staff review and opt photos into the public gallery.
+- **`property_photos_public`** — PUBLIC gallery: an **EVA** (`entity_view`
+  display, `argument_mode: token`) that auto-attaches to the property full page,
+  filtered to `field_public_ok = 1` + published. Flat grid, public access.
+
+Both render the media **source fields directly** — `field_media_image_1` via the
+**Colorbox** formatter (thumbnail `medium`, lightbox `max_1300x1300`, gallery
+prev/next, `alt` as caption for SEO) and `field_media_video_file_1` via the video
+player — NOT `rendered_entity` (which doesn't render reliably inside a view).
+Grid CSS is attached by the trimmed `bos_property_gallery` module
+(`hook_views_pre_render` → `bos_property_gallery/gallery` library).
+
+> The `gallery` media view mode created by the setup script is now unused by the
+> views (they render source fields directly); left in place, harmless.
 
 ## Dev vs live note
 

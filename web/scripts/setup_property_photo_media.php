@@ -300,6 +300,9 @@ foreach ($galleryDisplays as $bundle => [$srcField, $formatter]) {
     continue;
   }
   $gd = $repo->getViewDisplay($MEDIA, $bundle, 'gallery');
+  // The gallery view mode display must be ENABLED (status TRUE), else Views'
+  // rendered_entity field renders empty in this mode.
+  $gd->setStatus(TRUE);
   // Hide everything except the source field.
   foreach (array_keys($gd->getComponents()) as $c) {
     $gd->removeComponent($c);

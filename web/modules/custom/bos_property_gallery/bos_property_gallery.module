@@ -2,73 +2,17 @@
 
 /**
  * @file
- * Public property-page photo gallery.
- *
- * The staff "Gallery" tab (all photos + review flag) is a controller/local task
- * — see PropertyGalleryController. This file adds the PUBLIC gallery embedded on
- * the property's canonical page: only photos flagged field_public_ok = on (and
- * published), rendered as a Colorbox grid with SEO alt/captions.
+ * Property photo gallery — presentation is now Views (property_photos staff tab
+ * + property_photos_public EVA). This module only attaches the gallery grid CSS
+ * to those views. (The earlier controller/hook implementation was replaced by
+ * Views so filters are adjustable in the UI.)
  */
-
-use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 
 /**
- * Bundles shown in a property gallery.
+ * Implements hook_views_pre_render().
  */
-const BOS_PROPERTY_GALLERY_BUNDLES = ['property_photo', 'property_video', 'wo_images', 'wo_videos'];
-
-/**
- * Implements hook_ENTITY_TYPE_view() for properties.
- *
- * Appends the public gallery to the full property page.
- */
-function bos_property_gallery_properties_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
-  if ($view_mode !== 'full') {
-    return;
+function bos_property_gallery_views_pre_render(\Drupal\views\ViewExecutable $view) {
+  if (in_array($view->id(), ['property_photos', 'property_photos_public'], TRUE)) {
+    $view->element['#attached']['library'][] = 'bos_property_gallery/gallery';
   }
-
-  $storage = \Drupal::entityTypeManager()->getStorage('media');
-  // Public gate: published AND flagged for the public gallery. accessCheck TRUE
-  // so media access is still honored for anonymous visitors.
-  $mids = $storage->getQuery()
-    ->accessCheck(TRUE)
-    ->condition('field_property', $entity->id())
-    ->condition('field_public_ok', 1)
-    ->condition('status', 1)
-    ->condition('bundle', BOS_PROPERTY_GALLERY_BUNDLES, 'IN')
-    ->sort('created', 'DESC')
-    ->execute();
-
-  if (empty($mids)) {
-    return;
-  }
-
-  $viewBuilder = \Drupal::entityTypeManager()->getViewBuilder('media');
-  $items = [];
-  foreach ($storage->loadMultiple($mids) as $media) {
-    $items[] = [
-      '#type' => 'container',
-      '#attributes' => ['class' => ['bos-gallery__item']],
-      'media' => $viewBuilder->view($media, 'gallery'),
-    ];
-  }
-
-  $build['bos_property_gallery'] = [
-    '#type' => 'container',
-    '#attributes' => ['class' => ['bos-gallery-public']],
-    '#weight' => 50,
-    '#attached' => ['library' => ['bos_property_gallery/gallery']],
-    // Cache: rebuild when the property or any media changes.
-    '#cache' => [
-      'tags' => ['media_list', 'properties:' . $entity->id()],
-      'contexts' => ['user.permissions'],
-    ],
-    'title' => ['#markup' => '<h2 class="bos-gallery__section-title">' . t('Photo Gallery') . '</h2>'],
-    'grid' => [
-      '#type' => 'container',
-      '#attributes' => ['class' => ['bos-gallery']],
-      'items' => $items,
-    ],
-  ];
 }

@@ -1,0 +1,8 @@
+services:
+  bos_photo_import.import_service:
+    class: Drupal\bos_photo_import\Service\PropertyPhotoImportService
+    arguments:
+      - '@entity_type.manager'
+      - '@file.repository'
+      - '@file_system'
+      - '@logger.factory'

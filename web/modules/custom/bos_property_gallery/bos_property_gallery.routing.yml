@@ -1,0 +1,12 @@
+bos_property_gallery.tab:
+  path: '/properties/{properties}/gallery'
+  defaults:
+    _controller: '\Drupal\bos_property_gallery\Controller\PropertyGalleryController::staffGallery'
+    _title: 'Gallery'
+  requirements:
+    _custom_access: '\Drupal\bos_property_gallery\Controller\PropertyGalleryController::staffAccess'
+  options:
+    parameters:
+      properties:
+        type: 'entity:properties'
+    _admin_route: TRUE

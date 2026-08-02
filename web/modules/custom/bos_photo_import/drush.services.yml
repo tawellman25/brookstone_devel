@@ -1,0 +1,8 @@
+services:
+  bos_photo_import.commands:
+    class: Drupal\bos_photo_import\Commands\PhotoImportCommands
+    arguments:
+      - '@bos_photo_import.import_service'
+      - '@logger.factory'
+    tags:
+      - { name: drush.command }

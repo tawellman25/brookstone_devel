@@ -57,9 +57,12 @@ with `field_common_name` set.
 - `web/scripts/setup_it_equipment_bundle.php` — one-time-per-env bundle + fields
   + terms + displays setup.
 
-## Deploy (pending)
+## Deploy
 
-Tested in DDEV only. Live rollout = `scp` the module + setup script → `drush en
-bos_it_import` → run `setup_it_equipment_bundle.php` on live → `it:import` the
-baseline → verify → `cr`. No `cim` (ECK/field configs silent-skip; the setup
-script is the deploy path). Awaiting go-ahead.
+**Deployed live 2026-08-01** (commit `b14b4949`): `scp` module + setup script →
+`drush en bos_it_import` → ran `setup_it_equipment_bundle.php` → `it:import` the
+baseline → verified (13 records; 5 PC / 3 switch / 2 printer / 1 gateway / 1 NAS
+/ 1 unidentified; Active status; full PC posture) → `cr`. No `cim`, no DB
+migration, no maintenance mode. The staged baseline XLSX was removed from live
+after the import. Re-imports (updated baselines) just re-run `it:import` — the
+Asset-ID key keeps it idempotent.

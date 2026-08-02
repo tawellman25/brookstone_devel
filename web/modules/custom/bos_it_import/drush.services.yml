@@ -1,0 +1,8 @@
+services:
+  bos_it_import.import_commands:
+    class: Drupal\bos_it_import\Commands\ItImportCommands
+    arguments:
+      - '@bos_it_import.import_service'
+      - '@logger.factory'
+    tags:
+      - { name: drush.command }

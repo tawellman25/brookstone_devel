@@ -74,7 +74,18 @@ array and inode caps, not about BOS needing terabytes. This makes sizing easy
 - **Managed VPS with root** — provider does OS/security/hardware/network +
   offers a 2am support line; we keep root for instant app fixes and full control
   of disk; **our existing rsync + partial-cim + drush workflow transfers
-  unchanged.** Chosen.
+  unchanged.** Chosen *in principle*.
+
+> **⚠️ 2026-08-02 finding — Hosting.com doesn't sell "managed WITH root."**
+> Research (see §10a) confirms Hosting.com's **managed** line (VPS / VDS /
+> dedicated) is **CloudLinux + cPanel/WHM + LiteSpeed with NO root by design** —
+> i.e. our *exact current friction stack*. Root is only on their **unmanaged**
+> dedicated/cloud. So on Hosting.com the shape that fits our goals is **an
+> *unmanaged* root box on a plain OS, with the ops burden automated by us**
+> (§7, §9) to keep the "owner's time" cost low — plus, optionally, a Hosting.com
+> monitoring/management *add-on* if sales offers one. The reseller endeavors can
+> live on a **separate managed cPanel/WHM plan** under the same account, so
+> vendor/billing consolidation is preserved without dragging BOS onto cPanel.
 
 ---
 
@@ -250,6 +261,41 @@ it *before* cutover:
 9. IP: static IP included? Any egress limits that would affect S3 traffic?
 
 ---
+
+## 10a. Hosting.com product research (2026-08-02)
+
+Findings from Hosting.com's public pages + third-party sources:
+
+- **Managed dedicated servers exist** — 5 tiers (US-based, 2 free IPs, configs
+  combinable, "stock limited → contact sales", pricing sales-only):
+
+  | Tier | CPU | RAM | Storage |
+  |---|---|---|---|
+  | Intel Tier 1 | Intel E-2224 | 16 GB | 1 TB RAID1 NVMe |
+  | AMD Tier 1 | Ryzen 7600 | 16 GB | 960 GB RAID1 NVMe |
+  | Intel Tier 2 | Xeon Silver 4210R | 64 GB | 1 TB RAID1 NVMe |
+  | AMD Tier 2 | EPYC 7232 | 64 GB | 1 TB RAID1 NVMe |
+  | AMD Tier 3 | 2× EPYC 7252 | 128 GB | 960 GB RAID1 NVMe |
+
+  Also **VDS** (virtual dedicated, "scale with a reboot") up to "VDS Premium 256"
+  + custom builds.
+- **Spec is not the constraint.** Files are on S3, so BOS's server footprint is
+  code + DB + caches; even the entry 16 GB / 1 TB tier is oversized for us.
+- **The blocker:** the **managed** line = **CloudLinux + cPanel/WHM + LiteSpeed,
+  NO root by design.** That is our current friction stack. **Root only on
+  unmanaged.** → We want **unmanaged** (plain OS + root), ops automated by us.
+- **Reseller consolidation is still fine** — run reseller hosting on a separate
+  managed cPanel/WHM plan; keep BOS on the unmanaged root box; one Hosting.com
+  account.
+
+**Sharpened sales questions (supersede/extend §10):**
+- Confirm an **unmanaged dedicated OR cloud** offering with **root** + choice of
+  **AlmaLinux 9 / Ubuntu LTS** (no forced cPanel/CloudLinux/LiteSpeed).
+- Can we **resize disk / RAM / CPU** on the unmanaged tier with minimal downtime?
+- Do you offer an **à-la-carte management/monitoring add-on** on unmanaged boxes
+  (best-of-both: our root + your patching/monitoring safety net)?
+- Snapshots/images, off-site backup storage, outbound SMTP for cron alerts,
+  static IP, S3 egress — all as in §10.
 
 ## 11. Cutover (only after §8 is clean)
 

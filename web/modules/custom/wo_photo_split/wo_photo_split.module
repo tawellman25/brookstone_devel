@@ -1,0 +1,127 @@
+<?php
+
+/**
+ * @file
+ * Splits multi-image wo_images media into one media entity per photo.
+ *
+ * Technicians bulk-upload many photos into a single wo_images media (one
+ * "Photos of" label, phone-friendly). Because field_public_ok lives on the
+ * media entity, that made the whole batch public-or-not as a unit. Splitting
+ * each batch into one media per photo gives per-photo public control while
+ * keeping the bulk-upload UX and the grouped "Stage → Photos of" display (Views
+ * grouping clusters the individual media back together by their shared text).
+ *
+ * The split runs automatically on media insert/update (any creation path), and
+ * a one-time drush migration (wo:photos:split) splits pre-existing batches.
+ */
+
+use Drupal\media\MediaInterface;
+
+/**
+ * Bundle + image field this module operates on.
+ */
+const WO_PHOTO_SPLIT_BUNDLE = 'wo_images';
+const WO_PHOTO_SPLIT_IMAGE_FIELD = 'field_media_image_1';
+
+/**
+ * Context/grouping fields copied from the batch onto each split photo.
+ *
+ * field_public_ok is inherited too, so splitting never changes what is public:
+ * a batch that was public stays public on every photo (admin can then exclude
+ * individuals); a held batch stays held.
+ */
+const WO_PHOTO_SPLIT_INHERIT = [
+  'field_photos_of',
+  'field_stage',
+  'field_work_order',
+  'field_property',
+  'field_public_ok',
+];
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for media.
+ */
+function wo_photo_split_media_insert(MediaInterface $media) {
+  _wo_photo_split_maybe_split($media);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for media.
+ */
+function wo_photo_split_media_update(MediaInterface $media) {
+  _wo_photo_split_maybe_split($media);
+}
+
+/**
+ * Splits a multi-image wo_images media into one media per photo.
+ *
+ * Keeps the first image on the original media and creates a new wo_images media
+ * for each additional image, inheriting the grouping/context fields (and the
+ * public flag). Children are created BEFORE the original is trimmed, so every
+ * file's usage count stays >= 1 the entire time — no file is ever orphaned
+ * (safe on S3; no files are moved or copied, only references reassigned).
+ *
+ * @param \Drupal\media\MediaInterface $media
+ *   The media entity that was just saved.
+ *
+ * @return int
+ *   Number of new media entities created (0 if nothing to split).
+ */
+function _wo_photo_split_maybe_split(MediaInterface $media): int {
+  // Reentrancy guard: the child->save() and the trim save() below re-fire the
+  // insert/update hooks; single-image entities are skipped anyway, but this
+  // guarantees no recursion during the operation.
+  static $in_progress = FALSE;
+  if ($in_progress) {
+    return 0;
+  }
+  if ($media->bundle() !== WO_PHOTO_SPLIT_BUNDLE || !$media->hasField(WO_PHOTO_SPLIT_IMAGE_FIELD)) {
+    return 0;
+  }
+  $items = $media->get(WO_PHOTO_SPLIT_IMAGE_FIELD)->getValue();
+  if (count($items) <= 1) {
+    return 0;
+  }
+
+  $in_progress = TRUE;
+  $created = 0;
+  try {
+    $storage = \Drupal::entityTypeManager()->getStorage('media');
+    $first = $items[0];
+    $rest = array_slice($items, 1);
+
+    foreach ($rest as $item) {
+      $child = $storage->create([
+        'bundle' => WO_PHOTO_SPLIT_BUNDLE,
+        'uid' => $media->getOwnerId(),
+        'created' => $media->getCreatedTime(),
+        'status' => $media->isPublished(),
+        WO_PHOTO_SPLIT_IMAGE_FIELD => [$item],
+      ]);
+      foreach (WO_PHOTO_SPLIT_INHERIT as $f) {
+        if ($media->hasField($f) && $child->hasField($f)) {
+          $child->set($f, $media->get($f)->getValue());
+        }
+      }
+      $child->save();
+      $created++;
+    }
+
+    // Trim the original down to its first photo. The moved files are already
+    // held by the new children, so usage never drops to 0.
+    $media->set(WO_PHOTO_SPLIT_IMAGE_FIELD, [$first]);
+    $media->save();
+  }
+  finally {
+    $in_progress = FALSE;
+  }
+
+  if ($created > 0) {
+    \Drupal::logger('wo_photo_split')->info('Split wo_images media @id into 1 + @n individual photo media.', [
+      '@id' => $media->id(),
+      '@n' => $created,
+    ]);
+  }
+
+  return $created;
+}

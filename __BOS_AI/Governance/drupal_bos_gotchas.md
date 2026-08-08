@@ -6,6 +6,24 @@ This document captures hard-learned lessons. Most entries cite a specific commit
 
 ---
 
+## Long bulk media/import drush ops on live: slow + hang after completing
+
+Two occurrences (2026-08-02 photo import; 2026-08-03 `wo:photos:split`): a
+long-running drush command that **creates thousands of media entities on live**
+(a) runs **~2s per media** because each new image media reads its file from
+**S3 to build a thumbnail** (in-region on the app server would be faster; this is
+the cross-provider S3 read cost), and (b) **hangs after finishing all its work** —
+the entity count sits stable at the target for many minutes while the process is
+still "running" (no more DB writes happening).
+
+- **Don't wait on the process to exit** as the completion signal — it may never
+  cleanly return. Watch the actual **data** (target count reached + the invariant
+  holds, e.g. `multi-image remaining = 0`), confirm integrity, then **kill the
+  hung process** (`pkill -f '<command>'`). The work is already committed per-entity.
+- Run these in the **background** with a data-based monitor, not a fixed sleep.
+- Always take a **pre-op DB dump** first; make the op **idempotent** so a
+  kill/restart is safe (re-running finds nothing to do).
+
 ## Drupal field and bundle naming limits
 
 ### 32-character maximum on field machine names

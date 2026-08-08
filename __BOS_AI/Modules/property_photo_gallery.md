@@ -83,9 +83,37 @@ staff view adds a **row template** (`views-view-fields--property-photos`,
 registered via `hook_theme` + `hook_preprocess_views_view_fields`) rendering a
 tidy caption bar: a colored **Public** (green) / **Held** (amber) badge + a
 single **Edit** link (`destination` back to the gallery) — replacing the raw
-labelled field + operations dropbutton. Note: `field_public_ok` is per **media
-entity**, so a multi-photo WO media publishes all-or-nothing; archive photos (one
-per media) toggle individually.
+labelled field + operations dropbutton. `field_public_ok` is per **media
+entity**, and every photo is now its own media (see below), so each photo toggles
+Public/Held individually.
+
+## Per-photo public control — `wo_photo_split`
+
+`field_public_ok` lives on the media entity, so a multi-image `wo_images` batch
+would publish all-or-nothing. To give admins per-photo control **without**
+changing the technician bulk-upload UX, the dedicated **`wo_photo_split`** module
+splits each multi-image `wo_images` into **one media per photo**:
+
+- **On upload (automatic):** `hook_ENTITY_TYPE_insert`/`_update` on
+  `media:wo_images` — when a saved media holds >1 image, it keeps the first photo
+  and creates a new `wo_images` media for each additional one, inheriting
+  `field_photos_of` / `field_stage` / `field_work_order` / `field_property` /
+  `field_public_ok`. Children are created **before** the original is trimmed so
+  each file's usage stays ≥1 throughout (no orphaned/temporary files; safe on
+  S3 — references reassigned, no files moved). Reentrancy-guarded.
+- **Existing data (one-time):** `drush wo:photos:split` (dry-run default,
+  `--apply`) — idempotent. Live migration split **986 batches → 3,436 new media**
+  (1,966 → 5,402 `wo_images`), image refs + distinct fids unchanged (nothing
+  lost/duplicated).
+- **Display is unaffected:** the WO-page `wo_media_photos` EVA groups by **Stage →
+  Photos of** via Views grouping, which clusters the now-individual media back
+  together under the same heading — the WO gallery looks identical. The property
+  gallery shows each photo as its own toggleable tile.
+
+> Technicians still bulk-upload many photos under one "Photos of" label; the
+> split is invisible to them. Only `wo_images` is split (the sole gallery bundle
+> that is multi-image *and* has `field_public_ok`); `estimate_images`/
+> `estimate_design` (no public flag) and single-value `wo_videos` are untouched.
 
 > The `gallery` media view mode created by the setup script is now unused by the
 > views (they render source fields directly); left in place, harmless.

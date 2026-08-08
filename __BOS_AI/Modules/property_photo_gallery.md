@@ -65,11 +65,27 @@ columns in the Views UI (a first controller/hook build was replaced per the
   filtered to `field_public_ok = 1` + published. Flat grid, public access.
 
 Both render the media **source fields directly** — `field_media_image_1` via the
-**Colorbox** formatter (thumbnail `medium`, lightbox `max_1300x1300`, gallery
-prev/next, `alt` as caption for SEO) and `field_media_video_file_1` via the video
-player — NOT `rendered_entity` (which doesn't render reliably inside a view).
-Grid CSS is attached by the trimmed `bos_property_gallery` module
-(`hook_views_pre_render` → `bos_property_gallery/gallery` library).
+**Colorbox** formatter (thumbnail `medium`, lightbox `max_1300x1300`,
+**page-level** gallery so prev/next pages through every photo, `alt` as caption
+for SEO) and `field_media_video_file_1` via the video player — NOT
+`rendered_entity` (which doesn't render reliably inside a view).
+
+**One tile per photo (not per media entity).** `field_media_image_1` is
+multi-value (cardinality -1) — crews upload many photos into a single
+`wo_images`/`wo_videos` entity (985 such entities; one holds 54). The image field
+is set **`group_rows = FALSE`** so each image value explodes into its own view
+row → its own grid tile, instead of stacking a media entity's images in one cell.
+
+**Layout + staff caption bar.** Both views use the **unformatted list** style;
+the `bos_property_gallery` module's CSS (`hook_views_pre_render` →
+`bos_property_gallery/gallery`) lays the rows out as a responsive card grid. The
+staff view adds a **row template** (`views-view-fields--property-photos`,
+registered via `hook_theme` + `hook_preprocess_views_view_fields`) rendering a
+tidy caption bar: a colored **Public** (green) / **Held** (amber) badge + a
+single **Edit** link (`destination` back to the gallery) — replacing the raw
+labelled field + operations dropbutton. Note: `field_public_ok` is per **media
+entity**, so a multi-photo WO media publishes all-or-nothing; archive photos (one
+per media) toggle individually.
 
 > The `gallery` media view mode created by the setup script is now unused by the
 > views (they render source fields directly); left in place, harmless.

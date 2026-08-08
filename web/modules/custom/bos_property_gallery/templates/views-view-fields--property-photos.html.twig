@@ -1,0 +1,26 @@
+{#
+/**
+ * @file
+ * Staff "Gallery" tab row for the property_photos view.
+ *
+ * One image OR video tile + a caption bar with a colored Public/Held badge and
+ * a single Edit link. `gallery` (is_public / is_video / edit_url) is computed in
+ * bos_property_gallery_preprocess_views_view_fields(). The media source fields
+ * (Colorbox image / video player) are rendered from `fields`.
+ */
+#}
+<div class="pg-media">
+  {% if gallery.is_video %}
+    {{ fields.field_media_video_file_1.content }}
+  {% else %}
+    {{ fields.field_media_image_1.content }}
+  {% endif %}
+</div>
+<div class="pg-meta">
+  <span class="pg-badge {{ gallery.is_public ? 'pg-badge--public' : 'pg-badge--held' }}">
+    {{ gallery.is_public ? 'Public'|t : 'Held'|t }}
+  </span>
+  {% if gallery.edit_url %}
+    <a class="pg-edit" href="{{ gallery.edit_url }}">{{ 'Edit'|t }}</a>
+  {% endif %}
+</div>

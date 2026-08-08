@@ -52,11 +52,26 @@ $imageField = [
     'colorbox_node_style' => 'medium',
     'colorbox_node_style_first' => '',
     'colorbox_image_style' => 'max_1300x1300',
-    'colorbox_gallery' => 'post',
+    // Page-level gallery so lightbox prev/next pages through EVERY photo on
+    // the page — not just the (now single-image) row.
+    'colorbox_gallery' => 'page',
     'colorbox_gallery_custom' => '',
     'colorbox_caption' => 'alt',
     'colorbox_caption_custom' => '',
   ],
+  // field_media_image_1 is multi-value (cardinality -1): wo_images/wo_videos
+  // crews upload many photos into ONE media entity. group_rows => FALSE
+  // explodes each image value into its OWN view row → its own grid tile, so
+  // photos render all-separate instead of grouped/stacked by media entity.
+  'group_rows' => FALSE,
+  'group_column' => 'value',
+  'group_columns' => [],
+  'delta_limit' => 0,
+  'delta_offset' => 0,
+  'delta_reversed' => FALSE,
+  'delta_first_last' => FALSE,
+  'multi_type' => 'separator',
+  'separator' => '',
 ];
 $videoField = [
   'id' => 'field_media_video_file_1',
@@ -136,7 +151,9 @@ $createdSort = [
   'plugin_id' => 'date',
   'order' => 'DESC',
 ];
-$gridStyle = ['type' => 'grid_responsive', 'options' => ['columns' => 5, 'automatic_width' => TRUE, 'alignment' => 'horizontal']];
+// Unformatted list — the bos_property_gallery CSS lays the rows out as a
+// responsive grid of cards (staff row template adds the caption bar).
+$gridStyle = ['type' => 'default', 'options' => ['grouping' => [], 'row_class' => '', 'default_row_class' => TRUE]];
 
 // ─────────────────────────────────────────────────────────────────────────
 // View 1: property_photos — STAFF tab (clone property_work_orders)
@@ -161,19 +178,12 @@ foreach ($a['display'] as $dk => &$disp) {
     $do['arguments'] = ['field_property_target_id' => $propArg];
   }
   if (array_key_exists('fields', $do)) {
+    // Only the media source fields are declared; the staff row template
+    // (views-view-fields--property-photos) renders the Public/Held badge + Edit
+    // link, computed from the media entity in the module's preprocess.
     $do['fields'] = [
       'field_media_image_1' => $imageField,
       'field_media_video_file_1' => $videoField,
-      'field_public_ok' => [
-        'id' => 'field_public_ok', 'table' => 'media__field_public_ok', 'field' => 'field_public_ok',
-        'relationship' => 'none', 'entity_type' => 'media', 'entity_field' => 'field_public_ok',
-        'plugin_id' => 'field', 'type' => 'boolean', 'label' => 'Public',
-        'settings' => ['format' => 'custom', 'format_custom_true' => 'Public', 'format_custom_false' => 'Held'],
-      ],
-      'operations' => [
-        'id' => 'operations', 'table' => 'media', 'field' => 'operations', 'relationship' => 'none',
-        'entity_type' => 'media', 'plugin_id' => 'entity_operations', 'label' => '',
-      ],
     ];
   }
   if (array_key_exists('filters', $do)) {

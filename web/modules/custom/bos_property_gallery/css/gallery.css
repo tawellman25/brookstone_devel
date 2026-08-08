@@ -1,11 +1,67 @@
-.bos-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin: 1rem 0; }
-.bos-gallery__item { border: 1px solid #ddd; border-radius: 6px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
-.bos-gallery__item img { width: 100%; height: 170px; object-fit: cover; display: block; }
-.bos-gallery__item video { width: 100%; height: 170px; object-fit: cover; display: block; background:#000; }
-.bos-gallery__meta { padding: 6px 8px; font-size: .8rem; line-height: 1.3; }
-.bos-gallery__badge { display:inline-block; font-weight:700; font-size:.7rem; padding:.1rem .4rem; border-radius:3px; }
-.bos-gallery__badge--public { background:#e6f4ea; color:#137333; }
-.bos-gallery__badge--held { background:#fef7e0; color:#8a6d00; }
-.bos-gallery__meta a { font-size:.75rem; }
-.bos-gallery__section-title { margin-top:1.25rem; font-weight:700; }
-.bos-gallery__empty { color:#666; font-style:italic; }
+/**
+ * Property photo gallery — grid cards for both the staff tab (property_photos)
+ * and the public EVA (property_photos_public). The Views output is styled here;
+ * the staff view also uses a row template (views-view-fields--property-photos)
+ * for the caption bar (Public/Held badge + Edit link).
+ */
+
+/* Responsive grid of tiles for both galleries. */
+.view-id-property_photos .view-content,
+.view-id-property_photos_public .view-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 1rem 0;
+}
+
+/* Each row = one tile/card. */
+.view-id-property_photos .views-row,
+.view-id-property_photos_public .views-row {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Uniform thumbnails (image or video). */
+.view-id-property_photos .views-row img,
+.view-id-property_photos .views-row video,
+.view-id-property_photos_public .views-row img,
+.view-id-property_photos_public .views-row video {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  display: block;
+  background: #000;
+}
+
+/* Staff caption bar. */
+.view-id-property_photos .pg-media { line-height: 0; }
+.view-id-property_photos .pg-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+}
+.pg-badge {
+  font-weight: 700;
+  font-size: .7rem;
+  padding: .12rem .45rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.pg-badge--public { background: #e6f4ea; color: #137333; }
+.pg-badge--held { background: #fef7e0; color: #8a6d00; }
+.pg-edit {
+  font-size: .75rem;
+  text-decoration: none;
+  color: #1a73e8;
+  padding: .12rem .5rem;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.pg-edit:hover { background: #f2f2f2; }

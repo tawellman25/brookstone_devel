@@ -2,17 +2,75 @@
 
 /**
  * @file
- * Property photo gallery — presentation is now Views (property_photos staff tab
- * + property_photos_public EVA). This module only attaches the gallery grid CSS
- * to those views. (The earlier controller/hook implementation was replaced by
- * Views so filters are adjustable in the UI.)
+ * Property photo gallery — presentation is Views (property_photos staff tab +
+ * property_photos_public EVA). This module attaches the gallery grid CSS and
+ * provides the staff row template (colored Public/Held badge + single Edit
+ * link, BOS status-card style). Filters/sorting stay adjustable in the Views UI.
  */
+
+use Drupal\views\ViewExecutable;
+use Drupal\Core\Url;
 
 /**
  * Implements hook_views_pre_render().
  */
-function bos_property_gallery_views_pre_render(\Drupal\views\ViewExecutable $view) {
+function bos_property_gallery_views_pre_render(ViewExecutable $view) {
   if (in_array($view->id(), ['property_photos', 'property_photos_public'], TRUE)) {
     $view->element['#attached']['library'][] = 'bos_property_gallery/gallery';
   }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function bos_property_gallery_theme($existing, $type, $theme, $path) {
+  return [
+    // Staff "Gallery" tab row: one image/video tile + a caption bar with a
+    // colored Public/Held badge and a single Edit link.
+    'views_view_fields__property_photos' => [
+      'base hook' => 'views_view_fields',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views-view-fields.
+ *
+ * Computes the per-tile badge + edit link for the staff gallery from the row's
+ * media entity, so the template stays declarative and we don't render the raw
+ * operations dropbutton / labelled fields.
+ */
+function bos_property_gallery_preprocess_views_view_fields(array &$variables) {
+  $view = $variables['view'];
+  if ($view->id() !== 'property_photos') {
+    return;
+  }
+
+  $media = $variables['row']->_entity ?? NULL;
+  if (!$media) {
+    return;
+  }
+
+  $is_public = $media->hasField('field_public_ok') && (bool) $media->get('field_public_ok')->value;
+  $is_video = in_array($media->bundle(), ['property_video', 'wo_videos'], TRUE)
+    || ($media->hasField('field_media_video_file_1') && !$media->get('field_media_video_file_1')->isEmpty());
+
+  // Return to the gallery after editing.
+  $edit_url = NULL;
+  if ($media->access('update')) {
+    try {
+      $edit_url = $media->toUrl('edit-form', [
+        'query' => ['destination' => Url::fromRoute('<current>')->toString()],
+      ])->toString();
+    }
+    catch (\Exception $e) {
+      $edit_url = NULL;
+    }
+  }
+
+  $variables['gallery'] = [
+    'is_public' => $is_public,
+    'is_video' => $is_video,
+    'edit_url' => $edit_url,
+  ];
 }

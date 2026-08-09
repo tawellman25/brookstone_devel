@@ -15,7 +15,7 @@ ones:
 
 | Cost line | Source |
 |---|---|
-| **Labor** | `field_total_time` (hrs) × **blended labor cost/hr** (`business_setting.field_blended_labor_cost`) |
+| **Labor** | **Σ `wo_time_clock.field_total_time`** (live sum of the WO's clock entries) × **blended labor cost/hr** (`business_setting.field_blended_labor_cost`). Uses the clock entries directly, **not** the WO's `field_total_time` roll-up — that roll-up is only filled at sign-off, so reading it showed 0 labor for an in-progress WO that already had hours logged. |
 | **Materials** | Σ `wo_material_list_item.field_subtotal` (cost basis = unit cost × qty; the *charged* side uses `field_subtotal_w_markup`, so the difference is the markup margin) |
 | **Chemicals** | Σ `wo_chemicals_used.field_subtotal` (no markup field → charged at cost, nets out) |
 | **Rentals** | Σ `COALESCE(field_receipt_total_cost, field_hourly_rate × field_hours)` (pass-through) |
@@ -42,10 +42,17 @@ $27 blended cost). Chemicals/rentals/dump are pass-through (~0 margin).
   100** (set in `hook_install`) because the `wo_*` bundle modules set
   `field_wo_total` in *generic* `entity_presave`, which fires **after** the
   type-specific batch — a type-specific hook here would read a stale (0) revenue.
-- **`hook_entity_view`** — role-gated panel on the full WO page. Shows the frozen
-  `field_wo_cost`/`field_wo_profit` once the WO is in a recorded state
-  (1097/1281/1504/1283 with a stored value), otherwise a **live estimate** from
-  the calculator. `max-age 0` (live + permission-sensitive).
+- **`hook_entity_view`** — role-gated panel on the full WO page. Three states:
+  - **Recorded** (1097/1281/1504/1283 with a stored value): frozen Revenue /
+    Total cost / Profit / Margin — "Cost & Profit — recorded at completion".
+  - **In progress with revenue** (rare — `field_wo_total` set pre-record): live
+    Revenue / Profit / Margin.
+  - **In progress, no revenue** (the common case — revenue is computed at
+    sign-off): a **"Cost so far — live"** breakdown (Labor from live clock hours +
+    Materials + Chemicals + Rentals + Dump) with **no Profit/Margin** and a note
+    that revenue & profit finalize at completion. This avoids showing a
+    misleading "loss" against $0 revenue while a job is still running.
+  - `max-age 0` (live + permission-sensitive).
 - **Permission** `view wo cost profit` (`restrict access`) → granted at install
   to `supervisor`, `administration`, `site_admin`, `administrator`. Crew +
   clients never see cost/profit.

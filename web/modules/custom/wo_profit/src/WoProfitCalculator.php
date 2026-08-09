@@ -51,7 +51,11 @@ class WoProfitCalculator {
   public function calculate(EntityInterface $wo): array {
     $id = (int) $wo->id();
 
-    $hours = $this->decimal($wo, 'field_total_time');
+    // Sum the actual time-clock entries (live) rather than the WO's
+    // field_total_time roll-up — that roll-up is only filled at sign-off, so
+    // reading it would show 0 labor for an in-progress WO that already has
+    // hours logged. At completion the two are equal.
+    $hours = $this->laborHours($id);
     $rate = $this->blendedLaborRate();
     $labor = $hours * $rate;
 
@@ -87,6 +91,21 @@ class WoProfitCalculator {
     return $wo->hasField($field) && !$wo->get($field)->isEmpty()
       ? (float) $wo->get($field)->value
       : 0.0;
+  }
+
+  /**
+   * Labor hours = Σ wo_time_clock.field_total_time for this WO (live).
+   *
+   * Same source the wo_* billing modules use for field_labor_total, so live and
+   * frozen labor agree.
+   */
+  protected function laborHours(int $woId): float {
+    $q = $this->database->select('wo_time_clock__field_work_order', 'wo');
+    $q->condition('wo.field_work_order_target_id', $woId);
+    $q->condition('wo.deleted', 0);
+    $q->join('wo_time_clock__field_total_time', 'tt', 'tt.entity_id = wo.entity_id AND tt.deleted = 0');
+    $q->addExpression('SUM(tt.field_total_time_value)', 'h');
+    return (float) $q->execute()->fetchField();
   }
 
   /**

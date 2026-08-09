@@ -73,43 +73,67 @@ function wo_profit_work_order_view(array &$build, EntityInterface $wo, EntityVie
     : 0;
   $has_stored = $wo->hasField('field_wo_profit') && !$wo->get('field_wo_profit')->isEmpty();
   $recorded = in_array($status, WO_PROFIT_RECORDED_STATES, TRUE) && $has_stored;
+  $revenue = $c['revenue'];
 
-  // Headline uses the frozen figures once recorded (rate-accurate history);
-  // otherwise the live estimate.
+  // Profit/margin only mean something once revenue exists. Revenue (field_wo_total)
+  // is computed at sign-off, so before completion we show COST-SO-FAR only and say
+  // profit finalizes at completion — never a misleading "loss" against $0 revenue.
+  $show_profit = $recorded || $revenue > 0;
+
   $cost = $recorded ? (float) $wo->get('field_wo_cost')->value : $c['total_cost'];
   $profit = $recorded ? (float) $wo->get('field_wo_profit')->value : $c['profit'];
-  $revenue = $c['revenue'];
-  $margin = $revenue > 0 ? ($profit / $revenue * 100) : NULL;
+  $margin = ($show_profit && $revenue > 0) ? ($profit / $revenue * 100) : NULL;
 
   $money = fn($v) => '$' . number_format((float) $v, 2);
   $hrs = rtrim(rtrim(number_format($c['hours'], 2), '0'), '.');
   $rate_note = $c['rate'] > 0 ? $money($c['rate']) . '/hr' : t('rate not set');
 
-  $rows = [
-    [t('Revenue'), $money($revenue)],
-    [t('Labor (@h hrs × @r)', ['@h' => $hrs, '@r' => $rate_note]), $money($c['labor'])],
-    [t('Materials'), $money($c['materials'])],
-    [t('Chemicals'), $money($c['chemicals'])],
-    [t('Rentals'), $money($c['rentals'])],
-    [t('Dump fees'), $money($c['dump'])],
-    [['data' => t('Total cost'), 'class' => ['wo-profit__strong']], ['data' => $money($cost), 'class' => ['wo-profit__strong']]],
-    [['data' => t('Profit'), 'class' => ['wo-profit__strong']], ['data' => $money($profit), 'class' => ['wo-profit__strong']]],
-    [['data' => t('Margin'), 'class' => ['wo-profit__strong']], $margin === NULL ? '—' : number_format($margin, 1) . '%'],
-  ];
+  $rows = [];
+  if ($show_profit) {
+    $rows[] = [t('Revenue'), $money($revenue)];
+  }
+  $rows[] = [t('Labor (@h hrs × @r)', ['@h' => $hrs, '@r' => $rate_note]), $money($c['labor'])];
+  $rows[] = [t('Materials'), $money($c['materials'])];
+  $rows[] = [t('Chemicals'), $money($c['chemicals'])];
+  $rows[] = [t('Rentals'), $money($c['rentals'])];
+  $rows[] = [t('Dump fees'), $money($c['dump'])];
+  $cost_label = $show_profit ? t('Total cost') : t('Cost so far');
+  $rows[] = [['data' => $cost_label, 'class' => ['wo-profit__strong']], ['data' => $money($cost), 'class' => ['wo-profit__strong']]];
+  if ($show_profit) {
+    $rows[] = [['data' => t('Profit'), 'class' => ['wo-profit__strong']], ['data' => $money($profit), 'class' => ['wo-profit__strong']]];
+    $rows[] = [['data' => t('Margin'), 'class' => ['wo-profit__strong']], $margin === NULL ? '—' : number_format($margin, 1) . '%'];
+  }
+
+  if ($recorded) {
+    $title = t('Cost & Profit — recorded at completion');
+  }
+  elseif ($show_profit) {
+    $title = t('Cost & Profit — live estimate');
+  }
+  else {
+    $title = t('Cost so far — live (profit calculates at completion)');
+  }
+
+  // Green/red accent only when there's a real profit figure to judge.
+  $accent = $show_profit ? ($profit < 0 ? 'wo-profit--loss' : 'wo-profit--ok') : 'wo-profit--pending';
+
+  $note = $show_profit
+    ? t('Job-level gross margin — excludes fuel/vehicle, company overhead, and equipment depreciation. Labor cost uses the blended rate in Business Settings.')
+    : t('Cost accumulated so far. Revenue &amp; profit are calculated when the work order is signed off / completed. Labor cost uses the blended rate in Business Settings; excludes fuel/overhead/depreciation.');
 
   $build['wo_profit'] = [
     '#type' => 'details',
-    '#title' => $recorded ? t('Cost & Profit — recorded at completion') : t('Cost & Profit — live estimate'),
+    '#title' => $title,
     '#open' => TRUE,
     '#weight' => -50,
-    '#attributes' => ['class' => ['wo-profit', $profit < 0 ? 'wo-profit--loss' : 'wo-profit--ok']],
+    '#attributes' => ['class' => ['wo-profit', $accent]],
     'table' => [
       '#type' => 'table',
       '#rows' => $rows,
       '#attributes' => ['class' => ['wo-profit__table']],
     ],
     'note' => [
-      '#markup' => '<p class="wo-profit__note">' . t('Job-level gross margin — excludes fuel/vehicle, company overhead, and equipment depreciation. Labor cost uses the blended rate in Business Settings.') . '</p>',
+      '#markup' => '<p class="wo-profit__note">' . $note . '</p>',
     ],
     '#attached' => ['library' => ['wo_profit/panel']],
     // Live estimate changes as children change; and it is permission-gated.

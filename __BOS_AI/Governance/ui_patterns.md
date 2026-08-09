@@ -73,7 +73,29 @@ Mirrors `bos_spray_route_ui` (CSS attach) and the backflow Property Devices EVA
 
 ---
 
+## Responsive data tables (mobile)
+
+Views that render as multi-column **tables** run off the right edge on phones —
+the rightmost column (often the Edit/Links action) disappears. The crew-facing
+WO page hit this across ~11 tables (2026-08-03).
+
+**Fix (reusable):** the `brookstone_olivero/responsive_tables` library —
+- **JS** (`js/responsive-tables.js`): for each content table with a `<thead>`,
+  copy each column header onto its body cells as `data-bos-label` and add class
+  `.bos-stack-table` (`Drupal.behaviors` + `once`, so it re-applies after AJAX).
+- **CSS** (`css/responsive-tables.css`, `@media (max-width: 48em)`): stack
+  `.bos-stack-table` — hide `thead`, make each row a bordered block, each cell
+  full-width with its `data-bos-label` shown above it. Fallback: unlabeled
+  tables get `.view-content { overflow-x: auto }` so they scroll in their box
+  rather than pushing the page sideways; `img { max-width: 100% }`.
+
+Prefer this for existing table-style Views. For **new** stateful lists, still
+reach for the **status-card pattern** above (cards are mobile-friendly by
+design). Currently wired into `brookstone_olivero` only (crew/mobile theme);
+port to `brookstone_admin` if office staff hit the same on phones.
+
 ## Status
 
 - Created 2026-06-21 (status-card pattern, from the My Schedule + backflow card work).
+- 2026-08-03 — added the responsive data-tables pattern (mobile stacking).
 - Living document — add reusable BOS UI patterns here as they're established.

@@ -32,7 +32,7 @@ Equipment is not “consumed” like Materials/Chemicals; it is an asset.
 
 ## Bundles (Machine Name | Label)
 
-attachements | Attachements  
+attachements | Attachments  
 heavy_equipment | Heavy Equipment  
 power_tools | Power Tools  
 small_engine | Small Engine  
@@ -161,11 +161,28 @@ Invariant:
 
 ## Bundle Definitions (Fields by Bundle)
 
-### attachements (Attachements)
-Currently only base fields.
-Note:
-- Likely intended to model implements that attach to other equipment.
-- Consider adding relationship fields (attaches_to) if needed later (already exists on snow_plows).
+### attachements (Attachments)
+**Built out 2026-08-03** (was base-fields-only). Catalogs skid-steer / tractor /
+mini-ex attachments (buckets, forks, blades, rakes, mower decks, trencher
+attachments, hydraulic thumb/clamp, mulching kits, aerators, etc.). Machine name
+stays `attachements` (permanent typo); **label fixed to "Attachments"**. Built
+via idempotent entity-API script `web/scripts/setup_attachements_bundle.php` (no
+cim) — all 15 storages already existed; instances cloned from `heavy_equipment`
+(and `field_attaches_to` from `snow_plows`), so no new storage.
+- **`field_attaches_to`** (entity_reference → equipment) — the parent machine it
+  mounts to; target bundles **heavy_equipment, vehicles, small_engine**.
+- `field_equipment_type` (→ equipment_types), `field_status` (→ equipment_status),
+  `field_equipment_make`, `field_model`, `field_serial_code_number`, `field_size`,
+  `field_manufactured_year`, `field_date_purchased`, `field_purchase_price`,
+  `field_depriciated_value`, `field_equipment_number` (asset ID),
+  `field_public_description`, `field_pictures`, `field_documents`.
+- Form + default view display configured, mirroring `heavy_equipment`.
+- **New equipment_types terms** (`field_equipment_bundle = attachements`, seeded
+  by `web/scripts/seed_attachment_types.php`): Bucket, Forks, Hydraulic
+  Thumb/Clamp, Landscape Rake, Mower Deck, Trencher Attachment, Blade / Plow,
+  Mulching Kit, Aerator Attachment. (Live TIDs 1922–1930; dev/live TIDs differ.)
+- Data population is separate (moving the 16" trenching bucket + hydraulic clamp
+  E26 out of heavy_equipment into this bundle, attached to the Bobcat mini-ex).
 
 ### heavy_equipment (Heavy Equipment)
 Key fields:

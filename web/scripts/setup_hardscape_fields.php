@@ -107,15 +107,18 @@ else {
   print "  field_name label already \"Name\" (or missing)\n";
 }
 
-// ── Form display: ordered block first, existing fields shifted after ─────────
+// ── Form display: group-aware layout ────────────────────────────────────────
+// Loose (ungrouped) fields render on top by weight; field_group sections render
+// below (group weights 30+). Pack fields move INTO the Manufacturer group
+// (packaging is manufacturer-dictated). Description stays in Public Information.
 $repo = \Drupal::service('entity_display.repository');
 $form = $repo->getFormDisplay('material', $BUNDLE);
-$widgets = [
-  'field_name' => 'string_textfield',
+
+// Widget for the NEW fields (existing fields keep their current widget).
+$newWidgets = [
   'field_hardscape_type' => 'options_select',
   'field_color' => 'string_textfield',
   'field_finish_texture' => 'string_textfield',
-  'field_description' => 'text_textarea_with_summary',
   'field_length_in' => 'number',
   'field_width_in' => 'number',
   'field_thickness_in' => 'number',
@@ -123,41 +126,82 @@ $widgets = [
   'field_units_per_sqft' => 'number',
   'field_units_per_pallet' => 'number',
   'field_weight_each' => 'number',
-  'field_size' => 'string_textfield',
-  'field_carton_quantity' => 'string_textfield',
-  'field_unit_of_measure' => 'options_select',
   'field_application' => 'options_buttons',
 ];
-$order = array_keys($widgets);
-foreach ($order as $i => $name) {
+
+// Loose (top-level, ungrouped) fields in display order.
+$loose = [
+  'field_name', 'field_hardscape_type', 'field_color', 'field_finish_texture',
+  'field_length_in', 'field_width_in', 'field_thickness_in', 'field_setback',
+  'field_units_per_sqft', 'field_units_per_pallet', 'field_weight_each',
+  'field_size', 'field_carton_quantity', 'field_unit_of_measure', 'field_application',
+  'field_cost_integer', 'field_installed_price', 'field_price_updated', 'field_discontinued',
+  'field_supplier', 'field_replaced_by', 'field_material_tags', 'field_instructional_video',
+];
+foreach ($loose as $i => $name) {
   $comp = $form->getComponent($name);
   if ($comp === NULL) {
-    // New field — set widget + position.
-    $form->setComponent($name, ['type' => $widgets[$name], 'weight' => $i, 'region' => 'content', 'settings' => [], 'third_party_settings' => []]);
+    $form->setComponent($name, ['type' => $newWidgets[$name] ?? 'string_textfield', 'weight' => $i, 'region' => 'content', 'settings' => [], 'third_party_settings' => []]);
   }
   else {
-    // Existing field — keep its widget/settings, just reposition.
     $comp['weight'] = $i;
     $form->setComponent($name, $comp);
   }
 }
-// Shift every other material field after the ordered block (stable/idempotent).
-$others = [];
-foreach ($form->getComponents() as $name => $comp) {
-  if (in_array($name, $order, TRUE) || strpos($name, 'field_') !== 0) {
-    continue;
+
+// Reweight the field_group sections to sit below the loose fields.
+$groupWeights = [
+  'group_suppliers' => 30,
+  'group_manufacturer_information' => 31,
+  'group_public_information' => 32,
+  'group_supporting_images' => 33,
+  'group_office_admin' => 34,
+];
+foreach ($groupWeights as $gid => $gw) {
+  $g = $form->getThirdPartySetting('field_group', $gid);
+  if ($g) {
+    $g['weight'] = $gw;
+    $form->setThirdPartySetting('field_group', $gid, $g);
   }
-  $others[$name] = $comp['weight'] ?? 0;
 }
-asort($others);
-$w = 100;
-foreach (array_keys($others) as $name) {
+
+// Move the 5 pack fields INTO the Manufacturer group (idempotent).
+$packFields = ['field_pack_data_source', 'field_pack_family', 'field_pack_qty_mid_label', 'field_pack_qty_mid', 'field_pack_qty_case'];
+$mfg = $form->getThirdPartySetting('field_group', 'group_manufacturer_information');
+if ($mfg) {
+  // Drop pack fields from any OTHER group first (idempotency / no dupes).
+  foreach (array_keys($form->getThirdPartySettings('field_group')) as $gid) {
+    if ($gid === 'group_manufacturer_information') {
+      continue;
+    }
+    $g = $form->getThirdPartySetting('field_group', $gid);
+    $g['children'] = array_values(array_diff($g['children'] ?? [], $packFields));
+    $form->setThirdPartySetting('field_group', $gid, $g);
+  }
+  foreach ($packFields as $pf) {
+    if (!in_array($pf, $mfg['children'], TRUE)) {
+      $mfg['children'][] = $pf;
+    }
+  }
+  $form->setThirdPartySetting('field_group', 'group_manufacturer_information', $mfg);
+}
+// Order within the Manufacturer group (children sort by component weight).
+$mfgOrder = [
+  'field_manufacturer' => 0, 'field_manufacturer_item_number' => 1, 'field_manufacturer_website_item' => 2,
+  'field_documentation' => 3, 'field_safety_data_sheet' => 4,
+  'field_pack_data_source' => 5, 'field_pack_family' => 6, 'field_pack_qty_mid_label' => 7,
+  'field_pack_qty_mid' => 8, 'field_pack_qty_case' => 9,
+];
+foreach ($mfgOrder as $name => $mw) {
   $comp = $form->getComponent($name);
-  $comp['weight'] = $w++;
-  $form->setComponent($name, $comp);
+  if ($comp !== NULL) {
+    $comp['weight'] = $mw;
+    $form->setComponent($name, $comp);
+  }
 }
+
 $form->save();
-print "  form display order applied (16 ordered fields; " . count($others) . " others shifted after)\n";
+print "  form display: loose fields on top, groups below, pack fields → Manufacturer group\n";
 
 // ── Default view display: add the two catalog fields ────────────────────────
 $view = $repo->getViewDisplay('material', $BUNDLE);

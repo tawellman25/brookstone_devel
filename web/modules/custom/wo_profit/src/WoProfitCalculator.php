@@ -78,9 +78,12 @@ class WoProfitCalculator {
     $materials = $this->materialCost($id);
     $chemicals = $this->chemicalCost($id);
     $rentals = $this->rentalCost($id);
+    // Owned equipment cost = operating cost (its billed rate is REVENUE, not
+    // cost). rentalCost() excludes owned entries, so no double-count.
+    $equipment = $this->ownedEquipment($id)['cost'];
     $dump = $this->decimal($wo, 'field_dump_fee_total');
 
-    $total_cost = $labor + $materials + $chemicals + $rentals + $dump;
+    $total_cost = $labor + $materials + $chemicals + $rentals + $equipment + $dump;
     $revenue = $this->decimal($wo, 'field_wo_total');
     $profit = $revenue - $total_cost;
     $margin = $revenue > 0 ? ($profit / $revenue * 100) : NULL;
@@ -92,6 +95,7 @@ class WoProfitCalculator {
       'materials' => $materials,
       'chemicals' => $chemicals,
       'rentals' => $rentals,
+      'equipment' => $equipment,
       'dump' => $dump,
       'total_cost' => $total_cost,
       'revenue' => $revenue,
@@ -296,6 +300,10 @@ class WoProfitCalculator {
     $q = $this->database->select('wo_rental_equipment__field_rented_for', 'wrf');
     $q->condition('wrf.field_rented_for_target_id', $woId);
     $q->condition('wrf.deleted', 0);
+    // RENTED gear only — owned machines (field_equipment_used set) are counted
+    // by ownedEquipment(), so exclude them here to avoid double-counting.
+    $q->leftJoin('wo_rental_equipment__field_equipment_used', 'eu', 'eu.entity_id = wrf.entity_id AND eu.deleted = 0');
+    $q->isNull('eu.field_equipment_used_target_id');
     $q->leftJoin('wo_rental_equipment__field_hourly_rate', 'hr', 'hr.entity_id = wrf.entity_id AND hr.deleted = 0');
     $q->leftJoin('wo_rental_equipment__field_hours', 'h', 'h.entity_id = wrf.entity_id AND h.deleted = 0');
     $q->leftJoin('wo_rental_equipment__field_receipt_total_cost', 'rtc', 'rtc.entity_id = wrf.entity_id AND rtc.deleted = 0');

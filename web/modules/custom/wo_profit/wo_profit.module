@@ -91,13 +91,10 @@ function wo_profit_work_order_view(array &$build, EntityInterface $wo, EntityVie
 
   $show_profit = $recorded || $revenue > 0;
 
-  // Phase 1: owned-equipment usage adds a live cost line + (via liveRevenue) a
-  // revenue line, on in-progress WOs only — no effect on frozen/invoiced totals.
-  $equip_cost = $recorded ? 0.0 : \Drupal::service('wo_profit.calculator')->ownedEquipment((int) $wo->id())['cost'];
-  $live_total_cost = $c['total_cost'] + $equip_cost;
-
-  $cost = $recorded ? (float) $wo->get('field_wo_cost')->value : $live_total_cost;
-  $profit = $recorded ? (float) $wo->get('field_wo_profit')->value : ($revenue - $live_total_cost);
+  // total_cost already includes owned-equipment operating cost (calculate()),
+  // and rentalCost excludes owned entries — so no double-count.
+  $cost = $recorded ? (float) $wo->get('field_wo_cost')->value : $c['total_cost'];
+  $profit = $recorded ? (float) $wo->get('field_wo_profit')->value : ($revenue - $c['total_cost']);
   $margin = ($show_profit && $revenue > 0) ? ($profit / $revenue * 100) : NULL;
 
   $money = fn($v) => '$' . number_format((float) $v, 2);
@@ -112,8 +109,8 @@ function wo_profit_work_order_view(array &$build, EntityInterface $wo, EntityVie
   $rows[] = [t('Materials'), $money($c['materials'])];
   $rows[] = [t('Chemicals'), $money($c['chemicals'])];
   $rows[] = [t('Rentals'), $money($c['rentals'])];
-  if ($equip_cost > 0) {
-    $rows[] = [t('Equipment (owned)'), $money($equip_cost)];
+  if (!empty($c['equipment']) && $c['equipment'] > 0) {
+    $rows[] = [t('Equipment (owned)'), $money($c['equipment'])];
   }
   $rows[] = [t('Dump fees'), $money($c['dump'])];
   $cost_label = $show_profit ? t('Total cost') : t('Cost so far');

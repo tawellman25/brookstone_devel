@@ -304,6 +304,17 @@ Cloned from irrigation bundle. Backflow prevention devices:
 - **No entries migrated from `decorative_rock`** as part of bundle creation — that's a deferred decision
 - See [material_bulk_material.md](material_bulk_material.md) for full field list, vocabulary details, and permissions
 
+### pavers (Block and Pavers)
+**Reworked 2026-08-03** to model both pavers and retaining-wall blocks in one bundle (not split). Added via idempotent entity-API setup script (`web/scripts/setup_hardscape_fields.php`) — **no cim** (field-instance configs silently skip; the BOS idiom). New fields (all optional):
+- **`field_hardscape_type`** → new **`hardscape_types`** vocabulary (entity_reference, options_select). Terms (weights): Paver(0), Wall Block(1), Cap(2), Coping(3), Edger(4), Step(5), Slab(6), Other(100) — seeded by `web/scripts/seed_hardscape_types.php`.
+- `field_color` (string), `field_finish_texture` (string), `field_setback` (string, "Setback / Batter").
+- `field_length_in` / `field_width_in` / `field_thickness_in` decimal(6,2); `field_units_per_sqft` decimal(8,4); `field_units_per_pallet` integer; `field_weight_each` decimal(8,2). **Note:** these `_in` decimals deliberately do NOT reuse the STRING `field_width`/`field_height` (those are plant-bundle text fields).
+- `field_application` — **multi-value** list_string (patio, driveway, pool_deck, walkway, freestanding_wall, retaining_wall, edging, steps). Empty on existing rows by design.
+- `field_name` relabeled "Paver Name" → **"Name"** (safe — no Auto Entity Label on this bundle).
+- **Backfill:** all 10 existing rows (Holland Pavers, 4×8) set to `field_hardscape_type = Paver` via `web/scripts/backfill_hardscape_type_pavers.php` (done 2026-08-03, not an open item).
+- **#states:** `field_setback` shows only when Hardscape Type = "Wall Block" — core #states in `material_form_alter()` (`material` module), Wall-Block TID resolved dynamically by name (not hardcoded — differs per env).
+- **Form layout:** loose catalog/dimension/pricing fields on top; the 5 collapsed field-groups below; the 5 supplier **pack** fields (`field_pack_*`) moved INTO the **Manufacturer Information** group (packaging is manufacturer-dictated) — kept, not removed, since they're load-bearing for `wo_material_price_sync` / `supplier_price_ingest` (just empty on pavers). Entity **view display** (`material.pavers.default`) gained `field_hardscape_type` + `field_color`.
+
 ---
 
 ## Integration With Work Orders (Authoritative)

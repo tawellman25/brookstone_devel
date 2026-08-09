@@ -1,0 +1,118 @@
+<?php
+
+/**
+ * @file
+ * WO Cost & Profit (Stage 1).
+ *
+ * - On completion, stores + freezes field_wo_cost / field_wo_profit (in the
+ *   same save flow that already freezes billing totals — wo_billing_recalc
+ *   re-saves the WO while Complete, so these stay in sync until it leaves
+ *   Complete, then freeze).
+ * - Renders a supervisor/admin-only Cost & Profit panel on the WO page: the
+ *   frozen figures for completed/billed WOs, a live estimate for in-progress.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+
+/**
+ * WO status term IDs (Services taxonomy). Complete freezes the stored figures;
+ * these + Complete are the states that display the recorded (frozen) values.
+ */
+const WO_PROFIT_STATUS_COMPLETE = 1097;
+const WO_PROFIT_RECORDED_STATES = [1097, 1281, 1504, 1283];
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * Freeze cost/profit at completion. Uses the GENERIC entity_presave (not
+ * hook_ENTITY_TYPE_presave) because the wo_* bundle modules set field_wo_total
+ * in generic entity_presave, which fires AFTER the type-specific batch — so a
+ * type-specific hook here would read a stale (0) revenue. Combined with module
+ * weight 100 (set at install), this runs after those weight-0 bundle modules.
+ */
+function wo_profit_entity_presave(EntityInterface $wo) {
+  if ($wo->getEntityTypeId() !== 'work_order') {
+    return;
+  }
+  if (!$wo->hasField('field_wo_cost') || !$wo->hasField('field_wo_profit')) {
+    return;
+  }
+  $status = $wo->hasField('field_status') && !$wo->get('field_status')->isEmpty()
+    ? (int) $wo->get('field_status')->target_id
+    : 0;
+  // Only (re)compute while Complete — mirrors the billing-total freeze.
+  if ($status !== WO_PROFIT_STATUS_COMPLETE) {
+    return;
+  }
+  $c = \Drupal::service('wo_profit.calculator')->calculate($wo);
+  $wo->set('field_wo_cost', round($c['total_cost'], 2));
+  $wo->set('field_wo_profit', round($c['profit'], 2));
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for work_order.
+ *
+ * Role-gated Cost & Profit panel on the full WO page.
+ */
+function wo_profit_work_order_view(array &$build, EntityInterface $wo, EntityViewDisplayInterface $display, $view_mode) {
+  if ($view_mode !== 'full') {
+    return;
+  }
+  if (!\Drupal::currentUser()->hasPermission('view wo cost profit')) {
+    return;
+  }
+  if (!$wo->hasField('field_wo_total')) {
+    return;
+  }
+
+  $c = \Drupal::service('wo_profit.calculator')->calculate($wo);
+
+  $status = $wo->hasField('field_status') && !$wo->get('field_status')->isEmpty()
+    ? (int) $wo->get('field_status')->target_id
+    : 0;
+  $has_stored = $wo->hasField('field_wo_profit') && !$wo->get('field_wo_profit')->isEmpty();
+  $recorded = in_array($status, WO_PROFIT_RECORDED_STATES, TRUE) && $has_stored;
+
+  // Headline uses the frozen figures once recorded (rate-accurate history);
+  // otherwise the live estimate.
+  $cost = $recorded ? (float) $wo->get('field_wo_cost')->value : $c['total_cost'];
+  $profit = $recorded ? (float) $wo->get('field_wo_profit')->value : $c['profit'];
+  $revenue = $c['revenue'];
+  $margin = $revenue > 0 ? ($profit / $revenue * 100) : NULL;
+
+  $money = fn($v) => '$' . number_format((float) $v, 2);
+  $hrs = rtrim(rtrim(number_format($c['hours'], 2), '0'), '.');
+  $rate_note = $c['rate'] > 0 ? $money($c['rate']) . '/hr' : t('rate not set');
+
+  $rows = [
+    [t('Revenue'), $money($revenue)],
+    [t('Labor (@h hrs × @r)', ['@h' => $hrs, '@r' => $rate_note]), $money($c['labor'])],
+    [t('Materials'), $money($c['materials'])],
+    [t('Chemicals'), $money($c['chemicals'])],
+    [t('Rentals'), $money($c['rentals'])],
+    [t('Dump fees'), $money($c['dump'])],
+    [['data' => t('Total cost'), 'class' => ['wo-profit__strong']], ['data' => $money($cost), 'class' => ['wo-profit__strong']]],
+    [['data' => t('Profit'), 'class' => ['wo-profit__strong']], ['data' => $money($profit), 'class' => ['wo-profit__strong']]],
+    [['data' => t('Margin'), 'class' => ['wo-profit__strong']], $margin === NULL ? '—' : number_format($margin, 1) . '%'],
+  ];
+
+  $build['wo_profit'] = [
+    '#type' => 'details',
+    '#title' => $recorded ? t('Cost & Profit — recorded at completion') : t('Cost & Profit — live estimate'),
+    '#open' => TRUE,
+    '#weight' => -50,
+    '#attributes' => ['class' => ['wo-profit', $profit < 0 ? 'wo-profit--loss' : 'wo-profit--ok']],
+    'table' => [
+      '#type' => 'table',
+      '#rows' => $rows,
+      '#attributes' => ['class' => ['wo-profit__table']],
+    ],
+    'note' => [
+      '#markup' => '<p class="wo-profit__note">' . t('Job-level gross margin — excludes fuel/vehicle, company overhead, and equipment depreciation. Labor cost uses the blended rate in Business Settings.') . '</p>',
+    ],
+    '#attached' => ['library' => ['wo_profit/panel']],
+    // Live estimate changes as children change; and it is permission-gated.
+    '#cache' => ['max-age' => 0],
+  ];
+}

@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * @file
+ * Install/uninstall for wo_profit.
+ */
+
+use Drupal\user\Entity\Role;
+
+/**
+ * Implements hook_install().
+ *
+ * Runs the presave last (after the wo_* bundle modules set field_wo_total), and
+ * grants the cost/profit view permission to supervisor + office admin roles.
+ */
+function wo_profit_install() {
+  // Ensure our work_order presave runs AFTER the wo_* bundle modules (weight 0)
+  // that set field_wo_total, so we read the freshly-computed revenue.
+  module_set_weight('wo_profit', 100);
+
+  foreach (['supervisor', 'administration', 'site_admin', 'administrator'] as $rid) {
+    if ($role = Role::load($rid)) {
+      $role->grantPermission('view wo cost profit')->save();
+    }
+  }
+}

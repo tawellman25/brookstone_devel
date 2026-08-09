@@ -11,7 +11,10 @@
     <span class="equip-card__name">
       {% if equip_card.name_url %}<a href="{{ equip_card.name_url }}">{{ equip_card.name }}</a>{% else %}{{ equip_card.name }}{% endif %}
     </span>
-    <span class="equip-card__badge">{{ equip_card.badge }}</span>
+    <span class="equip-card__actions">
+      <span class="equip-card__badge">{{ equip_card.badge }}</span>
+      {% if equip_card.edit_url %}<a class="equip-card__edit" href="{{ equip_card.edit_url }}">{{ 'Edit'|t }}</a>{% endif %}
+    </span>
   </div>
 
   <div class="equip-card__body">
@@ -28,8 +31,4 @@
       <div class="equip-card__rented">{{ fields.field_receipt_total_cost.content }}</div>
     {% endif %}
   </div>
-
-  {% if equip_card.edit_url %}
-    <a class="equip-card__edit" href="{{ equip_card.edit_url }}">{{ 'Edit'|t }}</a>
-  {% endif %}
 </div>

@@ -122,7 +122,8 @@ class WoProfitCalculator {
     }
     $rev = $this->laborRevenue($wo, $cfg)
       + $this->materialRevenue((int) $wo->id())
-      + $this->rentalCost((int) $wo->id());
+      + $this->rentalCost((int) $wo->id())
+      + $this->ownedEquipment((int) $wo->id())['revenue'];
     return $rev > 0 ? ['revenue' => $rev, 'source' => 'computed'] : NULL;
   }
 
@@ -239,6 +240,53 @@ class WoProfitCalculator {
     $q->join('wo_chemicals_used__field_subtotal', 'st', 'st.entity_id = cwo.entity_id AND st.deleted = 0');
     $q->addExpression('SUM(st.field_subtotal_value)', 'c');
     return (float) $q->execute()->fetchField();
+  }
+
+  /**
+   * OWNED equipment used on the WO (not rented) — cost + billable revenue.
+   *
+   * Owned rows = wo_rental_equipment with field_equipment_used set (a reference
+   * to our own equipment) and NOT flagged rented. Cost = hours × the machine's
+   * Operating Cost per Hour; revenue = hours × its Hourly Work Order Rate
+   * (field_rate) when it is marked Billable. Currently only heavy_equipment /
+   * small_engine carry these fields (Phase 1 scope).
+   *
+   * @return array
+   *   ['cost' => float, 'revenue' => float]
+   */
+  public function ownedEquipment(int $woId): array {
+    $q = $this->database->select('wo_rental_equipment__field_rented_for', 'rf');
+    $q->condition('rf.field_rented_for_target_id', $woId);
+    $q->condition('rf.deleted', 0);
+    $q->join('wo_rental_equipment__field_equipment_used', 'eu', 'eu.entity_id = rf.entity_id AND eu.deleted = 0');
+    $q->leftJoin('wo_rental_equipment__field_equipment_rented', 'rented', 'rented.entity_id = rf.entity_id AND rented.deleted = 0');
+    $q->leftJoin('wo_rental_equipment__field_hours', 'h', 'h.entity_id = rf.entity_id AND h.deleted = 0');
+    $q->leftJoin('equipment__field_rate', 'r', 'r.entity_id = eu.field_equipment_used_target_id AND r.deleted = 0');
+    $q->leftJoin('equipment__field_operating_cost_per_hour', 'oc', 'oc.entity_id = eu.field_equipment_used_target_id AND oc.deleted = 0');
+    $q->leftJoin('equipment__field_billable', 'b', 'b.entity_id = eu.field_equipment_used_target_id AND b.deleted = 0');
+    // Owned = the "rented" flag is off/unset.
+    $owned = $q->orConditionGroup()
+      ->condition('rented.field_equipment_rented_value', 0)
+      ->isNull('rented.field_equipment_rented_value');
+    $q->condition($owned);
+    $q->addField('h', 'field_hours_value', 'hours');
+    $q->addField('r', 'field_rate_value', 'rate');
+    $q->addField('oc', 'field_operating_cost_per_hour_value', 'opcost');
+    $q->addField('b', 'field_billable_value', 'billable');
+
+    $cost = 0.0;
+    $revenue = 0.0;
+    foreach ($q->execute() as $row) {
+      $hours = (float) $row->hours;
+      if ($hours <= 0) {
+        continue;
+      }
+      $cost += $hours * (float) $row->opcost;
+      if ((int) $row->billable === 1) {
+        $revenue += $hours * (float) $row->rate;
+      }
+    }
+    return ['cost' => $cost, 'revenue' => $revenue];
   }
 
   /**

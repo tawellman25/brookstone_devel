@@ -79,6 +79,31 @@ is only computed at sign-off, so before then `liveRevenue($wo)` projects it:
      `wo_*` math as it's added.
 
 The trip fee is excluded from the computed projection (it's added at sign-off).
+
+## Owned-equipment cost & billing — `ownedEquipment()` (Phase 1: visibility)
+
+Owned **heavy_equipment / small_engine** used on a WO (recorded as a
+`wo_rental_equipment` row with `field_equipment_used` set and *not* flagged
+rented, + `field_hours`) now shows on the live panel:
+
+- **Cost** = hours × the machine's **Operating Cost per Hour**
+  (`equipment.field_operating_cost_per_hour`) → an **"Equipment (owned)"** line
+  in the cost breakdown.
+- **Revenue** = hours × its **Hourly Work Order Rate** (`equipment.field_rate`)
+  when the machine is marked **Billable** (`field_billable`) → folded into the
+  computed live-revenue projection.
+
+**Phase 1 is visibility-only** — it appears on the **live panel of in-progress
+WOs** and does **not** touch invoicing (`field_wo_total`), QuickBooks, or the
+frozen figures of completed WOs. The office sets the rates on each machine's
+equipment page and records usage via the existing equipment/rental form. No new
+equipment fields were needed (all pre-existed, just unused).
+
+**Phase 2 (not built):** wire owned-equipment charges into the actual sign-off
+billing — the rental-fee math is duplicated across ~32 `wo_*` modules, so the
+clean path is consolidating it into one shared rental/equipment service that
+handles rented + owned, then having each module call it. That's what makes it
+hit customer invoices; do it once rates are validated via Phase 1.
 - **Permission** `view wo cost profit` (`restrict access`) → granted at install
   to `supervisor`, `administration`, `site_admin`, `administrator`. Crew +
   clients never see cost/profit.

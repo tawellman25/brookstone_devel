@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * @file
+ * Embeds the "Similar Equipment" strip on each equipment page.
+ *
+ * The list itself is the `equipment_similar` view (fields/sort/count adjustable
+ * in the Views UI). This only places it and feeds it the current machine's type
+ * + id — because "same type" can't be auto-passed by EVA (EVA passes the entity
+ * id, not a field value).
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\views\Views;
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for equipment.
+ */
+function equipment_similar_equipment_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
+  if ($view_mode !== 'full') {
+    return;
+  }
+  if (!$entity->hasField('field_equipment_type') || $entity->get('field_equipment_type')->isEmpty()) {
+    return;
+  }
+  $tid = (int) $entity->get('field_equipment_type')->target_id;
+  $self = (int) $entity->id();
+
+  // Run the view first so we can hide the whole section when there are no
+  // siblings (heading + strip only appear when there's something to show).
+  $view = Views::getView('equipment_similar');
+  if (!$view) {
+    return;
+  }
+  $view->setDisplay('default');
+  $view->setArguments([$tid, $self]);
+  $view->execute();
+  if (empty($view->result)) {
+    return;
+  }
+
+  $build['equipment_similar'] = [
+    '#type' => 'container',
+    '#attributes' => ['class' => ['equipment-similar']],
+    '#weight' => 100,
+    '#attached' => ['library' => ['equipment_similar/strip']],
+    'heading' => [
+      '#markup' => '<h3 class="equipment-similar__title">' . t('Similar Equipment') . '</h3>',
+    ],
+    'list' => $view->buildRenderable('default', [$tid, $self]),
+  ];
+}

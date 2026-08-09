@@ -1,0 +1,133 @@
+<?php
+
+/**
+ * @file
+ * WO Equipment section — owned-equipment billing + card display.
+ *
+ * - Billing: for an OWNED machine (field_equipment_used set) that is Billable,
+ *   copy its "Hourly Work Order Rate" (equipment.field_rate) into the entry's
+ *   field_hourly_rate on save, so the existing rental billing
+ *   (COALESCE(receipt, hourly_rate × hours)) charges it → field_rental_total →
+ *   the invoice. Manual rates are never overwritten.
+ * - Display: renders each row of the wo_rented_equipment view as a card (like
+ *   the Labor hours cards), showing hours, our cost (× Operating Cost) and the
+ *   customer charge (× Work Order Rate) for owned machines.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Url;
+use Drupal\views\ViewExecutable;
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for wo_rental_equipment.
+ *
+ * Bill owned + Billable machines at their equipment-page rate.
+ */
+function wo_rental_equipment_ui_wo_rental_equipment_presave(EntityInterface $entity) {
+  if (!$entity->hasField('field_equipment_used') || $entity->get('field_equipment_used')->isEmpty()) {
+    return;
+  }
+  // Never override a manually-entered rate.
+  if ($entity->hasField('field_hourly_rate') && !$entity->get('field_hourly_rate')->isEmpty()) {
+    return;
+  }
+  $eq = $entity->get('field_equipment_used')->entity;
+  if (!$eq) {
+    return;
+  }
+  $billable = $eq->hasField('field_billable') && (bool) $eq->get('field_billable')->value;
+  $hasRate = $eq->hasField('field_rate') && !$eq->get('field_rate')->isEmpty();
+  if ($billable && $hasRate) {
+    $entity->set('field_hourly_rate', $eq->get('field_rate')->value);
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function wo_rental_equipment_ui_theme($existing, $type, $theme, $path) {
+  return [
+    'views_view_fields__wo_rented_equipment' => [
+      'base hook' => 'views_view_fields',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function wo_rental_equipment_ui_views_pre_render(ViewExecutable $view) {
+  if ($view->id() === 'wo_rented_equipment') {
+    $view->element['#attached']['library'][] = 'wo_rental_equipment_ui/cards';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views-view-fields.
+ *
+ * Builds the per-equipment card data (cost + charge computed from the machine's
+ * own rates for owned equipment).
+ */
+function wo_rental_equipment_ui_preprocess_views_view_fields(array &$variables) {
+  if ($variables['view']->id() !== 'wo_rented_equipment') {
+    return;
+  }
+  $entity = $variables['row']->_entity ?? NULL;
+  if (!$entity) {
+    return;
+  }
+
+  $money = fn($v) => '$' . number_format((float) $v, 2);
+  $hours = ($entity->hasField('field_hours') && !$entity->get('field_hours')->isEmpty())
+    ? (float) $entity->get('field_hours')->value : 0.0;
+  $hrs_f = rtrim(rtrim(number_format($hours, 2), '0'), '.');
+  $is_owned = $entity->hasField('field_equipment_used') && !$entity->get('field_equipment_used')->isEmpty();
+
+  $card = [
+    'is_owned' => $is_owned,
+    'hours_f' => $hrs_f,
+    'edit_url' => NULL,
+    'name' => '',
+    'name_url' => NULL,
+    'badge' => $is_owned ? t('Owned') : t('Rented'),
+  ];
+
+  if ($is_owned) {
+    $eq = $entity->get('field_equipment_used')->entity;
+    $card['name'] = $eq ? $eq->label() : '';
+    try {
+      $card['name_url'] = $eq ? $eq->toUrl()->toString() : NULL;
+    }
+    catch (\Exception $e) {
+      $card['name_url'] = NULL;
+    }
+    // Charge = what actually bills = the entry's field_hourly_rate × hours
+    // (auto-filled from the machine's rate for owned+Billable by the presave,
+    // or a manual override). Using this keeps the card in sync with the invoice.
+    $hourly = ($entity->hasField('field_hourly_rate') && !$entity->get('field_hourly_rate')->isEmpty()) ? (float) $entity->get('field_hourly_rate')->value : 0.0;
+    // Cost = our operating cost from the machine.
+    $op = ($eq && $eq->hasField('field_operating_cost_per_hour') && !$eq->get('field_operating_cost_per_hour')->isEmpty()) ? (float) $eq->get('field_operating_cost_per_hour')->value : 0.0;
+    $card['has_charge'] = $hourly > 0;
+    $card['rate_f'] = $money($hourly);
+    $card['op_f'] = $money($op);
+    $card['charge_f'] = $money($hours * $hourly);
+    $card['cost_f'] = $money($hours * $op);
+    $card['has_cost'] = $op > 0;
+  }
+  else {
+    // Rented: keep the existing "hrs x rate = receipt" display via the field.
+    $card['name'] = ($entity->hasField('field_rental_equipment_name') && !$entity->get('field_rental_equipment_name')->isEmpty())
+      ? $entity->get('field_rental_equipment_name')->value : t('Rented equipment');
+  }
+
+  if ($entity->access('update')) {
+    try {
+      $card['edit_url'] = $entity->toUrl('edit-form', ['query' => ['destination' => Url::fromRoute('<current>')->toString()]])->toString();
+    }
+    catch (\Exception $e) {
+      $card['edit_url'] = NULL;
+    }
+  }
+
+  $variables['equip_card'] = $card;
+}

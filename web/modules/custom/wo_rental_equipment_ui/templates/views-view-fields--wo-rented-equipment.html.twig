@@ -1,0 +1,35 @@
+{#
+/**
+ * @file
+ * Equipment-section card for one wo_rental_equipment entry (Labor-hours style).
+ * `equip_card` is built in wo_rental_equipment_ui_preprocess_views_view_fields().
+ * Rented rows fall back to the view's existing "hrs x rate = receipt" field.
+ */
+#}
+<div class="equip-card {{ equip_card.is_owned ? 'equip-card--owned' : 'equip-card--rented' }}">
+  <div class="equip-card__head">
+    <span class="equip-card__name">
+      {% if equip_card.name_url %}<a href="{{ equip_card.name_url }}">{{ equip_card.name }}</a>{% else %}{{ equip_card.name }}{% endif %}
+    </span>
+    <span class="equip-card__badge">{{ equip_card.badge }}</span>
+  </div>
+
+  <div class="equip-card__body">
+    {% if equip_card.is_owned %}
+      <div class="equip-card__hours">{{ equip_card.hours_f }} {{ 'hrs'|t }}</div>
+      {% if equip_card.has_charge %}
+        <div class="equip-card__charge">{{ 'Charge'|t }}: {{ equip_card.hours_f }} × {{ equip_card.rate_f }} = <strong>{{ equip_card.charge_f }}</strong></div>
+      {% endif %}
+      {% if equip_card.has_cost %}
+        <div class="equip-card__cost">{{ 'Our cost'|t }}: {{ equip_card.hours_f }} × {{ equip_card.op_f }} = {{ equip_card.cost_f }}{% if not equip_card.has_charge %} <em>({{ 'not billed'|t }})</em>{% endif %}</div>
+      {% endif %}
+    {% else %}
+      {# Rented: existing display (hours x hourly rate = receipt total). #}
+      <div class="equip-card__rented">{{ fields.field_receipt_total_cost.content }}</div>
+    {% endif %}
+  </div>
+
+  {% if equip_card.edit_url %}
+    <a class="equip-card__edit" href="{{ equip_card.edit_url }}">{{ 'Edit'|t }}</a>
+  {% endif %}
+</div>

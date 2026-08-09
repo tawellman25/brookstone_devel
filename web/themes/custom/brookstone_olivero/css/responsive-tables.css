@@ -1,0 +1,69 @@
+/**
+ * @file
+ * Mobile-friendly data tables — keep WO-page Views tables on-screen on phones.
+ * Paired with js/responsive-tables.js (adds data-bos-label + .bos-stack-table).
+ */
+
+@media (max-width: 48em) {
+  /* Stack labeled tables into blocks: one row = one card, one cell per line. */
+  .bos-stack-table,
+  .bos-stack-table > tbody,
+  .bos-stack-table > tbody > tr,
+  .bos-stack-table > tbody > tr > td,
+  .bos-stack-table > tbody > tr > th {
+    display: block;
+    width: 100% !important;
+    max-width: 100%;
+  }
+
+  .bos-stack-table thead {
+    display: none;
+  }
+
+  .bos-stack-table > tbody > tr {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin: 0 0 0.75rem;
+    padding: 0.35rem 0.6rem;
+    background: #fff;
+    box-sizing: border-box;
+  }
+
+  .bos-stack-table > tbody > tr > td,
+  .bos-stack-table > tbody > tr > th {
+    border: 0 !important;
+    padding: 0.35rem 0 !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+
+  .bos-stack-table td[data-bos-label]::before {
+    content: attr(data-bos-label);
+    display: block;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #555;
+    margin-bottom: 0.1rem;
+  }
+
+  /* Hide cells that carry no content once stacked. */
+  .bos-stack-table > tbody > tr > td:empty {
+    display: none;
+  }
+
+  /* Fallback: any content table the JS did not stack scrolls inside its box
+     instead of pushing the page sideways. */
+  main .view-content,
+  .region-content .view-content {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  /* Images/media never force the page wider than the viewport. */
+  main img,
+  .region-content img {
+    max-width: 100%;
+    height: auto;
+  }
+}

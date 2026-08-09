@@ -28,6 +28,22 @@ use Drupal\Core\Entity\EntityInterface;
  */
 class WoProfitCalculator {
 
+  /**
+   * Bundles with a standard "hours × billable rate + materials + rentals" live
+   * revenue projection, mapped to their business_setting rate/increment/minimum
+   * fields. Add a bundle here once its billing is verified to fit this shape;
+   * structurally different services (snow per-push, spray per-gallon) need their
+   * own method instead. Bundles not listed (and without an estimate) show
+   * cost-so-far only.
+   */
+  const LIVE_REVENUE_BUNDLES = [
+    'landscaping' => [
+      'rate' => 'field_maintenance_crew_labor',
+      'increment' => 'field_hour_billing_increment',
+      'minimum' => 'field_general_minimum_time',
+    ],
+  ];
+
   public function __construct(
     protected Connection $database,
     protected ConfigPagesLoaderService $configPages,
@@ -82,6 +98,98 @@ class WoProfitCalculator {
       'profit' => $profit,
       'margin' => $margin,
     ];
+  }
+
+  /**
+   * A live REVENUE projection for an in-progress WO (before sign-off computes
+   * field_wo_total).
+   *
+   * Priority: a linked estimate / quoted price (any bundle) → else the bundle's
+   * own billing formula (currently landscaping; extend via LIVE_REVENUE_BUNDLES).
+   *
+   * @return array|null
+   *   ['revenue' => float, 'source' => 'estimate'|'computed'] or NULL if no
+   *   projection is available for this bundle (→ panel shows cost-so-far).
+   */
+  public function liveRevenue(EntityInterface $wo): ?array {
+    $est = $this->estimateRevenue($wo);
+    if ($est !== NULL && $est > 0) {
+      return ['revenue' => $est, 'source' => 'estimate'];
+    }
+    $cfg = self::LIVE_REVENUE_BUNDLES[$wo->bundle()] ?? NULL;
+    if (!$cfg) {
+      return NULL;
+    }
+    $rev = $this->laborRevenue($wo, $cfg)
+      + $this->materialRevenue((int) $wo->id())
+      + $this->rentalCost((int) $wo->id());
+    return $rev > 0 ? ['revenue' => $rev, 'source' => 'computed'] : NULL;
+  }
+
+  /**
+   * Revenue from a linked estimate / quoted price, if any (NULL if none).
+   */
+  protected function estimateRevenue(EntityInterface $wo): ?float {
+    if ($wo->hasField('field_estimated_price') && !$wo->get('field_estimated_price')->isEmpty()) {
+      $p = (float) $wo->get('field_estimated_price')->value;
+      if ($p > 0) {
+        return $p;
+      }
+    }
+    if ($wo->hasField('field_estimate') && !$wo->get('field_estimate')->isEmpty()) {
+      $e = $wo->get('field_estimate')->entity;
+      if ($e && $e->hasField('field_estimate_total') && !$e->get('field_estimate_total')->isEmpty()) {
+        $t = (float) $e->get('field_estimate_total')->value;
+        if ($t > 0) {
+          return $t;
+        }
+      }
+    }
+    return NULL;
+  }
+
+  /**
+   * Live labor REVENUE for a standard hours × billable-rate bundle — replicates
+   * the wo_* sign-off math (increment rounding + minimum floor) so the live
+   * projection matches what completion would bill. 0 until any hours are logged.
+   */
+  protected function laborRevenue(EntityInterface $wo, array $cfg): float {
+    $rate = $this->rate($cfg['rate']);
+    if ($rate <= 0) {
+      return 0.0;
+    }
+    $hours = $this->laborHours((int) $wo->id());
+    if ($hours <= 0) {
+      return 0.0;
+    }
+    $increment = $this->rate($cfg['increment']);
+    $minimum = $this->rate($cfg['minimum']);
+    if ($hours > $minimum && $increment > 0) {
+      $increments = ceil(($hours * 60) / $increment);
+      return $rate * ($increment / 60) * $increments;
+    }
+    return $rate * $minimum;
+  }
+
+  /**
+   * Material REVENUE = Σ field_subtotal_w_markup (charged, incl. markup).
+   */
+  protected function materialRevenue(int $woId): float {
+    $q = $this->database->select('wo_material_list_item__field_subtotal_w_markup', 'st');
+    $q->join('wo_material_list_item__field_list_id', 'lid', 'st.entity_id = lid.entity_id AND lid.deleted = 0');
+    $q->join('wo_material_list__field_work_order', 'wo', 'lid.field_list_id_target_id = wo.entity_id AND wo.deleted = 0');
+    $q->condition('st.deleted', 0);
+    $q->condition('wo.field_work_order_target_id', $woId);
+    $q->addExpression('SUM(st.field_subtotal_w_markup_value)', 'r');
+    return (float) $q->execute()->fetchField();
+  }
+
+  /**
+   * A business_setting decimal value as float (0.0 if empty).
+   */
+  protected function rate(string $field): float {
+    $val = $this->configPages->getValue('business_setting', $field);
+    return isset($val[0]['value']) ? (float) $val[0]['value'] : 0.0;
   }
 
   /**

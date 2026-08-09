@@ -47,12 +47,38 @@ $27 blended cost). Chemicals/rentals/dump are pass-through (~0 margin).
     Total cost / Profit / Margin — "Cost & Profit — recorded at completion".
   - **In progress with revenue** (rare — `field_wo_total` set pre-record): live
     Revenue / Profit / Margin.
-  - **In progress, no revenue** (the common case — revenue is computed at
-    sign-off): a **"Cost so far — live"** breakdown (Labor from live clock hours +
-    Materials + Chemicals + Rentals + Dump) with **no Profit/Margin** and a note
-    that revenue & profit finalize at completion. This avoids showing a
-    misleading "loss" against $0 revenue while a job is still running.
+  - **In progress with a revenue projection** (`liveRevenue()` returns a value —
+    see below): **"Cost & Profit — projected"** with **Revenue (projected)** /
+    Profit / Margin and a note saying figures finalize at sign-off.
+  - **In progress, no projection** (bundle not yet supported + no estimate): a
+    **"Cost so far — live"** breakdown (Labor from live clock hours + Materials +
+    Chemicals + Rentals + Dump) with **no Profit/Margin** and a note that revenue
+    & profit finalize at completion. Avoids a misleading "loss" against $0 revenue.
   - `max-age 0` (live + permission-sensitive).
+
+## Live revenue projection (per-bundle) — `liveRevenue()`
+
+So open jobs show **projected profit**, not just cost. `field_wo_total` (revenue)
+is only computed at sign-off, so before then `liveRevenue($wo)` projects it:
+
+1. **Estimate first (any bundle):** if the WO has `field_estimated_price` > 0, or
+   a `field_estimate` reference whose estimate has `field_estimate_total` > 0, use
+   that (source `estimate`).
+2. **Else, the bundle's own formula** (source `computed`), for bundles listed in
+   `WoProfitCalculator::LIVE_REVENUE_BUNDLES` — a standard **hours × billable
+   rate + materials (marked up) + rentals**, replicating the `wo_*` sign-off math
+   (increment rounding + minimum floor) so the projection matches completion.
+   - **`landscaping`** implemented — rate `field_maintenance_crew_labor` (\$65),
+     `field_hour_billing_increment`, `field_general_minimum_time`.
+   - **Extending:** add a bundle to `LIVE_REVENUE_BUNDLES` with its rate/
+     increment/minimum fields once verified to fit the hours×rate shape.
+     Structurally different services (snow per-push, spray per-gallon) need their
+     own method. Bundles not listed (and without an estimate) fall back to
+     cost-so-far. **Doing this per-bundle is deliberate** — it avoids duplicating
+     all ~30 billing formulas at once and lets each be verified against the real
+     `wo_*` math as it's added.
+
+The trip fee is excluded from the computed projection (it's added at sign-off).
 - **Permission** `view wo cost profit` (`restrict access`) → granted at install
   to `supervisor`, `administration`, `site_admin`, `administrator`. Crew +
   clients never see cost/profit.

@@ -1,8 +1,44 @@
 <?php
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityFormInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
+
+/**
+ * Implements hook_form_alter().
+ *
+ * material.pavers only: show field_setback (Setback / Batter) exclusively when
+ * Hardscape Type = "Wall Block". Core #states (NOT conditional_fields, which
+ * strips values on edit). The Wall Block term id is resolved DYNAMICALLY by
+ * name — never hardcoded. If the term or fields aren't present, leave setback
+ * always-visible (fail open).
+ */
+function material_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  $object = $form_state->getFormObject();
+  if (!$object instanceof EntityFormInterface) {
+    return;
+  }
+  $entity = $object->getEntity();
+  if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'material' || $entity->bundle() !== 'pavers') {
+    return;
+  }
+  if (!isset($form['field_setback'], $form['field_hardscape_type'])) {
+    return;
+  }
+  $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
+    ->loadByProperties(['vid' => 'hardscape_types', 'name' => 'Wall Block']);
+  if (!$terms) {
+    return;
+  }
+  $tid = (string) reset($terms)->id();
+  $form['field_setback']['#states'] = [
+    'visible' => [
+      ':input[name="field_hardscape_type"]' => ['value' => $tid],
+    ],
+  ];
+}
 
 /**
  * Implements hook_entity_validate().

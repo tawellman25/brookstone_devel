@@ -86,7 +86,9 @@ Bundle: `lawn_maintenance_info`
 
 Purpose: Mowing specifications and lawn maintenance history for the property (e.g., mowing height, frequency, last mow date).
 
-Integration: Read/written by `wo_lawn_mowing` module.
+Key fields include `field_mowing_frequency`, `field_mowing_weekday`, `field_mowing_instructions`, `field_mowing_last_mowed`, and **`field_preferred_mow_height`** (string, free text — added 2026-08-03).
+
+Integration: Read/written by `wo_lawn_mowing` module. **Read-direction (2026-08-03):** `field_preferred_mow_height` is copied onto a **new `work_order.lawn_mowing`** (its own `field_preferred_mow_height`) via `wo_lawn_mowing_entity_presave` (only when the WO field is empty), so it shows on the mowing WO; the **Mow-list views** (`teammate_mow_route`, `admin_mow_crew_route`) read the source field directly (always live). Write-direction (unchanged): `field_mowing_last_mowed` / `field_mowing_last_mowed_by` set on WO completion.
 
 ---
 

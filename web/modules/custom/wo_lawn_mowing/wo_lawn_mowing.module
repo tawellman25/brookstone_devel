@@ -164,6 +164,21 @@ function wo_lawn_mowing_entity_presave(EntityInterface $entity) {
 
   // Process only Work Order entities of the 'lawn_mowing' bundle.
   if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'lawn_mowing') {
+      // Read-direction: copy the property's Preferred Mow Height onto a NEW
+      // mowing WO (if the WO field is still empty) so the crew sees it on the WO.
+      // Runs before the Complete guard so it fires at creation.
+      if ($entity->isNew() && $entity->hasField('field_preferred_mow_height') && $entity->get('field_preferred_mow_height')->isEmpty()) {
+        $propId = $entity->get('field_property')->target_id ?? NULL;
+        if ($propId) {
+          $lm = \Drupal::entityTypeManager()->getStorage('property_lawn_maintenance')
+            ->loadByProperties(['field_property' => $propId, 'type' => 'lawn_maintenance_info']);
+          $lm = $lm ? reset($lm) : NULL;
+          if ($lm && $lm->hasField('field_preferred_mow_height') && !$lm->get('field_preferred_mow_height')->isEmpty()) {
+            $entity->set('field_preferred_mow_height', $lm->get('field_preferred_mow_height')->value);
+          }
+        }
+      }
+
       $statusTermId = $entity->get('field_status')->target_id ?? 0;
       if ($statusTermId != 1097) {
           return;

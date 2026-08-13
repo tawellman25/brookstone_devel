@@ -12,7 +12,15 @@
 
 use Drupal\views\Entity\View;
 
-// ── 1. css_class on both gallery views ──────────────────────────────────────
+// ── 1. css_class + Grid (responsive) style on both gallery views ─────────────
+// The office chose core's "Grid (responsive)" style (columns owned in the Views
+// UI). Only set the style when it is NOT already grid_responsive — so this never
+// stomps a later column tweak on an already-grid view (it just brings a stale
+// 'default'/Unformatted-List display, e.g. on dev, up to the grid).
+$defaultGrid = [
+  'type' => 'grid_responsive',
+  'options' => ['grouping' => [], 'columns' => 4, 'cell_min_width' => 100, 'grid_gutter' => 10, 'alignment' => 'horizontal'],
+];
 foreach (['property_photos', 'property_photos_public'] as $vid) {
   $v = View::load($vid);
   if (!$v) { print "  view $vid: NOT FOUND\n"; continue; }
@@ -24,11 +32,17 @@ foreach (['property_photos', 'property_photos_public'] as $vid) {
       $do['css_class'] = 'bos-photo-gallery';
       $changed = TRUE;
     }
+    // Only the display that actually overrides 'style' carries it (default here).
+    if (array_key_exists('style', $do) && ($do['style']['type'] ?? '') !== 'grid_responsive') {
+      $do['style'] = $defaultGrid;
+      $changed = TRUE;
+      print "  view $vid [$dk]: style -> grid_responsive\n";
+    }
     unset($do);
   }
   unset($disp);
-  if ($changed) { $v->set('display', $display); $v->save(); print "  view $vid: css_class set\n"; }
-  else { print "  view $vid: css_class already set\n"; }
+  if ($changed) { $v->set('display', $display); $v->save(); print "  view $vid: saved\n"; }
+  else { print "  view $vid: already css_class + grid_responsive\n"; }
 }
 
 // ── 2. Move the public EVA to the bottom of the property page ────────────────

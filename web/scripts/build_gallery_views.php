@@ -153,7 +153,15 @@ $createdSort = [
 ];
 // Unformatted list — the bos_property_gallery CSS lays the rows out as a
 // responsive grid of cards (staff row template adds the caption bar).
-$gridStyle = ['type' => 'default', 'options' => ['grouping' => [], 'row_class' => '', 'default_row_class' => TRUE]];
+// Core "Grid (responsive)" style — owns the column layout (adjustable in the
+// Views UI). Columns/cell-width/gutter match the office's chosen setting.
+$gridStyle = ['type' => 'grid_responsive', 'options' => [
+  'grouping' => [],
+  'columns' => 4,
+  'cell_min_width' => 100,
+  'grid_gutter' => 10,
+  'alignment' => 'horizontal',
+]];
 
 // ─────────────────────────────────────────────────────────────────────────
 // View 1: property_photos — STAFF tab (clone property_work_orders)

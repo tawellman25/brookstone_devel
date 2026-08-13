@@ -1,32 +1,24 @@
 /**
- * Property photo gallery — grid tiles for both the staff tab (property_photos)
- * and the public EVA (property_photos_public). Targets a stable css_class
- * (bos-photo-gallery) set on both view displays, so it works regardless of
- * whether the .view-id-* class is present on the EVA wrapper.
+ * Property photo gallery — tile polish for both the staff tab (property_photos)
+ * and the public EVA (property_photos_public). Both views use core's
+ * "Grid (responsive)" style, which owns the column layout (columns / cell width
+ * / gutter are set in the Views UI). This file does NOT impose its own grid —
+ * it only styles the tiles + images inside the grid cells, and the staff
+ * caption bar. Scoped to the css_class 'bos-photo-gallery' on both views.
  */
 
-/* Responsive tile grid — 3 across on desktop, per request. */
-.bos-photo-gallery .view-content {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin: 1rem 0;
-}
-
-/* Each row = one tile/card. */
-.bos-photo-gallery .views-row {
+/* Card border per tile (the responsive-grid item wrapper). */
+.bos-photo-gallery .views-view-responsive-grid__item-inner {
   border: 1px solid #ddd;
   border-radius: 6px;
   overflow: hidden;
   background: #fff;
-  display: flex;
-  flex-direction: column;
 }
 
 /* Uniform, proportional thumbnails (image or video) — 4:3 tile, cover-cropped
  * so mixed orientations tile evenly. Full image opens in the Colorbox lightbox. */
-.bos-photo-gallery .views-row img,
-.bos-photo-gallery .views-row video {
+.bos-photo-gallery .views-view-responsive-grid__item img,
+.bos-photo-gallery .views-view-responsive-grid__item video {
   width: 100%;
   aspect-ratio: 4 / 3;
   height: auto;
@@ -39,15 +31,7 @@
 .bos-photo-gallery .pg-media,
 .bos-photo-gallery .views-field { line-height: 0; }
 
-/* 2 across on tablets, 1 across on phones. */
-@media (max-width: 48em) {
-  .bos-photo-gallery .view-content { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 30em) {
-  .bos-photo-gallery .view-content { grid-template-columns: 1fr; }
-}
-
-/* Staff caption bar. */
+/* Staff caption bar (Public/Held badge + Edit link). */
 .bos-photo-gallery .pg-meta {
   display: flex;
   align-items: center;

@@ -1,22 +1,20 @@
 /**
- * Property photo gallery — grid cards for both the staff tab (property_photos)
- * and the public EVA (property_photos_public). The Views output is styled here;
- * the staff view also uses a row template (views-view-fields--property-photos)
- * for the caption bar (Public/Held badge + Edit link).
+ * Property photo gallery — grid tiles for both the staff tab (property_photos)
+ * and the public EVA (property_photos_public). Targets a stable css_class
+ * (bos-photo-gallery) set on both view displays, so it works regardless of
+ * whether the .view-id-* class is present on the EVA wrapper.
  */
 
-/* Responsive grid of tiles for both galleries. */
-.view-id-property_photos .view-content,
-.view-id-property_photos_public .view-content {
+/* Responsive tile grid — 3 across on desktop, per request. */
+.bos-photo-gallery .view-content {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin: 1rem 0;
 }
 
 /* Each row = one tile/card. */
-.view-id-property_photos .views-row,
-.view-id-property_photos_public .views-row {
+.bos-photo-gallery .views-row {
   border: 1px solid #ddd;
   border-radius: 6px;
   overflow: hidden;
@@ -25,26 +23,38 @@
   flex-direction: column;
 }
 
-/* Uniform thumbnails (image or video). */
-.view-id-property_photos .views-row img,
-.view-id-property_photos .views-row video,
-.view-id-property_photos_public .views-row img,
-.view-id-property_photos_public .views-row video {
+/* Uniform, proportional thumbnails (image or video) — 4:3 tile, cover-cropped
+ * so mixed orientations tile evenly. Full image opens in the Colorbox lightbox. */
+.bos-photo-gallery .views-row img,
+.bos-photo-gallery .views-row video {
   width: 100%;
-  height: 170px;
+  aspect-ratio: 4 / 3;
+  height: auto;
   object-fit: cover;
   display: block;
   background: #000;
 }
 
+/* Keep the tile media flush (no inline-image whitespace gap). */
+.bos-photo-gallery .pg-media,
+.bos-photo-gallery .views-field { line-height: 0; }
+
+/* 2 across on tablets, 1 across on phones. */
+@media (max-width: 48em) {
+  .bos-photo-gallery .view-content { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 30em) {
+  .bos-photo-gallery .view-content { grid-template-columns: 1fr; }
+}
+
 /* Staff caption bar. */
-.view-id-property_photos .pg-media { line-height: 0; }
-.view-id-property_photos .pg-meta {
+.bos-photo-gallery .pg-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 6px 8px;
+  line-height: normal;
 }
 .pg-badge {
   font-weight: 700;

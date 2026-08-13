@@ -10,6 +10,8 @@
 
 use Drupal\views\ViewExecutable;
 use Drupal\Core\Url;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 
 /**
  * Implements hook_views_pre_render().
@@ -18,6 +20,17 @@ function bos_property_gallery_views_pre_render(ViewExecutable $view) {
   if (in_array($view->id(), ['property_photos', 'property_photos_public'], TRUE)) {
     $view->element['#attached']['library'][] = 'bos_property_gallery/gallery';
   }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for properties.
+ *
+ * The public gallery renders as an EVA on the property page; attaching the
+ * grid CSS here guarantees it loads regardless of how the EVA render array
+ * bubbles #attached (belt-and-suspenders with the views_pre_render attach).
+ */
+function bos_property_gallery_properties_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
+  $build['#attached']['library'][] = 'bos_property_gallery/gallery';
 }
 
 /**

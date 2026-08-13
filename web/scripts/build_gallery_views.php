@@ -195,6 +195,9 @@ foreach ($a['display'] as $dk => &$disp) {
   if (array_key_exists('style', $do)) {
     $do['style'] = $gridStyle;
   }
+  // Stable class for the gallery grid CSS (works even when the EVA wrapper
+  // omits the .view-id-* class).
+  $do['css_class'] = 'bos-photo-gallery';
   if (array_key_exists('row', $do)) {
     $do['row'] = ['type' => 'fields'];
   }
@@ -255,6 +258,9 @@ foreach ($b['display'] as $dk => &$disp) {
   if (array_key_exists('style', $do)) {
     $do['style'] = $gridStyle;
   }
+  // Stable class for the gallery grid CSS (works even when the EVA wrapper
+  // omits the .view-id-* class).
+  $do['css_class'] = 'bos-photo-gallery';
   if (array_key_exists('row', $do)) {
     $do['row'] = ['type' => 'fields'];
   }

@@ -14,10 +14,13 @@
 # /usr/local/bin/drush (the global PHAR re-execs through the CGI wrapper and
 # dies silently under cron). See drupal_bos_gotchas.md.
 #
-# Off-server copies are still recommended (pull via
-# dev_scripts/brookstone-sync-db-from-live.sh, or push to S3) — these dumps live
-# on the same disk as the DB, so they only protect against logical loss, not a
-# disk/server failure.
+# Off-site copy: after each local dump this pushes the gzip to S3 (a separate
+# failure domain from the Hosting.com data center — see the 2026-08 Phoenix DC
+# thermal outage). Credentials + bucket come from an off-git env file
+# ($HOME/.bos_s3_backup.env, chmod 600) so no secret lives in the repo; the
+# upload itself uses web/scripts/s3_backup_upload.php against the AWS SDK already
+# in vendor/ (no AWS CLI needed). S3 failure alerts by email but does NOT abort
+# the local backup (local dump stays primary).
 
 set -u
 
@@ -25,6 +28,8 @@ KEEP=14
 DIR="$HOME/db_backups"
 PROJECT="/home/brookstoneadmin/brookstone"
 DRUSH="/opt/alt/php83/usr/bin/php $PROJECT/vendor/drush/drush/drush.php"
+PHP_BIN="/opt/alt/php83/usr/bin/php"
+S3_ENV="$HOME/.bos_s3_backup.env"
 ALERT_TO="${BOS_BACKUP_ALERT_TO:-todd@brookstoneoutdoors.com}"
 HOST="$(hostname)"
 
@@ -45,6 +50,21 @@ echo "=== BOS DB backup $(date) ==="
 $DRUSH sql:dump --gzip --result-file="$BASE" || fail "drush sql:dump returned non-zero"
 [ -s "${BASE}.gz" ] || fail "dump missing or empty: ${BASE}.gz"
 echo "OK: ${BASE}.gz ($(du -h "${BASE}.gz" | cut -f1))"
+
+# Off-site push to S3 (local backup stays primary; S3 failure alerts, no abort).
+if [ -f "$S3_ENV" ]; then
+  set -a; . "$S3_ENV"; set +a
+  if "$PHP_BIN" "$PROJECT/web/scripts/s3_backup_upload.php" "${BASE}.gz" 2>>"$DIR/s3_upload.err"; then
+    echo "S3: uploaded $(basename "${BASE}.gz") to ${BOS_S3_BACKUP_BUCKET:-?}"
+  else
+    echo "$(date '+%F %T') S3 UPLOAD FAILED (local backup OK)"
+    printf 'BOS S3 off-site upload FAILED on %s (local dump OK: %s). See %s\n' \
+      "$HOST" "${BASE}.gz" "$DIR/s3_upload.err" \
+      | mail -s "BOS ALERT: S3 backup upload failed on ${HOST}" "$ALERT_TO" 2>/dev/null
+  fi
+else
+  echo "S3: skipped (no $S3_ENV)"
+fi
 
 # Rotate: keep the $KEEP newest, prune the rest.
 ls -1t "$DIR"/bos-db-*.sql.gz 2>/dev/null | tail -n +$((KEEP + 1)) | while read -r f; do

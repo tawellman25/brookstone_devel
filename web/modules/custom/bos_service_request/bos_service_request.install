@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * @file
+ * Install/update hooks for bos_service_request.
+ *
+ * permissions.yml only DEFINES the permission; it does not assign it. Roles are
+ * granted here on install, and again in a hook_update_N so an already-enabled
+ * live install picks up the grant (config/install does not re-import on an
+ * already-enabled module — documented BOS gotcha).
+ *
+ * NOTE: the service_request ECK entity type, its bundle, fields and displays are
+ * created by web/scripts/setup_service_request_entity.php (run per environment),
+ * and the service_request_status vocabulary by
+ * web/scripts/seed_service_request_status.php — not by this install hook. ECK
+ * field instances silently skip on cim, so the entity-API setup script is the
+ * reliable, idempotent landing path (BOS standard).
+ */
+
+use Drupal\user\Entity\Role;
+
+/**
+ * Office roles that administer service requests.
+ * (administrator is a superuser role and receives the permission implicitly.)
+ */
+const BOS_SERVICE_REQUEST_ADMIN_ROLES = ['administration', 'supervisor', 'site_admin'];
+
+/**
+ * Implements hook_install().
+ */
+function bos_service_request_install() {
+  _bos_service_request_grant_admin_permission();
+}
+
+/**
+ * Grant "administer service requests" to office roles (idempotent).
+ */
+function bos_service_request_update_10001() {
+  _bos_service_request_grant_admin_permission();
+  return (string) t('Granted "administer service requests" to office roles.');
+}
+
+/**
+ * Idempotently grant the admin permission to the office roles.
+ */
+function _bos_service_request_grant_admin_permission() {
+  foreach (BOS_SERVICE_REQUEST_ADMIN_ROLES as $rid) {
+    $role = Role::load($rid);
+    if ($role && !$role->hasPermission('administer service requests')) {
+      $role->grantPermission('administer service requests');
+      $role->save();
+    }
+  }
+}

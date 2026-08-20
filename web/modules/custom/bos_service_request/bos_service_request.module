@@ -1,0 +1,80 @@
+<?php
+
+/**
+ * @file
+ * BOS Service Request — public intake layer.
+ *
+ * ARCHITECTURE / SECURITY NOTE (do not "fix" by granting anonymous create):
+ * service_request entities are created PROGRAMMATICALLY in a submit handler on
+ * the public route (Gate 3), never through a granted anonymous ECK permission.
+ * The route + captcha + flood control are the access boundary. Anonymous users
+ * have NO create/view/edit permission on this entity and no route to reach one.
+ *
+ * This .module holds hook glue only (title + opaque reference assignment on
+ * create). All business logic lives in services (Gate 2+).
+ */
+
+/**
+ * Bundle → public-reference prefix. Winterizing = "W" (matches the postcard).
+ */
+const BOS_SERVICE_REQUEST_REF_PREFIXES = [
+  'sprinkler_winterizing' => 'W',
+];
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for service_request.
+ *
+ * Assign an opaque, customer-facing reference before the first save (no entity
+ * id needed). Never expose the entity id publicly — this is what the customer
+ * sees. Generated once; never overwritten.
+ */
+function bos_service_request_service_request_presave(\Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->hasField('field_public_ref') && $entity->get('field_public_ref')->isEmpty()) {
+    $entity->set('field_public_ref', _bos_service_request_generate_ref($entity->bundle()));
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for service_request.
+ *
+ * Set the title to "Service Request #{id}" now that the id exists. Deliberately
+ * NOT an auto_entitylabel [entity:id] pattern — that leaves a stuck
+ * %AutoEntityLabel:uuid% sentinel on a single programmatic save, and nothing
+ * heals service_request the way wo_shared heals work_order. The re-save fires
+ * hook_update (which has no title logic), so there is no recursion.
+ */
+function bos_service_request_service_request_insert(\Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->label() === NULL || $entity->label() === '' || str_contains((string) $entity->label(), 'AutoEntityLabel')) {
+    $entity->set('title', 'Service Request #' . $entity->id());
+    $entity->save();
+  }
+}
+
+/**
+ * Generate a unique opaque public reference, e.g. "W-7K3P2Q".
+ *
+ * Crockford-style alphabet (no I/L/O/U, no 0/1 ambiguity issues) so it reads
+ * cleanly over the phone. Retries on the vanishingly rare collision.
+ */
+function _bos_service_request_generate_ref(string $bundle): string {
+  $prefix = BOS_SERVICE_REQUEST_REF_PREFIXES[$bundle] ?? 'SR';
+  $alphabet = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
+  $storage = \Drupal::entityTypeManager()->getStorage('service_request');
+  for ($try = 0; $try < 25; $try++) {
+    $ref = $prefix . '-';
+    for ($i = 0; $i < 6; $i++) {
+      $ref .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+    }
+    $exists = $storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_public_ref', $ref)
+      ->range(0, 1)
+      ->sort('id', 'ASC')
+      ->execute();
+    if (!$exists) {
+      return $ref;
+    }
+  }
+  // Practically unreachable fallback.
+  return $prefix . '-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
+}

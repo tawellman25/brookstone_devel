@@ -1,0 +1,57 @@
+bos_service_request.settings:
+  type: config_object
+  label: 'BOS Service Request settings'
+  mapping:
+    bundles:
+      type: sequence
+      label: 'Per-bundle intake settings'
+      sequence:
+        type: mapping
+        label: 'Bundle settings'
+        mapping:
+          service_term_id:
+            type: integer
+            label: 'Services taxonomy term id'
+          service_year:
+            type: integer
+            label: 'Service year'
+          signup_open:
+            type: boolean
+            label: 'Signup open (instant kill switch)'
+          open_from:
+            type: string
+            label: 'Signup opens (Y-m-d)'
+          open_until:
+            type: string
+            label: 'Signup closes (Y-m-d)'
+          service_year_start:
+            type: string
+            label: 'Service-year window start (Y-m-d)'
+          service_year_end:
+            type: string
+            label: 'Service-year window end (Y-m-d)'
+          scheduling_notice:
+            type: label
+            label: 'Customer-facing scheduling notice'
+          disclose_existing_coverage:
+            type: boolean
+            label: 'Disclose already-on-list to corroborated submitters'
+    campaigns:
+      type: sequence
+      label: 'Campaign allowlist'
+      sequence:
+        type: string
+        label: 'Campaign code'
+    flood:
+      type: mapping
+      label: 'Flood limits'
+      mapping:
+        per_ip_hour:
+          type: integer
+          label: 'Max submissions per IP per hour'
+        per_address_year:
+          type: integer
+          label: 'Max submissions per normalized address per service year'
+    office_phone:
+      type: string
+      label: 'Office phone shown in customer copy'

@@ -189,7 +189,11 @@ $srcStorage = FieldStorageConfig::loadByName($ENTITY, 'field_source');
 printf("  field_source provider module = %s (must be 'options')\n", $srcStorage ? $srcStorage->getTypeProvider() : '?');
 
 // ── 5. Grant ECK entity permissions to office roles (created after entity) ──
+// Office roles can view/edit/delete, and create (legitimate office/phone intake
+// — field_source includes 'phone'/'office'). Anonymous is granted NOTHING; the
+// public path creates programmatically as uid 0 without a permission.
 $eckPerms = [
+  'create ' . $ENTITY . ' entities',
   'view any ' . $ENTITY . ' entities',
   'edit any ' . $ENTITY . ' entities',
   'delete any ' . $ENTITY . ' entities',

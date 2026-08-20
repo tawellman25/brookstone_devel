@@ -46,12 +46,23 @@ final class ServiceRequestPropertyMatcher {
       $flags[] = 'zip_out_of_area';
     }
 
-    // Cheap SQL prefilter: LIKE on the raw street core (first comma part).
+    // Cheap SQL prefilter — SUFFIX-AGNOSTIC so a submitted "Lane" still matches a
+    // stored "Ln" (the precise suffix-normalized compare happens below). Drop a
+    // trailing street-suffix token and wildcard between the remaining tokens
+    // (robust to spacing/punctuation). Over-matching here is fine; UNDER-matching
+    // (excluding the real property) is the bug this avoids.
     $streetCore = trim(explode(',', $street)[0]);
+    $coreTokens = array_values(array_filter(
+      explode(' ', $this->normalizer->normalizeText($streetCore)),
+      static fn($t) => $t !== ''
+    ));
+    if (count($coreTokens) > 1 && in_array(end($coreTokens), $this->normalizer->suffixSet(), TRUE)) {
+      array_pop($coreTokens);
+    }
     $propStorage = $this->entityTypeManager->getStorage('properties');
     $query = $propStorage->getQuery()->accessCheck(FALSE)->condition('type', 'property');
-    if ($streetCore !== '') {
-      $query->condition('field_street_address', '%' . $streetCore . '%', 'LIKE');
+    if ($coreTokens) {
+      $query->condition('field_street_address', '%' . implode('%', $coreTokens) . '%', 'LIKE');
     }
     $ids = $query->sort('id', 'ASC')->range(0, self::STREET_LIKE_CAP)->execute();
 

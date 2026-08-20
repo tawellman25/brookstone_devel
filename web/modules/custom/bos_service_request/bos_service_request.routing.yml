@@ -27,6 +27,35 @@ bos_service_request.convert:
       service_request:
         type: 'entity:service_request'
 
+# Gate 5 — postcard QR asset (print-ready page) + raw PNG download.
+bos_service_request.qr:
+  path: '/admin/operations/service-requests/qr'
+  defaults:
+    _controller: 'Drupal\bos_service_request\Controller\ServiceRequestQrController::page'
+    _title: 'Postcard QR'
+  requirements:
+    _permission: 'administer service requests'
+  options:
+    _admin_route: 'TRUE'
+
+bos_service_request.qr_png:
+  path: '/admin/operations/service-requests/qr.png'
+  defaults:
+    _controller: 'Drupal\bos_service_request\Controller\ServiceRequestQrController::png'
+  requirements:
+    _permission: 'administer service requests'
+
+# Gate 5 — campaign / source attribution report.
+bos_service_request.report:
+  path: '/admin/operations/service-requests/report'
+  defaults:
+    _controller: 'Drupal\bos_service_request\Controller\ServiceRequestReportController::page'
+    _title: 'Service request report'
+  requirements:
+    _permission: 'administer service requests'
+  options:
+    _admin_route: 'TRUE'
+
 # Secondary actions: Mark Duplicate / Mark Already Covered / Reject.
 bos_service_request.action:
   path: '/admin/operations/service-requests/{service_request}/{op}'

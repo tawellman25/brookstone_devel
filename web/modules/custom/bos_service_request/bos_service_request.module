@@ -14,12 +14,61 @@
  * create). All business logic lives in services (Gate 2+).
  */
 
+use Drupal\Core\Url;
+
 /**
  * Bundle → public-reference prefix. Winterizing = "W" (matches the postcard).
  */
 const BOS_SERVICE_REQUEST_REF_PREFIXES = [
   'sprinkler_winterizing' => 'W',
 ];
+
+/**
+ * WO status Complete-and-beyond guard is handled elsewhere; here we only guard
+ * the service_request "Converted" invariant (see the presave guard below).
+ */
+
+/**
+ * Implements hook_entity_operation() for the admin queue's Operations column.
+ *
+ * Adds Approve & Create WO + the three secondary actions to a service_request's
+ * operations dropbutton (permission-gated; hidden once converted). The admin
+ * View renders these via its Operations field — no VBO.
+ */
+function bos_service_request_entity_operation(\Drupal\Core\Entity\EntityInterface $entity): array {
+  if ($entity->getEntityTypeId() !== 'service_request') {
+    return [];
+  }
+  if (!\Drupal::currentUser()->hasPermission('administer service requests')) {
+    return [];
+  }
+  $ops = [];
+  $id = $entity->id();
+  $converted = $entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty();
+  if (!$converted) {
+    $ops['sr_convert'] = [
+      'title' => t('Approve & Create WO'),
+      'weight' => 1,
+      'url' => Url::fromRoute('bos_service_request.convert', ['service_request' => $id]),
+    ];
+    $ops['sr_already_covered'] = [
+      'title' => t('Mark Already Covered'),
+      'weight' => 2,
+      'url' => Url::fromRoute('bos_service_request.action', ['service_request' => $id, 'op' => 'already-covered']),
+    ];
+    $ops['sr_duplicate'] = [
+      'title' => t('Mark Duplicate'),
+      'weight' => 3,
+      'url' => Url::fromRoute('bos_service_request.action', ['service_request' => $id, 'op' => 'duplicate']),
+    ];
+    $ops['sr_reject'] = [
+      'title' => t('Reject'),
+      'weight' => 4,
+      'url' => Url::fromRoute('bos_service_request.action', ['service_request' => $id, 'op' => 'reject']),
+    ];
+  }
+  return $ops;
+}
 
 /**
  * Implements hook_ENTITY_TYPE_presave() for service_request.
@@ -31,6 +80,27 @@ const BOS_SERVICE_REQUEST_REF_PREFIXES = [
 function bos_service_request_service_request_presave(\Drupal\Core\Entity\EntityInterface $entity) {
   if ($entity->hasField('field_public_ref') && $entity->get('field_public_ref')->isEmpty()) {
     $entity->set('field_public_ref', _bos_service_request_generate_ref($entity->bundle()));
+  }
+
+  // Defense-in-depth (the form-layer convert action is the primary path; this is
+  // the presave backstop): a request may NOT be marked Converted without a
+  // linked work order. The converter sets both in one save, so it passes; a
+  // manual status flip to Converted with no WO is blocked.
+  if (!$entity->isNew()
+    && $entity->hasField('field_request_status') && !$entity->get('field_request_status')->isEmpty()
+    && $entity->hasField('field_work_order') && $entity->get('field_work_order')->isEmpty()) {
+    try {
+      $convertedTid = \Drupal::service('bos_service_request.status_resolver')
+        ->tid(\Drupal\bos_service_request\Service\ServiceRequestStatusResolver::CONVERTED);
+    }
+    catch (\Throwable $e) {
+      return;
+    }
+    if ((int) $entity->get('field_request_status')->target_id === $convertedTid) {
+      throw new \Drupal\Core\Entity\EntityStorageException(
+        'A service request cannot be marked Converted without a linked work order. Use "Approve & Create Work Order".'
+      );
+    }
   }
 }
 

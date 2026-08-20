@@ -10,3 +10,34 @@ bos_service_request.winterize:
     _access: 'TRUE'
   options:
     no_cache: 'TRUE'
+
+# Approve & Create Work Order — per-row confirm form (NOT a VBO bulk action, per
+# the documented VBO footgun incidents). The confirm form provides Drupal form
+# CSRF on the mutating POST; the converter is locked + idempotent.
+bos_service_request.convert:
+  path: '/admin/operations/service-requests/{service_request}/convert'
+  defaults:
+    _form: 'Drupal\bos_service_request\Form\ServiceRequestConvertForm'
+    _title: 'Approve & Create Work Order'
+  requirements:
+    _permission: 'administer service requests'
+  options:
+    _admin_route: 'TRUE'
+    parameters:
+      service_request:
+        type: 'entity:service_request'
+
+# Secondary actions: Mark Duplicate / Mark Already Covered / Reject.
+bos_service_request.action:
+  path: '/admin/operations/service-requests/{service_request}/{op}'
+  defaults:
+    _form: 'Drupal\bos_service_request\Form\ServiceRequestActionForm'
+    _title: 'Service request'
+  requirements:
+    _permission: 'administer service requests'
+    op: 'duplicate|already-covered|reject'
+  options:
+    _admin_route: 'TRUE'
+    parameters:
+      service_request:
+        type: 'entity:service_request'

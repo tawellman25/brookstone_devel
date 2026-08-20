@@ -14,6 +14,13 @@ services:
     tags:
       - { name: authentication_provider, provider_id: cowork_key, priority: 100 }
 
+  # Shared property-matching normalizers (text/street/token + street_suffix_map).
+  # Also consumed by bos_service_request's public matcher — one normalizer.
+  bos_wo_intake.property_normalizer:
+    class: Drupal\bos_wo_intake\Service\PropertyMatchNormalizer
+    arguments:
+      - '@config.factory'
+
   # Transport-agnostic intake logic. Reused by the REST resource now and by
   # Gate 2 / a future MCP tool later.
   bos_wo_intake.intake:
@@ -23,6 +30,7 @@ services:
       - '@logger.channel.bos_wo_intake'
       - '@config.factory'
       - '@module_handler'
+      - '@bos_wo_intake.property_normalizer'
 
   logger.channel.bos_wo_intake:
     parent: logger.channel_base

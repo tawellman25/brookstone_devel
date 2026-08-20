@@ -1,0 +1,41 @@
+services:
+  logger.channel.bos_service_request:
+    parent: logger.channel_base
+    arguments: ['bos_service_request']
+
+  # Name → TID for the content-based service_request_status vocab (cached).
+  bos_service_request.status_resolver:
+    class: Drupal\bos_service_request\Service\ServiceRequestStatusResolver
+    arguments:
+      - '@entity_type.manager'
+
+  # The single eligibility authority (property no-services, owner holds, existing
+  # WO, contract coverage, existing active request).
+  bos_service_request.eligibility:
+    class: Drupal\bos_service_request\Service\ServiceRequestEligibility
+    arguments:
+      - '@entity_type.manager'
+      - '@estimate_intake.intake_lookup'
+      - '@config.factory'
+      - '@bos_service_request.status_resolver'
+      - '@logger.channel.bos_service_request'
+
+  # Server-side property matcher (reuses bos_wo_intake's shared normalizers).
+  bos_service_request.property_matcher:
+    class: Drupal\bos_service_request\Service\ServiceRequestPropertyMatcher
+    arguments:
+      - '@entity_type.manager'
+      - '@bos_wo_intake.property_normalizer'
+      - '@logger.channel.bos_service_request'
+
+  # Approve & Create Work Order (delegates WO creation to bos_wo_intake).
+  bos_service_request.converter:
+    class: Drupal\bos_service_request\Service\ServiceRequestConverter
+    arguments:
+      - '@entity_type.manager'
+      - '@bos_wo_intake.intake'
+      - '@bos_service_request.eligibility'
+      - '@bos_service_request.status_resolver'
+      - '@lock'
+      - '@datetime.time'
+      - '@logger.channel.bos_service_request'

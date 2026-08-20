@@ -40,6 +40,7 @@ final class WorkOrderIntakeService {
     private readonly LoggerInterface $logger,
     private readonly ConfigFactoryInterface $configFactory,
     private readonly ModuleHandlerInterface $moduleHandler,
+    private readonly PropertyMatchNormalizer $normalizer,
   ) {
     $this->settings = $this->configFactory->get('bos_wo_intake.settings');
   }
@@ -510,18 +511,14 @@ final class WorkOrderIntakeService {
    * a possessive/plural stem so "bynums"→"bynum" and "todds"→"todd" still hit.
    */
   private function tokenMatches(string $nick, string $token): bool {
-    if (str_contains($nick, $token)) {
-      return TRUE;
-    }
-    $stem = $this->stem($token);
-    return $stem !== $token && str_contains($nick, $stem);
+    return $this->normalizer->tokenMatches($nick, $token);
   }
 
   /**
    * Strip a single trailing possessive/plural "s" from a meaningful-length token.
    */
   private function stem(string $t): string {
-    return (strlen($t) > 3 && substr($t, -1) === 's') ? substr($t, 0, -1) : $t;
+    return $this->normalizer->stem($t);
   }
 
   private function propertyCandidates(array $rows): array {
@@ -696,25 +693,15 @@ final class WorkOrderIntakeService {
   // ==========================================================================
 
   private function normalizeText(string $s): string {
-    $s = strtolower(trim($s));
-    $s = preg_replace('/[^a-z0-9]+/', ' ', $s);
-    return trim(preg_replace('/\s+/', ' ', $s));
+    return $this->normalizer->normalizeText($s);
   }
 
   private function normalizeStreet(string $s): string {
-    $map = $this->settings->get('street_suffix_map') ?? [];
-    $tokens = explode(' ', $this->normalizeText($s));
-    foreach ($tokens as &$t) {
-      if (isset($map[$t])) {
-        $t = $map[$t];
-      }
-    }
-    return trim(implode(' ', $tokens));
+    return $this->normalizer->normalizeStreet($s);
   }
 
   private function suffixSet(): array {
-    $map = $this->settings->get('street_suffix_map') ?? [];
-    return array_values(array_unique(array_merge(array_keys($map), array_values($map))));
+    return $this->normalizer->suffixSet();
   }
 
   private function loadProperty(int $id): ?EntityInterface {

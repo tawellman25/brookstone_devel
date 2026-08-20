@@ -95,6 +95,9 @@ final class WinterizeForm extends FormBase {
     $form['submitted_name'] = [
       '#type' => 'textfield', '#title' => $this->t('Your name'), '#required' => TRUE, '#maxlength' => 255,
       '#description' => $this->t('Last name is fine.'),
+      // Start focus in the form so tabbing flows through the fields, not the
+      // site header first.
+      '#attributes' => ['autofocus' => 'autofocus'],
     ];
     $form['submitted_address'] = [
       '#type' => 'textfield', '#title' => $this->t('Service address'), '#required' => TRUE, '#maxlength' => 255,

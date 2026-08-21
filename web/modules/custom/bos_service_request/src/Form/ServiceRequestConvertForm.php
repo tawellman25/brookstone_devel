@@ -55,7 +55,7 @@ final class ServiceRequestConvertForm extends ConfirmFormBase {
   }
 
   public function getCancelUrl(): Url {
-    return Url::fromUri('internal:/admin/operations/service-requests');
+    return Url::fromUri('internal:/admin/office/service-requests');
   }
 
   public function submitForm(array &$form, FormStateInterface $form_state): void {

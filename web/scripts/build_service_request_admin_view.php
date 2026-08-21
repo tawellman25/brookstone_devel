@@ -113,8 +113,9 @@ $page_display = [
   'display_title' => 'Queue',
   'position' => 1,
   'display_options' => [
-    'path' => 'admin/operations/service-requests',
-    'menu' => ['type' => 'normal', 'title' => 'Service Requests', 'description' => 'Public service-request intake queue.', 'weight' => 0, 'menu_name' => 'admin', 'context' => '', 'expanded' => FALSE],
+    'path' => 'admin/office/service-requests',
+    // Nested under the "Estimates" admin menu item (estimate_board.board).
+    'menu' => ['type' => 'normal', 'title' => 'Service Requests', 'description' => 'Public service-request intake queue.', 'weight' => 0, 'menu_name' => 'admin', 'parent' => 'estimate_board.board', 'context' => '', 'expanded' => FALSE],
   ],
 ];
 

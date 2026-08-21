@@ -15,7 +15,7 @@ bos_service_request.winterize:
 # the documented VBO footgun incidents). The confirm form provides Drupal form
 # CSRF on the mutating POST; the converter is locked + idempotent.
 bos_service_request.convert:
-  path: '/admin/operations/service-requests/{service_request}/convert'
+  path: '/admin/office/service-requests/{service_request}/convert'
   defaults:
     _form: 'Drupal\bos_service_request\Form\ServiceRequestConvertForm'
     _title: 'Approve & Create Work Order'
@@ -29,7 +29,7 @@ bos_service_request.convert:
 
 # Gate 5 — postcard QR asset (print-ready page) + raw PNG download.
 bos_service_request.qr:
-  path: '/admin/operations/service-requests/qr'
+  path: '/admin/office/service-requests/qr'
   defaults:
     _controller: 'Drupal\bos_service_request\Controller\ServiceRequestQrController::page'
     _title: 'Postcard QR'
@@ -39,7 +39,7 @@ bos_service_request.qr:
     _admin_route: 'TRUE'
 
 bos_service_request.qr_png:
-  path: '/admin/operations/service-requests/qr.png'
+  path: '/admin/office/service-requests/qr.png'
   defaults:
     _controller: 'Drupal\bos_service_request\Controller\ServiceRequestQrController::png'
   requirements:
@@ -47,7 +47,7 @@ bos_service_request.qr_png:
 
 # Gate 5 — campaign / source attribution report.
 bos_service_request.report:
-  path: '/admin/operations/service-requests/report'
+  path: '/admin/office/service-requests/report'
   defaults:
     _controller: 'Drupal\bos_service_request\Controller\ServiceRequestReportController::page'
     _title: 'Service request report'
@@ -58,7 +58,7 @@ bos_service_request.report:
 
 # Secondary actions: Mark Duplicate / Mark Already Covered / Reject.
 bos_service_request.action:
-  path: '/admin/operations/service-requests/{service_request}/{op}'
+  path: '/admin/office/service-requests/{service_request}/{op}'
   defaults:
     _form: 'Drupal\bos_service_request\Form\ServiceRequestActionForm'
     _title: 'Service request'

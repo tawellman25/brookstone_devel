@@ -1,0 +1,9 @@
+services:
+  bos_scheduling.winterize_carry_forward_commands:
+    class: Drupal\bos_scheduling\Commands\WinterizeCarryForwardCommands
+    arguments:
+      - '@entity_type.manager'
+      - '@entity_field.manager'
+      - '@database'
+    tags:
+      - { name: drush.command }

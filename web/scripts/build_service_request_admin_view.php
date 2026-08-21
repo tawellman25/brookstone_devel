@@ -15,6 +15,25 @@ if ($existing = View::load('service_request_admin')) {
   print "removed existing service_request_admin (rebuild)\n";
 }
 
+// Resolve the "Office" admin-menu link for THIS env (content UUID differs per
+// env; matched by title then the stable page_manager office route).
+$officeParent = '';
+$mlm = \Drupal::service('plugin.manager.menu.link');
+foreach ($mlm->getDefinitions() as $pid => $def) {
+  if (($def['menu_name'] ?? '') === 'admin' && strcasecmp((string) ($def['title'] ?? ''), 'office') === 0) {
+    $officeParent = $pid;
+    break;
+  }
+}
+if ($officeParent === '') {
+  foreach ($mlm->getDefinitions() as $pid => $def) {
+    if (($def['menu_name'] ?? '') === 'admin' && ($def['route_name'] ?? '') === 'page_manager.page_view_office_administation_office_administation-layout_builder-0') {
+      $officeParent = $pid;
+      break;
+    }
+  }
+}
+
 $field = function (string $name, string $label, string $type, ?string $table = NULL, array $settings = []): array {
   return [
     'id' => $name,
@@ -114,8 +133,8 @@ $page_display = [
   'position' => 1,
   'display_options' => [
     'path' => 'admin/office/service-requests',
-    // Nested under the "Estimates" admin menu item (estimate_board.board).
-    'menu' => ['type' => 'normal', 'title' => 'Service Requests', 'description' => 'Public service-request intake queue.', 'weight' => 0, 'menu_name' => 'admin', 'parent' => 'estimate_board.board', 'context' => '', 'expanded' => FALSE],
+    // Nested under the "Office" admin menu item (resolved per env above).
+    'menu' => ['type' => 'normal', 'title' => 'Service Requests', 'description' => 'Public service-request intake queue.', 'weight' => 0, 'menu_name' => 'admin', 'parent' => $officeParent, 'context' => '', 'expanded' => FALSE],
   ],
 ];
 

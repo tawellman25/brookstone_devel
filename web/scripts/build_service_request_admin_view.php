@@ -134,7 +134,7 @@ $page_display = [
   'display_options' => [
     'path' => 'admin/office/service-requests',
     // Nested under the "Office" admin menu item (resolved per env above).
-    'menu' => ['type' => 'normal', 'title' => 'Service Requests', 'description' => 'Public service-request intake queue.', 'weight' => 0, 'menu_name' => 'admin', 'parent' => $officeParent, 'context' => '', 'expanded' => FALSE],
+    'menu' => ['type' => 'normal', 'title' => 'Service Requests', 'description' => 'Public service-request intake queue.', 'weight' => -5, 'menu_name' => 'admin', 'parent' => $officeParent, 'context' => '', 'expanded' => FALSE],
   ],
 ];
 

@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-08-03 (WO cost & profit `wo_profit` live — Stage 1 + live projected revenue (landscaping) + owned-equipment visibility (Phase 1) shipped; Stage 2 dashboard + owned-equipment invoicing (Phase 2) in NEXT)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-08-21 (public service-request intake `bos_service_request` — Gates 1–5 live: `/winterize` postcard-QR form → office queue → Approve & Create WO, for the 2026 winterizing campaign; Gate 6 = offseason)
 
 ---
 
@@ -59,6 +59,23 @@ useful than this in-house path; the endpoint built for it is the reusable founda
 - **💡 Seasonal auto-disambiguation (idea, future):** resolve `cleanup` (Fall 413 / Spring 411) — and possibly bare `pruning` (Summer/Winter) — by the **current date/season** instead of returning candidates. A small dated-synonym layer on top of `synonym_map`. Deferred.
 - **✅ Data fix DONE (local + live, 2026-07-04):** un-flagged `field_work_order_service` on the **parent-category** terms **366 "Spraying"** (12 children) and **388 "Pruning"** (2 children) — grouping nodes mis-flagged as WO-services. Reference diagnostic (`web/scripts/wo_intake_term_refs.php`) confirmed **0 `field_service` references** → zero-risk; WO-service pool 39→37; leaf children unaffected. Applied as DB data on **both** environments (it's entity data, not config, so a local-only change would revert on the next prod sync). Removes the two `service_bundle_missing` edge cases.
 - **💡 Bare category word → child candidates (idea, minor):** post-un-flag, saying just `"pruning"` or `"spraying"` now returns `ambiguous(service)` with **no** candidates (the parent term name no longer resolves; children are "Summer Pruning" / "Weed Control", not "pruning"). Acceptable fallback (2B lets the user pick/retype), but nicer would be: if a phrase matches a **parent category** name, offer that category's WO-service **children** as candidates. Small resolver enhancement; deferred.
+
+### ⭐ Public service-request intake — Gates 1–5 SHIPPED 2026-08-20 (T1, Effort L)
+Public `/winterize` postcard-QR form → office review queue → **Approve & Create Work Order**. Intake is never execution; no anonymous path creates a WO/Property/Contact. First workflow = **2026 Sprinkler Winterizing** (postcards mail early–mid Sept for an October season). Module `bos_service_request` + `service_request` ECK entity; consumes `bos_wo_intake` (shared `PropertyMatchNormalizer` extracted). Docs: `Modules/bos_service_request.md`.
+
+| Gate | Status |
+|---|---|
+| **Gate 1** — `service_request` entity + status vocab + perms | ✅ **SHIPPED live** (`988ff56b`). 23 fields, `service_request_status` (content, resolve-by-name), `administer service requests`. |
+| **Gate 2** — services (eligibility / matcher / converter / status resolver) | ✅ **SHIPPED live** (`7c689d0a`; 15/15 dev). Eligibility first-hit authority incl. **contract coverage** (`field_do_you_want IN 1/4` on a current-year residential contract) — WO-only dedup was insufficient. Converter locked/idempotent, delegates WO creation to `bos_wo_intake`. |
+| **Gate 3** — public `/winterize` form | ✅ **SHIPPED live** (`1eb44ee3`; 13/13 dev). captcha + flood; **§6.0 property-disclosure invariant** enforced + tested vs rendered HTML; enumeration-safe confirmation copy; creates uid-0 record, zero properties/contacts on unmatched. **Form is OPEN on live** (`open_from` 2026-08-20). |
+| **Gate 4** — office queue + Approve & Create WO | ✅ **SHIPPED live** (`f3be4cfb`; 10/10 dev). View at `/admin/office/service-requests` (under Office menu, before Estimates); convert + Duplicate/Already-Covered/Reject as **per-row confirm forms, NOT VBO**; presave backstop. |
+| **Gate 5** — postcard QR asset + campaign report | ✅ **SHIPPED live** (`f7fc08a8`). QR via `endroid/qr-code` (`/winterize?c=pc26`, inline + 1200px download); attribution report (source/campaign/status + `wants_recurring` opt-ins). |
+
+**Service-request — remaining:**
+- **Gate 6 (LATER, offseason)** — prove the abstraction with a 2nd bundle (sprinkler repair / spring start-up).
+- Eligibility WO check: add the "or a linked scheduling date in-window" augmentation (created-in-window only now).
+- Decide whether to narrow `COVERED_CONTRACT_STATUS_TIDS` to the spec's three (currently includes Generate-WO 1651 + Completed-for-the-Year 1127).
+- **`field_wants_recurring` opt-ins** are next January's contract-section conversations, pre-sorted by geography — the real asset behind the campaign.
 
 ### Other NOW items
 | Item | Area | Tier | Effort | Notes |

@@ -42,7 +42,10 @@ $build = function (string $mode, array $components) {
 $out = [];
 
 // ── Public "what we do" page (full) ─────────────────────────────────────────
+// field_banner_image is multi-value ("Top Banner Image"); the image formatter
+// renders every value, so one banner = a hero, several = a stacked photo set.
 $out[] = $build('full', [
+  'field_banner_image' => ['type' => 'image', 'label' => 'hidden', 'weight' => -1, 'region' => 'content', 'settings' => ['image_style' => 'large', 'image_link' => ''], 'third_party_settings' => []],
   'field_iconic_image' => $component('field_iconic_image', ['label' => 'hidden', 'type' => 'image', 'weight' => 0]),
   'field_subtitle' => $component('field_subtitle', ['label' => 'hidden', 'type' => 'string', 'weight' => 1]),
   'field_public_description' => ['type' => 'text_default', 'label' => 'hidden', 'weight' => 2, 'region' => 'content', 'settings' => [], 'third_party_settings' => []],

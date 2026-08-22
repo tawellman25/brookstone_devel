@@ -74,23 +74,52 @@ else {
 $etm = \Drupal::entityTypeManager();
 $tids = $etm->getStorage('taxonomy_term')->getQuery()->accessCheck(FALSE)
   ->condition('vid', 'services')->execute();
-$copied = 0; $skipped = 0;
+// Choose the public "what we do" body. The core taxonomy `description`, when a
+// term has one, is the intentional public/marketing copy → it wins. Otherwise
+// the old Crew Description is the only public-ish source. The crew text stays in
+// field_description as the training body regardless.
+// Correction is safe/idempotent: we only overwrite an auto-copy (public still
+// equals the crew text) — a hand-edited public body is never clobbered.
+$norm = fn($t) => trim(preg_replace('/\s+/', ' ', strip_tags((string) $t)));
+$fromCrew = 0; $fromCore = 0; $corrected = 0; $skipped = 0;
 foreach ($etm->getStorage('taxonomy_term')->loadMultiple($tids) as $term) {
   if (!$term->hasField('field_public_description')) {
     continue;
   }
   $pub = $term->get('field_public_description');
-  $src = $term->get('field_description');
-  if ($pub->isEmpty() && !$src->isEmpty()) {
-    $pub->setValue($src->first()->getValue());
+  $crew = $term->get('field_description');
+  $core = $term->get('description');
+  $coreText = (!$core->isEmpty() && $norm($core->value) !== '') ? $core->value : NULL;
+  $crewVal = !$crew->isEmpty() ? $crew->first()->getValue() : NULL;
+
+  if ($pub->isEmpty()) {
+    if ($coreText !== NULL) {
+      $pub->setValue(['value' => $coreText, 'summary' => '', 'format' => $core->format ?: 'full_html']);
+      $term->save();
+      $fromCore++;
+    }
+    elseif ($crewVal !== NULL) {
+      $pub->setValue($crewVal);
+      $term->save();
+      $fromCrew++;
+    }
+    else {
+      $skipped++;
+    }
+  }
+  elseif ($coreText !== NULL && $crewVal !== NULL
+    && $norm($pub->value) === $norm($crewVal['value'] ?? '')
+    && $norm($pub->value) !== $norm($coreText)) {
+    // Public was auto-filled from crew, but a real public copy lives in core.
+    $pub->setValue(['value' => $coreText, 'summary' => '', 'format' => $core->format ?: 'full_html']);
     $term->save();
-    $copied++;
+    $corrected++;
   }
   else {
     $skipped++;
   }
 }
-$out[] = "copied Crew Description → public on $copied terms ($skipped left as-is)";
+$out[] = "public description: $fromCore from core, $fromCrew from crew, $corrected corrected to core ($skipped unchanged)";
 
 // 5. Add field_public_description to the services term form display.
 $form = EntityFormDisplay::load('taxonomy_term.services.default');

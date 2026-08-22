@@ -48,7 +48,7 @@ on `cim`). 23 fields, all names ≤ 32 chars.
 | `field_submitted_*` | name/address/zip/phone/email | Verbatim record of what a stranger typed — evidence, never written back as authoritative data. |
 | `field_access_notes` / `field_customer_notes` / `field_office_notes` | string_long | |
 | `field_match_candidates` | **string_long** (not text_long) | JSON of candidate property ids + scores when ambiguous. |
-| `field_review_flags` | string_long | newline machine flags: no_services, credit_hold, do_not_schedule, no_sprinkler_system, zip_out_of_area, ambiguous_property, unmatched_property. |
+| `field_review_flags` | string_long | newline machine flags: no_services, credit_hold, do_not_schedule, no_sprinkler_system, zip_out_of_area, ambiguous_property, unmatched_property, **contract_completed_for_year** (Phase 2 P0.2). |
 | `field_existing_work_order` / `field_existing_contract` | refs | What already covered them, if any. |
 | `field_work_order` | ref → work_order | The WO created at conversion. |
 | `field_converted_by` / `field_converted_on` | user / timestamp | |
@@ -91,8 +91,14 @@ presave backstop. `evaluate(propertyId, serviceTermId, serviceYear,
 6. Otherwise → `eligible`.
 
 `COVERED_CONTRACT_STATUS_TIDS = [1123 Approved, 1651 Generate WO, 1124 WO
-Created, 1125 Assigned, 1127 Completed for the Year]` — broadened beyond the
-spec's three (Approved/WO-Created/Assigned); narrow if the office prefers.
+Created, 1125 Assigned]` — statuses where work IS coming. **(Phase 2 P0.2,
+2026-08-22): 1127 "Completed for the Year" was REMOVED from the covered set.**
+1127 asserts the season is finished, not that coverage is coming — a customer
+writing in against a 1127 contract is a *disagreement*, not proof of coverage.
+Per **asymmetric failure** (accept + flag beats silently swallow): a current-year
+contract at 1127 holding a wanted term-369 section now returns **eligible** with
+review flag `contract_completed_for_year` (via `contractCompletedForYear()`),
+never `already_covered`.
 Service-year window uses `DrupalDateTime` in site tz (never `FROM_UNIXTIME` — the
 live MariaDB session tz is MST-no-DST). Deferred: the "or a linked scheduling
 date in the window" augmentation (created-in-window only for now).
@@ -207,8 +213,19 @@ Tabs on the queue page: **Queue / Report / Postcard QR**.
 970-835-9661). Per-bundle: `service_term_id`, `service_year`, **`signup_open`
 (instant kill switch — no deploy)**, `open_from`/`open_until`,
 `service_year_start`/`_end`, `scheduling_notice`, `disclose_existing_coverage`.
-Plus `campaigns` allowlist (website, pc26), `flood` (per_ip_hour 5,
-per_address_year 2), `office_phone`.
+Plus `campaigns` allowlist — **(Phase 2 P0.1, 2026-08-22)** now `[website,
+pc26a, pc26b, pc26]`: the 2026 mailing is two variants — **pc26a** ("already on
+our list", reassurance) and **pc26b** ("time to schedule", conversion); legacy
+**pc26** is kept accepted (may be in a test QR) and reported separately. `flood`
+(per_ip_hour 5, per_address_year 2), `office_phone`, and per-bundle
+**`freeze_disclaimer`** (Phase 2 P0.5 — freeze-damage notice shown by the submit
+button; office-editable in config, seeded by `hook_update_10002`).
+
+**Postcard QR** (`ServiceRequestQrController`): the print page now renders **both
+variants** (pc26a + pc26b), each with its own QR + high-res PNG download; `?c=`
+still renders a single code. **Report** breaks out A vs B explicitly (a
+dedicated "Postcard variants" table) — B's response is the number that justifies
+next year's spend and is never pooled with A.
 
 **Live state:** `/winterize` is OPEN (`open_from` set to 2026-08-20 for the
 early rollout). Intended production window ran from 2026-08-25.

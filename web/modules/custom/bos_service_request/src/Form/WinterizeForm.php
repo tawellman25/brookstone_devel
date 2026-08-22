@@ -352,7 +352,9 @@ final class WinterizeForm extends FormBase {
     if ($elig) {
       switch ($elig->outcome) {
         case EligibilityResult::ELIGIBLE:
-          return [ServiceRequestStatusResolver::NEW, NULL, NULL, []];
+          // Accepted as New, but carry any soft-signal flags (e.g.
+          // contract_completed_for_year — P0.2) into field_review_flags.
+          return [ServiceRequestStatusResolver::NEW, NULL, NULL, $elig->flags];
 
         case EligibilityResult::ALREADY_COVERED:
           return [ServiceRequestStatusResolver::ALREADY_COVERED, $elig->existingWorkOrderId, $elig->existingContractId, []];

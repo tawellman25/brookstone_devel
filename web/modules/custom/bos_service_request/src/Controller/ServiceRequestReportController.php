@@ -33,8 +33,25 @@ final class ServiceRequestReportController extends ControllerBase {
         . '</strong> opted into the automatic winterizing list.</p>',
     ];
 
+    // Postcard variants broken out explicitly — B is the number that justifies
+    // next year's spend and must never be pooled with A (P0.1).
+    $byCampaign = $this->groupCount('service_request__field_campaign', 'field_campaign_value');
+    $variantLabels = [
+      'pc26a' => 'Postcard A — "already on our list"',
+      'pc26b' => 'Postcard B — "time to schedule"',
+      'pc26' => 'Postcard (legacy pc26)',
+      'website' => 'Website',
+    ];
+    $variantRows = [];
+    foreach ($variantLabels as $code => $label) {
+      if (isset($byCampaign[$code])) {
+        $variantRows[$label] = $byCampaign[$code];
+      }
+    }
+    $build['variants'] = $this->table('Postcard variants (A vs B, kept separate)', $variantRows);
+
     $build['by_source'] = $this->table('By source', $this->groupCount('service_request__field_source', 'field_source_value'));
-    $build['by_campaign'] = $this->table('By campaign', $this->groupCount('service_request__field_campaign', 'field_campaign_value'));
+    $build['by_campaign'] = $this->table('By campaign (all codes)', $byCampaign);
     $build['by_year'] = $this->table('By service year', $this->groupCount('service_request__field_service_year', 'field_service_year_value'));
     $build['by_status'] = $this->table('By status', $this->statusCounts());
     $build['#cache'] = ['max-age' => 0];

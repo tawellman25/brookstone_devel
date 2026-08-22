@@ -23,16 +23,24 @@ use Psr\Log\LoggerInterface;
 final class ServiceRequestEligibility {
 
   /**
-   * Contract statuses that mean the year's contract is committed/covering.
+   * Contract statuses that mean the year's contract is committed/covering —
+   * i.e. work IS coming. {Approved 1123, Generate WO 1651, WO Created 1124,
+   * Assigned 1125}. Excluded: every pre-approval state, On Hold (1126), Canceled
+   * (1128), and — per P0.2 (asymmetric failure) — "Completed for the Year" (1127).
    *
-   * NOTE (§5.4 refinement, flagged for confirmation): the spec listed
-   * {Approved 1123, Work Orders Created 1124, Assigned 1125}. We also include
-   * "Generate Work Orders" (1651, the transitional state between Approved and
-   * WO-Created) and "Completed for the Year" (1127, already serviced) because
-   * all four mean the customer is covered. Excluded: every pre-approval state,
-   * On Hold (1126) and Canceled (1128).
+   * 1127 asserts the season is FINISHED, not that coverage is coming. A customer
+   * writing in against a 1127 contract is a DISAGREEMENT between two signals, not
+   * proof of coverage. Telling them "you're already on our list" when no WO
+   * exists risks a split manifold in November and a warranty argument. So 1127 is
+   * NOT covering: we accept the request and flag it (contract_completed_for_year)
+   * for a 30-second office check. See contractCompletedForYear().
    */
-  public const COVERED_CONTRACT_STATUS_TIDS = [1123, 1651, 1124, 1125, 1127];
+  public const COVERED_CONTRACT_STATUS_TIDS = [1123, 1651, 1124, 1125];
+
+  /**
+   * "Completed for the Year" — a soft/disagreement signal, never covering (P0.2).
+   */
+  public const CONTRACT_COMPLETED_FOR_YEAR_TID = 1127;
 
   /**
    * The ONLY Work Order status that does NOT block a new request: Canceled.
@@ -166,8 +174,45 @@ final class ServiceRequestEligibility {
       return new EligibilityResult(EligibilityResult::DUPLICATE, [], NULL, NULL, NULL, (int) reset($existing));
     }
 
-    // 6. Eligible.
-    return new EligibilityResult(EligibilityResult::ELIGIBLE);
+    // 6. Eligible. Attach the 1127 disagreement flag if present (accept + flag,
+    //    never swallow — P0.2 asymmetric failure).
+    $flags = [];
+    if ($this->contractCompletedForYear($propertyId, $serviceTermId, $serviceYear)) {
+      $flags[] = 'contract_completed_for_year';
+    }
+    return new EligibilityResult(EligibilityResult::ELIGIBLE, $flags);
+  }
+
+  /**
+   * TRUE when a current-year residential contract at "Completed for the Year"
+   * (1127) holds a wanted section for this service. A disagreement signal: the
+   * request is still eligible, but flagged for an office check (P0.2).
+   */
+  private function contractCompletedForYear(int $propertyId, int $serviceTermId, int $serviceYear): bool {
+    $contractIds = $this->entityTypeManager->getStorage('contracts')->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('type', 'residential')
+      ->condition('field_property', $propertyId)
+      ->condition('field_contract_year', $serviceYear)
+      ->condition('field_contract_status', self::CONTRACT_COMPLETED_FOR_YEAR_TID)
+      ->execute();
+    if (!$contractIds) {
+      return FALSE;
+    }
+    $sectionStorage = $this->entityTypeManager->getStorage('contract_sections');
+    foreach ($contractIds as $contractId) {
+      $sectionIds = $sectionStorage->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('field_contract', $contractId)
+        ->condition('field_service', $serviceTermId)
+        ->condition('field_do_you_want', self::CONTRACT_WANTS, 'IN')
+        ->range(0, 1)
+        ->execute();
+      if ($sectionIds) {
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 
   /**

@@ -41,6 +41,41 @@ function bos_service_request_update_10001() {
 }
 
 /**
+ * P0.1 + P0.5: campaign variants (pc26a/pc26b) + freeze disclaimer.
+ *
+ * config/install does not re-import on an already-enabled module, so push the
+ * new values onto active config here. Idempotent: campaign codes are merged
+ * (never dropping office-added ones, and keeping legacy pc26); the disclaimer is
+ * only seeded when empty (never clobbers an office edit).
+ */
+function bos_service_request_update_10002() {
+  $cfg = \Drupal::configFactory()->getEditable('bos_service_request.settings');
+  $changed = [];
+
+  $campaigns = $cfg->get('campaigns') ?? [];
+  foreach (['website', 'pc26a', 'pc26b', 'pc26'] as $code) {
+    if (!in_array($code, $campaigns, TRUE)) {
+      $campaigns[] = $code;
+    }
+  }
+  $cfg->set('campaigns', array_values($campaigns));
+  $changed[] = 'campaigns=' . implode(',', $campaigns);
+
+  $bundles = $cfg->get('bundles') ?? [];
+  $default = 'Sprinkler winterization (blow-out) greatly reduces but cannot eliminate the risk of freeze damage. Systems can still be damaged by an early hard freeze before your scheduled service, by water in components we are unable to reach, or by pre-existing conditions. By submitting this request you acknowledge that Brookstone is not responsible for freeze damage occurring before your winterization is performed.';
+  foreach ($bundles as $name => $b) {
+    if (empty($b['freeze_disclaimer'])) {
+      $bundles[$name]['freeze_disclaimer'] = $default;
+      $changed[] = "freeze_disclaimer[$name] seeded";
+    }
+  }
+  $cfg->set('bundles', $bundles);
+
+  $cfg->save();
+  return (string) t('Updated service-request settings: @c', ['@c' => implode('; ', $changed)]);
+}
+
+/**
  * Idempotently grant the admin permission to the office roles.
  */
 function _bos_service_request_grant_admin_permission() {

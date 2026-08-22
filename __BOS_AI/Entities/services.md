@@ -157,28 +157,32 @@ Meaning:
 
 ---
 
-### field_description (text_with_summary) — label "Crew / Training Description"
+### field_service_public_desc (text_with_summary) — label "Service Description (Public)"
 Meaning:
-- The **teammate "how we do it" training body**. Rendered on the service page
-  only in the `teammate_view` view mode (crew/office roles) — never shown to the
-  public. Formerly labeled "Crew Description".
-- Since 2026-08-22 (the `bos_services` public/teammate split), the same
-  `/services/{name}` page renders `teammate_view` for internal roles and `full`
-  for everyone else. See [field_public_description](#field_public_description)
-  for the public body.
+- The **public "what we do" body**, shown on the `/services/{name}` page in the
+  `full` view mode to anonymous/client visitors, and trimmed (300 chars) as the
+  teaser on the `/services` listing. Has an **optional summary**.
+- **Dedicated** to the services vocabulary (not shared). Summary-capable widget
+  (`text_textarea_with_summary`) on the term form's **Public View** tab.
 
 ---
 
-### field_public_description (text_long) — label "Service Description (Public)"
+### field_service_crew_desc (text_long) — label "Crew / Training Description"
 Meaning:
-- The **public "what we do" body**, shown on the service page in the `full` view
-  mode to anonymous/client visitors. Added 2026-08-22 in the `bos_services`
-  split. The core taxonomy `description` base field was retired from the term
-  form at the same time (its public/marketing copy migrated here on the terms
-  that used it).
-- **Shared storage** — `field_public_description` is a `text_long` storage also
-  used by `material_types`, `backflow_device_types`, and `backflow_uses`. Plain
-  textarea widget (no summary).
+- The **teammate "how we do it" training body**, shown on the same service page
+  only in the `teammate_view` view mode (crew/office roles) — never public.
+- **Dedicated** to the services vocabulary. Plain textarea (no summary) on the
+  term form's **Teammate View** tab.
+
+> **Role-based rendering (`bos_services`, 2026-08-22).** The same
+> `/services/{name}` URL renders `teammate_view` (crew body) for internal roles
+> and `full` (public body) for everyone else — `hook_entity_view_mode_alter`.
+> The earlier shared fields `field_description` ("Crew Description") and
+> `field_public_description` were **removed from the services bundle** on
+> 2026-08-22 in favour of these two dedicated fields (content migrated). The
+> core taxonomy `description` base field was also retired from the term form.
+> Those shared storages still exist for other vocabularies (equipment_types,
+> material_types, backflow_*).
 
 ---
 

@@ -29,8 +29,8 @@ All taxonomy vocabularies used in BOS. Base fields (name, description, weight, p
 | `field_default_estimate_item_temp` | entity_reference_revisions | Default Estimate Item Template | |
 | `field_department` | entity_reference → department | Department | |
 | `field_brookstone_tags` | entity_reference → taxonomy_term | Brookstone Tags | |
-| `field_description` | text_with_summary | Crew / Training Description | Teammate "how we do it" body; `teammate_view` view mode only (never public). Was "Crew Description" before the 2026-08-22 `bos_services` split. |
-| `field_public_description` | text_long | Service Description (Public) | Public "what we do" body; `full` view mode. Added 2026-08-22 (`bos_services`). Shared text_long storage (also material_types/backflow_device_types/backflow_uses). Replaced the core `description` base field, now retired from the form. |
+| `field_service_public_desc` | text_with_summary | Service Description (Public) | Public "what we do" body; `full` view mode + trimmed `/services` listing teaser. Has an optional summary. **Dedicated** to services. Added 2026-08-22 (`bos_services`). |
+| `field_service_crew_desc` | text_long | Crew / Training Description | Teammate "how we do it" training body; `teammate_view` view mode only (never public). **Dedicated** to services. Added 2026-08-22 (`bos_services`). |
 | `field_other_names` | string | Other Search Terms or Names | |
 | `field_subtitle` | string | Subtitle | |
 | `field_list_order` | integer | List Order | |

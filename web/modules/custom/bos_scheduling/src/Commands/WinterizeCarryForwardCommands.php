@@ -113,6 +113,11 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
       $rows[] = $this->buildRow($wo, $pid, $sourceYears, $targetYear, $history, $batchDays, $propInfo[$pid] ?? [], $tz);
     }
 
+    // ── 3.5 Proximity fill: place no-prior (new-customer) rows on the nearest
+    //    confidently-scheduled property's day, UNASSIGNED + flagged, so they land
+    //    on the calendar tentatively instead of being scheduled from scratch. ──
+    $this->proximityFill($rows, $propInfo);
+
     // ── 4. Dense route-order rank within each (proposed_date, proposed_tech) group. ──
     $this->assignRouteOrder($rows);
 
@@ -368,12 +373,15 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
             }
           }
         }
+        [$lat, $lon] = $this->propertyLatLon($p);
         $out[$pid] = [
           'nick' => (string) ($p->get('field_nickname')->value ?? ''),
           'street' => (string) ($p->get('field_street_address')->value ?? ''),
           'city' => $city,
           'zip' => $zip,
           'zones' => $zones[$pid] ?? '',
+          'lat' => $lat,
+          'lon' => $lon,
         ];
       }
     }
@@ -408,9 +416,9 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
       'source_year', 'prior_wo_id', 'prior_sched_id', 'prior_date', 'prior_weekday', 'prior_ordinal',
       'prior_tech_uid', 'prior_tech_name', 'prior_route_order', 'order_source', 'tech_source',
       'prior_signoff_at', 'prior_signed_off_by',
-      'alt_year', 'alt_date', 'alt_weekday', 'alt_ordinal', 'alt_tech_name',
+      'alt_year', 'alt_date', 'alt_weekday', 'alt_ordinal', 'alt_tech_name', 'year_check',
       'proposed_date', 'proposed_tech_uid', 'proposed_tech_name', 'proposed_route_order',
-      'action', 'flags',
+      'action', 'flags', 'note',
     ], '');
     $row['wo_id'] = $woId;
     $row['wo_number'] = $woNumber;
@@ -463,7 +471,14 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
     if ((int) $proposed->format('N') === 7) {
       $flags[] = 'weekend';
     }
-    if ($this->isHolidayOrClosure($proposed)) {
+    // Holiday = informational (winterizing works through holidays, e.g. Columbus
+    // Day); closure = office genuinely closed → blocks. Business calendar
+    // currently tags everything 'holiday', so holidays schedule with a flag.
+    $cal = $this->calendarType($proposed);
+    if ($cal === 'closure') {
+      $flags[] = 'closure_collision';
+    }
+    elseif ($cal === 'holiday') {
       $flags[] = 'holiday_collision';
     }
 
@@ -547,32 +562,110 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
       $row['alt_ordinal'] = $altOrd;
       $altTech = ($alt['signoff'] && $alt['signoff']['uid']) ? $alt['signoff']['uid'] : $alt['assigned'];
       $row['alt_tech_name'] = $altTech ? $this->userName($altTech) : '';
-      // Compare.
-      $sameWeekday = (int) $altDt->format('N') === $iso;
-      $sameOrdinal = $altOrd === $ordinal;
-      $sameMonth = (int) $altDt->format('n') === $month;
-      if ($sameWeekday && $sameOrdinal && $sameMonth) {
-        $flags[] = 'years_agree';
-      }
-      else {
-        if (!$sameOrdinal) {
-          $flags[] = 'year_disagree_ordinal';
-        }
-        if (!$sameWeekday) {
-          $flags[] = 'year_disagree_weekday';
-        }
-        if (!$sameMonth) {
-          $flags[] = 'year_disagree_month';
-        }
-      }
-      if ($altTech && $techUid && $altTech !== $techUid) {
-        $flags[] = 'year_disagree_tech';
-      }
+      // Year comparison is INFORMATIONAL only (recency wins) — collapsed into a
+      // single year_check column so it never clutters the actionable flags.
+      $diffs = [];
+      if ($altOrd !== $ordinal) { $diffs[] = 'ordinal'; }
+      if ((int) $altDt->format('N') !== $iso) { $diffs[] = 'weekday'; }
+      if ((int) $altDt->format('n') !== $month) { $diffs[] = 'month'; }
+      if ($altTech && $techUid && $altTech !== $techUid) { $diffs[] = 'tech'; }
+      $row['year_check'] = $diffs ? ('differs: ' . implode(', ', $diffs)) : 'agree';
     }
 
-    $row['action'] = 'schedule';
+    // Action: schedule everything with a usable date — dead-tech rows land
+    // UNASSIGNED (blank tech → calendar's unassigned bucket, supervisor assigns).
+    // Only a genuine date-conflict (holiday/Sunday) is held for manual review,
+    // because proximity can't fix a bad date. New-customer (no_prior) rows are
+    // proximity-filled in a later pass. All rows here are field_scheduled_firm =
+    // FALSE, so everything is a soft proposal the supervisor confirms. The office
+    // can still flip any action in the CSV.
     $row['flags'] = implode('|', $flags);
+    // Only a Sunday or a genuine office closure holds for manual — a bad date
+    // proximity can't fix. Holidays (worked) and everything else schedule soft.
+    $blocking = array_intersect($flags, ['weekend', 'closure_collision']);
+    $row['action'] = $blocking ? 'review' : 'schedule';
     return $row;
+  }
+
+  /**
+   * Place no-prior (new-customer) rows on the nearest confidently-scheduled
+   * property's day (unassigned, flagged proximity_fill). Rows with no GPS or no
+   * neighbour within the threshold stay action=skip (truly manual).
+   */
+  private function proximityFill(array &$rows, array $propInfo): void {
+    $maxMiles = 10.0;
+    // Anchors = already-scheduled rows with a date + GPS.
+    $anchors = [];
+    foreach ($rows as $r) {
+      if ($r['action'] !== 'schedule' || !$r['proposed_date'] || !$r['property_id']) {
+        continue;
+      }
+      $pi = $propInfo[(int) $r['property_id']] ?? NULL;
+      if ($pi && $pi['lat'] !== NULL && $pi['lon'] !== NULL) {
+        $anchors[] = ['lat' => $pi['lat'], 'lon' => $pi['lon'], 'date' => $r['proposed_date'], 'nick' => $r['property_nickname']];
+      }
+    }
+    if (!$anchors) {
+      return;
+    }
+    foreach ($rows as &$r) {
+      if ($r['action'] !== 'skip' || !str_contains((string) $r['flags'], 'no_prior_wo') || !$r['property_id']) {
+        continue;
+      }
+      $pi = $propInfo[(int) $r['property_id']] ?? NULL;
+      if (!$pi || $pi['lat'] === NULL || $pi['lon'] === NULL) {
+        continue;
+      }
+      $best = NULL;
+      $bestD = INF;
+      foreach ($anchors as $a) {
+        $d = $this->haversineMiles((float) $pi['lat'], (float) $pi['lon'], (float) $a['lat'], (float) $a['lon']);
+        if ($d < $bestD) {
+          $bestD = $d;
+          $best = $a;
+        }
+      }
+      if ($best && $bestD <= $maxMiles) {
+        $r['proposed_date'] = $best['date'];
+        $r['action'] = 'schedule';
+        $r['flags'] = 'no_prior_wo|proximity_fill';
+        $r['note'] = sprintf('New customer — placed near %s (%.1f mi); assign a tech.', mb_substr($best['nick'], 0, 40), $bestD);
+        $r['_order_tier'] = 2;
+        $r['_order_value'] = PHP_INT_MAX;
+      }
+    }
+    unset($r);
+  }
+
+  private function haversineMiles(float $lat1, float $lon1, float $lat2, float $lon2): float {
+    $R = 3958.8;
+    $dLat = deg2rad($lat2 - $lat1);
+    $dLon = deg2rad($lon2 - $lon1);
+    $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) ** 2;
+    return $R * 2 * asin(min(1.0, sqrt($a)));
+  }
+
+  /** @return array{0:?float,1:?float} [lat, lon] from field_geofield, or [null,null]. */
+  private function propertyLatLon($p): array {
+    if (!$p->hasField('field_geofield') || $p->get('field_geofield')->isEmpty()) {
+      return [NULL, NULL];
+    }
+    $item = $p->get('field_geofield')->first();
+    $lat = NULL;
+    $lon = NULL;
+    try {
+      $lat = $item->get('lat')->getValue();
+      $lon = $item->get('lon')->getValue();
+    }
+    catch (\Throwable $e) {
+      // fall through to WKT parse
+    }
+    if (($lat === NULL || $lon === NULL || $lat === '' || $lon === '') && !empty($item->value)
+      && preg_match('/POINT\s*\(\s*([-0-9.]+)\s+([-0-9.]+)\s*\)/i', (string) $item->value, $m)) {
+      $lon = (float) $m[1];
+      $lat = (float) $m[2];
+    }
+    return [is_numeric($lat) ? (float) $lat : NULL, is_numeric($lon) ? (float) $lon : NULL];
   }
 
   /** Dense 1..N route order within each (proposed_date, proposed_tech) group. */
@@ -623,10 +716,10 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
     return [new DrupalDateTime(sprintf('%04d-%02d-%02d 00:00:00', $year, $month, $day), $tz), FALSE];
   }
 
-  private function isHolidayOrClosure(DrupalDateTime $date): bool {
-    // Best-effort: business_calendar events on this date flagged holiday/closure.
+  /** business_calendar type ('holiday' | 'closure' | '') for a date (site tz). */
+  private function calendarType(DrupalDateTime $date): string {
     if (!$this->etm->hasDefinition('business_calendar')) {
-      return FALSE;
+      return '';
     }
     static $map = NULL;
     if ($map === NULL) {
@@ -646,10 +739,13 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
           }
           foreach ($e->getFields() as $fn => $fi) {
             $ft = $fi->getFieldDefinition()->getType();
-            if (in_array($ft, ['datetime', 'daterange', 'smartdate'], TRUE) && !$fi->isEmpty()) {
+            if (in_array($ft, ['datetime', 'daterange', 'smartdate', 'timestamp'], TRUE) && !$fi->isEmpty()) {
               $v = $fi->value;
               $d = is_numeric($v) ? date('Y-m-d', (int) $v) : substr((string) $v, 0, 10);
-              $map[$d] = TRUE;
+              // closure beats holiday if a date somehow has both.
+              if (!isset($map[$d]) || $type === 'closure') {
+                $map[$d] = $type;
+              }
               break;
             }
           }
@@ -659,7 +755,7 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
         $map = [];
       }
     }
-    return isset($map[$date->format('Y-m-d')]);
+    return $map[$date->format('Y-m-d')] ?? '';
   }
 
   /** @return array{0:?int,1:?string} [proposedTechUid|null, flag|null] */
@@ -690,13 +786,7 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
   }
 
   private function writeCsv(string $path, array $rows): void {
-    $cols = ['wo_id', 'wo_number', 'property_id', 'property_nickname', 'street', 'city', 'zip', 'total_zones',
-      'source_year', 'prior_wo_id', 'prior_sched_id', 'prior_date', 'prior_weekday', 'prior_ordinal',
-      'prior_tech_uid', 'prior_tech_name', 'prior_route_order', 'order_source', 'tech_source',
-      'prior_signoff_at', 'prior_signed_off_by',
-      'alt_year', 'alt_date', 'alt_weekday', 'alt_ordinal', 'alt_tech_name',
-      'proposed_date', 'proposed_tech_uid', 'proposed_tech_name', 'proposed_route_order',
-      'action', 'flags'];
+    $cols = $this->csvColumns();
     $fh = fopen($path, 'w');
     fputcsv($fh, $cols);
     foreach ($rows as $r) {
@@ -709,9 +799,34 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
     fclose($fh);
   }
 
+  private function csvColumns(): array {
+    return ['wo_id', 'wo_number', 'property_id', 'property_nickname', 'street', 'city', 'zip', 'total_zones',
+      'source_year', 'prior_wo_id', 'prior_sched_id', 'prior_date', 'prior_weekday', 'prior_ordinal',
+      'prior_tech_uid', 'prior_tech_name', 'prior_route_order', 'order_source', 'tech_source',
+      'prior_signoff_at', 'prior_signed_off_by',
+      'alt_year', 'alt_date', 'alt_weekday', 'alt_ordinal', 'alt_tech_name', 'year_check',
+      'proposed_date', 'proposed_tech_uid', 'proposed_tech_name', 'proposed_route_order',
+      'action', 'flags', 'note'];
+  }
+
   private function printSummary(array $rows, string $path): void {
-    $schedulable = count(array_filter($rows, fn($r) => $r['action'] === 'schedule'));
-    $skipped = count($rows) - $schedulable;
+    $isSched = fn($r) => $r['action'] === 'schedule';
+    $assigned = array_filter($rows, fn($r) => $isSched($r) && $r['proposed_tech_uid'] !== '');
+    $unassigned = array_filter($rows, fn($r) => $isSched($r) && $r['proposed_tech_uid'] === '');
+    $review = array_filter($rows, fn($r) => $r['action'] === 'review');
+    $skip = array_filter($rows, fn($r) => $r['action'] === 'skip');
+
+    $this->io()->newLine();
+    $this->io()->section('Winterizing carry-forward plan');
+    $this->io()->text([
+      sprintf('Candidates: %d', count($rows)),
+      sprintf('  ✅ auto-schedule, tech assigned  : %d   (apply schedules these; nothing to review)', count($assigned)),
+      sprintf('  🅿  auto-schedule, UNASSIGNED     : %d   (land on the calendar; confirm + assign a tech)', count($unassigned)),
+      sprintf('  ✋ manual — date conflict         : %d   (holiday/Sunday; move the date yourself)', count($review)),
+      sprintf('  🆕 skip — no history, no neighbour: %d   (schedule from scratch)', count($skip)),
+    ]);
+
+    // Actionable flag counts (year_check noise already excluded from flags).
     $flagCounts = [];
     foreach ($rows as $r) {
       foreach (array_filter(explode('|', (string) $r['flags'])) as $f) {
@@ -719,15 +834,29 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
       }
     }
     arsort($flagCounts);
-    $this->io()->newLine();
-    $this->io()->text(sprintf('Candidates: %d · schedulable: %d · skip (no prior): %d', count($rows), $schedulable, $skipped));
-    $this->io()->text('Flags:');
-    foreach ($flagCounts as $f => $n) {
-      $this->io()->text(sprintf('   %-28s %d', $f, $n));
+    if ($flagCounts) {
+      $this->io()->text('Flags:');
+      foreach ($flagCounts as $f => $n) {
+        $this->io()->text(sprintf('   %-24s %d', $f, $n));
+      }
     }
+
+    // Focused review file: only the rows that want a human — date conflicts,
+    // unassigned (need a tech), and true skips.
+    $reviewPath = preg_replace('/\.csv$/i', '', $path) . '_REVIEW.csv';
+    $keep = ['proposed_date', 'proposed_route_order', 'property_nickname', 'street', 'city',
+      'proposed_tech_name', 'order_source', 'prior_date', 'prior_weekday', 'action', 'flags', 'note'];
+    $fh = fopen($reviewPath, 'w');
+    fputcsv($fh, $keep);
+    foreach (array_merge($review, $unassigned, $skip) as $r) {
+      fputcsv($fh, array_map(fn($c) => $r[$c] ?? '', $keep));
+    }
+    fclose($fh);
+
     $this->io()->newLine();
-    $this->io()->success('CSV: ' . $path);
-    $this->io()->text('Review/edit the CSV, then: drush bos:winterize:apply --file=' . $path . ' --actor=<uid>');
+    $this->io()->success('Full plan CSV: ' . $path);
+    $this->io()->text('Focused review CSV (only rows needing a look): ' . $reviewPath);
+    $this->io()->text('Then: drush bos:winterize:apply --file=' . $path . ' --actor=<uid>');
   }
 
 }

@@ -2,6 +2,7 @@
 
 namespace Drupal\bos_scheduling\Controller;
 
+use Drupal\bos_scheduling\Service\ScheduleWriter;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Url;
@@ -21,6 +22,8 @@ use Symfony\Component\HttpFoundation\Request;
 class SprinklerSchedulingController extends ControllerBase {
 
   protected Connection $database;
+
+  protected ScheduleWriter $scheduleWriter;
 
   const BUNDLES = [
     'sprinkler_start_up'    => 'Start Up',
@@ -44,12 +47,13 @@ class SprinklerSchedulingController extends ControllerBase {
 
   const ACTIVE_STATUSES = [1089, 1099, 1095, 1503, 1091, 1090, 1092, 1093, 1094, 1096];
 
-  public function __construct(Connection $database) {
+  public function __construct(Connection $database, ScheduleWriter $schedule_writer) {
     $this->database = $database;
+    $this->scheduleWriter = $schedule_writer;
   }
 
   public static function create(ContainerInterface $container): static {
-    return new static($container->get('database'));
+    return new static($container->get('database'), $container->get('bos_scheduling.schedule_writer'));
   }
 
   /**
@@ -135,49 +139,21 @@ class SprinklerSchedulingController extends ControllerBase {
       return new JsonResponse(['success' => FALSE, 'message' => 'Invalid date.'], 400);
     }
 
-    $storage   = $this->entityTypeManager()->getStorage('scheduling');
-    $wo_storage = $this->entityTypeManager()->getStorage('work_order');
     $created   = 0;
     $skipped   = 0;
     $order     = $start_order;
 
     foreach ($wo_ids as $wo_id) {
-      $wo_id = (int) $wo_id;
-
-      // Check if scheduling record already exists for this WO on this date.
-      $existing = $this->database->select('scheduling__field_work_order', 'swo')
-        ->fields('swo', ['entity_id'])
-        ->condition('swo.field_work_order_target_id', $wo_id)
-        ->condition('swo.deleted', 0)
-        ->execute()->fetchField();
-
-      if ($existing) {
+      // Same create/idempotency/field_scheduled behavior as before — now via
+      // the shared ScheduleWriter service (also used by the carry-forward cmd).
+      $result = $this->scheduleWriter->schedule((int) $wo_id, $ts, [
+        'teammate_uid' => $teammate_uid,
+        'order' => $order,
+      ]);
+      if ($result['status'] === 'skipped') {
         $skipped++;
         continue;
       }
-
-      // Create scheduling entity.
-      $scheduling = $storage->create([
-        'type'                => 'work_order',
-        'field_work_order'    => ['target_id' => $wo_id],
-        'field_date'          => [
-          'value'     => $ts,
-          'end_value' => $ts + 86340,
-          'duration'  => 1439,
-        ],
-        'field_assigned_to'      => ['target_id' => $teammate_uid],
-        'field_scheduled_oder'   => $order,
-        'field_scheduled_firm'   => FALSE,
-      ]);
-      $scheduling->save();
-
-      // Mark WO as scheduled.
-      $wo = $wo_storage->load($wo_id);
-      if ($wo) {
-        $wo->set('field_scheduled', TRUE);
-        $wo->save();
-      }
-
       $created++;
       $order++;
     }

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Drupal\bos_scheduling\Commands;
 
+use Drupal\bos_scheduling\Service\ScheduleWriter;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Session\AccountSwitcherInterface;
+use Drupal\user\Entity\User;
 use Drush\Commands\DrushCommands;
 
 /**
@@ -42,6 +45,8 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
     private readonly EntityTypeManagerInterface $etm,
     private readonly EntityFieldManagerInterface $efm,
     private readonly Connection $db,
+    private readonly ScheduleWriter $writer,
+    private readonly AccountSwitcherInterface $accountSwitcher,
   ) {
     parent::__construct();
   }
@@ -130,6 +135,176 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
     // ── 6. Write CSV + summary. ──
     $this->writeCsv($out, $rows);
     $this->printSummary($rows, $out);
+  }
+
+  /**
+   * Apply a reviewed plan CSV as real scheduling records.
+   *
+   * Re-reads the CSV (does NOT recompute — the edited file is the authority),
+   * re-validates every row against LIVE state, and creates scheduling records
+   * via the shared writer. Only action=schedule rows are processed. Idempotent:
+   * a WO that already has a scheduling record is skipped, so a second run of the
+   * same file is a no-op. One bad row never aborts the run.
+   *
+   * @command bos:winterize:apply
+   * @option file The reviewed plan CSV (required).
+   * @option actor Office user uid to attribute the scheduling to (required; not 1).
+   * @option target-year Season year used for the date-window sanity check.
+   * @option limit Apply at most N rows (0 = all) — for a cautious first pass.
+   * @usage drush bos:winterize:apply --file=/tmp/winterize_plan_2026.csv --actor=6165 --limit=10
+   */
+  public function apply(array $options = ['file' => NULL, 'actor' => NULL, 'target-year' => 2026, 'limit' => 0]): void {
+    $file = (string) $options['file'];
+    $actorUid = (int) $options['actor'];
+    $targetYear = (int) $options['target-year'];
+    $limit = (int) $options['limit'];
+    $tz = new \DateTimeZone(date_default_timezone_get());
+
+    if ($file === '' || !is_readable($file)) {
+      $this->io()->error('--file is required and must be readable.');
+      return;
+    }
+    if ($actorUid <= 1) {
+      $this->io()->error('--actor is required and must be a real office user (not uid 1 — the superuser produces dishonest attribution on hundreds of records).');
+      return;
+    }
+    $actor = User::load($actorUid);
+    if (!$actor || !$actor->isActive()) {
+      $this->io()->error("--actor uid $actorUid is not an active user.");
+      return;
+    }
+    $winStart = (new DrupalDateTime("$targetYear-08-01 00:00:00", $tz))->getTimestamp();
+    $winEnd = (new DrupalDateTime("$targetYear-12-31 23:59:59", $tz))->getTimestamp();
+
+    // Parse CSV into associative rows.
+    $fh = fopen($file, 'r');
+    $header = fgetcsv($fh);
+    if (!$header) {
+      $this->io()->error('Empty CSV.');
+      fclose($fh);
+      return;
+    }
+    $rows = [];
+    while (($line = fgetcsv($fh)) !== FALSE) {
+      $rows[] = array_combine($header, array_pad($line, count($header), ''));
+    }
+    fclose($fh);
+
+    // Attribute + access-check as the office user for the whole run.
+    $this->accountSwitcher->switchTo($actor);
+    $results = [];
+    $ok = 0;
+    $skip = 0;
+    $rowNum = 1; // header is row 1
+    try {
+      foreach ($rows as $r) {
+        $rowNum++;
+        if ($limit > 0 && $ok >= $limit) {
+          break;
+        }
+        [$status, $reason, $schedId] = $this->applyRow($r, $winStart, $winEnd, $tz, $actorUid);
+        $results[] = ['wo_id' => $r['wo_id'] ?? '', 'scheduling_id' => $schedId ?? '', 'result' => $status, 'reason' => $reason, 'row' => $rowNum];
+        if ($status === 'ok') {
+          $ok++;
+        }
+        else {
+          $skip++;
+          if ($status !== 'not_schedule_action') {
+            $this->io()->text(sprintf('  row %d WO %s: %s — %s', $rowNum, $r['wo_id'] ?? '?', $status, $reason));
+          }
+        }
+      }
+    }
+    finally {
+      $this->accountSwitcher->switchBack();
+    }
+
+    // Applied-results CSV.
+    $appliedPath = preg_replace('/\.csv$/i', '', $file) . '_applied.csv';
+    $afh = fopen($appliedPath, 'w');
+    fputcsv($afh, ['wo_id', 'scheduling_id', 'result', 'reason', 'row']);
+    foreach ($results as $res) {
+      fputcsv($afh, [$res['wo_id'], $res['scheduling_id'], $res['result'], $res['reason'], $res['row']]);
+    }
+    fclose($afh);
+
+    $this->io()->newLine();
+    $this->io()->success(sprintf('Applied %d scheduling records · %d skipped.', $ok, $skip));
+    $this->io()->text('Results CSV: ' . $appliedPath);
+    if ($limit > 0) {
+      $this->io()->note("--limit=$limit was set; re-run without --limit to apply the rest.");
+    }
+  }
+
+  /**
+   * Validate one CSV row against live state and (if valid) create the record.
+   *
+   * @return array{0:string,1:string,2:?int} [result, reason, scheduling_id]
+   */
+  private function applyRow(array $r, int $winStart, int $winEnd, \DateTimeZone $tz, int $actorUid): array {
+    if (($r['action'] ?? '') !== 'schedule') {
+      return ['not_schedule_action', 'action=' . ($r['action'] ?? ''), NULL];
+    }
+    $woId = (int) ($r['wo_id'] ?? 0);
+    if (!$woId) {
+      return ['invalid', 'no wo_id', NULL];
+    }
+    $wo = $this->etm->getStorage('work_order')->load($woId);
+    if (!$wo || $wo->bundle() !== self::WINTERIZING) {
+      return ['invalid', 'WO missing or wrong bundle', NULL];
+    }
+    $status = $wo->get('field_status')->isEmpty() ? 0 : (int) $wo->get('field_status')->target_id;
+    if (in_array($status, self::EXCLUDED_STATUS_TIDS, TRUE)) {
+      return ['excluded_status', 'WO status ' . $status, NULL];
+    }
+    if ($this->writer->hasSchedule($woId)) {
+      return ['already_scheduled', 'WO already has a scheduling record', NULL];
+    }
+    // Date: parse + sanity window (guards a fat-fingered year).
+    $dateStr = trim((string) ($r['proposed_date'] ?? ''));
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateStr)) {
+      return ['bad_date', "unparseable proposed_date '$dateStr'", NULL];
+    }
+    $dt = DrupalDateTime::createFromFormat('Y-m-d H:i:s', $dateStr . ' 00:00:00', $tz);
+    if (!$dt || $dt->hasErrors()) {
+      return ['bad_date', "invalid proposed_date '$dateStr'", NULL];
+    }
+    $ts = $dt->getTimestamp();
+    if ($ts < $winStart || $ts > $winEnd) {
+      return ['date_out_of_window', "proposed_date '$dateStr' outside season window", NULL];
+    }
+    // Tech: blank OR an active teammate.
+    $techUid = ($r['proposed_tech_uid'] ?? '') !== '' ? (int) $r['proposed_tech_uid'] : NULL;
+    if ($techUid !== NULL) {
+      $tech = $this->etm->getStorage('user')->load($techUid);
+      if (!$tech || !$tech->isActive() || !in_array('teammates', $tech->getRoles(), TRUE)) {
+        return ['bad_tech', "tech uid $techUid not an active teammate", NULL];
+      }
+    }
+    $order = ($r['proposed_route_order'] ?? '') !== '' ? (int) $r['proposed_route_order'] : NULL;
+
+    $result = $this->writer->schedule($woId, $ts, [
+      'teammate_uid' => $techUid,
+      'order' => $order,
+      'firm' => FALSE,
+      'notify' => FALSE,
+      'uid' => $actorUid,
+      'scheduling_note' => $this->carryNote($r),
+    ]);
+    if ($result['status'] !== 'ok') {
+      return [$result['status'], 'writer skipped', $result['scheduling_id']];
+    }
+    return ['ok', '', $result['scheduling_id']];
+  }
+
+  private function carryNote(array $r): string {
+    $prior = trim((string) ($r['prior_date'] ?? ''));
+    if ($prior !== '') {
+      return sprintf('Carried forward from %s (%s) — %s route.',
+        $prior, $r['prior_weekday'] ?? '', $r['source_year'] ?? '');
+    }
+    $note = trim((string) ($r['note'] ?? ''));
+    return $note !== '' ? $note : 'Auto-scheduled (winterizing carry-forward).';
   }
 
   // ==========================================================================

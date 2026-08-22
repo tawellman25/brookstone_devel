@@ -4,3 +4,11 @@ services:
     arguments:
       - '@database'
       - '@entity_type.manager'
+
+  # Single scheduling:work_order creation path — shared by the Sprinkler Bulk
+  # Scheduling controller and the winterizing carry-forward command.
+  bos_scheduling.schedule_writer:
+    class: Drupal\bos_scheduling\Service\ScheduleWriter
+    arguments:
+      - '@entity_type.manager'
+      - '@database'

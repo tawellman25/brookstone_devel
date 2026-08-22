@@ -157,9 +157,28 @@ Meaning:
 
 ---
 
-### field_description (text)
+### field_description (text_with_summary) — label "Crew / Training Description"
 Meaning:
-- Full description of the service. Used for public pages and internal reference.
+- The **teammate "how we do it" training body**. Rendered on the service page
+  only in the `teammate_view` view mode (crew/office roles) — never shown to the
+  public. Formerly labeled "Crew Description".
+- Since 2026-08-22 (the `bos_services` public/teammate split), the same
+  `/services/{name}` page renders `teammate_view` for internal roles and `full`
+  for everyone else. See [field_public_description](#field_public_description)
+  for the public body.
+
+---
+
+### field_public_description (text_long) — label "Service Description (Public)"
+Meaning:
+- The **public "what we do" body**, shown on the service page in the `full` view
+  mode to anonymous/client visitors. Added 2026-08-22 in the `bos_services`
+  split. The core taxonomy `description` base field was retired from the term
+  form at the same time (its public/marketing copy migrated here on the terms
+  that used it).
+- **Shared storage** — `field_public_description` is a `text_long` storage also
+  used by `material_types`, `backflow_device_types`, and `backflow_uses`. Plain
+  textarea widget (no summary).
 
 ---
 

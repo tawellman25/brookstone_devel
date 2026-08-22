@@ -76,11 +76,12 @@ if (isset($groups['group_office_tabs'])) {
 }
 
 // 4. Make sure both bodies have a widget + sensible weights.
+// field_public_description storage is text_long (shared) → plain textarea widget.
 $fd->setComponent('field_public_description', [
-  'type' => 'text_textarea_with_summary',
+  'type' => 'text_textarea',
   'weight' => 2,
   'region' => 'content',
-  'settings' => ['rows' => 6, 'summary_rows' => 3, 'placeholder' => '', 'show_summary' => TRUE],
+  'settings' => ['rows' => 6, 'placeholder' => ''],
   'third_party_settings' => [],
 ]);
 $fd->setComponent('field_description', [

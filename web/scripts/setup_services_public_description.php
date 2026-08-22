@@ -127,11 +127,12 @@ if ($form && !$form->getComponent('field_public_description')) {
   // Place it just above the crew/training body if we can find its weight.
   $crewWidget = $form->getComponent('field_description');
   $weight = is_array($crewWidget) && isset($crewWidget['weight']) ? ((int) $crewWidget['weight'] - 1) : 0;
+  // field_public_description storage is text_long (shared) → plain textarea.
   $form->setComponent('field_public_description', [
-    'type' => 'text_textarea_with_summary',
+    'type' => 'text_textarea',
     'weight' => $weight,
     'region' => 'content',
-    'settings' => ['rows' => 6, 'summary_rows' => 3, 'placeholder' => '', 'show_summary' => TRUE],
+    'settings' => ['rows' => 6, 'placeholder' => ''],
     'third_party_settings' => [],
   ]);
   $form->save();

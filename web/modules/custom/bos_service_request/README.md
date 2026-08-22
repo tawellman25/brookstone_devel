@@ -44,8 +44,13 @@ WO status TIDs stay hardcoded (stable, system-wide).
 
 ## Instant kill switch
 
-`bos_service_request.settings` → `bundles.sprinkler_winterizing.signup_open: false`
-closes public intake immediately with no deploy (Gate 3 renders a closed page).
+**Office-editable (2026-08-22):** Business Settings → **Public Service Requests**
+(`/admin/config/business_settings`) — uncheck **Winterize Signup — Open**, or set
+**Opens On / Closes On** dates. `WinterizeForm::signupOpen()` reads these
+config_pages fields (`field_winterize_signup_open` / `_open_from` / `_open_until`)
+first, falling back to `bos_service_request.settings` →
+`bundles.sprinkler_winterizing.{signup_open,open_from,open_until}` when unset.
+Either way, a closed form renders the "call the office" page (Gate 3), no deploy.
 
 ## Gate status
 

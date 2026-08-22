@@ -278,15 +278,27 @@ final class WinterizeForm extends FormBase {
   }
 
   private function signupOpen(array $cfg): bool {
-    if (empty($cfg['signup_open'])) {
+    // The gate is office-editable on the Business Settings page (config_pages
+    // business_setting). Those fields are authoritative when present; otherwise
+    // fall back to the module config (bundles.sprinkler_winterizing.*).
+    $open = !empty($cfg['signup_open']);
+    $from = !empty($cfg['open_from']) ? $cfg['open_from'] : NULL;
+    $until = !empty($cfg['open_until']) ? $cfg['open_until'] : NULL;
+    $bs = \Drupal::service('config_pages.loader')->load('business_setting');
+    if ($bs && $bs->hasField('field_winterize_signup_open')) {
+      $open = (bool) $bs->get('field_winterize_signup_open')->value;
+      $from = $bs->get('field_winterize_open_from')->isEmpty() ? NULL : $bs->get('field_winterize_open_from')->value;
+      $until = $bs->get('field_winterize_open_until')->isEmpty() ? NULL : $bs->get('field_winterize_open_until')->value;
+    }
+    if (!$open) {
       return FALSE;
     }
     $tz = new \DateTimeZone(date_default_timezone_get());
     $now = (new DrupalDateTime('now', $tz))->getTimestamp();
-    if (!empty($cfg['open_from']) && $now < (new DrupalDateTime($cfg['open_from'] . ' 00:00:00', $tz))->getTimestamp()) {
+    if ($from && $now < (new DrupalDateTime($from . ' 00:00:00', $tz))->getTimestamp()) {
       return FALSE;
     }
-    if (!empty($cfg['open_until']) && $now > (new DrupalDateTime($cfg['open_until'] . ' 23:59:59', $tz))->getTimestamp()) {
+    if ($until && $now > (new DrupalDateTime($until . ' 23:59:59', $tz))->getTimestamp()) {
       return FALSE;
     }
     return TRUE;

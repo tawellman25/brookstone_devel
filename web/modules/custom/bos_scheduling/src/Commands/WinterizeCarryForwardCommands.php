@@ -148,12 +148,16 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
    *
    * @command bos:winterize:apply
    * @option file The reviewed plan CSV (required).
-   * @option actor Office user uid to attribute the scheduling to (required; not 1).
+   * @option actor Office user uid to attribute the scheduling to (required; uid 1
+   *   is rejected unless --allow-superuser is passed).
+   * @option allow-superuser Permit --actor=1 (the superuser). Off by default so a
+   *   batch is not lazily attributed to uid 1; pass it only when uid 1 is the real
+   *   person consciously owning the run.
    * @option target-year Season year used for the date-window sanity check.
    * @option limit Apply at most N rows (0 = all) — for a cautious first pass.
    * @usage drush bos:winterize:apply --file=/tmp/winterize_plan_2026.csv --actor=6165 --limit=10
    */
-  public function apply(array $options = ['file' => NULL, 'actor' => NULL, 'target-year' => 2026, 'limit' => 0]): void {
+  public function apply(array $options = ['file' => NULL, 'actor' => NULL, 'allow-superuser' => FALSE, 'target-year' => 2026, 'limit' => 0]): void {
     $file = (string) $options['file'];
     $actorUid = (int) $options['actor'];
     $targetYear = (int) $options['target-year'];
@@ -164,8 +168,13 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
       $this->io()->error('--file is required and must be readable.');
       return;
     }
-    if ($actorUid <= 1) {
-      $this->io()->error('--actor is required and must be a real office user (not uid 1 — the superuser produces dishonest attribution on hundreds of records).');
+    $allowSuperuser = (bool) $options['allow-superuser'];
+    if ($actorUid < 1) {
+      $this->io()->error('--actor is required (the office user uid to attribute the scheduling to).');
+      return;
+    }
+    if ($actorUid === 1 && !$allowSuperuser) {
+      $this->io()->error('--actor=1 is the superuser; batch attribution to uid 1 is off by default. Pass --allow-superuser only when uid 1 is the real person consciously owning this run.');
       return;
     }
     $actor = User::load($actorUid);

@@ -18,9 +18,11 @@ drush bos:winterize:apply --file=<csv> --actor=<uid> [--target-year=2026] [--lim
   a summary. Writes no entity; safe on live.
 - **`apply`** re-reads the reviewed CSV (the edited file is the authority — it does
   NOT recompute), re-validates every row against live, and creates records via the
-  shared writer. `--actor` is required, must be a real office user, and is rejected
-  if uid 1 (the superuser would give dishonest attribution on 400+ records); the
-  run switches to that account so access + attribution are real. `--limit=N` does a
+  shared writer. `--actor` is required and must be a real office user; uid 1 (the
+  superuser) is rejected by default so a batch is not lazily attributed to it —
+  pass `--allow-superuser` to permit `--actor=1` when uid 1 is the real person
+  consciously owning the run (uid 1 = Todd Wellman on this install). The run
+  switches to that account so access + attribution are real. `--limit=N` does a
   cautious first pass. Writes `*_applied.csv` (wo_id, scheduling_id, result, reason).
 
 ## How a proposal is built (`plan`)

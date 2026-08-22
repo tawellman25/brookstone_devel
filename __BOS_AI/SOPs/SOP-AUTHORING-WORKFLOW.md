@@ -50,6 +50,15 @@ gray #424242  | gray light #F5F5F5
 | OFF-ADM-EST-002 | Estimate Stage Management (Estimator)              | 1.0 | Active |
 | OFF-QBS-INV-003 | Printing Customer Invoices in QuickBooks Desktop   | 1.0 | Active |
 
+## Pending SOPs (SOP-Needed backlog)
+
+Flagged by Code when a human-facing workflow ships without an SOP. Claude
+Chat authors these in a dedicated session, then they move up to the SOP Index.
+
+| Suggested code  | Workflow                                           | Role  | Flagged     | Why |
+|-----------------|----------------------------------------------------|-------|-------------|-----|
+| CRW-SVC-TRN-001 | Per-service training on the Services page          | Crew  | 2026-08-22  | Each `/services/{name}` page now shows crew a "how we do it" training body (teammate_view) that the public never sees — crews need to know the service pages double as their training reference and how to read/use them. |
+
 ---
 
 ## SOP Maintenance Rules

@@ -17,6 +17,12 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 $targetYear = 2026;
 $tz = new \DateTimeZone(date_default_timezone_get());
+// WO candidate universe = full calendar year, matching the command's plan()
+// selection (2026 winterizing WOs are generated across the year — some as early
+// as February). The scheduled-date window below stays the fall season.
+$yearStart = (new DrupalDateTime("$targetYear-01-01 00:00:00", $tz))->getTimestamp();
+$yearEnd = (new DrupalDateTime("$targetYear-12-31 23:59:59", $tz))->getTimestamp();
+// Scheduled field_date must land in the winterizing season (apply enforces this).
 $seasonStart = (new DrupalDateTime("$targetYear-08-01 00:00:00", $tz))->getTimestamp();
 $seasonEnd = (new DrupalDateTime("$targetYear-12-31 23:59:59", $tz))->getTimestamp();
 $EXCLUDED = [1098, 1097, 1283, 1281, 1504];
@@ -30,7 +36,7 @@ $ok = function (string $label, bool $cond, string $detail = '') use (&$pass, &$f
 // All winterizing WOs in the target season + their scheduling records.
 $woIds = array_map('intval', $etm->getStorage('work_order')->getQuery()->accessCheck(FALSE)
   ->condition('type', 'sprinkler_winterizing')
-  ->condition('created', $seasonStart, '>=')->condition('created', $seasonEnd, '<=')
+  ->condition('created', $yearStart, '>=')->condition('created', $yearEnd, '<=')
   ->sort('id', 'ASC')->execute());
 
 $schedByWo = [];

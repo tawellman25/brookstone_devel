@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * @file
+ * BOS Services — role-based rendering of the services taxonomy.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Internal roles that see the teammate "how we do it" training display.
+ */
+const BOS_SERVICES_INTERNAL_ROLES = [
+  'teammates',
+  'supervisor',
+  'administration',
+  'site_assistant',
+  'site_admin',
+  'administrator',
+];
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ *
+ * Same /services/{name} URL, different body by audience: crew/office members see
+ * the teammate training display (teammate_view), everyone else (public, clients)
+ * sees the public "what we do" display (full). Only the canonical full-page
+ * render is rewritten — token/admin/embedded renders keep their own view mode.
+ */
+function bos_services_entity_view_mode_alter(&$view_mode, EntityInterface $entity) {
+  if ($view_mode !== 'full'
+    || $entity->getEntityTypeId() !== 'taxonomy_term'
+    || $entity->bundle() !== 'services') {
+    return;
+  }
+  if (array_intersect(BOS_SERVICES_INTERNAL_ROLES, \Drupal::currentUser()->getRoles())) {
+    $view_mode = 'teammate_view';
+  }
+}

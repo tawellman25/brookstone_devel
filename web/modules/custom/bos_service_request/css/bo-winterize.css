@@ -185,4 +185,13 @@
   .bo-footer__inner { flex-direction: column; align-items: flex-start; }
   .bo-footer__right { align-items: flex-start; }
   .bo-form-card .winterize-submit { width: 100%; }
+  /* reCAPTCHA v2 is a fixed 302px widget — scale it to fit narrow phones and
+     tighten the CAPTCHA fieldset so nothing runs off the right edge. */
+  .bo-winterize fieldset.captcha { padding: 12px; max-width: 100%; box-sizing: border-box; }
+  .bo-winterize .captcha__element,
+  .bo-winterize .g-recaptcha { max-width: 100%; overflow: hidden; }
+  .bo-winterize .g-recaptcha { transform: scale(0.9); transform-origin: 0 0; height: 71px; }
+}
+@media (max-width: 360px) {
+  .bo-winterize .g-recaptcha { transform: scale(0.78); transform-origin: 0 0; height: 62px; }
 }

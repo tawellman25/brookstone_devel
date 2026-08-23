@@ -28,6 +28,8 @@ final class ServiceRequestQrController extends ControllerBase {
   private const CAMPAIGNS = [
     'pc26a' => ['title' => 'Postcard A — "You\'re already on our list"', 'desc' => 'Reassurance mailing (current-year contract customers). Scans land on the Check-your-week page.', 'qr' => TRUE],
     'pc26b' => ['title' => 'Postcard B — "Time to schedule your winterization"', 'desc' => 'Conversion mailing (previously serviced, not on this year\'s list). Scans land on the signup form. Response on B justifies next year\'s spend — kept separate from A.', 'qr' => TRUE],
+    'bearcreek26' => ['title' => 'Bear Creek Subdivision promotion', 'desc' => 'Targeted promotion for the Bear Creek subdivision. Scans land on the signup form.', 'qr' => TRUE],
+    'online26' => ['title' => 'Online promotions', 'desc' => 'For website ads, email, and social posts — use the URL as the trackable link (QR provided for digital flyers). Lands on the signup form.', 'qr' => TRUE],
     'pc26' => ['title' => 'Legacy postcard (pc26)', 'desc' => 'Older single code — kept accepted for any test QR already printed; reported separately.', 'qr' => TRUE],
     'website' => ['title' => 'Website / direct link', 'desc' => 'People who type or click the address directly — no QR needed.', 'qr' => FALSE],
   ];

@@ -102,6 +102,22 @@ function bos_service_request_update_10003() {
 }
 
 /**
+ * Add the Bear Creek + Online promotion campaign codes to the allowlist.
+ * Idempotent merge (keeps existing/office-added codes).
+ */
+function bos_service_request_update_10004() {
+  $cfg = \Drupal::configFactory()->getEditable('bos_service_request.settings');
+  $campaigns = $cfg->get('campaigns') ?? [];
+  foreach (['bearcreek26', 'online26'] as $code) {
+    if (!in_array($code, $campaigns, TRUE)) {
+      $campaigns[] = $code;
+    }
+  }
+  $cfg->set('campaigns', array_values($campaigns))->save();
+  return (string) t('Campaign allowlist: @c', ['@c' => implode(', ', $campaigns)]);
+}
+
+/**
  * Idempotently grant the admin permission to the office roles.
  */
 function _bos_service_request_grant_admin_permission() {

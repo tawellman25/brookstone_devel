@@ -105,7 +105,7 @@ final class WinterizeForm extends FormBase {
       '#type' => 'container', '#attributes' => ['class' => ['bo-grid-2']],
       'submitted_name' => [
         '#type' => 'textfield', '#title' => $this->t('Last name'), '#required' => TRUE, '#maxlength' => 255,
-        '#attributes' => ['autofocus' => 'autofocus'],
+        // No autofocus — the page should land on the hero, not jump to the field.
       ],
       'submitted_phone' => ['#type' => 'tel', '#title' => $this->t('Phone'), '#required' => TRUE, '#maxlength' => 32],
     ];

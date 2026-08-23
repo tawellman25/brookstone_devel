@@ -23,11 +23,13 @@ use Symfony\Component\HttpFoundation\Response;
 final class ServiceRequestQrController extends ControllerBase {
 
   /**
-   * The 2026 postcard variants (§P0.1). Two codes → two QR PNGs for the printer.
+   * The campaign variants. `qr` = needs a printed QR on the page.
    */
-  private const POSTCARD_VARIANTS = [
-    'pc26a' => ['title' => 'Variant A — "You\'re already on our list"', 'desc' => 'Reassurance mailing (current-year contract customers).'],
-    'pc26b' => ['title' => 'Variant B — "Time to schedule your Sprinkler Winterization"', 'desc' => 'Conversion mailing (previously serviced, not on this year\'s list). Response rate on B justifies next year\'s spend — keep it separate from A.'],
+  private const CAMPAIGNS = [
+    'pc26a' => ['title' => 'Postcard A — "You\'re already on our list"', 'desc' => 'Reassurance mailing (current-year contract customers). Scans land on the Check-your-week page.', 'qr' => TRUE],
+    'pc26b' => ['title' => 'Postcard B — "Time to schedule your winterization"', 'desc' => 'Conversion mailing (previously serviced, not on this year\'s list). Scans land on the signup form. Response on B justifies next year\'s spend — kept separate from A.', 'qr' => TRUE],
+    'pc26' => ['title' => 'Legacy postcard (pc26)', 'desc' => 'Older single code — kept accepted for any test QR already printed; reported separately.', 'qr' => TRUE],
+    'website' => ['title' => 'Website / direct link', 'desc' => 'People who type or click the address directly — no QR needed.', 'qr' => FALSE],
   ];
 
   /**
@@ -69,24 +71,42 @@ final class ServiceRequestQrController extends ControllerBase {
    */
   public function page(Request $request): array {
     $phone = (string) $this->config('bos_service_request.settings')->get('office_phone');
+    // Optional ?c=<code> renders just that variant's QR block (single download).
     $requested = (string) $request->query->get('c', '');
+    $only = ($requested !== '' && isset(self::CAMPAIGNS[$requested])) ? $requested : NULL;
 
-    if ($requested !== '') {
-      $codes = [$this->campaign($request) => ['title' => 'Campaign: ' . $this->campaign($request), 'desc' => '']];
-    }
-    else {
-      $codes = self::POSTCARD_VARIANTS;
-    }
+    $intro = '<p>The 2026 winterizing campaign variants and where each scan lands. '
+      . 'Print each QR on its postcard variant <em>with the URL and phone beside it</em> — the QR is never the only path. '
+      . 'Every scan is attributed to its code automatically, and the variants are reported separately.</p>';
 
-    $blocks = '';
-    foreach ($codes as $code => $meta) {
+    // Summary: every variant, its code, and its destination URL.
+    $summary = '<table style="border-collapse:collapse;width:100%;max-width:860px;margin:0 0 2.5rem">'
+      . '<thead><tr>'
+      . '<th style="text-align:left;padding:6px 16px 6px 0;border-bottom:2px solid #e2d7c7">Variant</th>'
+      . '<th style="text-align:left;padding:6px 16px;border-bottom:2px solid #e2d7c7">Code</th>'
+      . '<th style="text-align:left;padding:6px 0;border-bottom:2px solid #e2d7c7">Where the scan lands</th>'
+      . '</tr></thead><tbody>';
+    foreach (self::CAMPAIGNS as $code => $meta) {
+      $summary .= '<tr>'
+        . '<td style="padding:10px 16px 10px 0;border-bottom:1px solid #eee;vertical-align:top"><strong>' . htmlspecialchars($meta['title']) . '</strong>'
+        . '<br><span style="color:#6b5d4f;font-size:.9em">' . htmlspecialchars($meta['desc']) . '</span></td>'
+        . '<td style="padding:10px 16px;border-bottom:1px solid #eee;font-family:monospace;vertical-align:top">' . htmlspecialchars($code) . '</td>'
+        . '<td style="padding:10px 0;border-bottom:1px solid #eee;font-family:monospace;font-size:.82em;word-break:break-all;vertical-align:top">' . htmlspecialchars($this->winterizeUrl($code)) . '</td>'
+        . '</tr>';
+    }
+    $summary .= '</tbody></table>';
+
+    // Printable QR blocks (variants flagged qr => TRUE).
+    $blocks = '<h2 style="margin:0 0 1rem">Printable QR codes</h2>';
+    foreach (self::CAMPAIGNS as $code => $meta) {
+      if (empty($meta['qr']) || ($only !== NULL && $code !== $only)) {
+        continue;
+      }
       $url = $this->winterizeUrl($code);
       $imgUrl = Url::fromRoute('bos_service_request.qr_png', [], ['query' => ['c' => $code]])->toString();
       $dlUrl = Url::fromRoute('bos_service_request.qr_png', [], ['query' => ['c' => $code, 'download' => 1]])->toString();
       $blocks .= '<div class="sr-qr-variant" style="margin-bottom:2rem">'
-        . '<h2 style="margin-bottom:.25rem">' . htmlspecialchars($meta['title']) . '</h2>'
-        . ($meta['desc'] !== '' ? '<p style="margin-top:0;color:#555">' . htmlspecialchars($meta['desc']) . '</p>' : '')
-        . '<p>Campaign code: <strong>' . htmlspecialchars($code) . '</strong></p>'
+        . '<h3 style="margin-bottom:.25rem">' . htmlspecialchars($meta['title']) . ' <span style="font-family:monospace;font-weight:normal;color:#6b5d4f">(' . htmlspecialchars($code) . ')</span></h3>'
         . '<div style="text-align:center;padding:1rem;border:1px solid #ddd;border-radius:8px;background:#fff;max-width:640px">'
         . '<img src="' . htmlspecialchars($imgUrl) . '" alt="QR code for ' . htmlspecialchars($url) . '" style="width:360px;height:360px;max-width:100%" />'
         . '<p style="font-family:monospace;font-size:1.15rem;margin:.5rem 0 0;word-break:break-all">' . htmlspecialchars($url) . '</p>'
@@ -96,10 +116,8 @@ final class ServiceRequestQrController extends ControllerBase {
         . '</div>';
     }
 
-    $intro = '<p>Print each QR on its postcard variant <em>with the URL and phone number beside it</em> — the QR is not the only path. Each scan is attributed to its campaign automatically; A and B are reported separately.</p>';
-
     return [
-      '#markup' => '<div class="sr-qr-asset">' . $intro . $blocks . '</div>',
+      '#markup' => '<div class="sr-qr-asset">' . $intro . $summary . $blocks . '</div>',
       '#cache' => ['max-age' => 0],
     ];
   }

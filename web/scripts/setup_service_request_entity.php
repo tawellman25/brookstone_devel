@@ -125,6 +125,8 @@ $fields = [
   'field_converted_on' => ['type' => 'timestamp', 'label' => 'Converted on', 'weight' => 44, 'widget' => 'datetime_timestamp', 'formatter' => 'timestamp'],
   // Phase 2 additions (all nullable).
   'field_wants_startup' => ['type' => 'boolean', 'label' => 'Wants spring start-up contact', 'weight' => 24, 'widget' => 'boolean_checkbox', 'formatter' => 'boolean'],
+  // P3.3/P1.2a — demand signal only. NO fee is calculated, quoted, stored or reserved.
+  'field_wants_specific_date' => ['type' => 'boolean', 'label' => 'Requested a specific date (call back)', 'weight' => 26, 'widget' => 'boolean_checkbox', 'formatter' => 'boolean'],
   'field_water_supply' => [
     'type' => 'list_string', 'label' => 'Water supply (as submitted)', 'weight' => 25,
     // module: options — a core storage silently degrades the Views filter to string (see field_source).

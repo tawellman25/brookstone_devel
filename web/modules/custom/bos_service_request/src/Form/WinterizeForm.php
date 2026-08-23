@@ -133,9 +133,11 @@ final class WinterizeForm extends FormBase {
     }
 
     // 4. The form — high, not buried.
+    // P3.3 #2 — "Last name" (the matcher keys on surname; "Your name" invites
+    // "John and Mary Smith", worse input for the same field).
     $form['submitted_name'] = [
-      '#type' => 'textfield', '#title' => $this->t('Your name'), '#required' => TRUE, '#maxlength' => 255,
-      '#description' => $this->t('Last name is fine.'),
+      '#type' => 'textfield', '#title' => $this->t('Last name'), '#required' => TRUE, '#maxlength' => 255,
+      '#description' => $this->t('The last name your account is under.'),
       '#attributes' => ['autofocus' => 'autofocus'], '#weight' => -40,
     ];
     $form['submitted_address'] = ['#type' => 'textfield', '#title' => $this->t('Service address'), '#required' => TRUE, '#maxlength' => 255, '#weight' => -39];
@@ -166,6 +168,20 @@ final class WinterizeForm extends FormBase {
     // P1.2 — two cross-sell opt-ins (recorded intent only; no auto-creation).
     $form['wants_recurring'] = ['#type' => 'checkbox', '#title' => $this->t('Add me to the automatic winterizing list each fall'), '#weight' => -20];
     $form['wants_startup'] = ['#type' => 'checkbox', '#title' => $this->t('Contact me in the spring about turning my system back on'), '#weight' => -19];
+    // P3.3 #1 / P1.2a — specific-date DEMAND SIGNAL only. Own bordered block with
+    // an orange left rule, visually separate from the marketing opt-ins so it is
+    // not swept up in a check-everything reflex. NO fee is calculated/quoted/
+    // stored/reserved anywhere — just the flag.
+    $form['specific_date_block'] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['winterize-specific-date']],
+      '#weight' => -18,
+      'wants_specific_date' => [
+        '#type' => 'checkbox',
+        '#title' => $this->t('I need a specific date — please call me'),
+        '#description' => $this->t('Additional fees may apply. Routes are set by area, so a fixed date pulls us off route.'),
+      ],
+    ];
 
     // captcha — site default challenge (recaptcha is enabled).
     $form['captcha'] = ['#type' => 'captcha', '#captcha_type' => 'default', '#weight' => -10];
@@ -179,7 +195,8 @@ final class WinterizeForm extends FormBase {
     }
 
     $form['actions'] = ['#type' => 'actions', '#weight' => 50];
-    $form['actions']['submit'] = ['#type' => 'submit', '#value' => $this->t('Request winterization')];
+    // P3.3 #4 — "Get on the list" matches the postcard and reads as joining.
+    $form['actions']['submit'] = ['#type' => 'submit', '#value' => $this->t('Get on the list'), '#attributes' => ['class' => ['winterize-submit']]];
 
     // 5. What happens next — plain steps, below the form.
     $form['next'] = [
@@ -345,6 +362,13 @@ final class WinterizeForm extends FormBase {
       $flags = array_values(array_unique($flags));
     }
 
+    // P3.3 #1 — specific-date demand signal (flag only; no fee anywhere).
+    $wantsSpecificDate = (bool) $form_state->getValue('wants_specific_date');
+    if ($wantsSpecificDate) {
+      $flags[] = 'wants_specific_date';
+      $flags = array_values(array_unique($flags));
+    }
+
     // Customer notes (verbatim record of what a stranger typed). Water supply is
     // now a structured field (field_water_supply), not free text.
     $customerNotes = $this->composeNotes([
@@ -378,6 +402,7 @@ final class WinterizeForm extends FormBase {
       'field_office_notes' => $officeNotes,
       'field_wants_recurring' => (bool) $form_state->getValue('wants_recurring'),
       'field_wants_startup' => (bool) $form_state->getValue('wants_startup'),
+      'field_wants_specific_date' => $wantsSpecificDate,
       'field_review_flags' => implode("\n", $flags),
       'field_notice_version' => $disclaimerShown !== '' ? substr(hash('sha256', $disclaimerShown), 0, 64) : '',
     ];
@@ -424,6 +449,12 @@ final class WinterizeForm extends FormBase {
       // Neutral received message — identical for matched, ambiguous, unmatched,
       // flagged, and non-corroborated covered/duplicate (enumeration control).
       $message = strtr("You're on the list. Reference: @ref.\n\nWe winterize by geographic route through October and will contact you with the week we plan to be in your area. If a hard freeze is possible before then, cover your backflow or pump.\n\nQuestions, or need a specific date? Call us at @phone.\n\nThank you for choosing Brookstone Outdoors.", ['@ref' => $ref, '@phone' => $phone]);
+    }
+
+    // P3.3 #1 — one extra line when a specific date was requested. Still promises
+    // no date, window or availability, and quotes no fee.
+    if ($wantsSpecificDate) {
+      $message .= "\n\nYou asked about a specific date — we'll call you about that.";
     }
 
     $form_state->set('winterize_done', $message);

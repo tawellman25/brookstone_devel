@@ -76,6 +76,32 @@ function bos_service_request_update_10002() {
 }
 
 /**
+ * Phase 2 §5: seasonal customer-facing strings (canonical copy).
+ *
+ * Sets scheduling_notice + freeze_disclaimer to the approved copy and adds the
+ * new specific_date_notice + closed_notice keys. Initial content load (not
+ * office-authored yet); the office can edit afterward. Idempotent one-time.
+ */
+function bos_service_request_update_10003() {
+  $cfg = \Drupal::configFactory()->getEditable('bos_service_request.settings');
+  $bundles = $cfg->get('bundles') ?? [];
+  $copy = [
+    'scheduling_notice' => 'We start winterizing in early October and work through the month by geographic route. Space is limited — get on the list early.',
+    'specific_date_notice' => 'Need a specific date? Call the office at 970-835-9661 by September 21st.',
+    'freeze_disclaimer' => 'If a hard freeze is possible before your scheduled date, please cover your backflow or pump. We are not responsible for freeze damage that occurs before we winterize your system.',
+    'closed_notice' => 'Winterization signup for 2026 is closed. Call the office at 970-835-9661 and we will tell you what is still possible.',
+  ];
+  if (isset($bundles['sprinkler_winterizing'])) {
+    foreach ($copy as $k => $v) {
+      $bundles['sprinkler_winterizing'][$k] = $v;
+    }
+    $cfg->set('bundles', $bundles)->save();
+    return (string) t('Set seasonal winterizing strings (scheduling/specific-date/freeze/closed).');
+  }
+  return (string) t('sprinkler_winterizing bundle not found — no change.');
+}
+
+/**
  * Idempotently grant the admin permission to the office roles.
  */
 function _bos_service_request_grant_admin_permission() {

@@ -123,6 +123,15 @@ $fields = [
     'widget' => 'entity_reference_autocomplete', 'formatter' => 'entity_reference_label',
   ],
   'field_converted_on' => ['type' => 'timestamp', 'label' => 'Converted on', 'weight' => 44, 'widget' => 'datetime_timestamp', 'formatter' => 'timestamp'],
+  // Phase 2 additions (all nullable).
+  'field_wants_startup' => ['type' => 'boolean', 'label' => 'Wants spring start-up contact', 'weight' => 24, 'widget' => 'boolean_checkbox', 'formatter' => 'boolean'],
+  'field_water_supply' => [
+    'type' => 'list_string', 'label' => 'Water supply (as submitted)', 'weight' => 25,
+    // module: options — a core storage silently degrades the Views filter to string (see field_source).
+    'storage' => ['allowed_values' => ['city' => 'City / domestic', 'ditch' => 'Ditch / irrigation company', 'well' => 'Well', 'unsure' => 'Not sure']],
+    'widget' => 'options_select', 'formatter' => 'list_default',
+  ],
+  'field_notice_version' => ['type' => 'string', 'label' => 'Notice version (hash of disclaimer shown)', 'weight' => 45, 'storage' => ['max_length' => 64], 'widget' => 'string_textfield', 'formatter' => 'string'],
 ];
 
 $repo = \Drupal::service('entity_display.repository');

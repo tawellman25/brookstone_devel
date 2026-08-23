@@ -69,72 +69,173 @@ final class WinterizeForm extends FormBase {
     // Confirmation state (set by submit; identical structure for every match
     // outcome — one, five, or zero candidates).
     if ($done = $form_state->get('winterize_done')) {
+      $paras = '';
+      foreach (preg_split('/\n\n+/', $done) as $p) {
+        $p = trim($p);
+        if ($p !== '') {
+          $paras .= '<p>' . Html::escape($p) . '</p>';
+        }
+      }
       $form['confirmation'] = [
         '#type' => 'container',
         '#attributes' => ['class' => ['winterize-confirmation']],
-        'msg' => ['#markup' => '<h2>Thank you</h2><p>' . Html::escape($done) . '</p>'],
+        'msg' => ['#markup' => '<h2>Thank you</h2>' . $paras],
       ];
       return $form;
     }
 
     // Open/closed gate — a static informational page, not a 404.
     if (!$this->signupOpen($cfg)) {
-      $form['closed'] = [
-        '#markup' => '<h2>Winterization signup</h2><p>' . Html::escape(strtr(
-          'Winterization signup for @year is closed. Call the office at @phone and we\'ll tell you what\'s still possible.',
-          ['@year' => $year, '@phone' => $phone]
-        )) . '</p>',
-      ];
+      $closed = !empty($cfg['closed_notice'])
+        ? (string) $cfg['closed_notice']
+        : strtr('Winterization signup for @year is closed. Call the office at @phone and we\'ll tell you what\'s still possible.', ['@year' => $year, '@phone' => $phone]);
+      $form['closed'] = ['#markup' => '<h2>Winterization signup</h2><p>' . Html::escape($closed) . '</p>'];
       return $form;
     }
 
+    // Landing page (§7.5). Content is the theme layer and is built so the FORM
+    // keeps working if styling slips — the form is the critical path. All copy
+    // comes from services term 369 via bos_services (public fields only — the
+    // crew training body is NEVER read here). Every content block renders
+    // nothing when its source is empty.
     $form['#attributes']['class'][] = 'winterize-form';
-    $form['intro'] = [
-      '#markup' => '<p>' . Html::escape((string) ($cfg['scheduling_notice'] ?? '')) . '</p>',
-    ];
+    $term = $this->serviceTerm();
+
+    // 1. Header — banner photo (if any) + office phone as tel:.
+    if ($term && $term->hasField('field_banner_image') && !$term->get('field_banner_image')->isEmpty()) {
+      $form['header_image'] = $term->get('field_banner_image')->view(['label' => 'hidden', 'type' => 'image', 'settings' => ['image_style' => 'large']]);
+      $form['header_image']['#weight'] = -100;
+    }
+    if ($phone !== '') {
+      $telHref = preg_replace('/[^0-9+]/', '', $phone);
+      $form['header_phone'] = [
+        '#markup' => '<p class="winterize-phone">Questions? Call the office: <a href="tel:' . Html::escape($telHref) . '">' . Html::escape($phone) . '</a></p>',
+        '#weight' => -99,
+      ];
+    }
+
+    // 2. Subtitle + seasonal scheduling notice(s).
+    if ($term && $term->hasField('field_subtitle') && !$term->get('field_subtitle')->isEmpty()) {
+      $form['subtitle'] = ['#markup' => '<p class="winterize-subtitle">' . Html::escape((string) $term->get('field_subtitle')->value) . '</p>', '#weight' => -90];
+    }
+    if (!empty($cfg['scheduling_notice'])) {
+      $form['intro'] = ['#markup' => '<p class="winterize-notice">' . Html::escape((string) $cfg['scheduling_notice']) . '</p>', '#weight' => -89];
+    }
+    if (!empty($cfg['specific_date_notice'])) {
+      $form['specific'] = ['#markup' => '<p class="winterize-specific">' . Html::escape((string) $cfg['specific_date_notice']) . '</p>', '#weight' => -88];
+    }
+
+    // 3. Summary ABOVE the form (the public "what we do" teaser). Empty → nothing.
+    $summary = ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty())
+      ? (string) $term->get('field_service_public_desc')->summary : '';
+    if (trim($summary) !== '') {
+      $form['summary'] = ['#type' => 'processed_text', '#text' => $summary, '#format' => 'full_html', '#weight' => -80];
+    }
+
+    // 4. The form — high, not buried.
     $form['submitted_name'] = [
       '#type' => 'textfield', '#title' => $this->t('Your name'), '#required' => TRUE, '#maxlength' => 255,
       '#description' => $this->t('Last name is fine.'),
-      // Start focus in the form so tabbing flows through the fields, not the
-      // site header first.
-      '#attributes' => ['autofocus' => 'autofocus'],
+      '#attributes' => ['autofocus' => 'autofocus'], '#weight' => -40,
     ];
-    $form['submitted_address'] = [
-      '#type' => 'textfield', '#title' => $this->t('Service address'), '#required' => TRUE, '#maxlength' => 255,
-    ];
-    $form['submitted_zip'] = [
-      '#type' => 'textfield', '#title' => $this->t('ZIP code'), '#required' => TRUE, '#maxlength' => 10, '#size' => 12,
-    ];
-    $form['submitted_phone'] = [
-      '#type' => 'tel', '#title' => $this->t('Phone'), '#required' => TRUE, '#maxlength' => 32,
-    ];
-    $form['submitted_email'] = [
-      '#type' => 'email', '#title' => $this->t('Email'), '#maxlength' => 255,
-    ];
+    $form['submitted_address'] = ['#type' => 'textfield', '#title' => $this->t('Service address'), '#required' => TRUE, '#maxlength' => 255, '#weight' => -39];
+    $form['submitted_zip'] = ['#type' => 'textfield', '#title' => $this->t('ZIP code'), '#required' => TRUE, '#maxlength' => 10, '#size' => 12, '#weight' => -38];
+    $form['submitted_phone'] = ['#type' => 'tel', '#title' => $this->t('Phone'), '#required' => TRUE, '#maxlength' => 32, '#weight' => -37];
+    $form['submitted_email'] = ['#type' => 'email', '#title' => $this->t('Email'), '#maxlength' => 255, '#weight' => -36];
+    // P1.3 — optional water supply. "Not sure" is a first-class answer, never a
+    // validation failure. Stored raw; never written to property_ss_sources.
     $form['water_supply'] = [
-      '#type' => 'textarea', '#title' => $this->t('Water supply / where the shutoff is'), '#rows' => 2,
-      '#description' => $this->t('Anything that helps us find and shut off your system.'),
+      '#type' => 'select', '#title' => $this->t('What supplies water to your system?'),
+      '#options' => [
+        '' => $this->t('- Select (optional) -'),
+        'city' => $this->t('City / domestic water'),
+        'ditch' => $this->t('Ditch / irrigation company water'),
+        'well' => $this->t('Well'),
+        'unsure' => $this->t("I'm not sure"),
+      ],
+      '#description' => $this->t('Optional — helps us plan your service. "Not sure" is perfectly fine.'),
+      '#weight' => -30,
     ];
     $form['access_notes'] = [
       '#type' => 'textarea', '#title' => $this->t('Gate & access notes'), '#rows' => 2,
-      '#description' => $this->t('Gate codes, dogs, where to park.'),
+      '#description' => $this->t('Gate codes, dogs, where to park, or if your shutoff is inside the house.'),
+      '#weight' => -29,
     ];
-    $form['changed'] = [
-      '#type' => 'textarea', '#title' => $this->t('Anything changed since last year?'), '#rows' => 2,
-    ];
-    $form['notes'] = [
-      '#type' => 'textarea', '#title' => $this->t('Anything else we should know'), '#rows' => 2,
-    ];
-    $form['wants_recurring'] = [
-      '#type' => 'checkbox', '#title' => $this->t('Add me to the automatic winterizing list each fall.'),
-    ];
+    $form['changed'] = ['#type' => 'textarea', '#title' => $this->t('Anything changed since last year?'), '#rows' => 2, '#weight' => -28];
+    $form['notes'] = ['#type' => 'textarea', '#title' => $this->t('Anything else we should know'), '#rows' => 2, '#weight' => -27];
+    // P1.2 — two cross-sell opt-ins (recorded intent only; no auto-creation).
+    $form['wants_recurring'] = ['#type' => 'checkbox', '#title' => $this->t('Add me to the automatic winterizing list each fall'), '#weight' => -20];
+    $form['wants_startup'] = ['#type' => 'checkbox', '#title' => $this->t('Contact me in the spring about turning my system back on'), '#weight' => -19];
 
     // captcha — site default challenge (recaptcha is enabled).
-    $form['captcha'] = ['#type' => 'captcha', '#captcha_type' => 'default'];
+    $form['captcha'] = ['#type' => 'captcha', '#captcha_type' => 'default', '#weight' => -10];
 
-    $form['actions'] = ['#type' => 'actions'];
+    // P0.5 — freeze-damage disclaimer, visible right by the submit button.
+    if (!empty($cfg['freeze_disclaimer'])) {
+      $form['freeze_disclaimer'] = [
+        '#markup' => '<p class="winterize-disclaimer"><small>' . Html::escape((string) $cfg['freeze_disclaimer']) . '</small></p>',
+        '#weight' => 48,
+      ];
+    }
+
+    $form['actions'] = ['#type' => 'actions', '#weight' => 50];
     $form['actions']['submit'] = ['#type' => 'submit', '#value' => $this->t('Request winterization')];
+
+    // 5. What happens next — plain steps, below the form.
+    $form['next'] = [
+      '#markup' => '<div class="winterize-next"><h2>What happens next</h2><ol>'
+        . '<li>We receive your request and confirm your service address.</li>'
+        . '<li>We schedule winterizations by geographic route through October.</li>'
+        . '<li>We contact you with the week we plan to be in your area.</li>'
+        . '<li>We blow out your system — and if a hard freeze is possible before then, cover your backflow or pump.</li>'
+        . '</ol></div>',
+      '#weight' => 60,
+    ];
+
+    // 6. Detail — the full public body as JS-free accordions, BELOW the form.
+    $body = ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty())
+      ? (string) $term->get('field_service_public_desc')->value : '';
+    if (trim($body) !== '') {
+      $form['detail'] = $this->bodyAccordions($body);
+    }
+
     return $form;
+  }
+
+  /**
+   * Load services term 369 (the winterizing service). Public copy source.
+   */
+  private function serviceTerm(): ?object {
+    $cfg = $this->bundleConfig();
+    $tid = (int) ($cfg['service_term_id'] ?? 0);
+    return $tid ? $this->entityTypeManager->getStorage('taxonomy_term')->load($tid) : NULL;
+  }
+
+  /**
+   * Build the public body into JS-free <details> accordions (split by <h3>).
+   * Works with JavaScript disabled; renders via full_html so the tags survive.
+   */
+  private function bodyAccordions(string $html): array {
+    $parts = preg_split('#<h3>(.*?)</h3>#is', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
+    $blocks = '';
+    $intro = trim($parts[0] ?? '');
+    if ($intro !== '') {
+      $blocks .= '<div class="winterize-detail-intro">' . $intro . '</div>';
+    }
+    for ($i = 1; $i < count($parts); $i += 2) {
+      $heading = trim($parts[$i] ?? '');
+      $content = trim($parts[$i + 1] ?? '');
+      if ($heading === '' && $content === '') {
+        continue;
+      }
+      $blocks .= '<details class="winterize-detail-section"><summary>' . $heading . '</summary>' . $content . '</details>';
+    }
+    return [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['winterize-detail']],
+      '#weight' => 70,
+      'content' => ['#type' => 'processed_text', '#text' => $blocks, '#format' => 'full_html'],
+    ];
   }
 
   public function validateForm(array &$form, FormStateInterface $form_state): void {
@@ -196,13 +297,18 @@ final class WinterizeForm extends FormBase {
     [$statusName, $existingWoId, $existingContractId, $extraFlags] = $this->classify($match['status'], $elig);
     $flags = array_values(array_unique(array_merge($flags, $extraFlags)));
 
-    // Customer notes (verbatim record of what a stranger typed).
+    // Customer notes (verbatim record of what a stranger typed). Water supply is
+    // now a structured field (field_water_supply), not free text.
     $customerNotes = $this->composeNotes([
-      'Water supply / shutoff' => $get('water_supply'),
       'Changed since last year' => $get('changed'),
       'Notes' => $get('notes'),
     ]);
     $officeNotes = $campaignNote;
+
+    // P1.3 water supply (list_string). P0.5 notice version = hash of the exact
+    // freeze disclaimer this submitter was shown.
+    $waterSupply = (string) $form_state->getValue('water_supply');
+    $disclaimerShown = (string) ($cfg['freeze_disclaimer'] ?? '');
 
     // Create the record (uid 0). field_property set ONLY on a confident match.
     $storage = $this->entityTypeManager->getStorage('service_request');
@@ -223,10 +329,15 @@ final class WinterizeForm extends FormBase {
       'field_customer_notes' => $customerNotes,
       'field_office_notes' => $officeNotes,
       'field_wants_recurring' => (bool) $form_state->getValue('wants_recurring'),
+      'field_wants_startup' => (bool) $form_state->getValue('wants_startup'),
       'field_review_flags' => implode("\n", $flags),
+      'field_notice_version' => $disclaimerShown !== '' ? substr(hash('sha256', $disclaimerShown), 0, 64) : '',
     ];
     if ($propertyId) {
       $values['field_property'] = $propertyId;
+    }
+    if (in_array($waterSupply, ['city', 'ditch', 'well', 'unsure'], TRUE)) {
+      $values['field_water_supply'] = $waterSupply;
     }
     if ($match['status'] === 'ambiguous' && !empty($match['candidates'])) {
       $values['field_match_candidates'] = json_encode($match['candidates']);
@@ -256,15 +367,15 @@ final class WinterizeForm extends FormBase {
     // corroborates the property's contact — a street address alone never unlocks it.
     $corroborated = $propertyId && $disclose && $this->matcher->contactCorroborates($propertyId, $phoneIn, $email);
     if ($elig && $elig->outcome === EligibilityResult::ALREADY_COVERED && $corroborated) {
-      $message = strtr("You're already on our winterization list. No additional signup is necessary. If anything about your system has changed, call the office at @phone.", ['@phone' => $phone]);
+      $message = strtr("Good news — you're already on our winterization list. No additional signup is necessary.\n\nWe'll be starting in early October and will contact you with the week we plan to be in your area. If anything about your system has changed, or you need a specific date, call us at @phone.", ['@phone' => $phone]);
     }
     elseif ($elig && $elig->outcome === EligibilityResult::DUPLICATE && $corroborated) {
-      $message = strtr("We've already received your winterization request. Reference: @ref. No additional signup is necessary.", ['@ref' => $ref]);
+      $message = strtr("We've already received your winterization request. Reference: @ref. No additional signup is necessary — we'll be in touch with your service week.", ['@ref' => $ref]);
     }
     else {
       // Neutral received message — identical for matched, ambiguous, unmatched,
-      // flagged, and non-corroborated covered/duplicate.
-      $message = strtr("Your sprinkler winterization request has been received. Reference: @ref. Brookstone schedules winterizations by geographic route through October. We'll contact you when your service window is assigned, or if we need more information.", ['@ref' => $ref]);
+      // flagged, and non-corroborated covered/duplicate (enumeration control).
+      $message = strtr("You're on the list. Reference: @ref.\n\nWe winterize by geographic route through October and will contact you with the week we plan to be in your area. If a hard freeze is possible before then, cover your backflow or pump.\n\nQuestions, or need a specific date? Call us at @phone.\n\nThank you for choosing Brookstone Outdoors.", ['@ref' => $ref, '@phone' => $phone]);
     }
 
     $form_state->set('winterize_done', $message);

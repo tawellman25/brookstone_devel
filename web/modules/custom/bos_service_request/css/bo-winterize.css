@@ -107,6 +107,17 @@
 .winterize-disclaimer svg { flex: none; margin-top: 2px; }
 .winterize-disclaimer p { margin: 0; font-size: 15.5px; line-height: 1.55; color: var(--bo-muted); max-width: 74ch; }
 
+/* CAPTCHA — drop Drupal's fieldset chrome (legend, border, boilerplate help);
+   keep just the reCAPTCHA widget. Legend is visually hidden, not removed, for
+   screen readers. */
+.bo-winterize fieldset.captcha { border: 0; padding: 0; margin: 0; }
+.bo-winterize fieldset.captcha > legend {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.bo-winterize fieldset.captcha .description,
+.bo-winterize fieldset.captcha .fieldset__description { display: none; }
+
 /* Submit row */
 .bo-form-card .form-actions { display: flex; align-items: center; gap: 26px; padding-top: 4px; flex-wrap: wrap; margin: 0; }
 /* !important + appearance reset to beat Olivero's own .button styling. */
@@ -187,7 +198,7 @@
   .bo-form-card .winterize-submit { width: 100%; }
   /* reCAPTCHA v2 is a fixed 302px widget — scale it to fit narrow phones and
      tighten the CAPTCHA fieldset so nothing runs off the right edge. */
-  .bo-winterize fieldset.captcha { padding: 12px; max-width: 100%; box-sizing: border-box; }
+  .bo-winterize fieldset.captcha { max-width: 100%; box-sizing: border-box; }
   .bo-winterize .captcha__element,
   .bo-winterize .g-recaptcha { max-width: 100%; overflow: hidden; }
   .bo-winterize .g-recaptcha { transform: scale(0.9); transform-origin: 0 0; height: 71px; }

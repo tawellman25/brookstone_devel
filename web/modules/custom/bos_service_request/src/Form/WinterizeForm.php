@@ -93,116 +93,80 @@ final class WinterizeForm extends FormBase {
       return $form;
     }
 
-    // Landing page (§7.5). Content is the theme layer and is built so the FORM
-    // keeps working if styling slips — the form is the critical path. All copy
-    // comes from services term 369 via bos_services (public fields only — the
-    // crew training body is NEVER read here). Every content block renders
-    // nothing when its source is empty.
+    // The form IS the card (page--winterize.html.twig owns the header, hero,
+    // "what happens next", accordions and footer). Built to the approved mockup:
+    // a 2-column field grid inside the .bo-form-card. Keeps working unstyled if
+    // the stylesheet fails (the form is the critical path).
     $form['#attributes']['class'][] = 'winterize-form';
-    $term = $this->serviceTerm();
+    $form['#attributes']['class'][] = 'bo-form-card';
 
-    // Header (logo + phone), hero (photo + headline + subtitle) and footer are
-    // rendered by the dedicated marketing template (page--winterize.html.twig) —
-    // NOT here — so the form output is only the card content. Seasonal notices +
-    // summary + form + accordions follow.
-    if (!empty($cfg['scheduling_notice'])) {
-      $form['intro'] = ['#markup' => '<p class="winterize-notice">' . Html::escape((string) $cfg['scheduling_notice']) . '</p>', '#weight' => -89];
-    }
-    if (!empty($cfg['specific_date_notice'])) {
-      $form['specific'] = ['#markup' => '<p class="winterize-specific">' . Html::escape((string) $cfg['specific_date_notice']) . '</p>', '#weight' => -88];
-    }
-
-    // 3. Summary ABOVE the form (the public "what we do" teaser). Empty → nothing.
-    $summary = ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty())
-      ? (string) $term->get('field_service_public_desc')->summary : '';
-    if (trim($summary) !== '') {
-      $form['summary'] = ['#type' => 'processed_text', '#text' => $summary, '#format' => 'full_html', '#weight' => -80];
-    }
-
-    // 4. The form — high, not buried.
-    // P3.3 #2 — "Last name" (the matcher keys on surname; "Your name" invites
-    // "John and Mary Smith", worse input for the same field).
-    $form['submitted_name'] = [
-      '#type' => 'textfield', '#title' => $this->t('Last name'), '#required' => TRUE, '#maxlength' => 255,
-      '#description' => $this->t('The last name your account is under.'),
-      '#attributes' => ['autofocus' => 'autofocus'], '#weight' => -40,
-    ];
-    $form['submitted_address'] = ['#type' => 'textfield', '#title' => $this->t('Service address'), '#required' => TRUE, '#maxlength' => 255, '#weight' => -39];
-    $form['submitted_zip'] = ['#type' => 'textfield', '#title' => $this->t('ZIP code'), '#required' => TRUE, '#maxlength' => 10, '#size' => 12, '#weight' => -38];
-    $form['submitted_phone'] = ['#type' => 'tel', '#title' => $this->t('Phone'), '#required' => TRUE, '#maxlength' => 32, '#weight' => -37];
-    $form['submitted_email'] = ['#type' => 'email', '#title' => $this->t('Email'), '#maxlength' => 255, '#weight' => -36];
-    // P1.3 — optional water supply. "Not sure" is a first-class answer, never a
-    // validation failure. Stored raw; never written to property_ss_sources.
-    $form['water_supply'] = [
-      '#type' => 'select', '#title' => $this->t('What supplies water to your system?'),
-      '#options' => [
-        '' => $this->t('- Select (optional) -'),
-        'city' => $this->t('City / domestic water'),
-        'ditch' => $this->t('Ditch / irrigation company water'),
-        'well' => $this->t('Well'),
-        'unsure' => $this->t("I'm not sure"),
+    // Row 1 — Last name + Phone. (P3.3 #2: surname is what the matcher keys on.)
+    $form['row_name'] = [
+      '#type' => 'container', '#attributes' => ['class' => ['bo-grid-2']],
+      'submitted_name' => [
+        '#type' => 'textfield', '#title' => $this->t('Last name'), '#required' => TRUE, '#maxlength' => 255,
+        '#attributes' => ['autofocus' => 'autofocus'],
       ],
-      '#description' => $this->t('Optional — helps us plan your service. "Not sure" is perfectly fine.'),
-      '#weight' => -30,
+      'submitted_phone' => ['#type' => 'tel', '#title' => $this->t('Phone'), '#required' => TRUE, '#maxlength' => 32],
     ];
-    $form['access_notes'] = [
-      '#type' => 'textarea', '#title' => $this->t('Gate & access notes'), '#rows' => 2,
-      '#description' => $this->t('Gate codes, dogs, where to park, or if your shutoff is inside the house.'),
-      '#weight' => -29,
+    // Row 2 — Service address (2fr) + ZIP (1fr).
+    $form['row_addr'] = [
+      '#type' => 'container', '#attributes' => ['class' => ['bo-grid-2-1']],
+      'submitted_address' => ['#type' => 'textfield', '#title' => $this->t('Service address'), '#required' => TRUE, '#maxlength' => 255],
+      'submitted_zip' => ['#type' => 'textfield', '#title' => $this->t('ZIP'), '#required' => TRUE, '#maxlength' => 10],
     ];
-    $form['changed'] = ['#type' => 'textarea', '#title' => $this->t('Anything changed since last year?'), '#rows' => 2, '#weight' => -28];
-    $form['notes'] = ['#type' => 'textarea', '#title' => $this->t('Anything else we should know'), '#rows' => 2, '#weight' => -27];
-    // P1.2 — two cross-sell opt-ins (recorded intent only; no auto-creation).
-    $form['wants_recurring'] = ['#type' => 'checkbox', '#title' => $this->t('Add me to the automatic winterizing list each fall'), '#weight' => -20];
-    $form['wants_startup'] = ['#type' => 'checkbox', '#title' => $this->t('Contact me in the spring about turning my system back on'), '#weight' => -19];
-    // P3.3 #1 / P1.2a — specific-date DEMAND SIGNAL only. Own bordered block with
-    // an orange left rule, visually separate from the marketing opt-ins so it is
-    // not swept up in a check-everything reflex. NO fee is calculated/quoted/
-    // stored/reserved anywhere — just the flag.
+    // Row 3 — Email + water supply (P1.3; "Not sure" first-class default).
+    $form['row_email'] = [
+      '#type' => 'container', '#attributes' => ['class' => ['bo-grid-2']],
+      'submitted_email' => ['#type' => 'email', '#title' => $this->t('Email'), '#maxlength' => 255],
+      'water_supply' => [
+        '#type' => 'select', '#title' => $this->t('What supplies water to your system?'),
+        '#options' => [
+          'unsure' => $this->t('Not sure'),
+          'city' => $this->t('City / town water'),
+          'ditch' => $this->t('Irrigation ditch or canal'),
+          'well' => $this->t('Private well'),
+        ],
+        '#default_value' => 'unsure',
+      ],
+    ];
+    $form['access_notes'] = ['#type' => 'textarea', '#title' => $this->t('Gate & access notes'), '#rows' => 2];
+    // P3.3 #5 — the two near-duplicate textareas merged into one.
+    $form['changed'] = ['#type' => 'textarea', '#title' => $this->t('Anything changed since last year?'), '#rows' => 2];
+
+    // P3.3 #1 / P1.2a — specific-date DEMAND SIGNAL only (orange-ruled block,
+    // set apart from the opt-ins). NO fee calculated/quoted/stored/reserved.
     $form['specific_date_block'] = [
-      '#type' => 'container',
-      '#attributes' => ['class' => ['winterize-specific-date']],
-      '#weight' => -18,
+      '#type' => 'container', '#attributes' => ['class' => ['winterize-specific-date']],
       'wants_specific_date' => [
         '#type' => 'checkbox',
         '#title' => $this->t('I need a specific date — please call me'),
         '#description' => $this->t('Additional fees may apply. Routes are set by area, so a fixed date pulls us off route.'),
       ],
     ];
+    // P1.2 — two cross-sell opt-ins (recorded intent only; no auto-creation).
+    $form['optin_block'] = [
+      '#type' => 'container', '#attributes' => ['class' => ['bo-optin']],
+      'wants_recurring' => ['#type' => 'checkbox', '#title' => $this->t('Add me to the automatic winterizing list each fall')],
+      'wants_startup' => ['#type' => 'checkbox', '#title' => $this->t('Contact me in the spring about turning my system back on')],
+    ];
 
-    // captcha — reCAPTCHA (P3.3 #3; keys configured 2026-08-23). Less friction
-    // for someone in a driveway than a math question, and stronger.
-    $form['captcha'] = ['#type' => 'captcha', '#captcha_type' => 'recaptcha/reCAPTCHA', '#weight' => -10];
-
-    // P0.5 — freeze-damage disclaimer, visible right by the submit button.
+    // P0.5 — freeze-damage disclaimer with the warning glyph (Markup::create so
+    // the inline SVG survives — #markup's Xss filter would strip it).
     if (!empty($cfg['freeze_disclaimer'])) {
+      $svg = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#B0703A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>';
       $form['freeze_disclaimer'] = [
-        '#markup' => '<p class="winterize-disclaimer"><small>' . Html::escape((string) $cfg['freeze_disclaimer']) . '</small></p>',
-        '#weight' => 48,
+        '#markup' => \Drupal\Core\Render\Markup::create('<div class="winterize-disclaimer">' . $svg . '<p>' . Html::escape((string) $cfg['freeze_disclaimer']) . '</p></div>'),
       ];
     }
 
-    $form['actions'] = ['#type' => 'actions', '#weight' => 50];
-    // P3.3 #4 — "Get on the list" matches the postcard and reads as joining.
+    // captcha — reCAPTCHA (P3.3 #3; keys configured 2026-08-23).
+    $form['captcha'] = ['#type' => 'captcha', '#captcha_type' => 'recaptcha/reCAPTCHA'];
+
+    $form['actions'] = ['#type' => 'actions'];
+    // P3.3 #4 — "Get on the list" matches the postcard.
     $form['actions']['submit'] = ['#type' => 'submit', '#value' => $this->t('Get on the list'), '#attributes' => ['class' => ['winterize-submit']]];
-
-    // 5. What happens next — plain steps, below the form.
-    $form['next'] = [
-      '#markup' => '<div class="winterize-next"><h2>What happens next</h2><ol>'
-        . '<li>We receive your request and confirm your service address.</li>'
-        . '<li>We schedule winterizations by geographic route through October.</li>'
-        . '<li>We contact you with the week we plan to be in your area.</li>'
-        . '<li>We blow out your system — and if a hard freeze is possible before then, cover your backflow or pump.</li>'
-        . '</ol></div>',
-      '#weight' => 60,
-    ];
-
-    // 6. Detail — the full public body as JS-free accordions, BELOW the form.
-    $body = ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty())
-      ? (string) $term->get('field_service_public_desc')->value : '';
-    if (trim($body) !== '') {
-      $form['detail'] = $this->bodyAccordions($body);
-    }
+    $form['actions']['limit'] = ['#markup' => '<span class="bo-form__limit">' . Html::escape((string) $this->t('Space is limited — routes fill through October.')) . '</span>'];
 
     return $form;
   }

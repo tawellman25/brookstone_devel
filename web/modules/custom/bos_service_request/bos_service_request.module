@@ -188,15 +188,43 @@ function bos_service_request_preprocess_page(array &$variables) {
   $cfg = \Drupal::config('bos_service_request.settings');
   $term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
     ->load((int) $cfg->get('bundles.sprinkler_winterizing.service_term_id'));
-  $subtitle = ($term && $term->hasField('field_subtitle') && !$term->get('field_subtitle')->isEmpty())
-    ? (string) $term->get('field_subtitle')->value
-    : 'Get on the winterizing list before the first hard freeze.';
 
   $variables['bo_logo'] = $base . '/assets/bo-logo-round.png';
   $variables['bo_hero'] = $base . '/assets/winterize-hero.jpg';
   $variables['bo_phone'] = (string) $cfg->get('office_phone');
   $variables['bo_tagline'] = 'Creating and Maintaining Your Outdoor Spaces';
+  $variables['bo_year'] = (int) ($cfg->get('bundles.sprinkler_winterizing.service_year') ?: date('Y'));
   $variables['bo_headline'] = 'Fall is on its way.';
-  $variables['bo_subhead'] = $subtitle;
-  $variables['bo_address'] = 'Brookstone Outdoors LLC · Delta & Montrose Counties, Colorado';
+  $variables['bo_subhead'] = 'Water left in your lines splits pipe, valves and backflows when it freezes — and underground breaks stay hidden until spring.';
+  $variables['bo_address'] = '20143 Austin Rd., Austin, CO 81410';
+
+  // Accordions from the editable term body (field_service_public_desc), split by
+  // <h3> into JS-free <details> sections. Empty body → no accordion section.
+  $variables['bo_accordions'] = NULL;
+  if ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty()) {
+    $body = (string) $term->get('field_service_public_desc')->value;
+    $variables['bo_accordions'] = _bos_service_request_accordions($body);
+  }
+}
+
+/**
+ * Build the public body into JS-free <details> accordions (split by <h3>).
+ * Returns a processed_text render array (full_html preserves details/summary).
+ */
+function _bos_service_request_accordions(string $html): array {
+  $parts = preg_split('#<h3>(.*?)</h3>#is', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
+  $blocks = '';
+  $intro = trim($parts[0] ?? '');
+  if ($intro !== '') {
+    $blocks .= '<div class="winterize-detail-intro">' . $intro . '</div>';
+  }
+  for ($i = 1; $i < count($parts); $i += 2) {
+    $heading = trim($parts[$i] ?? '');
+    $content = trim($parts[$i + 1] ?? '');
+    if ($heading === '' && $content === '') {
+      continue;
+    }
+    $blocks .= '<details class="winterize-detail-section"><summary>' . $heading . '</summary>' . $content . '</details>';
+  }
+  return ['#type' => 'processed_text', '#text' => $blocks, '#format' => 'full_html'];
 }

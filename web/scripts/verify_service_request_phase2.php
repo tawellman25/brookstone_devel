@@ -100,7 +100,7 @@ if (!$checkedSupply) { $ok('property with ss_sources found', FALSE, 'none reacha
 
 echo "== P0.3/P0.5 landing page (anonymous) ==\n";
 $ok('/winterize → 200', $status === 200);
-$ok('public summary above form (not crew)', str_contains($html, 'least expensive service we perform'));
+$ok('public content renders (hero subhead + body accordions, not crew)', str_contains($html, 'splits pipe') && str_contains($html, 'winterize-detail-section'));
 $ok('water-supply select + both opt-ins present', str_contains($html, 'water_supply') && str_contains($html, 'wants_recurring') && str_contains($html, 'wants_startup'));
 $ok('freeze disclaimer by the submit button', str_contains($html, 'winterize-disclaimer'));
 $ok('JS-free <details> accordions (>=5)', substr_count($html, '<details') >= 5, substr_count($html, '<details') . ' found');

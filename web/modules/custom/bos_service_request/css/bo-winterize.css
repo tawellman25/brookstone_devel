@@ -1,161 +1,183 @@
 /**
- * Public winterize landing page (bos_service_request). Marketing chrome only.
- * Degrades safely: if this stylesheet fails to load, the form still works —
- * it just renders unstyled (§7.5.1). All colors come from bo-tokens.css.
- *
- * Fonts: Oswald (display / accordion summaries) + a warm serif body. Both have
- * real fallbacks, so a blocked Google Fonts request never breaks the page.
+ * Public winterize landing page — faithful build of the approved mockup
+ * (Oswald + Source Serif 4, warm palette). Colors come from bo-tokens.css.
+ * Degrades safely: no stylesheet → an unstyled but working form (§7.5.1).
  */
 
 .bo-winterize {
-  --bo-display: "Oswald", "Arial Narrow", sans-serif;
-  --bo-body: Georgia, "Times New Roman", serif;
+  --osw: "Oswald", "Arial Narrow", sans-serif;
+  --serif: "Source Serif 4", Georgia, serif;
   background: var(--bo-paper);
   color: var(--bo-ink);
-  font-family: var(--bo-body);
-  line-height: 1.55;
+  font-family: var(--serif);
+  max-width: 1440px;
+  margin: 0 auto;
 }
-.bo-winterize *,
-.bo-winterize *::before,
-.bo-winterize *::after { box-sizing: border-box; }
+.bo-winterize *, .bo-winterize *::before, .bo-winterize *::after { box-sizing: border-box; }
+.bo-winterize .osw { font-family: var(--osw); }
+.bo-winterize a { color: var(--bo-orange); text-decoration: none; }
+.bo-winterize a:hover { color: var(--bo-orange-hover); text-decoration: underline; }
 
-/* ── Top bar: light paper with a hairline (NOT dark) ───────────────────────── */
+/* ── Top bar ────────────────────────────────────────────────────────────── */
 .bo-topbar {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 12px clamp(16px, 4vw, 48px);
-  background: var(--bo-paper);
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  padding: 15px clamp(16px, 5vw, 72px); background: var(--bo-paper);
   border-bottom: 1px solid var(--bo-hairline);
 }
-.bo-topbar__logo { width: 78px; height: 78px; flex: 0 0 auto; display: block; }
-.bo-topbar__tagline {
-  font-family: var(--bo-display);
-  font-weight: 600;
-  letter-spacing: .02em;
-  font-size: 1.05rem;
-  color: var(--bo-ink);
-  margin: 0;
-}
-.bo-topbar__phone { margin-left: auto; font-family: var(--bo-display); font-weight: 600; font-size: 1.15rem; }
-.bo-topbar__phone a { color: var(--bo-orange); text-decoration: none; }
+.bo-topbar__brand { display: flex; align-items: center; gap: 15px; }
+.bo-topbar__logo { width: 78px; height: 78px; display: block; flex: none; }
+.bo-topbar__name { font-family: var(--osw); font-size: 21px; font-weight: 600; letter-spacing: .05em; color: var(--bo-ink); display: block; }
+.bo-topbar__tag { font-size: 13.5px; font-style: italic; color: var(--bo-muted); display: block; }
+.bo-topbar__right { display: flex; align-items: center; gap: 28px; }
+.bo-topbar__area { font-family: var(--osw); font-size: 13px; letter-spacing: .09em; text-transform: uppercase; color: var(--bo-muted); }
+.bo-topbar__phone { font-family: var(--osw); font-size: 24px; font-weight: 600; color: var(--bo-orange); letter-spacing: .02em; }
 
-/* ── Hero: photo bleeds from the left, CSS fade to white; copy in normal flow
- *    sets the height so the photo (absolute) always fills the band. The band is
- *    pure #FFFFFF so the fade is seamless. (Recipe per §P3.2a.) ────────────── */
+/* ── Hero: photo bleeds left into a CSS fade over a pure-white band ─────── */
 .bo-hero { position: relative; background: var(--bo-hero); overflow: hidden; }
-.bo-hero__photo {
-  position: absolute; left: 0; top: 0; width: 64%; height: 100%;
-  object-fit: cover; object-position: 42% 62%;
+.bo-hero__photo { position: absolute; left: 0; top: 0; width: 64%; height: 100%; object-fit: cover; object-position: 32% center; display: block; }
+.bo-hero__fade { position: absolute; left: 0; top: 0; bottom: 0; width: 64%; background: linear-gradient(to right, rgba(255,255,255,0) 38%, #FFFFFF 84%); }
+.bo-hero__copy { position: relative; margin-left: 53%; padding: 58px clamp(16px,5vw,72px) 58px 0; display: flex; flex-direction: column; gap: 20px; }
+.bo-hero__eyebrow { font-family: var(--osw); font-size: 13px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--bo-orange); }
+.bo-hero__h1 { font-family: var(--osw); margin: 0; font-size: clamp(38px, 5vw, 60px); line-height: 1.02; font-weight: 600; letter-spacing: -.01em; color: var(--bo-ink); }
+.bo-hero__sub { margin: 0; font-size: 20px; line-height: 1.45; color: var(--bo-prose); }
+.bo-hero__cta-row { display: flex; align-items: center; gap: 18px; margin-top: 4px; flex-wrap: wrap; }
+.bo-btn {
+  font-family: var(--osw); display: inline-flex; align-items: center; gap: 12px;
+  background: var(--bo-orange); color: #fff; font-size: 19px; font-weight: 600;
+  letter-spacing: .04em; text-transform: uppercase; padding: 17px 30px; border-radius: 3px;
+  border: none; cursor: pointer;
 }
-.bo-hero__fade {
-  position: absolute; left: 0; top: 0; bottom: 0; width: 64%;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0) 38%, #FFFFFF 84%);
-}
-.bo-hero__copy {
-  position: relative; margin-left: 53%; padding: 58px 72px 58px 0;
-  display: flex; flex-direction: column; gap: 20px;
-}
-.bo-hero__headline {
-  font-family: var(--bo-display); font-weight: 700; line-height: 1.02;
-  font-size: clamp(2rem, 4.4vw, 3.4rem); letter-spacing: .01em; margin: 0; color: var(--bo-ink);
-}
-.bo-hero__sub { font-size: 1.15rem; margin: 0; max-width: 34ch; }
-.bo-hero__cta {
-  align-self: flex-start; display: inline-block; text-decoration: none;
-  background: var(--bo-orange); color: #fff; font-family: var(--bo-display); font-weight: 600;
-  letter-spacing: .03em; padding: 14px 28px; border-radius: 6px; font-size: 1.1rem;
-}
-.bo-hero__cta:hover { background: var(--bo-orange-dark); }
+.bo-btn:hover { background: var(--bo-orange-hover); color: #fff; text-decoration: none; }
+.bo-hero__callnote { font-size: 17px; color: var(--bo-muted); }
+.bo-hero__stats { display: flex; gap: 30px; padding-top: 18px; border-top: 1px solid #E8DFD2; margin-top: 4px; flex-wrap: wrap; }
+.bo-stat { display: flex; flex-direction: column; gap: 2px; }
+.bo-stat__n { font-family: var(--osw); font-size: 26px; font-weight: 600; color: var(--bo-green); }
+.bo-stat__l { font-size: 14.5px; color: var(--bo-muted); }
 
-/* ── Main sand band + the form card ────────────────────────────────────────── */
-.bo-main { background: var(--bo-sand); padding: clamp(28px, 5vw, 56px) clamp(16px, 4vw, 48px); }
-.bo-main .winterize-form,
-.bo-main .winterize-confirmation {
-  max-width: 760px; margin: 0 auto; background: var(--bo-card);
-  border: 1px solid var(--bo-hairline); border-radius: 12px;
-  padding: clamp(22px, 4vw, 40px); box-shadow: 0 2px 10px rgba(33, 29, 24, .06);
+/* ── Request form band + card ───────────────────────────────────────────── */
+.bo-formband { background: var(--bo-sand); padding: clamp(40px,6vw,76px) clamp(16px,5vw,72px) clamp(48px,7vw,84px); }
+.bo-formband__inner { max-width: 940px; margin: 0 auto; display: flex; flex-direction: column; gap: 34px; }
+.bo-formband__h2 { font-family: var(--osw); margin: 0; font-size: clamp(32px,4.5vw,44px); font-weight: 600; letter-spacing: -.005em; color: var(--bo-ink); }
+.bo-formband__intro { margin: 12px 0 0; font-size: 19px; line-height: 1.55; color: var(--bo-text-2); max-width: 62ch; }
+
+/* The Drupal form itself is the card. */
+.bo-form-card {
+  background: var(--bo-card); border: 1px solid var(--bo-border-card); border-radius: 4px;
+  padding: clamp(24px,4vw,44px) clamp(20px,4vw,48px) 40px;
+  display: flex; flex-direction: column; gap: 26px;
 }
-.bo-main .winterize-subtitle { font-family: var(--bo-display); font-weight: 600; font-size: 1.35rem; margin: 0 0 .25rem; }
-.bo-main .winterize-notice,
-.bo-main .winterize-specific { color: #5a5348; margin: .1rem 0; }
+.bo-form-card .form-item { margin: 0; }
+.bo-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 22px; }
+.bo-grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 22px; }
 
-/* Form fields */
-.bo-winterize label { font-weight: 600; }
-.bo-winterize input[type="text"],
-.bo-winterize input[type="email"],
-.bo-winterize input[type="tel"],
-.bo-winterize select,
-.bo-winterize textarea {
-  width: 100%; padding: 11px 12px; border: 1px solid #c9bfac; border-radius: 6px;
-  font: inherit; background: #fff; color: var(--bo-ink);
+/* Labels + fields, mockup .lbl / .fld */
+.bo-form-card label,
+.bo-form-card .form-item__label {
+  font-family: var(--osw); font-size: 13px; font-weight: 500; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--bo-muted); display: block; margin-bottom: 7px;
 }
-.bo-winterize input:focus,
-.bo-winterize select:focus,
-.bo-winterize textarea:focus { outline: 2px solid var(--bo-orange); outline-offset: 1px; border-color: var(--bo-orange); }
-.bo-winterize .form-item { margin: 0 0 1.1rem; }
-
-/* Specific-date block — bordered, orange left rule, set apart from the opt-ins */
-.bo-winterize .winterize-specific-date {
-  border: 1px solid var(--bo-hairline); border-left: 4px solid var(--bo-orange);
-  border-radius: 6px; padding: 14px 16px; margin: 1rem 0 1.4rem; background: #fbf8f2;
+.bo-form-card input[type="text"], .bo-form-card input[type="email"], .bo-form-card input[type="tel"],
+.bo-form-card select {
+  width: 100%; height: 50px; padding: 0 14px; border: 1px solid var(--bo-field-border);
+  background: var(--bo-card); border-radius: 3px; font-family: var(--serif); font-size: 17px; color: var(--bo-ink);
 }
-.bo-winterize .winterize-specific-date .form-item { margin: 0; }
-
-/* Freeze disclaimer by the button */
-.bo-winterize .winterize-disclaimer { color: #5a5348; font-size: .9rem; margin: 1rem 0 .5rem; }
-
-/* The single most-clicked control — orange, full-width, tall enough for a thumb */
-.bo-winterize .winterize-submit,
-.bo-winterize .form-actions .button {
-  background: var(--bo-orange); border: 0; color: #fff; cursor: pointer;
-  font-family: var(--bo-display); font-weight: 600; letter-spacing: .04em; font-size: 1.2rem;
-  padding: 15px 30px; border-radius: 8px; width: 100%; min-height: 52px;
+.bo-form-card textarea {
+  width: 100%; min-height: 84px; padding: 12px 14px; border: 1px solid var(--bo-field-border);
+  background: var(--bo-card); border-radius: 3px; font-family: var(--serif); font-size: 17px; color: var(--bo-ink); line-height: 1.45; resize: vertical;
 }
-.bo-winterize .winterize-submit:hover,
-.bo-winterize .form-actions .button:hover { background: var(--bo-orange-dark); }
+.bo-form-card input:focus, .bo-form-card select:focus, .bo-form-card textarea:focus {
+  outline: 2px solid var(--bo-orange); outline-offset: 1px; border-color: var(--bo-orange);
+}
+.bo-form-card .description { font-size: 14px; color: var(--bo-muted-2); margin-top: 5px; font-family: var(--serif); text-transform: none; letter-spacing: 0; }
 
-/* What happens next */
-.bo-winterize .winterize-next { max-width: 760px; margin: 1.6rem auto 0; }
-.bo-winterize .winterize-next h2 { font-family: var(--bo-display); font-weight: 600; }
-.bo-winterize .winterize-next ol { padding-left: 1.2rem; }
-.bo-winterize .winterize-next li { margin: .35rem 0; }
+/* Specific-date block — orange left rule */
+.bo-form-card .winterize-specific-date {
+  padding: 20px 24px; border: 1px solid #E0D0BA; border-left: 3px solid var(--bo-orange);
+  border-radius: 3px; background: #FFFFFF;
+}
+.bo-form-card .winterize-specific-date .description { font-style: italic; }
 
-/* ── Accordions — JS-free <details>; Oswald summary, hairline, orange + → × ─── */
-.bo-winterize .winterize-detail { max-width: 760px; margin: 1.4rem auto 0; }
-.winterize-detail-intro { margin-bottom: 1rem; }
-.winterize-detail-section { border-bottom: 1px solid var(--bo-hairline); }
+/* Opt-in pair block */
+.bo-optin { display: flex; flex-direction: column; gap: 14px; padding: 22px 24px; background: #FAF5ED; border: 1px solid #E7DBC9; border-radius: 3px; }
+.bo-form-card .winterize-specific-date label,
+.bo-optin label { font-family: var(--serif); font-size: 17.5px; font-weight: 400; letter-spacing: 0; text-transform: none; color: #2C251E; line-height: 1.45; }
+
+/* Freeze disclaimer */
+.winterize-disclaimer { display: flex; gap: 13px; align-items: flex-start; }
+.winterize-disclaimer svg { flex: none; margin-top: 2px; }
+.winterize-disclaimer p { margin: 0; font-size: 15.5px; line-height: 1.55; color: var(--bo-muted); max-width: 74ch; }
+
+/* Submit row */
+.bo-form-card .form-actions { display: flex; align-items: center; gap: 26px; padding-top: 4px; flex-wrap: wrap; margin: 0; }
+.bo-form-card .winterize-submit {
+  font-family: var(--osw); border: none; cursor: pointer; background: var(--bo-orange); color: #fff;
+  font-size: 20px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 20px 42px; border-radius: 3px;
+}
+.bo-form-card .winterize-submit:hover { background: var(--bo-orange-hover); }
+.bo-form__limit { font-size: 15px; color: var(--bo-muted-2); font-style: italic; }
+
+/* ── What happens next ──────────────────────────────────────────────────── */
+.bo-next { padding: clamp(44px,6vw,74px) clamp(16px,5vw,72px) clamp(40px,5vw,66px); background: var(--bo-paper); }
+.bo-next__inner { max-width: 1160px; margin: 0 auto; display: flex; flex-direction: column; gap: 38px; }
+.bo-next__eyebrow { font-family: var(--osw); margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--bo-orange); }
+.bo-next__grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 44px; }
+.bo-step { display: flex; flex-direction: column; gap: 14px; }
+.bo-step h3 { font-family: var(--osw); margin: 0; font-size: 23px; font-weight: 500; color: var(--bo-ink); }
+.bo-step p { margin: 0; font-size: 17px; line-height: 1.6; color: var(--bo-text-2); }
+
+/* ── Accordions ─────────────────────────────────────────────────────────── */
+.bo-detail { padding: 8px clamp(16px,5vw,72px) 82px; background: var(--bo-paper); }
+.bo-detail__inner { max-width: 1160px; margin: 0 auto; display: grid; grid-template-columns: 300px 1fr; gap: 64px; align-items: start; }
+.bo-detail__head { display: flex; flex-direction: column; gap: 14px; padding-top: 26px; }
+.bo-detail__head h2 { font-family: var(--osw); margin: 0; font-size: 34px; font-weight: 600; line-height: 1.12; color: var(--bo-ink); }
+.bo-detail__head p { margin: 0; font-size: 16.5px; line-height: 1.6; color: var(--bo-muted); }
+.winterize-detail-intro { margin-bottom: 6px; font-size: 17.5px; line-height: 1.62; color: var(--bo-prose); }
+.winterize-detail-section { border-top: 1px solid var(--bo-hairline); }
+.winterize-detail-section:last-of-type { border-bottom: 1px solid var(--bo-hairline); }
 .winterize-detail-section > summary {
-  list-style: none; cursor: pointer; position: relative; padding: 16px 44px 16px 0;
-  font-family: var(--bo-display); font-weight: 600; font-size: 1.2rem; color: var(--bo-ink);
+  list-style: none; cursor: pointer; padding: 22px 0; display: flex; align-items: center;
+  justify-content: space-between; gap: 20px; font-family: var(--osw); font-weight: 500;
+  font-size: 20px; letter-spacing: .01em; color: var(--bo-ink);
 }
 .winterize-detail-section > summary::-webkit-details-marker { display: none; }
-.winterize-detail-section > summary::after {
-  content: "+"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-  color: var(--bo-orange); font-family: var(--bo-display); font-weight: 700; font-size: 1.7rem; line-height: 1;
-}
-.winterize-detail-section[open] > summary::after { content: "\00d7"; }
-.winterize-detail-section > *:not(summary) { padding-bottom: 14px; }
+.winterize-detail-section > summary::after { content: "+"; flex: none; color: var(--bo-orange); font-family: var(--osw); font-weight: 400; font-size: 30px; line-height: .6; transition: transform .18s ease; }
+.winterize-detail-section[open] > summary::after { transform: rotate(45deg); }
+.winterize-detail-section > *:not(summary) { font-size: 17.5px; line-height: 1.62; color: var(--bo-prose); margin: 0 0 16px; max-width: 70ch; }
 
-/* ── Dark footer — logo sits DIRECTLY on the dark (no backing plate) ────────── */
-.bo-footer {
-  background: var(--bo-ink); color: var(--bo-ink-on-dark);
-  padding: clamp(32px, 5vw, 56px) clamp(16px, 4vw, 48px);
-  display: flex; flex-wrap: wrap; align-items: center; gap: 24px 40px;
-}
-.bo-footer__logo { width: 112px; height: 112px; flex: 0 0 auto; display: block; }
-.bo-footer__meta { font-family: var(--bo-body); }
-.bo-footer__tagline { font-family: var(--bo-display); font-weight: 600; font-size: 1.15rem; margin: 0 0 .4rem; }
-.bo-footer a { color: var(--bo-blue); text-decoration: none; }
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+.bo-footer { background: var(--bo-ink); color: var(--bo-footer-text); padding: 46px clamp(16px,5vw,72px); }
+.bo-footer__inner { max-width: 1160px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 40px; flex-wrap: wrap; }
+.bo-footer__brand { display: flex; align-items: center; gap: 18px; }
+.bo-footer__logo { width: 112px; height: 112px; display: block; flex: none; }
+.bo-footer__name { font-family: var(--osw); font-size: 17px; font-weight: 600; letter-spacing: .05em; color: var(--bo-footer-strong); display: block; }
+.bo-footer__addr { font-size: 14.5px; display: block; margin-top: 3px; }
+.bo-footer__right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.bo-footer__phone { font-family: var(--osw); font-size: 24px; font-weight: 600; color: var(--bo-footer-strong); }
+.bo-footer__tag { font-size: 14px; font-style: italic; }
+.bo-footer a { color: var(--bo-footer-strong); }
 
-/* ── Phone (≤ 640px): no horizontal fade; photo is a band across the top,
- *    headline below on paper — no text over the photo (§P3.2a). ───────────── */
-@media (max-width: 640px) {
+/* Confirmation state (after submit) — reuse the card look on the sand band. */
+.bo-formband .winterize-confirmation { background: var(--bo-card); border: 1px solid var(--bo-border-card); border-radius: 4px; padding: clamp(24px,4vw,44px); max-width: 760px; margin: 0 auto; }
+.winterize-confirmation h2 { font-family: var(--osw); }
+
+/* ── Phone (≤ 720px) ────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .bo-topbar { flex-wrap: wrap; gap: 12px 20px; padding: 14px 18px; }
   .bo-topbar__logo { width: 50px; height: 50px; }
-  .bo-topbar__tagline { font-size: .9rem; }
+  .bo-topbar__name { font-size: 16px; }
+  .bo-topbar__right { gap: 14px; }
+  .bo-topbar__phone { font-size: 19px; }
+  .bo-topbar__area { display: none; }
+  /* Hero: photo becomes a band across the top; copy below on paper. */
   .bo-hero { background: var(--bo-paper); }
-  .bo-hero__photo { position: static; width: 100%; height: 210px; }
+  .bo-hero__photo { position: static; width: 100%; height: 210px; object-position: 32% 60%; }
   .bo-hero__fade { display: none; }
-  .bo-hero__copy { margin-left: 0; padding: 22px clamp(16px, 5vw, 24px) 8px; }
-  .bo-footer__logo { width: 92px; height: 92px; }
+  .bo-hero__copy { margin-left: 0; padding: 22px 18px 26px; }
+  .bo-hero__h1 { font-size: 38px; }
+  .bo-grid-2, .bo-grid-2-1, .bo-next__grid { grid-template-columns: 1fr; }
+  .bo-detail__inner { grid-template-columns: 1fr; gap: 8px; }
+  .bo-detail__head { padding-top: 0; }
+  .bo-footer__inner { flex-direction: column; align-items: flex-start; }
+  .bo-footer__right { align-items: flex-start; }
+  .bo-form-card .winterize-submit { width: 100%; }
 }

@@ -1,19 +1,34 @@
 /**
- * Brookstone brand color tokens — the shared palette (Pantone-derived from the
- * CorelDraw brand file, 2026-08-23). Defined once here; the winterize page uses
- * them now, and common site CSS is being migrated onto them (site-wide refactor).
- * Keep this the single source of truth for the brand colors.
+ * Brookstone brand color tokens — shared palette, matched to the approved
+ * winterize mockup (2026-08-23). Single source of truth for the brand colors;
+ * the winterize page uses them and the site-wide CSS is being migrated onto them.
+ *
+ * NOTE on accents: these are the MOCKUP values so /winterize matches the design
+ * pixel-for-pixel. The CorelDraw Pantone-corrected accents you supplied differ
+ * slightly (orange #CB6015 / green #007A33 / blue #62B5E5) — swap the three
+ * accent tokens below to those if you prefer the print-brand values; everything
+ * inherits from here.
  */
 :root {
-  --bo-orange: #CB6015;        /* Pantone 159 C — CTA, accents, accordion + */
-  --bo-orange-dark: #A94E11;   /* hover/active for the orange CTA */
-  --bo-ink: #211D18;           /* dark footer band + body text */
-  --bo-paper: #F6F1E8;         /* warm page background */
-  --bo-sand: #EAE0CE;          /* form band behind the card */
-  --bo-card: #FFFFFF;          /* the form card */
-  --bo-hero: #FFFFFF;          /* hero band — pure white for the fade seam */
-  --bo-blue: #62B5E5;          /* Pantone 2915 C — secondary accent */
-  --bo-green: #007A33;         /* Pantone 356 C — secondary accent */
-  --bo-hairline: #E0D8C8;      /* warm hairline divider */
-  --bo-ink-on-dark: #F6F1E8;   /* text color on the dark footer */
+  --bo-paper: #FAF7F2;        /* warm page background */
+  --bo-sand: #F2E9DC;         /* form band */
+  --bo-card: #FFFDFA;         /* form card / field background */
+  --bo-hero: #FFFFFF;         /* hero band — pure white for the fade seam */
+  --bo-ink: #1A1613;          /* primary text + dark footer */
+
+  --bo-orange: #D55A0C;       /* CTA, accents, accordion + (Pantone 159 C = #CB6015) */
+  --bo-orange-hover: #A8440A;
+  --bo-green: #007831;        /* stats + step icons (Pantone 356 C = #007A33) */
+  --bo-blue: #62B5E5;         /* Pantone 2915 C — secondary accent */
+
+  --bo-prose: #3B322A;        /* body prose on light */
+  --bo-text-2: #4A3F35;       /* secondary body */
+  --bo-muted: #6B5D4F;        /* labels, captions */
+  --bo-muted-2: #8A7A69;      /* faint helper text */
+  --bo-footer-text: #C9BCAA;  /* body text on the dark footer */
+  --bo-footer-strong: #F5EFE6;/* headings on the dark footer */
+
+  --bo-hairline: #E2D7C7;     /* section dividers */
+  --bo-border-card: #DFD2BF;  /* card border */
+  --bo-field-border: #D6C9B6; /* input border */
 }

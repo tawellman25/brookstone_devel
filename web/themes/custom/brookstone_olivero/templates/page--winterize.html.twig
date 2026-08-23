@@ -1,48 +1,108 @@
 {#
 /**
  * @file
- * Dedicated PUBLIC marketing template for /winterize (bos_service_request).
- *
- * Marketing chrome ONLY — Brookstone logo, tagline, office phone, hero, footer.
- * It deliberately renders NONE of the site's regions (header, nav, sidebars,
- * footer menus) so a stranger scanning a postcard lands on a Brookstone page,
- * not the edge of the operations system. Only {{ page.content }} (the form) is
- * printed. Variables (bo_logo, bo_hero, bo_phone, …) come from
- * bos_service_request_preprocess_page(); the library is attached there too.
+ * Dedicated PUBLIC marketing template for /winterize — built to the approved
+ * mockup. Marketing chrome ONLY (logo, tagline, phone, hero, footer); renders
+ * none of the site's regions/menus. Only {{ page.content }} (the form card) is
+ * printed. Variables come from bos_service_request_preprocess_page().
  */
 #}
 {% set tel = bo_phone|replace({'-': '', ' ': '', '(': '', ')': ''}) %}
 <div class="bo-winterize">
 
   <header class="bo-topbar">
-    <img class="bo-topbar__logo" src="{{ bo_logo }}" alt="Brookstone Outdoors" />
-    <p class="bo-topbar__tagline">{{ bo_tagline }}</p>
-    {% if bo_phone %}
-      <div class="bo-topbar__phone"><a href="tel:{{ tel }}">{{ bo_phone }}</a></div>
-    {% endif %}
+    <div class="bo-topbar__brand">
+      <img class="bo-topbar__logo" src="{{ bo_logo }}" alt="Brookstone Outdoors" />
+      <div>
+        <span class="bo-topbar__name">BROOKSTONE OUTDOORS</span>
+        <span class="bo-topbar__tag">{{ bo_tagline }}</span>
+      </div>
+    </div>
+    <div class="bo-topbar__right">
+      <span class="bo-topbar__area">Delta &amp; Montrose Counties</span>
+      {% if bo_phone %}<a class="bo-topbar__phone" href="tel:{{ tel }}">{{ bo_phone }}</a>{% endif %}
+    </div>
   </header>
 
   <section class="bo-hero">
     <img class="bo-hero__photo" src="{{ bo_hero }}"
-         alt="A dew-covered golden aspen leaf resting on wet river rock as the season turns to fall." />
+         alt="An aspen leaf and river rock after an autumn rain, the season turning to fall." />
     <div class="bo-hero__fade" aria-hidden="true"></div>
     <div class="bo-hero__copy">
-      <h1 class="bo-hero__headline">{{ bo_headline }}</h1>
+      <span class="bo-hero__eyebrow osw">Sprinkler Winterization &middot; {{ bo_year }}</span>
+      <h1 class="bo-hero__h1">{{ bo_headline }}</h1>
       <p class="bo-hero__sub">{{ bo_subhead }}</p>
-      <a class="bo-hero__cta" href="#winterize-form">Get on the list &darr;</a>
+      <div class="bo-hero__cta-row">
+        <a href="#request" class="bo-btn">Get on the list
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
+        </a>
+        {% if bo_phone %}<span class="bo-hero__callnote">or call <a href="tel:{{ tel }}">{{ bo_phone }}</a></span>{% endif %}
+      </div>
+      <div class="bo-hero__stats">
+        <div class="bo-stat"><span class="bo-stat__n osw">30+ years</span><span class="bo-stat__l">winterizing on the Western Slope</span></div>
+        <div class="bo-stat"><span class="bo-stat__n osw">Guaranteed</span><span class="bo-stat__l">if it freezes after we winterize, we repair it free</span></div>
+      </div>
     </div>
   </section>
 
-  <main class="bo-main" id="winterize-form">
-    {{ page.content }}
-  </main>
+  <section class="bo-formband" id="request">
+    <div class="bo-formband__inner">
+      <div>
+        <h2 class="bo-formband__h2">Request your winterization</h2>
+        <p class="bo-formband__intro">We start in early October and work through the month, organized by location and water supply. We&rsquo;ll contact you with the week we plan to be in your area. Takes about a minute.</p>
+      </div>
+      {{ page.content }}
+    </div>
+  </section>
+
+  <section class="bo-next">
+    <div class="bo-next__inner">
+      <h2 class="bo-next__eyebrow">What happens next</h2>
+      <div class="bo-next__grid">
+        <div class="bo-step">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#007831" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          <h3>We match your address</h3>
+          <p>The office checks your request against our records of your property. If anything doesn&rsquo;t line up, we call you rather than guess.</p>
+        </div>
+        <div class="bo-step">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#007831" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h5l2-3h4l2 3h5"></path><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7"></path><path d="M8 19v2"></path><path d="M16 19v2"></path></svg>
+          <h3>We route your week</h3>
+          <p>Routes are organized by location and water supply. That&rsquo;s what keeps this service affordable — and why we can&rsquo;t promise an exact hour.</p>
+        </div>
+        <div class="bo-step">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#007831" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"></path></svg>
+          <h3>We call with your window</h3>
+          <p>You&rsquo;ll hear the week we plan to be in your area. Need a specific date? Call the office early, before routes are set.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% if bo_accordions %}
+  <section class="bo-detail">
+    <div class="bo-detail__inner">
+      <div class="bo-detail__head">
+        <h2>How we do it</h2>
+        <p>The details, for anyone who wants them.</p>
+      </div>
+      <div>{{ bo_accordions }}</div>
+    </div>
+  </section>
+  {% endif %}
 
   <footer class="bo-footer">
-    <img class="bo-footer__logo" src="{{ bo_logo }}" alt="Brookstone Outdoors" />
-    <div class="bo-footer__meta">
-      <p class="bo-footer__tagline">{{ bo_tagline }}</p>
-      <p>{{ bo_address }}</p>
-      {% if bo_phone %}<p><a href="tel:{{ tel }}">{{ bo_phone }}</a></p>{% endif %}
+    <div class="bo-footer__inner">
+      <div class="bo-footer__brand">
+        <img class="bo-footer__logo" src="{{ bo_logo }}" alt="Brookstone Outdoors" />
+        <div>
+          <span class="bo-footer__name">BROOKSTONE OUTDOORS LLC</span>
+          <span class="bo-footer__addr">{{ bo_address }}</span>
+        </div>
+      </div>
+      <div class="bo-footer__right">
+        {% if bo_phone %}<a class="bo-footer__phone" href="tel:{{ tel }}">{{ bo_phone }}</a>{% endif %}
+        <span class="bo-footer__tag">{{ bo_tagline }}</span>
+      </div>
     </div>
   </footer>
 

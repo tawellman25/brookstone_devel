@@ -469,6 +469,10 @@ final class WinterizeForm extends FormBase {
   private function resolveCampaign($request): array {
     $allow = $this->configFactory->get('bos_service_request.settings')->get('campaigns') ?? [];
     $raw = (string) $request->query->get('c', '');
+    // The Bear Creek landing route forces its campaign even without ?c=.
+    if ($raw === '' && \Drupal::routeMatch()->getRouteName() === 'bos_service_request.bear_creek') {
+      $raw = 'bearcreek26';
+    }
     if ($raw === '') {
       return ['website', 'website', ''];
     }

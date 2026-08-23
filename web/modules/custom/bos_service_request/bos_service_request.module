@@ -154,14 +154,16 @@ function _bos_service_request_generate_ref(string $bundle): string {
  */
 const BOS_SERVICE_REQUEST_WINTERIZE_ROUTE = 'bos_service_request.winterize';
 const BOS_SERVICE_REQUEST_CHECK_ROUTE = 'bos_service_request.check_week';
+const BOS_SERVICE_REQUEST_BEAR_CREEK_ROUTE = 'bos_service_request.bear_creek';
 
 /**
- * TRUE on either public winterize page (both use the marketing template).
+ * TRUE on any public winterize page (all use the marketing template).
  */
 function _bos_service_request_is_winterize(): bool {
   return in_array(\Drupal::routeMatch()->getRouteName(), [
     BOS_SERVICE_REQUEST_WINTERIZE_ROUTE,
     BOS_SERVICE_REQUEST_CHECK_ROUTE,
+    BOS_SERVICE_REQUEST_BEAR_CREEK_ROUTE,
   ], TRUE);
 }
 
@@ -212,8 +214,12 @@ function bos_service_request_preprocess_page(array &$variables) {
   $variables['bo_year'] = (int) ($cfg->get('bundles.sprinkler_winterizing.service_year') ?: date('Y'));
   $variables['bo_address'] = '20143 Austin Rd., Austin, CO 81410';
 
-  $isCheck = \Drupal::routeMatch()->getRouteName() === BOS_SERVICE_REQUEST_CHECK_ROUTE;
-  if ($isCheck) {
+  $route = \Drupal::routeMatch()->getRouteName();
+  $variables['bo_offer'] = NULL;
+  $accordions = ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty())
+    ? _bos_service_request_accordions((string) $term->get('field_service_public_desc')->value) : NULL;
+
+  if ($route === BOS_SERVICE_REQUEST_CHECK_ROUTE) {
     // pc26a "already on our list" → Check-your-week page.
     $variables['bo_eyebrow'] = 'Sprinkler Winterization · ' . $variables['bo_year'];
     $variables['bo_headline'] = "You're on the list.";
@@ -224,8 +230,24 @@ function bos_service_request_preprocess_page(array &$variables) {
     $variables['bo_show_detail'] = FALSE;
     $variables['bo_accordions'] = NULL;
   }
+  elseif ($route === BOS_SERVICE_REQUEST_BEAR_CREEK_ROUTE) {
+    // Bear Creek subdivision promotion — $60 offer.
+    $variables['bo_eyebrow'] = 'Bear Creek Residents · Winterization ' . $variables['bo_year'];
+    $variables['bo_headline'] = 'Get your sprinklers ready for winter.';
+    $variables['bo_subhead'] = "As Bear Creek's landscape maintenance provider, we're offering residents an exclusive winterization rate this fall.";
+    $variables['bo_offer'] = [
+      'price' => '$60',
+      'regular' => 'Regularly $90',
+      'note' => 'Exclusive Bear Creek resident rate. Includes professional winterization of residential systems with up to 5 zones.',
+    ];
+    $variables['bo_cta_text'] = 'Get on the list';
+    $variables['bo_formband_h2'] = 'Reserve your Bear Creek winterization';
+    $variables['bo_formband_intro'] = "We schedule by geographic route through October and will contact you with the week we plan to be in your area. Takes about a minute.";
+    $variables['bo_show_detail'] = TRUE;
+    $variables['bo_accordions'] = $accordions;
+  }
   else {
-    // Default / pc26b — signup.
+    // Default / pc26b / other codes — signup.
     $variables['bo_eyebrow'] = 'Sprinkler Winterization · ' . $variables['bo_year'];
     $variables['bo_headline'] = 'Fall is on its way.';
     $variables['bo_subhead'] = 'Water left in your lines splits pipe, valves and backflows when it freezes — and underground breaks stay hidden until spring.';
@@ -233,11 +255,7 @@ function bos_service_request_preprocess_page(array &$variables) {
     $variables['bo_formband_h2'] = 'Request your winterization';
     $variables['bo_formband_intro'] = "We start in early October and work through the month, organized by location and water supply. We'll contact you with the week we plan to be in your area. Takes about a minute.";
     $variables['bo_show_detail'] = TRUE;
-    // Accordions from the editable term body, split by <h3> into JS-free <details>.
-    $variables['bo_accordions'] = NULL;
-    if ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty()) {
-      $variables['bo_accordions'] = _bos_service_request_accordions((string) $term->get('field_service_public_desc')->value);
-    }
+    $variables['bo_accordions'] = $accordions;
   }
 }
 

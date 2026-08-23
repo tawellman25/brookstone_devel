@@ -32,6 +32,13 @@
       <span class="bo-hero__eyebrow osw">{{ bo_eyebrow }}</span>
       <h1 class="bo-hero__h1">{{ bo_headline }}</h1>
       <p class="bo-hero__sub">{{ bo_subhead }}</p>
+      {% if bo_offer %}
+      <div class="bo-hero__offer">
+        <span class="bo-hero__offer-price">{{ bo_offer.price }}</span>
+        <span class="bo-hero__offer-reg">{{ bo_offer.regular }}</span>
+        <span class="bo-hero__offer-note">{{ bo_offer.note }}</span>
+      </div>
+      {% endif %}
       <div class="bo-hero__cta-row">
         <a href="#request" class="bo-btn">{{ bo_cta_text }}
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>

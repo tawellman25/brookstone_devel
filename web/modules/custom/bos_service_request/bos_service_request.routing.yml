@@ -11,6 +11,19 @@ bos_service_request.winterize:
   options:
     no_cache: 'TRUE'
 
+# Bear Creek subdivision promotion — the signup form with Bear-Creek copy + the
+# $60 offer; requests are auto-tagged bearcreek26. Same intake/matching as
+# /winterize.
+bos_service_request.bear_creek:
+  path: '/winterize/bear-creek'
+  defaults:
+    _form: 'Drupal\bos_service_request\Form\WinterizeForm'
+    _title: 'Bear Creek Sprinkler Winterization'
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+
 # "Check your service week" — pc26a ("already on our list") postcard destination.
 # Public; reveals a schedule week ONLY on server-side contact corroboration
 # (captcha + flood gated). No property element is ever rendered.

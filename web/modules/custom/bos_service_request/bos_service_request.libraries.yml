@@ -1,3 +1,12 @@
+# Site-wide BOS brand palette (Brookstone colors as CSS custom properties).
+# Attached to every page by hook_page_attachments so --bo-* is the single source
+# of truth for the brand colors across both themes. Defining vars is inert — it
+# changes nothing visually until something references them.
+brand_tokens:
+  css:
+    base:
+      css/bo-tokens.css: {}
+
 winterize:
   css:
     theme:
@@ -5,10 +14,10 @@ winterize:
       # mockup. External; a blocked request falls back to the stacks in
       # bo-winterize.css, so the page still works.
       https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap: { type: external, minified: true }
-      css/bo-tokens.css: {}
       css/bo-winterize.css: {}
   js:
     js/bo-winterize.js: {}
   dependencies:
+    - bos_service_request/brand_tokens
     - core/drupal
     - core/once

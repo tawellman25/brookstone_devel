@@ -162,6 +162,18 @@ function _bos_service_request_is_winterize(): bool {
 }
 
 /**
+ * Implements hook_page_attachments().
+ *
+ * Publish the BOS brand palette (--bo-* tokens, css/bo-tokens.css) site-wide as
+ * the single source of truth for the brand colors, so any theme/module CSS can
+ * reference them instead of hardcoding hexes. Purely additive — defining CSS
+ * custom properties changes nothing until something uses them.
+ */
+function bos_service_request_page_attachments(array &$attachments) {
+  $attachments['#attached']['library'][] = 'bos_service_request/brand_tokens';
+}
+
+/**
  * Implements hook_theme_suggestions_page_alter().
  *
  * /winterize uses a dedicated marketing template (logo, hero, footer — NO site

@@ -174,13 +174,35 @@ final class ServiceRequestEligibility {
       return new EligibilityResult(EligibilityResult::DUPLICATE, [], NULL, NULL, NULL, (int) reset($existing));
     }
 
-    // 6. Eligible. Attach the 1127 disagreement flag if present (accept + flag,
-    //    never swallow — P0.2 asymmetric failure).
+    // 6. Eligible. Attach disagreement flags (accept + flag, never swallow —
+    //    P0.2/P1.4 asymmetric failure). Reaching here means no blocking WO and
+    //    no covered-contract section were found for the year.
     $flags = [];
     if ($this->contractCompletedForYear($propertyId, $serviceTermId, $serviceYear)) {
       $flags[] = 'contract_completed_for_year';
     }
+    if ($this->hasStandingShutDownFlag($propertyId)) {
+      $flags[] = 'standing_flag_no_contract';
+    }
     return new EligibilityResult(EligibilityResult::ELIGIBLE, $flags);
+  }
+
+  /**
+   * TRUE when the property carries the standing shut-down-contract flag
+   * (property_sprinkler_info.field_ss_shut_down_contract). A THIRD coverage
+   * signal, independent of the WO and contract-section checks — and known to
+   * drift (set years ago, never cleared). So at the eligible branch (no
+   * current-year WO or covered section), a TRUE flag is a DISAGREEMENT: accept
+   * the request and flag standing_flag_no_contract, never block (P1.4).
+   */
+  private function hasStandingShutDownFlag(int $propertyId): bool {
+    $ids = $this->entityTypeManager->getStorage('property_sprinkler_info')->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_property', $propertyId)
+      ->condition('field_ss_shut_down_contract', 1)
+      ->range(0, 1)
+      ->execute();
+    return !empty($ids);
   }
 
   /**

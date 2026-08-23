@@ -281,6 +281,23 @@ env and are resolved by name/route).
   the shown text). Config `freeze_disclaimer` per bundle.
 - **P1.2/P1.3** second opt-in (`field_wants_startup`) + optional water-supply
   select (`field_water_supply`, raw only, never to `property_ss_sources`).
+  **`supply_mismatch`** flag when a matched property's `property_ss_sources`
+  (reached via `property_sprinkler_info.field_systems → property_sprinkler_system
+  ← field_property_ss_system`) disagrees with the submitted supply ("unsure"/
+  empty never mismatches; no source records → no flag).
+- **P1.4** standing shut-down flag — `property_sprinkler_info.field_ss_shut_down_contract
+  = TRUE` at the eligible branch (no current-year WO/covered section) → eligible
+  + `standing_flag_no_contract` (flags, never blocks; same asymmetric failure).
+- **P1.5** exposed **"Review flag contains"** filter (identifier `flag`) on the
+  `service_request_admin` queue (`add_service_request_review_flags_filter.php`).
+- **P1.6** coverage-signal disagreement report
+  (`report_winterize_coverage_disagreement.php`, read-only): lists every property
+  where the three signals (standing flag / current-year section / winterizing WO)
+  disagree; category `1_standing_flag_only` = next year's variant-B list.
+- **Verifier** `verify_service_request_phase2.php` — 15/15 dev + live (read-only:
+  campaign allowlist, 1127 correctness + no-regression, standing flag, supply
+  mismatch, landing page, crew-leak, no-backflow-link, no property element, seed
+  idempotency).
 - **§5** seasonal strings (`scheduling_notice`, `specific_date_notice`,
   `closed_notice`, `freeze_disclaimer`) via `hook_update_10003`; **§7**
   confirmation copy refreshed (multi-paragraph).
@@ -297,15 +314,9 @@ silently reconciled.
 
 ## Remaining (Phase 2 next passes)
 
-- **P1.4** standing shut-down flag (`property_sprinkler_info.field_ss_shut_down_contract`)
-  → `standing_flag_no_contract` (flags, never blocks).
-- **P1.3 cont.** `supply_mismatch` flag vs `property_ss_sources` on a matched
-  property (store-raw already shipped).
-- **P1.5** expose review flags as a queue filter; **P1.6** coverage-signal
-  disagreement report (the variant-B list generator).
-- **P2.2** confirm the `/services` teaser formatter (Trimmed vs Summary-or-trimmed).
-- **P2.3 / carried:** eligibility "or linked scheduling date in-window"; Gate 6
-  (second bundle).
-- **Verifiers:** extend gate2/3/4 with the new scenarios (1127, campaign
-  normalization, crew-leak-after-cache, JS-off accordions, empty-safe, seed
-  idempotency, no-backflow-link).
+- **P2.2 — answered:** the `/services` listing formatter is **Trimmed**
+  (`text_trimmed`, 300) → it uses the body, ignores the summary; writing a
+  summary does not change the listing teaser.
+- **P2.3 / carried:** eligibility "or a linked scheduling date in-window"
+  augmentation (created-in-window only today); **Gate 6** — prove the
+  abstraction with a second bundle (sprinkler repair / spring start-up).

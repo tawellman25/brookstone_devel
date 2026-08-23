@@ -203,6 +203,46 @@ final class WinterizeForm extends FormBase {
   }
 
   /**
+   * P1.3 — TRUE when the matched property has water-source records but none of
+   * the submitted supply type. Read-only; never writes property_ss_sources.
+   * Path: properties ← property_sprinkler_info.field_property → field_systems →
+   * property_sprinkler_system ← property_ss_sources.field_property_ss_system.
+   * "unsure"/empty never mismatches; no source records → nothing to disagree.
+   */
+  private function waterSupplyMismatch(int $propertyId, string $submitted): bool {
+    $map = ['city' => 'domestic_source', 'ditch' => 'dirty_water_source', 'well' => 'well_water_source'];
+    if (!isset($map[$submitted])) {
+      return FALSE;
+    }
+    $infoStorage = $this->entityTypeManager->getStorage('property_sprinkler_info');
+    $infoIds = $infoStorage->getQuery()->accessCheck(FALSE)->condition('field_property', $propertyId)->execute();
+    if (!$infoIds) {
+      return FALSE;
+    }
+    $systemIds = [];
+    foreach ($infoStorage->loadMultiple($infoIds) as $info) {
+      foreach ($info->get('field_systems') as $ref) {
+        if ($ref->target_id) {
+          $systemIds[] = $ref->target_id;
+        }
+      }
+    }
+    if (!$systemIds) {
+      return FALSE;
+    }
+    $srcStorage = $this->entityTypeManager->getStorage('property_ss_sources');
+    $srcIds = $srcStorage->getQuery()->accessCheck(FALSE)->condition('field_property_ss_system', $systemIds, 'IN')->execute();
+    if (!$srcIds) {
+      return FALSE;
+    }
+    $bundles = [];
+    foreach ($srcStorage->loadMultiple($srcIds) as $s) {
+      $bundles[$s->bundle()] = TRUE;
+    }
+    return !isset($bundles[$map[$submitted]]);
+  }
+
+  /**
    * Load services term 369 (the winterizing service). Public copy source.
    */
   private function serviceTerm(): ?object {
@@ -296,6 +336,14 @@ final class WinterizeForm extends FormBase {
     // Internal status + coverage links.
     [$statusName, $existingWoId, $existingContractId, $extraFlags] = $this->classify($match['status'], $elig);
     $flags = array_values(array_unique(array_merge($flags, $extraFlags)));
+
+    // P1.3 — supply disagreement on a matched property. The raw answer is stored
+    // regardless; this only raises a review flag and changes NOTHING on
+    // property_ss_sources (those records stay authoritative).
+    if ($propertyId && $this->waterSupplyMismatch($propertyId, (string) $form_state->getValue('water_supply'))) {
+      $flags[] = 'supply_mismatch';
+      $flags = array_values(array_unique($flags));
+    }
 
     // Customer notes (verbatim record of what a stranger typed). Water supply is
     // now a structured field (field_water_supply), not free text.

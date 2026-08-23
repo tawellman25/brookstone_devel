@@ -34,20 +34,20 @@
 
 /* ── Hero: photo bleeds left into a CSS fade over a pure-white band ─────── */
 .bo-hero { position: relative; background: var(--bo-hero); overflow: hidden; }
-.bo-hero__photo { position: absolute; left: 0; top: 0; width: 64%; height: 100%; object-fit: cover; object-position: 32% center; display: block; }
+.bo-hero__photo { position: absolute; left: 0; top: 0; width: 64%; height: 100%; object-fit: cover; object-position: 38% 66%; display: block; }
 .bo-hero__fade { position: absolute; left: 0; top: 0; bottom: 0; width: 64%; background: linear-gradient(to right, rgba(255,255,255,0) 38%, #FFFFFF 84%); }
 .bo-hero__copy { position: relative; margin-left: 53%; padding: 58px clamp(16px,5vw,72px) 58px 0; display: flex; flex-direction: column; gap: 20px; }
 .bo-hero__eyebrow { font-family: var(--osw); font-size: 13px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--bo-orange); }
 .bo-hero__h1 { font-family: var(--osw); margin: 0; font-size: clamp(38px, 5vw, 60px); line-height: 1.02; font-weight: 600; letter-spacing: -.01em; color: var(--bo-ink); }
 .bo-hero__sub { margin: 0; font-size: 20px; line-height: 1.45; color: var(--bo-prose); }
 .bo-hero__cta-row { display: flex; align-items: center; gap: 18px; margin-top: 4px; flex-wrap: wrap; }
-.bo-btn {
+.bo-winterize a.bo-btn, .bo-winterize .bo-btn {
   font-family: var(--osw); display: inline-flex; align-items: center; gap: 12px;
-  background: var(--bo-orange); color: #fff; font-size: 19px; font-weight: 600;
+  background: var(--bo-orange); color: #fff !important; font-size: 19px; font-weight: 600;
   letter-spacing: .04em; text-transform: uppercase; padding: 17px 30px; border-radius: 3px;
   border: none; cursor: pointer;
 }
-.bo-btn:hover { background: var(--bo-orange-hover); color: #fff; text-decoration: none; }
+.bo-winterize a.bo-btn:hover, .bo-winterize .bo-btn:hover { background: var(--bo-orange-hover); color: #fff !important; text-decoration: none; }
 .bo-hero__callnote { font-size: 17px; color: var(--bo-muted); }
 .bo-hero__stats { display: flex; gap: 30px; padding-top: 18px; border-top: 1px solid #E8DFD2; margin-top: 4px; flex-wrap: wrap; }
 .bo-stat { display: flex; flex-direction: column; gap: 2px; }
@@ -109,11 +109,16 @@
 
 /* Submit row */
 .bo-form-card .form-actions { display: flex; align-items: center; gap: 26px; padding-top: 4px; flex-wrap: wrap; margin: 0; }
+/* !important + appearance reset to beat Olivero's own .button styling. */
+.bo-winterize .winterize-submit,
 .bo-form-card .winterize-submit {
-  font-family: var(--osw); border: none; cursor: pointer; background: var(--bo-orange); color: #fff;
-  font-size: 20px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 20px 42px; border-radius: 3px;
+  font-family: var(--osw); border: none; cursor: pointer;
+  background: var(--bo-orange) !important; background-image: none !important; color: #fff !important;
+  font-size: 20px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+  padding: 20px 42px; border-radius: 3px; box-shadow: none; -webkit-appearance: none; appearance: none;
 }
-.bo-form-card .winterize-submit:hover { background: var(--bo-orange-hover); }
+.bo-winterize .winterize-submit:hover,
+.bo-form-card .winterize-submit:hover { background: var(--bo-orange-hover) !important; color: #fff !important; }
 .bo-form__limit { font-size: 15px; color: var(--bo-muted-2); font-style: italic; }
 
 /* ── What happens next ──────────────────────────────────────────────────── */
@@ -170,7 +175,7 @@
   .bo-topbar__area { display: none; }
   /* Hero: photo becomes a band across the top; copy below on paper. */
   .bo-hero { background: var(--bo-paper); }
-  .bo-hero__photo { position: static; width: 100%; height: 210px; object-position: 32% 60%; }
+  .bo-hero__photo { position: static; width: 100%; height: 220px; object-position: 38% 70%; }
   .bo-hero__fade { display: none; }
   .bo-hero__copy { margin-left: 0; padding: 22px 18px 26px; }
   .bo-hero__h1 { font-size: 38px; }

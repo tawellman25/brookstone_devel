@@ -11,6 +11,19 @@ bos_service_request.winterize:
   options:
     no_cache: 'TRUE'
 
+# "Check your service week" — pc26a ("already on our list") postcard destination.
+# Public; reveals a schedule week ONLY on server-side contact corroboration
+# (captcha + flood gated). No property element is ever rendered.
+bos_service_request.check_week:
+  path: '/winterize/week'
+  defaults:
+    _form: 'Drupal\bos_service_request\Form\CheckWeekForm'
+    _title: 'Check Your Winterization Week'
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+
 # Approve & Create Work Order — per-row confirm form (NOT a VBO bulk action, per
 # the documented VBO footgun incidents). The confirm form provides Drupal form
 # CSRF on the mutating POST; the converter is locked + idempotent.

@@ -149,4 +149,20 @@ $ok('specific-date block + fee note', str_contains($html, 'winterize-specific-da
 $ok('"Last name" label + "Get on the list" submit', str_contains($html, 'Last name') && str_contains($html, 'Get on the list'));
 $ok('field_wants_specific_date exists', (bool) \Drupal\field\Entity\FieldConfig::loadByName('service_request', 'sprinkler_winterizing', 'field_wants_specific_date'));
 
+echo "== Check-your-week page (/winterize/week, pc26a) ==\n";
+$switcher->switchTo(new AnonymousUserSession());
+try {
+  $cw = $kernel->handle(Request::create('/winterize/week', 'GET'), HttpKernelInterface::SUB_REQUEST, TRUE);
+  $cwHtml = $cw->getContent();
+  $cwStatus = $cw->getStatusCode();
+}
+catch (\Throwable $e) {
+  $cwHtml = ''; $cwStatus = 0;
+}
+$switcher->switchBack();
+$ok('/winterize/week → 200', $cwStatus === 200);
+$ok('check-week form renders (marketing chrome)', str_contains($cwHtml, 'Check my week') && str_contains($cwHtml, 'bo-winterize'));
+$ok('no property-shaped element on the check page (§6.0)', !preg_match('/name="(property_id|field_property)"/', $cwHtml));
+$ok('no schedule week rendered on GET (only on corroborated submit)', !preg_match('/week of/i', $cwHtml));
+
 printf("\n== RESULT: %d passed, %d failed ==\n", $pass, $fail);

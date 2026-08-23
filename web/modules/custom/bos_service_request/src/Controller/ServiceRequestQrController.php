@@ -40,7 +40,12 @@ final class ServiceRequestQrController extends ControllerBase {
   }
 
   private function winterizeUrl(string $campaign): string {
-    return Url::fromRoute('bos_service_request.winterize', ['c' => $campaign])
+    // pc26a ("already on our list") lands on the Check-your-week page; every
+    // other code lands on the signup form.
+    $route = ($campaign === 'pc26a')
+      ? 'bos_service_request.check_week'
+      : 'bos_service_request.winterize';
+    return Url::fromRoute($route, ['c' => $campaign])
       ->setAbsolute()
       ->toString(TRUE)
       ->getGeneratedUrl();

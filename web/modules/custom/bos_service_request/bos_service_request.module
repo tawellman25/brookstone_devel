@@ -150,15 +150,19 @@ function _bos_service_request_generate_ref(string $bundle): string {
 }
 
 /**
- * The public winterize route (marketing-chrome landing page).
+ * The public marketing-chrome routes (signup + check-your-week).
  */
 const BOS_SERVICE_REQUEST_WINTERIZE_ROUTE = 'bos_service_request.winterize';
+const BOS_SERVICE_REQUEST_CHECK_ROUTE = 'bos_service_request.check_week';
 
 /**
- * TRUE on the public /winterize page.
+ * TRUE on either public winterize page (both use the marketing template).
  */
 function _bos_service_request_is_winterize(): bool {
-  return \Drupal::routeMatch()->getRouteName() === BOS_SERVICE_REQUEST_WINTERIZE_ROUTE;
+  return in_array(\Drupal::routeMatch()->getRouteName(), [
+    BOS_SERVICE_REQUEST_WINTERIZE_ROUTE,
+    BOS_SERVICE_REQUEST_CHECK_ROUTE,
+  ], TRUE);
 }
 
 /**
@@ -206,16 +210,34 @@ function bos_service_request_preprocess_page(array &$variables) {
   $variables['bo_phone'] = (string) $cfg->get('office_phone');
   $variables['bo_tagline'] = 'Creating and Maintaining Your Outdoor Spaces';
   $variables['bo_year'] = (int) ($cfg->get('bundles.sprinkler_winterizing.service_year') ?: date('Y'));
-  $variables['bo_headline'] = 'Fall is on its way.';
-  $variables['bo_subhead'] = 'Water left in your lines splits pipe, valves and backflows when it freezes — and underground breaks stay hidden until spring.';
   $variables['bo_address'] = '20143 Austin Rd., Austin, CO 81410';
 
-  // Accordions from the editable term body (field_service_public_desc), split by
-  // <h3> into JS-free <details> sections. Empty body → no accordion section.
-  $variables['bo_accordions'] = NULL;
-  if ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty()) {
-    $body = (string) $term->get('field_service_public_desc')->value;
-    $variables['bo_accordions'] = _bos_service_request_accordions($body);
+  $isCheck = \Drupal::routeMatch()->getRouteName() === BOS_SERVICE_REQUEST_CHECK_ROUTE;
+  if ($isCheck) {
+    // pc26a "already on our list" → Check-your-week page.
+    $variables['bo_eyebrow'] = 'Sprinkler Winterization · ' . $variables['bo_year'];
+    $variables['bo_headline'] = "You're on the list.";
+    $variables['bo_subhead'] = 'Check the week we plan to be in your area — we confirm it against the phone or email on your account.';
+    $variables['bo_cta_text'] = 'Check my week';
+    $variables['bo_formband_h2'] = 'Check your service week';
+    $variables['bo_formband_intro'] = 'We schedule winterizations by geographic route through October. Enter your details to see your week.';
+    $variables['bo_show_detail'] = FALSE;
+    $variables['bo_accordions'] = NULL;
+  }
+  else {
+    // Default / pc26b — signup.
+    $variables['bo_eyebrow'] = 'Sprinkler Winterization · ' . $variables['bo_year'];
+    $variables['bo_headline'] = 'Fall is on its way.';
+    $variables['bo_subhead'] = 'Water left in your lines splits pipe, valves and backflows when it freezes — and underground breaks stay hidden until spring.';
+    $variables['bo_cta_text'] = 'Get on the list';
+    $variables['bo_formband_h2'] = 'Request your winterization';
+    $variables['bo_formband_intro'] = "We start in early October and work through the month, organized by location and water supply. We'll contact you with the week we plan to be in your area. Takes about a minute.";
+    $variables['bo_show_detail'] = TRUE;
+    // Accordions from the editable term body, split by <h3> into JS-free <details>.
+    $variables['bo_accordions'] = NULL;
+    if ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty()) {
+      $variables['bo_accordions'] = _bos_service_request_accordions((string) $term->get('field_service_public_desc')->value);
+    }
   }
 }
 

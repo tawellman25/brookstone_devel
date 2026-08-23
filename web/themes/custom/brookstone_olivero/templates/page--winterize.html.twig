@@ -29,11 +29,11 @@
          alt="An aspen leaf and river rock after an autumn rain, the season turning to fall." />
     <div class="bo-hero__fade" aria-hidden="true"></div>
     <div class="bo-hero__copy">
-      <span class="bo-hero__eyebrow osw">Sprinkler Winterization &middot; {{ bo_year }}</span>
+      <span class="bo-hero__eyebrow osw">{{ bo_eyebrow }}</span>
       <h1 class="bo-hero__h1">{{ bo_headline }}</h1>
       <p class="bo-hero__sub">{{ bo_subhead }}</p>
       <div class="bo-hero__cta-row">
-        <a href="#request" class="bo-btn">Get on the list
+        <a href="#request" class="bo-btn">{{ bo_cta_text }}
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
         </a>
         {% if bo_phone %}<span class="bo-hero__callnote">or call <a href="tel:{{ tel }}">{{ bo_phone }}</a></span>{% endif %}
@@ -48,13 +48,14 @@
   <section class="bo-formband" id="request">
     <div class="bo-formband__inner">
       <div>
-        <h2 class="bo-formband__h2">Request your winterization</h2>
-        <p class="bo-formband__intro">We start in early October and work through the month, organized by location and water supply. We&rsquo;ll contact you with the week we plan to be in your area. Takes about a minute.</p>
+        <h2 class="bo-formband__h2">{{ bo_formband_h2 }}</h2>
+        <p class="bo-formband__intro">{{ bo_formband_intro }}</p>
       </div>
       {{ page.content }}
     </div>
   </section>
 
+  {% if bo_show_detail %}
   <section class="bo-next">
     <div class="bo-next__inner">
       <h2 class="bo-next__eyebrow">What happens next</h2>
@@ -77,6 +78,7 @@
       </div>
     </div>
   </section>
+  {% endif %}
 
   {% if bo_accordions %}
   <section class="bo-detail">

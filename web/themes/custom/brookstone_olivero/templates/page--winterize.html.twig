@@ -1,0 +1,49 @@
+{#
+/**
+ * @file
+ * Dedicated PUBLIC marketing template for /winterize (bos_service_request).
+ *
+ * Marketing chrome ONLY — Brookstone logo, tagline, office phone, hero, footer.
+ * It deliberately renders NONE of the site's regions (header, nav, sidebars,
+ * footer menus) so a stranger scanning a postcard lands on a Brookstone page,
+ * not the edge of the operations system. Only {{ page.content }} (the form) is
+ * printed. Variables (bo_logo, bo_hero, bo_phone, …) come from
+ * bos_service_request_preprocess_page(); the library is attached there too.
+ */
+#}
+{% set tel = bo_phone|replace({'-': '', ' ': '', '(': '', ')': ''}) %}
+<div class="bo-winterize">
+
+  <header class="bo-topbar">
+    <img class="bo-topbar__logo" src="{{ bo_logo }}" alt="Brookstone Outdoors" />
+    <p class="bo-topbar__tagline">{{ bo_tagline }}</p>
+    {% if bo_phone %}
+      <div class="bo-topbar__phone"><a href="tel:{{ tel }}">{{ bo_phone }}</a></div>
+    {% endif %}
+  </header>
+
+  <section class="bo-hero">
+    <img class="bo-hero__photo" src="{{ bo_hero }}"
+         alt="A dew-covered golden aspen leaf resting on wet river rock as the season turns to fall." />
+    <div class="bo-hero__fade" aria-hidden="true"></div>
+    <div class="bo-hero__copy">
+      <h1 class="bo-hero__headline">{{ bo_headline }}</h1>
+      <p class="bo-hero__sub">{{ bo_subhead }}</p>
+      <a class="bo-hero__cta" href="#winterize-form">Get on the list &darr;</a>
+    </div>
+  </section>
+
+  <main class="bo-main" id="winterize-form">
+    {{ page.content }}
+  </main>
+
+  <footer class="bo-footer">
+    <img class="bo-footer__logo" src="{{ bo_logo }}" alt="Brookstone Outdoors" />
+    <div class="bo-footer__meta">
+      <p class="bo-footer__tagline">{{ bo_tagline }}</p>
+      <p>{{ bo_address }}</p>
+      {% if bo_phone %}<p><a href="tel:{{ tel }}">{{ bo_phone }}</a></p>{% endif %}
+    </div>
+  </footer>
+
+</div>

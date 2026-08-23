@@ -121,4 +121,32 @@ include __DIR__ . '/seed_winterizing_service_copy.php';
 $seedOut = ob_get_clean();
 $ok('seed without --force skips non-empty fields (no clobber)', str_contains($seedOut, 'SKIPPED'));
 
+echo "== P3.1 no internal navigation on the public page ==\n";
+$navLeak = FALSE;
+foreach (['href="/admin', 'href="/teammates', 'href="/node', '>Services<', '>About<', 'block-olivero-main-menu', 'primary-nav'] as $n) {
+  if (str_contains($html, $n)) { $navLeak = TRUE; }
+}
+$ok('no internal menu label/path renders for anonymous', !$navLeak);
+$ok('dedicated marketing template applied (bo-winterize)', str_contains($html, 'bo-winterize'));
+$ok('no <nav> element on the page', substr_count($html, '<nav') === 0, substr_count($html, '<nav') . ' found');
+
+echo "== P3.2 marketing chrome + accordions ==\n";
+$ok('logo (top + footer) + hero photo present', str_contains($html, 'bo-topbar__logo') && str_contains($html, 'bo-footer__logo') && str_contains($html, 'bo-hero__photo'));
+$ok('brand token + page CSS attached', str_contains($html, 'bo-tokens.css') && str_contains($html, 'bo-winterize.css'));
+$ok('orange submit class present', str_contains($html, 'winterize-submit'));
+$ok('JS-free accordions styled container', str_contains($html, 'winterize-detail-section'));
+// Every <img> must carry a non-empty alt (P3 verification #8).
+preg_match_all('/<img\b[^>]*>/i', $html, $imgs);
+$badAlt = 0;
+foreach ($imgs[0] as $img) {
+  if (!preg_match('/\balt\s*=\s*"[^"]+"/i', $img)) { $badAlt++; }
+}
+$ok('every <img> has a non-empty alt', $badAlt === 0, $badAlt ? "$badAlt missing" : count($imgs[0]) . ' checked');
+
+echo "== P3.3 three independent checkboxes + labels ==\n";
+$ok('all three opt-in checkboxes render', str_contains($html, 'wants_recurring') && str_contains($html, 'wants_startup') && str_contains($html, 'wants_specific_date'));
+$ok('specific-date block + fee note', str_contains($html, 'winterize-specific-date') && str_contains($html, 'Additional fees may apply'));
+$ok('"Last name" label + "Get on the list" submit', str_contains($html, 'Last name') && str_contains($html, 'Get on the list'));
+$ok('field_wants_specific_date exists', (bool) \Drupal\field\Entity\FieldConfig::loadByName('service_request', 'sprinkler_winterizing', 'field_wants_specific_date'));
+
 printf("\n== RESULT: %d passed, %d failed ==\n", $pass, $fail);

@@ -101,23 +101,10 @@ final class WinterizeForm extends FormBase {
     $form['#attributes']['class'][] = 'winterize-form';
     $term = $this->serviceTerm();
 
-    // 1. Header — banner photo (if any) + office phone as tel:.
-    if ($term && $term->hasField('field_banner_image') && !$term->get('field_banner_image')->isEmpty()) {
-      $form['header_image'] = $term->get('field_banner_image')->view(['label' => 'hidden', 'type' => 'image', 'settings' => ['image_style' => 'large']]);
-      $form['header_image']['#weight'] = -100;
-    }
-    if ($phone !== '') {
-      $telHref = preg_replace('/[^0-9+]/', '', $phone);
-      $form['header_phone'] = [
-        '#markup' => '<p class="winterize-phone">Questions? Call the office: <a href="tel:' . Html::escape($telHref) . '">' . Html::escape($phone) . '</a></p>',
-        '#weight' => -99,
-      ];
-    }
-
-    // 2. Subtitle + seasonal scheduling notice(s).
-    if ($term && $term->hasField('field_subtitle') && !$term->get('field_subtitle')->isEmpty()) {
-      $form['subtitle'] = ['#markup' => '<p class="winterize-subtitle">' . Html::escape((string) $term->get('field_subtitle')->value) . '</p>', '#weight' => -90];
-    }
+    // Header (logo + phone), hero (photo + headline + subtitle) and footer are
+    // rendered by the dedicated marketing template (page--winterize.html.twig) —
+    // NOT here — so the form output is only the card content. Seasonal notices +
+    // summary + form + accordions follow.
     if (!empty($cfg['scheduling_notice'])) {
       $form['intro'] = ['#markup' => '<p class="winterize-notice">' . Html::escape((string) $cfg['scheduling_notice']) . '</p>', '#weight' => -89];
     }
@@ -183,8 +170,9 @@ final class WinterizeForm extends FormBase {
       ],
     ];
 
-    // captcha — site default challenge (recaptcha is enabled).
-    $form['captcha'] = ['#type' => 'captcha', '#captcha_type' => 'default', '#weight' => -10];
+    // captcha — reCAPTCHA (P3.3 #3; keys configured 2026-08-23). Less friction
+    // for someone in a driveway than a math question, and stronger.
+    $form['captcha'] = ['#type' => 'captcha', '#captcha_type' => 'recaptcha/reCAPTCHA', '#weight' => -10];
 
     // P0.5 — freeze-damage disclaimer, visible right by the submit button.
     if (!empty($cfg['freeze_disclaimer'])) {

@@ -148,3 +148,55 @@ function _bos_service_request_generate_ref(string $bundle): string {
   // Practically unreachable fallback.
   return $prefix . '-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
 }
+
+/**
+ * The public winterize route (marketing-chrome landing page).
+ */
+const BOS_SERVICE_REQUEST_WINTERIZE_ROUTE = 'bos_service_request.winterize';
+
+/**
+ * TRUE on the public /winterize page.
+ */
+function _bos_service_request_is_winterize(): bool {
+  return \Drupal::routeMatch()->getRouteName() === BOS_SERVICE_REQUEST_WINTERIZE_ROUTE;
+}
+
+/**
+ * Implements hook_theme_suggestions_page_alter().
+ *
+ * /winterize uses a dedicated marketing template (logo, hero, footer — NO site
+ * navigation). If the active theme lacks page--winterize.html.twig this falls
+ * back to the normal page template (degrades safely — the form still works).
+ */
+function bos_service_request_theme_suggestions_page_alter(array &$suggestions, array $variables) {
+  if (_bos_service_request_is_winterize()) {
+    $suggestions[] = 'page__winterize';
+  }
+}
+
+/**
+ * Implements hook_preprocess_page().
+ *
+ * Attach the winterize library and pass brand assets + copy to the template.
+ */
+function bos_service_request_preprocess_page(array &$variables) {
+  if (!_bos_service_request_is_winterize()) {
+    return;
+  }
+  $variables['#attached']['library'][] = 'bos_service_request/winterize';
+  $base = '/' . \Drupal::service('extension.list.module')->getPath('bos_service_request');
+  $cfg = \Drupal::config('bos_service_request.settings');
+  $term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
+    ->load((int) $cfg->get('bundles.sprinkler_winterizing.service_term_id'));
+  $subtitle = ($term && $term->hasField('field_subtitle') && !$term->get('field_subtitle')->isEmpty())
+    ? (string) $term->get('field_subtitle')->value
+    : 'Get on the winterizing list before the first hard freeze.';
+
+  $variables['bo_logo'] = $base . '/assets/bo-logo-round.png';
+  $variables['bo_hero'] = $base . '/assets/winterize-hero.jpg';
+  $variables['bo_phone'] = (string) $cfg->get('office_phone');
+  $variables['bo_tagline'] = 'Creating and Maintaining Your Outdoor Spaces';
+  $variables['bo_headline'] = 'Fall is on its way.';
+  $variables['bo_subhead'] = $subtitle;
+  $variables['bo_address'] = 'Brookstone Outdoors LLC · Delta & Montrose Counties, Colorado';
+}

@@ -53,6 +53,9 @@ on `cim`). 23 fields, all names ≤ 32 chars.
 | `field_work_order` | ref → work_order | The WO created at conversion. |
 | `field_converted_by` / `field_converted_on` | user / timestamp | |
 | `field_wants_recurring` | boolean | "Add me to the automatic winterizing list each fall." The front of the funnel. |
+| `field_wants_startup` | boolean | (Phase 2 P1.2) "Contact me in the spring about turning my system back on." Second cross-sell; recorded intent only. |
+| `field_water_supply` | list_string (`module: options`) | (Phase 2 P1.3) city / ditch / well / unsure. Stored raw; NEVER written to `property_ss_sources`. "Not sure" is first-class. |
+| `field_notice_version` | string(64) | (Phase 2 P0.5) sha256 of the exact freeze disclaimer shown to this submitter. |
 
 Title `Service Request #{id}` set in `hook_ENTITY_TYPE_insert` (NOT an AEL
 `[entity:id]` pattern — nothing heals `service_request` the way `wo_shared` heals
@@ -257,9 +260,52 @@ env and are resolved by name/route).
 
 ---
 
-## Remaining
+## Phase 2 (2026-08-22) — shipped live
 
-- **Gate 6 (offseason)** — prove the abstraction with a second bundle (sprinkler
-  repair / spring start-up).
-- Scheduling-date augmentation to the eligibility WO check.
-- Optional: narrow `COVERED_CONTRACT_STATUS_TIDS` to the spec's three.
+- **P0.1** campaign variants (pc26a/pc26b + legacy pc26); QR page renders both,
+  report breaks out A vs B (see Config + Gate 5 above).
+- **P0.2** 1127 removed from covered → accept + `contract_completed_for_year`
+  flag (see §5 above).
+- **P0.3 landing page** (`/winterize`): header (banner + `tel:`) → subtitle +
+  seasonal notices → **public summary above the form** → the form → **freeze
+  disclaimer by the submit button** → "What happens next" → the full public body
+  as **JS-free `<details>` accordions below the form** (split by `<h3>`). All
+  copy from services term 369 (`field_subtitle` + `field_service_public_desc`
+  summary/body via `bos_services`); the crew body is NEVER read here. Every block
+  renders nothing when empty. **No outbound links above the form; no
+  backflow-service link/checkbox** (owner decision — backflow not promoted).
+- **P0.4** `seed_winterizing_service_copy.php` — idempotent, `--force`/`SEED_FORCE`
+  guarded, writes subtitle + summary + body to term 369 (plain `<h3>/<p>`; the
+  template builds the accordions — no stored `<details>`, no format trap).
+- **P0.5** freeze disclaimer by the button + `field_notice_version` (sha256 of
+  the shown text). Config `freeze_disclaimer` per bundle.
+- **P1.2/P1.3** second opt-in (`field_wants_startup`) + optional water-supply
+  select (`field_water_supply`, raw only, never to `property_ss_sources`).
+- **§5** seasonal strings (`scheduling_notice`, `specific_date_notice`,
+  `closed_notice`, `freeze_disclaimer`) via `hook_update_10003`; **§7**
+  confirmation copy refreshed (multi-paragraph).
+- **P2.1 (cross-module)** `bos_services` now adds a `user.roles` cache context to
+  the services term render — the role-based view-mode switch was NOT cache-safe
+  with Dynamic Page Cache on (confirmed real leak risk; fixed).
+
+**⚠ Flagged conflict:** verifier scenario 8 ("no occurrence of *backflow*")
+contradicts the approved copy, which uses "backflow" correctly as a *component*
+to protect ("cover your backflow assembly"). Enforced the real intent instead —
+**no backflow-service promotion** (no checkbox/section, no link to
+`/services/backflow-prevention`) — not a blanket word ban. Reported, not
+silently reconciled.
+
+## Remaining (Phase 2 next passes)
+
+- **P1.4** standing shut-down flag (`property_sprinkler_info.field_ss_shut_down_contract`)
+  → `standing_flag_no_contract` (flags, never blocks).
+- **P1.3 cont.** `supply_mismatch` flag vs `property_ss_sources` on a matched
+  property (store-raw already shipped).
+- **P1.5** expose review flags as a queue filter; **P1.6** coverage-signal
+  disagreement report (the variant-B list generator).
+- **P2.2** confirm the `/services` teaser formatter (Trimmed vs Summary-or-trimmed).
+- **P2.3 / carried:** eligibility "or linked scheduling date in-window"; Gate 6
+  (second bundle).
+- **Verifiers:** extend gate2/3/4 with the new scenarios (1127, campaign
+  normalization, crew-leak-after-cache, JS-off accordions, empty-safe, seed
+  idempotency, no-backflow-link).

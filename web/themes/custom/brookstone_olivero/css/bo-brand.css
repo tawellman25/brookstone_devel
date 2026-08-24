@@ -31,6 +31,17 @@ body {
   background-color: var(--bo-paper, #faf7f2);
 }
 
+/* Links rest at the true brand orange (#CB6015 = primary-50) and DARKEN on hover.
+   Olivero ships this backwards (resting = darker primary-40, hover = brighter
+   primary-50), which made resting links read too dark. */
+a {
+  color: var(--color--primary-50);
+}
+a:hover,
+a:focus {
+  color: var(--color--primary-30);
+}
+
 /* Oswald display headings site-wide — matches the winterize pages. Body text
    keeps Olivero's readable face. !important because Olivero sets heading fonts
    via higher-specificity class selectors (.page-title, .text-content h2, …). */

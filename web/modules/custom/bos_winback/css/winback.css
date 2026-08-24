@@ -1,0 +1,57 @@
+/**
+ * Winterize win-back call list — BOS status-card pattern.
+ */
+.wb__intro { margin: 0 0 1.25rem; max-width: 900px; }
+.wb__intro p { margin: 0 0 0.75rem; color: #4a4033; }
+.wb__stats { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
+.wb__stat { font-size: 0.95rem; color: #6b5d4f; }
+.wb__stat strong { color: #1a1613; font-size: 1.05rem; }
+
+.wb__empty { padding: 1.5rem; background: #f6f2ea; border-radius: 6px; color: #6b5d4f; }
+
+.wb__list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.wb-card {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  align-items: flex-start;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-left: 5px solid #cb6015; /* brand orange accent */
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+.wb-card.is-worked { border-left-color: #007a33; background: #fcfdfb; } /* worked → green accent */
+
+.wb-card__main { flex: 1 1 340px; min-width: 0; }
+.wb-card__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; }
+.wb-card__name { font-family: "Oswald", "Arial Narrow", sans-serif; font-size: 1.15rem; font-weight: 600; }
+.wb-card__state { font-size: 0.85rem; color: #007a33; font-weight: 600; }
+.wb-card.is-worked .wb-card__state::before { content: "✓ "; }
+
+.wb-badge {
+  font-size: 0.72rem; font-weight: 700; border-radius: 3px;
+  padding: 0.1rem 0.45rem; line-height: 1.4;
+}
+.wb-badge--cancel { background: #fdecea; color: #a12b21; }
+
+.wb-card__meta { color: #6b5d4f; font-size: 0.92rem; margin-top: 0.15rem; }
+
+.wb-card__contact { margin-top: 0.35rem; display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem; }
+.wb-phone { font-size: 1.1rem; font-weight: 700; text-decoration: none; }
+.wb-email { font-size: 0.92rem; }
+.wb-nophone { color: #a12b21; font-size: 0.92rem; font-style: italic; }
+
+.wb-card__actions {
+  flex: 0 0 auto;
+  display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;
+}
+.wb-card__actions .button { margin: 0; }
+.wb-mark--decline { color: #a12b21; }
+.wb-reset { opacity: 0.7; }
+
+@media (max-width: 48em) {
+  .wb-card__actions { flex-basis: 100%; }
+}

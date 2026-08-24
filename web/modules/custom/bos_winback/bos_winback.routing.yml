@@ -1,0 +1,17 @@
+bos_winback.list:
+  path: '/admin/office/winterize/win-back'
+  defaults:
+    _controller: 'Drupal\bos_winback\Controller\WinbackController::list'
+    _title: 'Winterize Win-Back'
+  requirements:
+    _permission: 'access winterize winback'
+
+bos_winback.mark:
+  path: '/admin/office/winterize/win-back/mark/{property}'
+  defaults:
+    _controller: 'Drupal\bos_winback\Controller\WinbackController::mark'
+  methods: [POST]
+  requirements:
+    _permission: 'access winterize winback'
+    _csrf_request_header_token: 'TRUE'
+    property: '\d+'

@@ -1,0 +1,70 @@
+{#
+/**
+ * @file
+ * Winterize win-back call list. Cards with click-to-call + action buttons.
+ * A customer drops off when they get a current-year winterizing WO (recomputed
+ * each load) or when a caller marks them "Not interested".
+ *
+ * Available: rows, target_year, stats.
+ */
+#}
+{% set labels = {
+  'left_message': 'Left message',
+  'no_answer': 'No answer',
+  'reached': 'Reached',
+  'declined': 'Not interested'
+} %}
+<div class="wb">
+
+  <div class="wb__intro">
+    <p>{{ stats.total }} {{ target_year - 1 }} winterizing customers have no {{ target_year }} work order yet.
+      They drop off this list the moment you create a winterizing work order for them, or when you mark them <em>Not&nbsp;interested</em>.</p>
+    <div class="wb__stats">
+      <span class="wb__stat"><strong>{{ stats.total }}</strong> to call</span>
+      <span class="wb__stat"><strong>{{ stats.worked }}</strong> worked</span>
+      <span class="wb__stat"><strong>{{ stats.no_phone }}</strong> no phone</span>
+      <span class="wb__stat"><strong>{{ stats.canceled }}</strong> canceled last yr</span>
+      <span class="wb__stat"><strong>${{ stats.revenue }}</strong> billed last yr</span>
+    </div>
+  </div>
+
+  {% if rows is empty %}
+    <p class="wb__empty">Nothing to call right now — everyone from last season either has a work order this year or has been handled.</p>
+  {% endif %}
+
+  <div class="wb__list">
+    {% for row in rows %}
+      {% set name = row.contact_name ?: (row.owner_name ?: row.nickname) %}
+      <div class="wb-card{{ row.state ? ' is-worked' : '' }}" data-pid="{{ row.property_id }}">
+        <div class="wb-card__main">
+          <div class="wb-card__head">
+            <a class="wb-card__name" href="/properties/{{ row.property_id }}" target="_blank" rel="noopener">{{ name }}</a>
+            {% if row.was_canceled %}<span class="wb-badge wb-badge--cancel">Canceled last yr</span>{% endif %}
+            <span class="wb-card__state" data-role="state">{% if row.state %}{{ labels[row.state.outcome] }} · {{ row.state.by }} · {{ row.state.time_ts|date('m/d/Y') }}{% endif %}</span>
+          </div>
+          <div class="wb-card__meta">
+            {{ row.street }}{% if row.city %}, {{ row.city }}{% endif %}{% if row.zones %} · {{ row.zones }} zones{% endif %}{% if row.last_date %} · last {{ row.last_date }}{% endif %}{% if row.last_total %} · ${{ row.last_total }}{% endif %}
+          </div>
+          <div class="wb-card__contact">
+            {% if row.phone %}
+              <a class="wb-phone" href="tel:{{ row.phone|replace({' ': '', '-': '', '(': '', ')': '', '.': ''}) }}">📞 {{ row.phone }}</a>
+            {% else %}
+              <span class="wb-nophone">No phone on file</span>
+            {% endif %}
+            {% if row.email %}<a class="wb-email" href="mailto:{{ row.email }}">✉ {{ row.email }}</a>{% endif %}
+          </div>
+        </div>
+        <div class="wb-card__actions">
+          <a class="button button--primary button--small" target="_blank" rel="noopener"
+             href="/admin/content/work_order/add/sprinkler_winterizing?edit[field_property][widget][0][target_id]={{ row.property_id }}">Create WO</a>
+          <a class="button button--small" target="_blank" rel="noopener" href="/properties/{{ row.property_id }}/edit">Edit</a>
+          <button type="button" class="button button--small wb-mark" data-outcome="left_message">Left msg</button>
+          <button type="button" class="button button--small wb-mark" data-outcome="no_answer">No answer</button>
+          <button type="button" class="button button--small wb-mark wb-mark--decline" data-outcome="declined">Not interested</button>
+          <button type="button" class="button button--small wb-reset" data-outcome="clear"{{ row.state ? '' : ' hidden' }}>Reset</button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>

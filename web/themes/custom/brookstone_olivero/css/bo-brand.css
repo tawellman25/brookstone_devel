@@ -11,11 +11,12 @@
  * subtheme global library, so these overrides win.
  */
 :root {
-  /* Primary (buttons, links, focus, accents) → brand orange #CB6015 = hsl(25,81%,44%).
-     Olivero derives primary-30..80 from these three. */
-  --color--primary-hue: 25;
-  --color--primary-saturation: 81%;
-  --color--primary-lightness: 44;
+  /* NOTE: the PRIMARY color (buttons, links, focus, accents) is NOT set here.
+     olivero.theme injects --color--primary-hue/saturation/lightness as an inline
+     style on <html> from the `base_primary_color` theme setting, and an inline
+     element style beats any stylesheet :root. So primary = brand orange #CB6015
+     is set via that theme setting (brookstone_olivero.settings:base_primary_color),
+     not CSS. These remaining vars are NOT inline-injected, so overriding here works. */
 
   /* Warm the neutral grays toward the brand paper/sand/ink family (was blue-cool). */
   --color--gray-hue: 30;
@@ -31,13 +32,16 @@ body {
 }
 
 /* Oswald display headings site-wide — matches the winterize pages. Body text
-   keeps Olivero's readable face. */
+   keeps Olivero's readable face. !important because Olivero sets heading fonts
+   via higher-specificity class selectors (.page-title, .text-content h2, …). */
 h1, h2, h3, h4, h5, h6,
+.page-title,
 .site-title__name,
 .block__title,
 .field--name-title,
+.text-content h1, .text-content h2, .text-content h3, .text-content h4,
 .cta-link__link,
 .button {
-  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-family: "Oswald", "Arial Narrow", sans-serif !important;
   letter-spacing: 0.01em;
 }

@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for bos_winback.
+ */
+
+use Drupal\user\Entity\Role;
+
+/**
+ * Implements hook_install().
+ *
+ * Grant the win-back permission to office roles so the page is reachable on
+ * enable, without hand-editing role config or a risky cim.
+ */
+function bos_winback_install() {
+  foreach (['administration', 'supervisor', 'site_assistant', 'site_admin', 'administrator'] as $rid) {
+    $role = Role::load($rid);
+    if ($role && !$role->hasPermission('access winterize winback')) {
+      $role->grantPermission('access winterize winback');
+      $role->save();
+    }
+  }
+}

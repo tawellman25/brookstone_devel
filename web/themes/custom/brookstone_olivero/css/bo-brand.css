@@ -1,0 +1,43 @@
+/**
+ * Brookstone brand retheme of Olivero (public site + client portal).
+ *
+ * Olivero derives its whole palette from a few HSL variables, so remapping those
+ * recolors the entire theme from one place (buttons, links, header, footer,
+ * forms, cards) instead of touching every component. Warm & immersive: brand
+ * orange primary, warmed neutrals, paper page background, Oswald headings — to
+ * match the /winterize pages. Brand tokens come from bo-tokens.css (site-wide).
+ *
+ * FIRST PASS — reviewed + refined on dev. Loaded after Olivero's base in the
+ * subtheme global library, so these overrides win.
+ */
+:root {
+  /* Primary (buttons, links, focus, accents) → brand orange #CB6015 = hsl(25,81%,44%).
+     Olivero derives primary-30..80 from these three. */
+  --color--primary-hue: 25;
+  --color--primary-saturation: 81%;
+  --color--primary-lightness: 44;
+
+  /* Warm the neutral grays toward the brand paper/sand/ink family (was blue-cool). */
+  --color--gray-hue: 30;
+  --color--gray-saturation: 12%;
+
+  /* Secondary accent → brand green. */
+  --color--green: #007a33;
+}
+
+/* Warm, immersive page background (cards/surfaces stay white for contrast). */
+body {
+  background-color: var(--bo-paper, #faf7f2);
+}
+
+/* Oswald display headings site-wide — matches the winterize pages. Body text
+   keeps Olivero's readable face. */
+h1, h2, h3, h4, h5, h6,
+.site-title__name,
+.block__title,
+.field--name-title,
+.cta-link__link,
+.button {
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  letter-spacing: 0.01em;
+}

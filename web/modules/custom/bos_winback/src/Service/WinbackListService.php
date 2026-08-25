@@ -34,6 +34,20 @@ final class WinbackListService {
   private const SUPPRESS_OUTCOMES = ['declined'];
 
   /**
+   * Why a customer declined (machine key => label). Recorded on "Not interested".
+   */
+  public const DECLINE_REASONS = [
+    'moved' => 'Moved / no longer owns',
+    'sold' => 'Sold the property',
+    'competitor' => 'Using another company',
+    'diy' => 'Doing it themselves',
+    'price' => 'Price / too expensive',
+    'no_need' => 'No longer needs it',
+    'deceased' => 'Deceased / estate',
+    'other' => 'Other',
+  ];
+
+  /**
    * WO status: Canceled.
    */
   private const STATUS_CANCELED = 1098;
@@ -177,8 +191,11 @@ final class WinbackListService {
 
   /**
    * Record a call outcome for a property. Returns the stored state.
+   *
+   * For "declined", $reason (a DECLINE_REASONS key) and an optional free-text
+   * $note are captured so the office can see why customers are dropping.
    */
-  public function mark(int $pid, string $outcome, string $by): array {
+  public function mark(int $pid, string $outcome, string $by, string $reason = '', string $note = ''): array {
     $valid = ['left_message', 'no_answer', 'reached', 'declined'];
     if (!in_array($outcome, $valid, TRUE)) {
       throw new \InvalidArgumentException('Unknown outcome: ' . $outcome);
@@ -188,8 +205,68 @@ final class WinbackListService {
       'by' => $by,
       'time_ts' => $this->time->getRequestTime(),
     ];
+    if ($outcome === 'declined') {
+      $rec['reason'] = array_key_exists($reason, self::DECLINE_REASONS) ? $reason : 'other';
+      $rec['note'] = mb_substr(trim($note), 0, 500);
+    }
     \Drupal::keyValue(self::STATE_COLLECTION)->set((string) $this->stateKey($pid), $rec);
     return $rec;
+  }
+
+  /**
+   * Declined customers this season, with reason — newest first.
+   *
+   * @return array[]
+   *   Each: property_id, name, street, city, reason, reason_label, note, by,
+   *   time (m/d/Y).
+   */
+  public function getDeclined(): array {
+    $tz = new \DateTimeZone(date_default_timezone_get());
+    $out = [];
+    foreach ($this->allState() as $pid => $st) {
+      if (($st['outcome'] ?? '') !== 'declined') {
+        continue;
+      }
+      $prop = $this->etm->getStorage('properties')->load($pid);
+      $owner_uid = $this->findLatestOwner((int) $pid);
+      $contact = NULL;
+      if ($prop) {
+        foreach (['field_primary_contact_ref', 'field_contacts'] as $f) {
+          if ($contact = $this->refEntity($prop, $f)) {
+            break;
+          }
+        }
+      }
+      if (!$contact && $owner_uid) {
+        $contact = $this->profileContact($owner_uid);
+      }
+      $owner_user = $owner_uid > 1 ? $this->etm->getStorage('user')->load($owner_uid) : NULL;
+      $name = $contact ? $contact->label() : ($owner_user ? $owner_user->getDisplayName() : ($prop ? $prop->label() : ('Property ' . $pid)));
+
+      $city = '';
+      if ($prop) {
+        $zipref = $this->refEntity($prop, 'field_zipcode_reference');
+        if ($zipref) {
+          $ce = $this->refEntity($zipref, 'field_city');
+          $city = $ce ? $ce->label() : '';
+        }
+      }
+      $reason = $st['reason'] ?? 'other';
+      $out[] = [
+        'property_id' => (int) $pid,
+        'name' => $name,
+        'street' => $prop ? $this->scalar($prop, 'field_street_address') : '',
+        'city' => $city,
+        'reason' => $reason,
+        'reason_label' => self::DECLINE_REASONS[$reason] ?? 'Other',
+        'note' => $st['note'] ?? '',
+        'by' => $st['by'] ?? '',
+        'time' => !empty($st['time_ts']) ? (new \DateTime('@' . $st['time_ts']))->setTimezone($tz)->format('m/d/Y') : '',
+        'time_ts' => (int) ($st['time_ts'] ?? 0),
+      ];
+    }
+    usort($out, fn($a, $b) => $b['time_ts'] <=> $a['time_ts']);
+    return $out;
   }
 
   /**

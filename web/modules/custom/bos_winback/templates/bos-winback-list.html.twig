@@ -60,11 +60,44 @@
           <a class="button button--small" target="_blank" rel="noopener" href="/properties/{{ row.property_id }}/edit">Edit</a>
           <button type="button" class="button button--small wb-mark" data-outcome="left_message">Left msg</button>
           <button type="button" class="button button--small wb-mark" data-outcome="no_answer">No answer</button>
-          <button type="button" class="button button--small wb-mark wb-mark--decline" data-outcome="declined">Not interested</button>
+          <button type="button" class="button button--small wb-decline-open wb-mark--decline">Not interested</button>
           <button type="button" class="button button--small wb-reset" data-outcome="clear"{{ row.state ? '' : ' hidden' }}>Reset</button>
+        </div>
+
+        {# Inline reason picker — revealed when "Not interested" is clicked. #}
+        <div class="wb-decline" hidden>
+          <label class="wb-decline__label">Why not interested?
+            <select class="wb-decline__reason">
+              {% for key, label in reasons %}
+                <option value="{{ key }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <input type="text" class="wb-decline__note" maxlength="500" placeholder="Optional note (e.g. moved to Grand Junction)" />
+          <div class="wb-decline__actions">
+            <button type="button" class="button button--primary button--small wb-decline-confirm" data-outcome="declined">Remove &amp; save reason</button>
+            <button type="button" class="button button--small wb-decline-cancel">Cancel</button>
+          </div>
         </div>
       </div>
     {% endfor %}
   </div>
+
+  {% if declined is not empty %}
+    <details class="wb-declined">
+      <summary>Declined this season ({{ declined|length }})</summary>
+      <div class="wb-declined__list">
+        {% for d in declined %}
+          <div class="wb-declined__row" data-pid="{{ d.property_id }}">
+            <span class="wb-declined__name"><a href="/properties/{{ d.property_id }}" target="_blank" rel="noopener">{{ d.name }}</a></span>
+            <span class="wb-declined__where">{{ d.street }}{% if d.city %}, {{ d.city }}{% endif %}</span>
+            <span class="wb-declined__reason">{{ d.reason_label }}{% if d.note %} — {{ d.note }}{% endif %}</span>
+            <span class="wb-declined__by">{{ d.by }} · {{ d.time }}</span>
+            <button type="button" class="button button--small wb-declined-undo" data-pid="{{ d.property_id }}">Undo</button>
+          </div>
+        {% endfor %}
+      </div>
+    </details>
+  {% endif %}
 
 </div>

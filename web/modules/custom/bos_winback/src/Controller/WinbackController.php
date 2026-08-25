@@ -35,6 +35,8 @@ final class WinbackController extends ControllerBase {
     return [
       '#theme' => 'bos_winback_list',
       '#rows' => $rows,
+      '#declined' => $this->winback->getDeclined(),
+      '#reasons' => WinbackListService::DECLINE_REASONS,
       '#target_year' => $this->winback->targetYear(),
       '#stats' => [
         'total' => count($rows),
@@ -60,6 +62,8 @@ final class WinbackController extends ControllerBase {
    */
   public function mark(Request $request, int $property): JsonResponse {
     $outcome = (string) $request->request->get('outcome', '');
+    $reason = (string) $request->request->get('reason', '');
+    $note = (string) $request->request->get('note', '');
     $by = (string) $this->currentUser()->getDisplayName();
 
     if ($outcome === 'clear') {
@@ -68,7 +72,7 @@ final class WinbackController extends ControllerBase {
     }
 
     try {
-      $rec = $this->winback->mark($property, $outcome, $by);
+      $rec = $this->winback->mark($property, $outcome, $by, $reason, $note);
     }
     catch (\InvalidArgumentException $e) {
       return new JsonResponse(['status' => 'error', 'message' => $e->getMessage()], 400);

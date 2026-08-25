@@ -1036,6 +1036,38 @@ double-submit (second pass sees an already-cleared tempstore). Scope the guard t
 the high-stakes actions by `action_id` — the mechanism is safe to apply broadly
 (legit flow always matches) but blast radius is smallest when targeted.
 
+## Olivero's primary color is injected inline on `<html>` — CSS `:root` can't override it
+
+**Symptom.** Overriding `--color--primary-hue/saturation/lightness` (or the derived
+`--color--primary-40/50/…`) in a stylesheet `:root` rule does **nothing** — links,
+buttons, and accents stay Olivero blue no matter how late your CSS loads.
+
+**Cause.** `olivero.theme` (`olivero_preprocess_html`) reads the **`base_primary_color`**
+theme setting and writes it as an **inline `style` attribute on the `<html>` element**:
+`style="--color--primary-hue:202;--color--primary-saturation:79%;--color--primary-lightness:50"`.
+An inline element style outranks any stylesheet `:root` rule (short of `!important`
+gymnastics), so a CSS override is silently lost.
+
+**Fix.** To rebrand Olivero's primary color, set the theme setting, not CSS:
+```
+drush cset brookstone_olivero.settings base_primary_color '#CB6015' -y   # surgical, NOT full cim
+```
+Olivero converts the hex to HSL and injects it; all primary-derived shades follow.
+Verify with `curl … | grep '<html'` → the inline `--color--primary-hue` should change.
+
+**Corollaries.**
+- Other palette vars are **not** inline-injected and **can** be overridden in a `:root`
+  rule loaded after Olivero's base: `--color--gray-hue`/`--color--gray-saturation`
+  (warm the neutrals), `--color--green`, `--color--gold`, `--color--red`.
+- Olivero ships primary elements **backwards** for a brand feel: body links,
+  `.button--primary`, and `.primary-nav__menu-link` **rest** at the darker `primary-40`
+  and **brighten** to `primary-50` on hover. Flip in CSS if you want rest-bright / hover-dark.
+- The `hidden` HTML attribute is `[hidden]{display:none}` in the UA sheet — any author
+  `display:` rule on the same element overrides it. Guard reveal-on-click blocks with
+  `.thing:not([hidden]) { display: flex; }`, not `.thing { display: flex }`.
+
+Ref: `web/themes/custom/brookstone_olivero/css/bo-brand.css` (2026-08-25 brand retheme).
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

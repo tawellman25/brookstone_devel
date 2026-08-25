@@ -56,7 +56,9 @@
   .wb-card__actions { flex-basis: 100%; }
 }
 
-/* Decline reason picker (inline, revealed on "Not interested"). */
+/* Decline reason picker (inline, revealed on "Not interested"). Layout applies
+   only when NOT hidden, so the [hidden] attribute keeps it collapsed by default
+   (an author `display` would otherwise override the UA `[hidden]` rule). */
 .wb-decline {
   flex-basis: 100%;
   margin-top: 0.5rem;
@@ -64,6 +66,8 @@
   background: #fdf4ee;
   border: 1px solid #e6cdba;
   border-radius: 6px;
+}
+.wb-decline:not([hidden]) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

@@ -25,6 +25,25 @@
     }
   };
 
+  // On a FRESH load (no submit outcome), always land on the hero — don't let the
+  // browser restore a prior scroll position or a late reCAPTCHA init pull the view
+  // down to the form. The after-submit scroll (below) is guarded and still wins.
+  Drupal.behaviors.boWinterizeLandTop = {
+    attach: function (context) {
+      once('bo-winterize-top', 'body', context).forEach(function () {
+        if ('scrollRestoration' in window.history) {
+          window.history.scrollRestoration = 'manual';
+        }
+        var hasOutcome = document.querySelector('.winterize-confirmation, .messages--error, .messages--warning');
+        if (!hasOutcome) {
+          window.scrollTo(0, 0);
+          // Beat a late layout shift (e.g. reCAPTCHA rendering below the fold).
+          window.setTimeout(function () { window.scrollTo(0, 0); }, 350);
+        }
+      });
+    }
+  };
+
   Drupal.behaviors.boWinterizeScrollToAlert = {
     attach: function (context) {
       once('bo-winterize-alert', 'body', context).forEach(function () {

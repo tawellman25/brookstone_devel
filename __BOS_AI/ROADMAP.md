@@ -122,6 +122,11 @@ These are shipped, live systems whose only blocker is human adoption, not engine
 | Snow removal architecture + reconciliation bundle | snow_removal | T2 | L | Winter service — build before season. Reconciles clocked labor vs recorded work (same class as WO#49698). |
 | `special_mowing` reconciliation bundle | special_mowing | T2 | M | Same reconciliation pattern. Early fall. |
 
+### Content / handbook
+| Item | Area | Tier | Effort | Notes |
+|---|---|---|---|---|
+| Reconcile online handbook with the printed employee handbook | `handbook` | T2 | M | The online `handbook` entity (14 covers + 87 pages) and the PRINTED employee handbook are **one document in two formats and must stay aligned**. One-time pass: diff the online pages against the printed master, reconcile drift; then mirror every future edit both ways. Alignment invariant documented in `Entities/content_knowledge_entities.md`. |
+
 ### Supplier pricing pipeline (ongoing sub-project, T2/T3)
 **Core pipeline SHIPPED & live** (`supplier_price_ingest`, enabled on live; Phases 3.1–3.7, commits `05-25`…`05-31`): materials intake = **parse → match → dry-run report → approve → commit**, with a tiered matcher (Tier 1/2 exact + SKU-normalized/prefix, Tier 1.5 title-substring, Tier 3 fuzzy), a Discovery Queue + resolve forms, and office-manager dashboards. `wo_material_price_sync`, `material`, `material_supplier` all on. Docs: `Modules/supplier_pricing_pipeline_phase3_sequencing.md`. The rows below are the **remaining tuning/backfill/authoring** work, not a from-zero build.
 

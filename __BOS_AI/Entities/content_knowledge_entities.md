@@ -22,20 +22,43 @@ Storage: ECK
 - `uid` (base) → `user`
 
 ## Key Fields
-- `title` — page title
-- `status` (base) — boolean: published
-- `field_body` — long text: main content
-- `field_intro` — long text: introduction
-- `field_image` / `field_image` — cover/main image
-- `field_parent_page` → `handbook` — parent in hierarchy
-- `field_weight` — weight field for ordering
+Both bundles (`cover` and `page`) carry the **same five configurable fields**, all
+single-value (cardinality 1):
+
+- `title` (base) — page/section title
+- `status` (base) — boolean: published (controls crew visibility)
+- `field_body` — `text_long`: main content
+- `field_intro` — `text_long`: introduction / lead-in
+- `field_image` — `image`: labelled "Cover Image" on `cover`, "Main Image" on `page`
+- `field_parent_page` — `entity_reference` → `handbook` (self-reference): parent in the hierarchy
+- `field_weight` — `weight`: ordering among siblings under the same parent
 
 ## Invariants
 - `status` (published) controls visibility to crew.
 - Hierarchical via `field_parent_page`.
+- **The online handbook is the same document as the PRINTED employee handbook and
+  must stay in alignment with it.** The two are one handbook in two formats — a
+  change to either (a new policy, a reworded section, a removed page) must be
+  mirrored to the other in the same revision. When editing handbook content,
+  confirm the printed master and the online `handbook` entities match; when the
+  printed handbook is revised, update the corresponding online pages, and vice
+  versa. Treat a drift between them as a defect to reconcile, not a variation.
 
 ## Deletion / Archival
 - Unpublish (`status = false`) rather than delete.
+
+## Access / UI
+- **Admin / editing:** the `teammate_handbook` view, page display at
+  **`/admin/operations/training/handbook`** ("Handbook Admin").
+- **Crew reading:** pages render at pathauto-aliased URLs, pattern
+  `[handbook:field_parent_page:entity:url]/[handbook:title]` (nested to mirror the
+  hierarchy — pattern `teammate_handbook_aliases`), navigated via the **handbook
+  menu-tree block** (`brookstone_olivero_views_block__handbook_menu_tree_block`,
+  from the `teammate_handbook_menu_tree` view).
+- **Supporting views:** `teammate_handbook`, `teammate_handbook_menu_tree`,
+  `handbook_child_pages`, `handbook_add_child_links`, `subordinate_handbook_pages`,
+  `no_subordinate_handbook_page_link`.
+- **Content on live (2026-08-26):** 14 `cover` + 87 `page` entities.
 
 ---
 

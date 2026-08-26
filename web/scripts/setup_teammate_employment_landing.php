@@ -93,4 +93,35 @@ else {
 }
 $link->save();
 
+// --- 3. Reparent the org-structure Views under Employment. ---
+// Departments/Crews/Positions are view-provided menu links (each a page display
+// that injects a link), currently parented under the "Teammates" view. Repoint
+// them to Employment. The Employment link UUID differs per env, so resolve it
+// from the link we just ensured above — never hardcode. Edits ACTIVE view config
+// per env (views are drifted; not a cim path).
+$employment_parent = 'menu_link_content:' . $link->uuid();
+foreach (['teammate_departments', 'teammate_crews', 'teammate_positions'] as $vid) {
+  $cfg = \Drupal::configFactory()->getEditable('views.view.' . $vid);
+  if ($cfg->isNew()) {
+    print "  view $vid: NOT FOUND\n";
+    continue;
+  }
+  $menu = $cfg->get('display.page_1.display_options.menu');
+  if (empty($menu)) {
+    print "  view $vid: no page_1 menu settings — skipped\n";
+    continue;
+  }
+  $old = $menu['parent'] ?? '(none)';
+  if ($old === $employment_parent) {
+    print "  view $vid: already under Employment\n";
+    continue;
+  }
+  $menu['parent'] = $employment_parent;
+  $menu['menu_name'] = 'teammate-navigation';
+  $cfg->set('display.page_1.display_options.menu', $menu)->save();
+  print "  view $vid: parent $old → Employment\n";
+}
+\Drupal::service('plugin.manager.menu.link')->rebuild();
+print "Menu links rebuilt.\n";
+
 print "Done.\n";

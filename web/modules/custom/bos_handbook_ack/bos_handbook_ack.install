@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for bos_handbook_ack.
+ */
+
+use Drupal\user\Entity\Role;
+
+/**
+ * Implements hook_install().
+ *
+ * Grant the report permission to office roles so the gap report is reachable.
+ */
+function bos_handbook_ack_install(): void {
+  foreach (['administration', 'supervisor', 'site_assistant', 'site_admin', 'administrator'] as $rid) {
+    $role = Role::load($rid);
+    if ($role && !$role->hasPermission('view handbook acknowledgments')) {
+      $role->grantPermission('view handbook acknowledgments');
+      $role->save();
+    }
+  }
+}

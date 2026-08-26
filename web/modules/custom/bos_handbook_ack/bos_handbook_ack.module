@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * @file
+ * Handbook acknowledgment: append-only records + gap report.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * APPEND-ONLY: a handbook_acknowledgment is a legal record — it may be created
+ * but never edited. Block updates on every path (form, UI, REST, programmatic).
+ */
+function bos_handbook_ack_entity_presave(EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() === 'handbook_acknowledgment'
+    && !$entity->isNew()
+    && empty($entity->_allow_ack_update)) {
+    throw new \Drupal\Core\Entity\EntityStorageException('Handbook acknowledgments are append-only and cannot be edited.');
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function bos_handbook_ack_theme(): array {
+  return [
+    'bos_handbook_ack_report' => [
+      'variables' => [
+        'acked' => [],
+        'gap' => [],
+        'version' => NULL,
+        'versions' => [],
+        'stats' => [],
+      ],
+    ],
+  ];
+}

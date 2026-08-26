@@ -1,0 +1,64 @@
+{#
+/**
+ * @file
+ * Handbook acknowledgment report: acknowledged + gap for a chosen version.
+ * Variables: acked, gap, version, versions, stats.
+ */
+#}
+<div class="hbar">
+
+  <div class="hbar__head">
+    <p class="hbar__summary">
+      <strong>{{ stats.acked }}</strong> of <strong>{{ stats.total }}</strong> staff
+      ({{ stats.pct }}%) have acknowledged the Team Handbook
+      <strong>{{ version }}</strong>{% if not stats.is_current %} <em>(not the current version)</em>{% endif %}.
+      {% if stats.gap %}<span class="hbar__gap-note">{{ stats.gap }} still to go.</span>{% endif %}
+    </p>
+
+    {% if versions|length > 1 %}
+      <div class="hbar__versions">
+        <span class="hbar__versions-label">Version:</span>
+        {% for v in versions %}
+          <a class="hbar__ver{{ v == version ? ' is-active' : '' }}" href="?version={{ v|url_encode }}">{{ v }}</a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="hbar__cols">
+    <section class="hbar__col">
+      <h2 class="hbar__h2 hbar__h2--gap">Not yet acknowledged ({{ gap|length }})</h2>
+      {% if gap is empty %}
+        <p class="hbar__empty">Everyone has acknowledged this version. 🎉</p>
+      {% else %}
+        <ul class="hbar__list">
+          {% for r in gap %}
+            <li class="hbar__row hbar__row--gap"><a href="/user/{{ r.uid }}" target="_blank" rel="noopener">{{ r.name }}</a></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+
+    <section class="hbar__col">
+      <h2 class="hbar__h2 hbar__h2--done">Acknowledged ({{ acked|length }})</h2>
+      {% if acked is empty %}
+        <p class="hbar__empty">No acknowledgments recorded for this version yet.</p>
+      {% else %}
+        <table class="hbar__table">
+          <thead><tr><th>Name</th><th>On</th><th>Signed</th></tr></thead>
+          <tbody>
+            {% for r in acked %}
+              <tr>
+                <td><a href="/user/{{ r.uid }}" target="_blank" rel="noopener">{{ r.name }}</a></td>
+                <td>{{ r.date }}</td>
+                <td>{{ r.typed }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </section>
+  </div>
+
+  <p class="hbar__foot">Staff acknowledge online here, or sign the printed handbook page (scanned to their HR file). This report covers online acknowledgments.</p>
+</div>

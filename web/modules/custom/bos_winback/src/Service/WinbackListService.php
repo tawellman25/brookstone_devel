@@ -108,7 +108,8 @@ final class WinbackListService {
     $source_ids = $wo_s->getQuery()->accessCheck(FALSE)
       ->condition('type', 'sprinkler_winterizing')
       ->condition('created', [$ts(($target_year - $lookback) . '-08-15'), $ts(($target_year - 1) . '-12-31')], 'BETWEEN')
-      ->sort('id')
+      // Newest first so the first WO seen per property is its latest season.
+      ->sort('id', 'DESC')
       ->execute();
 
     $state = $this->allState();
@@ -128,11 +129,12 @@ final class WinbackListService {
       if ($st && in_array($st['outcome'] ?? '', self::SUPPRESS_OUTCOMES, TRUE)) {
         continue;
       }
-      // Most recent source WO per property.
-      if (isset($seen[$pid]) && $seen[$pid] >= (int) $wo->id()) {
+      // One row per property — WOs are newest-first, so the first is the latest
+      // prior winterization; skip any older season for the same property.
+      if (isset($seen[$pid])) {
         continue;
       }
-      $seen[$pid] = (int) $wo->id();
+      $seen[$pid] = TRUE;
 
       $property = $this->refEntity($wo, 'field_property');
       $status = $this->refEntity($wo, 'field_status');

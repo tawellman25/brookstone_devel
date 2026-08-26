@@ -24,8 +24,10 @@ final class WinbackController extends ControllerBase {
   /**
    * The call list page.
    */
-  public function list(): array {
-    $rows = $this->winback->getRows();
+  public function list(Request $request): array {
+    $lookback = $this->winback->clampLookback((int) $request->query->get('years', 1));
+    $rows = $this->winback->getRows($lookback);
+    $target_year = $this->winback->targetYear();
 
     $no_phone = count(array_filter($rows, fn($r) => $r['phone'] === ''));
     $canceled = count(array_filter($rows, fn($r) => $r['was_canceled']));
@@ -37,7 +39,9 @@ final class WinbackController extends ControllerBase {
       '#rows' => $rows,
       '#declined' => $this->winback->getDeclined(),
       '#reasons' => WinbackListService::DECLINE_REASONS,
-      '#target_year' => $this->winback->targetYear(),
+      '#target_year' => $target_year,
+      '#lookback' => $lookback,
+      '#earliest_year' => $target_year - $lookback,
       '#stats' => [
         'total' => count($rows),
         'no_phone' => $no_phone,

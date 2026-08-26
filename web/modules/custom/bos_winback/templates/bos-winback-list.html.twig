@@ -17,8 +17,18 @@
 <div class="wb">
 
   <div class="wb__intro">
-    <p>{{ stats.total }} {{ target_year - 1 }} winterizing customers have no {{ target_year }} work order yet.
+    <p>{{ stats.total }} customers winterized
+      {% if lookback == 1 %}in {{ target_year - 1 }}{% else %}between {{ earliest_year }} and {{ target_year - 1 }}{% endif %}
+      have no {{ target_year }} work order yet.
       They drop off this list the moment you create a winterizing work order for them, or when you mark them <em>Not&nbsp;interested</em>.</p>
+
+    <div class="wb__lookback">
+      <span class="wb__lookback-label">Look back:</span>
+      {% for n in 1..5 %}
+        <a class="wb__lookback-opt{{ n == lookback ? ' is-active' : '' }}" href="?years={{ n }}">{{ n }} {{ n == 1 ? 'year' : 'years' }}</a>
+      {% endfor %}
+    </div>
+
     <div class="wb__stats">
       <span class="wb__stat"><strong>{{ stats.total }}</strong> to call</span>
       <span class="wb__stat"><strong>{{ stats.worked }}</strong> worked</span>

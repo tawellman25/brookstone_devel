@@ -65,16 +65,26 @@ final class WinbackListService {
   }
 
   /**
+   * Clamp a requested look-back (in seasons) to a sane 1..10.
+   */
+  public function clampLookback(int $years): int {
+    return max(1, min(10, $years));
+  }
+
+  /**
    * Compute the win-back rows, newest-relevant first, in route order.
+   *
+   * @param int $lookback_years
+   *   How many prior seasons to include (1 = just last year). Clamped 1..10.
    *
    * @return array[]
    *   Each row: property_id, nickname, street, city, zip, zones, contact_name,
    *   owner_name, phone, email, last_wo_id, last_date, last_total, last_status,
    *   was_canceled, state (['outcome','by','time_ts'] or NULL).
    */
-  public function getRows(): array {
+  public function getRows(int $lookback_years = 1): array {
     $target_year = $this->targetYear();
-    $source_year = $target_year - 1;
+    $lookback = $this->clampLookback($lookback_years);
     $tz = new \DateTimeZone(date_default_timezone_get());
     $ts = fn(string $ymd) => (new DrupalDateTime($ymd . ' 00:00:00', $tz))->getTimestamp();
 
@@ -92,10 +102,12 @@ final class WinbackListService {
       }
     }
 
-    // Source-year winterizing WOs.
+    // Prior-season winterizing WOs across the look-back window: from N seasons
+    // ago (Aug 15) through the end of last year. Winterizing WOs only exist in
+    // fall, so a continuous range cleanly spans each prior season.
     $source_ids = $wo_s->getQuery()->accessCheck(FALSE)
       ->condition('type', 'sprinkler_winterizing')
-      ->condition('created', [$ts($source_year . '-08-15'), $ts($source_year . '-12-31')], 'BETWEEN')
+      ->condition('created', [$ts(($target_year - $lookback) . '-08-15'), $ts(($target_year - 1) . '-12-31')], 'BETWEEN')
       ->sort('id')
       ->execute();
 

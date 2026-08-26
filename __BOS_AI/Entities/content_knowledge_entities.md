@@ -50,6 +50,12 @@ single-value (cardinality 1):
 ## Access / UI
 - **Admin / editing:** the `teammate_handbook` view, page display at
   **`/admin/operations/training/handbook`** ("Handbook Admin").
+- **Teammate entry point:** crew reach the handbook from the **Employment** landing
+  page (`site_landing_page:teammate`, `/teammates/employment`, linked from the
+  `teammate-navigation` menu as "Employment"), which features the Team Handbook and
+  is the hub for future HR/employment resources. Root cover = "Team Handbook" at
+  `/teammates/training/handbook`. (Added 2026-08-26 — before this, teammates had no
+  menu door to the handbook.)
 - **Crew reading:** pages render at pathauto-aliased URLs, pattern
   `[handbook:field_parent_page:entity:url]/[handbook:title]` (nested to mirror the
   hierarchy — pattern `teammate_handbook_aliases`), navigated via the **handbook

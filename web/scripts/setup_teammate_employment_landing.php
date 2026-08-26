@@ -31,13 +31,24 @@ $body = <<<HTML
 <p>Our policies, expectations, and the way we do things &mdash; from time off and pay to conduct and safety. This is the same handbook you received in print; the online copy is kept in step with it.</p>
 <p><a href="/teammates/training/handbook"><strong>Open the Team Handbook &rarr;</strong></a></p>
 
+<h3>Team Structure</h3>
+<p>How Brookstone Outdoors is organized &mdash; who we are and where you fit.</p>
+<ul>
+  <li><a href="/teammates/departments"><strong>Departments</strong></a> &mdash; the service departments that make up the company and what each one covers.</li>
+  <li><a href="/teammates/crews"><strong>Crews</strong></a> &mdash; the field crews and who works on each.</li>
+  <li><a href="/teammates/positions"><strong>Positions</strong></a> &mdash; the job roles across the company and what they&rsquo;re responsible for.</li>
+</ul>
+
 <h3>More resources</h3>
 <p>We&rsquo;ll add more here over time &mdash; benefits, time-off requests, pay questions, forms, and safety references. If you need something that isn&rsquo;t here yet, ask the office.</p>
 HTML;
 
 if ($existing) {
+  // Script-managed content — refresh field_description to the canonical body.
   $slp = $slp_storage->load(reset($existing));
-  print "Employment landing page already exists (id " . $slp->id() . ") — leaving content as-is.\n";
+  $slp->set('field_description', ['value' => $body, 'format' => 'full_html']);
+  $slp->save();
+  print "Employment landing page (id " . $slp->id() . ") — content refreshed.\n";
 }
 else {
   $slp = $slp_storage->create([

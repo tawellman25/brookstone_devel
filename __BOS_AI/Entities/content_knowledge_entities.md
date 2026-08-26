@@ -32,6 +32,11 @@ single-value (cardinality 1):
 - `field_image` — `image`: labelled "Cover Image" on `cover`, "Main Image" on `page`
 - `field_parent_page` — `entity_reference` → `handbook` (self-reference): parent in the hierarchy
 - `field_weight` — `weight`: ordering among siblings under the same parent
+- `field_handbook_version` — `string`, **`cover` bundle only** (added 2026-08-26):
+  the handbook version / effective date. The value on the ROOT "Team Handbook"
+  cover is the *current* version; bumping it prompts staff to re-acknowledge and
+  should be kept in step with the printed copy. Drives the online acknowledgment
+  feature — see `Modules/bos_handbook_ack.md`.
 
 ## Invariants
 - `status` (published) controls visibility to crew.
@@ -65,6 +70,9 @@ single-value (cardinality 1):
   `handbook_child_pages`, `handbook_add_child_links`, `subordinate_handbook_pages`,
   `no_subordinate_handbook_page_link`.
 - **Content on live (2026-08-26):** 14 `cover` + 87 `page` entities.
+- **Acknowledgment:** the "Acknowledgment" cover (`/teammates/training/handbook/acknowledgment`)
+  hosts the online "I acknowledge the Team Handbook" form (append-only, version-aware) —
+  see `Modules/bos_handbook_ack.md`. Staff acknowledge online or sign the printed page.
 
 ---
 

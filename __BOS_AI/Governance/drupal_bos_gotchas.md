@@ -1068,6 +1068,21 @@ Verify with `curl … | grep '<html'` → the inline `--color--primary-hue` shou
 
 Ref: `web/themes/custom/brookstone_olivero/css/bo-brand.css` (2026-08-25 brand retheme).
 
+## A FormBase subclass can't re-declare `$requestStack` / `$currentUser` as promoted `readonly`
+
+**Symptom.** Fatal on class load: `Cannot redeclare non-readonly property
+Drupal\Core\Form\FormBase::$requestStack as readonly Drupal\…\MyForm::$requestStack`.
+
+**Cause.** `FormBase` (and `FormBase`-derived) already declare protected properties
+like `$requestStack`, `$currentUser`, `$configFactory`, `$routeMatch`, `$messenger`.
+Constructor **property promotion** with the same name — especially `readonly` — collides
+with the parent's non-readonly declaration.
+
+**Fix.** Name your injected properties something else: e.g. `$ackSvc`, `$account`,
+`$reqStack`, `$dates` instead of `$service`/`$currentUser`/`$requestStack`/`$dateFormatter`.
+(Same caution applies to `ControllerBase` subclasses.) Ref: `bos_handbook_ack`
+`HandbookAcknowledgmentForm` (2026-08-26).
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

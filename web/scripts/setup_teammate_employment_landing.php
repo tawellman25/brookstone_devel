@@ -51,29 +51,46 @@ else {
   print "Created Employment landing page (id " . $slp->id() . ") at " . $alias . "\n";
 }
 
-// --- 2. Teammate-navigation menu link (idempotent on the target uri). ---
+// --- 2. Teammate-navigation menu link, nested UNDER "Office". ---
 $uri = 'internal:' . $alias;
 $mlc_storage = \Drupal::entityTypeManager()->getStorage('menu_link_content');
-$link_ids = $mlc_storage->getQuery()
-  ->accessCheck(FALSE)
+
+// Resolve the "Office" link so we can parent Employment beneath it (UUID differs
+// per env, so look it up rather than hardcode).
+$office_ids = $mlc_storage->getQuery()->accessCheck(FALSE)
+  ->condition('menu_name', 'teammate-navigation')
+  ->condition('title', 'Office')
+  ->execute();
+$parent = $office_ids ? 'menu_link_content:' . $mlc_storage->load(reset($office_ids))->uuid() : '';
+
+$link_ids = $mlc_storage->getQuery()->accessCheck(FALSE)
   ->condition('menu_name', 'teammate-navigation')
   ->condition('link.uri', $uri)
   ->execute();
 
 if ($link_ids) {
-  print "Teammate menu link already exists (id " . reset($link_ids) . ").\n";
+  $link = $mlc_storage->load(reset($link_ids));
+  print "Teammate menu link already exists (id " . $link->id() . ").\n";
 }
 else {
   $link = MenuLinkContent::create([
     'title' => 'Employment',
     'link' => ['uri' => $uri],
     'menu_name' => 'teammate-navigation',
-    'weight' => 1,
     'expanded' => FALSE,
     'enabled' => TRUE,
   ]);
-  $link->save();
-  print "Created teammate-navigation menu link 'Employment' → " . $alias . " (id " . $link->id() . ")\n";
+  print "Created teammate-navigation menu link 'Employment' → " . $alias . "\n";
 }
+
+$link->set('weight', 1);
+if ($parent !== '') {
+  $link->set('parent', $parent);
+  print "Nested under Office (" . $parent . ").\n";
+}
+else {
+  print "WARNING: 'Office' link not found — Employment left at top level.\n";
+}
+$link->save();
 
 print "Done.\n";

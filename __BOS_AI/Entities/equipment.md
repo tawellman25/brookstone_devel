@@ -87,6 +87,7 @@ pattern as `services.field_service_bundle` → work_order bundles.
 | 55 | Skid-Steer | — |
 | 70 | Snow Blower | — |
 | 68 | Snow Plow | — |
+| 1931 | Sod Cutter | small_engine |
 | 49 | String Trimmer | — |
 | 69 | Tractor | — |
 | 71 | Tractor Attachment | — |
@@ -95,10 +96,22 @@ pattern as `services.field_service_bundle` → work_order bundles.
 | 47 | Walk-Behind Edger | — |
 | 54 | Walk-Behind Pipe Puller | — |
 | 53 | Walk-Behind Trencher | — |
+| 1939 | Welder | power_tools |
 | 42 | Zero-Turn Mower | — |
 
 Most terms still need `field_equipment_bundle` populated. This should
 be done as part of operational data cleanup.
+
+> **Prod-created terms (not in config):** `Sod Cutter` (TID 1931, small_engine)
+> and `Welder` (TID 1939, power_tools) were created directly on **live** as
+> taxonomy **content** by the 2nd Brain (Claude Code on D:) while cataloging
+> equipment — with `field_equipment_bundle` + `field_common_name` set. Taxonomy
+> terms are content, not config, so they do **not** export or sync to DDEV. To
+> mirror them locally, recreate the equivalents in DDEV (TIDs will differ — match
+> by name + bundle, and set `field_common_name`, which drives the term's
+> auto-label). These are the first records in two previously-empty bundles:
+> `small_engine`'s Sod Cutter (eq 77678, "Ryan Jr Sod Cutter") and the
+> `power_tools` bundle's first item, the Welder (eq 77682, "Vulcan OmniPro 220").
 
 ---
 

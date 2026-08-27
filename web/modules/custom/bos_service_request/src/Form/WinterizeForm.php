@@ -100,25 +100,32 @@ final class WinterizeForm extends FormBase {
     $form['#attributes']['class'][] = 'winterize-form';
     $form['#attributes']['class'][] = 'bo-form-card';
 
-    // Row 1 — Last name + Phone. (P3.3 #2: surname is what the matcher keys on.)
+    // Row 1 — First name + Last name. (P3.3 #2: surname is what the matcher keys on.)
     $form['row_name'] = [
       '#type' => 'container', '#attributes' => ['class' => ['bo-grid-2']],
-      'submitted_name' => [
-        '#type' => 'textfield', '#title' => $this->t('Last name'), '#required' => TRUE, '#maxlength' => 255,
+      'submitted_first_name' => [
+        '#type' => 'textfield', '#title' => $this->t('First name'), '#required' => TRUE, '#maxlength' => 255,
         // No autofocus — the page should land on the hero, not jump to the field.
       ],
-      'submitted_phone' => ['#type' => 'tel', '#title' => $this->t('Phone'), '#required' => TRUE, '#maxlength' => 32],
+      'submitted_name' => [
+        '#type' => 'textfield', '#title' => $this->t('Last name'), '#required' => TRUE, '#maxlength' => 255,
+      ],
     ];
-    // Row 2 — Service address (2fr) + ZIP (1fr).
+    // Row 2 — Phone + Email.
+    $form['row_contact'] = [
+      '#type' => 'container', '#attributes' => ['class' => ['bo-grid-2']],
+      'submitted_phone' => ['#type' => 'tel', '#title' => $this->t('Phone'), '#required' => TRUE, '#maxlength' => 32],
+      'submitted_email' => ['#type' => 'email', '#title' => $this->t('Email'), '#maxlength' => 255],
+    ];
+    // Row 3 — Service address (2fr) + ZIP (1fr).
     $form['row_addr'] = [
       '#type' => 'container', '#attributes' => ['class' => ['bo-grid-2-1']],
       'submitted_address' => ['#type' => 'textfield', '#title' => $this->t('Service address'), '#required' => TRUE, '#maxlength' => 255],
       'submitted_zip' => ['#type' => 'textfield', '#title' => $this->t('ZIP'), '#required' => TRUE, '#maxlength' => 10],
     ];
-    // Row 3 — Email + water supply (P1.3; "Not sure" first-class default).
-    $form['row_email'] = [
+    // Row 4 — water supply (P1.3; "Not sure" first-class default).
+    $form['row_supply'] = [
       '#type' => 'container', '#attributes' => ['class' => ['bo-grid-2']],
-      'submitted_email' => ['#type' => 'email', '#title' => $this->t('Email'), '#maxlength' => 255],
       'water_supply' => [
         '#type' => 'select', '#title' => $this->t('What supplies water to your system?'),
         '#options' => [
@@ -132,7 +139,7 @@ final class WinterizeForm extends FormBase {
     ];
     $form['access_notes'] = ['#type' => 'textarea', '#title' => $this->t('Gate & access notes'), '#rows' => 2];
     // P3.3 #5 — the two near-duplicate textareas merged into one.
-    $form['changed'] = ['#type' => 'textarea', '#title' => $this->t('Anything changed since last year?'), '#rows' => 2];
+    $form['changed'] = ['#type' => 'textarea', '#title' => $this->t('Anything we should know about your sprinkler system?'), '#rows' => 2];
 
     // P3.3 #1 / P1.2a — specific-date DEMAND SIGNAL only (orange-ruled block,
     // set apart from the opt-ins). NO fee calculated/quoted/stored/reserved.
@@ -285,7 +292,10 @@ final class WinterizeForm extends FormBase {
     }
 
     $get = fn(string $key) => $this->clean((string) $form_state->getValue($key));
+    $firstName = $get('submitted_first_name');
+    // Surname — the matcher keys on this; kept separate from the stored full name.
     $name = $get('submitted_name');
+    $fullName = trim($firstName . ' ' . $name);
     $address = $get('submitted_address');
     $zip = $get('submitted_zip');
     $phoneIn = $get('submitted_phone');
@@ -324,7 +334,7 @@ final class WinterizeForm extends FormBase {
     // Customer notes (verbatim record of what a stranger typed). Water supply is
     // now a structured field (field_water_supply), not free text.
     $customerNotes = $this->composeNotes([
-      'Changed since last year' => $get('changed'),
+      'About the sprinkler system' => $get('changed'),
       'Notes' => $get('notes'),
     ]);
     $officeNotes = $campaignNote;
@@ -344,7 +354,7 @@ final class WinterizeForm extends FormBase {
       'field_request_status' => $this->statusResolver->tid($statusName),
       'field_source' => $source,
       'field_campaign' => $campaign,
-      'field_submitted_name' => $name,
+      'field_submitted_name' => $fullName,
       'field_submitted_address' => $address,
       'field_submitted_zip' => $zip,
       'field_submitted_phone' => $phoneIn,

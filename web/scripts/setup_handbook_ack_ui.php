@@ -45,11 +45,19 @@ else {
 $mlc = \Drupal::entityTypeManager()->getStorage('menu_link_content');
 $uri = 'internal:/admin/operations/training/handbook/acknowledgments';
 
+// Resolve the Operations → Training section landing by its exact URL — the
+// title "Training" is ambiguous (the SOP entity also has a `training` bundle).
 $parent = '';
-$ph = $mlc->getQuery()->accessCheck(FALSE)
-  ->condition('menu_name', 'admin')->condition('title', 'Operations')->execute();
-if ($ph) {
-  $parent = 'menu_link_content:' . $mlc->load(reset($ph))->uuid();
+foreach ($mlc->loadByProperties(['menu_name' => 'admin', 'title' => 'Training']) as $cand) {
+  try {
+    if ($cand->getUrlObject()->toString() === '/admin/operations/training') {
+      $parent = 'menu_link_content:' . $cand->uuid();
+      break;
+    }
+  }
+  catch (\Exception $e) {
+    // Skip unresolved links.
+  }
 }
 
 $ex = $mlc->getQuery()->accessCheck(FALSE)
@@ -72,10 +80,10 @@ $link->set('title', 'Handbook Acknowledgments');
 $link->set('weight', 20);
 if ($parent !== '') {
   $link->set('parent', $parent);
-  print "  nested under admin 'Operations'\n";
+  print "  nested under admin 'Operations → Training'\n";
 }
 else {
-  print "  WARNING: admin 'Operations' link not found — left at top level of admin menu\n";
+  print "  WARNING: admin 'Training' link not found — left at top level of admin menu\n";
 }
 $link->save();
 

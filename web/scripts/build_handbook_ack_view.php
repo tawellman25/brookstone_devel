@@ -33,12 +33,19 @@ if ($existing = View::load('handbook_acknowledgments')) {
   print "removed existing handbook_acknowledgments (rebuild)\n";
 }
 
-// Resolve the "Operations" admin-menu link for THIS env (content plugin id).
+// Resolve the Operations → Training section landing by its exact URL — the title
+// "Training" is ambiguous (the SOP entity also has a `training` bundle admin link).
 $handbookParent = '';
-foreach (\Drupal::service('plugin.manager.menu.link')->getDefinitions() as $pid => $def) {
-  if (($def['menu_name'] ?? '') === 'admin' && strcasecmp((string) ($def['title'] ?? ''), 'operations') === 0) {
-    $handbookParent = $pid;
-    break;
+$mlcStorage = \Drupal::entityTypeManager()->getStorage('menu_link_content');
+foreach ($mlcStorage->loadByProperties(['menu_name' => 'admin', 'title' => 'Training']) as $cand) {
+  try {
+    if ($cand->getUrlObject()->toString() === '/admin/operations/training') {
+      $handbookParent = 'menu_link_content:' . $cand->uuid();
+      break;
+    }
+  }
+  catch (\Exception $e) {
+    // Skip.
   }
 }
 
@@ -152,5 +159,5 @@ $view = View::create([
 ]);
 $view->save();
 print "created view handbook_acknowledgments at /admin/operations/handbook-acknowledgments";
-print $handbookParent ? " (menu under Operations)\n" : " (WARNING: Operations parent not found; top-level admin)\n";
+print $handbookParent ? " (menu under Operations → Training)\n" : " (WARNING: Training parent not found; top-level admin)\n";
 print "Done.\n";

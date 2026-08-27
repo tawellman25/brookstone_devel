@@ -149,6 +149,41 @@ class MaterialListManagementForm extends FormBase {
       '#weight' => 2,
     ];
 
+    // Import Items link opens modal (upload/paste → preview → import).
+    $form['actions']['import_items'] = [
+      '#type' => 'link',
+      '#title' => $this->t('Import Items'),
+      '#url' => Url::fromRoute(
+        'wo_material_list_management.import_items_modal',
+        ['wo_material_list' => $wo_material_list->id()]
+      ),
+      '#attributes' => [
+        'class' => ['use-ajax', 'button', 'button--primary'],
+        'data-dialog-type' => 'modal',
+        'data-dialog-options' => Json::encode(['width' => 900]),
+      ],
+      '#attached' => ['library' => ['core/drupal.dialog.ajax']],
+      '#weight' => 3,
+    ];
+
+    // Export current items to CSV.
+    $form['actions']['export_items'] = [
+      '#type' => 'link',
+      '#title' => $this->t('Export Items'),
+      '#url' => Url::fromRoute('wo_material_list_management.export_items', ['wo_material_list' => $wo_material_list->id()]),
+      '#attributes' => ['class' => ['button']],
+      '#weight' => 4,
+    ];
+
+    // Blank import template.
+    $form['actions']['import_template'] = [
+      '#type' => 'link',
+      '#title' => $this->t('Import Template'),
+      '#url' => Url::fromRoute('wo_material_list_management.import_template'),
+      '#attributes' => ['class' => ['button', 'button--small']],
+      '#weight' => 5,
+    ];
+
     // Delete selected items if permission allows.
     $current_user = \Drupal::currentUser();
     if ($current_user->hasPermission('delete any wo_material_list_item entity') ||

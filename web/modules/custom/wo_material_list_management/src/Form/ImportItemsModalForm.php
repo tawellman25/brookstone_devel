@@ -1,0 +1,196 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Drupal\wo_material_list_management\Form;
+
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\CloseModalDialogCommand;
+use Drupal\Core\Ajax\RedirectCommand;
+use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
+use Drupal\eck\Entity\EckEntity;
+use Drupal\wo_material_list_management\Service\MaterialListImportService;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+
+/**
+ * Two-step modal: upload/paste a material list → preview & confirm → import.
+ */
+final class ImportItemsModalForm extends FormBase {
+
+  public function __construct(private readonly MaterialListImportService $importer) {}
+
+  public static function create(ContainerInterface $container): static {
+    return new static($container->get('wo_material_list_management.import'));
+  }
+
+  public function getFormId(): string {
+    return 'wo_material_list_import_items_form';
+  }
+
+  public function buildForm(array $form, FormStateInterface $form_state, ?EckEntity $wo_material_list = NULL): array {
+    if ($wo_material_list) {
+      $form_state->set('list_id', (int) $wo_material_list->id());
+    }
+    $form['#prefix'] = '<div id="wo-import-wrapper">';
+    $form['#suffix'] = '</div>';
+    $form['#attached']['library'][] = 'core/drupal.dialog.ajax';
+
+    $step = $form_state->get('step') ?? 'input';
+
+    if ($step === 'preview') {
+      return $this->buildPreviewStep($form, $form_state);
+    }
+    return $this->buildInputStep($form, $form_state);
+  }
+
+  private function buildInputStep(array $form, FormStateInterface $form_state): array {
+    $form['help'] = [
+      '#markup' => '<p>Upload a <strong>.csv</strong> / <strong>.xlsx</strong> or paste rows. Columns: '
+        . '<em>identifier</em> (material ID or supplier item #), <em>quantity</em>, optional <em>unit cost</em>, optional <em>supplier</em>. '
+        . 'A header row is auto-detected.</p>',
+    ];
+    $form['file'] = [
+      '#type' => 'managed_file',
+      '#title' => $this->t('Spreadsheet file'),
+      '#upload_location' => 'temporary://wo_material_import',
+      '#upload_validators' => ['file_validate_extensions' => ['csv txt xls xlsx']],
+    ];
+    $form['paste'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('…or paste rows'),
+      '#rows' => 6,
+      '#placeholder' => "12345, 4\nSKU-778, 2, 19.50",
+    ];
+    $form['actions'] = ['#type' => 'actions'];
+    $form['actions']['preview'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Preview'),
+      '#submit' => ['::previewSubmit'],
+      '#ajax' => ['callback' => '::ajaxRebuild', 'wrapper' => 'wo-import-wrapper'],
+    ];
+    return $form;
+  }
+
+  private function buildPreviewStep(array $form, FormStateInterface $form_state): array {
+    $rows = $form_state->get('rows') ?? [];
+    $matched = count(array_filter($rows, fn($r) => ($r['status'] ?? '') === 'matched'));
+    $ambiguous = count(array_filter($rows, fn($r) => ($r['status'] ?? '') === 'ambiguous'));
+    $unmatched = count(array_filter($rows, fn($r) => ($r['status'] ?? '') === 'unmatched'));
+
+    $form['summary'] = [
+      '#markup' => "<p><strong>" . count($rows) . "</strong> rows — {$matched} matched, {$ambiguous} to confirm, {$unmatched} unmatched. "
+        . "Adjust below, then import. Unmatched rows: pick a material or leave unchecked to skip.</p>",
+    ];
+
+    $form['rows'] = ['#type' => 'table', '#header' => ['Include', 'From file', 'Status', 'Material', 'Qty', 'Unit cost']];
+    foreach ($rows as $i => $r) {
+      $status = $r['status'] ?? 'unmatched';
+      $form['rows'][$i]['include'] = [
+        '#type' => 'checkbox',
+        '#default_value' => ($status !== 'unmatched'),
+      ];
+      $form['rows'][$i]['identifier'] = ['#markup' => '<code>' . htmlspecialchars($r['identifier']) . '</code>'];
+      $form['rows'][$i]['status'] = ['#markup' => '<span class="wo-import-status wo-import-status--' . $status . '">' . ucfirst($status) . '</span>'];
+      $default_material = !empty($r['material_id'])
+        ? \Drupal::entityTypeManager()->getStorage('material')->load($r['material_id'])
+        : NULL;
+      $form['rows'][$i]['material'] = [
+        '#type' => 'entity_autocomplete',
+        '#target_type' => 'material',
+        '#default_value' => $default_material,
+        '#selection_handler' => 'default:material',
+      ];
+      $form['rows'][$i]['quantity'] = [
+        '#type' => 'number', '#min' => 1, '#default_value' => is_numeric($r['quantity']) ? (int) $r['quantity'] : 1, '#size' => 5,
+      ];
+      $form['rows'][$i]['unit_cost'] = [
+        '#type' => 'textfield', '#default_value' => $r['unit_cost'] ?? '', '#size' => 8, '#placeholder' => 'catalog',
+      ];
+      $form['rows'][$i]['supplier_id'] = ['#type' => 'value', '#value' => $r['supplier_id'] ?? NULL];
+      $form['rows'][$i]['supplier_item_number'] = ['#type' => 'value', '#value' => $r['supplier_item_number'] ?? ($r['identifier'] ?? '')];
+    }
+
+    $form['actions'] = ['#type' => 'actions'];
+    $form['actions']['import'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Import items'),
+      '#button_type' => 'primary',
+      '#ajax' => ['callback' => '::ajaxImport', 'wrapper' => 'wo-import-wrapper'],
+    ];
+    $form['actions']['restart'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Start over'),
+      '#submit' => ['::restartSubmit'],
+      '#limit_validation_errors' => [],
+      '#ajax' => ['callback' => '::ajaxRebuild', 'wrapper' => 'wo-import-wrapper'],
+    ];
+    return $form;
+  }
+
+  /**
+   * Parse + match, move to preview.
+   */
+  public function previewSubmit(array &$form, FormStateInterface $form_state): void {
+    $raw = [];
+    $fids = $form_state->getValue('file');
+    if (!empty($fids[0]) && ($file = \Drupal::entityTypeManager()->getStorage('file')->load($fids[0]))) {
+      $raw = $this->importer->parseFile($file);
+    }
+    elseif (trim((string) $form_state->getValue('paste')) !== '') {
+      $raw = $this->importer->parsePaste((string) $form_state->getValue('paste'));
+    }
+    if (!$raw) {
+      $this->messenger()->addWarning($this->t('No rows found — upload a file or paste some rows.'));
+      $form_state->setRebuild(TRUE);
+      return;
+    }
+    $form_state->set('rows', $this->importer->matchRows($raw));
+    $form_state->set('step', 'preview');
+    $form_state->setRebuild(TRUE);
+  }
+
+  public function restartSubmit(array &$form, FormStateInterface $form_state): void {
+    $form_state->set('step', 'input');
+    $form_state->set('rows', NULL);
+    $form_state->setRebuild(TRUE);
+  }
+
+  public function ajaxRebuild(array &$form, FormStateInterface $form_state): array {
+    return $form;
+  }
+
+  /**
+   * Create/merge the confirmed rows, then close + reload the list page.
+   */
+  public function ajaxImport(array &$form, FormStateInterface $form_state): AjaxResponse {
+    $listId = (int) $form_state->get('list_id');
+    $submitted = $form_state->getValue('rows') ?? [];
+    $rows = [];
+    foreach ($submitted as $r) {
+      $rows[] = [
+        'include' => !empty($r['include']),
+        'material_id' => (int) ($r['material'] ?? 0),
+        'quantity' => (int) ($r['quantity'] ?? 1),
+        'unit_cost' => $r['unit_cost'] ?? '',
+        'supplier_id' => $r['supplier_id'] ?? NULL,
+        'supplier_item_number' => $r['supplier_item_number'] ?? '',
+      ];
+    }
+    $result = $this->importer->import($listId, $rows);
+    $this->messenger()->addStatus($this->t('Imported @c new, merged @m, skipped @s.', [
+      '@c' => $result['created'], '@m' => $result['merged'], '@s' => $result['skipped'],
+    ]));
+
+    $response = new AjaxResponse();
+    $response->addCommand(new CloseModalDialogCommand());
+    $response->addCommand(new RedirectCommand(Url::fromUri('internal:/wo_material_list/' . $listId)->toString()));
+    return $response;
+  }
+
+  public function submitForm(array &$form, FormStateInterface $form_state): void {
+    // All work happens in the AJAX callbacks above.
+  }
+
+}

@@ -3,3 +3,7 @@ services:
     class: Drupal\wo_material_list_management\Plugin\Block\WOMaterialListItemECKFormBlock
     tags:
       - { name: block }
+
+  wo_material_list_management.import:
+    class: Drupal\wo_material_list_management\Service\MaterialListImportService
+    arguments: ['@entity_type.manager', '@file_system']

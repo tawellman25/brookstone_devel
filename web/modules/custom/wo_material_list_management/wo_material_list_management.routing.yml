@@ -22,3 +22,26 @@ wo_material_list_management.clone_items_modal:
     _title: 'Select target material list'
   requirements:
     _permission: 'access content'
+wo_material_list_management.import_items_modal:
+  path: '/wo_material_list/{wo_material_list}/import-modal'
+  defaults:
+    _form: '\Drupal\wo_material_list_management\Form\ImportItemsModalForm'
+    _title: 'Import material items'
+  requirements:
+    _permission: 'access content'
+
+wo_material_list_management.export_items:
+  path: '/wo_material_list/{wo_material_list}/export-items'
+  defaults:
+    _controller: '\Drupal\wo_material_list_management\Controller\MaterialListExportController::export'
+    _title: 'Export items'
+  requirements:
+    _permission: 'access content'
+
+wo_material_list_management.import_template:
+  path: '/wo_material_list/import-template'
+  defaults:
+    _controller: '\Drupal\wo_material_list_management\Controller\MaterialListExportController::template'
+    _title: 'Import template'
+  requirements:
+    _permission: 'access content'

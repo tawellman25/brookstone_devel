@@ -33,10 +33,10 @@ if ($existing = View::load('handbook_acknowledgments')) {
   print "removed existing handbook_acknowledgments (rebuild)\n";
 }
 
-// Resolve the "Handbook" admin-menu link for THIS env (content plugin id).
+// Resolve the "Operations" admin-menu link for THIS env (content plugin id).
 $handbookParent = '';
 foreach (\Drupal::service('plugin.manager.menu.link')->getDefinitions() as $pid => $def) {
-  if (($def['menu_name'] ?? '') === 'admin' && strcasecmp((string) ($def['title'] ?? ''), 'handbook') === 0) {
+  if (($def['menu_name'] ?? '') === 'admin' && strcasecmp((string) ($def['title'] ?? ''), 'operations') === 0) {
     $handbookParent = $pid;
     break;
   }
@@ -134,9 +134,9 @@ $page_display = [
   'display_options' => [
     'path' => 'admin/operations/handbook-acknowledgments',
     'menu' => [
-      'type' => 'normal', 'title' => 'Acknowledgment Log',
+      'type' => 'normal', 'title' => 'Handbook Acknowledgment Log',
       'description' => 'Audit trail of online handbook acknowledgments (all versions).',
-      'weight' => 3, 'menu_name' => 'admin', 'parent' => $handbookParent, 'context' => '', 'expanded' => FALSE,
+      'weight' => 21, 'menu_name' => 'admin', 'parent' => $handbookParent, 'context' => '', 'expanded' => FALSE,
     ],
   ],
 ];
@@ -152,5 +152,5 @@ $view = View::create([
 ]);
 $view->save();
 print "created view handbook_acknowledgments at /admin/operations/handbook-acknowledgments";
-print $handbookParent ? " (menu under Handbook)\n" : " (WARNING: Handbook parent not found; top-level admin)\n";
+print $handbookParent ? " (menu under Operations)\n" : " (WARNING: Operations parent not found; top-level admin)\n";
 print "Done.\n";

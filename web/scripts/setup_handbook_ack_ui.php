@@ -47,7 +47,7 @@ $uri = 'internal:/admin/operations/training/handbook/acknowledgments';
 
 $parent = '';
 $ph = $mlc->getQuery()->accessCheck(FALSE)
-  ->condition('menu_name', 'admin')->condition('title', 'Handbook')->execute();
+  ->condition('menu_name', 'admin')->condition('title', 'Operations')->execute();
 if ($ph) {
   $parent = 'menu_link_content:' . $mlc->load(reset($ph))->uuid();
 }
@@ -60,21 +60,22 @@ if ($ex) {
 }
 else {
   $link = MenuLinkContent::create([
-    'title' => 'Acknowledgments',
+    'title' => 'Handbook Acknowledgments',
     'link' => ['uri' => $uri],
     'menu_name' => 'admin',
-    'weight' => 2,
+    'weight' => 20,
     'expanded' => FALSE,
   ]);
-  print "created menu link 'Acknowledgments'\n";
+  print "created menu link 'Handbook Acknowledgments'\n";
 }
-$link->set('weight', 2);
+$link->set('title', 'Handbook Acknowledgments');
+$link->set('weight', 20);
 if ($parent !== '') {
   $link->set('parent', $parent);
-  print "  nested under admin 'Handbook'\n";
+  print "  nested under admin 'Operations'\n";
 }
 else {
-  print "  WARNING: admin 'Handbook' link not found — left at top level of admin menu\n";
+  print "  WARNING: admin 'Operations' link not found — left at top level of admin menu\n";
 }
 $link->save();
 

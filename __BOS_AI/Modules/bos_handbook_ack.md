@@ -50,14 +50,26 @@ handbook menu-tree). Gated to **staff roles**. Behavior:
   on {date}, signed {name}" instead of the form (no duplicate).
 - Version bumped → the form reappears (no record for the new version yet).
 
-## Gate 4 — Management report
+## Gate 4 — Management surfaces (two, complementary)
 
-Computed page at **`/admin/operations/training/handbook/acknowledgments`** (admin
-menu, under **Handbook**; permission `view handbook acknowledgments`). Shows, for a
-chosen version (default = current): **acknowledged** (name, date, signed) and the
-**version-aware GAP** ("not yet acknowledged"), with a version filter and a
-completion %. Computed (not a View) because a version-aware gap — acked *this*
-version? — isn't expressible in pure Views (same reasoning as Winterize Win-Back).
+**1. Status & gap report (computed)** — `/admin/operations/training/handbook/acknowledgments`
+(admin menu → **Handbook → Acknowledgments**; permission `view handbook
+acknowledgments`). For a chosen version (default = current): **acknowledged** (name,
+date, signed) + the **version-aware GAP** ("not yet acknowledged") + completion %.
+Computed (not a View) because a version-aware gap — acked *this* version? — isn't
+expressible in pure Views (same reasoning as Winterize Win-Back).
+
+**2. Acknowledgment Log (View)** — `/admin/operations/handbook-acknowledgments`
+(admin menu → **Handbook → Acknowledgment Log**; permission `access
+handbook_acknowledgment entity listing`). The raw audit trail: `views.view.
+handbook_acknowledgments`, table over `handbook_acknowledgment_field_data` —
+columns staff member (linked) · signed name · version · acknowledged-on (short
+date) · IP; sortable, 50/page, newest-first; exposed filters version (contains) +
+acknowledged-on date range; total-count header. Built via
+`web/scripts/build_handbook_ack_view.php` (idempotent, per env — grants the listing
+perm + builds the view; **not** committed-config+cim, matching the
+`service_request_admin` precedent). Requested by Claude Chat 2026-08-26; kept
+alongside the report (report = who still needs to sign; log = the immutable record).
 
 ## Audience
 

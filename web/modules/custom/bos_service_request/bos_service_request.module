@@ -45,7 +45,16 @@ function bos_service_request_entity_operation(\Drupal\Core\Entity\EntityInterfac
   $ops = [];
   $id = $entity->id();
   $converted = $entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty();
+  $has_property = $entity->hasField('field_property') && !$entity->get('field_property')->isEmpty();
   if (!$converted) {
+    // New customer (no matched property) → guided create-customer flow first.
+    if (!$has_property) {
+      $ops['sr_create_customer'] = [
+        'title' => t('Create Customer & Property'),
+        'weight' => 0,
+        'url' => Url::fromRoute('bos_service_request.create_customer', ['service_request' => $id]),
+      ];
+    }
     $ops['sr_convert'] = [
       'title' => t('Approve & Create WO'),
       'weight' => 1,

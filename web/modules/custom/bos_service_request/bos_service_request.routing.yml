@@ -83,6 +83,14 @@ bos_service_request.report:
     _admin_route: 'TRUE'
 
 # Secondary actions: Mark Duplicate / Mark Already Covered / Reject.
+bos_service_request.create_customer:
+  path: '/admin/office/service-requests/{service_request}/create-customer'
+  defaults:
+    _form: 'Drupal\bos_service_request\Form\CreateCustomerForm'
+    _title: 'Create Customer & Property'
+  requirements:
+    _permission: 'administer service requests'
+
 bos_service_request.action:
   path: '/admin/office/service-requests/{service_request}/{op}'
   defaults:

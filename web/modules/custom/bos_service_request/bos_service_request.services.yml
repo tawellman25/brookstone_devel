@@ -39,3 +39,7 @@ services:
       - '@lock'
       - '@datetime.time'
       - '@logger.channel.bos_service_request'
+
+  bos_service_request.customer_provisioning:
+    class: Drupal\bos_service_request\Service\CustomerProvisioningService
+    arguments: ['@entity_type.manager', '@password_generator']

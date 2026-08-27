@@ -53,16 +53,18 @@ handbook menu-tree). Gated to **staff roles**. Behavior:
 ## Gate 4 — Management surfaces (two, complementary)
 
 **1. Status & gap report (computed)** — `/admin/operations/training/handbook/acknowledgments`
-(admin menu → **Operations → Handbook Acknowledgments**; permission `view handbook
+(admin menu → **Operations → Training → Handbook Acknowledgments**; permission `view handbook
 acknowledgments`). For a chosen version (default = current): **acknowledged** (name,
 date, signed) + the **version-aware GAP** ("not yet acknowledged") + completion %.
 Computed (not a View) because a version-aware gap — acked *this* version? — isn't
 expressible in pure Views (same reasoning as Winterize Win-Back).
 
 **2. Acknowledgment Log (View)** — `/admin/operations/handbook-acknowledgments`
-(admin menu → **Operations → Handbook Acknowledgment Log**; permission `access
-handbook_acknowledgment entity listing`). Both items sit directly under the
-**Operations** admin section (not the crew "Handbook" link). The raw audit trail: `views.view.
+(admin menu → **Operations → Training → Handbook Acknowledgment Log**; permission `access
+handbook_acknowledgment entity listing`). Both items sit under the **Operations →
+Training** section landing (`/admin/operations/training`) — the handbook already
+lives under Training — not loose at the Operations top level or the crew "Handbook"
+link. The raw audit trail: `views.view.
 handbook_acknowledgments`, table over `handbook_acknowledgment_field_data` —
 columns staff member (linked) · signed name · version · acknowledged-on (short
 date) · IP; sortable, 50/page, newest-first; exposed filters version (contains) +

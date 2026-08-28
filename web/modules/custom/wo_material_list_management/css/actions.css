@@ -1,0 +1,150 @@
+/* ==========================================================================
+   Compact material-list items table — tighter rows, small Edit buttons,
+   fits desktop and mobile without horizontal scroll (descriptions wrap/clip).
+   ========================================================================== */
+table.wo-ml-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  /* Condensed, material-list feel. Arial Narrow where present (Win/Mac),
+     then condensed fallbacks; font-stretch narrows faces that support it. */
+  font-family: "Arial Narrow", "Roboto Condensed", "Liberation Sans Narrow", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-stretch: condensed;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+table.wo-ml-table th,
+table.wo-ml-table td { font-stretch: condensed; }
+table.wo-ml-table th,
+table.wo-ml-table td {
+  padding: 1px 6px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  vertical-align: middle;
+  border: 0;
+  border-bottom: 1px solid #ececec;
+  line-height: 1.15;
+}
+/* Kill Claro's row/checkbox padding that inflates row height. */
+table.wo-ml-table tr { height: auto !important; }
+table.wo-ml-table td .form-item,
+table.wo-ml-table td .form-wrapper,
+table.wo-ml-table td .js-form-item { margin: 0 !important; padding: 0 !important; }
+table.wo-ml-table td input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0 !important;
+  vertical-align: middle;
+}
+table.wo-ml-table thead th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #6a6a6a;
+  border-bottom: 2px solid #d9d9d9;
+  background: none;
+}
+table.wo-ml-table tbody tr:hover {
+  background: #faf7f2;
+}
+/* Column widths: [ ✓ ][ # ][ description (flex) ][ subtotal ][ edit ] */
+table.wo-ml-table th:nth-child(1),
+table.wo-ml-table td:nth-child(1) { width: 1.9rem; text-align: center; }
+table.wo-ml-table th:nth-child(2),
+table.wo-ml-table td:nth-child(2) { width: 2.2rem; text-align: right; color: #444; }
+table.wo-ml-table th:nth-child(3),
+table.wo-ml-table td:nth-child(3) { width: auto; word-break: break-word; }
+table.wo-ml-table th:nth-child(4),
+table.wo-ml-table td:nth-child(4) { width: 4.5rem; text-align: right; white-space: nowrap; }
+table.wo-ml-table th:nth-child(5),
+table.wo-ml-table td:nth-child(5) { width: 3.4rem; text-align: right; }
+/* Small, quiet Edit button. */
+table.wo-ml-table td .button {
+  display: inline-block;
+  margin: 0 !important;
+  padding: 0 9px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  font-size: 0.78rem !important;
+  line-height: 1.5 !important;
+  border-radius: 3px;
+}
+/* Trim Claro's default checkbox spacing inside the row. */
+table.wo-ml-table td .form-item,
+table.wo-ml-table td input[type="checkbox"] {
+  margin: 0 !important;
+}
+
+/* Mobile: shrink further; the fixed layout already prevents page overflow. */
+@media (max-width: 40em) {
+  table.wo-ml-table { font-size: 0.8rem; }
+  table.wo-ml-table th,
+  table.wo-ml-table td { padding: 2px 4px !important; }
+  table.wo-ml-table th:nth-child(1),
+  table.wo-ml-table td:nth-child(1) { width: 1.5rem; }
+  table.wo-ml-table th:nth-child(2),
+  table.wo-ml-table td:nth-child(2) { width: 1.7rem; }
+  table.wo-ml-table th:nth-child(4),
+  table.wo-ml-table td:nth-child(4) { width: 3.6rem; }
+  table.wo-ml-table th:nth-child(5),
+  table.wo-ml-table td:nth-child(5) { width: 3rem; }
+  table.wo-ml-table td .button {
+    padding: 1px 7px !important;
+    font-size: 0.72rem !important;
+  }
+}
+
+/* Phone: keep the management list a real (fixed, fits-on-screen) TABLE instead
+   of the site-wide card stacking (brookstone_olivero/responsive_tables tags it
+   .bos-stack-table). `table.wo-ml-table.bos-stack-table` wins on specificity.
+   Only this table is opted out; other WO tables keep their mobile cards. */
+@media (max-width: 48em) {
+  table.wo-ml-table.bos-stack-table { display: table !important; table-layout: fixed !important; width: 100% !important; }
+  table.wo-ml-table.bos-stack-table > thead { display: table-header-group !important; }
+  table.wo-ml-table.bos-stack-table > tbody { display: table-row-group !important; }
+  table.wo-ml-table.bos-stack-table > tbody > tr {
+    display: table-row !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid #ececec !important;
+    border-radius: 0 !important;
+    background: none !important;
+  }
+  table.wo-ml-table.bos-stack-table > tbody > tr > td,
+  table.wo-ml-table.bos-stack-table > tbody > tr > th {
+    display: table-cell !important;
+    padding: 2px 4px !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+  /* Drop the injected per-cell labels the stacking JS added. */
+  table.wo-ml-table.bos-stack-table td[data-bos-label]::before { content: none !important; display: none !important; }
+  /* Keep #, subtotal, and Edit columns right/centered as on desktop. */
+  table.wo-ml-table.bos-stack-table td:nth-child(1) { text-align: center !important; }
+  table.wo-ml-table.bos-stack-table td:nth-child(2) { text-align: right !important; }
+  table.wo-ml-table.bos-stack-table td:nth-child(4),
+  table.wo-ml-table.bos-stack-table td:nth-child(5) { text-align: right !important; }
+}
+
+/* Material-list action toolbar: tidy row, Delete pushed right (destructive). */
+.wo-ml-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.wo-ml-actions .dropbutton-wrapper {
+  margin: 0;
+}
+.wo-ml-actions .wo-ml-delete {
+  margin-left: auto;
+}
+@media (max-width: 48em) {
+  .wo-ml-actions .wo-ml-delete {
+    margin-left: 0;
+  }
+}

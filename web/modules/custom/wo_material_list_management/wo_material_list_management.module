@@ -80,3 +80,38 @@ function wo_material_list_management_entity_view(array &$build, EntityInterface 
     $build['material_list_management'] = \Drupal::formBuilder()->getForm('Drupal\wo_material_list_management\Form\MaterialListManagementForm', $entity);
   }
 }
+
+/**
+ * Views whose tables get the compact material-list styling on the WO page.
+ */
+function _wo_material_list_management_display_views() {
+  return [
+    'wo_materials_grand_total',   // item table + grand total (embedded on WO page)
+    'wo_material_list_grouping',  // parent grouping view on the WO page
+    'wo_material_list_groups',    // standalone line/block variant
+  ];
+}
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * Attach the compact material-list styling to the WO-page materials displays so
+ * they match the material-list management table.
+ */
+function wo_material_list_management_views_pre_render(\Drupal\views\ViewExecutable $view) {
+  if (in_array($view->id(), _wo_material_list_management_display_views(), TRUE)) {
+    $view->element['#attached']['library'][] = 'wo_material_list_management/wo_display';
+  }
+}
+
+/**
+ * Implements hook_preprocess_views_view().
+ *
+ * Add a stable wrapper class the compact CSS scopes to (survives embedding via
+ * views_field_view, unlike relying on the view-id class).
+ */
+function wo_material_list_management_preprocess_views_view(array &$variables) {
+  if (in_array($variables['view']->id(), _wo_material_list_management_display_views(), TRUE)) {
+    $variables['attributes']['class'][] = 'wo-ml-display';
+  }
+}

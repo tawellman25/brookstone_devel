@@ -73,6 +73,8 @@ class MaterialListManagementForm extends FormBase {
         $this->t(''),
       ],
       '#empty' => $this->t('No items found'),
+      '#attributes' => ['class' => ['wo-ml-table']],
+      '#attached' => ['library' => ['wo_material_list_management/actions']],
     ];
 
     // Load existing items.
@@ -111,6 +113,8 @@ class MaterialListManagementForm extends FormBase {
     // Actions container.
     $form['actions'] = [
       '#type' => 'actions',
+      '#attributes' => ['class' => ['wo-ml-actions']],
+      '#attached' => ['library' => ['wo_material_list_management/actions']],
     ];
 
     // Add Item link (modal).
@@ -132,51 +136,35 @@ class MaterialListManagementForm extends FormBase {
       '#weight' => 0,
     ];
 
-    // Clone Items link opens modal.
-    $form['actions']['clone_list'] = [
-      '#type' => 'link',
-      '#title' => $this->t('Clone Items'),
-      '#url' => Url::fromRoute(
-        'wo_material_list_management.clone_items_modal',
-        ['wo_material_list' => $wo_material_list->id()]
-      ),
-      '#attributes' => [
-        'class' => ['use-ajax', 'button', 'button--primary'],
-        'data-dialog-type' => 'modal',
-        'data-dialog-options' => Json::encode(['width' => 600]),
+    // Items ▾ — one dropdown grouping clone + the import/export utilities.
+    $form['actions']['import_export'] = [
+      '#type' => 'dropbutton',
+      '#dropbutton_type' => 'small',
+      '#links' => [
+        'import' => [
+          'title' => $this->t('Import Items'),
+          'url' => Url::fromRoute('wo_material_list_management.import_items', ['wo_material_list' => $wo_material_list->id()]),
+        ],
+        'clone' => [
+          'title' => $this->t('Clone Items'),
+          'url' => Url::fromRoute('wo_material_list_management.clone_items_modal', ['wo_material_list' => $wo_material_list->id()]),
+          'attributes' => [
+            'class' => ['use-ajax'],
+            'data-dialog-type' => 'modal',
+            'data-dialog-options' => Json::encode(['width' => 600]),
+          ],
+        ],
+        'template' => [
+          'title' => $this->t('Import Template'),
+          'url' => Url::fromRoute('wo_material_list_management.import_template'),
+        ],
+        'export' => [
+          'title' => $this->t('Export Items'),
+          'url' => Url::fromRoute('wo_material_list_management.export_items', ['wo_material_list' => $wo_material_list->id()]),
+        ],
       ],
       '#attached' => ['library' => ['core/drupal.dialog.ajax']],
-      '#weight' => 2,
-    ];
-
-    // Import Items → full page (upload/paste → preview → import).
-    $form['actions']['import_items'] = [
-      '#type' => 'link',
-      '#title' => $this->t('Import Items'),
-      '#url' => Url::fromRoute(
-        'wo_material_list_management.import_items',
-        ['wo_material_list' => $wo_material_list->id()]
-      ),
-      '#attributes' => ['class' => ['button', 'button--primary']],
       '#weight' => 3,
-    ];
-
-    // Export current items to CSV.
-    $form['actions']['export_items'] = [
-      '#type' => 'link',
-      '#title' => $this->t('Export Items'),
-      '#url' => Url::fromRoute('wo_material_list_management.export_items', ['wo_material_list' => $wo_material_list->id()]),
-      '#attributes' => ['class' => ['button']],
-      '#weight' => 4,
-    ];
-
-    // Blank import template.
-    $form['actions']['import_template'] = [
-      '#type' => 'link',
-      '#title' => $this->t('Import Template'),
-      '#url' => Url::fromRoute('wo_material_list_management.import_template'),
-      '#attributes' => ['class' => ['button', 'button--small']],
-      '#weight' => 5,
     ];
 
     // Delete selected items if permission allows.
@@ -187,7 +175,7 @@ class MaterialListManagementForm extends FormBase {
         '#type' => 'submit',
         '#value' => $this->t('Delete Items'),
         '#attributes' => [
-          'class' => ['button', 'button--primary', 'js-form-submit', 'form-submit'],
+          'class' => ['button', 'button--danger', 'js-form-submit', 'form-submit', 'wo-ml-delete'],
         ],
         '#submit' => ['::deleteSelectedSubmit'],
         '#limit_validation_errors' => [['items']],

@@ -1,0 +1,101 @@
+/* ==========================================================================
+   Compact WO-page materials display — matches the material-list management
+   table: tight rows, condensed font, small Edit, no heavy zebra shading.
+   Applied (via the .wo-ml-display wrapper class) to the WO-page material views:
+   wo_material_list_grouping and its embedded wo_materials_grand_total table.
+   ========================================================================== */
+.wo-ml-display table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.25rem 0;
+  font-family: "Arial Narrow", "Roboto Condensed", "Liberation Sans Narrow", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-stretch: condensed;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+.wo-ml-display table th,
+.wo-ml-display table td {
+  padding: 2px 8px !important;
+  height: auto !important;
+  border: 0;
+  border-bottom: 1px solid #ececec;
+  vertical-align: middle;
+}
+.wo-ml-display table thead th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #6a6a6a;
+  border-bottom: 2px solid #d9d9d9;
+  background: none;
+}
+/* Remove the zebra shading that makes the list look heavy. */
+.wo-ml-display table tbody tr,
+.wo-ml-display table tbody tr.odd,
+.wo-ml-display table tbody tr.even { background: none !important; }
+.wo-ml-display table tbody tr:hover { background: #faf7f2 !important; }
+
+/* Numeric columns: right-aligned, tight, no wrap. */
+.wo-ml-display .views-field-field-quantity { width: 3.2rem; text-align: center; }
+.wo-ml-display .views-field-field-material-cost,
+.wo-ml-display .views-field-field-subtotal-w-markup {
+  text-align: right;
+  white-space: nowrap;
+  width: 6rem;
+}
+.wo-ml-display .views-field-operations { width: 1px; white-space: nowrap; text-align: right; }
+
+/* Small, quiet Edit dropbutton. */
+.wo-ml-display td .dropbutton-wrapper { margin: 0 !important; }
+.wo-ml-display td .button,
+.wo-ml-display .dropbutton .button {
+  margin: 0 !important;
+  padding: 0 9px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  font-size: 0.78rem !important;
+  line-height: 1.6 !important;
+  border-radius: 3px;
+}
+
+@media (max-width: 40em) {
+  .wo-ml-display table { font-size: 0.82rem; }
+  .wo-ml-display table th,
+  .wo-ml-display table td { padding: 2px 5px !important; }
+  .wo-ml-display .views-field-field-material-cost,
+  .wo-ml-display .views-field-field-subtotal-w-markup { width: 4.6rem; }
+}
+
+/* Phone: keep the materials list a real (compact, swipeable) TABLE instead of
+   the site-wide card stacking. Overrides brookstone_olivero/responsive_tables
+   for this table only; the `table.bos-stack-table` prefix wins on specificity.
+   Every other WO-page table keeps its mobile cards. */
+@media (max-width: 48em) {
+  .wo-ml-display { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .wo-ml-display table.bos-stack-table { display: table !important; width: 100% !important; }
+  .wo-ml-display table.bos-stack-table > thead { display: table-header-group !important; }
+  .wo-ml-display table.bos-stack-table > tbody { display: table-row-group !important; }
+  .wo-ml-display table.bos-stack-table > tbody > tr {
+    display: table-row !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid #ececec !important;
+    border-radius: 0 !important;
+    background: none !important;
+  }
+  .wo-ml-display table.bos-stack-table > tbody > tr > td,
+  .wo-ml-display table.bos-stack-table > tbody > tr > th {
+    display: table-cell !important;
+    width: auto !important;
+    padding: 2px 6px !important;
+    text-align: left !important;
+  }
+  /* Drop the injected per-cell labels the stacking JS added. */
+  .wo-ml-display table.bos-stack-table td[data-bos-label]::before { content: none !important; display: none !important; }
+  /* Numeric columns stay tight + right-aligned; description wraps. */
+  .wo-ml-display table.bos-stack-table .views-field-field-quantity { text-align: center !important; white-space: nowrap; }
+  .wo-ml-display table.bos-stack-table .views-field-field-material-cost,
+  .wo-ml-display table.bos-stack-table .views-field-field-subtotal-w-markup { text-align: right !important; white-space: nowrap; }
+}

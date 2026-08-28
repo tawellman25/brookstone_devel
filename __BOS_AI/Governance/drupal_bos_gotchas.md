@@ -6,6 +6,40 @@ This document captures hard-learned lessons. Most entries cite a specific commit
 
 ---
 
+## CSV header detection with `\b` word boundaries fails on `snake_case` headers
+
+**Discovered 2026-08-28** (`wo_material_list_management` import round-trip). A
+CSV/spreadsheet header detector that matches column names with `preg_match('/\b(cost|price|unit)\b/', $header)`
+**will not match `unit_cost`, `supplier_item_number`, or `material_name`** —
+because in PCRE `_` is a *word* character (`\w`), so there is no word boundary
+between `unit` and `_cost`. The match silently fails and the column falls back to
+whatever default index the code assumed.
+
+Concretely: the material-list **export** wrote header
+`identifier, material_name, supplier_item_number, quantity, unit_cost`; the
+importer's `\b` detector matched only `identifier` and `quantity`, so `unit_cost`
+defaulted to **column index 2 — the supplier_item_number column** — and every
+re-imported line's cost was read from the SKU (`429-010` → `$429,010`,
+`810080` → `$810,080`). Materials and quantities were correct; only costs were
+garbage, so the whole list's totals were wrong.
+
+**Fixes:**
+- Detect headers by **exact known name** first (canonicalize the cell —
+  `preg_replace('/[^a-z0-9]+/', ' ', strtolower($h))` — then look up in a map),
+  and only fall back to fuzzy `\b` matching when no header is recognized. Exact
+  match is collision-free and lets an export **round-trip**.
+- If you must use `\b` matching, canonicalize underscores/punctuation to spaces
+  first so the boundaries exist.
+- **Round-tripping principle:** whatever a feature *exports* must parse back
+  through its own *importer*. Test the round trip, not just a hand-made sample.
+
+The corrupted live data was repaired with a CSV-driven one-off
+(`web/scripts/fix_import_costs.php`) that reset `field_material_cost` only on lines
+whose stored cost equaled the SKU-stripped-to-digits value (unambiguously the bad
+import), leaving every other list untouched.
+
+---
+
 ## Long bulk media/import drush ops on live: slow + hang after completing
 
 Two occurrences (2026-08-02 photo import; 2026-08-03 `wo:photos:split`): a

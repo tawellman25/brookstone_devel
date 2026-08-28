@@ -7,6 +7,14 @@ Import materials onto a WO material list from a vendor invoice/order file (or a
 pasted list), matching to the BOS catalog and — optionally — **learning** the
 vendor's SKUs and prices for next time.
 
+## Action toolbar
+
+The material-list management page shows a tidy action row (`css/actions.css`,
+library `wo_material_list_management/actions`): **Add Item** (primary) ·
+**Clone Items** (secondary) · **Import / Export ▾** — a `dropbutton` grouping
+*Import Items*, *Import Template*, *Export Items* · **Delete Items** (destructive,
+`button--danger`, pushed right).
+
 ## Entry point
 
 **Import Items** button on the material-list management page → full page at
@@ -26,10 +34,30 @@ form submits. Also **Export Items** (`/…/export-items`, re-importable CSV) and
 
 ## Column detection
 
-Header auto-detected; a SiteOne order CSV works unchanged:
-`Product ID → identifier`, `Quantity`, `Your Price → unit cost` (the `$` stripped);
-`Retail Price`, `Total`, `Branch#`, `On-Hand Inventory` ignored. Also captures the
-`Description`.
+Two passes (`normalizeTable`):
+
+1. **Exact known header names** (authoritative, collision-free) — our own export +
+   template headers (`identifier`, `material_name`→ignored, `supplier_item_number`
+   →ignored, `quantity`, `unit_cost`) and common vendor headers (`product id`,
+   `your price`, `quantity`, `description`). Header cells are canonicalized
+   (punctuation/underscores → spaces) before lookup. This is what makes a
+   re-imported **export round-trip correctly**.
+2. **Fuzzy fallback** (only when no header is recognized) — `\b`-word matching on
+   the canonicalized cells for arbitrary invoice layouts.
+
+A SiteOne order CSV works unchanged: `Product ID → identifier`, `Quantity`,
+`Your Price → unit cost` (the `$` stripped); `Retail Price`, `Total`, `Branch#`,
+`On-Hand Inventory` ignored. Also captures the `Description`.
+
+> **Round-trip bug fixed 2026-08-28.** The export header uses underscores
+> (`unit_cost`, `supplier_item_number`), and the old detector used `\b` word
+> boundaries — but `_` is a word character, so `\bcost\b` never matched `unit_cost`
+> and `unit_cost` silently fell back to its **default column index 2 = the
+> supplier_item_number column**. Re-importing an export therefore read each line's
+> cost from the SKU (`429-010` → `$429,010`). The exact-header pass above is the
+> fix. See `Governance/drupal_bos_gotchas.md`. One-off repair for the affected live
+> list: `web/scripts/fix_import_costs.php` (CSV-driven, resets `field_material_cost`
+> only on lines whose cost equals the SKU-derived garbage).
 
 ## Matching (`MaterialListImportService::matchRow`)
 

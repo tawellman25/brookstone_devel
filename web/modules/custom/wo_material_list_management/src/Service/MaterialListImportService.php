@@ -81,14 +81,52 @@ final class MaterialListImportService {
     // Header detection.
     $map = ['identifier' => 0, 'quantity' => 1, 'unit_cost' => 2, 'supplier' => 3, 'description' => NULL];
     $header = array_map(fn($c) => strtolower(trim((string) $c)), $table[0]);
+    // Canonicalize each header cell (collapse punctuation/underscores to single
+    // spaces) so "unit_cost" and "supplier_item_number" are matched cleanly —
+    // \b word boundaries treat "_" as a word char and would otherwise fail.
+    $canon = array_map(fn($h) => trim((string) preg_replace('/[^a-z0-9]+/', ' ', $h)), $header);
     $looksHeader = FALSE;
-    foreach ($header as $i => $h) {
-      if (preg_match('/\b(desc|description)\b/', $h)) { $map['description'] = $i; $looksHeader = TRUE; }
-      elseif (preg_match('/\b(id|sku|item|material|part|identifier)\b/', $h)) { $map['identifier'] = $i; $looksHeader = TRUE; }
-      elseif (preg_match('/\b(qty|quantity|count)\b/', $h)) { $map['quantity'] = $i; $looksHeader = TRUE; }
-      // "Your Price" wins over "Retail Price" because it is later in the row.
-      elseif (preg_match('/\b(cost|price|each|unit)\b/', $h)) { $map['unit_cost'] = $i; $looksHeader = TRUE; }
-      elseif (preg_match('/\b(supplier|vendor)\b/', $h)) { $map['supplier'] = $i; $looksHeader = TRUE; }
+
+    // Pass 1: exact known header names (our own export + template, and common
+    // vendor headers). This is authoritative and collision-free — it is how a
+    // re-imported export round-trips correctly.
+    $known = [
+      'identifier' => 'identifier', 'material id' => 'identifier', 'id' => 'identifier',
+      'sku' => 'identifier', 'product id' => 'identifier', 'part number' => 'identifier',
+      'material name' => '_ignore', 'name' => '_ignore',
+      'supplier item number' => '_sku', 'supplier item' => '_sku', 'item number' => '_sku',
+      'quantity' => 'quantity', 'qty' => 'quantity', 'count' => 'quantity',
+      'unit cost' => 'unit_cost', 'cost' => 'unit_cost', 'your price' => 'unit_cost',
+      'price' => 'unit_cost', 'each' => 'unit_cost',
+      'supplier' => 'supplier', 'vendor' => 'supplier',
+      'description' => 'description', 'desc' => 'description',
+    ];
+    $exactHit = FALSE;
+    foreach ($canon as $i => $h) {
+      if (!isset($known[$h])) {
+        continue;
+      }
+      $exactHit = $looksHeader = TRUE;
+      $key = $known[$h];
+      // material_name is display-only; supplier_item_number is not the identifier
+      // on a round-tripped export (col 0 material ID is), so skip both.
+      if ($key === '_ignore' || $key === '_sku') {
+        continue;
+      }
+      $map[$key] = $i;
+    }
+
+    // Pass 2 (fallback): only for arbitrary files with no recognized header —
+    // best-effort fuzzy match on the canonicalized cells.
+    if (!$exactHit) {
+      foreach ($canon as $i => $h) {
+        if (preg_match('/\b(desc|description)\b/', $h)) { $map['description'] = $i; $looksHeader = TRUE; }
+        elseif (preg_match('/\b(id|sku|item|material|part|identifier)\b/', $h)) { $map['identifier'] = $i; $looksHeader = TRUE; }
+        elseif (preg_match('/\b(qty|quantity|count)\b/', $h)) { $map['quantity'] = $i; $looksHeader = TRUE; }
+        // "Your Price" wins over "Retail Price" because it is later in the row.
+        elseif (preg_match('/\b(cost|price|each|unit)\b/', $h)) { $map['unit_cost'] = $i; $looksHeader = TRUE; }
+        elseif (preg_match('/\b(supplier|vendor)\b/', $h)) { $map['supplier'] = $i; $looksHeader = TRUE; }
+      }
     }
     $rows = [];
     foreach ($table as $n => $cells) {

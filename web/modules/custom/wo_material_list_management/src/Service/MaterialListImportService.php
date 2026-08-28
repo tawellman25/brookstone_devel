@@ -165,30 +165,52 @@ final class MaterialListImportService {
   }
 
   /**
-   * Candidate materials whose title overlaps the given text (tokens ≥ 4 chars),
-   * ranked by how many tokens hit. Up to 8.
+   * Parse a nominal size to a decimal so "1-1/2 in." (1.5) is distinct from
+   * "1/2 in." (0.5). Handles mixed numbers, fractions, and whole inches.
+   */
+  private function extractSize(string $text): ?float {
+    // Mixed number: 1-1/2, 2 - 3/4.
+    if (preg_match('/(\d+)\s*-\s*(\d+)\s*\/\s*(\d+)/', $text, $m)) {
+      return (float) $m[1] + (float) $m[2] / max(1, (float) $m[3]);
+    }
+    // Fraction: 1/2, 3/4.
+    if (preg_match('/(?<!\d)(\d+)\s*\/\s*(\d+)/', $text, $m)) {
+      return (float) $m[1] / max(1, (float) $m[2]);
+    }
+    // Whole inches: 1 in., 2", 3 inch.
+    if (preg_match('/(?<!\/)(?<!\d)(\d+)\s*(?:in\b|inch|")/i', $text, $m)) {
+      return (float) $m[1];
+    }
+    return NULL;
+  }
+
+  /**
+   * Candidate materials whose title overlaps the given text (tokens ≥ 3 chars),
+   * ranked by token overlap and — when a nominal size is present — filtered to
+   * matching-size items so 1-1/2 in. never resolves to 1/2 in. Up to 8.
    */
   private function fuzzyCandidates(string $text): array {
     $text = trim($text);
     if ($text === '') {
       return [];
     }
+    // Word tokens: ≥ 3 chars, letters (drop pure numbers — size is handled below).
     $tokens = array_values(array_unique(array_filter(
       preg_split('/[^a-z0-9]+/i', strtolower($text)) ?: [],
-      fn($w) => strlen($w) >= 4
+      fn($w) => strlen($w) >= 3 && !ctype_digit($w)
     )));
+    $desc_size = $this->extractSize($text);
     $s = $this->etm->getStorage('material');
     if (!$tokens) {
-      $ids = $s->getQuery()->accessCheck(FALSE)->condition('title', '%' . $text . '%', 'LIKE')->range(0, 12)->execute();
+      $ids = $s->getQuery()->accessCheck(FALSE)->condition('title', '%' . $text . '%', 'LIKE')->range(0, 25)->execute();
     }
     else {
-      $tokens = array_slice($tokens, 0, 5);
       $q = $s->getQuery()->accessCheck(FALSE);
       $or = $q->orConditionGroup();
-      foreach ($tokens as $t) {
+      foreach (array_slice($tokens, 0, 6) as $t) {
         $or->condition('title', '%' . $t . '%', 'LIKE');
       }
-      $ids = $q->condition($or)->range(0, 25)->execute();
+      $ids = $q->condition($or)->range(0, 40)->execute();
     }
     if (!$ids) {
       return [];
@@ -202,7 +224,14 @@ final class MaterialListImportService {
           $score++;
         }
       }
-      $scored[(int) $m->id()] = ['label' => $m->label(), 'score' => $score];
+      $scored[(int) $m->id()] = ['label' => $m->label(), 'score' => $score, 'size' => $this->extractSize($title)];
+    }
+    // If the description names a size, keep only same-size candidates (when any).
+    if ($desc_size !== NULL) {
+      $same = array_filter($scored, fn($d) => $d['size'] !== NULL && abs($d['size'] - $desc_size) < 0.01);
+      if ($same) {
+        $scored = $same;
+      }
     }
     uasort($scored, fn($a, $b) => $b['score'] <=> $a['score']);
     $out = [];

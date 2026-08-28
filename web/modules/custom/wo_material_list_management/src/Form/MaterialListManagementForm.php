@@ -149,20 +149,15 @@ class MaterialListManagementForm extends FormBase {
       '#weight' => 2,
     ];
 
-    // Import Items link opens modal (upload/paste → preview → import).
+    // Import Items → full page (upload/paste → preview → import).
     $form['actions']['import_items'] = [
       '#type' => 'link',
       '#title' => $this->t('Import Items'),
       '#url' => Url::fromRoute(
-        'wo_material_list_management.import_items_modal',
+        'wo_material_list_management.import_items',
         ['wo_material_list' => $wo_material_list->id()]
       ),
-      '#attributes' => [
-        'class' => ['use-ajax', 'button', 'button--primary'],
-        'data-dialog-type' => 'modal',
-        'data-dialog-options' => Json::encode(['width' => 900]),
-      ],
-      '#attached' => ['library' => ['core/drupal.dialog.ajax']],
+      '#attributes' => ['class' => ['button', 'button--primary']],
       '#weight' => 3,
     ];
 

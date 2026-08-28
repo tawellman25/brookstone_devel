@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Drupal\wo_material_list_management\Form;
 
-use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\CloseModalDialogCommand;
-use Drupal\Core\Ajax\RedirectCommand;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -33,9 +30,6 @@ final class ImportItemsModalForm extends FormBase {
     if ($wo_material_list) {
       $form_state->set('list_id', (int) $wo_material_list->id());
     }
-    $form['#prefix'] = '<div id="wo-import-wrapper">';
-    $form['#suffix'] = '</div>';
-    $form['#attached']['library'][] = 'core/drupal.dialog.ajax';
 
     $step = $form_state->get('step') ?? 'input';
 
@@ -81,7 +75,12 @@ final class ImportItemsModalForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Preview'),
       '#submit' => ['::previewSubmit'],
-      '#ajax' => ['callback' => '::ajaxRebuild', 'wrapper' => 'wo-import-wrapper'],
+    ];
+    $form['actions']['cancel'] = [
+      '#type' => 'link',
+      '#title' => $this->t('Cancel'),
+      '#url' => Url::fromUri('internal:/wo_material_list/' . ((int) $form_state->get('list_id'))),
+      '#attributes' => ['class' => ['button']],
     ];
     return $form;
   }
@@ -139,14 +138,12 @@ final class ImportItemsModalForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Import items'),
       '#button_type' => 'primary',
-      '#ajax' => ['callback' => '::ajaxImport', 'wrapper' => 'wo-import-wrapper'],
     ];
     $form['actions']['restart'] = [
       '#type' => 'submit',
       '#value' => $this->t('Start over'),
       '#submit' => ['::restartSubmit'],
       '#limit_validation_errors' => [],
-      '#ajax' => ['callback' => '::ajaxRebuild', 'wrapper' => 'wo-import-wrapper'],
     ];
     return $form;
   }
@@ -181,14 +178,10 @@ final class ImportItemsModalForm extends FormBase {
     $form_state->setRebuild(TRUE);
   }
 
-  public function ajaxRebuild(array &$form, FormStateInterface $form_state): array {
-    return $form;
-  }
-
   /**
-   * Create/merge the confirmed rows, then close + reload the list page.
+   * Create/merge the confirmed rows, learn supplier links, back to the list.
    */
-  public function ajaxImport(array &$form, FormStateInterface $form_state): AjaxResponse {
+  public function submitForm(array &$form, FormStateInterface $form_state): void {
     $listId = (int) $form_state->get('list_id');
     $submitted = $form_state->getValue('rows') ?? [];
     $rows = [];
@@ -213,15 +206,7 @@ final class ImportItemsModalForm extends FormBase {
         '@lc' => $result['links_created'], '@lu' => $result['links_updated'],
       ]));
     }
-
-    $response = new AjaxResponse();
-    $response->addCommand(new CloseModalDialogCommand());
-    $response->addCommand(new RedirectCommand(Url::fromUri('internal:/wo_material_list/' . $listId)->toString()));
-    return $response;
-  }
-
-  public function submitForm(array &$form, FormStateInterface $form_state): void {
-    // All work happens in the AJAX callbacks above.
+    $form_state->setRedirectUrl(Url::fromUri('internal:/wo_material_list/' . $listId));
   }
 
 }

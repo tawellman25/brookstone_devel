@@ -63,6 +63,19 @@ final class ImportItemsModalForm extends FormBase {
       '#rows' => 6,
       '#placeholder' => "12345, 4\nSKU-778, 2, 19.50",
     ];
+    $form['supplier'] = [
+      '#type' => 'entity_autocomplete',
+      '#target_type' => 'supplier',
+      '#selection_handler' => 'default:supplier',
+      '#title' => $this->t('Supplier (vendor this file is from)'),
+      '#description' => $this->t('Optional — e.g. SiteOne. Lets BOS remember item numbers and update prices for that supplier.'),
+    ];
+    $form['learn'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Remember new item numbers &amp; update prices for this supplier'),
+      '#default_value' => TRUE,
+      '#states' => ['visible' => [':input[name="supplier"]' => ['filled' => TRUE]]],
+    ];
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['preview'] = [
       '#type' => 'submit',
@@ -84,7 +97,15 @@ final class ImportItemsModalForm extends FormBase {
         . "Adjust below, then import. Unmatched rows: pick a material or leave unchecked to skip.</p>",
     ];
 
-    $form['rows'] = ['#type' => 'table', '#header' => ['Include', 'From file', 'Status', 'Material', 'Qty', 'Unit cost']];
+    $sid = $form_state->get('supplier_id');
+    if ($sid && ($sup = \Drupal::entityTypeManager()->getStorage('supplier')->load($sid))) {
+      $form['supplier_note'] = [
+        '#markup' => '<p><strong>Supplier:</strong> ' . htmlspecialchars($sup->label())
+          . ($form_state->get('learn') ? ' — new item numbers &amp; prices will be remembered for this supplier.' : '') . '</p>',
+      ];
+    }
+
+    $form['rows'] = ['#type' => 'table', '#header' => ['Include', 'Item #', 'Description', 'Status', 'Material', 'Qty', 'Unit cost']];
     foreach ($rows as $i => $r) {
       $status = $r['status'] ?? 'unmatched';
       $form['rows'][$i]['include'] = [
@@ -92,6 +113,7 @@ final class ImportItemsModalForm extends FormBase {
         '#default_value' => ($status !== 'unmatched'),
       ];
       $form['rows'][$i]['identifier'] = ['#markup' => '<code>' . htmlspecialchars($r['identifier']) . '</code>'];
+      $form['rows'][$i]['description'] = ['#markup' => '<span class="wo-import-desc">' . htmlspecialchars($r['description'] ?? '') . '</span>'];
       $form['rows'][$i]['status'] = ['#markup' => '<span class="wo-import-status wo-import-status--' . $status . '">' . ucfirst($status) . '</span>'];
       $default_material = !empty($r['material_id'])
         ? \Drupal::entityTypeManager()->getStorage('material')->load($r['material_id'])
@@ -146,6 +168,8 @@ final class ImportItemsModalForm extends FormBase {
       $form_state->setRebuild(TRUE);
       return;
     }
+    $form_state->set('supplier_id', $form_state->getValue('supplier') ? (int) $form_state->getValue('supplier') : NULL);
+    $form_state->set('learn', (bool) $form_state->getValue('learn'));
     $form_state->set('rows', $this->importer->matchRows($raw));
     $form_state->set('step', 'preview');
     $form_state->setRebuild(TRUE);
@@ -178,10 +202,17 @@ final class ImportItemsModalForm extends FormBase {
         'supplier_item_number' => $r['supplier_item_number'] ?? '',
       ];
     }
-    $result = $this->importer->import($listId, $rows);
+    $supplierId = $form_state->get('supplier_id');
+    $learn = (bool) $form_state->get('learn');
+    $result = $this->importer->import($listId, $rows, $supplierId, $learn);
     $this->messenger()->addStatus($this->t('Imported @c new, merged @m, skipped @s.', [
       '@c' => $result['created'], '@m' => $result['merged'], '@s' => $result['skipped'],
     ]));
+    if (!empty($result['links_created']) || !empty($result['links_updated'])) {
+      $this->messenger()->addStatus($this->t('Catalog updated: @lc item number(s) remembered, @lu price(s) updated for the supplier.', [
+        '@lc' => $result['links_created'], '@lu' => $result['links_updated'],
+      ]));
+    }
 
     $response = new AjaxResponse();
     $response->addCommand(new CloseModalDialogCommand());

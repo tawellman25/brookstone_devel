@@ -79,12 +79,14 @@ final class MaterialListImportService {
     unset($first);
 
     // Header detection.
-    $map = ['identifier' => 0, 'quantity' => 1, 'unit_cost' => 2, 'supplier' => 3];
+    $map = ['identifier' => 0, 'quantity' => 1, 'unit_cost' => 2, 'supplier' => 3, 'description' => NULL];
     $header = array_map(fn($c) => strtolower(trim((string) $c)), $table[0]);
     $looksHeader = FALSE;
     foreach ($header as $i => $h) {
-      if (preg_match('/\b(id|sku|item|material|part|identifier)\b/', $h)) { $map['identifier'] = $i; $looksHeader = TRUE; }
+      if (preg_match('/\b(desc|description)\b/', $h)) { $map['description'] = $i; $looksHeader = TRUE; }
+      elseif (preg_match('/\b(id|sku|item|material|part|identifier)\b/', $h)) { $map['identifier'] = $i; $looksHeader = TRUE; }
       elseif (preg_match('/\b(qty|quantity|count)\b/', $h)) { $map['quantity'] = $i; $looksHeader = TRUE; }
+      // "Your Price" wins over "Retail Price" because it is later in the row.
       elseif (preg_match('/\b(cost|price|each|unit)\b/', $h)) { $map['unit_cost'] = $i; $looksHeader = TRUE; }
       elseif (preg_match('/\b(supplier|vendor)\b/', $h)) { $map['supplier'] = $i; $looksHeader = TRUE; }
     }
@@ -99,6 +101,7 @@ final class MaterialListImportService {
       }
       $rows[] = [
         'identifier' => $identifier,
+        'description' => $map['description'] !== NULL ? trim((string) ($cells[$map['description']] ?? '')) : '',
         'quantity' => trim((string) ($cells[$map['quantity']] ?? '')),
         'unit_cost' => preg_replace('/[^0-9.]/', '', (string) ($cells[$map['unit_cost']] ?? '')),
         'supplier' => trim((string) ($cells[$map['supplier']] ?? '')),
@@ -114,11 +117,8 @@ final class MaterialListImportService {
    *   status (matched|ambiguous|unmatched), material_id, material_label,
    *   candidates[id=>label], supplier_id, supplier_item_number.
    */
-  public function matchIdentifier(string $identifier): array {
+  public function matchRow(string $identifier, string $description = ''): array {
     $id = trim($identifier);
-    if ($id === '') {
-      return ['status' => 'unmatched'];
-    }
     $matStorage = $this->etm->getStorage('material');
 
     // 1. Material entity ID.
@@ -143,29 +143,81 @@ final class MaterialListImportService {
       }
     }
 
-    // 3. Fuzzy title contains.
-    $q = $matStorage->getQuery()->accessCheck(FALSE)
-      ->condition('title', '%' . $id . '%', 'LIKE')->range(0, 10)->execute();
-    if ($q) {
-      $cands = [];
-      foreach ($matStorage->loadMultiple($q) as $m) {
-        $cands[(int) $m->id()] = $m->label();
+    // 3. Fuzzy — by description first (product name), then the identifier.
+    foreach ([$description, $id] as $needle) {
+      $cands = $this->fuzzyCandidates((string) $needle);
+      if ($cands) {
+        return [
+          'status' => 'ambiguous', 'candidates' => $cands,
+          'material_id' => (int) array_key_first($cands), 'material_label' => reset($cands),
+        ];
       }
-      return [
-        'status' => 'ambiguous', 'candidates' => $cands,
-        'material_id' => (int) array_key_first($cands), 'material_label' => reset($cands),
-      ];
     }
 
     return ['status' => 'unmatched'];
   }
 
   /**
-   * Match a whole set of parsed rows.
+   * BC shim — match by identifier only.
+   */
+  public function matchIdentifier(string $identifier): array {
+    return $this->matchRow($identifier, '');
+  }
+
+  /**
+   * Candidate materials whose title overlaps the given text (tokens ≥ 4 chars),
+   * ranked by how many tokens hit. Up to 8.
+   */
+  private function fuzzyCandidates(string $text): array {
+    $text = trim($text);
+    if ($text === '') {
+      return [];
+    }
+    $tokens = array_values(array_unique(array_filter(
+      preg_split('/[^a-z0-9]+/i', strtolower($text)) ?: [],
+      fn($w) => strlen($w) >= 4
+    )));
+    $s = $this->etm->getStorage('material');
+    if (!$tokens) {
+      $ids = $s->getQuery()->accessCheck(FALSE)->condition('title', '%' . $text . '%', 'LIKE')->range(0, 12)->execute();
+    }
+    else {
+      $tokens = array_slice($tokens, 0, 5);
+      $q = $s->getQuery()->accessCheck(FALSE);
+      $or = $q->orConditionGroup();
+      foreach ($tokens as $t) {
+        $or->condition('title', '%' . $t . '%', 'LIKE');
+      }
+      $ids = $q->condition($or)->range(0, 25)->execute();
+    }
+    if (!$ids) {
+      return [];
+    }
+    $scored = [];
+    foreach ($s->loadMultiple($ids) as $m) {
+      $title = strtolower((string) $m->label());
+      $score = 0;
+      foreach ($tokens as $t) {
+        if (str_contains($title, $t)) {
+          $score++;
+        }
+      }
+      $scored[(int) $m->id()] = ['label' => $m->label(), 'score' => $score];
+    }
+    uasort($scored, fn($a, $b) => $b['score'] <=> $a['score']);
+    $out = [];
+    foreach (array_slice($scored, 0, 8, TRUE) as $mid => $d) {
+      $out[$mid] = $d['label'];
+    }
+    return $out;
+  }
+
+  /**
+   * Match a whole set of parsed rows (uses the identifier + description).
    */
   public function matchRows(array $rows): array {
     foreach ($rows as &$r) {
-      $r += $this->matchIdentifier($r['identifier']);
+      $r += $this->matchRow($r['identifier'], $r['description'] ?? '');
     }
     return $rows;
   }
@@ -180,9 +232,10 @@ final class MaterialListImportService {
    * @return array
    *   created, merged, skipped counts.
    */
-  public function import(int $listId, array $rows): array {
+  public function import(int $listId, array $rows, ?int $supplierId = NULL, bool $learn = FALSE): array {
     $storage = $this->etm->getStorage('wo_material_list_item');
     $created = $merged = $skipped = 0;
+    $links_created = $links_updated = 0;
 
     foreach ($rows as $r) {
       $mid = (int) ($r['material_id'] ?? 0);
@@ -195,6 +248,7 @@ final class MaterialListImportService {
         $qty = 1;
       }
       $cost = (isset($r['unit_cost']) && $r['unit_cost'] !== '' && is_numeric($r['unit_cost'])) ? $r['unit_cost'] : NULL;
+      $sku = trim((string) ($r['supplier_item_number'] ?? ''));
 
       // Merge into an existing line for the same material on this list.
       $existing = $storage->getQuery()->accessCheck(FALSE)
@@ -207,30 +261,88 @@ final class MaterialListImportService {
         // Keep the existing cost snapshot; only merging quantity.
         $item->save();
         $merged++;
-        continue;
+      }
+      else {
+        $values = [
+          'type' => 'items',
+          'field_list_id' => ['target_id' => $listId],
+          'field_parts_used' => ['target_id' => $mid],
+          'field_quantity' => $qty,
+        ];
+        // File cost if provided; else empty → presave fills from material.field_cost_integer.
+        if ($cost !== NULL) {
+          $values['field_material_cost'] = $cost;
+        }
+        if ($supplierId) {
+          $values['field_purchased_supplier'] = ['target_id' => $supplierId];
+        }
+        elseif (!empty($r['supplier_id'])) {
+          $values['field_purchased_supplier'] = ['target_id' => $r['supplier_id']];
+        }
+        if ($sku !== '') {
+          $values['field_supplier_item_number'] = $sku;
+        }
+        $storage->create($values)->save();
+        $created++;
       }
 
-      $values = [
-        'type' => 'items',
-        'field_list_id' => ['target_id' => $listId],
-        'field_parts_used' => ['target_id' => $mid],
-        'field_quantity' => $qty,
-      ];
-      // File cost if provided; else leave empty → presave fills from material.field_cost_integer.
-      if ($cost !== NULL) {
-        $values['field_material_cost'] = $cost;
+      // Learn: remember the SKU + update the supplier's unit cost on the
+      // material_suppliers link (find-or-create; the module normalizes the SKU
+      // and blocks duplicate material+supplier links).
+      if ($learn && $supplierId && $sku !== '') {
+        $res = $this->upsertSupplierLink($mid, $supplierId, $sku, $cost);
+        if ($res === 'created') {
+          $links_created++;
+        }
+        elseif ($res === 'updated') {
+          $links_updated++;
+        }
       }
-      if (!empty($r['supplier_id'])) {
-        $values['field_purchased_supplier'] = ['target_id' => $r['supplier_id']];
-      }
-      if (!empty($r['supplier_item_number'])) {
-        $values['field_supplier_item_number'] = $r['supplier_item_number'];
-      }
-      $storage->create($values)->save();
-      $created++;
     }
 
-    return ['created' => $created, 'merged' => $merged, 'skipped' => $skipped];
+    return [
+      'created' => $created, 'merged' => $merged, 'skipped' => $skipped,
+      'links_created' => $links_created, 'links_updated' => $links_updated,
+    ];
+  }
+
+  /**
+   * Find-or-create the material↔supplier link; refresh its SKU + unit cost.
+   */
+  private function upsertSupplierLink(int $materialId, int $supplierId, string $sku, ?string $cost): string {
+    $storage = $this->etm->getStorage('material_suppliers');
+    $ids = $storage->getQuery()->accessCheck(FALSE)
+      ->condition('field_material', $materialId)
+      ->condition('field_supplier', $supplierId)
+      ->range(0, 1)->execute();
+    if ($ids) {
+      $link = $storage->load(reset($ids));
+      $changed = FALSE;
+      if ($sku !== '' && (string) $link->get('field_supplier_item_number')->value !== $sku) {
+        $link->set('field_supplier_item_number', $sku);
+        $changed = TRUE;
+      }
+      if ($cost !== NULL && (string) $link->get('field_supplier_unit_cost')->value !== (string) $cost) {
+        $link->set('field_supplier_unit_cost', $cost);
+        $changed = TRUE;
+      }
+      if ($changed) {
+        $link->save();
+        return 'updated';
+      }
+      return 'unchanged';
+    }
+    $values = [
+      'type' => 'supplier',
+      'field_material' => ['target_id' => $materialId],
+      'field_supplier' => ['target_id' => $supplierId],
+      'field_supplier_item_number' => $sku,
+    ];
+    if ($cost !== NULL) {
+      $values['field_supplier_unit_cost'] = $cost;
+    }
+    $storage->create($values)->save();
+    return 'created';
   }
 
 }

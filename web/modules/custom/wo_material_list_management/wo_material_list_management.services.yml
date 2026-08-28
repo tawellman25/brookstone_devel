@@ -8,3 +8,14 @@ services:
     class: Drupal\wo_material_list_management\Service\MaterialListImportService
     public: true
     arguments: ['@entity_type.manager', '@file_system']
+
+  logger.channel.wo_material_list_management:
+    parent: logger.channel_base
+    arguments: ['wo_material_list_management']
+
+  # Invoice-photo → rows via a vision model (provider-agnostic; uses whichever
+  # provider is set for the ai chat_with_image_vision operation — gpt-4o or Claude).
+  wo_material_list_management.invoice_vision:
+    class: Drupal\wo_material_list_management\Service\InvoiceVisionExtractor
+    public: true
+    arguments: ['@ai.provider', '@config.factory', '@entity_type.manager', '@logger.channel.wo_material_list_management']

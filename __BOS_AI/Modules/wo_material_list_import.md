@@ -23,9 +23,34 @@ A full page (not a modal) — the preview table is wide and the multi-step is pl
 form submits. Also **Export Items** (`/…/export-items`, re-importable CSV) and
 **Import Template** (`/wo_material_list/import-template`).
 
+## Invoice-photo import (AI vision)
+
+A third intake alongside file/paste: **snap or upload a photo of a supplier
+invoice/ticket** (JPG/PNG) → a vision model reads the line items → they drop into
+the same preview → match → confirm → import → learn flow.
+
+- Service: `InvoiceVisionExtractor` (`wo_material_list_management.invoice_vision`).
+  Sends the image to the `ai` module's `chat_with_image_vision` operation and
+  returns rows (`identifier`, `description`, `quantity`, `unit_cost`, `uom`) plus
+  `vendor`, `document_type`, and `warnings`.
+- **Provider = Claude** (`ai_provider_anthropic`, model **claude-sonnet-4-5**),
+  set as the `chat_with_image_vision` default in `ai.settings`. The extractor is
+  **provider-agnostic** — swapping to gpt-4o is config only. API key via the
+  `anthropic_api_key` key entity (env provider → `ANTHROPIC_API_KEY`, kept out of
+  git via `config_ignore`; live value in `settings.php` `putenv`).
+- **Graceful gate:** the photo option only appears when `isAvailable()` is true
+  (a vision provider is set AND its key resolves) — no dead button otherwise.
+- **UOM capture** reads the unit-of-measure column a CSV often lacks, so the
+  preview can **auto-flag case-priced lines** (the trap that broke a SiteOne
+  import). Return/credit tickets (negative qty) are flagged too.
+- **Preview is mandatory** — photos are messy (rotation, glare, a wrong sign or a
+  mis-read digit on a return ticket). The office confirms every row before import.
+- Setup (per env, idempotent, no cim): `web/scripts/setup_anthropic_vision.php`.
+
 ## Flow
 
-1. **Upload** `.csv` / `.xlsx` or **paste** rows; optionally pick a **Supplier**
+1. **Upload** `.csv` / `.xlsx`, **paste** rows, or **photograph an invoice**;
+   optionally pick a **Supplier**
    (e.g. SiteOne) + "remember item numbers & update prices".
 2. **Preview** — each row: Item # · **Description** · match status · a material
    autocomplete (pre-filled with the best guess) · qty · unit cost. Map or skip

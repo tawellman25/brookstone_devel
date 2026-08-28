@@ -9,27 +9,37 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\eck\Entity\EckEntity;
 use Drupal\wo_material_list_management\Service\MaterialListImportService;
+use Drupal\wo_material_list_management\Service\InvoiceVisionExtractor;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Two-step modal: upload/paste a material list → preview & confirm → import.
+ * Two-step modal: upload/paste/photograph a material list → preview → import.
  */
 final class ImportItemsModalForm extends FormBase {
 
   /**
-   * The importer. Declared (not constructor-promoted) so DependencySerialization
-   * Trait can re-inject it when the cacheable form is serialized (managed_file).
+   * Declared (not constructor-promoted) so DependencySerializationTrait can
+   * re-inject when the cacheable form is serialized (managed_file).
    *
    * @var \Drupal\wo_material_list_management\Service\MaterialListImportService
    */
   protected $importer;
 
-  public function __construct(MaterialListImportService $importer) {
+  /**
+   * @var \Drupal\wo_material_list_management\Service\InvoiceVisionExtractor
+   */
+  protected $vision;
+
+  public function __construct(MaterialListImportService $importer, InvoiceVisionExtractor $vision) {
     $this->importer = $importer;
+    $this->vision = $vision;
   }
 
   public static function create(ContainerInterface $container): static {
-    return new static($container->get('wo_material_list_management.import'));
+    return new static(
+      $container->get('wo_material_list_management.import'),
+      $container->get('wo_material_list_management.invoice_vision'),
+    );
   }
 
   public function getFormId(): string {
@@ -67,6 +77,16 @@ final class ImportItemsModalForm extends FormBase {
       '#rows' => 6,
       '#placeholder' => "12345, 4\nSKU-778, 2, 19.50",
     ];
+    // Photo intake — only when a vision provider (Claude/gpt-4o) is configured.
+    if ($this->vision->isAvailable()) {
+      $form['photo'] = [
+        '#type' => 'managed_file',
+        '#title' => $this->t('…or snap a photo of a supplier invoice'),
+        '#description' => $this->t('Upload/take a photo of a supplier invoice or ticket (JPG/PNG). AI reads the line items — item #, description, quantity, price — and you confirm every row in the next step. Photos can be angled or a little blurry.'),
+        '#upload_location' => 'temporary://wo_material_import',
+        '#upload_validators' => ['file_validate_extensions' => ['jpg jpeg png webp']],
+      ];
+    }
     $form['supplier'] = [
       '#type' => 'entity_autocomplete',
       '#target_type' => 'supplier',
@@ -105,6 +125,22 @@ final class ImportItemsModalForm extends FormBase {
       '#markup' => "<p><strong>" . count($rows) . "</strong> rows — {$matched} matched, {$ambiguous} to confirm, {$unmatched} unmatched. "
         . "Adjust below, then import. Unmatched rows: pick a material or leave unchecked to skip.</p>",
     ];
+
+    // Vision-extraction context: vendor guess + case/return warnings.
+    $vendor = $form_state->get('extract_vendor');
+    if ($vendor) {
+      $form['extract_vendor'] = [
+        '#markup' => '<p>Read from a <strong>photo</strong> — vendor: <strong>' . htmlspecialchars($vendor)
+          . '</strong>. Double-check the item numbers, quantities, and prices below before importing.</p>',
+      ];
+    }
+    $warnings = $form_state->get('extract_warnings') ?? [];
+    if ($warnings) {
+      $form['extract_warnings'] = [
+        '#markup' => '<div class="messages messages--warning"><ul><li>'
+          . implode('</li><li>', array_map('htmlspecialchars', $warnings)) . '</li></ul></div>',
+      ];
+    }
 
     $sid = $form_state->get('supplier_id');
     if ($sid && ($sup = \Drupal::entityTypeManager()->getStorage('supplier')->load($sid))) {
@@ -163,8 +199,27 @@ final class ImportItemsModalForm extends FormBase {
    */
   public function previewSubmit(array &$form, FormStateInterface $form_state): void {
     $raw = [];
+    $form_state->set('extract_warnings', NULL);
+    $form_state->set('extract_vendor', NULL);
+    $pids = $form_state->getValue('photo');
     $fids = $form_state->getValue('file');
-    if (!empty($fids[0]) && ($file = \Drupal::entityTypeManager()->getStorage('file')->load($fids[0]))) {
+    if (!empty($pids[0]) && ($img = \Drupal::entityTypeManager()->getStorage('file')->load($pids[0]))) {
+      // Photo → vision extraction → rows (identifier/description/quantity/unit_cost).
+      $path = \Drupal::service('file_system')->realpath($img->getFileUri());
+      $binary = $path ? (string) file_get_contents($path) : '';
+      try {
+        $ex = $this->vision->extract($binary, (string) $img->getMimeType());
+      }
+      catch (\Throwable $e) {
+        $this->messenger()->addError($this->t('Could not read the invoice photo: @m', ['@m' => $e->getMessage()]));
+        $form_state->setRebuild(TRUE);
+        return;
+      }
+      $raw = $ex['rows'];
+      $form_state->set('extract_vendor', $ex['vendor']);
+      $form_state->set('extract_warnings', $ex['warnings']);
+    }
+    elseif (!empty($fids[0]) && ($file = \Drupal::entityTypeManager()->getStorage('file')->load($fids[0]))) {
       $raw = $this->importer->parseFile($file);
     }
     elseif (trim((string) $form_state->getValue('paste')) !== '') {

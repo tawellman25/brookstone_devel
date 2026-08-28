@@ -89,8 +89,10 @@ final class CustomerProvisioningService {
       $contact->save();
 
       // 5. Client user (role: client). No welcome email; portal access is
-      //    governed by the profile, not this account being active.
-      $username = $this->uniqueUsername($email !== '' ? $email : trim("$first $last"));
+      //    governed by the profile, not this account being active. BOS convention:
+      //    the username is the person's real name ("First Last"), not the email.
+      $fullName = trim("$first $last");
+      $username = $this->uniqueUsername($fullName !== '' ? $fullName : ($email !== '' ? $email : 'Customer'));
       $user = $this->etm->getStorage('user')->create([
         'name' => $username,
         'mail' => $email !== '' ? $email : NULL,

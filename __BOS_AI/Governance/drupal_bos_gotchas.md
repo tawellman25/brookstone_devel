@@ -1083,6 +1083,23 @@ with the parent's non-readonly declaration.
 (Same caution applies to `ControllerBase` subclasses.) Ref: `bos_handbook_ack`
 `HandbookAcknowledgmentForm` (2026-08-26).
 
+**And do NOT constructor-PROMOTE injected services in a Form at all** (even with a
+different name). A **cacheable** form — any form with `#ajax`, a `managed_file`, or
+explicit `setCache` — is serialized into the form cache and unserialized on the
+next submit. `DependencySerializationTrait::__wakeup()` re-injects services, **but
+only for DECLARED properties, not constructor-promoted ones** → the promoted
+property comes back **uninitialized**: *"Typed property …\$x must not be accessed
+before initialization"* in a submit/AJAX handler (it builds fine on the initial
+GET, so it looks like it works). Declare the property the old way and assign it in
+the constructor (the core-form pattern):
+```php
+protected $importer;                 // NOT: public function __construct(private X $importer)
+public function __construct(X $importer) { $this->importer = $importer; }
+```
+Controllers are exempt (not serialized). Verify with a `serialize()`/`unserialize()`
+round-trip + `ReflectionProperty::isInitialized()`. Ref: ImportItemsModalForm /
+CreateCustomerForm / HandbookAcknowledgmentForm (2026-08-28).
+
 ## Two Google Maps keys: geofield_map (client-side, referrer) vs geocoder module (server-side, IP)
 
 **Symptom.** Server-side geocoding (`\Drupal::service('geocoder')->geocode(...)`)

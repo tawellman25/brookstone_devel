@@ -320,3 +320,34 @@ silently reconciled.
 - **P2.3 / carried:** eligibility "or a linked scheduling date in-window"
   augmentation (created-in-window only today); **Gate 6** — prove the
   abstraction with a second bundle (sprinkler repair / spring start-up).
+
+## New-customer conversion — guided "Create Customer & Property" (2026-08-27, LIVE)
+
+When a public signup doesn't match an existing property (a new customer), the
+request lands **Needs Review** with **no `field_property`**. The office queue then
+shows a **"Create Customer & Property"** operation (`hook_entity_operation`, shown
+only when not converted AND no property).
+
+- **Route:** `bos_service_request.create_customer` →
+  `/admin/office/service-requests/{service_request}/create-customer`
+  (`administer service requests`). Registered before the generic `{op}` catch-all.
+- **Form** `CreateCustomerForm` — prefilled from the request (name split into
+  first/last, address, ZIP, phone, email). A **"Look up on Google"** button
+  geocodes the address (server-side `geocoder`) and shows a static-map confirm.
+- **`CustomerProvisioningService::provision()`** creates, in one DB transaction:
+  property → phone_number (contacts bundle) → contact → **client user** (`client`
+  role; **username = person's real name "First Last"**, not email) →
+  **customer_profile** (`field_client_type` required, default 1 = Person/Couple;
+  `field_primary_contact_ref` set so the `customer` module doesn't auto-make a
+  blank contact) → **ownership_record** (owner ↔ property). Then links the contact
+  onto the property and sets `service_request.field_property` so the existing
+  **Approve & Create WO** finishes.
+- **Geocoding keys:** the property map + address search use the client-side
+  `geofield_map` referrer key; the guided form's server-side lookup uses the
+  `geocoder.geocoder_provider.googlemaps` **server key** (IP-locked to live,
+  Geocoding API, live active config only + `config_ignore`). See the two-keys
+  gotcha in `Governance/drupal_bos_gotchas.md`.
+
+Also this pass: winterize signup forms capture **First + Last name** (matcher
+still keys on surname) and reword the "since last year" note to "Anything we
+should know about your sprinkler system?".

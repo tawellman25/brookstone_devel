@@ -1083,6 +1083,31 @@ with the parent's non-readonly declaration.
 (Same caution applies to `ControllerBase` subclasses.) Ref: `bos_handbook_ack`
 `HandbookAcknowledgmentForm` (2026-08-26).
 
+## Two Google Maps keys: geofield_map (client-side, referrer) vs geocoder module (server-side, IP)
+
+**Symptom.** Server-side geocoding (`\Drupal::service('geocoder')->geocode(...)`)
+fails: *"API keys with referer restrictions cannot be used with this API."* — even
+though the Google maps render fine everywhere.
+
+**Cause.** BOS has **two different geocoding paths** needing **two different keys**:
+- **`geofield_map`** (the property/scheduling map widgets, incl. the address-search
+  box) geocodes **client-side in the browser** → uses the **`geofield_map.settings`
+  `gmap_api_key`**, which must be a **Website / HTTP-referrer**-restricted key
+  (`AIzaSy…DUXsAY`). This one works for all the in-page maps.
+- The **`geocoder` module** (`geocoder.geocoder_provider.googlemaps` apiKey) geocodes
+  **server-side (PHP)** — Google **refuses a referrer key** here. It needs a key with
+  the **Geocoding API enabled** and **IP-restricted** (to the server's *outbound* IP,
+  `68.66.226.93`) or unrestricted.
+
+**Fix / setup.** Keep the referrer key in `geofield_map.settings`. Put a separate
+server key on `geocoder.geocoder_provider.googlemaps` (**live active config only —
+not git**), and add that provider to **`config_ignore`** so a cim can't revert it.
+The server key is live-IP-locked, so server geocoding **won't work from DDEV** (a
+different IP) — test it on live. reCAPTCHA is the mirror case: keys live only in each
+env's active config (`recaptcha.settings` sync has blanks); for dev testing use
+Google's always-pass **test keys** in dev active config. Ref: `bos_service_request`
+CustomerProvisioningService / CreateCustomerForm (2026-08-27).
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

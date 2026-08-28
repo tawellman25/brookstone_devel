@@ -18,13 +18,20 @@ use Symfony\Component\HttpFoundation\RequestStack;
  */
 final class HandbookAcknowledgmentForm extends FormBase {
 
-  // Property names avoid FormBase's own ($requestStack, $currentUser, …).
-  public function __construct(
-    private readonly HandbookAckService $ackSvc,
-    private readonly AccountProxyInterface $account,
-    private readonly RequestStack $reqStack,
-    private readonly DateFormatterInterface $dates,
-  ) {}
+  // Declared (not promoted); names avoid FormBase's own ($requestStack, …).
+  // DependencySerializationTrait can only re-inject DECLARED properties on a
+  // serialized form, not constructor-promoted ones.
+  protected $ackSvc;
+  protected $account;
+  protected $reqStack;
+  protected $dates;
+
+  public function __construct(HandbookAckService $ackSvc, AccountProxyInterface $account, RequestStack $reqStack, DateFormatterInterface $dates) {
+    $this->ackSvc = $ackSvc;
+    $this->account = $account;
+    $this->reqStack = $reqStack;
+    $this->dates = $dates;
+  }
 
   public static function create(ContainerInterface $container): static {
     return new static(

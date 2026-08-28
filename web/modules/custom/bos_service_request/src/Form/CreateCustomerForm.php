@@ -19,12 +19,20 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 final class CreateCustomerForm extends FormBase {
 
-  public function __construct(
-    private readonly CustomerProvisioningService $prov,
-    private readonly EntityTypeManagerInterface $etm,
-    private readonly ConfigFactoryInterface $cfg,
-    private readonly mixed $geocoder,
-  ) {}
+  // Declared (not promoted) + non-readonly: the form is cacheable (the geocode
+  // AJAX button), so DependencySerializationTrait must re-inject these on
+  // __wakeup() — which it can't do for constructor-promoted properties.
+  protected $prov;
+  protected $etm;
+  protected $cfg;
+  protected $geocoder;
+
+  public function __construct(CustomerProvisioningService $prov, EntityTypeManagerInterface $etm, ConfigFactoryInterface $cfg, $geocoder) {
+    $this->prov = $prov;
+    $this->etm = $etm;
+    $this->cfg = $cfg;
+    $this->geocoder = $geocoder;
+  }
 
   public static function create(ContainerInterface $container): static {
     return new static(

@@ -16,7 +16,17 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 final class ImportItemsModalForm extends FormBase {
 
-  public function __construct(private readonly MaterialListImportService $importer) {}
+  /**
+   * The importer. Declared (not constructor-promoted) so DependencySerialization
+   * Trait can re-inject it when the cacheable form is serialized (managed_file).
+   *
+   * @var \Drupal\wo_material_list_management\Service\MaterialListImportService
+   */
+  protected $importer;
+
+  public function __construct(MaterialListImportService $importer) {
+    $this->importer = $importer;
+  }
 
   public static function create(ContainerInterface $container): static {
     return new static($container->get('wo_material_list_management.import'));

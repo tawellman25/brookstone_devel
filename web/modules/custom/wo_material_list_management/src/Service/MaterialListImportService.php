@@ -200,17 +200,38 @@ final class MaterialListImportService {
       fn($w) => strlen($w) >= 3 && !ctype_digit($w)
     )));
     $desc_size = $this->extractSize($text);
-    $s = $this->etm->getStorage('material');
-    if (!$tokens) {
-      $ids = $s->getQuery()->accessCheck(FALSE)->condition('title', '%' . $text . '%', 'LIKE')->range(0, 25)->execute();
+    // The canonical size string as BOS stores it, e.g. "1-1/2 in." — used to
+    // narrow candidates to the right size at the DB level.
+    $size_str = NULL;
+    if (preg_match('/(\d+-\d+\/\d+|\d+\/\d+|\d+)\s*(?:in\b\.?|inch|")/i', $text, $mm)) {
+      $size_str = preg_replace('/\s+/', '', $mm[1]) . ' in.';
     }
-    else {
+    $s = $this->etm->getStorage('material');
+
+    $build = function () use ($s, $tokens, $text) {
       $q = $s->getQuery()->accessCheck(FALSE);
-      $or = $q->orConditionGroup();
-      foreach (array_slice($tokens, 0, 6) as $t) {
-        $or->condition('title', '%' . $t . '%', 'LIKE');
+      if ($tokens) {
+        $or = $q->orConditionGroup();
+        foreach (array_slice($tokens, 0, 6) as $t) {
+          $or->condition('title', '%' . $t . '%', 'LIKE');
+        }
+        $q->condition($or);
       }
-      $ids = $q->condition($or)->range(0, 40)->execute();
+      else {
+        $q->condition('title', '%' . $text . '%', 'LIKE');
+      }
+      return $q;
+    };
+
+    $q = $build();
+    if ($size_str !== NULL) {
+      $q->condition('title', '%' . $size_str . '%', 'LIKE');
+    }
+    $ids = $q->range(0, 80)->execute();
+    // If the size string was too strict (formatting), retry without it — the
+    // decimal size filter below still keeps only same-size candidates.
+    if (!$ids && $size_str !== NULL) {
+      $ids = $build()->range(0, 80)->execute();
     }
     if (!$ids) {
       return [];

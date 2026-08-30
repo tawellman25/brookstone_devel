@@ -1,8 +1,13 @@
 /**
  * @file
- * Route Editor — Stage 2 (read-only). Renders a multi-day map: markers colored
- * by day, one numbered route line per (day, tech), a toggleable legend, a
- * no-location bucket, and card↔marker hover linking. No editing yet.
+ * Route Editor — Stage 2 (read-only). Renders a multi-day map: numbered
+ * markers, one route line per (day, tech), a toggleable legend, a no-location
+ * bucket, and card↔marker hover linking. No editing yet.
+ *
+ * Coloring has two modes (toolbar toggle):
+ *   - "day"  : one hue per calendar day (spot cross-day overlap in Week view).
+ *   - "crew" : one distinct color per crew member (tell techs apart, esp. Day view).
+ * Day-range views default to "crew"; multi-day views default to "day".
  *
  * Google Maps JS API is loaded dynamically with the key from drupalSettings
  * (geofield_map.settings gmap_api_key) — never hardcoded.
@@ -12,10 +17,15 @@
 
   // One color per day index (stable across markers / lines / legend).
   var DAY_COLORS = ['#CB6015', '#007A33', '#2b6cb0', '#8e44ad', '#c0392b', '#16a085', '#d68910'];
+  // Distinct colors per crew member (used in "crew" mode). Neutral gray = Unassigned.
+  var CREW_COLORS = ['#e6194B', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#42d4f4',
+                     '#f032e6', '#469990', '#9A6324', '#800000', '#808000', '#000075', '#d68910'];
+  var UNASSIGNED_COLOR = '#8a8a8a';
 
   var map = null;
-  var overlays = { markers: {}, lines: {}, listRows: {} }; // keyed by group "day|uid"
   var infoWindow = null;
+  var overlays = { markers: {}, lines: {}, listRows: {}, origin: null }; // markers/lines keyed by "day|uid"
+  var state = { data: null, mode: 'day', colorForDay: {}, colorForCrew: {} };
 
   Drupal.behaviors.bosRouteEditor = {
     attach: function (context) {
@@ -25,6 +35,8 @@
           setStatus('No Google Maps key configured — cannot load the map.');
           return;
         }
+        // Day view is most useful colored by crew; wider views by day.
+        state.mode = (String(cfg.range) === '1') ? 'crew' : 'day';
         loadGoogleMaps(cfg.gmapKey, function () { boot(cfg); });
       });
     }
@@ -48,14 +60,38 @@
     setStatus('Loading stops…');
     fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
-      .then(render)
+      .then(receive)
       .catch(function (e) { setStatus('Failed to load stops: ' + e); });
   }
 
-  function render(data) {
+  // Store data + assign palettes, wire the toggle, then draw.
+  function receive(data) {
+    state.data = data;
     var days = (data.range && data.range.days) || [];
-    var colorForDay = {};
-    days.forEach(function (d, i) { colorForDay[d] = DAY_COLORS[i % DAY_COLORS.length]; });
+    state.colorForDay = {};
+    days.forEach(function (d, i) { state.colorForDay[d] = DAY_COLORS[i % DAY_COLORS.length]; });
+    state.colorForCrew = {};
+    var ci = 0;
+    (data.stops || []).forEach(function (s) {
+      var uid = s.assigned_uid;
+      if (uid && !state.colorForCrew[uid]) { state.colorForCrew[uid] = CREW_COLORS[ci % CREW_COLORS.length]; ci++; }
+    });
+    wireColorToggle();
+    draw();
+  }
+
+  // Color for a (day|tech) group, honoring the current mode.
+  function groupColor(g) {
+    if (state.mode === 'crew') {
+      return g.uid ? (state.colorForCrew[g.uid] || UNASSIGNED_COLOR) : UNASSIGNED_COLOR;
+    }
+    return state.colorForDay[g.day] || '#888';
+  }
+
+  function draw() {
+    clearOverlays();
+    var data = state.data || {};
+    var days = (data.range && data.range.days) || [];
 
     // Group stops by "day|uid".
     var groups = {};
@@ -72,7 +108,7 @@
     // Origin marker (the shop).
     if (data.origin && data.origin.ok) {
       var o = new google.maps.LatLng(data.origin.lat, data.origin.lng);
-      new google.maps.Marker({
+      overlays.origin = new google.maps.Marker({
         position: o, map: map, title: 'Shop — ' + (data.origin.label || ''),
         icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#111', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
         zIndex: 9999,
@@ -83,7 +119,7 @@
     // Markers + route line per group.
     Object.keys(groups).forEach(function (key) {
       var g = groups[key];
-      var color = colorForDay[g.day] || '#888';
+      var color = groupColor(g);
       var path = [];
       overlays.markers[key] = [];
       g.stops.forEach(function (s, idx) {
@@ -130,14 +166,48 @@
         });
       }
     }
-    buildLegend(days, colorForDay, groups);
+    buildLegend(days, groups);
     buildNoLocation(data.no_location || []);
-    buildStopList(days, colorForDay, groups);
-    setStatus(stopCount + ' stops · ' + data.counts.no_location + ' without location' +
+    buildStopList(days, groups);
+    setStatus(stopCount + ' stops · ' + (data.counts ? data.counts.no_location : 0) + ' without location' +
       (data.origin && !data.origin.ok ? ' · ⚠ origin: ' + data.origin.reason : ''));
   }
 
-  function buildLegend(days, colorForDay, groups) {
+  // Remove every drawn overlay + the side lists so draw() can rebuild cleanly.
+  function clearOverlays() {
+    Object.keys(overlays.markers).forEach(function (k) {
+      overlays.markers[k].forEach(function (m) { m.setMap(null); });
+    });
+    Object.keys(overlays.lines).forEach(function (k) { overlays.lines[k].setMap(null); });
+    if (overlays.origin) { overlays.origin.setMap(null); }
+    overlays.markers = {}; overlays.lines = {}; overlays.listRows = {}; overlays.origin = null;
+    var legend = document.querySelector('.bos-re__legend-items');
+    if (legend) { legend.innerHTML = ''; }
+    var stops = document.querySelector('.bos-re__stops');
+    if (stops) { stops.remove(); }
+  }
+
+  function wireColorToggle() {
+    var wrap = document.querySelector('.bos-re__colorby');
+    if (!wrap) { return; }
+    wrap.querySelectorAll('.bos-re__cb-btn').forEach(function (btn) {
+      var isActive = (btn.getAttribute('data-mode') === state.mode);
+      btn.classList.toggle('is-active', isActive);
+      if (btn.dataset.bosWired) { return; }
+      btn.dataset.bosWired = '1';
+      btn.addEventListener('click', function () {
+        var m = btn.getAttribute('data-mode');
+        if (m === state.mode) { return; }
+        state.mode = m;
+        wrap.querySelectorAll('.bos-re__cb-btn').forEach(function (b) {
+          b.classList.toggle('is-active', b.getAttribute('data-mode') === m);
+        });
+        draw();
+      });
+    });
+  }
+
+  function buildLegend(days, groups) {
     var el = document.querySelector('.bos-re__legend-items');
     if (!el) { return; }
     el.innerHTML = '';
@@ -146,20 +216,22 @@
       if (!techs.length) { return; }
       var head = document.createElement('div');
       head.className = 'bos-re__legend-day';
-      head.innerHTML = '<span class="bos-re__swatch" style="background:' + colorForDay[d] + '"></span>' + fmtDay(d);
+      head.innerHTML = '<span class="bos-re__swatch" style="background:' + (state.colorForDay[d] || '#888') + '"></span>' + fmtDay(d);
       el.appendChild(head);
       techs.forEach(function (key) {
         var g = groups[key];
         var row = document.createElement('label');
         row.className = 'bos-re__legend-tech';
-        row.innerHTML = '<input type="checkbox" checked> ' + esc(g.tech) + ' <span class="bos-re__legend-n">(' + g.stops.length + ')</span>';
+        row.innerHTML = '<input type="checkbox" checked> ' +
+          '<span class="bos-re__swatch bos-re__swatch--sm" style="background:' + groupColor(g) + '"></span>' +
+          esc(g.tech) + ' <span class="bos-re__legend-n">(' + g.stops.length + ')</span>';
         row.querySelector('input').addEventListener('change', function (e) { toggleGroup(key, e.target.checked); });
         el.appendChild(row);
       });
     });
   }
 
-  function buildStopList(days, colorForDay, groups) {
+  function buildStopList(days, groups) {
     // A compact grouped list beside the map; rows hover-link to markers.
     var side = document.querySelector('.bos-re__side');
     var wrap = document.createElement('div');
@@ -167,15 +239,16 @@
     days.forEach(function (d) {
       Object.keys(groups).filter(function (k) { return groups[k].day === d; }).forEach(function (key) {
         var g = groups[key];
+        var color = groupColor(g);
         var col = document.createElement('div');
         col.className = 'bos-re__stopcol';
-        col.style.borderLeftColor = colorForDay[d];
+        col.style.borderLeftColor = color;
         col.innerHTML = '<div class="bos-re__stopcol-h">' + fmtDay(d) + ' · ' + esc(g.tech) + '</div>';
         overlays.listRows[key] = [];
         g.stops.forEach(function (s, idx) {
           var r = document.createElement('div');
           r.className = 'bos-re__stoprow';
-          r.innerHTML = '<span class="bos-re__seq" style="background:' + colorForDay[d] + '">' + (idx + 1) + '</span> ' +
+          r.innerHTML = '<span class="bos-re__seq" style="background:' + color + '">' + (idx + 1) + '</span> ' +
             esc(s.nickname) + ' <span class="bos-re__svc">' + esc(s.service_code) + '</span>';
           r.addEventListener('mouseover', function () { bounceMarker(key, idx, true); });
           r.addEventListener('mouseout', function () { bounceMarker(key, idx, false); });

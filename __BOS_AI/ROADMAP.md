@@ -193,6 +193,7 @@ These are shipped, live systems whose only blocker is human adoption, not engine
 ### Scheduling (T2–T3)
 | Item | Notes |
 |---|---|
+| **Route Editor + winterize carry-forward date rule** | ✅ **SHIPPED live 2026-08-30** (branch `feature/scheduling-route-editor`). Map route editor at `/teammates/calendar/route-editor` (Day/3-Day/Week; color by day/crew; **assign** crews, **drag-reorder**, **Optimize** nearest-stop; supervisor-gated, tz-safe). Winterize carry-forward date rule corrected **nth-weekday → calendar-date** (+1 weekday, Sat/Sun→Mon; **443 of 459** 2026 records re-dated on live, DB backed up); **season floor** ignores WOs created before Apr 1 (off-season catch-ups); new **`field_route_order_set`** (distinct from customer-commitment `field_scheduled_firm`) auto-stamped on reorder/optimize so an arranged route's order carries forward. Docs: `Modules/route_editor.md`. **Follow-ups:** assign the 15 unassigned new-customer winterize stops; per-route Optimize on merged Mondays. |
 | Gantt scheduling mode (Mode 3) | Multi-week phased timeline for Irrigation Install + Landscape crews. FullCalendar can't; needs Frappe Gantt + a phase data model. Useful for scaling design-build. |
 | Mow route-list + Spray compliance-list modes | Mode 1 route views. Spray partly covered; mow route list not built. |
 | FullCalendar event link `target="_blank"` | Cosmetic; native `<a>` cleaner. |

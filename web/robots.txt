@@ -13,6 +13,23 @@
 # For more information about the robots.txt standard, see:
 # http://www.robotstxt.org/robotstxt.html
 
+# --- Aggressive AI / training crawlers — blocked to conserve server CPU ---
+# Search engines (Googlebot, Bingbot, etc.) are NOT affected — they match the
+# "User-agent: *" group below and crawl normally. These bots ignore Crawl-delay,
+# so a full Disallow is the only effective throttle. Added 2026-08-29.
+User-agent: GPTBot
+Disallow: /
+
+User-agent: OAI-SearchBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+# --------------------------------------------------------------------------
+
 User-agent: *
 # CSS, JS, Images
 Allow: /core/*.css$

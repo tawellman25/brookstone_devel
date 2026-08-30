@@ -5,14 +5,17 @@
  *
  * The card IS the row element (views-view-fields--wo-notes--entity-view-1), so
  * no extra .views-row chrome is emitted here. The toggle (handled by
- * js/wo-notes-toggle.js) adds .hide-system to .wo-notes-list, which hides the
+ * js/wo-notes-toggle.js) toggles .hide-system on .wo-notes-list, which hides the
  * system (schedule) cards via CSS.
+ *
+ * Default = schedule changes HIDDEN (.hide-system on by default); the button
+ * reveals them. The toggle JS flips correctly from this starting state.
  */
 #}
 <div class="wo-notes-toolbar">
-  <button type="button" class="wo-notes-toggle" aria-pressed="false">Hide schedule changes</button>
+  <button type="button" class="wo-notes-toggle" aria-pressed="true">Show schedule changes</button>
 </div>
-<div class="wo-notes-list">
+<div class="wo-notes-list hide-system">
   {% for row in rows %}
     {{ row.content }}
   {% endfor %}

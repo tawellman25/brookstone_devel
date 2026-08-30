@@ -395,6 +395,34 @@ version. Hygiene only — removes noisy remove/reinstall churn from every deploy
 
 ---
 
+### 25. Go all-Claude — remove the unused OpenAI AI provider (hygiene)
+
+Surfaced 2026-08-28 (invoice-photo vision shipped on Claude). BOS now uses **only
+Claude** (`ai_provider_anthropic`, claude-sonnet-4-5) for its one AI feature —
+invoice-photo → material-list extraction (`chat_with_image_vision`, set to
+anthropic in active config). **`ai_provider_openai` is still enabled with an EMPTY
+key** — inert (its model call fails in ~11ms; **not** a performance factor), but
+unused clutter that still gets patched/maintained.
+
+**Not a one-click uninstall — two references remain:**
+1. `ai.settings` `default_providers` — **10 operation types** (chat,
+   chat_with_complex_json, chat_with_structured_response, chat_with_tools,
+   embeddings, moderation, speech_to_text, text_to_image, text_to_speech) still
+   point at `openai`. None are invoked by BOS, but they'd dangle on uninstall.
+2. `editor.editor.full_ai_html` — a CKEditor "AI HTML" editor config tied to the
+   AI integration; Drupal may block the uninstall on this dependency or leave the
+   editor's AI button pointing at a missing provider.
+
+**Clean sequence (when the server is healthy — do NOT run during the current
+host-level CPU overload; needs a ~2.5-min `cr`):** repoint all 10 `ai.settings`
+defaults → anthropic + a Claude model (entity-API script, not cim — same pattern
+as `web/scripts/setup_anthropic_vision.php`); resolve/retarget `full_ai_html`
+(repoint to Claude or drop its AI plugin); `drush pmu ai_provider_openai`; `cr`;
+verify vision still works + no config-dependency errors. Alternatively just leave
+it installed-but-idle (zero runtime cost). See `Modules/wo_material_list_import.md` + `web/scripts/setup_anthropic_vision.php`.
+
+---
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

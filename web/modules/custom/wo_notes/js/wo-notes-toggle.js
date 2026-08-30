@@ -3,8 +3,9 @@
  * "Hide schedule changes" toggle for the WO Notes cards.
  *
  * Toggles .hide-system on the nearest .wo-notes-list, flipping aria-pressed and
- * the button label. Default OFF (all notes shown). once() prevents double-bind
- * after the AJAX re-render that follows "Add Note".
+ * the button label. Default ON (schedule changes hidden — set in the template);
+ * the button reveals them. once() prevents double-bind after the AJAX re-render
+ * that follows "Add Note".
  */
 (function (Drupal, once) {
   'use strict';

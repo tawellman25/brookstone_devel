@@ -52,7 +52,12 @@ final class RouteEditorController extends ControllerBase {
   public function page(Request $request): array {
     $tz = new \DateTimeZone(date_default_timezone_get());
     [$start, $end, $days] = $this->resolveRange($request, $tz);
-    $range = (string) $request->query->get('range', '7');
+    $n = count($days);
+    $range = (string) $n;
+
+    // Prev/Next shift the window by its own length, anchored on the start day.
+    $prev = (clone $start)->modify("-{$n} days")->format('Y-m-d');
+    $next = (clone $start)->modify("+{$n} days")->format('Y-m-d');
 
     $gmap_key = (string) $this->config('geofield_map.settings')->get('gmap_api_key');
 
@@ -61,6 +66,8 @@ final class RouteEditorController extends ControllerBase {
       '#start' => $start->format('Y-m-d'),
       '#end'   => $end->format('Y-m-d'),
       '#range' => $range,
+      '#prev'  => $prev,
+      '#next'  => $next,
       '#has_map_key' => $gmap_key !== '',
       '#attached' => [
         'library' => ['bos_scheduling/route_editor'],

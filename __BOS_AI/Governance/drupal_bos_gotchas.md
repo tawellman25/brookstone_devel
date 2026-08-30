@@ -1147,8 +1147,9 @@ though the Google maps render fine everywhere.
   (`AIzaSy…DUXsAY`). This one works for all the in-page maps.
 - The **`geocoder` module** (`geocoder.geocoder_provider.googlemaps` apiKey) geocodes
   **server-side (PHP)** — Google **refuses a referrer key** here. It needs a key with
-  the **Geocoding API enabled** and **IP-restricted** (to the server's *outbound* IP,
-  `68.66.226.93`) or unrestricted.
+  the **Geocoding API enabled** and **IP-restricted** (to the server's *outbound* IP —
+  currently `65.181.121.20`, the dedicated VPS as of the 2026-08-30 move; update the
+  Google key's allowlist whenever the server IP changes) or unrestricted.
 
 **Fix / setup.** Keep the referrer key in `geofield_map.settings`. Put a separate
 server key on `geocoder.geocoder_provider.googlemaps` (**live active config only —

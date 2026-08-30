@@ -1,0 +1,23 @@
+uuid: efafe7d3-edbc-4f8b-80b1-b83379512e20
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.scheduling.work_order
+    - field.storage.scheduling.field_route_order_set
+id: scheduling.work_order.field_route_order_set
+field_name: field_route_order_set
+entity_type: scheduling
+bundle: work_order
+label: 'Route order set'
+description: 'Set automatically when the office arranges this route in the Route Editor (reorder or Optimize). The winterize carry-forward reuses a route-order-set route''s stop order next year. Distinct from Firm/Tentative (customer commitment).'
+required: false
+translatable: false
+default_value:
+  -
+    value: 0
+default_value_callback: ''
+settings:
+  on_label: 'Order set'
+  off_label: 'Not set'
+field_type: boolean

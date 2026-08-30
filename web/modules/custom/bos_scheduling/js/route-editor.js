@@ -269,8 +269,10 @@
         head.className = 'bos-re__stopcol-h';
         var lbl = document.createElement('label');
         lbl.className = 'bos-re__stopcol-title';
+        var orderSet = g.stops.length > 0 && g.stops.every(function (s) { return s.route_order_set; });
         lbl.innerHTML = '<input type="checkbox" class="bos-re__pickall"> ' + fmtDay(d) + ' · ' + esc(g.tech) +
-          ' <span class="bos-re__legend-n">(' + g.stops.length + ')</span>';
+          ' <span class="bos-re__legend-n">(' + g.stops.length + ')</span>' +
+          (orderSet ? ' <span class="bos-re__orderset" title="Route order set — carries forward to next year">✓ order set</span>' : '');
         head.appendChild(lbl);
         if (g.stops.length >= 2) {
           var optBtn = document.createElement('button');
@@ -504,8 +506,8 @@
           draw(true); // revert to stored order
           return;
         }
-        // Reflect the new sequence in local data, then redraw (keep viewport).
-        ids.forEach(function (sid, i) { var s = findStop(sid); if (s) { s.order = i + 1; } });
+        // Reflect the new sequence + "order set" stamp locally, then redraw.
+        ids.forEach(function (sid, i) { var s = findStop(sid); if (s) { s.order = i + 1; s.route_order_set = true; } });
         draw(true);
         setStatus(b.updated + ' stop(s) reordered' + (b.skipped ? ', ' + b.skipped + ' unchanged' : '') + '.');
       })
@@ -522,8 +524,8 @@
     if (!window.confirm('Optimize this route (' + stops.length + ' stops) by nearest stop from the shop?\nYou can still fine-tune the order by dragging.')) { return; }
     var ordered = nearestNeighbor(stops);
     var ids = ordered.map(function (s) { return s.scheduling_id; });
-    var same = ids.every(function (id, i) { return g.stops[i] && g.stops[i].scheduling_id === id; });
-    if (same) { setStatus('Route is already in nearest-stop order.'); return; }
+    // Always save — even if the order is unchanged, this marks the route
+    // "order set" so the carry-forward reuses it next year.
     saveReorderIds(ids);
   }
 

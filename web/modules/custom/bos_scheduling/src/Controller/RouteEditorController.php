@@ -123,6 +123,7 @@ final class RouteEditorController extends ControllerBase {
         'assigned_uid' => $uid,
         'tech' => $tech,
         'order' => (int) ($r->schedule_order ?? 0),
+        'route_order_set' => (bool) ($r->route_order_set ?? 0),
         'nickname' => mb_substr(trim((string) ($r->property_nickname ?? '')) ?: 'Unknown', 0, 120),
         'service_code' => strtoupper(trim((string) ($r->service_code ?? ''))) ?: '?',
         'status_tid' => (int) ($r->status_tid ?? 0),
@@ -235,7 +236,13 @@ final class RouteEditorController extends ControllerBase {
    * update hook emails on ANY save where notify==1 (not gated on assignment
    * changing) — a reorder must never fire an assignment email. We deliberately
    * do NOT go through ScheduleWriter here: it would reset field_scheduled_firm
-   * and rewrite the date. Only the sequence changes.
+   * (the customer-commitment flag — untouched) and rewrite the date. Only the
+   * sequence changes.
+   *
+   * Arranging a route this way stamps field_route_order_set = TRUE on each stop
+   * (drag AND Optimize both post here). The winterize carry-forward reuses a
+   * route-order-set route's planned order next year instead of reconstructing
+   * it from the driven order — so the office's arranging effort carries forward.
    */
   public function reorder(Request $request): JsonResponse {
     $data = json_decode((string) $request->getContent(), TRUE) ?: [];
@@ -256,12 +263,19 @@ final class RouteEditorController extends ControllerBase {
           $skipped++;
           continue;
         }
-        $current = (int) ($entity->get('field_scheduled_oder')->value ?? 0);
-        if ($current === $pos) {
+        $needOrder = (int) ($entity->get('field_scheduled_oder')->value ?? 0) !== $pos;
+        $hasSetField = $entity->hasField('field_route_order_set');
+        $needStamp = $hasSetField && !((bool) $entity->get('field_route_order_set')->value);
+        if (!$needOrder && !$needStamp) {
           $skipped++;
           continue;
         }
-        $entity->set('field_scheduled_oder', $pos);
+        if ($needOrder) {
+          $entity->set('field_scheduled_oder', $pos);
+        }
+        if ($hasSetField) {
+          $entity->set('field_route_order_set', TRUE);
+        }
         if ($entity->hasField('field_notify_assigned_teammate')) {
           $entity->set('field_notify_assigned_teammate', FALSE);
         }
@@ -331,6 +345,8 @@ final class RouteEditorController extends ControllerBase {
     $q->addField('sat', 'field_assigned_to_target_id', 'assigned_uid');
     $q->leftJoin('scheduling__field_scheduled_oder', 'sord', 's.id = sord.entity_id AND sord.deleted = 0');
     $q->addField('sord', 'field_scheduled_oder_value', 'schedule_order');
+    $q->leftJoin('scheduling__field_route_order_set', 'sros', 's.id = sros.entity_id AND sros.deleted = 0');
+    $q->addField('sros', 'field_route_order_set_value', 'route_order_set');
 
     $q->leftJoin('work_order__field_property', 'wop', 'wop.entity_id = swo.field_work_order_target_id AND wop.deleted = 0');
     $q->leftJoin('properties__field_nickname', 'nick', 'nick.entity_id = wop.field_property_target_id AND nick.deleted = 0');

@@ -400,6 +400,7 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
         'start' => $sched[$wid]['start'],
         'assigned' => $sched[$wid]['assigned'],
         'planned_order' => $sched[$wid]['order'],
+        'order_set' => $sched[$wid]['order_set'] ?? FALSE,
         'signoff' => $signoff[$wid] ?? NULL,
         'clock' => $clock[$wid] ?? NULL,
         'status' => $status[$wid] ?? NULL,
@@ -438,6 +439,7 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
           'start' => $s->get('field_date')->isEmpty() ? NULL : (int) $s->get('field_date')->value,
           'assigned' => $s->get('field_assigned_to')->isEmpty() ? NULL : (int) $s->get('field_assigned_to')->target_id,
           'order' => $s->get('field_scheduled_oder')->isEmpty() ? NULL : (int) $s->get('field_scheduled_oder')->value,
+          'order_set' => $s->hasField('field_route_order_set') && !$s->get('field_route_order_set')->isEmpty() && (bool) $s->get('field_route_order_set')->value,
         ];
         if (!isset($out[$wid]) || $rec['sid'] > $out[$wid]['sid']) {
           $out[$wid] = $rec;
@@ -706,11 +708,20 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
     $row['proposed_tech_uid'] = $propTechUid ?: '';
     $row['proposed_tech_name'] = $propTechUid ? $this->userName($propTechUid) : '';
 
-    // Order signal precedence: sign-off → clock → status → planned → none.
+    // Order signal precedence: route-order-set (office arranged it in the Route
+    // Editor → authoritative) → sign-off → clock → status → planned → none.
+    // A route-order-set route means the office deliberately sequenced it, so its
+    // planned order wins over the order the truck happened to drive.
     $orderSource = 'none';
     $orderValue = PHP_INT_MAX;
     $tier = 2;
-    if ($signoff && $signoff['completed'] !== NULL) {
+    if (!empty($rec['order_set']) && $rec['planned_order'] !== NULL) {
+      $orderSource = 'planned_set';
+      $orderValue = $rec['planned_order'];
+      $tier = 0;
+      $flags[] = 'route_order_set';
+    }
+    elseif ($signoff && $signoff['completed'] !== NULL) {
       $orderSource = 'signoff';
       $orderValue = $signoff['completed'];
       $tier = 0;

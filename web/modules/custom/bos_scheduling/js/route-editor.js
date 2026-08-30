@@ -38,6 +38,8 @@
       streetViewControl: false,
     });
     infoWindow = new google.maps.InfoWindow();
+    var ld = document.querySelector('.bos-re__map-loading');
+    if (ld) { ld.remove(); }
     var url = cfg.dataUrl + '?start=' + encodeURIComponent(cfg.start) +
               '&end=' + encodeURIComponent(cfg.end) + '&range=' + encodeURIComponent(cfg.range);
     setStatus('Loading stops…');
@@ -107,11 +109,28 @@
       });
     });
 
-    if (!bounds.isEmpty()) { map.fitBounds(bounds); }
+    var stopCount = (data.stops || []).length;
+    if (stopCount === 0) {
+      // Empty range (e.g. a Sunday, or a week with nothing scheduled). Make it
+      // obvious rather than a lonely dot zoomed to the shop's driveway.
+      showEmpty(true);
+      if (data.origin && data.origin.ok) { map.setCenter({ lat: data.origin.lat, lng: data.origin.lng }); }
+      map.setZoom(10);
+    }
+    else {
+      showEmpty(false);
+      if (!bounds.isEmpty()) {
+        map.fitBounds(bounds);
+        // Don't over-zoom when the stops are tightly clustered / few.
+        google.maps.event.addListenerOnce(map, 'idle', function () {
+          if (map.getZoom() > 14) { map.setZoom(14); }
+        });
+      }
+    }
     buildLegend(days, colorForDay, groups);
     buildNoLocation(data.no_location || []);
     buildStopList(days, colorForDay, groups);
-    setStatus(data.counts.stops + ' stops · ' + data.counts.no_location + ' without location' +
+    setStatus(stopCount + ' stops · ' + data.counts.no_location + ' without location' +
       (data.origin && !data.origin.ok ? ' · ⚠ origin: ' + data.origin.reason : ''));
   }
 
@@ -204,6 +223,23 @@
     s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&callback=__bosReMapInit';
     s.async = true; s.defer = true;
     document.head.appendChild(s);
+  }
+
+  function showEmpty(on) {
+    var mapEl = document.getElementById('bos-re-map');
+    var banner = document.querySelector('.bos-re__empty');
+    if (on) {
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.className = 'bos-re__empty';
+        banner.innerHTML = 'No stops scheduled in this range.<br><small>Crews don\'t work Sundays — try the <strong>Week</strong> view or use Prev/Next to reach a working day.</small>';
+        mapEl.appendChild(banner);
+      }
+      banner.style.display = 'block';
+    }
+    else if (banner) {
+      banner.style.display = 'none';
+    }
   }
 
   function setStatus(t) { var e = document.querySelector('.bos-re__status'); if (e) { e.textContent = t; } }

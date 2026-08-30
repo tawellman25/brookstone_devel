@@ -423,6 +423,25 @@ it installed-but-idle (zero runtime cost). See `Modules/wo_material_list_import.
 
 ---
 
+### 26. Update `guzzlehttp/guzzle` once a fixed tag lands on the core line (security)
+
+Surfaced 2026-08-30 (first security pass on the new VPS). `composer audit` flags
+**guzzle** with a **high** advisory (CVE-2026-69246, "noncanonical host can bypass
+host-based checks"; also CVE-2026-69245 / -67354). Fixed in **7.15.2**, and our
+`composer.json` allows `^7.12.1` (which permits 7.15) — **but `drupal/core-recommended`
+pins guzzle to the 7.12.x line on Drupal 10.6, and the only 7.12.x fix is an
+untagged `7.12.x-dev`**, which we won't ship to prod. So it's held at **7.12.3**.
+
+**Revisit when:** a Drupal core release (on our 10.6.x line, or when we move to a
+newer minor/11) bundles a fixed guzzle tag — then `composer update drupal/core-recommended --with-dependencies`
+picks it up. Re-check with `composer audit`. **Risk is low for BOS:** guzzle is
+only used for calls to *known* hosts (Anthropic API, Google geocoder, WEX CSV
+download, s3fs/stage_file_proxy) — not untrusted-URL host-allowlist checks.
+The other 5 packages in that audit (core, dompdf, phpspreadsheet, entity,
+entity_browser) were updated 2026-08-30; see CLAUDE.md changelog.
+
+---
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

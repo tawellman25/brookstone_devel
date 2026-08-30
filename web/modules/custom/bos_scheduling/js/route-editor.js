@@ -265,10 +265,22 @@
         col.className = 'bos-re__stopcol';
         col.style.borderLeftColor = color;
 
-        var head = document.createElement('label');
+        var head = document.createElement('div');
         head.className = 'bos-re__stopcol-h';
-        head.innerHTML = '<input type="checkbox" class="bos-re__pickall"> ' + fmtDay(d) + ' · ' + esc(g.tech) +
+        var lbl = document.createElement('label');
+        lbl.className = 'bos-re__stopcol-title';
+        lbl.innerHTML = '<input type="checkbox" class="bos-re__pickall"> ' + fmtDay(d) + ' · ' + esc(g.tech) +
           ' <span class="bos-re__legend-n">(' + g.stops.length + ')</span>';
+        head.appendChild(lbl);
+        if (g.stops.length >= 2) {
+          var optBtn = document.createElement('button');
+          optBtn.type = 'button';
+          optBtn.className = 'bos-re__opt-btn';
+          optBtn.textContent = 'Optimize';
+          optBtn.title = 'Reorder this route by nearest stop from the shop';
+          optBtn.addEventListener('click', function () { optimizeRoute(g); });
+          head.appendChild(optBtn);
+        }
         col.appendChild(head);
 
         overlays.listRows[key] = [];
@@ -471,6 +483,10 @@
   function saveReorder(col) {
     var ids = Array.prototype.slice.call(col.querySelectorAll('.bos-re__stoprow'))
       .map(function (x) { return parseInt(x.dataset.sid, 10); });
+    saveReorderIds(ids);
+  }
+
+  function saveReorderIds(ids) {
     if (!ids.length) { return; }
     setStatus('Saving route order…');
     getCsrf().then(function (token) {
@@ -494,6 +510,50 @@
         setStatus(b.updated + ' stop(s) reordered' + (b.skipped ? ', ' + b.skipped + ' unchanged' : '') + '.');
       })
       .catch(function (e) { window.alert('Reorder error: ' + e); draw(true); });
+  }
+
+  // ---- Optimize (nearest-stop order from the shop) -----------------------
+
+  // Greedy nearest-neighbor from the origin — a sane starting order the office
+  // fine-tunes by dragging. Straight-line (haversine); no paid routing API.
+  function optimizeRoute(g) {
+    var stops = (g.stops || []).slice();
+    if (stops.length < 2) { return; }
+    if (!window.confirm('Optimize this route (' + stops.length + ' stops) by nearest stop from the shop?\nYou can still fine-tune the order by dragging.')) { return; }
+    var ordered = nearestNeighbor(stops);
+    var ids = ordered.map(function (s) { return s.scheduling_id; });
+    var same = ids.every(function (id, i) { return g.stops[i] && g.stops[i].scheduling_id === id; });
+    if (same) { setStatus('Route is already in nearest-stop order.'); return; }
+    saveReorderIds(ids);
+  }
+
+  function nearestNeighbor(stops) {
+    var o = (state.data.origin && state.data.origin.ok) ? state.data.origin : stops[0];
+    var cur = { lat: o.lat, lng: o.lng };
+    var remaining = stops.slice();
+    var result = [];
+    while (remaining.length) {
+      var bi = 0, bd = Infinity;
+      for (var i = 0; i < remaining.length; i++) {
+        var d = haversine(cur, remaining[i]);
+        if (d < bd) { bd = d; bi = i; }
+      }
+      var next = remaining.splice(bi, 1)[0];
+      result.push(next);
+      cur = { lat: next.lat, lng: next.lng };
+    }
+    return result;
+  }
+
+  function haversine(a, b) {
+    var R = 3958.8; // miles
+    var toRad = Math.PI / 180;
+    var dLat = (b.lat - a.lat) * toRad;
+    var dLng = (b.lng - a.lng) * toRad;
+    var la1 = a.lat * toRad, la2 = b.lat * toRad;
+    var s1 = Math.sin(dLat / 2), s2 = Math.sin(dLng / 2);
+    var h = s1 * s1 + Math.cos(la1) * Math.cos(la2) * s2 * s2;
+    return 2 * R * Math.asin(Math.sqrt(h));
   }
 
   // ---- Misc helpers ------------------------------------------------------

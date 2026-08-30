@@ -73,3 +73,12 @@ bos_scheduling.route_editor_assign:
     _role: 'administrator+administration+supervisor+site_admin+site_assistant'
     _csrf_request_header_token: 'TRUE'
   methods: [POST]
+
+bos_scheduling.route_editor_reorder:
+  path: '/teammates/calendar/route-editor/reorder'
+  defaults:
+    _controller: '\Drupal\bos_scheduling\Controller\RouteEditorController::reorder'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+    _csrf_request_header_token: 'TRUE'
+  methods: [POST]

@@ -80,6 +80,7 @@ final class RouteEditorController extends ControllerBase {
             'range'    => $range,
             'gmapKey'  => $gmap_key,
             'assignUrl' => Url::fromRoute('bos_scheduling.route_editor_assign')->toString(),
+            'reorderUrl' => Url::fromRoute('bos_scheduling.route_editor_reorder')->toString(),
           ],
         ],
       ],
@@ -204,6 +205,63 @@ final class RouteEditorController extends ControllerBase {
         }
         $entity->set('field_assigned_to', $uid === 0 ? NULL : $uid);
         // Never fire teammate notification emails on a bulk map reassignment.
+        if ($entity->hasField('field_notify_assigned_teammate')) {
+          $entity->set('field_notify_assigned_teammate', FALSE);
+        }
+        $entity->save();
+        $updated++;
+      }
+      catch (\Throwable $e) {
+        $errors[] = "#$id: " . $e->getMessage();
+      }
+    }
+
+    return new JsonResponse([
+      'ok' => empty($errors),
+      'updated' => $updated,
+      'skipped' => $skipped,
+      'errors' => $errors,
+    ]);
+  }
+
+  /**
+   * STAGE 4 (write): reorder the stops within one route (a day+tech column).
+   *
+   * POST JSON: {ordered_ids: [scheduling_id, …]} in the desired sequence.
+   * Writes field_scheduled_oder = 1..N densely. CSRF-guarded (see routing).
+   *
+   * Order is intentionally NOT a wo_schedule-tracked field, so a reorder writes
+   * no audit note. We still suppress field_notify_assigned_teammate because the
+   * update hook emails on ANY save where notify==1 (not gated on assignment
+   * changing) — a reorder must never fire an assignment email. We deliberately
+   * do NOT go through ScheduleWriter here: it would reset field_scheduled_firm
+   * and rewrite the date. Only the sequence changes.
+   */
+  public function reorder(Request $request): JsonResponse {
+    $data = json_decode((string) $request->getContent(), TRUE) ?: [];
+    $ids = array_values(array_filter(array_map('intval', (array) ($data['ordered_ids'] ?? []))));
+    if (!$ids) {
+      return new JsonResponse(['ok' => FALSE, 'error' => 'No stops to reorder.'], 400);
+    }
+
+    $storage = $this->entityTypeManager()->getStorage('scheduling');
+    $updated = 0;
+    $skipped = 0;
+    $errors = [];
+    foreach ($ids as $i => $id) {
+      $pos = $i + 1;
+      try {
+        $entity = $storage->load($id);
+        if (!$entity || $entity->bundle() !== 'work_order') {
+          $skipped++;
+          continue;
+        }
+        $current = (int) ($entity->get('field_scheduled_oder')->value ?? 0);
+        if ($current === $pos) {
+          $skipped++;
+          continue;
+        }
+        $entity->set('field_scheduled_oder', $pos);
         if ($entity->hasField('field_notify_assigned_teammate')) {
           $entity->set('field_notify_assigned_teammate', FALSE);
         }

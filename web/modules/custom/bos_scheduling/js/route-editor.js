@@ -106,7 +106,7 @@
     };
   }
 
-  function draw() {
+  function draw(preserveView) {
     clearOverlays();
     var data = state.data || {};
     var days = (data.range && data.range.days) || [];
@@ -173,12 +173,15 @@
     if (stopCount === 0) {
       // Empty range (e.g. a Sunday, or a week with nothing scheduled).
       showEmpty(true);
-      if (data.origin && data.origin.ok) { map.setCenter({ lat: data.origin.lat, lng: data.origin.lng }); }
-      map.setZoom(10);
+      if (!preserveView) {
+        if (data.origin && data.origin.ok) { map.setCenter({ lat: data.origin.lat, lng: data.origin.lng }); }
+        map.setZoom(10);
+      }
     }
     else {
       showEmpty(false);
-      if (!bounds.isEmpty()) {
+      // Don't re-fit on a reorder redraw — keep the editor's viewport steady.
+      if (!preserveView && !bounds.isEmpty()) {
         map.fitBounds(bounds);
         google.maps.event.addListenerOnce(map, 'idle', function () {
           if (map.getZoom() > 14) { map.setZoom(14); }
@@ -275,13 +278,17 @@
           sids.push(sid);
           var r = document.createElement('div');
           r.className = 'bos-re__stoprow' + (state.selected[sid] ? ' is-selected' : '');
+          r.setAttribute('draggable', 'true');
+          r.dataset.sid = sid;
           r.innerHTML =
+            '<span class="bos-re__grip" title="Drag to reorder">⠿</span>' +
             '<input type="checkbox" class="bos-re__pick"' + (state.selected[sid] ? ' checked' : '') + '> ' +
             '<span class="bos-re__seq" style="background:' + color + '">' + (idx + 1) + '</span> ' +
             esc(s.nickname) + ' <span class="bos-re__svc">' + esc(s.service_code) + '</span>';
           r.querySelector('.bos-re__pick').addEventListener('change', function (e) { toggleSelect(sid, s, e.target.checked); });
           r.addEventListener('mouseover', function () { bounceMarker(key, idx, true); });
           r.addEventListener('mouseout', function () { bounceMarker(key, idx, false); });
+          attachDrag(r, col);
           col.appendChild(r);
           overlays.listRows[key].push(r);
           overlays.rowBySid[sid] = r;
@@ -408,6 +415,85 @@
     return fetch(Drupal.url('session/token'), { credentials: 'same-origin' })
       .then(function (r) { return r.text(); })
       .then(function (t) { _csrf = t; return t; });
+  }
+
+  // ---- Drag-to-reorder (within one route column only) --------------------
+
+  var dragRow = null, dragCol = null;
+
+  function attachDrag(row, col) {
+    row.addEventListener('dragstart', function (e) {
+      dragRow = row; dragCol = col;
+      row.classList.add('is-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', row.dataset.sid); } catch (ignore) {}
+    });
+    row.addEventListener('dragend', function () {
+      row.classList.remove('is-dragging');
+      clearDropMarkers();
+      dragRow = null; dragCol = null;
+    });
+    row.addEventListener('dragover', function (e) {
+      if (!dragRow || col !== dragCol || row === dragRow) { return; }
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      showDropMarker(row, isBefore(e, row));
+    });
+    row.addEventListener('drop', function (e) {
+      if (!dragRow || col !== dragCol || row === dragRow) { clearDropMarkers(); return; }
+      e.preventDefault();
+      if (isBefore(e, row)) { col.insertBefore(dragRow, row); }
+      else { col.insertBefore(dragRow, row.nextSibling); }
+      clearDropMarkers();
+      saveReorder(col);
+    });
+  }
+
+  function isBefore(e, row) {
+    var box = row.getBoundingClientRect();
+    return (e.clientY - box.top) < (box.height / 2);
+  }
+
+  function showDropMarker(row, before) {
+    clearDropMarkers();
+    row.classList.add(before ? 'drop-before' : 'drop-after');
+  }
+
+  function clearDropMarkers() {
+    document.querySelectorAll('.bos-re__stoprow.drop-before, .bos-re__stoprow.drop-after')
+      .forEach(function (x) { x.classList.remove('drop-before', 'drop-after'); });
+  }
+
+  function findStop(sid) {
+    return (state.data.stops || []).filter(function (s) { return s.scheduling_id === sid; })[0];
+  }
+
+  function saveReorder(col) {
+    var ids = Array.prototype.slice.call(col.querySelectorAll('.bos-re__stoprow'))
+      .map(function (x) { return parseInt(x.dataset.sid, 10); });
+    if (!ids.length) { return; }
+    setStatus('Saving route order…');
+    getCsrf().then(function (token) {
+      return fetch(state.cfg.reorderUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token, 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ ordered_ids: ids }),
+      });
+    }).then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
+      .then(function (res) {
+        var b = res.body || {};
+        if (res.status >= 400 || (!b.ok && !b.updated)) {
+          window.alert('Reorder failed: ' + (b.error || (b.errors || []).join('; ') || ('HTTP ' + res.status)));
+          draw(true); // revert to stored order
+          return;
+        }
+        // Reflect the new sequence in local data, then redraw (keep viewport).
+        ids.forEach(function (sid, i) { var s = findStop(sid); if (s) { s.order = i + 1; } });
+        draw(true);
+        setStatus(b.updated + ' stop(s) reordered' + (b.skipped ? ', ' + b.skipped + ' unchanged' : '') + '.');
+      })
+      .catch(function (e) { window.alert('Reorder error: ' + e); draw(true); });
   }
 
   // ---- Misc helpers ------------------------------------------------------

@@ -86,4 +86,62 @@ if ($e2->hasField('field_notify_assigned_teammate')) {
 $e2->save();
 $e3 = $storage->loadUnchanged($sid);
 print 'REVERTED uid=' . (int) ($e3->get('field_assigned_to')->target_id ?? 0) . " (expected $orig)\n";
+
+// ---- Reorder test (reversible) ----------------------------------------
+print "\n--- REORDER ---\n";
+// Find a route (same date + same assigned uid) with >= 2 scheduling records.
+$route = $db->query('
+  SELECT a.field_assigned_to_target_id AS uid, d.field_date_value AS ts, COUNT(*) AS n
+  FROM {scheduling__field_assigned_to} a
+  JOIN {scheduling__field_date} d ON d.entity_id = a.entity_id AND d.deleted = 0
+  WHERE a.field_assigned_to_target_id IS NOT NULL AND a.deleted = 0
+  GROUP BY a.field_assigned_to_target_id, d.field_date_value
+  HAVING n >= 2
+  ORDER BY d.field_date_value DESC
+  LIMIT 1
+')->fetchObject();
+if (!$route) {
+  print "no multi-stop route found — skip reorder test\nDONE\n";
+  return;
+}
+$routeIds = $db->query('
+  SELECT a.entity_id
+  FROM {scheduling__field_assigned_to} a
+  JOIN {scheduling__field_date} d ON d.entity_id = a.entity_id AND d.deleted = 0
+  LEFT JOIN {scheduling__field_scheduled_oder} o ON o.entity_id = a.entity_id AND o.deleted = 0
+  WHERE a.field_assigned_to_target_id = :uid AND d.field_date_value = :ts AND a.deleted = 0
+  ORDER BY o.field_scheduled_oder_value ASC
+', [':uid' => $route->uid, ':ts' => $route->ts])->fetchCol();
+$routeIds = array_map('intval', $routeIds);
+print 'route uid=' . $route->uid . ' n=' . count($routeIds) . ' ids=' . implode(',', $routeIds) . "\n";
+
+$origOrder = [];
+foreach ($routeIds as $rid) {
+  $origOrder[$rid] = (int) ($storage->loadUnchanged($rid)->get('field_scheduled_oder')->value ?? 0);
+}
+print 'orig order: ' . json_encode($origOrder) . "\n";
+
+$reversed = array_reverse($routeIds);
+$resp = $c->reorder(Request::create('/x', 'POST', [], [], [], [], json_encode(['ordered_ids' => $reversed])));
+print 'REORDER RESP: ' . $resp->getContent() . "\n";
+
+$ok = TRUE;
+foreach ($reversed as $i => $rid) {
+  $now = (int) ($storage->loadUnchanged($rid)->get('field_scheduled_oder')->value ?? 0);
+  if ($now !== $i + 1) { $ok = FALSE; print "  MISMATCH #$rid order=$now expected " . ($i + 1) . "\n"; }
+}
+print 'reversed order applied: ' . ($ok ? "✓\n" : "✗\n");
+
+// Revert to the original order values.
+foreach ($origOrder as $rid => $ord) {
+  $en = $storage->loadUnchanged($rid);
+  $en->set('field_scheduled_oder', $ord);
+  if ($en->hasField('field_notify_assigned_teammate')) { $en->set('field_notify_assigned_teammate', FALSE); }
+  $en->save();
+}
+$revOk = TRUE;
+foreach ($origOrder as $rid => $ord) {
+  if ((int) ($storage->loadUnchanged($rid)->get('field_scheduled_oder')->value ?? 0) !== $ord) { $revOk = FALSE; }
+}
+print 'reverted to orig order: ' . ($revOk ? "✓\n" : "✗\n");
 print "DONE\n";

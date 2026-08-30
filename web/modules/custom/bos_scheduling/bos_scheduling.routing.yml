@@ -46,3 +46,21 @@ bos_scheduling.scheduling_hub:
     _role: 'administrator+administration+supervisor+site_admin+site_assistant'
   options:
     _admin_route: TRUE
+
+bos_scheduling.route_editor:
+  path: '/teammates/calendar/route-editor'
+  defaults:
+    _controller: '\Drupal\bos_scheduling\Controller\RouteEditorController::page'
+    _title: 'Route Editor'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+  options:
+    _admin_route: TRUE
+
+bos_scheduling.route_editor_data:
+  path: '/teammates/calendar/route-editor/data'
+  defaults:
+    _controller: '\Drupal\bos_scheduling\Controller\RouteEditorController::data'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+  methods: [GET]

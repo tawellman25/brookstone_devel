@@ -1,0 +1,42 @@
+/**
+ * Route Editor (Stage 2, read-only) — multi-day map + side panel.
+ */
+.bos-re { display: flex; flex-direction: column; height: calc(100vh - 180px); min-height: 560px; font-size: 0.9rem; }
+
+.bos-re__toolbar { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 0.5rem 0.75rem; border-bottom: 1px solid #ddd; }
+.bos-re__title { font-size: 1.05rem; }
+.bos-re__dates { color: #555; }
+.bos-re__range-btn, .bos-re__nav-btn { display: inline-block; padding: 2px 8px; border: 1px solid #ccc; border-radius: 3px; text-decoration: none; color: #333; margin-left: 3px; }
+.bos-re__range-btn.is-active { background: #CB6015; color: #fff; border-color: #CB6015; }
+.bos-re__status { margin-left: auto; color: #666; font-size: 0.85rem; }
+
+.bos-re__body { display: flex; flex: 1; min-height: 0; }
+.bos-re__side { width: 320px; flex: 0 0 320px; overflow-y: auto; border-right: 1px solid #ddd; padding: 0.5rem; }
+.bos-re__map { flex: 1; min-width: 0; position: relative; }
+.bos-re__map-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #888; }
+
+.bos-re__legend { margin-bottom: 0.75rem; }
+.bos-re__legend-title, .bos-re__noloc-title, .bos-re__stopcol-h { font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.02em; color: #555; }
+.bos-re__legend-day { margin-top: 0.4rem; font-weight: 600; }
+.bos-re__legend-tech { display: block; margin: 1px 0 1px 1.2rem; cursor: pointer; }
+.bos-re__legend-n { color: #999; }
+.bos-re__swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+
+.bos-re__noloc { margin-bottom: 0.75rem; border: 1px solid #f0c36d; background: #fffaf0; border-radius: 4px; padding: 0.4rem 0.5rem; }
+.bos-re__noloc-count { color: #b7791f; }
+.bos-re__noloc-help { font-size: 0.78rem; color: #777; margin: 2px 0; }
+.bos-re__noloc-list { margin: 0; padding-left: 1rem; font-size: 0.82rem; }
+.bos-re__noloc-reason { color: #b7791f; font-style: italic; }
+
+.bos-re__stopcol { border-left: 4px solid #ccc; padding: 2px 0 4px 6px; margin: 4px 0; }
+.bos-re__stoprow { padding: 1px 4px; border-radius: 3px; cursor: default; }
+.bos-re__stoprow.is-hot { background: #fff3e6; }
+.bos-re__seq { display: inline-block; min-width: 16px; text-align: center; color: #fff; border-radius: 50%; font-size: 0.72rem; font-weight: 700; }
+.bos-re__svc { color: #999; font-size: 0.78rem; }
+
+@media (max-width: 48em) {
+  .bos-re { height: auto; }
+  .bos-re__body { flex-direction: column; }
+  .bos-re__side { width: auto; flex: none; border-right: 0; border-bottom: 1px solid #ddd; max-height: 40vh; }
+  .bos-re__map { height: 60vh; }
+}

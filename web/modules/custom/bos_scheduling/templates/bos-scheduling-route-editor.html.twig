@@ -1,0 +1,48 @@
+{#
+/**
+ * @file
+ * Route Editor (Stage 2: read-only). Multi-day map colored by day, route lines
+ * per (day, tech), numbered markers, card↔marker hover, no-location bucket.
+ * All rendering is done by js/route-editor.js from the JSON data endpoint.
+ */
+#}
+<div class="bos-re" data-start="{{ start }}" data-end="{{ end }}" data-range="{{ range }}">
+
+  <div class="bos-re__toolbar">
+    <strong class="bos-re__title">Route Editor</strong>
+    <span class="bos-re__dates">{{ start }} → {{ end }}</span>
+    <span class="bos-re__range">
+      Range:
+      <a href="?range=1&date={{ start }}" class="bos-re__range-btn{{ range == '1' ? ' is-active' : '' }}">Day</a>
+      <a href="?range=3&date={{ start }}" class="bos-re__range-btn{{ range == '3' ? ' is-active' : '' }}">3 Days</a>
+      <a href="?range=7&date={{ start }}" class="bos-re__range-btn{{ range == '7' ? ' is-active' : '' }}">Week</a>
+    </span>
+    <span class="bos-re__nav">
+      <a href="?range={{ range }}&date={{ start }}&nav=prev" class="bos-re__nav-btn" data-nav="prev">◀ Prev</a>
+      <a href="?range={{ range }}&date={{ start }}&nav=next" class="bos-re__nav-btn" data-nav="next">Next ▶</a>
+    </span>
+    <span class="bos-re__status" aria-live="polite"></span>
+  </div>
+
+  {% if not has_map_key %}
+    <div class="messages messages--warning">No Google Maps key is configured (geofield_map.settings). The map can't load.</div>
+  {% endif %}
+
+  <div class="bos-re__body">
+    <div class="bos-re__side">
+      <div class="bos-re__legend" aria-label="Day legend">
+        <div class="bos-re__legend-title">Days &amp; techs — click to toggle a route</div>
+        <div class="bos-re__legend-items"><em>Loading…</em></div>
+      </div>
+      <div class="bos-re__noloc">
+        <div class="bos-re__noloc-title">No location <span class="bos-re__noloc-count"></span></div>
+        <div class="bos-re__noloc-help">These stops have no usable map coordinates — they won't route until a property location is set.</div>
+        <ul class="bos-re__noloc-list"></ul>
+      </div>
+    </div>
+    <div class="bos-re__map" id="bos-re-map">
+      <div class="bos-re__map-loading">Loading map…</div>
+    </div>
+  </div>
+
+</div>

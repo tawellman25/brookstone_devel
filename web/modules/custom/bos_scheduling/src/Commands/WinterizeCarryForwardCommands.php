@@ -67,11 +67,13 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
     $sourceYears = array_values(array_filter(array_map('intval', explode(',', (string) $options['source-years']))));
     $out = $options['out'] ?: sys_get_temp_dir() . "/winterize_plan_{$targetYear}_" . date('Ymd_His') . '.csv';
 
-    // ── 1. Candidate 2026 WOs: winterizing, in the target year, not excluded,
+    // ── 1. Candidate WOs: winterizing, created this SEASON, not excluded,
     //    without a scheduling record. Authority for "the target set" is WO
-    //    `created` within the target CALENDAR year — the 2026 WOs were generated
-    //    this season, so calendar-year catches them all regardless of month.
-    $yearStart = (new DrupalDateTime("$targetYear-01-01 00:00:00", $tz))->getTimestamp();
+    //    `created` from Apr 1 through Dec 31 of the target year. The Apr-1 floor
+    //    excludes off-season catch-ups — a WO created Jan–Mar is a prior-season
+    //    winterize done late (e.g. a property forgotten in the fall and finally
+    //    done in February), not part of this season's cycle.
+    $yearStart = (new DrupalDateTime("$targetYear-04-01 00:00:00", $tz))->getTimestamp();
     $yearEnd = (new DrupalDateTime("$targetYear-12-31 23:59:59", $tz))->getTimestamp();
     $woIds = array_map('intval', $this->etm->getStorage('work_order')->getQuery()
       ->accessCheck(FALSE)

@@ -64,3 +64,12 @@ bos_scheduling.route_editor_data:
   requirements:
     _role: 'administrator+administration+supervisor+site_admin+site_assistant'
   methods: [GET]
+
+bos_scheduling.route_editor_assign:
+  path: '/teammates/calendar/route-editor/assign'
+  defaults:
+    _controller: '\Drupal\bos_scheduling\Controller\RouteEditorController::assign'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+    _csrf_request_header_token: 'TRUE'
+  methods: [POST]

@@ -10,6 +10,7 @@ use Drupal\Core\Cache\CacheableJsonResponse;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -78,6 +79,7 @@ final class RouteEditorController extends ControllerBase {
             'end'      => $end->format('Y-m-d'),
             'range'    => $range,
             'gmapKey'  => $gmap_key,
+            'assignUrl' => Url::fromRoute('bos_scheduling.route_editor_assign')->toString(),
           ],
         ],
       ],
@@ -145,6 +147,7 @@ final class RouteEditorController extends ControllerBase {
       ],
       'origin' => $origin,
       'techs' => array_values($techs),
+      'teammates' => $this->roster(),
       'stops' => $stops,
       'no_location' => $no_location,
       'counts' => ['stops' => count($stops), 'no_location' => count($no_location)],
@@ -153,6 +156,94 @@ final class RouteEditorController extends ControllerBase {
     $response = new CacheableJsonResponse($payload);
     $response->addCacheableDependency((new CacheableMetadata())->setCacheMaxAge(0));
     return $response;
+  }
+
+  /**
+   * STAGE 3 (write): reassign the crew member on one or more scheduling records.
+   *
+   * POST JSON: {scheduling_ids: [int], uid: int}  (uid 0 = unassign).
+   * CSRF-guarded (X-CSRF-Token header, see routing). Each save runs through the
+   * normal scheduling save path, so wo_schedule writes the "Re-assigned to …"
+   * audit note + WO status update for us. Teammate email notifications are
+   * suppressed — a bulk map reassignment must not fire a blast of emails.
+   */
+  public function assign(Request $request): JsonResponse {
+    $data = json_decode((string) $request->getContent(), TRUE) ?: [];
+    $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($data['scheduling_ids'] ?? [])))));
+    $uid = (int) ($data['uid'] ?? 0);
+
+    if (!$ids) {
+      return new JsonResponse(['ok' => FALSE, 'error' => 'No stops selected.'], 400);
+    }
+    // uid 0 = unassign; any other must be an active teammate.
+    if ($uid !== 0) {
+      $valid = FALSE;
+      foreach ($this->roster() as $t) {
+        if ((int) $t['uid'] === $uid) { $valid = TRUE; break; }
+      }
+      if (!$valid) {
+        return new JsonResponse(['ok' => FALSE, 'error' => 'Unknown crew member.'], 400);
+      }
+    }
+
+    $storage = $this->entityTypeManager()->getStorage('scheduling');
+    $updated = 0;
+    $skipped = 0;
+    $errors = [];
+    foreach ($ids as $id) {
+      try {
+        $entity = $storage->load($id);
+        if (!$entity || $entity->bundle() !== 'work_order') {
+          $skipped++;
+          continue;
+        }
+        $current = (int) ($entity->get('field_assigned_to')->target_id ?? 0);
+        if ($current === $uid) {
+          $skipped++;
+          continue;
+        }
+        $entity->set('field_assigned_to', $uid === 0 ? NULL : $uid);
+        // Never fire teammate notification emails on a bulk map reassignment.
+        if ($entity->hasField('field_notify_assigned_teammate')) {
+          $entity->set('field_notify_assigned_teammate', FALSE);
+        }
+        $entity->save();
+        $updated++;
+      }
+      catch (\Throwable $e) {
+        $errors[] = "#$id: " . $e->getMessage();
+      }
+    }
+
+    return new JsonResponse([
+      'ok' => empty($errors),
+      'updated' => $updated,
+      'skipped' => $skipped,
+      'errors' => $errors,
+    ]);
+  }
+
+  /**
+   * Active teammates assignable to a route (uid + display name), last-name sort.
+   * Mirrors SprinklerSchedulingController::getTeammates().
+   */
+  protected function roster(): array {
+    $q = $this->database->select('users_field_data', 'u');
+    $q->fields('u', ['uid']);
+    $q->join('user__roles', 'ur', 'ur.entity_id = u.uid AND ur.roles_target_id = :role', [':role' => 'teammates']);
+    $q->join('profile', 'tp', 'tp.uid = u.uid AND tp.type = :pt AND tp.status = 1', [':pt' => 'teammate_profile']);
+    $q->leftJoin('profile__field_first_name', 'fn', 'fn.entity_id = tp.profile_id AND fn.deleted = 0');
+    $q->leftJoin('profile__field_last_name', 'ln', 'ln.entity_id = tp.profile_id AND ln.deleted = 0');
+    $q->addExpression("TRIM(CONCAT(COALESCE(fn.field_first_name_value,''),' ',COALESCE(ln.field_last_name_value,'')))", 'name');
+    $q->condition('u.status', 1);
+    $q->orderBy('ln.field_last_name_value', 'ASC');
+    $q->orderBy('fn.field_first_name_value', 'ASC');
+
+    $out = [];
+    foreach ($q->execute()->fetchAll() as $r) {
+      $out[] = ['uid' => (int) $r->uid, 'name' => trim((string) $r->name) ?: ('User ' . $r->uid)];
+    }
+    return $out;
   }
 
   /**

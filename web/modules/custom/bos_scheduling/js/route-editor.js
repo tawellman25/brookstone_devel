@@ -1,13 +1,12 @@
 /**
  * @file
- * Route Editor — Stage 2 (read-only). Renders a multi-day map: numbered
- * markers, one route line per (day, tech), a toggleable legend, a no-location
- * bucket, and card↔marker hover linking. No editing yet.
+ * Route Editor — Stage 3. Read-only multi-day map (markers colored by day or
+ * crew, one route line per (day, tech), toggleable legend, no-location bucket,
+ * card↔marker hover) PLUS crew assignment: select stops (row checkboxes or a
+ * whole route) and reassign them to a crew member in one save.
  *
- * Coloring has two modes (toolbar toggle):
- *   - "day"  : one hue per calendar day (spot cross-day overlap in Week view).
- *   - "crew" : one distinct color per crew member (tell techs apart, esp. Day view).
- * Day-range views default to "crew"; multi-day views default to "day".
+ * Coloring modes (toolbar toggle): "day" (one hue per calendar day) or "crew"
+ * (one distinct color per crew member). Day-range views default to "crew".
  *
  * Google Maps JS API is loaded dynamically with the key from drupalSettings
  * (geofield_map.settings gmap_api_key) — never hardcoded.
@@ -21,22 +20,26 @@
   var CREW_COLORS = ['#e6194B', '#3cb44b', '#4363d8', '#f58231', '#911eb4', '#42d4f4',
                      '#f032e6', '#469990', '#9A6324', '#800000', '#808000', '#000075', '#d68910'];
   var UNASSIGNED_COLOR = '#8a8a8a';
+  var SELECT_RING = '#111';
 
   var map = null;
   var infoWindow = null;
-  var overlays = { markers: {}, lines: {}, listRows: {}, origin: null }; // markers/lines keyed by "day|uid"
-  var state = { data: null, mode: 'day', colorForDay: {}, colorForCrew: {} };
+  var overlays = { markers: {}, lines: {}, listRows: {}, markerBySid: {}, rowBySid: {}, origin: null };
+  var state = { cfg: null, data: null, mode: 'day', selected: {}, colorForDay: {}, colorForCrew: {} };
+  var _csrf = null;
 
   Drupal.behaviors.bosRouteEditor = {
     attach: function (context) {
       once('bos-route-editor', '#bos-re-map', context).forEach(function () {
         var cfg = drupalSettings.bosRouteEditor || {};
+        state.cfg = cfg;
         if (!cfg.gmapKey) {
           setStatus('No Google Maps key configured — cannot load the map.');
           return;
         }
         // Day view is most useful colored by crew; wider views by day.
         state.mode = (String(cfg.range) === '1') ? 'crew' : 'day';
+        wireAssignBar();
         loadGoogleMaps(cfg.gmapKey, function () { boot(cfg); });
       });
     }
@@ -52,9 +55,13 @@
     infoWindow = new google.maps.InfoWindow();
     var ld = document.querySelector('.bos-re__map-loading');
     if (ld) { ld.remove(); }
-    // The data endpoint resolves its window from date+range (same as the page),
-    // so send the resolved window start as the anchor date — not start/end,
-    // which it doesn't read (that mismatch showed the current week regardless).
+    fetchData();
+  }
+
+  // Fetch the JSON window and (re)draw. The data endpoint resolves its window
+  // from date+range (same as the page) — send the resolved start as the anchor.
+  function fetchData() {
+    var cfg = state.cfg || {};
     var url = cfg.dataUrl + '?date=' + encodeURIComponent(cfg.start) +
               '&range=' + encodeURIComponent(cfg.range);
     setStatus('Loading stops…');
@@ -64,7 +71,7 @@
       .catch(function (e) { setStatus('Failed to load stops: ' + e); });
   }
 
-  // Store data + assign palettes, wire the toggle, then draw.
+  // Store data + assign palettes + crew dropdown, then draw.
   function receive(data) {
     state.data = data;
     var days = (data.range && data.range.days) || [];
@@ -76,6 +83,7 @@
       var uid = s.assigned_uid;
       if (uid && !state.colorForCrew[uid]) { state.colorForCrew[uid] = CREW_COLORS[ci % CREW_COLORS.length]; ci++; }
     });
+    populateAssignSelect(data.teammates || []);
     wireColorToggle();
     draw();
   }
@@ -86,6 +94,16 @@
       return g.uid ? (state.colorForCrew[g.uid] || UNASSIGNED_COLOR) : UNASSIGNED_COLOR;
     }
     return state.colorForDay[g.day] || '#888';
+  }
+
+  function markerIcon(color, selected) {
+    return {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: selected ? 13 : 11,
+      fillColor: color, fillOpacity: 0.95,
+      strokeColor: selected ? SELECT_RING : '#fff',
+      strokeWeight: selected ? 4 : 1.5,
+    };
   }
 
   function draw() {
@@ -126,11 +144,13 @@
         var pos = new google.maps.LatLng(s.lat, s.lng);
         path.push(pos);
         bounds.extend(pos);
+        var sel = !!state.selected[s.scheduling_id];
         var marker = new google.maps.Marker({
           position: pos, map: map, label: { text: String(idx + 1), color: '#fff', fontSize: '11px', fontWeight: '700' },
-          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 11, fillColor: color, fillOpacity: 0.95, strokeColor: '#fff', strokeWeight: 1.5 },
+          icon: markerIcon(color, sel),
           title: (idx + 1) + '. ' + s.nickname + ' (' + s.service_code + ') — ' + s.tech + ' · ' + s.date,
         });
+        marker.reBaseColor = color;
         marker.addListener('click', function () {
           infoWindow.setContent(
             '<strong>' + esc(s.nickname) + '</strong> <span>' + esc(s.service_code) + '</span><br>' +
@@ -142,6 +162,7 @@
         marker.addListener('mouseover', function () { highlightRow(key, idx, true); });
         marker.addListener('mouseout', function () { highlightRow(key, idx, false); });
         overlays.markers[key].push(marker);
+        overlays.markerBySid[s.scheduling_id] = marker;
       });
       overlays.lines[key] = new google.maps.Polyline({
         path: path, map: map, strokeColor: color, strokeOpacity: 0.8, strokeWeight: 3,
@@ -150,8 +171,7 @@
 
     var stopCount = (data.stops || []).length;
     if (stopCount === 0) {
-      // Empty range (e.g. a Sunday, or a week with nothing scheduled). Make it
-      // obvious rather than a lonely dot zoomed to the shop's driveway.
+      // Empty range (e.g. a Sunday, or a week with nothing scheduled).
       showEmpty(true);
       if (data.origin && data.origin.ok) { map.setCenter({ lat: data.origin.lat, lng: data.origin.lng }); }
       map.setZoom(10);
@@ -160,7 +180,6 @@
       showEmpty(false);
       if (!bounds.isEmpty()) {
         map.fitBounds(bounds);
-        // Don't over-zoom when the stops are tightly clustered / few.
         google.maps.event.addListenerOnce(map, 'idle', function () {
           if (map.getZoom() > 14) { map.setZoom(14); }
         });
@@ -169,18 +188,19 @@
     buildLegend(days, groups);
     buildNoLocation(data.no_location || []);
     buildStopList(days, groups);
+    updateAssignBar();
     setStatus(stopCount + ' stops · ' + (data.counts ? data.counts.no_location : 0) + ' without location' +
       (data.origin && !data.origin.ok ? ' · ⚠ origin: ' + data.origin.reason : ''));
   }
 
-  // Remove every drawn overlay + the side lists so draw() can rebuild cleanly.
   function clearOverlays() {
     Object.keys(overlays.markers).forEach(function (k) {
       overlays.markers[k].forEach(function (m) { m.setMap(null); });
     });
     Object.keys(overlays.lines).forEach(function (k) { overlays.lines[k].setMap(null); });
     if (overlays.origin) { overlays.origin.setMap(null); }
-    overlays.markers = {}; overlays.lines = {}; overlays.listRows = {}; overlays.origin = null;
+    overlays.markers = {}; overlays.lines = {}; overlays.listRows = {};
+    overlays.markerBySid = {}; overlays.rowBySid = {}; overlays.origin = null;
     var legend = document.querySelector('.bos-re__legend-items');
     if (legend) { legend.innerHTML = ''; }
     var stops = document.querySelector('.bos-re__stops');
@@ -191,8 +211,7 @@
     var wrap = document.querySelector('.bos-re__colorby');
     if (!wrap) { return; }
     wrap.querySelectorAll('.bos-re__cb-btn').forEach(function (btn) {
-      var isActive = (btn.getAttribute('data-mode') === state.mode);
-      btn.classList.toggle('is-active', isActive);
+      btn.classList.toggle('is-active', btn.getAttribute('data-mode') === state.mode);
       if (btn.dataset.bosWired) { return; }
       btn.dataset.bosWired = '1';
       btn.addEventListener('click', function () {
@@ -232,7 +251,6 @@
   }
 
   function buildStopList(days, groups) {
-    // A compact grouped list beside the map; rows hover-link to markers.
     var side = document.querySelector('.bos-re__side');
     var wrap = document.createElement('div');
     wrap.className = 'bos-re__stops';
@@ -243,18 +261,37 @@
         var col = document.createElement('div');
         col.className = 'bos-re__stopcol';
         col.style.borderLeftColor = color;
-        col.innerHTML = '<div class="bos-re__stopcol-h">' + fmtDay(d) + ' · ' + esc(g.tech) + '</div>';
+
+        var head = document.createElement('label');
+        head.className = 'bos-re__stopcol-h';
+        head.innerHTML = '<input type="checkbox" class="bos-re__pickall"> ' + fmtDay(d) + ' · ' + esc(g.tech) +
+          ' <span class="bos-re__legend-n">(' + g.stops.length + ')</span>';
+        col.appendChild(head);
+
         overlays.listRows[key] = [];
+        var sids = [];
         g.stops.forEach(function (s, idx) {
+          var sid = s.scheduling_id;
+          sids.push(sid);
           var r = document.createElement('div');
-          r.className = 'bos-re__stoprow';
-          r.innerHTML = '<span class="bos-re__seq" style="background:' + color + '">' + (idx + 1) + '</span> ' +
+          r.className = 'bos-re__stoprow' + (state.selected[sid] ? ' is-selected' : '');
+          r.innerHTML =
+            '<input type="checkbox" class="bos-re__pick"' + (state.selected[sid] ? ' checked' : '') + '> ' +
+            '<span class="bos-re__seq" style="background:' + color + '">' + (idx + 1) + '</span> ' +
             esc(s.nickname) + ' <span class="bos-re__svc">' + esc(s.service_code) + '</span>';
+          r.querySelector('.bos-re__pick').addEventListener('change', function (e) { toggleSelect(sid, s, e.target.checked); });
           r.addEventListener('mouseover', function () { bounceMarker(key, idx, true); });
           r.addEventListener('mouseout', function () { bounceMarker(key, idx, false); });
           col.appendChild(r);
           overlays.listRows[key].push(r);
+          overlays.rowBySid[sid] = r;
         });
+
+        head.querySelector('.bos-re__pickall').addEventListener('change', function (e) {
+          var on = e.target.checked;
+          g.stops.forEach(function (s) { toggleSelect(s.scheduling_id, s, on); });
+        });
+
         wrap.appendChild(col);
       });
     });
@@ -275,6 +312,105 @@
       listEl.appendChild(li);
     });
   }
+
+  // ---- Selection + assignment -------------------------------------------
+
+  function toggleSelect(sid, stop, on) {
+    if (on) { state.selected[sid] = stop; } else { delete state.selected[sid]; }
+    var row = overlays.rowBySid[sid];
+    if (row) {
+      row.classList.toggle('is-selected', on);
+      var cb = row.querySelector('.bos-re__pick');
+      if (cb && cb.checked !== on) { cb.checked = on; }
+    }
+    var m = overlays.markerBySid[sid];
+    if (m) { m.setIcon(markerIcon(m.reBaseColor || '#888', on)); }
+    updateAssignBar();
+  }
+
+  function updateAssignBar() {
+    var bar = document.querySelector('.bos-re__assign');
+    var countEl = document.querySelector('.bos-re__assign-count');
+    if (!bar) { return; }
+    var n = Object.keys(state.selected).length;
+    bar.hidden = (n === 0);
+    if (countEl) { countEl.textContent = n + ' stop' + (n === 1 ? '' : 's') + ' selected'; }
+  }
+
+  function populateAssignSelect(teammates) {
+    var sel = document.querySelector('.bos-re__assign-select');
+    if (!sel) { return; }
+    sel.innerHTML =
+      '<option value="">— Assign selected to… —</option>' +
+      '<option value="__none__">— Unassign —</option>' +
+      (teammates || []).map(function (t) { return '<option value="' + t.uid + '">' + esc(t.name) + '</option>'; }).join('');
+  }
+
+  function wireAssignBar() {
+    var go = document.querySelector('.bos-re__assign-go');
+    var clear = document.querySelector('.bos-re__assign-clear');
+    if (go && !go.dataset.bosWired) { go.dataset.bosWired = '1'; go.addEventListener('click', doAssign); }
+    if (clear && !clear.dataset.bosWired) {
+      clear.dataset.bosWired = '1';
+      clear.addEventListener('click', function () {
+        Object.keys(state.selected).map(Number).forEach(function (sid) {
+          var stop = state.selected[sid];
+          toggleSelect(sid, stop, false);
+        });
+      });
+    }
+  }
+
+  function doAssign() {
+    var sel = document.querySelector('.bos-re__assign-select');
+    var go = document.querySelector('.bos-re__assign-go');
+    var val = sel ? sel.value : '';
+    if (val === '') { window.alert('Choose a crew member (or Unassign) first.'); return; }
+    var uid = (val === '__none__') ? 0 : parseInt(val, 10);
+    var ids = Object.keys(state.selected).map(Number);
+    if (!ids.length) { return; }
+    var who = (val === '__none__') ? 'Unassign' : (sel.options[sel.selectedIndex].text);
+    if (!window.confirm('Reassign ' + ids.length + ' stop(s) → ' + who + '?')) { return; }
+
+    if (go) { go.disabled = true; }
+    setStatus('Saving assignment…');
+    getCsrf().then(function (token) {
+      return fetch(state.cfg.assignUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token, 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ scheduling_ids: ids, uid: uid }),
+      });
+    }).then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
+      .then(function (res) {
+        if (go) { go.disabled = false; }
+        var b = res.body || {};
+        if (res.status >= 400 || (!b.ok && !b.updated)) {
+          window.alert('Assignment failed: ' + (b.error || (b.errors || []).join('; ') || ('HTTP ' + res.status)));
+          setStatus('Assignment failed.');
+          return;
+        }
+        // Success (full or partial): clear selection + refetch so grouping,
+        // colors, and the audit-driven state reflect the new assignment.
+        state.selected = {};
+        if (sel) { sel.value = ''; }
+        fetchData();
+        var msg = b.updated + ' stop(s) reassigned' +
+          (b.skipped ? ', ' + b.skipped + ' unchanged' : '') +
+          (b.errors && b.errors.length ? ', ' + b.errors.length + ' error(s)' : '') + '.';
+        setStatus(msg);
+      })
+      .catch(function (e) { if (go) { go.disabled = false; } window.alert('Assignment error: ' + e); });
+  }
+
+  function getCsrf() {
+    if (_csrf) { return Promise.resolve(_csrf); }
+    return fetch(Drupal.url('session/token'), { credentials: 'same-origin' })
+      .then(function (r) { return r.text(); })
+      .then(function (t) { _csrf = t; return t; });
+  }
+
+  // ---- Misc helpers ------------------------------------------------------
 
   function toggleGroup(key, on) {
     (overlays.markers[key] || []).forEach(function (m) { m.setMap(on ? map : null); });

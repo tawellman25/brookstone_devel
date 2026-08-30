@@ -17,7 +17,7 @@ use Drush\Commands\DrushCommands;
  * Winterizing 2026 schedule carry-forward.
  *
  * `bos:winterize:plan` — READ-ONLY. Proposes 2026 sprinkler_winterizing
- * schedules from prior-season history (same nth-weekday-of-month date, actual
+ * schedules from prior-season history (same calendar date → one weekday later, actual
  * technician, and the route order the crew actually DROVE last fall), and writes
  * a reviewable CSV. It writes NO entity — the office edits the CSV, then
  * `bos:winterize:apply` (separate) applies the reviewed file.
@@ -639,22 +639,36 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
       $flags[] = 'multiple_prior_schedules';
     }
 
-    // Prior date → weekday/ordinal → proposed nth-weekday date.
+    // Prior date → proposed date via the CALENDAR-DATE rule: keep the prior
+    // month/day in the target year, so it lands one weekday later than last
+    // year (the season keeps its sequence + pace and slides forward a weekday).
+    // Weekend rule: Sat & Sun roll forward to the next Monday (crews work
+    // Mon–Fri). This replaced the old nth-weekday-of-month mapping, which
+    // preserved each customer's weekday but scrambled the route order year to
+    // year (e.g. first-Wednesday customers leapfrogged to the 4th week).
     $prior = DrupalDateTime::createFromTimestamp($rec['start'], $tz);
     $row['prior_date'] = $prior->format('Y-m-d');
     $row['prior_weekday'] = $prior->format('D');
     $iso = (int) $prior->format('N');
     $month = (int) $prior->format('n');
-    $ordinal = intdiv(((int) $prior->format('j')) - 1, 7) + 1;
-    $row['prior_ordinal'] = $ordinal;
-    [$proposed, $fellBack] = $this->nthWeekday($targetYear, $month, $iso, $ordinal, $tz);
-    if ($fellBack) {
-      $flags[] = 'ordinal_5_fallback';
+    $day = (int) $prior->format('j');
+    $row['prior_ordinal'] = intdiv($day - 1, 7) + 1;
+    $proposed = new DrupalDateTime(sprintf('%04d-%02d-%02d 00:00:00', $targetYear, $month, $day), $tz);
+    // Feb-29 guard (prior on a leap day, target not a leap year → last of month).
+    if ((int) $proposed->format('n') !== $month) {
+      $proposed = new DrupalDateTime(sprintf('%04d-%02d-01 00:00:00', $targetYear, $month), $tz);
+      $proposed->modify('last day of this month');
+    }
+    $dow = (int) $proposed->format('N'); // 1=Mon … 7=Sun
+    if ($dow === 6) {
+      $proposed->modify('+2 days');
+      $flags[] = 'weekend_roll';
+    }
+    elseif ($dow === 7) {
+      $proposed->modify('+1 day');
+      $flags[] = 'weekend_roll';
     }
     $row['proposed_date'] = $proposed->format('Y-m-d');
-    if ((int) $proposed->format('N') === 7) {
-      $flags[] = 'weekend';
-    }
     // Holiday = informational (winterizing works through holidays, e.g. Columbus
     // Day); closure = office genuinely closed → blocks. Business calendar
     // currently tags everything 'holiday', so holidays schedule with a flag.
@@ -758,15 +772,15 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
 
     // Action: schedule everything with a usable date — dead-tech rows land
     // UNASSIGNED (blank tech → calendar's unassigned bucket, supervisor assigns).
-    // Only a genuine date-conflict (holiday/Sunday) is held for manual review,
-    // because proximity can't fix a bad date. New-customer (no_prior) rows are
-    // proximity-filled in a later pass. All rows here are field_scheduled_firm =
-    // FALSE, so everything is a soft proposal the supervisor confirms. The office
-    // can still flip any action in the CSV.
+    // Weekend-landing dates auto-roll to Monday (weekend_roll, non-blocking), so
+    // only a genuine office closure is held for manual review. New-customer
+    // (no_prior) rows are proximity-filled in a later pass. All rows here are
+    // field_scheduled_firm = FALSE, so everything is a soft proposal the
+    // supervisor confirms. The office can still flip any action in the CSV.
     $row['flags'] = implode('|', $flags);
-    // Only a Sunday or a genuine office closure holds for manual — a bad date
-    // proximity can't fix. Holidays (worked) and everything else schedule soft.
-    $blocking = array_intersect($flags, ['weekend', 'closure_collision']);
+    // Only a genuine office closure holds for manual — a bad date proximity
+    // can't fix. Weekends roll to Monday; holidays (worked) schedule soft.
+    $blocking = array_intersect($flags, ['closure_collision']);
     $row['action'] = $blocking ? 'review' : 'schedule';
     return $row;
   }
@@ -886,19 +900,6 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
     }
   }
 
-  private function nthWeekday(int $year, int $month, int $iso, int $ordinal, \DateTimeZone $tz): array {
-    $first = new DrupalDateTime(sprintf('%04d-%02d-01 00:00:00', $year, $month), $tz);
-    $firstIso = (int) $first->format('N');
-    $offset = ($iso - $firstIso + 7) % 7;
-    $day = 1 + $offset + ($ordinal - 1) * 7;
-    $daysInMonth = (int) $first->format('t');
-    if ($day > $daysInMonth) {
-      // Ordinal 5 (or 4) doesn't exist this month — use the last occurrence.
-      $lastDay = 1 + $offset + (intdiv($daysInMonth - 1 - $offset, 7)) * 7;
-      return [new DrupalDateTime(sprintf('%04d-%02d-%02d 00:00:00', $year, $month, $lastDay), $tz), TRUE];
-    }
-    return [new DrupalDateTime(sprintf('%04d-%02d-%02d 00:00:00', $year, $month, $day), $tz), FALSE];
-  }
 
   /** business_calendar type ('holiday' | 'closure' | '') for a date (site tz). */
   private function calendarType(DrupalDateTime $date): string {
@@ -1006,7 +1007,7 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
       sprintf('Candidates: %d', count($rows)),
       sprintf('  ✅ auto-schedule, tech assigned  : %d   (apply schedules these; nothing to review)', count($assigned)),
       sprintf('  🅿  auto-schedule, UNASSIGNED     : %d   (land on the calendar; confirm + assign a tech)', count($unassigned)),
-      sprintf('  ✋ manual — date conflict         : %d   (holiday/Sunday; move the date yourself)', count($review)),
+      sprintf('  ✋ manual — date conflict         : %d   (office closure; move the date yourself)', count($review)),
       sprintf('  🆕 skip — no history, no neighbour: %d   (schedule from scratch)', count($skip)),
     ]);
 

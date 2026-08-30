@@ -40,8 +40,11 @@
     infoWindow = new google.maps.InfoWindow();
     var ld = document.querySelector('.bos-re__map-loading');
     if (ld) { ld.remove(); }
-    var url = cfg.dataUrl + '?start=' + encodeURIComponent(cfg.start) +
-              '&end=' + encodeURIComponent(cfg.end) + '&range=' + encodeURIComponent(cfg.range);
+    // The data endpoint resolves its window from date+range (same as the page),
+    // so send the resolved window start as the anchor date — not start/end,
+    // which it doesn't read (that mismatch showed the current week regardless).
+    var url = cfg.dataUrl + '?date=' + encodeURIComponent(cfg.start) +
+              '&range=' + encodeURIComponent(cfg.range);
     setStatus('Loading stops…');
     fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
       .then(function (r) { return r.json(); })

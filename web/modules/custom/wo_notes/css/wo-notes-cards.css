@@ -21,16 +21,25 @@
 }
 
 /* Whole card is a link to the note's edit form (modal). */
-a.wo-note-card--link {
+.wo-note-card--link {
   text-decoration: none;
   cursor: pointer;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-a.wo-note-card--link:hover {
+.wo-note-card--link:hover {
   border-color: #1a5276;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   text-decoration: none;
+}
+
+/* Links inside a note body stay real, clickable links (the card is a div, so
+   this is valid HTML now) and shouldn't inherit the card's underline reset. */
+.wo-note-body a {
+  text-decoration: underline;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
 }
 
 /* Brand blue = human notes. */

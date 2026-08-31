@@ -11,8 +11,10 @@
  *   accent_class   — wo-note-card--system | wo-note-card--manual.
  *   edit_url       — modal edit-form URL (empty if the user can't edit).
  *
- * The whole card opens the note's edit form in a modal (use-ajax), when the
- * user can edit; otherwise it renders as a plain, non-clickable card.
+ * The whole card opens the note's edit form in a modal via JS (see
+ * wo-notes-toggle.js: data-edit-url), when the user can edit; otherwise it
+ * renders as a plain, non-clickable card. It must NOT be an <a> — note bodies
+ * can contain links, and nested anchors are invalid HTML (browsers split them).
  */
 #}
 {% set card_inner %}
@@ -28,11 +30,18 @@
   {% endif %}
 {% endset %}
 
+{#
+  The whole card opens the edit modal, but it must be a <div>, not an <a>:
+  note bodies can contain links (e.g. a "WO#12345" cross-reference), and nested
+  <a> tags are invalid HTML — the browser force-closes the outer card link at
+  the inner link, splitting the card apart. JS (wo-notes-toggle.js) opens the
+  modal on click via data-edit-url, and ignores clicks on real inner links.
+#}
 {% if edit_url %}
-  <a href="{{ edit_url }}" class="wo-note-card wo-note-card--link {{ accent_class }} use-ajax"
-     data-dialog-type="modal" data-dialog-options='{"width":"90%","maxWidth":"1000"}'>
+  <div class="wo-note-card wo-note-card--link {{ accent_class }}"
+       data-edit-url="{{ edit_url }}" role="button" tabindex="0">
     {{ card_inner }}
-  </a>
+  </div>
 {% else %}
   <div class="wo-note-card {{ accent_class }}">
     {{ card_inner }}

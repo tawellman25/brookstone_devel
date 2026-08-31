@@ -1160,6 +1160,30 @@ env's active config (`recaptcha.settings` sync has blanks); for dev testing use
 Google's always-pass **test keys** in dev active config. Ref: `bos_service_request`
 CustomerProvisioningService / CreateCustomerForm (2026-08-27).
 
+## A whole-card `<a>` link splits apart when the card's content contains a link
+
+**Symptom.** A clickable status card (rendered as `<a class="card" href=…>` so the
+whole card opens something) suddenly renders as **empty/broken boxes with a link
+floating outside the card** — but only for *some* records. WO Notes hit this: a
+note card was an `<a>` (use-ajax modal edit), and a note whose body contained a
+link (a `WO#12345` cross-reference `<a>`) rendered as fragments with the inner
+link outside the card.
+
+**Cause.** **Nested `<a>` tags are invalid HTML.** When the browser parses
+`<a>…<a>WO#12345</a>…</a>` it force-closes the outer anchor at the point the inner
+`<a>` begins (per the HTML parsing spec — an `<a>` may not contain another `<a>`),
+splitting the DOM: the outer card ends early and the inner link lands outside it.
+Any card content that can contain a link breaks the card.
+
+**Fix.** Don't make the clickable card an `<a>`. Render it as
+`<div class="card" data-…-url role="button" tabindex="0">` and open the target in
+JS (a `Drupal.behaviors` click handler → `Drupal.ajax({url, dialogType:'modal', …}).execute()`
+for a modal), **ignoring clicks whose `event.target.closest('a, button, …')`** so
+real inner links still work. A `<div>` may legally contain `<a>`. De-scope any
+`a.card--link` CSS to `.card--link`. Ref: `wo_notes` note cards (2026-08-31,
+`32121479`). Applies to the whole BOS status-card pattern (`ui_patterns.md`) —
+whenever card content might contain a link, the card wrapper must not be an anchor.
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

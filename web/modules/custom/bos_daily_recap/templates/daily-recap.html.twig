@@ -17,6 +17,15 @@
 
   <p class="daily-recap__generated">Generated {{ generated_at }}</p>
 
+  <form class="daily-recap__daypicker" method="get" action="{{ form_action }}">
+    <label for="recap-day">Look at a specific day:</label>
+    <input type="date" id="recap-day" name="day" value="{{ selected_day }}">
+    <button type="submit">View day</button>
+    {% if is_specific_day %}
+      <a class="daily-recap__reset" href="{{ reset_url }}">Reset to latest</a>
+    {% endif %}
+  </form>
+
   <div class="daily-recap__windows">
     {% for w in windows %}
       <section class="recap-card">
@@ -49,7 +58,7 @@
       {{ list_label }}{% if list_count %} — {{ list_count }} work orders, {{ list_total }}{% endif %}
     </h2>
     {% if selection_active %}
-      <a class="daily-recap__clear" href="{{ clear_url }}">&times; clear &middot; show yesterday (all)</a>
+      <a class="daily-recap__clear" href="{{ clear_url }}">&times; clear &middot; show all completions</a>
     {% endif %}
   </div>
 

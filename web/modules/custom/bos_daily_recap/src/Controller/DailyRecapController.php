@@ -46,7 +46,14 @@ final class DailyRecapController extends ControllerBase {
    * Dashboard. ?range= & ?dept= select which total the bottom list shows.
    */
   public function view(Request $request): array {
-    $windows = $this->windows();
+    // Optional ?day=YYYY-MM-DD anchors the whole recap to a chosen day (that
+    // day + week-to-that-day + month-to-that-day). Empty = default (yesterday /
+    // WTD / MTD as of now).
+    $day = (string) $request->query->get('day', '');
+    $day_valid = $day !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) === 1;
+    $base_query = $day_valid ? ['day' => $day] : [];
+
+    $windows = $this->windows($day_valid ? $day : '');
     $sel_range = (string) $request->query->get('range', '');
     $sel_dept = $request->query->get('dept', NULL);
     $has_selection = $sel_range !== '' && isset($windows[$sel_range]) && $sel_dept !== NULL && $sel_dept !== '';
@@ -65,7 +72,7 @@ final class DailyRecapController extends ControllerBase {
           'dept' => $d['label'],
           'value' => $this->money($d['value']),
           'count' => $d['count'],
-          'url' => Url::fromRoute('bos_daily_recap.dashboard', [], ['query' => ['range' => $key, 'dept' => $dept_id]])->toString(),
+          'url' => Url::fromRoute('bos_daily_recap.dashboard', [], ['query' => ['range' => $key, 'dept' => $dept_id] + $base_query])->toString(),
           'active' => $has_selection && $sel_range === $key && (string) $sel_dept === (string) $dept_id,
         ];
       }
@@ -120,47 +127,66 @@ final class DailyRecapController extends ControllerBase {
       '#list_total' => $this->money($list_total),
       '#list_count' => $list_count,
       '#selection_active' => $has_selection,
-      '#clear_url' => Url::fromRoute('bos_daily_recap.dashboard')->toString(),
+      '#clear_url' => Url::fromRoute('bos_daily_recap.dashboard', [], ['query' => $base_query])->toString(),
+      '#selected_day' => $day_valid ? $day : '',
+      '#is_specific_day' => $day_valid,
+      '#form_action' => Url::fromRoute('bos_daily_recap.dashboard')->toString(),
+      '#reset_url' => Url::fromRoute('bos_daily_recap.dashboard')->toString(),
       '#mowing_note' => 'Lawn mowing is contract-billed, so its dollar value is not carried on the work order — the per-department $ shows ~$0 for mowing; use the completions count for mowing volume.',
       '#attached' => ['library' => ['bos_daily_recap/dashboard']],
       '#cache' => [
         'max-age' => 0,
-        'contexts' => ['url.query_args:range', 'url.query_args:dept'],
+        'contexts' => ['url.query_args:range', 'url.query_args:dept', 'url.query_args:day'],
       ],
     ];
   }
 
   /* ---------- windows ---------- */
 
-  private function windows(): array {
+  private function windows(string $day = ''): array {
     $tz = new \DateTimeZone(date_default_timezone_get());
     $now = new \DateTime('@' . $this->time->getRequestTime());
     $now->setTimezone($tz);
 
-    $y_start = (clone $now)->modify('yesterday')->setTime(0, 0, 0);
-    $y_end = (clone $y_start)->setTime(23, 59, 59);
+    // The "day" window + the point WTD/MTD run through. Default: yesterday, with
+    // WTD/MTD as of now. With ?day set: that day, with WTD/MTD as of end-of-day.
+    if ($day !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) === 1) {
+      $d_start = (\DateTime::createFromFormat('Y-m-d H:i:s', $day . ' 00:00:00', $tz))->setTime(0, 0, 0);
+      $d_end = (clone $d_start)->setTime(23, 59, 59);
+      $asof = $d_end;
+      $day_label = 'Selected day (' . $d_start->format('m/d/Y') . ')';
+      $wtd_prefix = 'Week through ' . $d_start->format('m/d');
+      $mtd_prefix = 'Month through ' . $d_start->format('m/d');
+    }
+    else {
+      $d_start = (clone $now)->modify('yesterday')->setTime(0, 0, 0);
+      $d_end = (clone $d_start)->setTime(23, 59, 59);
+      $asof = $now;
+      $day_label = 'Yesterday (' . $d_start->format('m/d/Y') . ')';
+      $wtd_prefix = 'Week to date';
+      $mtd_prefix = 'Month to date';
+    }
 
-    // Week-to-date, Sunday start.
-    $dow = (int) $now->format('w');
-    $w_start = (clone $now)->modify("-{$dow} days")->setTime(0, 0, 0);
-
-    $m_start = (clone $now)->modify('first day of this month')->setTime(0, 0, 0);
+    // Week (Sunday start) + month, anchored to the "as of" moment.
+    $dow = (int) $asof->format('w');
+    $w_start = (clone $asof)->modify("-{$dow} days")->setTime(0, 0, 0);
+    $m_start = (clone $asof)->modify('first day of this month')->setTime(0, 0, 0);
 
     return [
       'yesterday' => [
-        'label' => 'Yesterday (' . $y_start->format('m/d/Y') . ')',
-        'start' => $y_start->getTimestamp(),
-        'end' => $y_end->getTimestamp(),
+        'label' => $day_label,
+        'start' => $d_start->getTimestamp(),
+        'end' => $d_end->getTimestamp(),
       ],
       'wtd' => [
-        'label' => 'Week to date (since ' . $w_start->format('m/d/Y') . ')',
+        'label' => $wtd_prefix . ' (since ' . $w_start->format('m/d/Y') . ')',
         'start' => $w_start->getTimestamp(),
-        'end' => $now->getTimestamp(),
+        'end' => $asof->getTimestamp(),
       ],
       'mtd' => [
-        'label' => 'Month to date (since ' . $m_start->format('m/d/Y') . ')',
+        'label' => $mtd_prefix . ' (since ' . $m_start->format('m/d/Y') . ')',
         'start' => $m_start->getTimestamp(),
-        'end' => $now->getTimestamp(),
+        'end' => $asof->getTimestamp(),
       ],
     ];
   }

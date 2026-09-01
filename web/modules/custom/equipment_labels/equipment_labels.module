@@ -1,0 +1,119 @@
+<?php
+
+/**
+ * @file
+ * Equipment Labels — fills two auto_entitylabel gaps.
+ *
+ *  1. Equipment bundles with NO auto_entitylabel pattern (e.g. power_tools,
+ *     which also has no field_equipment_number) never got a generated title, so
+ *     new records saved blank. Here we compose one from make + type + model
+ *     (+ " - " + number, matching the fleet convention), only when the title is
+ *     empty — so clearing the title and re-saving regenerates it. Bundles that
+ *     DO have an auto_entitylabel pattern (heavy_equipment, small_engine, …) are
+ *     left to that module.
+ *
+ *  2. equipment_types terms auto-label from [term:field_common_name]; a term
+ *     created with only `name` set (no field_common_name) came out blank. We
+ *     copy name → field_common_name when the latter is empty, and force this to
+ *     run BEFORE auto_entitylabel (see hook_module_implements_alter) so the
+ *     typed name survives the rebuild.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_presave().
+ */
+function equipment_labels_entity_presave(EntityInterface $entity) {
+  $type = $entity->getEntityTypeId();
+  if ($type === 'taxonomy_term' && $entity->bundle() === 'equipment_types') {
+    _equipment_labels_term_common_name($entity);
+  }
+  elseif ($type === 'equipment') {
+    _equipment_labels_equipment_title($entity);
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * Run our entity_presave before auto_entitylabel's, so the term
+ * name → field_common_name copy happens before auto_entitylabel rebuilds the
+ * name from field_common_name.
+ */
+function equipment_labels_module_implements_alter(&$implementations, $hook) {
+  if ($hook === 'entity_presave' && isset($implementations['equipment_labels'])) {
+    $ours = $implementations['equipment_labels'];
+    unset($implementations['equipment_labels']);
+    $implementations = ['equipment_labels' => $ours] + $implementations;
+  }
+}
+
+/**
+ * Copy a typed term name into field_common_name when the latter is empty.
+ */
+function _equipment_labels_term_common_name(EntityInterface $term) {
+  if (!$term->hasField('field_common_name')) {
+    return;
+  }
+  $common = trim((string) $term->get('field_common_name')->value);
+  $name = trim((string) $term->label());
+  if ($common === '' && $name !== '') {
+    $term->set('field_common_name', $name);
+  }
+}
+
+/**
+ * Compose an equipment title for bundles without an auto_entitylabel pattern.
+ */
+function _equipment_labels_equipment_title(EntityInterface $equip) {
+  // Leave bundles that have an active auto_entitylabel pattern to that module.
+  if (\Drupal::config('auto_entitylabel.settings.equipment.' . $equip->bundle())->get('status')) {
+    return;
+  }
+  $label_key = $equip->getEntityType()->getKey('label');
+  if (!$label_key) {
+    return;
+  }
+  // Only fill an empty title — clearing it and re-saving regenerates.
+  if (trim((string) $equip->label()) !== '') {
+    return;
+  }
+
+  $make = _equipment_labels_field($equip, 'field_equipment_make');
+  $model = _equipment_labels_field($equip, 'field_model');
+  $number = _equipment_labels_field($equip, 'field_equipment_number');
+  $type = _equipment_labels_type_name($equip);
+
+  $base = trim(implode(' ', array_filter([$make, $type, $model], 'strlen')));
+  if ($base === '' && $number === '') {
+    return;
+  }
+  // Trailing " -" when there is no number matches the existing fleet titles.
+  $equip->set($label_key, rtrim($base . ' - ' . $number));
+}
+
+/**
+ * Type name = the referenced equipment_types term's common name (or its label).
+ */
+function _equipment_labels_type_name(EntityInterface $equip) {
+  if (!$equip->hasField('field_equipment_type') || $equip->get('field_equipment_type')->isEmpty()) {
+    return '';
+  }
+  $term = $equip->get('field_equipment_type')->entity;
+  if (!$term) {
+    return '';
+  }
+  $common = $term->hasField('field_common_name') ? trim((string) $term->get('field_common_name')->value) : '';
+  return $common !== '' ? $common : trim((string) $term->label());
+}
+
+/**
+ * Trimmed scalar value of a field, or '' when missing/empty.
+ */
+function _equipment_labels_field(EntityInterface $entity, string $field) {
+  if (!$entity->hasField($field) || $entity->get($field)->isEmpty()) {
+    return '';
+  }
+  return trim((string) $entity->get($field)->value);
+}

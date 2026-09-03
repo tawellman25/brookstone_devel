@@ -43,8 +43,28 @@
     setTimeout(function () { card.remove(); }, 250);
   }
 
+  function reapplyFilter() {
+    var bar = document.querySelector('.wb__filter');
+    var f = (bar && bar.dataset.active) || 'all';
+    document.querySelectorAll('.wb-card').forEach(function (card) {
+      var oc = card.getAttribute('data-outcome') || 'none';
+      card.style.display = (f === 'all' || oc === f) ? '' : 'none';
+    });
+  }
+
   Drupal.behaviors.bosWinback = {
     attach: function (context) {
+      // Call-outcome filter (All / Not worked / Left message / No answer).
+      once('wb-filter', '.wb__filter', context).forEach(function (bar) {
+        bar.addEventListener('click', function (e) {
+          var b = e.target.closest('.wb__filter-opt');
+          if (!b) { return; }
+          bar.querySelectorAll('.wb__filter-opt').forEach(function (x) { x.classList.toggle('is-active', x === b); });
+          bar.dataset.active = b.getAttribute('data-filter');
+          reapplyFilter();
+        });
+      });
+
       once('wb-card', '.wb-card', context).forEach(function (card) {
         var pid = card.getAttribute('data-pid');
         var stateEl = card.querySelector('[data-role="state"]');
@@ -60,10 +80,12 @@
               btn.disabled = false;
               if (!res || res.status !== 'ok') { return; }
               card.classList.add('is-worked');
+              card.setAttribute('data-outcome', res.outcome);
               if (stateEl) {
                 stateEl.textContent = (LABELS[res.outcome] || res.outcome) + ' · ' + res.by + ' · ' + res.time;
               }
               if (resetBtn) { resetBtn.hidden = false; }
+              reapplyFilter();
             }).catch(function () { btn.disabled = false; });
           });
         });
@@ -96,8 +118,10 @@
             post(pid, { outcome: 'clear' }).then(function () {
               resetBtn.disabled = false;
               card.classList.remove('is-worked');
+              card.setAttribute('data-outcome', 'none');
               if (stateEl) { stateEl.textContent = ''; }
               resetBtn.hidden = true;
+              reapplyFilter();
             }).catch(function () { resetBtn.disabled = false; });
           });
         }

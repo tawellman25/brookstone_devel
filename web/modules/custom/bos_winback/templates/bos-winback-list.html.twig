@@ -44,10 +44,18 @@
     <p class="wb__empty">Nothing to call right now — everyone from last season either has a work order this year or has been handled.</p>
   {% endif %}
 
+  <div class="wb__filter">
+    <span class="wb__filter-label">Show:</span>
+    <button type="button" class="wb__filter-opt is-active" data-filter="all">All</button>
+    <button type="button" class="wb__filter-opt" data-filter="none">Not worked</button>
+    <button type="button" class="wb__filter-opt" data-filter="left_message">Left message</button>
+    <button type="button" class="wb__filter-opt" data-filter="no_answer">No answer</button>
+  </div>
+
   <div class="wb__list">
     {% for row in rows %}
       {% set name = row.contact_name ?: (row.owner_name ?: row.nickname) %}
-      <div class="wb-card{{ row.state ? ' is-worked' : '' }}" data-pid="{{ row.property_id }}">
+      <div class="wb-card{{ row.state ? ' is-worked' : '' }}" data-pid="{{ row.property_id }}" data-outcome="{{ row.state.outcome|default('none') }}">
         <div class="wb-card__main">
           <div class="wb-card__head">
             <a class="wb-card__name" href="/properties/{{ row.property_id }}" target="_blank" rel="noopener">{{ name }}</a>

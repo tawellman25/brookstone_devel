@@ -354,7 +354,12 @@
         setTimeout(function () {
           const cell = el.querySelector('.fc-daygrid-day[data-date="' + targetDate + '"], .fc-day[data-date="' + targetDate + '"]');
           if (cell) {
-            cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Scroll the target week near the top (below the sticky admin
+            // toolbar + calendar header) so the week-of is prominent, not the
+            // week above it. Offset ≈ toolbar + month/day headers.
+            const rect = cell.getBoundingClientRect();
+            const y = window.pageYOffset + rect.top - 150;
+            window.scrollTo({ top: y > 0 ? y : 0, behavior: 'smooth' });
             cell.classList.add('bos-cal-day-focus');
             setTimeout(function () { cell.classList.remove('bos-cal-day-focus'); }, 4000);
           }

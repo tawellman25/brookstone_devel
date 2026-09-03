@@ -53,7 +53,8 @@
   table.rate { width: 100%; border-collapse: collapse; margin-top: 2px; }
   table.rate th, table.rate td { border: 1px solid #666; padding: 5px 8px; text-align: left; }
   table.rate th { background: #f0ece6; font-size: 9.5px; text-transform: uppercase; letter-spacing: .04em; }
-  table.rate td.amt { text-align: right; font-weight: bold; width: 130px; }
+  table.rate td.amt { text-align: right; font-weight: bold; width: 150px; }
+  table.rate th .thsub { display: block; font-size: 7px; font-weight: normal; text-transform: none; letter-spacing: 0; color: #333; margin-top: 1px; }
   .ratenote { font-size: 8.5px; color: #444; margin-top: 5px; line-height: 1.35; }
 
   .terms h2.th { font-size: 15px; color: #CB6015; margin: 0 0 8px 0; }
@@ -137,7 +138,7 @@
   <div class="box">
     <h2>Snowplowing Pricing</h2>
     <table class="rate">
-      <tr><th>Snow Depth</th><th style="text-align:right;">Rate per Complete Plowing</th></tr>
+      <tr><th>Snow Depth</th><th style="text-align:right;">Rate<span class="thsub">per complete plowing</span></th></tr>
       {% for r in data.rates %}
         <tr><td>{{ r.tier }}</td><td class="amt">{{ r.rate|default('$________') }}</td></tr>
       {% endfor %}

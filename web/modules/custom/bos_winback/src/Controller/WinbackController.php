@@ -33,6 +33,7 @@ final class WinbackController extends ControllerBase {
     $canceled = count(array_filter($rows, fn($r) => $r['was_canceled']));
     $revenue = array_sum(array_map(fn($r) => (float) $r['last_total'], $rows));
     $worked = count(array_filter($rows, fn($r) => !empty($r['state'])));
+    $summary = $this->winback->getSummary($lookback);
 
     return [
       '#theme' => 'bos_winback_list',
@@ -48,6 +49,11 @@ final class WinbackController extends ControllerBase {
         'canceled' => $canceled,
         'worked' => $worked,
         'revenue' => number_format($revenue, 2),
+        'won_back' => $summary['won_back'],
+        'came_back' => $summary['came_back'],
+        'contracted' => $summary['contracted'],
+        'source_total' => $summary['source_total'],
+        'pct' => $summary['pct'],
       ],
       '#attached' => [
         'library' => ['bos_winback/winback'],

@@ -204,6 +204,69 @@ final class WinbackListService {
   }
 
   /**
+   * Win-back summary counts for the header:
+   *   source_total — distinct properties winterized in the look-back window
+   *   came_back    — of those, how many now have a current-year winterize
+   *   contracted   — of came_back, how many are on a current-year contract
+   *                  (their winterize WO carries a contract link — a renewal,
+   *                  not a campaign recovery)
+   *   won_back     — came_back minus contracted (recovered without a contract)
+   *   pct          — won_back / source_total, rounded
+   */
+  public function getSummary(int $lookback_years = 1): array {
+    $target_year = $this->targetYear();
+    $lookback = $this->clampLookback($lookback_years);
+    $tz = new \DateTimeZone(date_default_timezone_get());
+    $ts = fn(string $ymd) => (new DrupalDateTime($ymd . ' 00:00:00', $tz))->getTimestamp();
+    $db = \Drupal::database();
+
+    // Source: distinct properties winterized in the look-back window.
+    $sq = $db->select('work_order__field_property', 'wop');
+    $sq->join('work_order_field_data', 'wo', 'wo.id = wop.entity_id');
+    $sq->condition('wo.type', 'sprinkler_winterizing');
+    $sq->condition('wop.deleted', 0);
+    $sq->condition('wo.created', [$ts(($target_year - $lookback) . '-08-15'), $ts(($target_year - 1) . '-12-31')], 'BETWEEN');
+    $sq->fields('wop', ['field_property_target_id']);
+    $sq->distinct();
+    $source = array_map('intval', $sq->execute()->fetchCol());
+
+    // Covered this year: property → is it on a current-year contract (its
+    // current-year winterize WO carries a contract link)?
+    $cq = $db->select('work_order__field_property', 'wop');
+    $cq->join('work_order_field_data', 'wo', 'wo.id = wop.entity_id');
+    $cq->leftJoin('work_order__field_contract', 'fc', 'fc.entity_id = wo.id AND fc.deleted = 0');
+    $cq->condition('wo.type', 'sprinkler_winterizing');
+    $cq->condition('wop.deleted', 0);
+    $cq->condition('wo.created', $ts($target_year . '-01-01'), '>=');
+    $cq->addField('wop', 'field_property_target_id', 'pid');
+    $cq->addExpression('MAX(CASE WHEN fc.field_contract_target_id IS NOT NULL THEN 1 ELSE 0 END)', 'contracted');
+    $cq->groupBy('wop.field_property_target_id');
+    $covered = [];
+    foreach ($cq->execute() as $r) {
+      $covered[(int) $r->pid] = (int) $r->contracted;
+    }
+
+    $came_back = $contracted = 0;
+    foreach ($source as $pid) {
+      if (isset($covered[$pid])) {
+        $came_back++;
+        if ($covered[$pid]) {
+          $contracted++;
+        }
+      }
+    }
+    $won_back = $came_back - $contracted;
+    $source_total = count($source);
+    return [
+      'source_total' => $source_total,
+      'came_back' => $came_back,
+      'contracted' => $contracted,
+      'won_back' => $won_back,
+      'pct' => $source_total ? (int) round($won_back / $source_total * 100) : 0,
+    ];
+  }
+
+  /**
    * The date the WO was signed off / completed (from its wo_complete_info
    * record's field_date_completed), formatted m/d/Y, or '' if not completed.
    * Bundle-agnostic — matches whichever crew signed it off.

@@ -1,0 +1,59 @@
+<?php
+
+/**
+ * @file
+ * Contract — Snow Removal.
+ *
+ * Phase 1: assign a stable Snow Contract number (SNOW-{year}-{id}) and default
+ * the template version. Later phases add the print/PDF template + QR (modeled
+ * on wo_backflow_testing) and the workflow actions.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Current Snow Removal Service Agreement template version. Bump when the
+ * agreement layout/terms change so executed copies stay tied to their version.
+ */
+const CONTRACT_SNOW_TEMPLATE_VERSION = 'v1.0';
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for contracts.
+ *
+ * Default the template version on snow contracts that don't have one yet.
+ */
+function contract_snow_contracts_presave(EntityInterface $contract) {
+  if ($contract->bundle() !== 'snow_removal') {
+    return;
+  }
+  if ($contract->hasField('field_snow_template_version')
+      && $contract->get('field_snow_template_version')->isEmpty()) {
+    $contract->set('field_snow_template_version', CONTRACT_SNOW_TEMPLATE_VERSION);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for contracts.
+ *
+ * Assign the contract number once the id exists: SNOW-{year}-{id}. Uses a
+ * second save (the id isn't available during presave on insert — same pattern
+ * as the AEL sentinel heal in wo_shared).
+ */
+function contract_snow_contracts_insert(EntityInterface $contract) {
+  if ($contract->bundle() !== 'snow_removal') {
+    return;
+  }
+  if (!$contract->hasField('field_snow_contract_number')
+      || !$contract->get('field_snow_contract_number')->isEmpty()) {
+    return;
+  }
+  $year = date('Y');
+  if ($contract->hasField('field_contract_year') && !$contract->get('field_contract_year')->isEmpty()) {
+    $raw = (string) $contract->get('field_contract_year')->value;
+    if (preg_match('/(\d{4})/', $raw, $m)) {
+      $year = $m[1];
+    }
+  }
+  $contract->set('field_snow_contract_number', 'SNOW-' . $year . '-' . $contract->id());
+  $contract->save();
+}

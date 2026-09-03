@@ -34,6 +34,8 @@ $c = $etm->getStorage('contracts')->create([
   'field_snow_service_method' => 'automatic',
   'field_snow_trigger' => $trig_tid ? ['target_id' => $trig_tid] : NULL,
   'field_snow_trigger_other' => '3" or more (per site manager)',
+  'field_snow_ice_max_amount' => '10',
+  'field_snow_ice_max_unit' => 'bags',
   'field_snow_ice_authorized' => TRUE,
   'field_shoveling_labor_included' => TRUE,
   'field_plow_rate_0_2' => '75.00',

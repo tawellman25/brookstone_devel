@@ -108,6 +108,7 @@ class SnowAgreementController extends ControllerBase {
       'service_method' => $method_map[$val('field_snow_service_method')] ?? '',
       'trigger_options' => $trigger_options,
       'trigger_other' => (string) ($val('field_snow_trigger_other') ?? ''),
+      'ice_max' => $this->iceMax($c),
       'ice_authorized' => (bool) $val('field_snow_ice_authorized'),
       'shoveling_included' => (bool) $val('field_shoveling_labor_included'),
       'rates' => [
@@ -123,6 +124,22 @@ class SnowAgreementController extends ControllerBase {
       'logo_uri' => $this->logoDataUri(),
       'qr_uri' => $this->qrDataUri($qr_target),
     ];
+  }
+
+  /**
+   * "10 Bags" style per-visit ice-control cap, or '' when unset.
+   */
+  protected function iceMax(EntityInterface $c): string {
+    if (!$c->hasField('field_snow_ice_max_amount') || $c->get('field_snow_ice_max_amount')->isEmpty()) {
+      return '';
+    }
+    $amount = rtrim(rtrim((string) $c->get('field_snow_ice_max_amount')->value, '0'), '.');
+    $unit = '';
+    if ($c->hasField('field_snow_ice_max_unit') && !$c->get('field_snow_ice_max_unit')->isEmpty()) {
+      $map = ['bags' => 'Bags', 'pounds' => 'Pounds', 'gallons' => 'Gallons'];
+      $unit = $map[$c->get('field_snow_ice_max_unit')->value] ?? '';
+    }
+    return trim($amount . ' ' . $unit);
   }
 
   /**

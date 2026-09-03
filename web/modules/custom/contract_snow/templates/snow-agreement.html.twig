@@ -162,7 +162,8 @@
       </tr>
       <tr>
         <td class="lbl">Ice Control Authorized</td>
-        <td><span class="cb">{{ data.ice_authorized ? '✓' : '' }}</span> Yes &nbsp;&nbsp;
+        <td><span class="cb">{{ data.ice_authorized ? '✓' : '' }}</span> Yes{% if data.ice_max %} &nbsp;&nbsp;
+            <span class="lbl" style="width:auto">Max per visit:</span> <b>{{ data.ice_max }}</b>{% endif %} &nbsp;&nbsp;
             <span class="icebill">Ice-control material is billed by the pound (salt) or gallon (mag chloride) at current market price.</span></td>
       </tr>
     </table>

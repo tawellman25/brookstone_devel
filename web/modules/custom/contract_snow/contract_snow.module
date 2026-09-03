@@ -43,6 +43,31 @@ function contract_snow_form_alter(array &$form, \Drupal\Core\Form\FormStateInter
 }
 
 /**
+ * Implements hook_ENTITY_TYPE_prepare_form() for contracts.
+ *
+ * On a NEW snow contract, prefill the per-customer Salt/Mag rates from the
+ * Business Settings defaults (Default Salt Rate per lb; Mag Chloride Rate per
+ * gal) so the office sees them and can override per customer.
+ */
+function contract_snow_contracts_prepare_form(\Drupal\Core\Entity\EntityInterface $entity, $operation, \Drupal\Core\Form\FormStateInterface $form_state) {
+  if ($entity->bundle() !== 'snow_removal' || !$entity->isNew()) {
+    return;
+  }
+  $bs = \Drupal::service('config_pages.loader')->load('business_setting');
+  if (!$bs) {
+    return;
+  }
+  if ($entity->hasField('field_salt_rate') && $entity->get('field_salt_rate')->isEmpty()
+      && $bs->hasField('field_default_salt_per_lb') && !$bs->get('field_default_salt_per_lb')->isEmpty()) {
+    $entity->set('field_salt_rate', $bs->get('field_default_salt_per_lb')->value);
+  }
+  if ($entity->hasField('field_mag_rate') && $entity->get('field_mag_rate')->isEmpty()
+      && $bs->hasField('field_mag_chloride_rate') && !$bs->get('field_mag_chloride_rate')->isEmpty()) {
+    $entity->set('field_mag_rate', $bs->get('field_mag_chloride_rate')->value);
+  }
+}
+
+/**
  * Implements hook_theme().
  */
 function contract_snow_theme($existing, $type, $theme, $path) {

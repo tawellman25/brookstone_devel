@@ -440,6 +440,11 @@
         document.getElementById('bos-filter-firm-only').checked = false;
         document.getElementById('bos-filter-show-completed').checked = false;
         calendar.getEventSourceById('completed')?.remove();
+        // Also clear the property search + single-WO focus.
+        if (searchInput) { searchInput.value = ''; }
+        if (searchResults) { searchResults.hidden = true; searchResults.innerHTML = ''; }
+        focusWoId = null; focusNick = ''; focusDate = null; focusActive = false; searchHighlight = '';
+        renderFocusNote();
         clearLegend();
         calendar.refetchEvents();
       });

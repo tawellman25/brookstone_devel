@@ -44,7 +44,10 @@
   .lbl { color: #555; width: 130px; }
   .val { font-weight: bold; }
 
-  .chk { font-weight: bold; }             /* [X] / [ ] selection marks */
+  /* Real checkbox: a bordered box, checked shows a ✓. Fixed size = scan-friendly. */
+  .cb { display: inline-block; width: 12px; height: 12px; border: 1.4px solid #1A1613;
+        text-align: center; line-height: 11px; font-size: 11px; font-weight: bold;
+        vertical-align: -2px; margin-right: 4px; }
 
   table.rate { width: 100%; border-collapse: collapse; margin-top: 2px; }
   table.rate th, table.rate td { border: 1px solid #666; padding: 5px 8px; text-align: left; }
@@ -115,8 +118,8 @@
       <tr>
         <td class="lbl">Method</td>
         <td>
-          <span class="chk">[{{ data.service_method == 'Automatic' ? 'X' : ' ' }}]</span> Automatic &nbsp;&nbsp;
-          <span class="chk">[{{ data.service_method == 'On-Call' ? 'X' : ' ' }}]</span> On-Call
+          <span class="cb">{{ data.service_method == 'Automatic' ? '✓' : '' }}</span> Automatic &nbsp;&nbsp;
+          <span class="cb">{{ data.service_method == 'On-Call' ? '✓' : '' }}</span> On-Call
         </td>
       </tr>
       <tr><td class="lbl">Snow Trigger</td><td class="val">{{ data.snow_trigger|default('____') }}</td></tr>
@@ -144,12 +147,12 @@
     <table class="cols">
       <tr>
         <td class="lbl">Sidewalk / Shoveling</td>
-        <td><span class="chk">[{{ data.shoveling_included ? 'X' : ' ' }}]</span> Included &nbsp;&nbsp;
+        <td><span class="cb">{{ data.shoveling_included ? '✓' : '' }}</span> Included &nbsp;&nbsp;
             <span class="lbl" style="width:auto">Rate:</span> <b>{{ data.shovel_rate|default('') }}</b></td>
       </tr>
       <tr>
         <td class="lbl">Ice Control Authorized</td>
-        <td><span class="chk">[{{ data.ice_authorized ? 'X' : ' ' }}]</span> Yes &nbsp;&nbsp;
+        <td><span class="cb">{{ data.ice_authorized ? '✓' : '' }}</span> Yes &nbsp;&nbsp;
             <span class="lbl" style="width:auto">Salt:</span> <b>{{ data.salt_rate|default('') }}</b> &nbsp;&nbsp;
             <span class="lbl" style="width:auto">Mag:</span> <b>{{ data.mag_rate|default('') }}</b></td>
       </tr>

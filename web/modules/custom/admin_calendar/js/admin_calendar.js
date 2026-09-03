@@ -200,6 +200,14 @@
         id: 'business_events',
       };
 
+      // Property-nickname search highlight term (see search wiring below).
+      let searchHighlight = '';
+      function bosCalEsc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+        });
+      }
+
       // ── FullCalendar init ─────────────────────────────────────────
       const calendar = new FullCalendar.Calendar(el, {
         initialView: 'dayGridMonth',
@@ -265,6 +273,11 @@
           if (historicalStatuses.includes(info.event.extendedProps.statusTid)) {
             info.el.style.fontStyle = 'italic';
           }
+          // Property-search highlight.
+          if (searchHighlight && (info.event.extendedProps.propertyNickname || '').toLowerCase().indexOf(searchHighlight) !== -1) {
+            info.el.style.outline = '3px solid #CB6015';
+            info.el.style.outlineOffset = '1px';
+          }
         },
 
         // Drag-drop: update the scheduling entity date.
@@ -283,6 +296,51 @@
 
       calendar.render();
       buildBusinessLegend();
+
+      // ── Property-nickname search ───────────────────────────────────
+      const searchInput   = document.getElementById('bos-cal-search');
+      const searchResults = document.getElementById('bos-cal-search-results');
+      let searchTimer = null;
+      function runPropertySearch() {
+        const q = (searchInput.value || '').trim();
+        if (q.length < 2) { searchResults.hidden = true; searchResults.innerHTML = ''; return; }
+        fetch('/teammates/calendar/search?q=' + encodeURIComponent(q))
+          .then(function (r) { return r.json(); })
+          .then(function (rows) {
+            if (!rows.length) {
+              searchResults.innerHTML = '<div class="bos-cal-search-empty">No scheduled work orders match.</div>';
+            }
+            else {
+              searchResults.innerHTML = rows.map(function (row) {
+                return '<button type="button" class="bos-cal-search-item" data-date="' + row.date + '" data-nick="' + bosCalEsc(row.nickname) + '">' +
+                  '<span class="nk">' + bosCalEsc(row.nickname) + '</span> ' +
+                  '<span class="sv">' + bosCalEsc(row.service) + '</span> ' +
+                  '<span class="dt">' + bosCalEsc(row.date_label) + '</span></button>';
+              }).join('');
+            }
+            searchResults.hidden = false;
+          })
+          .catch(function (e) { console.error('BOS Calendar search:', e); });
+      }
+      searchInput?.addEventListener('input', function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(runPropertySearch, 250);
+      });
+      searchResults?.addEventListener('click', function (e) {
+        const btn = e.target.closest('.bos-cal-search-item');
+        if (!btn) { return; }
+        searchHighlight = (btn.getAttribute('data-nick') || '').toLowerCase();
+        calendar.gotoDate(btn.getAttribute('data-date'));
+        calendar.refetchEvents();
+        searchResults.hidden = true;
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      // Hide results when clicking away.
+      document.addEventListener('click', function (e) {
+        if (searchResults && !searchResults.hidden && !e.target.closest('.bos-cal-search-group')) {
+          searchResults.hidden = true;
+        }
+      });
 
       // ── Filter controls ───────────────────────────────────────────
       // Mobile filter toggle.

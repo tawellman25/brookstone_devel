@@ -477,4 +477,54 @@ class AdminCalendarEventsController extends ControllerBase {
     return $events;
   }
 
+  /**
+   * JSON search: scheduled WOs whose property nickname matches ?q=.
+   *
+   * Lets the calendar jump to where a property's WO is scheduled, even in
+   * another month. tz-safe (raw field_date ts → PHP site tz, never
+   * FROM_UNIXTIME). Newest/upcoming first.
+   */
+  public function search(Request $request): JsonResponse {
+    $q = trim((string) $request->query->get('q', ''));
+    if (mb_strlen($q) < 2) {
+      return new JsonResponse([]);
+    }
+    $query = $this->database->select('scheduling_field_data', 's');
+    $query->fields('s', ['id']);
+    $query->join('scheduling__field_date', 'fd', 's.id = fd.entity_id AND fd.deleted = 0');
+    $query->addField('fd', 'field_date_value', 'date_ts');
+    $query->join('scheduling__field_work_order', 'swo', 's.id = swo.entity_id AND swo.deleted = 0');
+    $query->addField('swo', 'field_work_order_target_id', 'wo_id');
+    $query->leftJoin('work_order__field_property', 'wop', 'wop.entity_id = swo.field_work_order_target_id AND wop.deleted = 0');
+    $query->leftJoin('properties__field_nickname', 'nick', 'nick.entity_id = wop.field_property_target_id AND nick.deleted = 0');
+    $query->addField('nick', 'field_nickname_value', 'nickname');
+    $query->leftJoin('work_order__field_service', 'wosvc', 'wosvc.entity_id = swo.field_work_order_target_id AND wosvc.deleted = 0');
+    $query->leftJoin('taxonomy_term_field_data', 'svc', 'svc.tid = wosvc.field_service_target_id');
+    $query->addField('svc', 'name', 'service');
+    $query->condition('nick.field_nickname_value', '%' . $this->database->escapeLike($q) . '%', 'LIKE');
+    $query->orderBy('fd.field_date_value', 'DESC');
+    $query->range(0, 25);
+
+    $tz = new \DateTimeZone(date_default_timezone_get());
+    $out = [];
+    foreach ($query->execute() as $r) {
+      $d = (new \DateTime('@' . (int) $r->date_ts))->setTimezone($tz);
+      try {
+        $wo_url = Url::fromRoute('entity.work_order.canonical', ['work_order' => $r->wo_id])->toString();
+      }
+      catch (\Throwable $e) {
+        $wo_url = '';
+      }
+      $out[] = [
+        'date' => $d->format('Y-m-d'),
+        'date_label' => $d->format('D m/d/Y'),
+        'nickname' => (string) ($r->nickname ?? ''),
+        'service' => trim((string) ($r->service ?? '')),
+        'wo_id' => (int) $r->wo_id,
+        'wo_url' => $wo_url,
+      ];
+    }
+    return new JsonResponse($out);
+  }
+
 }

@@ -17,6 +17,15 @@ admin_calendar.events:
   options:
     _admin_route: FALSE
 
+admin_calendar.search:
+  path: '/teammates/calendar/search'
+  defaults:
+    _controller: '\Drupal\admin_calendar\Controller\AdminCalendarEventsController::search'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant+teammates'
+  options:
+    _admin_route: FALSE
+
 admin_calendar.completed:
   path: '/teammates/calendar/completed'
   defaults:

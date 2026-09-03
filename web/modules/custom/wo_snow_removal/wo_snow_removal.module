@@ -815,3 +815,67 @@ function calculate_mag_cost($magUsed, $magRate, $magMin) {
       return $magRate * $magUsed;
   }
 }
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Snow-removal task list ("How many times(pushes)" + "Snow Plowed"):
+ *  1. The pushes field references snow_plows terms; only the real plow-portion
+ *     terms (field_calculation_factor > 0 — 1/4, 1/2, 3/4, 1 Complete, 2
+ *     Complete) should be selectable. The legacy "Did Not Plow" / "Helped Plow"
+ *     terms (factor 0) are dropped from the options, EXCEPT when the record
+ *     being edited already holds one (216 historical WOs use "Did Not Plow") —
+ *     so old records still display and aren't silently wiped on re-save.
+ *  2. Show the pushes field only when Snow Plowed is checked (not plowed → no
+ *     portion needed). Visibility only — interim saves are never blocked.
+ */
+function wo_snow_removal_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof \Drupal\Core\Entity\EntityFormInterface) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if (!$entity || $entity->getEntityTypeId() !== 'wo_tasks_list' || $entity->bundle() !== 'snow_removal') {
+    return;
+  }
+  if (!isset($form['field_snow_plowed_pushes']['widget']) || !isset($form['field_snow_plowed'])) {
+    return;
+  }
+
+  // Currently-selected pushes term(s) on this record — never remove these.
+  $current = [];
+  if ($entity->hasField('field_snow_plowed_pushes')) {
+    foreach ($entity->get('field_snow_plowed_pushes') as $item) {
+      if (!empty($item->target_id)) {
+        $current[(int) $item->target_id] = TRUE;
+      }
+    }
+  }
+
+  // Keep only plow-portion terms (factor > 0), plus any current value. Also
+  // drop the empty "N/A" radio — the field stays optional (so it never blocks a
+  // save), it just no longer offers an explicit N/A choice.
+  $widget = &$form['field_snow_plowed_pushes']['widget'];
+  if (isset($widget['#options'])) {
+    unset($widget['#options']['_none']);
+    $term_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+    foreach (array_keys($widget['#options']) as $tid) {
+      if (!is_numeric($tid) || isset($current[(int) $tid])) {
+        continue;
+      }
+      $term = $term_storage->load($tid);
+      $factor = ($term && $term->hasField('field_calculation_factor') && !$term->get('field_calculation_factor')->isEmpty())
+        ? (float) $term->get('field_calculation_factor')->value : 0.0;
+      if ($factor <= 0) {
+        unset($widget['#options'][$tid]);
+      }
+    }
+  }
+
+  // Show the pushes field only when Snow Plowed is checked.
+  $form['field_snow_plowed_pushes']['#states'] = [
+    'visible' => [
+      ':input[name="field_snow_plowed[value]"]' => ['checked' => TRUE],
+    ],
+  ];
+}

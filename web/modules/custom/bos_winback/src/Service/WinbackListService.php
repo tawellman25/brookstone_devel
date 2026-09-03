@@ -190,8 +190,8 @@ final class WinbackListService {
         'phone'        => $phone,
         'email'        => $email,
         'last_wo_id'   => (int) $wo->id(),
-        'last_date'    => $wo->get('created')->isEmpty() ? '' :
-          (new \DateTime('@' . $wo->get('created')->value))->setTimezone($tz)->format('m/d/Y'),
+        'last_date'    => $this->completionDate((int) $wo->id(), $tz) ?: ($wo->get('created')->isEmpty() ? '' :
+          (new \DateTime('@' . $wo->get('created')->value))->setTimezone($tz)->format('m/d/Y')),
         'last_total'   => $this->scalar($wo, 'field_wo_total'),
         'last_status'  => $status ? $status->label() : '',
         'was_canceled' => $status_tid === self::STATUS_CANCELED,
@@ -201,6 +201,28 @@ final class WinbackListService {
 
     usort($rows, fn($a, $b) => [$a['city'], $a['street']] <=> [$b['city'], $b['street']]);
     return $rows;
+  }
+
+  /**
+   * The date the WO was signed off / completed (from its wo_complete_info
+   * record's field_date_completed), formatted m/d/Y, or '' if not completed.
+   * Bundle-agnostic — matches whichever crew signed it off.
+   */
+  protected function completionDate(int $wo_id, \DateTimeZone $tz): string {
+    $ids = \Drupal::entityQuery('wo_complete_info')
+      ->condition('field_work_order', $wo_id)
+      ->accessCheck(FALSE)
+      ->sort('id', 'DESC')
+      ->range(0, 1)
+      ->execute();
+    if (!$ids) {
+      return '';
+    }
+    $ci = \Drupal::entityTypeManager()->getStorage('wo_complete_info')->load(reset($ids));
+    if (!$ci || !$ci->hasField('field_date_completed') || $ci->get('field_date_completed')->isEmpty()) {
+      return '';
+    }
+    return (new \DateTime('@' . $ci->get('field_date_completed')->value))->setTimezone($tz)->format('m/d/Y');
   }
 
   /**

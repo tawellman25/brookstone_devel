@@ -337,8 +337,13 @@
         const histStatuses = [1097, 1283, 1281, 1504];
         const st = parseInt(btn.getAttribute('data-status'), 10);
         if (histStatuses.indexOf(st) !== -1) {
+          // Completed/historical WO — turn on + actually add the completed
+          // event source so the event renders on its day.
           const sc = document.getElementById('bos-filter-show-completed');
-          if (sc && !sc.checked) { sc.checked = true; }
+          if (sc) { sc.checked = true; }
+          if (!calendar.getEventSourceById('completed')) {
+            calendar.addEventSource(completedSource);
+          }
         }
         calendar.gotoDate(btn.getAttribute('data-date'));
         calendar.refetchEvents();

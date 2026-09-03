@@ -345,10 +345,23 @@
             calendar.addEventSource(completedSource);
           }
         }
-        calendar.gotoDate(btn.getAttribute('data-date'));
+        const targetDate = btn.getAttribute('data-date');
+        calendar.gotoDate(targetDate);
         calendar.refetchEvents();
         searchResults.hidden = true;
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Scroll the specific day cell into view + briefly highlight it so the
+        // office doesn't have to hunt for it.
+        setTimeout(function () {
+          const cell = el.querySelector('.fc-daygrid-day[data-date="' + targetDate + '"], .fc-day[data-date="' + targetDate + '"]');
+          if (cell) {
+            cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            cell.classList.add('bos-cal-day-focus');
+            setTimeout(function () { cell.classList.remove('bos-cal-day-focus'); }, 4000);
+          }
+          else {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 300);
       });
       // Hide results when clicking away.
       document.addEventListener('click', function (e) {

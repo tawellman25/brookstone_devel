@@ -144,6 +144,9 @@
         return '/teammates/calendar/completed?' + params.toString();
       }
 
+      // When set (via property search), the calendar shows ONLY this WO.
+      let focusWoId = null;
+
       const completedSource = {
         events: function (fetchInfo, successCallback, failureCallback) {
           fetch(buildCompletedUrl(fetchInfo))
@@ -152,6 +155,7 @@
               return r.json();
             })
             .then(function (data) {
+              if (focusWoId) { data = data.filter(function (e) { return e.extendedProps && e.extendedProps.woEntityId === focusWoId; }); }
               successCallback(data);
             })
             .catch(function (err) {
@@ -238,6 +242,7 @@
                   updateLegend(evt.color, evt.extendedProps.departmentName);
                 }
               });
+              if (focusWoId) { data = data.filter(function (e) { return e.extendedProps && e.extendedProps.woEntityId === focusWoId; }); }
               successCallback(data);
             })
             .catch(function (err) {
@@ -312,7 +317,7 @@
             }
             else {
               searchResults.innerHTML = rows.map(function (row) {
-                return '<button type="button" class="bos-cal-search-item" data-date="' + row.date + '" data-status="' + (row.status_tid || 0) + '" data-nick="' + bosCalEsc(row.nickname) + '">' +
+                return '<button type="button" class="bos-cal-search-item" data-date="' + row.date + '" data-status="' + (row.status_tid || 0) + '" data-wo="' + (row.wo_id || 0) + '" data-nick="' + bosCalEsc(row.nickname) + '">' +
                   '<span class="nk">' + bosCalEsc(row.nickname) + '</span> ' +
                   '<span class="sv">' + bosCalEsc(row.service) + '</span> ' +
                   '<span class="dt">' + bosCalEsc(row.date_label) + '</span>' +
@@ -332,6 +337,14 @@
         const btn = e.target.closest('.bos-cal-search-item');
         if (!btn) { return; }
         searchHighlight = (btn.getAttribute('data-nick') || '').toLowerCase();
+        // Filter the calendar to ONLY this work order.
+        focusWoId = parseInt(btn.getAttribute('data-wo'), 10) || null;
+        const focusNote = document.getElementById('bos-cal-focus-note');
+        if (focusNote) {
+          focusNote.innerHTML = 'Showing only: <strong>' + bosCalEsc(btn.getAttribute('data-nick')) + '</strong> ' +
+            '<button type="button" id="bos-cal-focus-clear">Show all</button>';
+          focusNote.hidden = false;
+        }
         // If the target WO is completed/invoiced/historical, make sure the
         // calendar is showing completed work so the event actually appears.
         const histStatuses = [1097, 1283, 1281, 1504];
@@ -372,6 +385,15 @@
       document.addEventListener('click', function (e) {
         if (searchResults && !searchResults.hidden && !e.target.closest('.bos-cal-search-group')) {
           searchResults.hidden = true;
+        }
+      });
+      // "Show all" clears the single-WO focus.
+      document.getElementById('bos-cal-focus-note')?.addEventListener('click', function (e) {
+        if (e.target.id === 'bos-cal-focus-clear') {
+          focusWoId = null;
+          searchHighlight = '';
+          this.hidden = true;
+          calendar.refetchEvents();
         }
       });
 

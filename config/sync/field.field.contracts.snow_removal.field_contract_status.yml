@@ -1,0 +1,30 @@
+uuid: 81b7db0b-f6dd-43c0-be33-1103e83819b5
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contracts.snow_removal
+    - field.storage.contracts.field_contract_status
+    - taxonomy.vocabulary.contract_status
+id: contracts.snow_removal.field_contract_status
+field_name: field_contract_status
+entity_type: contracts
+bundle: snow_removal
+label: 'Contract Status'
+description: 'Snow agreement lifecycle. Shares the contract_status vocab with residential.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      contract_status: contract_status
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference
+

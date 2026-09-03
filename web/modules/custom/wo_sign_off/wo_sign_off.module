@@ -587,6 +587,11 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
   if ($entity_type === 'wo_tasks_list' && $entity->bundle() === 'lawn_mowing') {
     array_unshift($form['#validate'], '_wo_sign_off_assert_mowing_roster_populated');
   }
+  // Phase 2 (snow): plow-portion + ice-treatment completion validation, at the
+  // head so it blocks before reconciliation work.
+  if ($entity_type === 'wo_tasks_list' && $entity->bundle() === 'snow_removal') {
+    array_unshift($form['#validate'], '_wo_sign_off_snow_completion_validate');
+  }
   $form['#validate'][] = '_wo_sign_off_reconciliation_validate';
   // Graceful form-layer counterpart to the entity-presave open-clock-in guard
   // (_wo_sign_off_assert_no_open_clockins). Runs AFTER reconciliation validate
@@ -661,7 +666,8 @@ function _wo_sign_off_assert_mowing_roster_populated(array &$form, FormStateInte
  *   - any roster member lacks a complete wo_time_clock entry
  */
 function wo_sign_off_wo_tasks_list_presave(EntityInterface $entity): void {
-  if ($entity->bundle() !== 'lawn_mowing') {
+  $bundle = $entity->bundle();
+  if ($bundle !== 'lawn_mowing' && $bundle !== 'snow_removal') {
     return;
   }
   // Only fires when field_completed is being set falsy (cascade trigger).
@@ -672,6 +678,17 @@ function wo_sign_off_wo_tasks_list_presave(EntityInterface $entity): void {
   }
   // Skip if reconciliation handler is mid-flight.
   if (!empty($entity->_signoff_reconciliation_in_progress)) {
+    return;
+  }
+
+  // Phase 2 (snow): completion requires the plow portion when plowed, and a
+  // Salt/Mag amount on an Icy visit when the contract requires ice treatment.
+  // Backstop for non-form paths; the form guard surfaces a clean inline error.
+  if ($bundle === 'snow_removal') {
+    $errors = _wo_sign_off_snow_completion_errors_from_entity($entity);
+    if ($errors) {
+      throw new EntityStorageException('wo_tasks_list:snow_removal cannot be completed: ' . implode(' ', array_map('strval', $errors)));
+    }
     return;
   }
 
@@ -691,6 +708,103 @@ function wo_sign_off_wo_tasks_list_presave(EntityInterface $entity): void {
   // enforcement as Guard 1 on the wo_complete_info path. The field_completed
   // and _signoff_reconciliation_in_progress gates above already scope this.
   _wo_sign_off_assert_no_open_clockins($entity);
+}
+
+/**
+ * Form-layer completion guard for wo_tasks_list:snow_removal (Phase 2).
+ *
+ * Surfaces clean inline errors (the presave backstop throws for non-form
+ * paths). Only runs at completion — the cascade trigger is field_completed
+ * being set falsy — so interim saves are never blocked.
+ */
+function _wo_sign_off_snow_completion_validate(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof EntityFormInterface) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if ($entity->getEntityTypeId() !== 'wo_tasks_list' || $entity->bundle() !== 'snow_removal') {
+    return;
+  }
+  // Build a populated entity from the submitted values (not yet saved).
+  $built = $form_object->buildEntity($form, $form_state);
+  // Same cascade gate as the presave: only validate when completing.
+  if (!$built->hasField('field_completed')
+      || $built->get('field_completed')->isEmpty()
+      || $built->get('field_completed')->value) {
+    return;
+  }
+  foreach (_wo_sign_off_snow_completion_errors_from_entity($built) as $field => $message) {
+    $form_state->setErrorByName($field, $message);
+  }
+}
+
+/**
+ * The snow completion rules, evaluated against a (built or saved) entity.
+ *
+ * @return array
+ *   Keyed by field name → error message; empty when the WO may complete.
+ */
+function _wo_sign_off_snow_completion_errors_from_entity(EntityInterface $entity): array {
+  $plowed = $entity->hasField('field_snow_plowed') && (bool) $entity->get('field_snow_plowed')->value;
+  $pushes_empty = !$entity->hasField('field_snow_plowed_pushes') || $entity->get('field_snow_plowed_pushes')->isEmpty();
+  $level_tid = ($entity->hasField('field_snow_level') && !$entity->get('field_snow_level')->isEmpty())
+    ? (int) $entity->get('field_snow_level')->target_id : NULL;
+  $salt = ($entity->hasField('field_pounds_of_salt') && !$entity->get('field_pounds_of_salt')->isEmpty())
+    ? (float) $entity->get('field_pounds_of_salt')->value : 0.0;
+  $mag = ($entity->hasField('field_snow_mag_gallons') && !$entity->get('field_snow_mag_gallons')->isEmpty())
+    ? (float) $entity->get('field_snow_mag_gallons')->value : 0.0;
+  $wo_id = ($entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty())
+    ? (int) $entity->get('field_work_order')->target_id : NULL;
+
+  $errors = [];
+  // Rule 1: plowed → a plow portion must be recorded.
+  if ($plowed && $pushes_empty) {
+    $errors['field_snow_plowed_pushes'] = t('Snow Plowed is checked — record how much was plowed (the plow portion) before completing.');
+  }
+  // Rule 2: Icy visit + contract requires ice → Salt or Mag amount > 0.
+  if ($level_tid && $wo_id
+      && _wo_sign_off_snow_level_is_icy($level_tid)
+      && _wo_sign_off_snow_contract_requires_ice($wo_id)
+      && $salt <= 0 && $mag <= 0) {
+    $errors['field_pounds_of_salt'] = t('This is an Icy Conditions visit and this property’s snow contract requires ice treatment — enter Pounds of Salt or Mag Chloride Gallons before completing.');
+  }
+  return $errors;
+}
+
+/**
+ * TRUE when the snow_levels term is an "Icy" level (name-based, so it survives
+ * a future snow-level term rename).
+ */
+function _wo_sign_off_snow_level_is_icy(int $tid): bool {
+  $term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->load($tid);
+  return $term && stripos((string) $term->label(), 'icy') !== FALSE;
+}
+
+/**
+ * TRUE when the WO's property's latest snow contract requires ice treatment.
+ * Mirrors wo_snow_removal's latest-snow-contract lookup.
+ */
+function _wo_sign_off_snow_contract_requires_ice(int $wo_id): bool {
+  $wo = \Drupal::entityTypeManager()->getStorage('work_order')->load($wo_id);
+  if (!$wo || !$wo->hasField('field_property') || $wo->get('field_property')->isEmpty()) {
+    return FALSE;
+  }
+  $pid = (int) $wo->get('field_property')->target_id;
+  $ids = \Drupal::entityQuery('contracts')
+    ->accessCheck(FALSE)
+    ->condition('field_property', $pid)
+    ->condition('type', 'snow_removal')
+    ->sort('created', 'DESC')
+    ->range(0, 1)
+    ->execute();
+  if (!$ids) {
+    return FALSE;
+  }
+  $contract = \Drupal::entityTypeManager()->getStorage('contracts')->load(reset($ids));
+  return $contract
+    && $contract->hasField('field_requires_ice_treatment')
+    && (bool) $contract->get('field_requires_ice_treatment')->value;
 }
 
 /**

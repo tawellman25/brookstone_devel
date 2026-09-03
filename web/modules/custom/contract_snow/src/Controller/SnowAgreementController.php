@@ -107,6 +107,7 @@ class SnowAgreementController extends ControllerBase {
       'contact_email' => $contact_email,
       'service_method' => $method_map[$val('field_snow_service_method')] ?? '',
       'trigger_options' => $trigger_options,
+      'trigger_other' => (string) ($val('field_snow_trigger_other') ?? ''),
       'ice_authorized' => (bool) $val('field_snow_ice_authorized'),
       'shoveling_included' => (bool) $val('field_shoveling_labor_included'),
       'rates' => [

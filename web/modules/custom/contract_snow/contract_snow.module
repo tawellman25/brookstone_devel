@@ -12,6 +12,37 @@
 use Drupal\Core\Entity\EntityInterface;
 
 /**
+ * Implements hook_form_alter().
+ *
+ * On the snow contract form, show the "Other trigger — specify" text field only
+ * when Snow Trigger = the "Other" term (the online form's conditional too).
+ */
+function contract_snow_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  $fo = $form_state->getFormObject();
+  if (!$fo instanceof \Drupal\Core\Entity\EntityFormInterface) {
+    return;
+  }
+  $entity = $fo->getEntity();
+  if ($entity->getEntityTypeId() !== 'contracts' || $entity->bundle() !== 'snow_removal') {
+    return;
+  }
+  if (!isset($form['field_snow_trigger']) || !isset($form['field_snow_trigger_other'])) {
+    return;
+  }
+  $other = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
+    ->loadByProperties(['vid' => 'snow_trigger', 'name' => 'Other']);
+  if (!$other) {
+    return;
+  }
+  $tid = (string) reset($other)->id();
+  $form['field_snow_trigger_other']['#states'] = [
+    'visible' => [
+      ':input[name="field_snow_trigger"]' => ['value' => $tid],
+    ],
+  ];
+}
+
+/**
  * Implements hook_theme().
  */
 function contract_snow_theme($existing, $type, $theme, $path) {

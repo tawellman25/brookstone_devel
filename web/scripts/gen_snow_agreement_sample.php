@@ -14,8 +14,8 @@ use Drupal\contract_snow\Controller\SnowAgreementController;
 $out = $extra['args'][0] ?? '/tmp/snow-agreement-sample.pdf';
 $etm = \Drupal::entityTypeManager();
 
-// Resolve the "2\" or more" snow_trigger term for the sample.
-$trig = $etm->getStorage('taxonomy_term')->loadByProperties(['vid' => 'snow_trigger', 'name' => '2" or more']);
+// Sample: select "Other" so the Other fill-in line is demonstrated.
+$trig = $etm->getStorage('taxonomy_term')->loadByProperties(['vid' => 'snow_trigger', 'name' => 'Other']);
 $trig_tid = $trig ? reset($trig)->id() : NULL;
 
 // A real property with a primary contact + address, for a realistic sample.
@@ -33,6 +33,7 @@ $c = $etm->getStorage('contracts')->create([
   'field_property' => $pid ? ['target_id' => $pid] : NULL,
   'field_snow_service_method' => 'automatic',
   'field_snow_trigger' => $trig_tid ? ['target_id' => $trig_tid] : NULL,
+  'field_snow_trigger_other' => '3" or more (per site manager)',
   'field_snow_ice_authorized' => TRUE,
   'field_shoveling_labor_included' => TRUE,
   'field_plow_rate_0_2' => '75.00',

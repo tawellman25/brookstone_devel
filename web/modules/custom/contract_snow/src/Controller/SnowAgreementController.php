@@ -74,6 +74,17 @@ class SnowAgreementController extends ControllerBase {
       [$customer_name, $contact_phone, $contact_email] = $this->resolveCustomer($property);
     }
 
+    // Snow trigger options (snow_trigger vocab) for checkbox rendering.
+    $trigger_tid = ($c->hasField('field_snow_trigger') && !$c->get('field_snow_trigger')->isEmpty())
+      ? (int) $c->get('field_snow_trigger')->target_id : 0;
+    $trigger_options = [];
+    $tstore = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+    $tterms = $tstore->loadByProperties(['vid' => 'snow_trigger']);
+    uasort($tterms, fn($a, $b) => $a->getWeight() <=> $b->getWeight());
+    foreach ($tterms as $t) {
+      $trigger_options[] = ['label' => $t->label(), 'selected' => ((int) $t->id() === $trigger_tid)];
+    }
+
     // QR encodes the stable contract canonical URL (contains the entity id).
     $qr_target = '';
     try {
@@ -95,7 +106,7 @@ class SnowAgreementController extends ControllerBase {
       'contact_phone' => $contact_phone,
       'contact_email' => $contact_email,
       'service_method' => $method_map[$val('field_snow_service_method')] ?? '',
-      'snow_trigger' => $val('field_snow_trigger') !== NULL ? rtrim(rtrim((string) $val('field_snow_trigger'), '0'), '.') . '"' : '',
+      'trigger_options' => $trigger_options,
       'ice_authorized' => (bool) $val('field_snow_ice_authorized'),
       'shoveling_included' => (bool) $val('field_shoveling_labor_included'),
       'rates' => [

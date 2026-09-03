@@ -122,7 +122,14 @@
           <span class="cb">{{ data.service_method == 'On-Call' ? '✓' : '' }}</span> On-Call
         </td>
       </tr>
-      <tr><td class="lbl">Snow Trigger</td><td class="val">{{ data.snow_trigger|default('____') }}</td></tr>
+      <tr>
+        <td class="lbl">Snow Trigger</td>
+        <td>
+          {% for o in data.trigger_options %}
+            <span class="cb">{{ o.selected ? '✓' : '' }}</span> {{ o.label }}{% if not loop.last %} &nbsp;&nbsp; {% endif %}
+          {% endfor %}
+        </td>
+      </tr>
     </table>
   </div>
 

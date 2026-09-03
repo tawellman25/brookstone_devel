@@ -204,14 +204,19 @@ final class WinbackListService {
   }
 
   /**
-   * Win-back summary counts for the header:
+   * Win-back summary counts for the header.
+   *
+   * The season's winterize WOs are created in one big carry-forward batch (one
+   * day), then win-back WOs are created ad-hoc afterward. So we split
+   * came-back customers by whether their current-year winterize WO was created
+   * in the batch (carried forward) or AFTER it (won back this season).
+   *
    *   source_total — distinct properties winterized in the look-back window
    *   came_back    — of those, how many now have a current-year winterize
-   *   contracted   — of came_back, how many are on a current-year contract
-   *                  (their winterize WO carries a contract link — a renewal,
-   *                  not a campaign recovery)
-   *   won_back     — came_back minus contracted (recovered without a contract)
-   *   pct          — won_back / source_total, rounded
+   *   carried      — of came_back, created in the carry-forward batch
+   *   won_back     — of came_back, created AFTER the batch (this season's wins)
+   *   batch_date   — the carry-forward batch day (m/d/Y), for the label
+   *   pct          — came_back / source_total, rounded
    */
   public function getSummary(int $lookback_years = 1): array {
     $target_year = $this->targetYear();
@@ -228,41 +233,53 @@ final class WinbackListService {
     $sq->condition('wo.created', [$ts(($target_year - $lookback) . '-08-15'), $ts(($target_year - 1) . '-12-31')], 'BETWEEN');
     $sq->fields('wop', ['field_property_target_id']);
     $sq->distinct();
-    $source = array_map('intval', $sq->execute()->fetchCol());
+    $source = array_flip(array_map('intval', $sq->execute()->fetchCol()));
 
-    // Covered this year: property → is it on a current-year contract (its
-    // current-year winterize WO carries a contract link)?
+    // Current-year winterize WOs: earliest created per property + day tallies.
     $cq = $db->select('work_order__field_property', 'wop');
     $cq->join('work_order_field_data', 'wo', 'wo.id = wop.entity_id');
-    $cq->leftJoin('work_order__field_contract', 'fc', 'fc.entity_id = wo.id AND fc.deleted = 0');
     $cq->condition('wo.type', 'sprinkler_winterizing');
     $cq->condition('wop.deleted', 0);
     $cq->condition('wo.created', $ts($target_year . '-01-01'), '>=');
     $cq->addField('wop', 'field_property_target_id', 'pid');
-    $cq->addExpression('MAX(CASE WHEN fc.field_contract_target_id IS NOT NULL THEN 1 ELSE 0 END)', 'contracted');
-    $cq->groupBy('wop.field_property_target_id');
-    $covered = [];
+    $cq->addField('wo', 'created', 'created');
+    $prop_first = [];
+    $by_day = [];
     foreach ($cq->execute() as $r) {
-      $covered[(int) $r->pid] = (int) $r->contracted;
+      $pid = (int) $r->pid;
+      $c = (int) $r->created;
+      if (!isset($prop_first[$pid]) || $c < $prop_first[$pid]) {
+        $prop_first[$pid] = $c;
+      }
+      $day = (new \DateTime('@' . $c))->setTimezone($tz)->format('Y-m-d');
+      $by_day[$day] = ($by_day[$day] ?? 0) + 1;
     }
+    // The carry-forward batch = the day the most winterize WOs were created.
+    arsort($by_day);
+    $batch_day = key($by_day);
+    $batch_cutoff = $batch_day ? $ts($batch_day) + 86399 : 0;
 
-    $came_back = $contracted = 0;
-    foreach ($source as $pid) {
-      if (isset($covered[$pid])) {
-        $came_back++;
-        if ($covered[$pid]) {
-          $contracted++;
-        }
+    $came_back = $carried = $won_back = 0;
+    foreach ($prop_first as $pid => $first_created) {
+      if (!isset($source[$pid])) {
+        continue;
+      }
+      $came_back++;
+      if ($first_created > $batch_cutoff) {
+        $won_back++;
+      }
+      else {
+        $carried++;
       }
     }
-    $won_back = $came_back - $contracted;
     $source_total = count($source);
     return [
       'source_total' => $source_total,
       'came_back' => $came_back,
-      'contracted' => $contracted,
+      'carried' => $carried,
       'won_back' => $won_back,
-      'pct' => $source_total ? (int) round($won_back / $source_total * 100) : 0,
+      'batch_date' => $batch_day ? (new \DateTime($batch_day))->format('m/d/Y') : '',
+      'pct' => $source_total ? (int) round($came_back / $source_total * 100) : 0,
     ];
   }
 

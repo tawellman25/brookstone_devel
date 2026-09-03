@@ -1,0 +1,234 @@
+{#
+/**
+ * @file
+ * Snow Removal Service Agreement (2-page PDF, rendered via dompdf).
+ * Deterministic, print-first, B&W-safe. vars: data (see SnowAgreementController).
+ */
+#}
+<html>
+<head>
+<style>
+  @page { margin: 108px 54px 90px 54px; }
+  * { box-sizing: border-box; }
+  body { font-family: "DejaVu Sans", sans-serif; color: #1A1613; font-size: 10.5px; line-height: 1.4; margin: 0; }
+
+  /* Running header + footer (repeat on every page in dompdf). */
+  .rhead { position: fixed; top: -84px; left: 0; right: 0; height: 78px; }
+  .rhead .logo { width: 60px; height: 60px; vertical-align: middle; }
+  .rhead .co { display: inline-block; vertical-align: middle; margin-left: 10px; }
+  .rhead .co .name { font-size: 15px; font-weight: bold; color: #1A1613; }
+  .rhead .co .sub { font-size: 9px; color: #444; }
+  .rhead .qr { position: absolute; top: 0; right: 0; text-align: center; }
+  .rhead .qr img { width: 66px; height: 66px; }
+  .rhead .qr .cap { font-size: 6.5px; color: #555; }
+  .rhead .rule { border-bottom: 3px solid #CB6015; margin-top: 4px; }
+
+  .rfoot { position: fixed; bottom: -70px; left: 0; right: 0; height: 60px; font-size: 8px; color: #555; }
+  .rfoot .rule { border-top: 1.5px solid #CB6015; padding-top: 4px; }
+  .rfoot table { width: 100%; border-collapse: collapse; }
+  .rfoot td { vertical-align: top; }
+  .rfoot .mid { text-align: center; }
+  .rfoot .right { text-align: right; }
+  .pagenum:after { content: "Page " counter(page) " of " counter(pages); }
+
+  h1.title { font-size: 18px; color: #CB6015; margin: 0 0 2px 0; letter-spacing: .5px; }
+  .subline { font-size: 10px; color: #333; margin-bottom: 10px; }
+  .subline b { color: #1A1613; }
+
+  .box { border: 1.2px solid #999; border-radius: 4px; padding: 8px 10px; margin-bottom: 9px; }
+  .box h2 { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #fff; background: #1A1613;
+            margin: -8px -10px 8px -10px; padding: 4px 10px; border-radius: 4px 4px 0 0; }
+  .cols { width: 100%; border-collapse: collapse; }
+  .cols td { vertical-align: top; padding: 1px 6px 1px 0; }
+  .lbl { color: #555; width: 130px; }
+  .val { font-weight: bold; }
+
+  .chk { font-weight: bold; }             /* [X] / [ ] selection marks */
+
+  table.rate { width: 100%; border-collapse: collapse; margin-top: 2px; }
+  table.rate th, table.rate td { border: 1px solid #666; padding: 5px 8px; text-align: left; }
+  table.rate th { background: #f0ece6; font-size: 9.5px; text-transform: uppercase; letter-spacing: .04em; }
+  table.rate td.amt { text-align: right; font-weight: bold; width: 130px; }
+  .ratenote { font-size: 8.5px; color: #444; margin-top: 5px; line-height: 1.35; }
+
+  .terms h2.th { font-size: 15px; color: #CB6015; margin: 0 0 8px 0; }
+  .terms h3 { font-size: 10.5px; color: #1A1613; margin: 9px 0 2px 0; }
+  .terms p { margin: 0 0 5px 0; text-align: justify; }
+
+  .sign { margin-top: 16px; border-top: 2px solid #1A1613; padding-top: 10px; }
+  .sigrow { margin-top: 22px; }
+  .sigline { display: inline-block; border-bottom: 1px solid #1A1613; width: 300px; }
+  .sigsmall { font-size: 8px; color: #555; }
+  .pagebreak { page-break-before: always; }
+</style>
+</head>
+<body>
+
+  {# ---- Running header (every page) ---- #}
+  <div class="rhead">
+    {% if data.logo_uri %}<img class="logo" src="{{ data.logo_uri }}">{% endif %}
+    <div class="co">
+      <div class="name">Brookstone Outdoors LLC</div>
+      <div class="sub">Snow &amp; Ice Management · Montrose &amp; Delta County, CO · 970-835-9661</div>
+    </div>
+    {% if data.qr_uri %}
+      <div class="qr">
+        <img src="{{ data.qr_uri }}">
+        <div class="cap">{{ data.contract_number }}</div>
+      </div>
+    {% endif %}
+    <div class="rule"></div>
+  </div>
+
+  {# ---- Running footer (every page) ---- #}
+  <div class="rfoot">
+    <div class="rule">
+      <table><tr>
+        <td>Brookstone Outdoors LLC · 970-835-9661</td>
+        <td class="mid">Contract {{ data.contract_number }} · Template {{ data.template_version }}</td>
+        <td class="right"><span class="pagenum"></span></td>
+      </tr></table>
+    </div>
+  </div>
+
+  {# ================= PAGE 1 ================= #}
+  <h1 class="title">Snow Removal Service Agreement</h1>
+  <div class="subline">
+    <b>Contract:</b> {{ data.contract_number }} &nbsp;&nbsp; <b>Season:</b> {{ data.season }}
+    ({{ data.season_start }} – {{ data.season_end }})
+  </div>
+
+  <div class="box">
+    <h2>Customer &amp; Service Property</h2>
+    <table class="cols">
+      <tr><td class="lbl">Customer</td><td class="val">{{ data.customer_name|default('__________________________') }}</td></tr>
+      <tr><td class="lbl">Service Property</td><td class="val">{{ data.property_name|default('') }}</td></tr>
+      <tr><td class="lbl">Address</td><td class="val">{{ data.property_address|default('') }}</td></tr>
+      <tr><td class="lbl">Phone</td><td class="val">{{ data.contact_phone|default('') }}</td></tr>
+    </table>
+  </div>
+
+  <div class="box">
+    <h2>Service Method</h2>
+    <table class="cols">
+      <tr>
+        <td class="lbl">Method</td>
+        <td>
+          <span class="chk">[{{ data.service_method == 'Automatic' ? 'X' : ' ' }}]</span> Automatic &nbsp;&nbsp;
+          <span class="chk">[{{ data.service_method == 'On-Call' ? 'X' : ' ' }}]</span> On-Call
+        </td>
+      </tr>
+      <tr><td class="lbl">Snow Trigger</td><td class="val">{{ data.snow_trigger|default('____') }}</td></tr>
+    </table>
+  </div>
+
+  <div class="box">
+    <h2>Snowplowing Pricing</h2>
+    <table class="rate">
+      <tr><th>Snow Depth</th><th style="text-align:right;">Rate per Complete Plowing</th></tr>
+      {% for r in data.rates %}
+        <tr><td>{{ r.tier }}</td><td class="amt">{{ r.rate|default('$________') }}</td></tr>
+      {% endfor %}
+    </table>
+    <div class="ratenote">
+      Rates are for one complete plowing of the contracted service area. Snow depth is determined at the time
+      each plowing service begins. If only a portion of the property is plowed, the charge may be adjusted
+      proportionately. During prolonged or heavy snowfall, Brookstone may service the property more than once;
+      each visit is separately billable based on the depth and plowing performed during that visit.
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Sidewalk / Hand-Shoveling &amp; Ice Control</h2>
+    <table class="cols">
+      <tr>
+        <td class="lbl">Sidewalk / Shoveling</td>
+        <td><span class="chk">[{{ data.shoveling_included ? 'X' : ' ' }}]</span> Included &nbsp;&nbsp;
+            <span class="lbl" style="width:auto">Rate:</span> <b>{{ data.shovel_rate|default('') }}</b></td>
+      </tr>
+      <tr>
+        <td class="lbl">Ice Control Authorized</td>
+        <td><span class="chk">[{{ data.ice_authorized ? 'X' : ' ' }}]</span> Yes &nbsp;&nbsp;
+            <span class="lbl" style="width:auto">Salt:</span> <b>{{ data.salt_rate|default('') }}</b> &nbsp;&nbsp;
+            <span class="lbl" style="width:auto">Mag:</span> <b>{{ data.mag_rate|default('') }}</b></td>
+      </tr>
+    </table>
+  </div>
+
+  {% if data.instructions %}
+  <div class="box">
+    <h2>Property-Specific Instructions</h2>
+    <div>{{ data.instructions }}</div>
+  </div>
+  {% endif %}
+
+  {# ================= PAGE 2 ================= #}
+  <div class="pagebreak terms">
+    <h2 class="th">Terms and Conditions</h2>
+
+    <h3>Snow Removal Service</h3>
+    <p>Brookstone Outdoors LLC will provide the snow and ice services selected on Page 1 for the {{ data.season }}
+    snow season, {{ data.season_start }} through {{ data.season_end }}.</p>
+
+    <h3>Snow Depth and Plowing Charges</h3>
+    <p>Snow depth is determined at the time each plowing service begins. Plowing rates shown on Page 1 are for one
+    complete plowing of the contracted service area. If only a portion of the property is plowed, the charge may be
+    adjusted proportionately based on the portion actually serviced.</p>
+    <p>During prolonged or heavy snowfall, Brookstone may need to service a property more than once before the storm
+    has ended. Each visit is separately billable based on the snow depth and amount of plowing performed during that
+    visit.</p>
+
+    <h3>Service Timing</h3>
+    <p>Brookstone will make every reasonable effort to service contracted properties as promptly as conditions allow.
+    Snowstorms, traffic, road conditions, equipment availability, continuing snowfall, and route requirements may
+    affect service times. Unless specifically agreed to in writing, a particular arrival or completion time is not
+    guaranteed.</p>
+
+    <h3>On-Call Service</h3>
+    <p>Customers selecting On-Call Service will be serviced after Brookstone receives a request and as scheduling and
+    route conditions allow. Snow that has been driven on, packed, frozen, or allowed to accumulate may require
+    additional time, equipment, or deicing material and may result in additional charges.</p>
+
+    <h3>Ice Control</h3>
+    <p>Salt, magnesium chloride, or other approved deicing material will be applied according to the service selected
+    on Page 1. Deicing materials help reduce icy conditions but cannot guarantee that pavement or walkways will remain
+    completely free of snow or ice.</p>
+
+    <h3>Property Conditions</h3>
+    <p>Customer is responsible for identifying unusual or hidden objects within the service area and for providing
+    reasonable access to the property. Parked vehicles, equipment, locked gates, or other obstructions may prevent
+    Brookstone from completely servicing an area.</p>
+    <p>If the property contains a gravel or unpaved surface, some movement of gravel during snowplowing is unavoidable.
+    Spring cleanup or regrading of displaced gravel is not included in snow-removal pricing and may be performed for an
+    additional charge.</p>
+
+    <h3>Billing and Payment</h3>
+    <p>Invoices will be sent monthly. Past-due balances may be assessed interest at 1.5% per month (18% annually), or
+    the maximum permitted by law. Brookstone may suspend snow-removal service on past-due accounts until the account is
+    brought current. Customer is responsible for reasonable collection costs, including attorney fees where permitted
+    by law.</p>
+
+    <h3>Cancellation</h3>
+    <p>Either party may cancel this Agreement with written notice. Customer remains responsible for all services
+    performed through the effective date of cancellation.</p>
+
+    <h3>Acceptance</h3>
+    <p>Customer's signature acknowledges acceptance of the services, pricing, and terms shown on Pages 1 and 2 of this
+    Agreement.</p>
+
+    <div class="sign">
+      <table class="cols" style="width:100%">
+        <tr>
+          <td style="width:60%"><div class="sigrow"><span class="sigline"></span><br><span class="sigsmall">Customer Signature</span></div></td>
+          <td><div class="sigrow"><span class="sigline" style="width:150px"></span><br><span class="sigsmall">Date</span></div></td>
+        </tr>
+        <tr>
+          <td><div class="sigrow"><span class="sigline"></span><br><span class="sigsmall">Printed Name</span></div></td>
+          <td><div class="sigrow"><span class="sigline" style="width:150px"></span><br><span class="sigsmall">Brookstone Representative</span></div></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</body>
+</html>

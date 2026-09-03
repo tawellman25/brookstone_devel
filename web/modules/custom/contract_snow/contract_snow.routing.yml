@@ -1,0 +1,11 @@
+contract_snow.agreement_pdf:
+  path: '/contracts/snow/{contracts}/agreement'
+  defaults:
+    _controller: '\Drupal\contract_snow\Controller\SnowAgreementController::pdf'
+    _title: 'Snow Removal Service Agreement'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+  options:
+    parameters:
+      contracts:
+        type: entity:contracts

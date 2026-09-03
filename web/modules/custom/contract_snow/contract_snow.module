@@ -12,6 +12,18 @@
 use Drupal\Core\Entity\EntityInterface;
 
 /**
+ * Implements hook_theme().
+ */
+function contract_snow_theme($existing, $type, $theme, $path) {
+  return [
+    'snow_agreement' => [
+      'variables' => ['data' => []],
+      'template' => 'snow-agreement',
+    ],
+  ];
+}
+
+/**
  * Current Snow Removal Service Agreement template version. Bump when the
  * agreement layout/terms change so executed copies stay tied to their version.
  */

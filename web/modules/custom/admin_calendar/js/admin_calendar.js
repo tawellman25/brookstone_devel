@@ -144,8 +144,9 @@
         return '/teammates/calendar/completed?' + params.toString();
       }
 
-      // When set (via property search), the calendar shows ONLY this WO.
-      let focusWoId = null;
+      // Single-WO focus (via property search). focusActive toggles the filter
+      // on/off while keeping the chosen WO so the bar can flip back and forth.
+      let focusWoId = null, focusNick = '', focusDate = null, focusActive = false;
 
       const completedSource = {
         events: function (fetchInfo, successCallback, failureCallback) {
@@ -155,7 +156,7 @@
               return r.json();
             })
             .then(function (data) {
-              if (focusWoId) { data = data.filter(function (e) { return e.extendedProps && e.extendedProps.woEntityId === focusWoId; }); }
+              if (focusActive && focusWoId) { data = data.filter(function (e) { return e.extendedProps && e.extendedProps.woEntityId === focusWoId; }); }
               successCallback(data);
             })
             .catch(function (err) {
@@ -242,7 +243,7 @@
                   updateLegend(evt.color, evt.extendedProps.departmentName);
                 }
               });
-              if (focusWoId) { data = data.filter(function (e) { return e.extendedProps && e.extendedProps.woEntityId === focusWoId; }); }
+              if (focusActive && focusWoId) { data = data.filter(function (e) { return e.extendedProps && e.extendedProps.woEntityId === focusWoId; }); }
               successCallback(data);
             })
             .catch(function (err) {
@@ -333,18 +334,25 @@
         clearTimeout(searchTimer);
         searchTimer = setTimeout(runPropertySearch, 250);
       });
+      function renderFocusNote() {
+        const note = document.getElementById('bos-cal-focus-note');
+        if (!note) { return; }
+        if (!focusWoId) { note.hidden = true; note.innerHTML = ''; return; }
+        note.hidden = false;
+        note.innerHTML = focusActive
+          ? 'Showing only: <strong>' + bosCalEsc(focusNick) + '</strong> <button type="button" id="bos-cal-focus-toggle">Show all</button>'
+          : 'Showing all — <button type="button" id="bos-cal-focus-toggle">Show only <strong>' + bosCalEsc(focusNick) + '</strong></button>';
+      }
       searchResults?.addEventListener('click', function (e) {
         const btn = e.target.closest('.bos-cal-search-item');
         if (!btn) { return; }
         searchHighlight = (btn.getAttribute('data-nick') || '').toLowerCase();
         // Filter the calendar to ONLY this work order.
         focusWoId = parseInt(btn.getAttribute('data-wo'), 10) || null;
-        const focusNote = document.getElementById('bos-cal-focus-note');
-        if (focusNote) {
-          focusNote.innerHTML = 'Showing only: <strong>' + bosCalEsc(btn.getAttribute('data-nick')) + '</strong> ' +
-            '<button type="button" id="bos-cal-focus-clear">Show all</button>';
-          focusNote.hidden = false;
-        }
+        focusNick = btn.getAttribute('data-nick') || '';
+        focusDate = btn.getAttribute('data-date');
+        focusActive = true;
+        renderFocusNote();
         // If the target WO is completed/invoiced/historical, make sure the
         // calendar is showing completed work so the event actually appears.
         const histStatuses = [1097, 1283, 1281, 1504];
@@ -387,12 +395,13 @@
           searchResults.hidden = true;
         }
       });
-      // "Show all" clears the single-WO focus.
+      // Toggle between showing only the chosen WO and showing all.
       document.getElementById('bos-cal-focus-note')?.addEventListener('click', function (e) {
-        if (e.target.id === 'bos-cal-focus-clear') {
-          focusWoId = null;
-          searchHighlight = '';
-          this.hidden = true;
+        if (e.target.closest('#bos-cal-focus-toggle')) {
+          focusActive = !focusActive;
+          searchHighlight = focusActive ? (focusNick || '').toLowerCase() : '';
+          if (focusActive && focusDate) { calendar.gotoDate(focusDate); }
+          renderFocusNote();
           calendar.refetchEvents();
         }
       });

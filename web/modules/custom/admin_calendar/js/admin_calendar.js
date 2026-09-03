@@ -312,10 +312,12 @@
             }
             else {
               searchResults.innerHTML = rows.map(function (row) {
-                return '<button type="button" class="bos-cal-search-item" data-date="' + row.date + '" data-nick="' + bosCalEsc(row.nickname) + '">' +
+                return '<button type="button" class="bos-cal-search-item" data-date="' + row.date + '" data-status="' + (row.status_tid || 0) + '" data-nick="' + bosCalEsc(row.nickname) + '">' +
                   '<span class="nk">' + bosCalEsc(row.nickname) + '</span> ' +
                   '<span class="sv">' + bosCalEsc(row.service) + '</span> ' +
-                  '<span class="dt">' + bosCalEsc(row.date_label) + '</span></button>';
+                  '<span class="dt">' + bosCalEsc(row.date_label) + '</span>' +
+                  (row.status_label ? ' <span class="st">' + bosCalEsc(row.status_label) + '</span>' : '') +
+                  '</button>';
               }).join('');
             }
             searchResults.hidden = false;
@@ -330,6 +332,14 @@
         const btn = e.target.closest('.bos-cal-search-item');
         if (!btn) { return; }
         searchHighlight = (btn.getAttribute('data-nick') || '').toLowerCase();
+        // If the target WO is completed/invoiced/historical, make sure the
+        // calendar is showing completed work so the event actually appears.
+        const histStatuses = [1097, 1283, 1281, 1504];
+        const st = parseInt(btn.getAttribute('data-status'), 10);
+        if (histStatuses.indexOf(st) !== -1) {
+          const sc = document.getElementById('bos-filter-show-completed');
+          if (sc && !sc.checked) { sc.checked = true; }
+        }
         calendar.gotoDate(btn.getAttribute('data-date'));
         calendar.refetchEvents();
         searchResults.hidden = true;

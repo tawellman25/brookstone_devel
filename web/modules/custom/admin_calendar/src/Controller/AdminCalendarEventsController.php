@@ -501,13 +501,24 @@ class AdminCalendarEventsController extends ControllerBase {
     $query->leftJoin('work_order__field_service', 'wosvc', 'wosvc.entity_id = swo.field_work_order_target_id AND wosvc.deleted = 0');
     $query->leftJoin('taxonomy_term_field_data', 'svc', 'svc.tid = wosvc.field_service_target_id');
     $query->addField('svc', 'name', 'service');
+    $query->leftJoin('work_order__field_status', 'wos', 'wos.entity_id = swo.field_work_order_target_id AND wos.deleted = 0');
+    $query->addField('wos', 'field_status_target_id', 'status_tid');
     $query->condition('nick.field_nickname_value', '%' . $this->database->escapeLike($q) . '%', 'LIKE');
+    // Scheduled/active first, then by date (newest first) — so a currently
+    // scheduled WO is surfaced above completed history.
     $query->orderBy('fd.field_date_value', 'DESC');
-    $query->range(0, 25);
+    $query->range(0, 40);
 
     $tz = new \DateTimeZone(date_default_timezone_get());
+    // Status TIDs that don't represent a live schedule the office would jump to.
+    $canceled = 1098;
     $out = [];
     foreach ($query->execute() as $r) {
+      $status_tid = (int) ($r->status_tid ?? 0);
+      // Skip canceled — they're not a real place on the schedule.
+      if ($status_tid === $canceled) {
+        continue;
+      }
       $d = (new \DateTime('@' . (int) $r->date_ts))->setTimezone($tz);
       try {
         $wo_url = Url::fromRoute('entity.work_order.canonical', ['work_order' => $r->wo_id])->toString();
@@ -522,7 +533,12 @@ class AdminCalendarEventsController extends ControllerBase {
         'service' => trim((string) ($r->service ?? '')),
         'wo_id' => (int) $r->wo_id,
         'wo_url' => $wo_url,
+        'status_tid' => $status_tid,
+        'status_label' => self::STATUS_LABELS[$status_tid] ?? '',
       ];
+      if (count($out) >= 25) {
+        break;
+      }
     }
     return new JsonResponse($out);
   }

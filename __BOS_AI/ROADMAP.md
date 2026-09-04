@@ -120,6 +120,7 @@ These are shipped, live systems whose only blocker is human adoption, not engine
 ### Season-gated (build early fall 2026)
 | Item | Area | Tier | Effort | Notes |
 |---|---|---|---|---|
+| **Snow contract (residential) — P1–P3 SHIPPED LIVE** | `contracts:snow_removal` / `contract_snow` | T2 | L | Tiered per-plowing rates (0–2/2–4/4–6/6+) + per-push, snow-trigger vocab (+ Other free-text), per-customer salt/mag ice rates (+ Business-Settings defaults) w/ per-visit Bag/Pound max, 2-page Snow Removal Service Agreement PDF (`contract_snow.agreement_pdf`, entity_print+dompdf+QR, brand tokens), and the **workflow toolbar** (Preview / Mark Sent / Upload Signed / Activate) with signed-PDF upload + **hard version-lock** (Executed/Active freezes pricing+terms). Deployed via entity-API setup scripts + rsync. Docs: `Modules/contract_snow.md`. **P4 remaining →** wire tiered rates into `wo_snow_removal` billing (plow depth → tier). |
 | Snow removal architecture + reconciliation bundle | snow_removal | T2 | L | Winter service — build before season. Reconciles clocked labor vs recorded work (same class as WO#49698). |
 | `special_mowing` reconciliation bundle | special_mowing | T2 | M | Same reconciliation pattern. Early fall. |
 

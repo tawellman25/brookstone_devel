@@ -227,7 +227,8 @@ Provides a VBO bulk action: re-saves `wo_complete_info` entities to trigger reca
 | `config_pages:business_setting` | Salt rate, bag size/increments, mag rate + minimum, snow labor rate, shoveling minimum, ATV charge, hourly labor rates, aeration pricing reference |
 | `sq_ft_break_points` ECK entity | Area-based pricing breakpoints for aeration, dethatching, overseeding (referenced from `business_setting`) |
 | `zipcodes.field_trip_fee` | Per-zipcode trip fee (loaded via `properties.field_zipcode_reference`) |
-| `contracts:snow_removal.field_per_push_rate` | Per-push rate for snow removal (from the property's latest snow removal contract) |
+| `contracts:snow_removal.field_plow_rate_0_2` / `_2_4` / `_4_6` / `_6_plus` | **Depth-tiered** per-plowing rates. The recorded Snow Level (`wo_tasks_list:snow_removal.field_snow_level` → `snow_levels` term → `field_snow_depth_tier` = `0_2`/`2_4`/`4_6`/`6_plus`/`icy`) selects the tier. `get_snow_plow_rate_for_wo()` returns the matched tier rate, or **falls back to `field_per_push_rate`** when the tier rate is empty, the level is Icy, or no depth tier is recorded. `plow_subtotal = plow-portion factor × resolved rate`. |
+| `contracts:snow_removal.field_per_push_rate` | Flat per-push rate — the fallback when no tier rate applies (contracts that carry only this keep billing unchanged). |
 | `contracts:snow_removal.field_shoveling_labor_included` | Whether shoveling is included in the snow removal contract |
 
 ---

@@ -166,8 +166,11 @@ function wo_snow_removal_entity_presave(EntityInterface $entity) {
           $shovelingMin = $business_settings->get('field_shoveling_minimum')->value;
                     
           
-          // Get values from functions
-          $snowRemovalRate = get_per_push_rate_from_latest_contract($entity->id());
+          // Get values from functions. Plow rate is depth-tier aware: the
+          // recorded Snow Level maps to a contract plow-rate tier (0-2 / 2-4 /
+          // 4-6 / 6"+); when the matched tier rate is empty, it falls back to
+          // the flat per-push rate. See get_snow_plow_rate_for_wo().
+          $snowRemovalRate = get_snow_plow_rate_for_wo($entity->id());
           $shovelingIncluded = get_shoveling_included_value_from_latest_contract($entity->id());
           $pushValue = get_push_value_for_snow_removal($entity->id());
           $saltUsed = get_salt_used_for_snow_removal($entity->id());
@@ -421,6 +424,108 @@ function get_per_push_rate_from_latest_contract($workOrderId) {
 
   // Ensure the value is a float
   return (float) $perPushRate;
+}
+
+/**
+ * Loads the latest snow_removal Contract for the Property on a Work Order.
+ *
+ * @param int $workOrderId
+ *   The Work Order entity ID.
+ *
+ * @return \Drupal\Core\Entity\EntityInterface|null
+ *   The latest snow contract, or NULL.
+ */
+function _wo_snow_removal_latest_contract($workOrderId) {
+  $workOrder = \Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId);
+  if (!$workOrder || !$workOrder->hasField('field_property')) {
+    return NULL;
+  }
+  $propertyId = $workOrder->get('field_property')->target_id;
+  if (!$propertyId) {
+    return NULL;
+  }
+  $ids = \Drupal::entityQuery('contracts')
+    ->accessCheck(FALSE)
+    ->condition('field_property', $propertyId)
+    ->condition('type', 'snow_removal')
+    ->sort('created', 'DESC')
+    ->range(0, 1)
+    ->execute();
+  if (empty($ids)) {
+    return NULL;
+  }
+  return \Drupal::entityTypeManager()->getStorage('contracts')->load(reset($ids));
+}
+
+/**
+ * Resolves the plow-rate tier key (0_2 / 2_4 / 4_6 / 6_plus / icy) for a Work
+ * Order from its recorded Snow Level term (field_snow_level ->
+ * field_snow_depth_tier). Returns NULL when no tier can be determined.
+ *
+ * @param int $workOrderId
+ *   The Work Order entity ID.
+ *
+ * @return string|null
+ *   The tier key, or NULL.
+ */
+function get_snow_depth_tier_for_wo($workOrderId) {
+  $ids = \Drupal::entityQuery('wo_tasks_list')
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $workOrderId)
+    ->condition('type', 'snow_removal')
+    ->sort('created', 'DESC')
+    ->range(0, 1)
+    ->execute();
+  if (empty($ids)) {
+    return NULL;
+  }
+  $taskList = \Drupal::entityTypeManager()->getStorage('wo_tasks_list')->load(reset($ids));
+  if (!$taskList || !$taskList->hasField('field_snow_level') || $taskList->get('field_snow_level')->isEmpty()) {
+    return NULL;
+  }
+  $term = $taskList->get('field_snow_level')->entity;
+  if (!$term || !$term->hasField('field_snow_depth_tier') || $term->get('field_snow_depth_tier')->isEmpty()) {
+    return NULL;
+  }
+  return (string) $term->get('field_snow_depth_tier')->value;
+}
+
+/**
+ * Depth-tier-aware plow rate for a snow Work Order.
+ *
+ * Picks the contract plow-rate tier matching the recorded snow depth
+ * (field_plow_rate_0_2 / _2_4 / _4_6 / _6_plus). Falls back to the flat
+ * field_per_push_rate when the matched tier rate is empty/zero, when the level
+ * is Icy (ice-only, no plow tier), or when no depth tier is recorded — so
+ * contracts that carry only the flat rate keep billing exactly as before.
+ *
+ * @param int $workOrderId
+ *   The Work Order entity ID.
+ *
+ * @return float
+ *   The per-plowing rate to bill.
+ */
+function get_snow_plow_rate_for_wo($workOrderId) {
+  $contract = _wo_snow_removal_latest_contract($workOrderId);
+  if (!$contract) {
+    return 0.0;
+  }
+
+  $flat = ($contract->hasField('field_per_push_rate') && !$contract->get('field_per_push_rate')->isEmpty())
+    ? (float) $contract->get('field_per_push_rate')->value : 0.0;
+
+  $tier = get_snow_depth_tier_for_wo($workOrderId);
+  if ($tier && $tier !== 'icy') {
+    $field = 'field_plow_rate_' . $tier;
+    if ($contract->hasField($field) && !$contract->get($field)->isEmpty()) {
+      $rate = (float) $contract->get($field)->value;
+      if ($rate > 0) {
+        return $rate;
+      }
+    }
+  }
+
+  return $flat;
 }
 
 /**

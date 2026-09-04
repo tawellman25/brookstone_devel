@@ -105,10 +105,30 @@ Entity-API setup scripts run on each environment (dev then live via
 intentionally drifted). Live drush:
 `/opt/alt/php83/usr/bin/php -d memory_limit=768M vendor/drush/drush/drush.php`.
 
+## Tiered billing (P4 — shipped)
+
+`wo_snow_removal` bills plowing by depth tier. The crew records the storm depth on
+the task list (`wo_tasks_list:snow_removal.field_snow_level` → `snow_levels`
+vocabulary, now standardized to **0-2" / 2-4" / 4-6" / 6"+ / Icy Conditions**,
+each carrying a machine key `field_snow_depth_tier`). At completion,
+`get_snow_plow_rate_for_wo()` maps that tier to the contract's
+`field_plow_rate_{0_2,2_4,4_6,6_plus}` and bills
+`plow-portion factor × tier rate`.
+
+**Fallback:** when the matched tier rate is empty, the level is Icy (ice-only,
+billed via salt/mag not plowing), or no tier is recorded, it falls back to the
+flat `field_per_push_rate` — so contracts that carry only the flat rate (and the
+46 historical WOs pointing at a since-deleted snow-level term) bill exactly as
+before. Tiered billing activates per-contract the moment the office fills the
+tier rates.
+
+Setup: `web/scripts/setup_snow_depth_tier_field.php` (tier-key field) +
+`web/scripts/standardize_snow_levels.php` (label-driven term standardization +
+historical migration). Ice control is billed separately (per-lb salt / per-gal
+mag), unchanged.
+
 ## Not built yet
 
-- **P4** — wire the tiered plow rates into `wo_snow_removal` billing (measured
-  plow depth → matching rate band). Until then the tiers are contract-side only.
 - Snow-trigger term **descriptions** (Todd/Chat author at
   `/admin/structure/taxonomy/manage/snow_trigger/overview`).
 - Real per-lb salt price in Business Settings (seeded $0.85 placeholder).

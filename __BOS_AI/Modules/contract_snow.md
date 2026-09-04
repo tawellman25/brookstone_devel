@@ -51,6 +51,16 @@ Built via entity-API setup scripts (ECK/field configs silent-skip on cim), not
   (file, PDF only) — the scanned executed agreement. Files → `public://`
   (s3fs on live) under `snow-signed-contracts/{Y}`.
 
+## Finding snow contracts
+
+The **Snow Contracts** admin list lives at **`/admin/office/contracts/snow`** —
+an admin-menu item in the Office section (sibling of Contracts). It's the
+`contracts_snow` view (script-built, `web/scripts/build_snow_contracts_view.php`,
+run per env): contract # (linked), property, status, year + view/edit ops, and an
+**Add New Snow Contract** button. Role-gated to administrator / site_admin /
+administration / supervisor. The main Contracts list (`/admin/office/contracts`)
+stays residential-oriented.
+
 ## The agreement PDF (P2)
 
 `SnowAgreementController::pdf()` renders `templates/snow-agreement.html.twig`

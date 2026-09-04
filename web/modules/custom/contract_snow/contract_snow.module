@@ -10,6 +10,7 @@
  */
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageException;
 
 /**
  * Implements hook_form_alter().
@@ -98,6 +99,70 @@ function contract_snow_contracts_presave(EntityInterface $contract) {
       && $contract->get('field_snow_template_version')->isEmpty()) {
     $contract->set('field_snow_template_version', CONTRACT_SNOW_TEMPLATE_VERSION);
   }
+
+  // Hard lock: once a contract is Executed/Active, its pricing + terms are
+  // frozen. Block edits to those fields (status + signed PDF stay editable —
+  // to revise the agreement, create a new season contract). The Activate save
+  // itself passes, because the SAVED (pre-activation) status isn't yet
+  // Executed/Active.
+  if (!$contract->isNew()) {
+    $orig = \Drupal::entityTypeManager()->getStorage('contracts')->loadUnchanged($contract->id());
+    if ($orig && _contract_snow_is_executed($orig)) {
+      foreach (_contract_snow_locked_fields() as $f) {
+        if ($contract->hasField($f)
+            && $orig->get($f)->getValue() != $contract->get($f)->getValue()) {
+          throw new EntityStorageException('This snow contract is Executed/Active — its pricing and terms are locked. Move it off Executed/Active or create a new season contract to make changes.');
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for contracts.
+ *
+ * Renders the workflow action toolbar at the top of a snow contract page.
+ */
+function contract_snow_contracts_view(array &$build, EntityInterface $entity, $display, $view_mode) {
+  if ($entity->bundle() !== 'snow_removal' || !in_array($view_mode, ['full', 'default'], TRUE)) {
+    return;
+  }
+  $build['snow_actions'] = \Drupal::formBuilder()
+    ->getForm(\Drupal\contract_snow\Form\SnowContractActionsForm::class, $entity);
+  $build['snow_actions']['#weight'] = -100;
+}
+
+/**
+ * Contract-content fields frozen once a snow contract is Executed/Active.
+ */
+function _contract_snow_locked_fields(): array {
+  return [
+    'field_plow_rate_0_2', 'field_plow_rate_2_4', 'field_plow_rate_4_6', 'field_plow_rate_6_plus',
+    'field_per_push_rate', 'field_snow_service_method', 'field_snow_trigger', 'field_snow_trigger_other',
+    'field_snow_ice_authorized', 'field_requires_ice_treatment', 'field_salt_rate', 'field_mag_rate',
+    'field_shovel_rate', 'field_snow_ice_max_amount', 'field_snow_ice_max_unit',
+    'field_snow_property_instructions', 'field_snow_template_version', 'field_contract_year',
+  ];
+}
+
+/**
+ * TRUE when a contract's status is the Executed/Active term.
+ */
+function _contract_snow_is_executed(EntityInterface $contract): bool {
+  if (!$contract->hasField('field_contract_status') || $contract->get('field_contract_status')->isEmpty()) {
+    return FALSE;
+  }
+  $term = $contract->get('field_contract_status')->entity;
+  return $term && stripos((string) $term->label(), 'executed') !== FALSE;
+}
+
+/**
+ * The contract_status term id for a given name (per-env tids), or NULL.
+ */
+function contract_snow_status_tid(string $name): ?int {
+  $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
+    ->loadByProperties(['vid' => 'contract_status', 'name' => $name]);
+  return $terms ? (int) reset($terms)->id() : NULL;
 }
 
 /**

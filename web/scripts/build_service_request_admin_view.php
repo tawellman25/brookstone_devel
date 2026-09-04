@@ -53,14 +53,19 @@ $field = function (string $name, string $label, string $type, ?string $table = N
 };
 
 $fields = [
-  'field_public_ref' => $field('field_public_ref', 'Ref', 'string'),
+  // Ref links through to the request's own page (/service_request/{id}).
+  'field_public_ref' => $field('field_public_ref', 'Ref', 'string', NULL, ['link_to_entity' => TRUE]),
   'created' => [
     'id' => 'created', 'table' => 'service_request_field_data', 'field' => 'created',
     'relationship' => 'none', 'group_type' => 'group', 'entity_type' => 'service_request',
     'entity_field' => 'created', 'plugin_id' => 'field', 'type' => 'timestamp',
     'label' => 'Submitted', 'settings' => ['date_format' => 'short', 'tz' => ''],
   ],
-  'field_submitted_name' => $field('field_submitted_name', 'Name', 'string'),
+  // Name also links to the request page. Contact columns follow so the office
+  // can actually reach the customer from this list.
+  'field_submitted_name' => $field('field_submitted_name', 'Name', 'string', NULL, ['link_to_entity' => TRUE]),
+  'field_submitted_phone' => $field('field_submitted_phone', 'Phone', 'telephone_link'),
+  'field_submitted_email' => $field('field_submitted_email', 'Email', 'basic_string'),
   'field_submitted_address' => $field('field_submitted_address', 'Address', 'string'),
   'field_submitted_zip' => $field('field_submitted_zip', 'ZIP', 'string'),
   'field_property' => $field('field_property', 'Matched property', 'entity_reference_label'),

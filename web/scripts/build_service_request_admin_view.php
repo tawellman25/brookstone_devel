@@ -102,6 +102,21 @@ $filters = [
     'plugin_id' => 'string', 'operator' => 'contains', 'value' => '', 'exposed' => TRUE,
     'expose' => ['operator_id' => 'field_campaign_value_op', 'label' => 'Campaign', 'identifier' => 'campaign'],
   ],
+  // Status dropdown (scoped to the service_request_status vocabulary).
+  'field_request_status_target_id' => [
+    'id' => 'field_request_status_target_id', 'table' => 'service_request__field_request_status',
+    'field' => 'field_request_status_target_id', 'relationship' => 'none',
+    'entity_type' => 'service_request', 'entity_field' => 'field_request_status',
+    'plugin_id' => 'taxonomy_index_tid', 'operator' => 'or', 'value' => [],
+    'vid' => 'service_request_status', 'type' => 'select', 'limit' => TRUE,
+    'hierarchy' => FALSE, 'error_message' => TRUE,
+    'exposed' => TRUE,
+    'expose' => [
+      'operator_id' => 'field_request_status_target_id_op', 'label' => 'Status',
+      'identifier' => 'status', 'operator' => 'field_request_status_target_id_op',
+      'multiple' => FALSE, 'reduce' => FALSE,
+    ],
+  ],
 ];
 
 $default_display = [
@@ -116,7 +131,9 @@ $default_display = [
     'query' => ['type' => 'views_query', 'options' => []],
     'exposed_form' => ['type' => 'basic', 'options' => ['submit_button' => 'Filter', 'reset_button' => TRUE]],
     'pager' => ['type' => 'full', 'options' => ['items_per_page' => 50]],
-    'style' => ['type' => 'table', 'options' => ['default' => 'created', 'order' => 'asc']],
+    // Unformatted rows — each row becomes a status card via the row template
+    // views-view-fields--service-request-admin.html.twig (bos_service_request).
+    'style' => ['type' => 'default', 'options' => []],
     'row' => ['type' => 'fields'],
     'fields' => $fields,
     'filters' => $filters,

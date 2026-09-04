@@ -290,3 +290,156 @@ function _bos_service_request_accordions(string $html): array {
   }
   return ['#type' => 'processed_text', '#text' => $blocks, '#format' => 'full_html'];
 }
+
+/**
+ * Implements hook_theme().
+ *
+ * Registers the admin-queue row suggestion so the service_request_admin view
+ * renders each request as a BOS status card (UI-patterns status-card;
+ * templates/views-view-fields--service-request-admin.html.twig).
+ */
+function bos_service_request_theme($existing, $type, $theme, $path): array {
+  return [
+    'views_view_fields__service_request_admin' => [
+      'base hook' => 'views_view_fields',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * Attach the service-request card CSS to the admin queue.
+ */
+function bos_service_request_views_pre_render($view): void {
+  if ($view->id() === 'service_request_admin') {
+    $view->element['#attached']['library'][] = 'bos_service_request/request_cards';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views_view_fields.
+ *
+ * Computes the card data for each service_request row on the admin queue. The
+ * Operations dropbutton stays a rendered view field ({{ fields.operations }}).
+ */
+function bos_service_request_preprocess_views_view_fields(array &$variables): void {
+  $view = $variables['view'] ?? NULL;
+  if (!$view || $view->id() !== 'service_request_admin') {
+    return;
+  }
+  $entity = $variables['row']->_entity ?? NULL;
+  if (!$entity instanceof \Drupal\Core\Entity\EntityInterface || $entity->getEntityTypeId() !== 'service_request') {
+    return;
+  }
+  $variables['sr_card'] = _bos_service_request_build_card($entity);
+}
+
+/**
+ * Status label → card accent class.
+ */
+function _bos_service_request_status_class(string $label): string {
+  $map = [
+    'New' => 'new',
+    'Needs Review' => 'review',
+    'Verified' => 'verified',
+    'Already Covered' => 'covered',
+    'Duplicate' => 'dup',
+    'Rejected' => 'rejected',
+    'Converted' => 'converted',
+  ];
+  return $map[$label] ?? 'new';
+}
+
+/**
+ * Builds the card data array for one service_request row.
+ */
+function _bos_service_request_build_card(\Drupal\Core\Entity\EntityInterface $sr): array {
+  $get = function (string $f) use ($sr): string {
+    return ($sr->hasField($f) && !$sr->get($f)->isEmpty()) ? trim((string) $sr->get($f)->value) : '';
+  };
+  $ref_entity = function (string $f) use ($sr) {
+    return ($sr->hasField($f) && !$sr->get($f)->isEmpty()) ? $sr->get($f)->entity : NULL;
+  };
+
+  try {
+    $view_url = $sr->toUrl()->toString();
+  }
+  catch (\Throwable $e) {
+    $view_url = '/service_request/' . $sr->id();
+  }
+
+  // Status.
+  $status_term = $ref_entity('field_request_status');
+  $status = $status_term ? (string) $status_term->label() : 'New';
+
+  // Matched property.
+  $property = $ref_entity('field_property');
+  $prop_label = '';
+  $prop_url = '';
+  if ($property) {
+    $prop_label = trim((string) ($property->get('field_nickname')->value ?? '')) ?: (string) $property->label();
+    try {
+      $prop_url = $property->toUrl()->toString();
+    }
+    catch (\Throwable $e) {
+      $prop_url = '';
+    }
+  }
+
+  // Created work order.
+  $wo = $ref_entity('field_work_order');
+  $wo_id = '';
+  $wo_url = '';
+  if ($wo) {
+    $wo_id = (string) $wo->id();
+    try {
+      $wo_url = $wo->toUrl()->toString();
+    }
+    catch (\Throwable $e) {
+      $wo_url = '';
+    }
+  }
+
+  // Submitted date (US format per BOS convention).
+  $submitted = '';
+  if (!$sr->get('created')->isEmpty()) {
+    $submitted = \Drupal::service('date.formatter')->format((int) $sr->get('created')->value, 'custom', 'm/d/Y g:i A');
+  }
+
+  // Interest badges.
+  $wants = [];
+  if ($sr->hasField('field_wants_recurring') && (bool) $sr->get('field_wants_recurring')->value) {
+    $wants[] = 'Auto each fall';
+  }
+  if ($sr->hasField('field_wants_startup') && (bool) $sr->get('field_wants_startup')->value) {
+    $wants[] = 'Spring start-up';
+  }
+  if ($sr->hasField('field_wants_specific_date') && (bool) $sr->get('field_wants_specific_date')->value) {
+    $wants[] = 'Wants a date — call back';
+  }
+
+  $phone = $get('field_submitted_phone');
+
+  return [
+    'id' => $sr->id(),
+    'ref' => $get('field_public_ref'),
+    'view_url' => $view_url,
+    'submitted' => $submitted,
+    'name' => $get('field_submitted_name'),
+    'phone' => $phone,
+    'phone_tel' => preg_replace('/[^0-9+]/', '', $phone),
+    'email' => $get('field_submitted_email'),
+    'address' => $get('field_submitted_address'),
+    'zip' => $get('field_submitted_zip'),
+    'property_label' => $prop_label,
+    'property_url' => $prop_url,
+    'status' => $status,
+    'status_class' => _bos_service_request_status_class($status),
+    'campaign' => $get('field_campaign'),
+    'flags' => $get('field_review_flags'),
+    'wants' => $wants,
+    'wo_id' => $wo_id,
+    'wo_url' => $wo_url,
+  ];
+}

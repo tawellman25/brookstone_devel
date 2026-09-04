@@ -178,12 +178,22 @@ Route `/winterize` (+ `?c=<campaign>`), `_access: TRUE`, `no_cache`. Form API.
 
 Queue view **`service_request_admin`** at **`/admin/office/service-requests`**
 (built by `web/scripts/build_service_request_admin_view.php`; menu link nested
-under **Office**, ordered before Estimates). Columns: ref / submitted date /
-name / address / matched property / status / source / campaign / flags / WO +
-**Operations** dropbutton. Exposed filters: service year / source / campaign.
-Access: `administer service requests` (administration, supervisor, site_admin,
-administrator; granted via `hook_install` + `hook_update_10001`, plus ECK entity
-perms by the setup script). Anon → 403.
+under **Office**, ordered before Estimates). Rendered as **BOS status cards**
+(2026-09-04) — unformatted rows + the row template
+`templates/views-view-fields--service-request-admin.html.twig`, card data built
+in `bos_service_request_preprocess_views_view_fields()` (`sr_card`), CSS
+(`css/request-cards.css`) attached via `hook_views_pre_render`; theme suggestion
+registered in `hook_theme` (base hook `views_view_fields`). Each card: name
+(links to the request page) + a color-keyed **status badge** (left accent bar
+matches), ref + submitted datetime + campaign, **click-to-call phone + email**,
+address, matched property (linked), created **Work Order** (linked), interest
+tags (auto-each-fall / spring start-up / wants-a-date), review flags, and the
+**Operations** dropbutton (rendered view field `fields.operations`). Exposed
+filters: **status** (`taxonomy_index_tid`, scoped to `service_request_status`) /
+service year / source / campaign. Access: `administer service requests`
+(administration, supervisor, site_admin, administrator; granted via
+`hook_install` + `hook_update_10001`, plus ECK entity perms by the setup script).
+Anon → 403.
 
 Actions are **per-row confirm forms, NOT VBO** (the documented VBO-footgun
 family: mass-invoice, Back-button replay, shift-click select):

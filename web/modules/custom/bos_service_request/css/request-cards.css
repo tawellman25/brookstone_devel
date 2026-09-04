@@ -1,0 +1,73 @@
+/**
+ * Service-request admin queue — BOS status-card pattern (mirrors My Schedule /
+ * property cards). White card, left status-accent bar, badge pushed right.
+ */
+.view-service-request-admin .views-row { margin: 0 0 0.6rem; }
+
+.sr-card {
+  background: #fff;
+  border: 2px solid #ddd;
+  border-left: 5px solid #6b5d4f;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
+/* Status accents (left bar + badge share the color key). */
+.sr-card--new       { border-left-color: #CB6015; }
+.sr-card--review    { border-left-color: #E0A800; }
+.sr-card--verified  { border-left-color: #62B5E5; }
+.sr-card--covered   { border-left-color: #8a7d6d; }
+.sr-card--dup       { border-left-color: #8a7d6d; }
+.sr-card--rejected  { border-left-color: #A12B21; }
+.sr-card--converted { border-left-color: #007A33; }
+
+.sr-card__header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; }
+.sr-card__name {
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-size: 1.15rem; font-weight: 600; text-decoration: none;
+  margin-right: auto;
+}
+
+.sr-badge {
+  font-size: 0.72rem; font-weight: 700; border-radius: 3px;
+  padding: 0.15rem 0.5rem; line-height: 1.4; color: #fff; white-space: nowrap;
+}
+.sr-badge--new       { background: #CB6015; }
+.sr-badge--review    { background: #E0A800; color: #1a1613; }
+.sr-badge--verified  { background: #3a7fa5; }
+.sr-badge--covered   { background: #8a7d6d; }
+.sr-badge--dup       { background: #8a7d6d; }
+.sr-badge--rejected  { background: #A12B21; }
+.sr-badge--converted { background: #007A33; }
+
+.sr-card__meta {
+  display: flex; flex-wrap: wrap; gap: 0.25rem 1rem;
+  color: #6b5d4f; font-size: 0.85rem; margin-top: 0.2rem;
+}
+
+.sr-card__contact { margin-top: 0.4rem; display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem; }
+.sr-card__phone { font-size: 1.05rem; font-weight: 700; text-decoration: none; }
+.sr-card__email { font-size: 0.92rem; }
+
+.sr-card__addr { color: #6b5d4f; font-size: 0.92rem; margin-top: 0.2rem; }
+
+.sr-card__links {
+  display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem;
+  margin-top: 0.4rem; font-size: 0.92rem;
+}
+.sr-card__prop--none { color: #a12b21; font-style: italic; }
+
+.sr-card__wants { margin-top: 0.4rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.sr-tag {
+  font-size: 0.75rem; background: #f2e9dc; color: #6b5d4f;
+  border-radius: 3px; padding: 0.1rem 0.45rem;
+}
+
+.sr-card__flags {
+  margin-top: 0.4rem; font-size: 0.85rem; color: #a12b21;
+  background: #fdf4ee; border: 1px solid #e6cdba; border-radius: 4px;
+  padding: 0.3rem 0.5rem; white-space: pre-line;
+}
+
+.sr-card__actions { margin-top: 0.6rem; }
+.sr-card__actions .dropbutton-wrapper { margin: 0; }

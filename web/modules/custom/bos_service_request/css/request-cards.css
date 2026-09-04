@@ -10,6 +10,19 @@
   border-left: 5px solid #6b5d4f;
   border-radius: 6px;
   padding: 0.75rem 1rem;
+  display: flex;
+  gap: 0.75rem 1rem;
+  align-items: flex-start;
+}
+.sr-card__body { flex: 1 1 auto; min-width: 0; }
+
+/* Right-hand aside: status badge on top, actions stacked beneath it. */
+.sr-card__aside {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
 }
 
 /* Status accents (left bar + badge share the color key). */
@@ -21,11 +34,10 @@
 .sr-card--rejected  { border-left-color: #A12B21; }
 .sr-card--converted { border-left-color: #007A33; }
 
-.sr-card__header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; }
 .sr-card__name {
+  display: inline-block;
   font-family: "Oswald", "Arial Narrow", sans-serif;
   font-size: 1.15rem; font-weight: 600; text-decoration: none;
-  margin-right: auto;
 }
 
 .sr-badge {
@@ -69,5 +81,16 @@
   padding: 0.3rem 0.5rem; white-space: pre-line;
 }
 
-.sr-card__actions { margin-top: 0.6rem; }
+.sr-card__actions { margin: 0; }
 .sr-card__actions .dropbutton-wrapper { margin: 0; }
+
+/* On narrow screens, drop the aside below the body and align its contents left. */
+@media (max-width: 40em) {
+  .sr-card { flex-wrap: wrap; }
+  .sr-card__aside {
+    flex-basis: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}

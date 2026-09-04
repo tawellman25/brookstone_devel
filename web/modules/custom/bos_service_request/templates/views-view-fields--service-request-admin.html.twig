@@ -3,65 +3,68 @@
  * @file
  * Service-request status card for /admin/office/service-requests. Card data is
  * computed in bos_service_request_preprocess_views_view_fields() (sr_card); the
- * Operations dropbutton stays the rendered view field (fields.operations).
+ * Operations dropbutton stays the rendered view field (fields.operations) and
+ * sits in the right-hand aside, under the status badge.
  */
 #}
 {% set c = sr_card %}
 {% if c %}
   <div class="sr-card sr-card--{{ c.status_class }}">
 
-    <div class="sr-card__header">
+    <div class="sr-card__body">
       <a class="sr-card__name" href="{{ c.view_url }}">
         {{ c.name ?: (c.property_label ?: ('Request ' ~ c.ref)) }}
       </a>
-      <span class="sr-badge sr-badge--{{ c.status_class }}">{{ c.status }}</span>
-    </div>
 
-    <div class="sr-card__meta">
-      {% if c.ref %}<span class="sr-card__ref">Ref {{ c.ref }}</span>{% endif %}
-      {% if c.submitted %}<span class="sr-card__submitted">Submitted {{ c.submitted }}</span>{% endif %}
-      {% if c.campaign %}<span class="sr-card__campaign">Campaign: {{ c.campaign }}</span>{% endif %}
-    </div>
-
-    <div class="sr-card__contact">
-      {% if c.phone %}<a class="sr-card__phone" href="tel:{{ c.phone_tel }}">📞 {{ c.phone }}</a>{% endif %}
-      {% if c.email %}<a class="sr-card__email" href="mailto:{{ c.email }}">✉ {{ c.email }}</a>{% endif %}
-    </div>
-
-    {% if c.address or c.zip %}
-      <div class="sr-card__addr">{{ c.address }}{% if c.zip %}{% if c.address %}, {% endif %}{{ c.zip }}{% endif %}</div>
-    {% endif %}
-
-    <div class="sr-card__links">
-      {% if c.property_label %}
-        <span class="sr-card__prop">Property:
-          {% if c.property_url %}<a href="{{ c.property_url }}" target="_blank" rel="noopener">{{ c.property_label }}</a>
-          {% else %}{{ c.property_label }}{% endif %}
-        </span>
-      {% else %}
-        <span class="sr-card__prop sr-card__prop--none">No matched property</span>
-      {% endif %}
-      {% if c.wo_id %}
-        <span class="sr-card__wo">Work Order:
-          {% if c.wo_url %}<a href="{{ c.wo_url }}" target="_blank" rel="noopener">#{{ c.wo_id }}</a>
-          {% else %}#{{ c.wo_id }}{% endif %}
-        </span>
-      {% endif %}
-    </div>
-
-    {% if c.wants %}
-      <div class="sr-card__wants">
-        {% for w in c.wants %}<span class="sr-tag">{{ w }}</span>{% endfor %}
+      <div class="sr-card__meta">
+        {% if c.ref %}<span class="sr-card__ref">Ref {{ c.ref }}</span>{% endif %}
+        {% if c.submitted %}<span class="sr-card__submitted">Submitted {{ c.submitted }}</span>{% endif %}
+        {% if c.campaign %}<span class="sr-card__campaign">Campaign: {{ c.campaign }}</span>{% endif %}
       </div>
-    {% endif %}
 
-    {% if c.flags %}
-      <div class="sr-card__flags">{{ c.flags }}</div>
-    {% endif %}
+      <div class="sr-card__contact">
+        {% if c.phone %}<a class="sr-card__phone" href="tel:{{ c.phone_tel }}">📞 {{ c.phone }}</a>{% endif %}
+        {% if c.email %}<a class="sr-card__email" href="mailto:{{ c.email }}">✉ {{ c.email }}</a>{% endif %}
+      </div>
 
-    {% if fields.operations.content|render|trim %}
-      <div class="sr-card__actions">{{ fields.operations.content }}</div>
-    {% endif %}
+      {% if c.address or c.zip %}
+        <div class="sr-card__addr">{{ c.address }}{% if c.zip %}{% if c.address %}, {% endif %}{{ c.zip }}{% endif %}</div>
+      {% endif %}
+
+      <div class="sr-card__links">
+        {% if c.property_label %}
+          <span class="sr-card__prop">Property:
+            {% if c.property_url %}<a href="{{ c.property_url }}" target="_blank" rel="noopener">{{ c.property_label }}</a>
+            {% else %}{{ c.property_label }}{% endif %}
+          </span>
+        {% else %}
+          <span class="sr-card__prop sr-card__prop--none">No matched property</span>
+        {% endif %}
+        {% if c.wo_id %}
+          <span class="sr-card__wo">Work Order:
+            {% if c.wo_url %}<a href="{{ c.wo_url }}" target="_blank" rel="noopener">#{{ c.wo_id }}</a>
+            {% else %}#{{ c.wo_id }}{% endif %}
+          </span>
+        {% endif %}
+      </div>
+
+      {% if c.wants %}
+        <div class="sr-card__wants">
+          {% for w in c.wants %}<span class="sr-tag">{{ w }}</span>{% endfor %}
+        </div>
+      {% endif %}
+
+      {% if c.flags %}
+        <div class="sr-card__flags">{{ c.flags }}</div>
+      {% endif %}
+    </div>
+
+    <div class="sr-card__aside">
+      <span class="sr-badge sr-badge--{{ c.status_class }}">{{ c.status }}</span>
+      {% if fields.operations.content|render|trim %}
+        <div class="sr-card__actions">{{ fields.operations.content }}</div>
+      {% endif %}
+    </div>
 
   </div>
 {% endif %}

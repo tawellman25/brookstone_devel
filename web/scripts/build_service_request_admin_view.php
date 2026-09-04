@@ -102,6 +102,16 @@ $filters = [
     'plugin_id' => 'string', 'operator' => 'contains', 'value' => '', 'exposed' => TRUE,
     'expose' => ['operator_id' => 'field_campaign_value_op', 'label' => 'Campaign', 'identifier' => 'campaign'],
   ],
+  // Request type (bundle) dropdown — Winterize vs Fall Cleanup, etc.
+  'type' => [
+    'id' => 'type', 'table' => 'service_request_field_data', 'field' => 'type',
+    'relationship' => 'none', 'entity_type' => 'service_request', 'entity_field' => 'type',
+    'plugin_id' => 'bundle', 'operator' => 'in', 'value' => [], 'exposed' => TRUE,
+    'expose' => [
+      'operator_id' => 'type_op', 'label' => 'Type', 'identifier' => 'type',
+      'operator' => 'type_op', 'multiple' => FALSE, 'reduce' => FALSE,
+    ],
+  ],
   // Status dropdown (scoped to the service_request_status vocabulary).
   'field_request_status_target_id' => [
     'id' => 'field_request_status_target_id', 'table' => 'service_request__field_request_status',

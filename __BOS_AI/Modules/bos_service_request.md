@@ -203,6 +203,56 @@ family: mass-invoice, Back-button replay, shift-click select):
 - `hook_entity_operation` exposes these in the dropbutton (hidden once
   converted). Presave backstop blocks status → Converted without a linked WO.
 
+The queue renders as **BOS status cards** (2026-09-04) with exposed **Type**
+(bundle) + **Status** + year/source/campaign filters — see the card note under
+the queue view. Both service_request bundles (winterize + fall cleanup) share
+this one queue.
+
+---
+
+## Fall Cleanup bundle + landing page (2026-09-04)
+
+A second `service_request` bundle, **`fall_cleanup`**, with a public landing page
+at the Fall Cleanup **services term** URL
+(`/services/landscape-lawn-care/yard-cleanup/fall-cleanup`) — a Google Ads
+sitelink target (`?c=goog26-fall`).
+
+- **Page:** the services term (term 413 on dev; resolved per env **by name**) is
+  rendered as a marketing landing for **public/client viewers only** — internal
+  roles keep the normal term page (bos_services teammate_view crew training).
+  Mechanism mirrors `/winterize`: `page__fall_cleanup` theme suggestion +
+  `_bos_service_request_preprocess_fall_cleanup()` (gated by
+  `_bos_service_request_is_fall_cleanup_page()`), template
+  `page--fall-cleanup.html.twig`, library `bos_service_request/fall_cleanup`
+  (depends on the winterize CSS). It keeps a **breadcrumb bar** but drops site
+  nav (a conversion landing, like winterize).
+- **Editable copy:** the long "How we do it" body lives in the term's
+  `field_service_public_desc` (editable in the admin UI — no deploy), rendered as
+  accordions. The short hero/step/close chrome is in the template + preprocess
+  (matches winterize).
+- **Form:** `FallCleanupForm` (Form API, reCAPTCHA, flood, `?c=` via a hidden
+  field that survives validation). Creates a `service_request:fall_cleanup`
+  (ref prefix **F-**). Fall-specific fields: `field_fc_needs` (multi checkboxes),
+  `field_fc_tree_count`, `field_fc_wants_winterize/_snow/_landscape`,
+  `field_fc_linked_winterize`, `field_fc_linked_estimate`.
+- **Cross-sell (eliminates office follow-up):**
+  - *Winterize my sprinklers* → also creates a linked
+    `service_request:sprinkler_winterizing` (Needs Review, note refs the FC ref)
+    so the person lands in the winterize queue.
+  - *Spring landscape project* → auto-creates an **`estimate_request`**
+    design-build lead (status New - Gathering Info, priority normal, service
+    Landscaping). **Note:** this cascades through `estimate_intake` to also spawn
+    an Estimate + a Contact — deliberate (full pipeline entry; reCAPTCHA + flood
+    guard the spam vector).
+  - *Snow removal contract* → boolean + `snow_contract_requested` review flag on
+    the card (no snow intake bundle; office follows up).
+- **SEO:** title "Fall Cleanup | Brookstone Outdoors" (natural, site name =
+  "Brookstone Outdoors") + a page-scoped meta description. No JSON-LD (matches
+  winterize).
+- **Setup (per env):** `setup_fall_cleanup_service_request.php` (bundle + fields)
+  → `setup_fall_cleanup_page.php` (config + body copy; resolves the term by name)
+  → `build_service_request_admin_view.php` (rebuild queue with the Type filter).
+
 ---
 
 ## Campaign report + QR asset (Gate 5)

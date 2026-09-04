@@ -17,10 +17,15 @@
       </a>
 
       <div class="sr-card__meta">
+        {% if c.bundle_label %}<span class="sr-card__bundle">{{ c.bundle_label }}</span>{% endif %}
         {% if c.ref %}<span class="sr-card__ref">Ref {{ c.ref }}</span>{% endif %}
         {% if c.submitted %}<span class="sr-card__submitted">Submitted {{ c.submitted }}</span>{% endif %}
         {% if c.campaign %}<span class="sr-card__campaign">Campaign: {{ c.campaign }}</span>{% endif %}
       </div>
+
+      {% if c.needs %}
+        <div class="sr-card__needs"><strong>Needs:</strong> {{ c.needs|join(' · ') }}</div>
+      {% endif %}
 
       <div class="sr-card__contact">
         {% if c.phone %}<a class="sr-card__phone" href="tel:{{ c.phone_tel }}">📞 {{ c.phone }}</a>{% endif %}

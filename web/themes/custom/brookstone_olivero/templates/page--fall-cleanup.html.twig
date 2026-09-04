@@ -1,0 +1,132 @@
+{#
+/**
+ * @file
+ * PUBLIC marketing template for the Fall Cleanup landing page (services term
+ * 413), for public/client viewers only — internal roles get the normal term
+ * page (crew training). Mirrors page--winterize.html.twig: marketing chrome,
+ * no site navigation, but WITH a breadcrumb bar. Variables come from
+ * _bos_service_request_preprocess_fall_cleanup(). The intake form is bo_form;
+ * the editable "How we do it" body is bo_accordions.
+ */
+#}
+{% set tel = bo_phone|replace({'-': '', ' ': '', '(': '', ')': ''}) %}
+<div class="bo-winterize bo-fall">
+
+  <header class="bo-topbar">
+    <div class="bo-topbar__brand">
+      <img class="bo-topbar__logo" src="{{ bo_logo }}" alt="Brookstone Outdoors" />
+      <div>
+        <span class="bo-topbar__name">BROOKSTONE OUTDOORS</span>
+        <span class="bo-topbar__tag">{{ bo_tagline }}</span>
+      </div>
+    </div>
+    <div class="bo-topbar__right">
+      <span class="bo-topbar__area">Delta &amp; Montrose Counties</span>
+      {% if bo_phone %}<a class="bo-topbar__phone" href="tel:{{ tel }}">{{ bo_phone }}</a>{% endif %}
+    </div>
+  </header>
+
+  {% if bo_breadcrumb %}
+    <nav class="bo-crumbs" aria-label="Breadcrumb">
+      <div class="bo-crumbs__inner">
+        {# The breadcrumb service excludes the current page, so every returned
+           crumb is a link; the current page (bo_h1) is appended plain. #}
+        {% for crumb in bo_breadcrumb %}
+          <a href="{{ crumb.url }}">{{ crumb.title }}</a><span class="bo-crumbs__sep">›</span>
+        {% endfor %}
+        <span class="bo-crumbs__here">{{ bo_h1 }}</span>
+      </div>
+    </nav>
+  {% endif %}
+
+  <section class="bo-hero">
+    <img class="bo-hero__photo" src="{{ bo_hero }}"
+         alt="An aspen leaf and river rock after an autumn rain, the season turning to fall." />
+    <div class="bo-hero__fade" aria-hidden="true"></div>
+    <div class="bo-hero__copy">
+      <span class="bo-hero__eyebrow osw">Fall Cleanup</span>
+      <h1 class="bo-hero__h1">{{ bo_h1 }}</h1>
+      <p class="bo-hero__sub">{{ bo_hook }}</p>
+      <div class="bo-hero__cta-row">
+        <a href="#request" class="bo-btn">{{ bo_cta_text }}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
+        </a>
+        {% if bo_phone %}<span class="bo-hero__callnote">or call <a href="tel:{{ tel }}">{{ bo_phone }}</a></span>{% endif %}
+      </div>
+      <div class="bo-hero__stats">
+        {% for line in bo_trust %}
+          <div class="bo-stat"><span class="bo-stat__l">{{ line }}</span></div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="bo-formband" id="request">
+    <div class="bo-formband__inner">
+      <div>
+        <h2 class="bo-formband__h2">{{ bo_formband_h2 }}</h2>
+        <p class="bo-formband__intro">{{ bo_formband_intro }}</p>
+      </div>
+      {{ bo_form }}
+      {% if bo_form_disclaimer %}<p class="bo-form-disclaimer">{{ bo_form_disclaimer }}</p>{% endif %}
+      {% if bo_scarcity %}<p class="bo-form-scarcity">{{ bo_scarcity }}</p>{% endif %}
+    </div>
+  </section>
+
+  {% if bo_steps %}
+  <section class="bo-next">
+    <div class="bo-next__inner">
+      <h2 class="bo-next__eyebrow">What happens next</h2>
+      <div class="bo-next__grid">
+        {% for step in bo_steps %}
+          <div class="bo-step">
+            <h3>{{ step.title }}</h3>
+            <p>{{ step.body }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if bo_accordions %}
+  <section class="bo-detail">
+    <div class="bo-detail__inner">
+      <div class="bo-detail__head">
+        <h2>How we do it</h2>
+        <p>The details, for anyone who wants them.</p>
+      </div>
+      <div>{{ bo_accordions }}</div>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="bo-close">
+    <div class="bo-close__inner">
+      <p>{{ bo_close }}</p>
+      <p class="bo-close__kicker">{{ bo_close_kicker }}</p>
+      <div class="bo-hero__cta-row">
+        <a href="#request" class="bo-btn">{{ bo_cta_text }}</a>
+        {% if bo_phone %}<span class="bo-hero__callnote"><a href="tel:{{ tel }}">{{ bo_phone }}</a></span>{% endif %}
+      </div>
+      <p class="bo-close__thanks">{{ bo_close_thanks }}</p>
+    </div>
+  </section>
+
+  <footer class="bo-footer">
+    <div class="bo-footer__inner">
+      <div class="bo-footer__brand">
+        <img class="bo-footer__logo" src="{{ bo_logo }}" alt="Brookstone Outdoors" />
+        <div>
+          <span class="bo-footer__name">BROOKSTONE OUTDOORS LLC</span>
+          <span class="bo-footer__addr">{{ bo_address }}</span>
+        </div>
+      </div>
+      <div class="bo-footer__right">
+        {% if bo_phone %}<a class="bo-footer__phone" href="tel:{{ tel }}">{{ bo_phone }}</a>{% endif %}
+        <span class="bo-footer__tag">{{ bo_tagline }}</span>
+      </div>
+    </div>
+  </footer>
+
+</div>

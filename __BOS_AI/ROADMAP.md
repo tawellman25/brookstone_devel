@@ -72,7 +72,7 @@ Public `/winterize` postcard-QR form → office review queue → **Approve & Cre
 | **Gate 5** — postcard QR asset + campaign report | ✅ **SHIPPED live** (`f7fc08a8`). QR via `endroid/qr-code` (`/winterize?c=pc26`, inline + 1200px download); attribution report (source/campaign/status + `wants_recurring` opt-ins). |
 
 **Service-request — remaining:**
-- **Gate 6 (LATER, offseason)** — prove the abstraction with a 2nd bundle (sprinkler repair / spring start-up).
+- **Gate 6 — DELIVERED (2026-09-04):** 2nd bundle **`fall_cleanup`** + a public landing page at the Fall Cleanup services term (`/services/landscape-lawn-care/yard-cleanup/fall-cleanup`, Google Ads `?c=goog26-fall`). Same queue/Approve flow; editable body in the term's `field_service_public_desc`. Cross-sell: Winterize box → linked winterize request; Spring-landscape box → auto `estimate_request` design-build lead (cascades to estimate+contact via `estimate_intake`, deliberate); Snow box → review flag. Docs: `Modules/bos_service_request.md`. _(Abstraction proven; further bundles are now cheap.)_
 - Eligibility WO check: add the "or a linked scheduling date in-window" augmentation (created-in-window only now).
 - Decide whether to narrow `COVERED_CONTRACT_STATUS_TIDS` to the spec's three (currently includes Generate-WO 1651 + Completed-for-the-Year 1127).
 - **`field_wants_recurring` opt-ins** are next January's contract-section conversations, pre-sorted by geography — the real asset behind the campaign.

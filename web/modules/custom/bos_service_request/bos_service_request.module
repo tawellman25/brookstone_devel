@@ -21,6 +21,7 @@ use Drupal\Core\Url;
  */
 const BOS_SERVICE_REQUEST_REF_PREFIXES = [
   'sprinkler_winterizing' => 'W',
+  'fall_cleanup' => 'F',
 ];
 
 /**
@@ -186,6 +187,22 @@ function _bos_service_request_is_winterize(): bool {
  */
 function bos_service_request_page_attachments(array &$attachments) {
   $attachments['#attached']['library'][] = 'bos_service_request/brand_tokens';
+
+  // SEO meta description on the Fall Cleanup landing page (winterize emits none,
+  // so this stays a page-scoped tag, not a new site-wide pattern).
+  if (_bos_service_request_is_fall_cleanup_page()) {
+    $attachments['#attached']['html_head'][] = [
+      [
+        '#tag' => 'meta',
+        '#attributes' => [
+          'name' => 'description',
+          'content' => 'Leaf removal, bed cleanup, and final mow across Delta and Montrose counties. Book it the same week we winterize your sprinklers. 30+ years on the Western Slope.',
+        ],
+      ],
+      'bos_fall_cleanup_description',
+    ];
+    $attachments['#cache']['contexts'][] = 'user.roles';
+  }
 }
 
 /**
@@ -199,6 +216,35 @@ function bos_service_request_theme_suggestions_page_alter(array &$suggestions, a
   if (_bos_service_request_is_winterize()) {
     $suggestions[] = 'page__winterize';
   }
+  elseif (_bos_service_request_is_fall_cleanup_page()) {
+    $suggestions[] = 'page__fall_cleanup';
+  }
+}
+
+/**
+ * The Fall Cleanup services term id (from config), or 0.
+ */
+function _bos_service_request_fall_cleanup_term_id(): int {
+  return (int) (\Drupal::config('bos_service_request.settings')->get('bundles.fall_cleanup.service_term_id') ?? 0);
+}
+
+/**
+ * TRUE on the PUBLIC Fall Cleanup landing page. It is the services term's
+ * canonical page, but only for public/client viewers — internal roles keep the
+ * normal services term render (bos_services teammate_view crew training).
+ */
+function _bos_service_request_is_fall_cleanup_page(): bool {
+  if (\Drupal::routeMatch()->getRouteName() !== 'entity.taxonomy_term.canonical') {
+    return FALSE;
+  }
+  $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
+  $tid = is_object($term) ? (int) $term->id() : (int) $term;
+  if (!$tid || $tid !== _bos_service_request_fall_cleanup_term_id()) {
+    return FALSE;
+  }
+  // Internal roles → let bos_services render the crew training view instead.
+  $internal = ['teammates', 'supervisor', 'administration', 'site_assistant', 'site_admin', 'administrator'];
+  return !array_intersect($internal, \Drupal::currentUser()->getRoles());
 }
 
 /**
@@ -207,6 +253,10 @@ function bos_service_request_theme_suggestions_page_alter(array &$suggestions, a
  * Attach the winterize library and pass brand assets + copy to the template.
  */
 function bos_service_request_preprocess_page(array &$variables) {
+  if (_bos_service_request_is_fall_cleanup_page()) {
+    _bos_service_request_preprocess_fall_cleanup($variables);
+    return;
+  }
   if (!_bos_service_request_is_winterize()) {
     return;
   }
@@ -407,8 +457,9 @@ function _bos_service_request_build_card(\Drupal\Core\Entity\EntityInterface $sr
     $submitted = \Drupal::service('date.formatter')->format((int) $sr->get('created')->value, 'custom', 'm/d/Y g:i A');
   }
 
-  // Interest badges.
+  // Interest badges — per bundle.
   $wants = [];
+  // Winterize bundle wants.
   if ($sr->hasField('field_wants_recurring') && (bool) $sr->get('field_wants_recurring')->value) {
     $wants[] = 'Auto each fall';
   }
@@ -418,12 +469,33 @@ function _bos_service_request_build_card(\Drupal\Core\Entity\EntityInterface $sr
   if ($sr->hasField('field_wants_specific_date') && (bool) $sr->get('field_wants_specific_date')->value) {
     $wants[] = 'Wants a date — call back';
   }
+  // Fall cleanup bundle wants + the selected needs.
+  if ($sr->hasField('field_fc_wants_winterize') && (bool) $sr->get('field_fc_wants_winterize')->value) {
+    $wants[] = 'Winterize too';
+  }
+  if ($sr->hasField('field_fc_wants_snow') && (bool) $sr->get('field_fc_wants_snow')->value) {
+    $wants[] = 'Snow contract';
+  }
+  if ($sr->hasField('field_fc_wants_landscape') && (bool) $sr->get('field_fc_wants_landscape')->value) {
+    $wants[] = 'Spring landscape';
+  }
+  $needs = [];
+  if ($sr->hasField('field_fc_needs') && !$sr->get('field_fc_needs')->isEmpty()) {
+    $allowed = $sr->get('field_fc_needs')->getFieldDefinition()->getSetting('allowed_values') ?? [];
+    foreach ($sr->get('field_fc_needs')->getValue() as $item) {
+      $needs[] = $allowed[$item['value']] ?? $item['value'];
+    }
+  }
+
+  $bundleLabel = ['sprinkler_winterizing' => 'Winterize', 'fall_cleanup' => 'Fall Cleanup'][$sr->bundle()] ?? $sr->bundle();
 
   $phone = $get('field_submitted_phone');
 
   return [
     'id' => $sr->id(),
     'ref' => $get('field_public_ref'),
+    'bundle' => $sr->bundle(),
+    'bundle_label' => $bundleLabel,
     'view_url' => $view_url,
     'submitted' => $submitted,
     'name' => $get('field_submitted_name'),
@@ -439,7 +511,78 @@ function _bos_service_request_build_card(\Drupal\Core\Entity\EntityInterface $sr
     'campaign' => $get('field_campaign'),
     'flags' => $get('field_review_flags'),
     'wants' => $wants,
+    'needs' => $needs,
     'wo_id' => $wo_id,
     'wo_url' => $wo_url,
   ];
 }
+
+/**
+ * Fall Cleanup public landing page — variables for page--fall-cleanup.html.twig.
+ *
+ * Mirrors the winterize marketing chrome (hero / steps / accordions), but keeps
+ * the site's normal header + breadcrumb + footer (this is a services term page,
+ * not a bare route). Body copy ("How we do it") comes from the term's editable
+ * field_service_public_desc; the short chrome lives here (as with winterize).
+ */
+function _bos_service_request_preprocess_fall_cleanup(array &$variables): void {
+  $variables['#attached']['library'][] = 'bos_service_request/fall_cleanup';
+  // Role-varying (public vs internal) + campaign query param.
+  $variables['#cache']['contexts'][] = 'user.roles';
+  $variables['#cache']['contexts'][] = 'url.query_args';
+
+  $base = '/' . \Drupal::service('extension.list.module')->getPath('bos_service_request');
+  $cfg = \Drupal::config('bos_service_request.settings');
+  $term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
+    ->load(_bos_service_request_fall_cleanup_term_id());
+
+  $variables['bo_logo'] = $base . '/assets/bo-logo-round.png';
+  // Reuse the autumn aspen-leaf/river-rock hero — it matches the fall copy.
+  $variables['bo_hero'] = $base . '/assets/winterize-hero.jpg';
+  $variables['bo_phone'] = (string) $cfg->get('office_phone');
+  $variables['bo_tagline'] = 'Creating and Maintaining Your Outdoor Spaces';
+  $variables['bo_address'] = '20143 Austin Rd., Austin, CO 81410';
+
+  // The intake form.
+  $variables['bo_form'] = \Drupal::formBuilder()->getForm(\Drupal\bos_service_request\Form\FallCleanupForm::class);
+
+  // Editable body → accordions (same renderer as winterize).
+  $variables['bo_accordions'] = ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty())
+    ? _bos_service_request_accordions((string) $term->get('field_service_public_desc')->value)
+    : NULL;
+
+  // Breadcrumb (real menu trail — Home › Landscape and Lawn Care › Yard Cleanup › Fall Cleanup).
+  $crumbs = [];
+  $breadcrumb = \Drupal::service('breadcrumb')->build(\Drupal::routeMatch());
+  foreach ($breadcrumb->getLinks() as $link) {
+    try {
+      $crumbs[] = ['title' => $link->getText(), 'url' => $link->getUrl()->toString()];
+    }
+    catch (\Throwable $e) {
+      // Skip an unroutable crumb.
+    }
+  }
+  $variables['bo_breadcrumb'] = $crumbs;
+
+  // Marketing chrome (approved copy; matches winterize's in-template pattern).
+  $variables['bo_h1'] = 'Fall Cleanup';
+  $variables['bo_hook'] = 'Leaves do not blow away over the winter. They mat down under the snow, and what comes out in April is not lawn.';
+  $variables['bo_cta_text'] = 'Request your fall cleanup';
+  $variables['bo_trust'] = [
+    '30+ years on the Western Slope',
+    'One trip — cleanup and sprinkler winterization the same week',
+  ];
+  $variables['bo_formband_h2'] = 'Request your fall cleanup';
+  $variables['bo_formband_intro'] = 'We start once leaf drop is mostly finished and work until the ground freezes, organized by location. We will contact you with the week we plan to be in your area. Takes about a minute.';
+  $variables['bo_form_disclaimer'] = 'Fall cleanup is priced by the property, not by a flat rate. We will look at it and give you a number before we start any work.';
+  $variables['bo_scarcity'] = 'Routes fill from late October through the first snow.';
+  $variables['bo_steps'] = [
+    ['title' => 'We look at the property', 'body' => 'Cleanup is priced by what is actually on the ground, so we come look — at the trees, the beds, the turf, and how much is coming off. If you are already a customer of ours, we usually already know.'],
+    ['title' => 'You get a number before we start', 'body' => 'No hourly surprise. You will know what the cleanup costs before a single tarp comes off the truck.'],
+    ['title' => 'We route your week', 'body' => 'Routes are organized by location, which is what keeps this affordable. You will hear the week we plan to be in your area. If you need a specific date, call the office early, before routes are set.'],
+  ];
+  $variables['bo_close'] = 'We have been cleaning up yards in Delta and Montrose counties for over thirty years — Cedaredge, Delta, Montrose, Olathe, Eckert, Paonia, Hotchkiss and Crawford. We know what a Western Slope winter does to a lawn that went into it dirty, because we are the ones who fix it in the spring.';
+  $variables['bo_close_kicker'] = 'Get on the list.';
+  $variables['bo_close_thanks'] = 'Thank you for choosing Brookstone Outdoors.';
+}
+

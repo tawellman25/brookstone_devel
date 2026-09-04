@@ -1,0 +1,55 @@
+/**
+ * Fall Cleanup landing — additions on top of bo-winterize.css (which supplies
+ * the hero / form-band / steps / accordions / footer components + brand tokens).
+ * Only the breadcrumb bar, close section, form disclaimer/scarcity, and the
+ * fall-specific form fields (needs checkboxes, tree select, opt-ins) live here.
+ */
+
+/* Breadcrumb bar. */
+.bo-fall .bo-crumbs { background: var(--bo-paper, #FAF7F2); border-bottom: 1px solid #E8DFD2; }
+.bo-fall .bo-crumbs__inner {
+  max-width: 1100px; margin: 0 auto; padding: 10px clamp(16px, 5vw, 72px);
+  font-size: 14px; color: var(--bo-muted, #6b5d4f); display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+}
+.bo-fall .bo-crumbs a { color: var(--bo-orange, #CB6015); }
+.bo-fall .bo-crumbs__sep { color: var(--bo-muted, #6b5d4f); }
+.bo-fall .bo-crumbs__here { color: var(--bo-ink, #1A1613); font-weight: 600; }
+
+/* Trust lines: single-column labels (no big stat number here). */
+.bo-fall .bo-hero__stats { flex-direction: column; gap: 8px; }
+.bo-fall .bo-hero__stats .bo-stat__l { font-size: 15.5px; color: var(--bo-text-2, #4a4033); }
+
+/* "What do you need?" checkboxes — responsive two-column grid. */
+.fc-form .form-item-fc-needs > .fieldset__wrapper .fieldset__legend,
+.fc-form fieldset.form-item-fc-needs > legend,
+.fc-form .fieldset-legend { font-weight: 600; }
+.fc-form #edit-fc-needs .fieldset__wrapper,
+.fc-form .form-checkboxes {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 20px;
+}
+.fc-form .form-checkboxes .form-item { margin: 0; }
+
+/* Opt-in checkboxes stack with a little breathing room. */
+.fc-form .bo-optin { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+
+/* Disclaimer + scarcity under the form. */
+.bo-fall .bo-form-disclaimer {
+  max-width: 940px; margin: 16px auto 0; font-size: 15.5px; line-height: 1.55;
+  color: var(--bo-text-2, #4a4033); font-style: italic;
+}
+.bo-fall .bo-form-scarcity {
+  max-width: 940px; margin: 8px auto 0; font-family: var(--osw); font-weight: 600;
+  letter-spacing: .02em; color: var(--bo-orange, #CB6015);
+}
+
+/* Close section. */
+.bo-fall .bo-close { background: var(--bo-sand, #F2E9DC); padding: clamp(40px,6vw,72px) clamp(16px,5vw,72px); }
+.bo-fall .bo-close__inner { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.bo-fall .bo-close p { margin: 0; font-size: 18px; line-height: 1.6; color: var(--bo-text-2, #4a4033); }
+.bo-fall .bo-close__kicker { font-family: var(--osw); font-size: 24px; font-weight: 700; color: var(--bo-ink, #1A1613); }
+.bo-fall .bo-close__thanks { color: var(--bo-muted, #6b5d4f); }
+
+@media (max-width: 640px) {
+  .fc-form #edit-fc-needs .fieldset__wrapper,
+  .fc-form .form-checkboxes { grid-template-columns: 1fr; }
+}

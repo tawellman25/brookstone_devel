@@ -58,6 +58,7 @@ Chat authors these in a dedicated session, then they move up to the SOP Index.
 | Suggested code  | Workflow                                           | Role  | Flagged     | Why |
 |-----------------|----------------------------------------------------|-------|-------------|-----|
 | CRW-SVC-TRN-001 | Per-service training on the Services page          | Crew  | 2026-08-22  | Each `/services/{name}` page now shows crew a "how we do it" training body (teammate_view) that the public never sees — crews need to know the service pages double as their training reference and how to read/use them. |
+| OFF-SVC-REQ-001 | Approving a public service request into a Work Order | Office | 2026-09-04 | The office must use the **"Approve & Create Work Order"** button on `/admin/office/service-requests` (dropbutton on each request) to turn a request into a WO — it creates the WO, links it back to the request (`field_work_order`), and marks the request **Converted** in one step. Creating the WO manually (Add Work Order) leaves the request unlinked and stuck in Needs Review, so the queue can't show what's been handled (this happened 2026-09-02 — 4 requests were WO'd by hand and had to be reconciled). SOP should show the button, the resulting status change, and warn against manual WO creation for requests. |
 
 ---
 

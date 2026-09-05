@@ -106,7 +106,7 @@
       <div class="home-who__body">
         <h2>{{ d.who_h2 }}</h2>
         {% for para in d.who_body|split('\n\n') %}<p>{{ para }}</p>{% endfor %}
-        <p class="home-who__area">{{ d.service_area }}</p>
+        <p class="home-who__area">{% for town in d.service_area|split(' · ') %}<span class="home-town">{{ town }}</span>{% endfor %}</p>
       </div>
       <div class="home-stats">
         {% for st in d.stats %}

@@ -73,6 +73,14 @@
 .home-who__inner { display: grid; grid-template-columns: 1.6fr 1fr; gap: 2.5rem; align-items: start; }
 .home-who__body p { color: var(--bo-text-2, #4a4033); line-height: 1.65; font-size: 17px; }
 .home-who__area { font-family: var(--osw, "Oswald", sans-serif); color: var(--bo-ink, #1A1613) !important; font-weight: 600; letter-spacing: .01em; }
+/* Desktop: towns inline, separated by "·" BETWEEN items (never before the first). */
+.home-town + .home-town::before { content: " · "; color: var(--bo-orange, #CB6015); }
+/* Mobile: 3 lines (3-column grid for the 8 towns), centered, no separators. */
+@media (max-width: 48rem) {
+  .home-who__area { display: grid; grid-template-columns: repeat(3, auto); justify-content: center; gap: .25rem 1.1rem; }
+  .home-town + .home-town::before { content: none; }
+  .home-town { text-align: center; }
+}
 .home-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--bo-border-card, #E8DFD2); border: 1px solid var(--bo-border-card, #E8DFD2); border-radius: 6px; overflow: hidden; }
 .home-stat { background: #fff; padding: 1.4rem 1rem; text-align: center; }
 .home-stat__n { display: block; font-size: 38px; font-weight: 700; color: var(--bo-orange, #CB6015); line-height: 1; font-family: var(--osw, "Oswald", sans-serif); }

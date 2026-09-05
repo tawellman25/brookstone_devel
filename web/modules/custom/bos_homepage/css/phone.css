@@ -12,3 +12,16 @@
 .bo-header-phone__icon { color: var(--bo-orange, #CB6015); flex: none; }
 #block-bos-homepage-phone { display: flex; align-items: center; }
 @media (max-width: 500px) { .bo-header-phone { font-size: .98rem; } }
+
+/* M1 — mobile header phone. The secondary-menu phone (desktop) collapses into
+   the off-canvas nav on mobile, so this second placement lives in the header row
+   and shows only below the nav breakpoint (>=75rem hidden, so it never competes
+   with / collapses the desktop primary nav). Sits right, before the hamburger. */
+#block-bos-homepage-phone-mobile { display: none; }
+@media (max-width: 74.9375em) {
+  #block-bos-homepage-phone-mobile { display: flex; align-items: center; margin-left: auto; }
+  #block-bos-homepage-phone-mobile .bo-header-phone {
+    min-height: 44px; min-width: 44px; padding: 0 6px;
+    justify-content: center; align-items: center;
+  }
+}

@@ -80,4 +80,30 @@ else {
   print "phone block already in secondary_menu\n";
 }
 
+// ── 3b. Mobile phone block (header region, shown only on mobile via CSS) ──────
+// The secondary_menu phone collapses into the off-canvas nav on mobile, so it's
+// not visible in the header. This second placement sits in the header row (left
+// of the hamburger); CSS hides it at >=75rem so it never competes with the
+// desktop primary nav.
+if (!Block::load('bos_homepage_phone_mobile')) {
+  Block::create([
+    'id' => 'bos_homepage_phone_mobile',
+    'theme' => 'brookstone_olivero',
+    'region' => 'header',
+    'plugin' => 'bos_homepage_phone',
+    'weight' => 50,
+    'settings' => [
+      'id' => 'bos_homepage_phone_mobile',
+      'label' => 'Phone (mobile)',
+      'label_display' => '0',
+      'provider' => 'bos_homepage',
+    ],
+    'visibility' => [],
+  ])->save();
+  print "placed mobile phone block (brookstone_olivero:header)\n";
+}
+else {
+  print "mobile phone block already placed\n";
+}
+
 print "DONE\n";

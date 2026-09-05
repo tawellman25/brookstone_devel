@@ -15,7 +15,8 @@
   <section class="home-hero" style="background-image:url('{{ d.hero_image }}');">
     <div class="home-hero__overlay" aria-hidden="true"></div>
     <div class="home-hero__inner">
-      <span class="home-hero__eyebrow osw">{{ d.hero_eyebrow }}</span>
+      {% set eb = d.hero_eyebrow|split(' · ') %}
+      <span class="home-hero__eyebrow osw">{% if eb|length > 1 %}<span class="home-hero__eyebrow-co">{{ eb[0] }} · </span>{{ eb[1:]|join(' · ') }}{% else %}{{ d.hero_eyebrow }}{% endif %}</span>
       <h1 class="home-hero__h1">{{ d.hero_headline }}</h1>
       <p class="home-hero__sub">{{ d.hero_subhead }}</p>
       <div class="home-hero__cta">

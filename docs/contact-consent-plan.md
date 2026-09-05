@@ -1,6 +1,6 @@
 # Plan — Opt-in / consent on Contact
 
-**Status:** built & verified on **dev**; **not yet on live** (live deploy needs a DB dump + go-ahead). **Companion evidence:** [`contact-model-discovery.md`](contact-model-discovery.md).
+**Status:** **SHIPPED LIVE 2026-09-05** (dev-verified, then deployed). Live results: 651 unlinked → 37 (9 linked + 605 created); 2 legacy consents migrated → 3 consent_log rows (all `src=import`); 3 User consent fields retired; site 200. Pre-deploy dump `~/pre-consent-model-20260905.sql.gz` (136M). **Companion evidence:** [`contact-model-discovery.md`](contact-model-discovery.md).
 
 ## As-built (dev-verified 2026-09-05)
 

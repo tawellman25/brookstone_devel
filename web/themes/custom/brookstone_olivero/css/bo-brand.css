@@ -165,3 +165,22 @@ body:not(.is-always-mobile-nav) .primary-nav__button-toggle .icon--menu-toggle::
   border-bottom-color: var(--bo-blue, #62B5E5);
   opacity: 1;
 }
+
+/* M1 (round 2b) — keep the mobile header on ONE line so the phone doesn't wrap
+   under the wordmark. Branding shrinks, phone is pushed to the right just before
+   the hamburger. Below the desktop-nav breakpoint only. */
+@media (max-width: 74.9375em) {
+  .site-header__inner__container { flex-wrap: nowrap; align-items: center; }
+  .site-branding.bo-brand { flex: 0 1 auto; min-width: 0; gap: 10px; }
+  .bo-brand__logo { width: 46px; height: 46px; }
+  .bo-brand__name { font-size: 15px; }
+  #block-bos-homepage-phone-mobile { flex: 0 0 auto; margin-inline-start: auto; }
+  #block-bos-homepage-phone-mobile .bo-header-phone { font-size: .95rem; white-space: nowrap; }
+  .mobile-buttons { flex: 0 0 auto; }
+}
+/* On the smallest phones, drop the phone number text to the glyph only so the
+   logo + wordmark + call button + hamburger still fit one line. */
+@media (max-width: 26rem) {
+  #block-bos-homepage-phone-mobile .bo-header-phone { font-size: 0; }
+  #block-bos-homepage-phone-mobile .bo-header-phone__icon { font-size: 20px; }
+}

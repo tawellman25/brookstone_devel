@@ -4,13 +4,21 @@
 
 ## As-built (dev-verified 2026-09-05)
 
-Decision taken: **split opt-in flags** — marketing vs service, per channel. Scripts (all idempotent, dry-run by default):
-- `web/scripts/setup_contact_consent_fields.php` — Stage 1 (add fields).
+Decision taken: **split opt-in flags** — marketing vs service, per channel — **plus an append-only consent log** for provenance. Scripts (all idempotent, dry-run by default) + one module:
+- `web/scripts/setup_contact_consent_fields.php` — Stage 1 (add flags to Contact).
+- `web/scripts/setup_consent_log_entity.php` — the `consent_log` ECK entity.
+- `bos_consent_log` module — auto-writes the log on every flag change; append-only guard; maintains the consent cache on Contact.
 - `web/scripts/backfill_contact_primary_links.php` — Stage 3 (link/create primary contacts).
 - `web/scripts/migrate_user_consent_to_contact.php` — Stage 2 (move legacy consent).
 - `web/scripts/retire_user_consent_fields.php` — cleanup (retire User consent fields).
 
-Dev results: link gap **649 → 37** (8 linked + 604 created; **37 left for manual review** = 11 profiles with no valid user + 26 users whose name isn't usable). Legacy consent: of 4 users with a value, **2 migrated** to `field_opt_in_service_email` (2 have no linkable contact → manual). Marketing flags correctly stayed **0** (never inferred). Three legacy User consent fields retired; operational flags (`field_do_not_schedule`, `field_credit_hold`, `field_service_suspension_reason`) kept.
+Dev results: link gap **649 → 37** (8 linked + 604 created; **37 left for manual review** = 11 profiles with no valid user + 26 users whose name isn't usable). Legacy consent: of 4 users with a value, **2 migrated** to `field_opt_in_service_email` (2 have no linkable contact → manual). Marketing flags correctly stayed **0** (never inferred). Three legacy User consent fields retired; operational flags (`field_do_not_schedule`, `field_credit_hold`, `field_service_suspension_reason`) kept. Consent-log verified: flag change → 1 row (channel/type/old→new/source/actor/IP/note), multi-flag save → N rows, no-op save → 0 rows, edits refused.
+
+## Consent log (append-only provenance)
+
+The boolean flags are the fast "current state"; the **`consent_log`** ECK entity is the audit trail that answers *when / who / from what / opt-in vs opt-out vs bad import*. One immutable row per flag change: `field_contact`, `field_channel` (email/sms), `field_consent_type` (marketing/service), `field_old_state` / `field_new_state` (unknown/opted_in/opted_out), `field_event_source` (web_form/phone/paper/import/staff/system), `field_actor` (user), `field_ip`, `field_note`, plus the ECK `created` timestamp.
+
+Written automatically by `bos_consent_log` (`hook_entity_presave` detects changes + stamps the cache; `insert`/`update` write the rows). Callers attribute a save via hints on the contact — `$contact->_consent_source` / `_consent_actor` / `_consent_ip` / `_consent_note` (default source: `staff` if authenticated, `web_form` if anon). The log can't drift from the flags because the same save writes both. Edits are refused on every path (`bos_consent_log_consent_log_presave` throws unless the row is new). View permission granted to office/ops roles only.
 
 ## The model (confirmed)
 
@@ -93,6 +101,7 @@ After Stage 2, remove the now-orphaned marketing-consent field **instances** fro
 
 ## Remaining for live
 
-1. DB dump, then run Stage 1 → 3 → 2 → cleanup on live (each dry-run reviewed first for Stage 3).
-2. Hand the office the **37 unlinked-profile** + **2 unmigrated-consent** remainders for manual review.
-3. Follow-on: intake forms write opt-in to the Contact; send-time consent check when a customer-facing mail path is built.
+Order (DB dump first): **Stage 1 fields → `setup_consent_log_entity.php` → `drush en bos_consent_log` → Stage 3 (dry-run reviewed, then apply) → Stage 2 → cleanup → `cr`.** Enable the log module *before* Stage 2 so the migrated legacy consents get logged (source = `import`).
+
+1. Hand the office the **37 unlinked-profile** + **2 unmigrated-consent** remainders for manual review.
+2. Follow-on: intake forms write opt-in to the Contact (set `_consent_source='web_form'` + `_consent_ip`); send-time consent check when a customer-facing mail path is built; optional office UI/View over `consent_log`.

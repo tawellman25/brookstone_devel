@@ -1,0 +1,183 @@
+<?php
+
+/**
+ * @file
+ * BOS Consent Log — append-only provenance for Contact opt-in changes.
+ *
+ * Whenever an opt-in flag on a contacts.contact entity changes, this module
+ * writes one immutable consent_log row per changed flag (channel, type,
+ * old->new state, source, actor, time, IP, note) and stamps the consent_updated
+ * / consent_source cache on the Contact — so the log can never drift from the
+ * flags. The consent_log entity is append-only (edits are refused).
+ *
+ * Attribution: callers may hint the save via public props on the contact —
+ *   $contact->_consent_source  (web_form|phone|paper|import|staff|system)
+ *   $contact->_consent_actor   (uid)
+ *   $contact->_consent_ip      (string)
+ *   $contact->_consent_note    (string)
+ * Defaults: source = 'staff' for an authenticated saver, 'web_form' for anon;
+ * actor = current user. Mirrors the wo_clock field_source attribution pattern.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageException;
+
+/**
+ * The four opt-in flags → [channel, consent_type].
+ */
+function _bos_consent_log_flags(): array {
+  return [
+    'field_opt_in_marketing_email' => ['email', 'marketing'],
+    'field_opt_in_marketing_sms' => ['sms', 'marketing'],
+    'field_opt_in_service_email' => ['email', 'service'],
+    'field_opt_in_service_sms' => ['sms', 'service'],
+  ];
+}
+
+/**
+ * A boolean opt-in field's state: 'unknown' (never set) | 'opted_in' | 'opted_out'.
+ */
+function _bos_consent_log_state(?EntityInterface $entity, string $field): string {
+  if (!$entity || !$entity->hasField($field) || $entity->get($field)->isEmpty()) {
+    return 'unknown';
+  }
+  return ((bool) $entity->get($field)->value) ? 'opted_in' : 'opted_out';
+}
+
+/**
+ * Resolve the consent source for this save (hint wins; else current user).
+ */
+function _bos_consent_log_source(EntityInterface $contact): string {
+  $hint = $contact->_consent_source ?? NULL;
+  $allowed = ['web_form', 'phone', 'paper', 'import', 'staff', 'system'];
+  if ($hint && in_array($hint, $allowed, TRUE)) {
+    return $hint;
+  }
+  return \Drupal::currentUser()->isAuthenticated() ? 'staff' : 'web_form';
+}
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * Detect changed opt-in flags, stash them for the insert/update logger, and
+ * stamp the consent cache on the Contact in the same save.
+ */
+function bos_consent_log_entity_presave(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'contacts' || $entity->bundle() !== 'contact') {
+    return;
+  }
+
+  // Original snapshot (BOS-correct: $entity->original isn't guaranteed).
+  $original = NULL;
+  if (!$entity->isNew()) {
+    if (!empty($entity->original) && $entity->original instanceof EntityInterface) {
+      $original = $entity->original;
+    }
+    else {
+      $storage = \Drupal::entityTypeManager()->getStorage('contacts');
+      $original = $storage->loadUnchanged((int) $entity->id());
+    }
+  }
+
+  $changes = [];
+  foreach (_bos_consent_log_flags() as $field => [$channel, $type]) {
+    if (!$entity->hasField($field)) {
+      continue;
+    }
+    $old = _bos_consent_log_state($original, $field);
+    $new = _bos_consent_log_state($entity, $field);
+    if ($old !== $new) {
+      $changes[] = ['channel' => $channel, 'type' => $type, 'old' => $old, 'new' => $new];
+    }
+  }
+
+  if (!$changes) {
+    return;
+  }
+
+  // Stash for the post-save logger.
+  $entity->_consent_changes = $changes;
+
+  // Maintain the cache on the Contact (same save). field_consent_source only
+  // accepts web_form|phone|paper|import|staff, so map 'system' → not stored.
+  if ($entity->hasField('field_consent_updated')) {
+    $now = (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i:s');
+    $entity->set('field_consent_updated', $now);
+  }
+  if ($entity->hasField('field_consent_source')) {
+    $src = _bos_consent_log_source($entity);
+    if (in_array($src, ['web_form', 'phone', 'paper', 'import', 'staff'], TRUE)) {
+      $entity->set('field_consent_source', $src);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function bos_consent_log_entity_insert(EntityInterface $entity) {
+  _bos_consent_log_flush($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function bos_consent_log_entity_update(EntityInterface $entity) {
+  _bos_consent_log_flush($entity);
+}
+
+/**
+ * Write the stashed consent changes as immutable consent_log rows.
+ */
+function _bos_consent_log_flush(EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== 'contacts' || $entity->bundle() !== 'contact') {
+    return;
+  }
+  $changes = $entity->_consent_changes ?? NULL;
+  if (empty($changes)) {
+    return;
+  }
+  unset($entity->_consent_changes);
+
+  $source = _bos_consent_log_source($entity);
+  $actor = $entity->_consent_actor ?? \Drupal::currentUser()->id();
+  $ip = $entity->_consent_ip ?? NULL;
+  $note = $entity->_consent_note ?? NULL;
+  $storage = \Drupal::entityTypeManager()->getStorage('consent_log');
+
+  foreach ($changes as $c) {
+    $values = [
+      'type' => 'log',
+      // No PII in the title.
+      'title' => sprintf('%s %s: %s', ucfirst($c['type']), $c['channel'], $c['new']),
+      'field_contact' => (int) $entity->id(),
+      'field_channel' => $c['channel'],
+      'field_consent_type' => $c['type'],
+      'field_old_state' => $c['old'],
+      'field_new_state' => $c['new'],
+      'field_event_source' => $source,
+    ];
+    if ($actor) {
+      $values['field_actor'] = (int) $actor;
+    }
+    if ($ip) {
+      $values['field_ip'] = mb_substr((string) $ip, 0, 45);
+    }
+    if ($note) {
+      $values['field_note'] = mb_substr((string) $note, 0, 255);
+    }
+    $storage->create($values)->save();
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for consent_log — append-only guard.
+ *
+ * A consent_log row is immutable: once written it cannot be edited. New rows
+ * (our own writes) pass; any save of an existing row is refused, on every path.
+ */
+function bos_consent_log_consent_log_presave(EntityInterface $entity) {
+  if (!$entity->isNew()) {
+    throw new EntityStorageException('consent_log is append-only; existing entries cannot be edited (id ' . $entity->id() . ').');
+  }
+}

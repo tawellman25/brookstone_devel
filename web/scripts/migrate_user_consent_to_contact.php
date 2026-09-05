@@ -66,6 +66,10 @@ foreach ($rows as $uid => $flags) {
     if ($changed) {
       if ($c->get('field_consent_updated')->isEmpty()) { $c->set('field_consent_updated', $now); }
       if ($c->get('field_consent_source')->isEmpty()) { $c->set('field_consent_source', 'import'); }
+      // Attribution hints for bos_consent_log (if enabled): record these as an
+      // import so the consent_log row shows provenance, not "staff".
+      $c->_consent_source = 'import';
+      $c->_consent_note = 'legacy User consent flag migrated to Contact';
       $c->save();
       $migrated++;
     }

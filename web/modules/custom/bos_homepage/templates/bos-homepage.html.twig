@@ -1,0 +1,169 @@
+{#
+/**
+ * @file
+ * Public homepage — six bands. Renders inside the normal Olivero page (header,
+ * nav, footer preserved). Reuses the winterize bo-* brand tokens/components;
+ * homepage-specific layout is in css/homepage.css. All copy comes from
+ * bos_homepage.settings via the controller (data).
+ */
+#}
+{% set d = data %}
+{% set tel = d.phone|replace({'-': '', ' ': '', '(': '', ')': ''}) %}
+<div class="bo-home">
+
+  {# BAND 1 — HERO (full-bleed photo, dark overlay, left-aligned text) #}
+  <section class="home-hero" style="background-image:url('{{ d.hero_image }}');">
+    <div class="home-hero__overlay" aria-hidden="true"></div>
+    <div class="home-hero__inner">
+      <span class="home-hero__eyebrow osw">{{ d.hero_eyebrow }}</span>
+      <h1 class="home-hero__h1">{{ d.hero_headline }}</h1>
+      <p class="home-hero__sub">{{ d.hero_subhead }}</p>
+      <div class="home-hero__cta">
+        <a class="bo-btn" href="{{ d.hero_primary_url }}">{{ d.hero_primary_label }}</a>
+      </div>
+    </div>
+  </section>
+
+  {# Trust strip (black band) — directly under the hero. #}
+  <div class="home-trust">
+    <div class="home-trust__inner">
+      {% for t in d.trust %}<span class="home-trust__item">{{ t }}</span>{% endfor %}
+    </div>
+  </div>
+
+  {# Seasonal promo banner (editable + toggleable) — under the trust strip. #}
+  {% if d.promo_enabled and d.promo_text %}
+    <a class="home-promo" href="{{ d.promo_cta_url }}">
+      <span class="home-promo__inner">
+        {% if d.promo_eyebrow %}<span class="home-promo__eyebrow osw">{{ d.promo_eyebrow }}</span>{% endif %}
+        <span class="home-promo__text">{{ d.promo_text }}</span>
+        {% if d.promo_cta_label %}<span class="home-promo__cta">{{ d.promo_cta_label }}</span>{% endif %}
+      </span>
+    </a>
+  {% endif %}
+
+  {# BAND 2 — SERVICES #}
+  <section class="home-services">
+    <div class="home-services__inner">
+      <h2>{{ d.services_h2 }}</h2>
+      <p class="home-lead">{{ d.services_intro }}</p>
+      <div class="home-cards">
+        {% for s in d.services %}
+          <a class="home-card" href="{{ s.url }}">
+            <h3>{{ s.title }}</h3>
+            <p>{{ s.blurb }}</p>
+            <span class="home-card__more">Learn more →</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {# BAND 3 — PROOF (conditional: only when photos exist) #}
+  {% if d.portfolio %}
+  <section class="home-proof">
+    <div class="home-proof__inner">
+      <h2>{{ d.proof_h2 }}</h2>
+      <p class="home-lead">{{ d.proof_intro }}</p>
+      <div class="home-grid">
+        {% for p in d.portfolio %}
+          <figure class="home-shot">
+            <img src="{{ p.url }}" alt="{{ p.alt }}" loading="lazy" />
+            {% if p.town %}<figcaption>{{ p.town }}</figcaption>{% endif %}
+          </figure>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {# BAND 4 — HOW A PROJECT WORKS #}
+  <section class="home-steps">
+    <div class="home-steps__inner">
+      <h2>{{ d.steps_h2 }}</h2>
+      <p class="home-lead">{{ d.steps_intro }}</p>
+      <ol class="home-steps__list">
+        {% for step in d.steps %}
+          <li class="home-step">
+            <span class="home-step__n osw">{{ loop.index }}</span>
+            <div>
+              <h3>{{ step.title }}</h3>
+              <p>{{ step.body }}</p>
+            </div>
+          </li>
+        {% endfor %}
+      </ol>
+      <div class="home-steps__cta">
+        <a class="bo-btn" href="{{ d.hero_primary_url }}">{{ d.steps_cta_label }}</a>
+      </div>
+    </div>
+  </section>
+
+  {# BAND 5 — WHO WE ARE #}
+  <section class="home-who">
+    <div class="home-who__inner">
+      <div class="home-who__body">
+        <h2>{{ d.who_h2 }}</h2>
+        {% for para in d.who_body|split('\n\n') %}<p>{{ para }}</p>{% endfor %}
+        <p class="home-who__area">{{ d.service_area }}</p>
+      </div>
+      <div class="home-stats">
+        {% for st in d.stats %}
+          <div class="home-stat">
+            <span class="home-stat__n osw">{{ st.number }}</span>
+            <span class="home-stat__l">{{ st.label }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {# BAND 6 — CAREERS #}
+  <section class="home-careers">
+    <div class="home-careers__inner">
+      <h2>{{ d.careers_h2 }}</h2>
+      <p>{{ d.careers_body }}</p>
+      <a class="bo-btn" href="{{ d.careers_url }}">{{ d.careers_button_label }}</a>
+    </div>
+  </section>
+
+  {# FOOTER (homepage) #}
+  <footer class="home-footer">
+    <div class="home-footer__grid">
+      <div>
+        <span class="home-footer__name osw">Brookstone Outdoors LLC</span>
+        <p>20143 Austin Rd.<br>Austin, CO 81410<br>{% if d.phone %}<a href="tel:{{ tel }}">{{ d.phone }}</a>{% endif %}</p>
+        <p class="home-footer__tag">Creating and Maintaining Your Outdoor Spaces</p>
+      </div>
+      <div>
+        <span class="home-footer__h osw">Services</span>
+        <ul>
+          <li><a href="/services/landscaping">Landscaping</a></li>
+          <li><a href="/services/landscape-lawn-care">Landscape and Lawn Care</a></li>
+          <li><a href="/services/sprinkler-system">Sprinkler Systems</a></li>
+          <li><a href="/lighting">Lighting</a></li>
+          <li><a href="/services/christmas-decorations">Holiday Decorations</a></li>
+          <li><a href="/services/snow-removal">Snow Removal</a></li>
+        </ul>
+      </div>
+      <div>
+        <span class="home-footer__h osw">Quick links</span>
+        <ul>
+          <li><a href="{{ d.hero_primary_url }}">Get a Free Estimate</a></li>
+          <li><a href="/winterize">Sprinkler Winterization</a></li>
+          <li><a href="{{ d.careers_url }}">Careers</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <span class="home-footer__h osw">Service area</span>
+        <p>{{ d.service_area }}</p>
+      </div>
+    </div>
+    <div class="home-footer__bar">
+      <span>© 2026 Brookstone Outdoors LLC</span>
+      <a class="home-footer__crew" href="/user/login">Crew Login</a>
+    </div>
+  </footer>
+
+</div>

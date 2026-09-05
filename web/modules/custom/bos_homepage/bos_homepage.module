@@ -1,0 +1,135 @@
+<?php
+
+/**
+ * @file
+ * BOS Homepage — front page bands, sitewide phone, LocalBusiness JSON-LD.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function bos_homepage_theme($existing, $type, $theme, $path): array {
+  return [
+    'bos_homepage' => [
+      'variables' => ['data' => []],
+      'template' => 'bos-homepage',
+    ],
+  ];
+}
+
+/**
+ * TRUE on the front page route.
+ */
+function _bos_homepage_is_front(): bool {
+  return \Drupal::routeMatch()->getRouteName() === 'bos_homepage.front';
+}
+
+/**
+ * Builds the homepage bands render array (theme bos_homepage). Used by both the
+ * controller and hook_preprocess_page so the page--front template can render the
+ * bands directly, outside Olivero's constrained content region.
+ */
+function _bos_homepage_render_array(): array {
+  $cfg = \Drupal::config('bos_homepage.settings');
+  $base = '/' . \Drupal::service('extension.list.module')->getPath('bos_homepage');
+
+  // Portfolio (Proof band): {fid, town, alt}. Hidden until >= 4 distinct photos.
+  $portfolio = [];
+  foreach ((array) $cfg->get('portfolio') as $item) {
+    if (empty($item['fid'])) {
+      continue;
+    }
+    $file = \Drupal\file\Entity\File::load($item['fid']);
+    if (!$file) {
+      continue;
+    }
+    $portfolio[] = [
+      'url' => \Drupal::service('file_url_generator')->generateString($file->getFileUri()),
+      'town' => $item['town'] ?? '',
+      'alt' => $item['alt'] ?? '',
+    ];
+  }
+
+  $data = $cfg->get();
+  $data['hero_image'] = $base . '/assets/home-hero.jpg';
+  $data['portfolio'] = (count($portfolio) >= 4) ? $portfolio : [];
+  $data['phone'] = (string) \Drupal::config('bos_service_request.settings')->get('office_phone');
+
+  return [
+    '#theme' => 'bos_homepage',
+    '#data' => $data,
+    '#attached' => ['library' => ['bos_homepage/homepage']],
+    '#cache' => [
+      'tags' => ['config:bos_homepage.settings'],
+      'contexts' => ['url'],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_preprocess_page().
+ *
+ * On the front page, hand the bands render array to page--front.html.twig as
+ * `bos_home` so it can print them full-width, outside the content region.
+ */
+function bos_homepage_preprocess_page(array &$variables): void {
+  if (_bos_homepage_is_front()) {
+    $variables['bos_home'] = _bos_homepage_render_array();
+  }
+}
+
+/**
+ * Implements hook_block_access().
+ *
+ * Hide the page-title block on the front page so the hero's H1 is the only H1
+ * (the route title would otherwise render a second "Home" heading).
+ */
+function bos_homepage_block_access(\Drupal\block\Entity\Block $block, $operation, \Drupal\Core\Session\AccountInterface $account) {
+  // On the front page: hide the page-title block (the hero H1 is the only H1)
+  // and the account menu ("Log in") — login lives only in the footer Crew Login
+  // link. Both are front-page-only; other pages are unchanged.
+  $hidden = ['page_title_block', 'system_menu_block:account'];
+  if ($operation === 'view' && in_array($block->getPluginId(), $hidden, TRUE) && _bos_homepage_is_front()) {
+    return \Drupal\Core\Access\AccessResult::forbidden()->addCacheContexts(['route.name']);
+  }
+  return \Drupal\Core\Access\AccessResult::neutral();
+}
+
+/**
+ * Implements hook_page_attachments().
+ *
+ * LocalBusiness JSON-LD on the front page only (no schema module in play, so no
+ * conflict). Business facts are static; the phone comes from config.
+ */
+function bos_homepage_page_attachments(array &$attachments) {
+  if (!_bos_homepage_is_front()) {
+    return;
+  }
+  $phone = (string) \Drupal::config('bos_service_request.settings')->get('office_phone');
+  $ld = [
+    '@context' => 'https://schema.org',
+    '@type' => 'LocalBusiness',
+    'name' => 'Brookstone Outdoors LLC',
+    'image' => \Drupal::request()->getSchemeAndHttpHost() . '/' . \Drupal::service('extension.list.module')->getPath('bos_homepage') . '/assets/home-hero.jpg',
+    'telephone' => $phone,
+    'url' => \Drupal::request()->getSchemeAndHttpHost() . '/',
+    'address' => [
+      '@type' => 'PostalAddress',
+      'streetAddress' => '20143 Austin Rd.',
+      'addressLocality' => 'Austin',
+      'addressRegion' => 'CO',
+      'postalCode' => '81410',
+      'addressCountry' => 'US',
+    ],
+    'areaServed' => ['Cedaredge', 'Delta', 'Montrose', 'Olathe', 'Eckert', 'Paonia', 'Hotchkiss', 'Crawford'],
+  ];
+  $attachments['#attached']['html_head'][] = [
+    [
+      '#type' => 'html_tag',
+      '#tag' => 'script',
+      '#attributes' => ['type' => 'application/ld+json'],
+      '#value' => json_encode($ld, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+    ],
+    'bos_homepage_localbusiness',
+  ];
+}

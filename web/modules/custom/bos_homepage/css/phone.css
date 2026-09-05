@@ -1,0 +1,14 @@
+/* Sitewide tap-to-call phone. Lives in Olivero's secondary-menu utility row
+   (top-right, beside account/search) so it never squeezes the primary nav. */
+.bo-header-phone {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-family: var(--osw, "Oswald", sans-serif); font-weight: 600;
+  font-size: 1.05rem; color: var(--bo-ink, #1A1613); text-decoration: none;
+  white-space: nowrap;
+}
+.bo-header-phone:hover { color: var(--bo-orange, #CB6015); }
+/* SVG phone icon takes a real color (the 📞 emoji rendered pink and couldn't be
+   recolored). Brand orange accent; inherits currentColor. */
+.bo-header-phone__icon { color: var(--bo-orange, #CB6015); flex: none; }
+#block-bos-homepage-phone { display: flex; align-items: center; }
+@media (max-width: 500px) { .bo-header-phone { font-size: .98rem; } }

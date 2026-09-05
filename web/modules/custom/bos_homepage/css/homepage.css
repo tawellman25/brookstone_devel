@@ -1,0 +1,137 @@
+/**
+ * BOS homepage bands. Uses the --bo-* brand tokens (bo-tokens.css). The .bo-btn
+ * here is defined unscoped (this stylesheet only loads on the homepage + the
+ * estimate form, both of which need it); the winterize .bo-btn is scoped to
+ * .bo-winterize and never reaches these pages.
+ */
+.bo-home { --home-content: 1040px; color: var(--bo-ink, #1A1613); font-size: 17px; line-height: 1.6; }
+.bo-home h2 { font-family: var(--osw, "Oswald", sans-serif); font-weight: 600; color: var(--bo-ink, #1A1613); margin: 0 0 .5rem; font-size: clamp(28px, 3.2vw, 40px); line-height: 1.1; }
+.bo-home h3 { font-family: var(--osw, "Oswald", sans-serif); font-weight: 600; margin: 0 0 .35rem; font-size: 18px; }
+.bo-home p { font-size: 17px; line-height: 1.6; }
+.bo-home .home-lead { font-size: 17px; line-height: 1.55; color: var(--bo-text-2, #4a4033); max-width: 62ch; margin: 0 0 1.75rem; }
+
+/* One shared inner wrapper: same max-width + padding on every band, so content
+   left edges align down the whole page (fix B1). */
+.bo-home section > [class$="__inner"],
+.home-footer__grid,
+.home-footer__bar { max-width: var(--home-content, 1040px); margin: 0 auto; padding-inline: clamp(20px, 5vw, 64px); }
+
+/* One vertical rhythm on every band (fix B3). */
+.home-services, .home-proof, .home-steps, .home-who { padding-block: clamp(52px, 7vw, 96px); }
+
+/* Buttons (fix A2/A3). */
+.bo-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--bo-orange, #CB6015); color: #fff !important;
+  font-family: var(--osw, "Oswald", sans-serif); font-weight: 600; font-size: 17px; line-height: 1;
+  padding: 13px 26px; border: 2px solid transparent; border-radius: 4px;
+  text-decoration: none; cursor: pointer;
+}
+.bo-btn:hover { background: var(--bo-orange-hover, #A94E11); color: #fff !important; text-decoration: none; }
+.bo-btn--ghost { background: transparent; color: #fff !important; border-color: rgba(255,255,255,.85); }
+.bo-btn--ghost:hover { background: rgba(255,255,255,.15); }
+.bo-home .osw { font-family: var(--osw, "Oswald", sans-serif); }
+
+/* BAND 1 — HERO (full-bleed photo, dark overlay, left-aligned text) */
+.home-hero { position: relative; background-size: cover; background-position: center; min-height: clamp(440px, 60vh, 600px); display: flex; align-items: center; }
+.home-hero__overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(20,18,16,.80) 0%, rgba(20,18,16,.58) 44%, rgba(20,18,16,.15) 100%); }
+.home-hero__inner { position: relative; max-width: var(--home-content, 1040px); width: 100%; margin: 0 auto; padding: 3rem clamp(20px,5vw,64px); display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.home-hero__eyebrow { color: #fff; letter-spacing: .16em; text-transform: uppercase; font-size: 12px; font-weight: 600; opacity: .92; }
+.home-hero__h1 { font-family: var(--osw, "Oswald", sans-serif); color: #fff; font-weight: 600; font-size: clamp(34px, 4.2vw, 54px); line-height: 1.04; letter-spacing: -.01em; margin: 0; max-width: 18ch; }
+.home-hero__sub { color: #f4efe8; font-size: clamp(17px, 2.2vw, 20px); line-height: 1.5; max-width: 48ch; margin: 0; }
+.home-hero__cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+
+/* Trust strip */
+.home-trust { background: var(--bo-ink, #1A1613); }
+.home-trust__inner { display: flex; flex-wrap: wrap; gap: .4rem 2.5rem; justify-content: center; padding-block: .9rem; }
+.home-trust__item { color: #f4efe8; font-size: 15px; font-weight: 500; position: relative; }
+.home-trust__item + .home-trust__item::before { content: "·"; position: absolute; left: -1.3rem; color: var(--bo-orange, #CB6015); }
+
+/* BAND 2 — SERVICES */
+.home-services { background: var(--bo-paper, #FAF7F2); }
+.home-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.home-card { display: block; background: #fff; border: 1px solid var(--bo-border-card, #E8DFD2); border-left: 4px solid var(--bo-orange, #CB6015); border-radius: 6px; padding: 24px; text-decoration: none; color: var(--bo-ink, #1A1613); transition: box-shadow .15s, transform .15s; }
+.home-card:hover { box-shadow: 0 6px 20px rgba(20,18,16,.10); transform: translateY(-2px); text-decoration: none; }
+.home-card h3 { margin: 0 0 .5rem; }
+.home-card p { color: var(--bo-text-2, #4a4033); font-size: 15.5px; line-height: 1.55; margin: 0 0 .75rem; }
+.home-card__more { color: var(--bo-orange, #CB6015); font-weight: 600; font-size: 15px; }
+
+/* BAND 3 — PROOF */
+.home-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+.home-shot { margin: 0; position: relative; border-radius: 6px; overflow: hidden; }
+.home-shot img { display: block; width: 100%; height: 100%; aspect-ratio: 4/3; object-fit: cover; }
+.home-shot figcaption { position: absolute; left: 0; bottom: 0; background: rgba(20,18,16,.72); color: #fff; font-size: 13px; padding: .25rem .6rem; border-top-right-radius: 6px; }
+
+/* BAND 4 — HOW A PROJECT WORKS */
+.home-steps { background: var(--bo-sand, #F2E9DC); }
+.home-steps__list { list-style: none; margin: 0 0 1.75rem; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem 2rem; }
+.home-step { display: flex; gap: 1rem; align-items: flex-start; }
+.home-step__n { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%; background: var(--bo-green, #007A33); color: #fff; display: grid; place-items: center; font-size: 22px; font-weight: 700; }
+.home-step p { color: var(--bo-text-2, #4a4033); line-height: 1.55; margin: 0; font-size: 15.5px; }
+
+/* BAND 5 — WHO WE ARE (stats share edges → read as one object, fix C3) */
+.home-who__inner { display: grid; grid-template-columns: 1.6fr 1fr; gap: 2.5rem; align-items: start; }
+.home-who__body p { color: var(--bo-text-2, #4a4033); line-height: 1.65; font-size: 17px; }
+.home-who__area { font-family: var(--osw, "Oswald", sans-serif); color: var(--bo-ink, #1A1613) !important; font-weight: 600; letter-spacing: .01em; }
+.home-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--bo-border-card, #E8DFD2); border: 1px solid var(--bo-border-card, #E8DFD2); border-radius: 6px; overflow: hidden; }
+.home-stat { background: #fff; padding: 1.4rem 1rem; text-align: center; }
+.home-stat__n { display: block; font-size: 38px; font-weight: 700; color: var(--bo-orange, #CB6015); line-height: 1; font-family: var(--osw, "Oswald", sans-serif); }
+.home-stat__l { display: block; margin-top: .35rem; font-size: 14px; color: var(--bo-text-2, #4a4033); }
+
+/* BAND 6 — CAREERS (quiet horizontal strip, fix C2) */
+.home-careers { background: var(--bo-paper, #FAF7F2); border-top: 3px solid #1E7834; }
+.home-careers__inner { max-width: var(--home-content, 1040px); margin: 0 auto; padding: 26px clamp(20px,5vw,64px); display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.5rem; }
+.home-careers h2 { font-size: 19px; margin: 0; color: var(--bo-ink, #1A1613); }
+.home-careers p { margin: 0; flex: 1 1 300px; font-size: 15.5px; color: var(--bo-text-2, #4a4033); line-height: 1.5; }
+.home-careers .bo-btn { margin-left: auto; }
+
+/* FOOTER */
+.home-footer { background: var(--bo-ink, #1A1613); color: #d8d2c9; }
+.home-footer__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; padding-block: clamp(40px,5vw,56px) 1.5rem; }
+.home-footer a { color: #f0ece5; }
+.home-footer a:hover { color: var(--bo-orange, #CB6015); }
+.home-footer__name, .home-footer__h { display: block; color: #fff; font-size: 17px; margin-bottom: .6rem; }
+.home-footer ul { list-style: none; margin: 0; padding: 0; line-height: 1.9; }
+.home-footer p { font-size: 15px; }
+.home-footer__tag { font-style: italic; color: #b7b0a5; font-size: 14px; }
+.home-footer__bar { border-top: 1px solid rgba(255,255,255,.12); padding-block: 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #b7b0a5; }
+.home-footer__crew { font-size: 13px; opacity: .8; }
+
+/* Front-page full-bleed (fix B1). page--front.html.twig drops Olivero's
+   .layout-main / .main-content / .container; here we also lift the site-wide
+   .page-wrapper max-width. Compound selector (0,2,0) outranks .page-wrapper. */
+/* The bands render directly (page--front prints bos_home, not page.content), so
+   the only site-wide cap left to lift is .page-wrapper's max-width. The bands
+   are full-width; each band's __inner still caps + centers the content. */
+.page-wrapper.page-wrapper--front { max-width: none; }
+.page-wrapper--front #main-wrapper,
+.page-wrapper--front .home-main { max-width: none; width: 100%; margin: 0; padding: 0; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .home-cards { grid-template-columns: repeat(2, 1fr); }
+  .home-grid { grid-template-columns: repeat(2, 1fr); }
+  .home-who__inner { grid-template-columns: 1fr; }
+  .home-footer__grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .home-cards, .home-grid, .home-steps__list, .home-footer__grid { grid-template-columns: 1fr; }
+  .home-hero__overlay { background: linear-gradient(180deg, rgba(20,18,16,.5) 0%, rgba(20,18,16,.8) 100%); }
+  .home-careers .bo-btn { margin-left: 0; }
+  .home-footer__bar { flex-direction: column; gap: .5rem; }
+}
+
+/* Seasonal promo banner (under the hero). Full-width orange bar. */
+.home-promo { display: block; background: var(--bo-orange, #CB6015); color: #fff !important; text-decoration: none; }
+.home-promo:hover { background: var(--bo-orange-hover, #A94E11); color: #fff !important; text-decoration: none; }
+.home-promo__inner { max-width: var(--home-content, 1040px); margin: 0 auto; padding: 14px clamp(20px,5vw,64px); display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 1.5rem; }
+.home-promo__eyebrow { font-family: var(--osw, "Oswald", sans-serif); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 14px; }
+.home-promo__text { font-size: 17px; }
+.home-promo__cta {
+  margin-left: auto; white-space: nowrap; text-decoration: none;
+  font-family: var(--osw, "Oswald", sans-serif); font-weight: 600; font-size: 16px;
+  border: 2px solid rgba(255,255,255,.9); border-radius: 4px; padding: 10px 22px; color: #fff;
+}
+.home-promo:hover .home-promo__cta { background: rgba(255,255,255,.15); }
+@media (max-width: 560px) { .home-promo__cta { margin-left: 0; } }
+

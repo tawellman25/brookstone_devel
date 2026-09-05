@@ -1,0 +1,63 @@
+{#
+/**
+ * @file
+ * Front-page template. Same Olivero header (branding, main menu, and the BOS
+ * phone block) as every other page, but the main content renders FULL-WIDTH —
+ * it is NOT wrapped in Olivero's constrained `.main-content__container.container`
+ * — so the homepage's full-bleed hero and edge-to-edge bands (bos_homepage) can
+ * reach the viewport edges. The homepage provides its own footer band, so the
+ * theme footer regions are omitted here. Header markup mirrors
+ * core/themes/olivero/templates/layout/page.html.twig verbatim.
+ */
+#}
+<div id="page-wrapper" class="page-wrapper page-wrapper--front">
+  <div id="page">
+    {% if page.header or page.primary_menu or page.secondary_menu %}
+      <header id="header" class="site-header" data-drupal-selector="site-header" role="banner">
+        <div class="site-header__fixable" data-drupal-selector="site-header-fixable">
+          <div class="site-header__initial">
+            <button class="sticky-header-toggle" data-drupal-selector="sticky-header-toggle" role="switch" aria-controls="site-header__inner" aria-label="{{ 'Sticky header'|t }}" aria-checked="false">
+              <span class="sticky-header-toggle__icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
+            </button>
+          </div>
+          <div id="site-header__inner" class="site-header__inner" data-drupal-selector="site-header-inner">
+            <div class="container site-header__inner__container">
+              {{ page.header }}
+              {% if page.primary_menu or page.secondary_menu %}
+                <div class="mobile-buttons" data-drupal-selector="mobile-buttons">
+                  <button class="mobile-nav-button" data-drupal-selector="mobile-nav-button" aria-label="{{ 'Main Menu'|t }}" aria-controls="header-nav" aria-expanded="false">
+                    <span class="mobile-nav-button__label">{{ 'Menu'|t }}</span>
+                    <span class="mobile-nav-button__icon"></span>
+                  </button>
+                </div>
+                <div id="header-nav" class="header-nav" data-drupal-selector="header-nav">
+                  {{ page.primary_menu }}
+                  {{ page.secondary_menu }}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </header>
+    {% endif %}
+
+    {# Render the homepage bands DIRECTLY (from hook_preprocess_page), NOT via
+       {{ page.content }} — that would wrap them in Olivero's constrained
+       content-region grid and box them. This mirrors how page--winterize renders
+       its full-width content. Keep .layout-main-wrapper only for its stacking
+       context (mobile-nav z-index). #}
+    <div id="main-wrapper" class="layout-main-wrapper">
+      <a id="main-content" tabindex="-1"></a>
+      <main role="main" class="home-main">
+        {{ bos_home }}
+      </main>
+    </div>
+
+    <div class="overlay" data-drupal-selector="overlay"></div>
+
+  </div>
+</div>

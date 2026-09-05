@@ -102,3 +102,58 @@ h1, h2, h3, h4, h5, h6,
   font-family: "Oswald", "Arial Narrow", sans-serif !important;
   letter-spacing: 0.01em;
 }
+
+
+/* Sitewide brand lockup (matches the /winterize header): round emblem +
+   "BROOKSTONE OUTDOORS" in Oswald + tagline. Rendered by the branding block
+   override (block--system-branding-block.html.twig). */
+.bo-brand { display: flex; align-items: center; gap: 15px; }
+.bo-brand__logo-link { display: block; flex: none; line-height: 0; }
+.bo-brand__logo { width: 78px; height: 78px; display: block; }
+.bo-brand__text { text-decoration: none; display: block; }
+.bo-brand__text:hover { text-decoration: none; }
+.bo-brand__name {
+  font-family: "Oswald", "Arial Narrow", sans-serif; font-size: 21px; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--bo-ink, #1A1613); display: block; line-height: 1.1;
+}
+.bo-brand__tag { font-size: 13.5px; font-style: italic; color: var(--bo-muted, #6b5d4f); display: block; }
+@media (max-width: 60rem) {
+  .bo-brand__logo { width: 54px; height: 54px; }
+  .bo-brand__name { font-size: 17px; }
+  .bo-brand__tag { font-size: 12px; }
+}
+
+/* Header bar: one continuous surface in the warm sand tone (matches the page
+   sections). The header/toggle KEEP Olivero's default geometry (that's what the
+   live site uses and it looks right) — this only recolors, never resizes. */
+.site-header__inner,
+.site-branding,
+.site-branding--bg-gray,
+.site-branding--bg-white { background: var(--bo-sand, #F2E9DC); }
+
+/* Float the logo + text vertically centered in the header (was bottom-aligned,
+   which clipped the top of the logo as the header shrank on scroll). */
+.site-branding { display: flex; align-items: center; }
+
+/* The menu region (.header-nav) paints itself white — unify it with the sand
+   bar (the mobile slide-in nav becomes sand too, which reads fine). */
+.header-nav,
+body:not(.is-always-mobile-nav) .header-nav { background-color: var(--bo-sand, #F2E9DC); }
+
+/* When the header sticks on scroll and the sand bar (.site-header__inner) slides
+   left, the area it vacates should be BLACK instead of the white page behind it.
+   Paint ONLY the outer <header> (.site-header) — NOT .site-header__fixable (the
+   toggle's parent, which broke the hamburger). The sand bar + orange toggle sit
+   on top, so this black shows only in the vacated area during the slide. */
+.site-header { background-color: var(--bo-ink, #1A1613); }
+
+/* Services dropdown caret: the box behind the arrow was white (wrong on sand) —
+   blend it into the header with a brand-blue chevron. */
+body:not(.is-always-mobile-nav) .primary-nav__button-toggle .icon--menu-toggle {
+  background-color: transparent;
+}
+body:not(.is-always-mobile-nav) .primary-nav__button-toggle .icon--menu-toggle::after {
+  border-right-color: var(--bo-blue, #62B5E5);
+  border-bottom-color: var(--bo-blue, #62B5E5);
+  opacity: 1;
+}

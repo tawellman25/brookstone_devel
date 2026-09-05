@@ -1,0 +1,23 @@
+bos_homepage.front:
+  path: '/home'
+  defaults:
+    _controller: '\Drupal\bos_homepage\Controller\HomepageController::page'
+    _title: 'Home'
+  requirements:
+    _access: 'TRUE'
+
+bos_homepage.request_estimate:
+  path: '/request-estimate'
+  defaults:
+    _form: '\Drupal\bos_homepage\Form\RequestEstimateForm'
+    _title: 'Request an Estimate'
+  requirements:
+    _access: 'TRUE'
+
+bos_homepage.settings:
+  path: '/admin/config/bos/homepage'
+  defaults:
+    _form: '\Drupal\bos_homepage\Form\HomepageSettingsForm'
+    _title: 'Homepage settings'
+  requirements:
+    _permission: 'administer site configuration'

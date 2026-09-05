@@ -1,0 +1,18 @@
+{#
+/**
+ * @file
+ * Brookstone branding block override — the winterize-page treatment (round
+ * emblem + "BROOKSTONE OUTDOORS" in Oswald + tagline) applied to EVERY page's
+ * header. Ignores the theme's logo/name/slogan config in favor of this fixed
+ * brand lockup so all public pages match /winterize.
+ */
+#}
+<div{{ attributes.addClass('site-branding', 'bo-brand') }}>
+  <a href="{{ path('<front>') }}" rel="home" class="bo-brand__logo-link" aria-label="{{ 'Brookstone Outdoors — Home'|t }}">
+    <img class="bo-brand__logo" src="/themes/custom/brookstone_olivero/images/bo-logo-round.png" alt="Brookstone Outdoors" width="78" height="78" />
+  </a>
+  <a href="{{ path('<front>') }}" rel="home" class="bo-brand__text">
+    <span class="bo-brand__name">BROOKSTONE OUTDOORS</span>
+    <span class="bo-brand__tag">Creating and Maintaining Your Outdoor Spaces</span>
+  </a>
+</div>

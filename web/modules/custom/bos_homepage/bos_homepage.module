@@ -85,10 +85,10 @@ function bos_homepage_preprocess_page(array &$variables): void {
  * (the route title would otherwise render a second "Home" heading).
  */
 function bos_homepage_block_access(\Drupal\block\Entity\Block $block, $operation, \Drupal\Core\Session\AccountInterface $account) {
-  // On the front page: hide the page-title block (the hero H1 is the only H1)
-  // and the account menu ("Log in") — login lives only in the footer Crew Login
-  // link. Both are front-page-only; other pages are unchanged.
-  $hidden = ['page_title_block', 'system_menu_block:account'];
+  // On the front page: hide the page-title block only (the hero H1 is the only
+  // H1). The account menu ("Log in") stays so the homepage header matches every
+  // other page. Front-page-only; other pages are unchanged.
+  $hidden = ['page_title_block'];
   if ($operation === 'view' && in_array($block->getPluginId(), $hidden, TRUE) && _bos_homepage_is_front()) {
     return \Drupal\Core\Access\AccessResult::forbidden()->addCacheContexts(['route.name']);
   }

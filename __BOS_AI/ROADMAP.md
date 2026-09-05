@@ -80,6 +80,7 @@ Public `/winterize` postcard-QR form → office review queue → **Approve & Cre
 ### Other NOW items
 | Item | Area | Tier | Effort | Notes |
 |---|---|---|---|---|
+| **Public homepage + brand header — SHIPPED LIVE 2026-09-05** | `bos_homepage` / `brookstone_olivero` | T1 | L | Front page was `/user/login` (site opened on the crew login screen); now a real homepage at `/` (six editable bands, seasonal promo banner, LocalBusiness JSON-LD), a public **Request-an-Estimate** form → `estimate_request` lead, a **/careers** page, and the sitewide winterize-style brand header (round emblem + Oswald wordmark, sand bar). Bands render outside Olivero's content region for full-bleed; header keeps Olivero's default sticky geometry. **Follow-ups:** office runs `drush bos_homepage:portfolio-import` on live once ≥4 project photos are staged (Proof band hidden until then); full public-site rebuild is the separate Jan–Feb 2027 project. Docs: `Modules/bos_homepage.md`. |
 | QuickBooks Desktop IIF export | Billing | T1 | M | Fully scoped. Residential = 1 invoice/WO; Commercial = batched line-items/period; two-bucket on `field_client_type`. |
 | Warranty full-dollar-capture + QB zeroing | `wo_sign_off` / Billing | T2 | M | Sign-off path live (1283); **dollar-capture fields do not exist**. Coupled deploy unit — capture + zeroing ship together or risk billing customers for warranty work. |
 

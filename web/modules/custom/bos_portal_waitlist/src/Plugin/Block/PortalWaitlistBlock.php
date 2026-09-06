@@ -29,7 +29,7 @@ class PortalWaitlistBlock extends BlockBase implements \Drupal\Core\Plugin\Conta
     $bullets = [
       $this->t('Every work order we have completed on your property — the date, the crew, and what was actually done'),
       $this->t('What is scheduled next, and roughly which week we expect to be on your street'),
-      $this->t('The property information we keep — irrigation zones, controller settings, and what is planted where'),
+      $this->t('The property information we keep — irrigation types and zones, controller settings, spray maps, snowplow maps and how many trees and shrubs are planted'),
       $this->t('Your maintenance agreement and what it covers this season'),
     ];
     return [

@@ -63,20 +63,20 @@ operational history. They must not be treated as junk to be cleaned up.
   third-party exposure, no hard bounce) — but it is still not the customer's
   mailbox, so it is not a marketing/customer-send target.
 
-### Residual exposure (open for Todd)
+### Residual exposure — RESOLVED 2026-09-05
 
-The Contact-side our-domain emails are cleared, but the **client User accounts**
-still hold them (policy part 1 — no automated change to User emails):
-**1,887 ACTIVE client accounts carry a `@sewardslandscape.com` email** (a domain
-we don't own). Core Drupal can email `user.mail` (password reset, admin
-"notify user" on account edit), so those could reach the third party. Options
-for Todd to decide (each is an explicit exception to policy part 1, since it
-edits User emails): (a) leave as-is and rely on "no customer-send path + clients
-never log in"; (b) rewrite just the domain `@sewardslandscape.com` →
-`@brookstoneoutdoors.com` on those accounts (keeps the name/identity, moves it
-under our catch-all, kills third-party exposure) — needs unique-email collision
-handling; (c) blank the email on those accounts; (d) block the accounts. Not
-acted on — awaiting decision.
+The `@sewardslandscape.com` addresses on **client User accounts** were a
+third-party exposure (core Drupal could email a domain we don't own). Todd chose
+the domain-rewrite remediation (a sanctioned one-time exception to policy part 1,
+for the un-owned domain only). **All 1,990 client User accounts** at
+`@sewardslandscape.com` were rewritten to `@brookstoneoutdoors.com` — **local
+part / name preserved**, domain swapped to the one we own + catch-all. 5 needed
+`<local>.<uid>@` disambiguation to stay unique; 0 duplicate emails resulted; 0
+`@sewardslandscape.com` addresses remain anywhere (User or Contact). Script:
+`web/scripts/rewrite_seward_user_domain.php` (domain-guarded, dry-run default).
+Pre-op dump: `~/pre-seward-rewrite-20260905.sql.gz`. These are still fabricated
+addresses (never a marketing/customer-send target); they now simply cannot leave
+our control. Policy part 1 remains in force for all other cases.
 
 ## Applied
 

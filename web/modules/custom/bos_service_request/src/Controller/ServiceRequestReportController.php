@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\bos_service_request\Controller;
 
+use Drupal\bos_service_request\CampaignSource;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -33,6 +34,21 @@ final class ServiceRequestReportController extends ControllerBase {
         . '</strong> opted into the automatic winterizing list.</p>',
     ];
 
+    // The headline: which campaigns actually produce JOBS (a request that became
+    // a Work Order), not just clicks/requests. This is the loop from ad spend to
+    // real work. Ad platforms report clicks + cost; this reports bookings + jobs.
+    $build['funnel_head'] = [
+      '#markup' => '<h2>Campaigns → jobs</h2><p>Requests that became a Work Order. The ad platforms (Google/Meta) show clicks &amp; cost; this shows what actually turned into work.</p>',
+    ];
+    $build['funnel'] = [
+      '#type' => 'table',
+      '#caption' => $this->t('By campaign — requests vs jobs created'),
+      '#header' => [$this->t('Campaign code'), $this->t('Channel'), $this->t('Requests'), $this->t('Jobs (WO)'), $this->t('Conversion')],
+      '#rows' => $this->campaignFunnel(),
+      '#empty' => $this->t('No requests yet — campaigns start producing rows here as bookings come in.'),
+      '#attributes' => ['style' => 'max-width:780px;margin-bottom:1.5rem'],
+    ];
+
     // Postcard variants broken out explicitly — B is the number that justifies
     // next year's spend and must never be pooled with A (P0.1).
     $byCampaign = $this->groupCount('service_request__field_campaign', 'field_campaign_value');
@@ -56,6 +72,37 @@ final class ServiceRequestReportController extends ControllerBase {
     $build['by_status'] = $this->table('By status', $this->statusCounts());
     $build['#cache'] = ['max-age' => 0];
     return $build;
+  }
+
+  /**
+   * Per-campaign funnel: requests, jobs (converted to a WO), conversion %.
+   *
+   * @return array<int,array<int,string|int>>
+   */
+  private function campaignFunnel(): array {
+    if (!$this->database->schema()->tableExists('service_request__field_campaign')) {
+      return [];
+    }
+    $q = $this->database->select('service_request_field_data', 's');
+    $q->leftJoin('service_request__field_campaign', 'c', 'c.entity_id = s.id');
+    $q->leftJoin('service_request__field_work_order', 'wo', 'wo.entity_id = s.id');
+    $q->addField('c', 'field_campaign_value', 'campaign');
+    $q->addExpression('COUNT(*)', 'requests');
+    $q->addExpression('SUM(CASE WHEN wo.field_work_order_target_id IS NOT NULL THEN 1 ELSE 0 END)', 'jobs');
+    $q->groupBy('c.field_campaign_value');
+    $q->orderBy('requests', 'DESC');
+
+    $labels = CampaignSource::allValues();
+    $rows = [];
+    foreach ($q->execute() as $r) {
+      $code = (string) $r->campaign;
+      $requests = (int) $r->requests;
+      $jobs = (int) $r->jobs;
+      $channel = $code === '' ? '—' : ($labels[CampaignSource::forCode($code)] ?? $this->t('Other'));
+      $pct = $requests > 0 ? round(100 * $jobs / $requests) . '%' : '—';
+      $rows[] = [$code === '' ? '(none)' : $code, $channel, $requests, $jobs, $pct];
+    }
+    return $rows;
   }
 
   /**

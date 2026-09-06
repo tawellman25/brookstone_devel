@@ -52,6 +52,32 @@ operational history. They must not be treated as junk to be cleaned up.
 - The only safe way an address becomes real is a deliberate human (admin) edit —
   so that is the single sanctioned path.
 
+## Domain ownership (confirmed 2026-09-05, by Todd)
+
+- **`sewardslandscape.com` — NOT owned by us anymore.** Mail to any
+  `@sewardslandscape.com` address goes to whoever now controls the domain.
+  Treat it as hostile: never send there under any circumstance.
+- **`brookstoneoutdoors.com` — a catch-all mailbox will receive all mail** to
+  fabricated/unknown local parts (Todd is ensuring this). So mail to fabricated
+  `@brookstoneoutdoors.com` addresses lands in an inbox we control (no
+  third-party exposure, no hard bounce) — but it is still not the customer's
+  mailbox, so it is not a marketing/customer-send target.
+
+### Residual exposure (open for Todd)
+
+The Contact-side our-domain emails are cleared, but the **client User accounts**
+still hold them (policy part 1 — no automated change to User emails):
+**1,887 ACTIVE client accounts carry a `@sewardslandscape.com` email** (a domain
+we don't own). Core Drupal can email `user.mail` (password reset, admin
+"notify user" on account edit), so those could reach the third party. Options
+for Todd to decide (each is an explicit exception to policy part 1, since it
+edits User emails): (a) leave as-is and rely on "no customer-send path + clients
+never log in"; (b) rewrite just the domain `@sewardslandscape.com` →
+`@brookstoneoutdoors.com` on those accounts (keeps the name/identity, moves it
+under our catch-all, kills third-party exposure) — needs unique-email collision
+handling; (c) blank the email on those accounts; (d) block the accounts. Not
+acted on — awaiting decision.
+
 ## Applied
 
 - **2026-09-05 — fabricated Contact emails cleared.** The 2,734 fabricated

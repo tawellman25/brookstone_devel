@@ -6,6 +6,23 @@ This document captures hard-learned lessons. Most entries cite a specific commit
 
 ---
 
+## Resizing the Olivero sticky header breaks the toggle unless FOUR constants scale together
+
+Shrinking the desktop header (`brookstone_olivero`) repeatedly "lost the hamburger"
+and clipped the logo on scroll (2026-09-06, and twice before). The header height
+IS overridable — `--site-header-height-wide` (`--sp10` = **180px**) is only a
+`min-height` **spacer** — but Olivero's sticky-collapse relies on **four interlocked
+constants**. Change one alone and the collapse/toggle breaks:
+
+1. **`--site-header-height-wide`** (`css/base/variables.css`, used in `.site-header min-height`, `≥75rem`) — the bar height.
+2. **`.sticky-header-toggle { height: var(--sp6) }`** = **108px** (`components/header-sticky-toggle.css`) — the orange toggle tab. **If the header is shorter than this, the toggle clips/vanishes** ("lost hamburger").
+3. **`.site-header__fixable` / `.site-header__initial { align-items: flex-end }`** — bottom-piles the content + the toggle X (all empty space lands ABOVE the logo/icon). Set to `center`.
+4. **`.site-header__fixable.is-fixed { inset-block-start: calc(var(--drupal-displace-offset-top,0) − var(--sp4)) }`** = **−72px** pull-up on scroll — sized for 180px; on a short header it yanks the logo/toggle off the top ("cut off as it scrolls up"). Drop the `− --sp4`.
+
+**Fix:** override all four in `bo-brand.css` inside `@media (min-width: 75rem)` (never touch the `<75rem` mobile breakpoint, and never edit `web/core/`). Working values for a 96px header: `--site-header-height-wide: 6rem; .sticky-header-toggle{height:6rem}; .site-header__fixable,.site-header__initial{align-items:center}; .site-header__fixable.is-fixed{inset-block-start:var(--drupal-displace-offset-top,0)}`. Verify BOTH states in a browser (top + scrolled) — curl can't see the sticky JS. **Bulletproof alternative:** disable the sticky-collapse entirely, then a plain fixed height has no interlocking constants to break (cost: lose the slide-away/toggle effect).
+
+---
+
 ## CSV header detection with `\b` word boundaries fails on `snake_case` headers
 
 **Discovered 2026-08-28** (`wo_material_list_management` import round-trip). A

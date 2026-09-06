@@ -1,0 +1,80 @@
+/**
+ * Login-page two-column layout + customer waitlist panel.
+ * Scoped to .bo-login-page (added by hook_preprocess_html on the login route).
+ * Uses the sitewide --bo-* brand tokens (bos_service_request/bo-tokens.css).
+ */
+
+/* The form carries its own "Crew & Office Login" heading, so drop the default
+   "Log in" page title to avoid a duplicate heading. */
+.bo-login-page .block-page-title-block { display: none; }
+
+/* Two columns: login (left) + customer panel (right). */
+.bo-login-page .region--content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 2.5rem clamp(2rem, 5vw, 4rem);
+  max-width: 1080px;
+  margin-inline: auto;
+}
+.bo-login-page .block-local-tasks-block { flex-basis: 100%; order: -1; }
+.bo-login-page .block-system-main-block { flex: 1 1 320px; min-width: 270px; }
+.bo-login-page .block-bos-portal-waitlist { flex: 1 1 430px; min-width: 270px; }
+
+/* Crew login heading. */
+.bo-crew-login__heading {
+  font-family: var(--bo-display, "Oswald", sans-serif);
+  font-size: 1.6rem; margin: 0 0 1rem; color: var(--bo-ink, #1A1613);
+}
+
+/* Customer hint above the crew form — MOBILE ONLY. */
+.bo-customer-hint { display: none; }
+.bo-customer-hint a { color: var(--bo-orange, #CB6015); font-weight: 700; }
+
+/* Right-column panel. */
+.bo-waitlist {
+  background: var(--bo-sand, #F2E9DC);
+  border: 1px solid rgba(0, 0, 0, .08);
+  border-radius: 8px;
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+.bo-waitlist__eyebrow {
+  display: inline-block;
+  font-family: var(--bo-display, "Oswald", sans-serif);
+  text-transform: uppercase; letter-spacing: .12em; font-weight: 700;
+  font-size: .8rem; color: var(--bo-orange, #CB6015); margin-bottom: .35rem;
+}
+.bo-waitlist__h2 {
+  font-family: var(--bo-display, "Oswald", sans-serif);
+  font-size: 1.55rem; margin: 0 0 .75rem; color: var(--bo-ink, #1A1613);
+}
+.bo-waitlist p { margin: 0 0 .8rem; }
+.bo-waitlist__list { margin: 0 0 1rem; padding-left: 1.1rem; }
+.bo-waitlist__list li { margin-bottom: .5rem; }
+
+/* Form. */
+.bo-waitlist__form { margin-top: 1.25rem; }
+.bo-waitlist-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.bo-waitlist-row > * { flex: 1 1 160px; }
+.bo-waitlist-form .form-item { margin: 0 0 .9rem; }
+.bo-waitlist-form input[type="text"],
+.bo-waitlist-form input[type="email"],
+.bo-waitlist-form input[type="tel"] { width: 100%; box-sizing: border-box; }
+.bo-waitlist-fineprint { font-size: .82rem; color: #5b544c; margin-top: .5rem; }
+.bo-waitlist-submit {
+  background: var(--bo-orange, #CB6015); color: #fff; border: 0;
+  font-family: var(--bo-display, "Oswald", sans-serif); font-weight: 700;
+  padding: .7rem 1.4rem; border-radius: 4px; cursor: pointer;
+}
+.bo-waitlist-submit:hover { background: var(--bo-orange-hover, #A94E11); }
+
+/* Mobile: stack, login FIRST, then the panel; show the hint. */
+@media (max-width: 47.99em) {
+  .bo-login-page .region--content { display: block; }
+  .bo-login-page .block-bos-portal-waitlist { margin-top: 2rem; }
+  .bo-customer-hint {
+    display: block; background: var(--bo-sand, #F2E9DC);
+    border-left: 3px solid var(--bo-orange, #CB6015);
+    padding: .6rem .8rem; border-radius: 4px; margin: 0 0 1rem;
+  }
+}

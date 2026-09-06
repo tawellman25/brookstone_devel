@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @file
+ * BOS Portal Waitlist — customer-portal waitlist panel on the login page.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function bos_portal_waitlist_theme($existing, $type, $theme, $path): array {
+  return [
+    'bos_portal_waitlist_panel' => [
+      'variables' => ['bullets' => [], 'form' => NULL],
+      'template' => 'bos-portal-waitlist-panel',
+    ],
+  ];
+}
+
+/**
+ * TRUE on the login route.
+ */
+function _bos_portal_waitlist_is_login(): bool {
+  return \Drupal::routeMatch()->getRouteName() === 'user.login';
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for user_login_form.
+ *
+ * Adds the "Crew & Office Login" heading and a mobile-only jump link to the
+ * customer panel. Does NOT alter fields, validation, routes, or the reset link.
+ */
+function bos_portal_waitlist_form_user_login_form_alter(array &$form, FormStateInterface $form_state): void {
+  $form['#attributes']['class'][] = 'bo-crew-login';
+  $form['bo_login_heading'] = [
+    '#type' => 'html_tag', '#tag' => 'h2',
+    '#value' => t('Crew &amp; Office Login'),
+    '#weight' => -100,
+    '#attributes' => ['class' => ['bo-crew-login__heading']],
+  ];
+  // Mobile-only "are you a customer?" jump link, above the form.
+  $form['bo_customer_hint'] = [
+    '#type' => 'html_tag', '#tag' => 'p',
+    '#value' => t('<strong>A customer?</strong> Accounts are coming — <a href="#customer-accounts">put your name down below ↓</a>'),
+    '#weight' => -99,
+    '#attributes' => ['class' => ['bo-customer-hint']],
+  ];
+  $form['#attached']['library'][] = 'bos_portal_waitlist/waitlist';
+}
+
+/**
+ * Implements hook_preprocess_html().
+ *
+ * Body class so the two-column login CSS is scoped to this route only.
+ */
+function bos_portal_waitlist_preprocess_html(array &$variables): void {
+  if (_bos_portal_waitlist_is_login()) {
+    $variables['attributes']['class'][] = 'bo-login-page';
+  }
+}

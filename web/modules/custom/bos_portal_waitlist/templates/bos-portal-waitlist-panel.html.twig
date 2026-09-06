@@ -1,0 +1,21 @@
+{#
+/**
+ * @file
+ * "Coming for customers" panel — right column of the login page. Copy is the
+ * approved login-page spec (rev 2). The section id is the target of the
+ * mobile-only jump link added to the crew login form.
+ */
+#}
+<section class="bo-waitlist" id="customer-accounts">
+  <span class="bo-waitlist__eyebrow">{{ 'Coming for customers'|t }}</span>
+  <h2 class="bo-waitlist__h2">{{ 'Your property, in one place'|t }}</h2>
+
+  <p>{{ 'We are building a customer side to this site. When it is ready, you will be able to log in and see:'|t }}</p>
+  <ul class="bo-waitlist__list">
+    {% for b in bullets %}<li>{{ b }}</li>{% endfor %}
+  </ul>
+  <p>{{ 'Right now all of that lives in our office system, and the way you get it is to call us. That works, and you are welcome to keep doing it — we are not going anywhere and we still answer the phone.'|t }}</p>
+  <p>{{ 'But if you would rather look something up on a Saturday than wait until Monday, put your name down. We do not have a date yet. When customer accounts are open, we will email you.'|t }}</p>
+
+  <div class="bo-waitlist__form">{{ form }}</div>
+</section>

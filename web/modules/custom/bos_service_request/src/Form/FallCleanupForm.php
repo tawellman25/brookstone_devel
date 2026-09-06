@@ -380,8 +380,7 @@ final class FallCleanupForm extends FormBase {
       return ['website', 'website', ''];
     }
     if (in_array($raw, $allow, TRUE)) {
-      $sourceVal = ($raw === 'website') ? 'website' : 'other';
-      return [$raw, $sourceVal, ''];
+      return [$raw, \Drupal\bos_service_request\CampaignSource::forCode($raw), ''];
     }
     return ['unknown', 'other', 'Unrecognized campaign code: ' . Html::escape($raw)];
   }

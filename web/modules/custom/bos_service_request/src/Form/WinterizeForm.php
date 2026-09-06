@@ -487,12 +487,11 @@ final class WinterizeForm extends FormBase {
       return ['website', 'website', ''];
     }
     if (in_array($raw, $allow, TRUE)) {
-      $source = ($raw === 'website') ? 'website' : 'postcard_qr';
-      return [$raw, $source, ''];
+      return [$raw, \Drupal\bos_service_request\CampaignSource::forCode($raw), ''];
     }
     // Unknown — store 'unknown', keep the raw (capped, escaped) in office notes.
     $note = 'Unrecognized campaign code: ' . Html::escape(mb_substr($raw, 0, 64));
-    return ['unknown', 'postcard_qr', $note];
+    return ['unknown', 'other', $note];
   }
 
   /**

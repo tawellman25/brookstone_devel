@@ -105,3 +105,7 @@ Order (DB dump first): **Stage 1 fields → `setup_consent_log_entity.php` → `
 
 1. Hand the office the **37 unlinked-profile** + **2 unmigrated-consent** remainders for manual review.
 2. Follow-on: intake forms write opt-in to the Contact (set `_consent_source='web_form'` + `_consent_ip`); send-time consent check when a customer-facing mail path is built; optional office UI/View over `consent_log`.
+
+## Related policy — client email addresses
+
+See **`__BOS_AI/Governance/client_email_policy.md`** (adopted 2026-09-05). A 2026-09-05 audit found ~78% of customer-linked contacts carry a **fabricated our-domain email** (name@brookstoneoutdoors.com / @sewardslandscape.com); only ~780 (~22%) are real/deliverable. Rule: **never auto-replace or delete** a client User's email (admin-manual edit only), and **never send** to fabricated/our-domain addresses. A send therefore requires BOTH gates: opted-in (this consent model) AND a real external address (that policy).

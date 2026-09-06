@@ -1,0 +1,180 @@
+<?php
+
+/**
+ * @file
+ * BOS Analytics — Google Tag Manager container + no-PII dataLayer conversion
+ * events for the public forms.
+ *
+ * GTM is the SINGLE tag host: GA4, the Meta Pixel, and Google Ads conversion are
+ * all configured inside GTM's web UI (no BOS code per tag). This module only
+ * (1) injects the GTM container on every page and (2) pushes a named dataLayer
+ * event on successful submission of the winterize / fall-cleanup / portal-
+ * waitlist forms, so GTM triggers can fire the Lead/conversion tags.
+ *
+ * The container ID is read from settings.php:
+ *   $settings['bos_gtm_container_id'] = 'GTM-XXXXXXX';
+ * Env-specific + off-git — dev stays untracked unless the line is added there.
+ * Nothing renders when the ID is unset.
+ *
+ * PRIVACY: dataLayer payloads carry ONLY the event name + the ?c= campaign code.
+ * No names, emails, phones, or addresses. The push is self-guarding and async —
+ * it can never block or break a form, even if GTM is blocked/adblocked.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Markup;
+use Drupal\Core\Site\Settings;
+
+/**
+ * The configured GTM container ID, or '' if unset.
+ */
+function _bos_analytics_container_id(): string {
+  $id = (string) Settings::get('bos_gtm_container_id', '');
+  // Only accept a well-formed container id; never render an arbitrary value.
+  return preg_match('/^GTM-[A-Z0-9]+$/', $id) ? $id : '';
+}
+
+/**
+ * Implements hook_page_attachments().
+ *
+ * Injects the GTM head loader on every page (as high in <head> as core allows),
+ * and — when a public form was just submitted — the one-shot dataLayer event.
+ */
+function bos_analytics_page_attachments(array &$attachments): void {
+  $id = _bos_analytics_container_id();
+  if ($id === '') {
+    return;
+  }
+
+  $js = "(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','" . $id . "');";
+  $attachments['#attached']['html_head'][] = [
+    [
+      '#type' => 'html_tag',
+      '#tag' => 'script',
+      '#value' => Markup::create($js),
+      '#weight' => -1000,
+      '#attributes' => ['data-bos-gtm' => 'container'],
+    ],
+    'bos_analytics_gtm',
+  ];
+  // GTM loader varies per response; keep it uncached at the page level.
+  $attachments['#cache']['contexts'][] = 'url.query_args:c';
+
+  // One-shot conversion event, if a form just succeeded (same request rebuild
+  // OR the next request after a redirect).
+  $event = _bos_analytics_take_pending_event();
+  if ($event) {
+    $payload = ['event' => $event['event']];
+    if (!empty($event['campaign'])) {
+      $payload['campaign'] = $event['campaign'];
+    }
+    $push = 'window.dataLayer=window.dataLayer||[];window.dataLayer.push(' . json_encode($payload, JSON_UNESCAPED_SLASHES) . ');';
+    $attachments['#attached']['html_head'][] = [
+      [
+        '#type' => 'html_tag',
+        '#tag' => 'script',
+        '#value' => Markup::create($push),
+        '#weight' => -900,
+        '#attributes' => ['data-bos-gtm' => 'event'],
+      ],
+      'bos_analytics_event',
+    ];
+  }
+}
+
+/**
+ * Implements hook_page_top().
+ *
+ * The GTM <noscript> iframe, immediately after <body> opens.
+ */
+function bos_analytics_page_top(array &$page): void {
+  $id = _bos_analytics_container_id();
+  if ($id === '') {
+    return;
+  }
+  $page['bos_analytics_gtm_noscript'] = [
+    '#markup' => Markup::create('<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=' . $id . '" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>'),
+    '#weight' => -1000,
+  ];
+}
+
+/**
+ * Public forms whose success should push a dataLayer event → event name.
+ */
+function _bos_analytics_form_events(): array {
+  return [
+    'bos_winterize_form' => 'winterize_submit',
+    'bos_fall_cleanup_form' => 'cleanup_submit',
+    'bos_portal_waitlist_form' => 'portal_waitlist_submit',
+  ];
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Appends a capture submit handler to the tracked public forms. Non-invasive:
+ * it runs AFTER the form's own submit (after the record is saved) and only
+ * records a one-shot session flag — it never alters validation, the record
+ * write, or existing submit logic, and cannot break the form.
+ */
+function bos_analytics_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  if (_bos_analytics_container_id() === '') {
+    return;
+  }
+  $events = _bos_analytics_form_events();
+  if (!isset($events[$form_id])) {
+    return;
+  }
+  $form['#submit'][] = 'bos_analytics_capture_submit';
+  // Stash the event name for the capture handler (keyed off the form id).
+  $form_state->set('bos_analytics_event_name', $events[$form_id]);
+}
+
+/**
+ * Submit handler (appended): records the success as a one-shot session flag.
+ * Wrapped so it can never surface an error onto the form.
+ */
+function bos_analytics_capture_submit(array &$form, FormStateInterface $form_state): void {
+  try {
+    $event = (string) $form_state->get('bos_analytics_event_name');
+    if ($event === '') {
+      return;
+    }
+    // Success gate for the rebuild forms (redirect forms reach here on success).
+    $done = $form_state->get('winterize_done') || $form_state->get('fc_done');
+    $isWaitlist = ($event === 'portal_waitlist_submit');
+    if (!$done && !$isWaitlist) {
+      return;
+    }
+    // Campaign from ?c= (untrusted → normalized; no PII).
+    $c = (string) \Drupal::request()->query->get('c', '');
+    $c = preg_replace('/[^A-Za-z0-9_\-]/', '', $c);
+
+    \Drupal::request()->getSession()->set('bos_analytics_pending', [
+      'event' => $event,
+      'campaign' => $c !== '' ? $c : NULL,
+    ]);
+  }
+  catch (\Throwable $e) {
+    // Analytics must never affect the form.
+    \Drupal::logger('bos_analytics')->warning('capture submit skipped: @m', ['@m' => $e->getMessage()]);
+  }
+}
+
+/**
+ * Read and clear the pending conversion event from the session.
+ */
+function _bos_analytics_take_pending_event(): ?array {
+  try {
+    $session = \Drupal::request()->getSession();
+    $pending = $session->get('bos_analytics_pending');
+    if ($pending) {
+      $session->remove('bos_analytics_pending');
+      return $pending;
+    }
+  }
+  catch (\Throwable $e) {
+    // Ignore — no event rather than an error.
+  }
+  return NULL;
+}

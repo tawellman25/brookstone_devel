@@ -52,6 +52,18 @@ operational history. They must not be treated as junk to be cleaned up.
 - The only safe way an address becomes real is a deliberate human (admin) edit —
   so that is the single sanctioned path.
 
+## Applied
+
+- **2026-09-05 — fabricated Contact emails cleared.** The 2,734 fabricated
+  our-domain addresses were removed from `contacts.contact.field_email` (data
+  values only; records, names, phones, opt-in flags, titles, and
+  customer↔Contact links all retained). Staff mailboxes (9) and one placeholder
+  were protected. **Client User emails were NOT touched** (they remain the
+  account identity, per part 1). After: ~787 contacts hold an email (the
+  real/deliverable set + placeholders). Script:
+  `web/scripts/clear_fabricated_contact_emails.php` (domain-guarded; dry-run
+  default). Pre-op dump on live: `~/pre-clear-emails-20260905.sql.gz`.
+
 ## Enforcement
 
 - **Send-time (when a customer email program is built):** the send path filters

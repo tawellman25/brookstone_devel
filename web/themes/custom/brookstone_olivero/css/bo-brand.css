@@ -118,8 +118,14 @@ h1, h2, h3, h4, h5, h6,
 .bo-brand__text:hover { text-decoration: none; }
 .bo-brand__name {
   font-family: "Oswald", "Arial Narrow", sans-serif; font-size: 21px; font-weight: 600;
-  letter-spacing: .05em; text-transform: uppercase; color: var(--bo-ink, #1A1613); display: block; line-height: 1.1;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--bo-ink, #1A1613);
+  display: flex; align-items: baseline; gap: .38em; line-height: 1.1;
 }
+/* "Brookstone" is the logo font (Fractus) as an image — embedding is restricted,
+   so it ships as artwork, not a webfont. Sized so its cap height sits a touch
+   above the Oswald "Outdoors" beside it; bottom aligns to the text baseline. */
+.bo-brand__wordmark { height: 1.02em; width: auto; display: block; }
+.bo-brand__outdoors { display: block; line-height: 1; }
 .bo-brand__tag { font-size: 13.5px; font-style: italic; color: var(--bo-muted, #6b5d4f); display: block; }
 @media (max-width: 60rem) {
   .bo-brand__logo { width: 54px; height: 54px; }

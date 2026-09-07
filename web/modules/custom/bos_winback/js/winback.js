@@ -112,6 +112,46 @@
           });
         }
 
+        // Phase-2 call details (optional, non-blocking): elsewhere / who / why.
+        var intelPanel = card.querySelector('.wb-intel');
+        var intelOpen = card.querySelector('.wb-intel-open');
+        if (intelOpen && intelPanel) {
+          intelOpen.addEventListener('click', function () { intelPanel.hidden = !intelPanel.hidden; });
+          var whySel = intelPanel.querySelector('.wb-intel-why');
+          var whyOther = intelPanel.querySelector('.wb-intel-why-other');
+          if (whySel && whyOther) {
+            whySel.addEventListener('change', function () { whyOther.hidden = whySel.value !== 'other'; });
+          }
+          var intelSave = intelPanel.querySelector('.wb-intel-save');
+          var intelSaved = intelPanel.querySelector('.wb-intel__saved');
+          if (intelSave) {
+            intelSave.addEventListener('click', function () {
+              var base = (drupalSettings.bosWinback && drupalSettings.bosWinback.intelUrlBase) || '';
+              var picked = intelPanel.querySelector('input[name="wb-elsewhere-' + pid + '"]:checked');
+              var comp = intelPanel.querySelector('.wb-intel-competitor');
+              var params = new URLSearchParams();
+              params.set('elsewhere', picked ? picked.value : '');
+              params.set('competitor', comp ? comp.value : '');
+              params.set('why_left', whySel ? whySel.value : '');
+              params.set('why_left_other', whyOther ? whyOther.value : '');
+              intelSave.disabled = true;
+              csrfToken().then(function (token) {
+                return fetch(base + pid, {
+                  method: 'POST', credentials: 'same-origin',
+                  headers: { 'X-CSRF-Token': token, 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: params.toString()
+                });
+              }).then(function (r) { return r.json(); }).then(function () {
+                if (intelSaved) { intelSaved.hidden = false; }
+                intelSave.disabled = false;
+              }).catch(function () {
+                intelSave.disabled = false;
+                window.alert('Could not save call details.');
+              });
+            });
+          }
+        }
+
         // Simple outcomes (left message / no answer / reached).
         card.querySelectorAll('.wb-mark').forEach(function (btn) {
           btn.addEventListener('click', function () {

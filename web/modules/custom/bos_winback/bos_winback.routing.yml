@@ -25,3 +25,21 @@ bos_winback.create:
     _permission: 'access winterize winback'
     _csrf_request_header_token: 'TRUE'
     property: '\d+'
+
+bos_winback.intel:
+  path: '/admin/office/winterize/win-back/intel/{property}'
+  defaults:
+    _controller: 'Drupal\bos_winback\Controller\WinbackController::intel'
+  methods: [POST]
+  requirements:
+    _permission: 'access winterize winback'
+    _csrf_request_header_token: 'TRUE'
+    property: '\d+'
+
+bos_winback.report:
+  path: '/admin/office/winterize/win-back/report'
+  defaults:
+    _controller: 'Drupal\bos_winback\Controller\WinbackController::report'
+    _title: 'Win-Back Call Intelligence'
+  requirements:
+    _permission: 'access winterize winback'

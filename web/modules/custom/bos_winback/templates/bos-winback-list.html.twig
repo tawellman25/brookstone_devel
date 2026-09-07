@@ -82,6 +82,31 @@
           <button type="button" class="button button--small wb-mark" data-outcome="no_answer">No answer</button>
           <button type="button" class="button button--small wb-decline-open wb-mark--decline">Not interested</button>
           <button type="button" class="button button--small wb-reset" data-outcome="clear"{{ row.state ? '' : ' hidden' }}>Reset</button>
+          <button type="button" class="button button--small wb-intel-open">Details</button>
+        </div>
+
+        {# Phase-2 call intelligence — optional, ~4 seconds, revealed on "Details". #}
+        <div class="wb-intel" hidden>
+          <div class="wb-intel__row">
+            <span class="wb-intel__q">Done elsewhere last year?</span>
+            {% for key, label in elsewhere_options %}
+              <label class="wb-intel__opt"><input type="radio" name="wb-elsewhere-{{ row.property_id }}" value="{{ key }}"> {{ label }}</label>
+            {% endfor %}
+          </div>
+          <label class="wb-intel__field">Who did it?
+            <input type="text" class="wb-intel-competitor" maxlength="200" placeholder="Competitor name (optional)" />
+          </label>
+          <label class="wb-intel__field">Why did they leave?
+            <select class="wb-intel-why">
+              <option value="">—</option>
+              {% for key, label in why_left_options %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+            </select>
+          </label>
+          <input type="text" class="wb-intel-why-other" maxlength="200" placeholder="If other, briefly…" hidden />
+          <div class="wb-intel__actions">
+            <button type="button" class="button button--primary button--small wb-intel-save">Save details</button>
+            <span class="wb-intel__saved" hidden>Saved ✓</span>
+          </div>
         </div>
 
         {# Inline reason picker — revealed when "Not interested" is clicked. #}

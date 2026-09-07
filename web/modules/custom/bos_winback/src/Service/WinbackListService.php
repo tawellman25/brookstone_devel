@@ -48,6 +48,20 @@ final class WinbackListService {
   ];
 
   /**
+   * Phase-2 call intelligence — captured at the moment of the call. Perishable:
+   * it cannot be reconstructed later, which is the whole point of capturing it.
+   */
+  public const ELSEWHERE = ['yes' => 'Yes', 'no' => 'No', 'unknown' => 'Unknown'];
+  public const WHY_LEFT = [
+    'price' => 'Price',
+    'too_late' => 'Scheduling / we were too late',
+    'service' => 'Service problem',
+    'moved' => 'Moved / sold',
+    'no_longer' => 'No longer needed',
+    'other' => 'Other',
+  ];
+
+  /**
    * WO status: Canceled.
    */
   private const STATUS_CANCELED = 1098;
@@ -350,6 +364,68 @@ final class WinbackListService {
     }
     \Drupal::keyValue(self::STATE_COLLECTION)->set((string) $this->stateKey($pid), $rec);
     return $rec;
+  }
+
+  /**
+   * Merge Phase-2 call intelligence into the property's call record (preserving
+   * any outcome), so it reconciles with the outcome buttons rather than forming
+   * a parallel store. Optional/non-blocking; unknown values are dropped.
+   */
+  public function captureIntel(int $pid, string $by, array $data): array {
+    $kv = \Drupal::keyValue(self::STATE_COLLECTION);
+    $key = (string) $this->stateKey($pid);
+    $rec = $kv->get($key) ?: [];
+    $elsewhere = (string) ($data['elsewhere'] ?? '');
+    if (array_key_exists($elsewhere, self::ELSEWHERE)) {
+      $rec['elsewhere'] = $elsewhere;
+    }
+    $why = (string) ($data['why_left'] ?? '');
+    if (array_key_exists($why, self::WHY_LEFT)) {
+      $rec['why_left'] = $why;
+    }
+    $rec['competitor'] = mb_substr(trim((string) ($data['competitor'] ?? '')), 0, 200);
+    $rec['why_left_other'] = mb_substr(trim((string) ($data['why_left_other'] ?? '')), 0, 200);
+    $rec['intel_by'] = $by;
+    $rec['intel_ts'] = $this->time->getRequestTime();
+    $kv->set($key, $rec);
+    return $rec;
+  }
+
+  /**
+   * Season roll-up of the captured call intelligence: why they left + who did it
+   * instead + done-elsewhere. Reads the KeyValue call records (not View-able).
+   *
+   * @return array{total:int, why:array<string,int>, competitors:array<string,int>, elsewhere:array<string,int>}
+   */
+  public function intelReport(): array {
+    $prefix = $this->targetYear() . ':';
+    $why = $competitors = [];
+    $elsewhere = ['yes' => 0, 'no' => 0, 'unknown' => 0];
+    $total = 0;
+    foreach (\Drupal::keyValue(self::STATE_COLLECTION)->getAll() as $key => $rec) {
+      if (strpos((string) $key, $prefix) !== 0) {
+        continue;
+      }
+      $hasIntel = !empty($rec['why_left']) || !empty($rec['elsewhere']) || !empty($rec['competitor']);
+      if (!$hasIntel) {
+        continue;
+      }
+      $total++;
+      if (!empty($rec['why_left'])) {
+        $label = $rec['why_left'] === 'other' && !empty($rec['why_left_other'])
+          ? 'Other: ' . $rec['why_left_other'] : (self::WHY_LEFT[$rec['why_left']] ?? $rec['why_left']);
+        $why[$label] = ($why[$label] ?? 0) + 1;
+      }
+      if (!empty($rec['elsewhere']) && isset($elsewhere[$rec['elsewhere']])) {
+        $elsewhere[$rec['elsewhere']]++;
+      }
+      if (!empty($rec['competitor'])) {
+        $competitors[$rec['competitor']] = ($competitors[$rec['competitor']] ?? 0) + 1;
+      }
+    }
+    arsort($why);
+    arsort($competitors);
+    return ['total' => $total, 'why' => $why, 'competitors' => $competitors, 'elsewhere' => $elsewhere];
   }
 
   /**

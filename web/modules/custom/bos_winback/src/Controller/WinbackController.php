@@ -52,6 +52,8 @@ final class WinbackController extends ControllerBase {
       '#rows' => $rows,
       '#declined' => $this->winback->getDeclined(),
       '#reasons' => WinbackListService::DECLINE_REASONS,
+      '#elsewhere_options' => WinbackListService::ELSEWHERE,
+      '#why_left_options' => WinbackListService::WHY_LEFT,
       '#target_year' => $target_year,
       '#lookback' => $lookback,
       '#earliest_year' => $target_year - $lookback,
@@ -74,6 +76,7 @@ final class WinbackController extends ControllerBase {
           'bosWinback' => [
             'markUrlBase' => '/admin/office/winterize/win-back/mark/',
             'createUrlBase' => '/admin/office/winterize/win-back/create/',
+            'intelUrlBase' => '/admin/office/winterize/win-back/intel/',
           ],
         ],
       ],
@@ -110,6 +113,60 @@ final class WinbackController extends ControllerBase {
       // Declined removes the customer from the list.
       'suppress' => $outcome === 'declined',
     ]);
+  }
+
+  /**
+   * Capture Phase-2 call intelligence for a property. AJAX endpoint.
+   */
+  public function intel(Request $request, int $property): JsonResponse {
+    $data = [
+      'elsewhere' => (string) $request->request->get('elsewhere', ''),
+      'competitor' => (string) $request->request->get('competitor', ''),
+      'why_left' => (string) $request->request->get('why_left', ''),
+      'why_left_other' => (string) $request->request->get('why_left_other', ''),
+    ];
+    $this->winback->captureIntel($property, (string) $this->currentUser()->getDisplayName(), $data);
+    return new JsonResponse(['status' => 'ok']);
+  }
+
+  /**
+   * Season report: why customers left + who did it instead. Reads the captured
+   * call intelligence (KeyValue, not View-able), so it is a controller roll-up.
+   */
+  public function report(): array {
+    $r = $this->winback->intelReport();
+    $build = [];
+    $build['head'] = [
+      '#markup' => '<h2>Win-back call intelligence — ' . $this->winback->targetYear() . '</h2><p><strong>' . $r['total']
+        . '</strong> calls with details captured. Done elsewhere last year: <strong>' . $r['elsewhere']['yes']
+        . '</strong> yes · ' . $r['elsewhere']['no'] . ' no · ' . $r['elsewhere']['unknown'] . ' unknown.</p>',
+    ];
+    $whyRows = [];
+    foreach ($r['why'] as $label => $count) {
+      $whyRows[] = [$label, $count];
+    }
+    $build['why'] = [
+      '#type' => 'table',
+      '#caption' => $this->t('Why they left us'),
+      '#header' => [$this->t('Reason'), $this->t('Count')],
+      '#rows' => $whyRows,
+      '#empty' => $this->t('No reasons captured yet.'),
+      '#attributes' => ['style' => 'max-width:520px;margin-bottom:1.5rem'],
+    ];
+    $compRows = [];
+    foreach ($r['competitors'] as $name => $count) {
+      $compRows[] = [$name, $count];
+    }
+    $build['competitors'] = [
+      '#type' => 'table',
+      '#caption' => $this->t('Who did it instead (competitors named)'),
+      '#header' => [$this->t('Company'), $this->t('Times named')],
+      '#rows' => $compRows,
+      '#empty' => $this->t('No competitors named yet.'),
+      '#attributes' => ['style' => 'max-width:520px;margin-bottom:1.5rem'],
+    ];
+    $build['#cache'] = ['max-age' => 0];
+    return $build;
   }
 
   /**

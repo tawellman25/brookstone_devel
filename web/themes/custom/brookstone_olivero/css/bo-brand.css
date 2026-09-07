@@ -222,19 +222,21 @@ body:not(.is-always-mobile-nav) .primary-nav__button-toggle .icon--menu-toggle::
   #block-bos-homepage-phone-mobile .bo-header-phone__icon { font-size: 20px; }
 }
 
-/* Round 2c — the phone glyph + hamburger were pinned near the TOP of the sand
-   bar and the wide wordmark ran under them. Give the mobile header a little more
-   vertical room, move the controls DOWN (vertically centered), and keep the
-   wordmark from overflowing so it can't sit behind the phone/hamburger. */
+/* Round 2d — on mobile, STACK the lockup: "Brookstone" over a smaller
+   "Outdoors" so it's narrow, plus a little more header room and the controls
+   moved down (vertically centered). The wordmark is hard-capped in vw so it can
+   never run wide enough to sit behind the phone glyph + hamburger. */
 @media (max-width: 74.9375em) {
   .site-header__inner { padding-block: 10px; }
   .site-header__inner__container { align-items: center; }
   .mobile-buttons { margin-block-start: 0; align-self: center; }
   #block-bos-homepage-phone-mobile { align-self: center; }
-  .bo-brand__wordmark, .bo-wordmark { max-width: 100%; height: auto; max-height: 1.02em; }
+  .bo-brand__name { flex-direction: column; align-items: flex-start; gap: 2px; line-height: 1; }
+  .bo-brand__wordmark { height: auto; width: auto; max-width: 46vw; max-height: 28px; }
+  .bo-brand__outdoors { font-size: 14px; line-height: 1; letter-spacing: .1em; }
 }
-/* Smaller phones: trim the lockup so it clearly clears the controls. */
-@media (max-width: 30rem) {
-  .bo-brand__logo { width: 42px; height: 42px; }
-  .bo-brand__name { font-size: 13.5px; }
+/* Smallest phones: shrink the stacked lockup a bit more for clearance. */
+@media (max-width: 26rem) {
+  .bo-brand__wordmark { max-width: 44vw; max-height: 24px; }
+  .bo-brand__outdoors { font-size: 12px; }
 }

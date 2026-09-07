@@ -8,6 +8,7 @@
  */
 #}
 {% set tel = bo_phone|replace({'-': '', ' ': '', '(': '', ')': ''}) %}
+{% set tagp = bo_tagline|split(' Your ') %}
 <div class="bo-winterize">
 
   <header class="bo-topbar">
@@ -15,7 +16,7 @@
       <img class="bo-topbar__logo" src="{{ bo_logo }}" alt="Brookstone Outdoors" />
       <div>
         <span class="bo-topbar__name"><img class="bo-wordmark" src="/themes/custom/brookstone_olivero/images/brookstone-wordmark.png" alt="Brookstone" /><span>Outdoors</span></span>
-        <span class="bo-topbar__tag">{{ bo_tagline }}</span>
+        <span class="bo-topbar__tag">{{ tagp[0] }}{% if tagp|length > 1 %}<br class="bo-tag-br">Your {{ tagp[1] }}{% endif %}</span>
       </div>
     </div>
     <div class="bo-topbar__right">
@@ -111,7 +112,7 @@
       </div>
       <div class="bo-footer__right">
         {% if bo_phone %}<a class="bo-footer__phone" href="tel:{{ tel }}">{{ bo_phone }}</a>{% endif %}
-        <span class="bo-footer__tag">{{ bo_tagline }}</span>
+        <span class="bo-footer__tag">{{ tagp[0] }}{% if tagp|length > 1 %}<br class="bo-tag-br">Your {{ tagp[1] }}{% endif %}</span>
       </div>
     </div>
     <div class="bo-footer__copy">© {{ "now"|date("Y") }} Brookstone Outdoors LLC</div>

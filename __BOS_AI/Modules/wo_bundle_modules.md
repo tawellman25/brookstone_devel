@@ -97,8 +97,8 @@ These IDs are referenced directly in `wo_*` module hook guards. If the status ta
 | `wo_sprinkler_design` | `sprinkler_design` | Writes to `property_sprinkler_design` |
 | `wo_sprinkler_installation` | `sprinkler_installation` | Writes to `property_sprinkler_system` |
 | `wo_sprinkler_repair` | `sprinkler_repair` | |
-| `wo_sprinkler_start_up` | `sprinkler_start_up` | Reads/writes `property_sprinkler_system`, `property_system_controller`. Also calls `bos_scheduling.aeration_flag` service on insert/update to set `field_aeration_flag_heads` based on active aerating WOs for the property. |
-| `wo_sprinkler_winterizing` | `sprinkler_winterizing` | Reads/writes `property_sprinkler_system`, `property_system_controller` |
+| `wo_sprinkler_start_up` | `sprinkler_start_up` | Reads/writes `property_sprinkler_system`, `property_system_controller`. **`field_system_type`** drives the base+pump charge (see "System Type on winterizing/start-up" below). Also calls `bos_scheduling.aeration_flag` service on insert/update to set `field_aeration_flag_heads` based on active aerating WOs for the property. |
+| `wo_sprinkler_winterizing` | `sprinkler_winterizing` | Reads/writes `property_sprinkler_system`, `property_system_controller`. **`field_system_type`** drives the base+pump charge (see "System Type on winterizing/start-up" below). |
 | `wo_summer_pruning` | `summer_pruning` | |
 | `wo_trunk_bore` | `trunk_bore` | Reads/writes `property_spraying_info:trunk_bore` |
 | `wo_weed_pulling` | `weed_pulling` | |
@@ -109,6 +109,28 @@ These IDs are referenced directly in `wo_*` module hook guards. If the status ta
 | `wo_exterior_lighting` | `exterior_lighting` | Mirrors `wo_sprinkler_repair`: labor (dedicated `field_lighting_technician_rate` / `field_lighting_tech_minimum`) + materials + trip + rentals + adjustment. Labor skipped while the rate is empty. No property detail write-back. |
 
 Bundles without a dedicated module: `estimate` — relies on cross-cutting modules; not yet fully implemented as a billable service type.
+
+### System Type on winterizing/start-up (`field_system_type`) — the pump-fee charge driver
+
+Both `sprinkler_winterizing` and `sprinkler_start_up` bill a **base fee** plus a **$25 pump fee** when the sprinkler system needs a pump blown out. The pump surcharge is keyed on the **System Type** term (`sprinkler_system_types` vocab):
+
+| Term | TID | Charge |
+|---|---|---|
+| Domestic Water | 13 | base only |
+| Dirty Water | 15 | base + pump |
+| Duel Water | 16 | base + pump |
+| Well Water | 30742 | base + pump |
+
+Rates in `config_pages:business_setting`: `field_winterizing_base_fee` ($90), `field_start_up_base_fee` ($80), shared `field_winterizing_pump_fee` ($25). (TIDs 13/15/16/30742 are hardcoded in both modules.)
+
+**As of 2026-09-07 the WO records System Type itself** (shared `field_system_type` storage on `work_order` → `sprinkler_system_types`, radios), instead of only reading the property live at sign-off. The WO is the source of truth for the job:
+
+1. **Pre-fill (create):** presave on a new WO copies the property's **primary (delta 0)** `property_sprinkler_system.field_system_type` onto the WO (`_wo_sw_property_primary_system()` / `_wo_ssu_property_primary_system()`), so the crew sees it and can correct it.
+2. **Bill off the WO value (completion):** `_wo_sw_resolve_system_type_total()` / `_wo_ssu_resolve_system_type_total()` use the WO's own value (a crew correction on site **wins**), falling back to the property when empty, and **freeze** the resolved value onto the WO. Result feeds `field_task_rate` → `field_wo_total`. **Multi-system properties** (rare) keep the per-system property sum (`calculate_property_sprinkler_system[_winterize]_type_total()`).
+3. **Freeze:** because the value is stamped on the WO, a later property edit **never re-prices** a completed WO.
+4. **Write-back (Option A):** `hook_entity_insert`/`update` → `_wo_sprinkler_*_write_back_system_type()` pushes the WO's (crew-corrected) System Type back onto the property's **single** sprinkler system on completion (status 1097), so the property stays current for next year. Skipped when the property has 0 or >1 systems (don't guess).
+
+Setup scripts (entity-API, cim-skip): `web/scripts/setup_wo_winterizing_system_type.php`, `setup_wo_start_up_system_type.php`. Historical WOs backfilled by `backfill_wo_system_type.php` — a **direct DB insert** (no entity save → no billing recompute), which is why 9,831 old WOs gained the field without disturbing any frozen total. Commits `6e92b1de` / `f29f4a74` / `663fc1bb`.
 
 ---
 

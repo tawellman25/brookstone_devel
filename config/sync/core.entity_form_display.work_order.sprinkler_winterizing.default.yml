@@ -21,9 +21,12 @@ dependencies:
     - field.field.work_order.sprinkler_winterizing.field_service
     - field.field.work_order.sprinkler_winterizing.field_status
     - field.field.work_order.sprinkler_winterizing.field_supervisor
+    - field.field.work_order.sprinkler_winterizing.field_system_type
     - field.field.work_order.sprinkler_winterizing.field_task_rate
     - field.field.work_order.sprinkler_winterizing.field_total_time
     - field.field.work_order.sprinkler_winterizing.field_trip_fee
+    - field.field.work_order.sprinkler_winterizing.field_wo_cost
+    - field.field.work_order.sprinkler_winterizing.field_wo_profit
     - field.field.work_order.sprinkler_winterizing.field_wo_total
     - field.field.work_order.sprinkler_winterizing.field_work_order_id
     - field.field.work_order.sprinkler_winterizing.field_work_order_notes
@@ -274,6 +277,12 @@ content:
       size: 60
       placeholder: ''
     third_party_settings: {  }
+  field_system_type:
+    type: options_buttons
+    weight: -5
+    region: content
+    settings: {  }
+    third_party_settings: {  }
   field_task_rate:
     type: number
     weight: 10
@@ -349,6 +358,9 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
+  field_wo_cost: true
+  field_wo_profit: true
   field_work_order_id: true
   field_work_order_notes: true
   title: true
+

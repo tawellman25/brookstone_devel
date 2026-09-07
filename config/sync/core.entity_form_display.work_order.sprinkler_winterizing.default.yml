@@ -14,6 +14,7 @@ dependencies:
     - field.field.work_order.sprinkler_winterizing.field_invoiced
     - field.field.work_order.sprinkler_winterizing.field_labor_total
     - field.field.work_order.sprinkler_winterizing.field_material_chemical_total
+    - field.field.work_order.sprinkler_winterizing.field_new_customer_discount
     - field.field.work_order.sprinkler_winterizing.field_printed
     - field.field.work_order.sprinkler_winterizing.field_property
     - field.field.work_order.sprinkler_winterizing.field_rental_total
@@ -25,6 +26,8 @@ dependencies:
     - field.field.work_order.sprinkler_winterizing.field_task_rate
     - field.field.work_order.sprinkler_winterizing.field_total_time
     - field.field.work_order.sprinkler_winterizing.field_trip_fee
+    - field.field.work_order.sprinkler_winterizing.field_winterize_discount
+    - field.field.work_order.sprinkler_winterizing.field_winterize_discount_reason
     - field.field.work_order.sprinkler_winterizing.field_wo_cost
     - field.field.work_order.sprinkler_winterizing.field_wo_profit
     - field.field.work_order.sprinkler_winterizing.field_wo_total
@@ -220,6 +223,13 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_new_customer_discount:
+    type: boolean_checkbox
+    weight: 59
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
   field_printed:
     type: boolean_checkbox
     weight: 14
@@ -302,6 +312,21 @@ content:
     weight: 14
     region: content
     settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_winterize_discount:
+    type: number
+    weight: 60
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_winterize_discount_reason:
+    type: string_textfield
+    weight: 61
+    region: content
+    settings:
+      size: 40
       placeholder: ''
     third_party_settings: {  }
   field_wo_total:

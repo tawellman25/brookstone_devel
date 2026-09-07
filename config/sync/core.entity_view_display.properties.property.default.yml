@@ -15,10 +15,12 @@ dependencies:
     - field.field.properties.property.field_full_address
     - field.field.properties.property.field_gate_code
     - field.field.properties.property.field_geofield
+    - field.field.properties.property.field_hoa_contracted
     - field.field.properties.property.field_import_id
     - field.field.properties.property.field_latest_contract
     - field.field.properties.property.field_maps
     - field.field.properties.property.field_must_use_client_app
+    - field.field.properties.property.field_neighborhood
     - field.field.properties.property.field_nickname
     - field.field.properties.property.field_no_services
     - field.field.properties.property.field_parcel_number
@@ -368,6 +370,16 @@ content:
     third_party_settings: {  }
     weight: 5
     region: content
+  field_hoa_contracted:
+    type: boolean
+    label: inline
+    settings:
+      format: yes-no
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 21
+    region: content
   field_must_use_client_app:
     type: boolean
     label: inline
@@ -377,6 +389,14 @@ content:
       format_custom_true: ''
     third_party_settings: {  }
     weight: 8
+    region: content
+  field_neighborhood:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 20
     region: content
   field_no_services:
     type: boolean
@@ -462,6 +482,11 @@ content:
     third_party_settings: {  }
     weight: 10
     region: content
+  property_photos_public_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 40
+    region: content
   property_pre_emergent_photos_entity_view_1:
     settings: {  }
     third_party_settings: {  }
@@ -544,3 +569,4 @@ hidden:
   field_zipcode_reference: true
   title: true
   uid: true
+

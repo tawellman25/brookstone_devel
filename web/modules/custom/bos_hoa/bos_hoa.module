@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * @file
+ * BOS HOA — GPS point-in-polygon membership hooks.
+ *
+ * When an HOA (properties.hoa) is saved, re-scan its boundary and add/remove the
+ * winterizing HOA discount on member homes. When a residential home is saved,
+ * (re)assign it to a discounted HOA if its GPS point falls inside one. Homes are
+ * auto-managed only while field_hoa is set; manual flags (no field_hoa) are never
+ * touched by an outside result.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for properties.
+ */
+function bos_hoa_properties_insert(EntityInterface $entity) {
+  if ($entity->bundle() === 'hoa' && empty($entity->_bos_hoa_scan)) {
+    \Drupal::service('bos_hoa.membership')->syncHoa((int) $entity->id(), TRUE);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for properties.
+ */
+function bos_hoa_properties_update(EntityInterface $entity) {
+  if ($entity->bundle() === 'hoa' && empty($entity->_bos_hoa_scan)) {
+    // HOAs are few and this is idempotent; re-sync on any HOA save so a changed
+    // boundary or discount flag immediately re-flows to member homes.
+    \Drupal::service('bos_hoa.membership')->syncHoa((int) $entity->id(), TRUE);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for properties.
+ *
+ * Residential home: assign to a discounted HOA by GPS (in-memory — no separate
+ * save, so no recursion). Runs for the entity being saved only.
+ */
+function bos_hoa_properties_presave(EntityInterface $entity) {
+  if ($entity->bundle() !== 'property') { return; }
+  if (!empty($entity->_bos_hoa_scan)) { return; }
+  if (!$entity->hasField('field_geofield') || $entity->get('field_geofield')->isEmpty()) { return; }
+
+  $item = $entity->get('field_geofield')->first();
+  $lat = (float) ($item->get('lat')->getValue() ?? 0);
+  $lon = (float) ($item->get('lon')->getValue() ?? 0);
+  if ($lat === 0.0 && $lon === 0.0) { return; }
+
+  $match = \Drupal::service('bos_hoa.membership')->hoaForPoint($lon, $lat);
+  $hadHoa = $entity->hasField('field_hoa') && !$entity->get('field_hoa')->isEmpty();
+
+  if ($match) {
+    $entity->set('field_hoa', $match['id']);
+    $entity->set('field_hoa_contracted', TRUE);
+    if ($entity->hasField('field_neighborhood') && $entity->get('field_neighborhood')->isEmpty() && $match['name'] !== '') {
+      $entity->set('field_neighborhood', $match['name']);
+    }
+  }
+  elseif ($hadHoa) {
+    // Was auto-assigned, now outside every discounted HOA → release it.
+    $entity->set('field_hoa', NULL);
+    $entity->set('field_hoa_contracted', FALSE);
+  }
+  // Not inside + no field_hoa → manual/none: leave the flag as the office set it.
+}

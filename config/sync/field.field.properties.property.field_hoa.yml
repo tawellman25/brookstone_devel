@@ -1,0 +1,28 @@
+uuid: 4fe45786-1012-4b26-9de7-2e4ccd50f8ac
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.properties.hoa
+    - eck.eck_type.properties.property
+    - field.storage.properties.field_hoa
+id: properties.property.field_hoa
+field_name: field_hoa
+entity_type: properties
+bundle: property
+label: HOA
+description: 'The HOA this home falls within (set automatically by the GPS boundary scan). Auto-managed: while set, the HOA discount is applied/removed by the scan.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:properties'
+  handler_settings:
+    target_bundles:
+      hoa: hoa
+    sort:
+      field: _none
+    auto_create: false
+field_type: entity_reference
+

@@ -167,13 +167,15 @@
 
 /* ── Footer ─────────────────────────────────────────────────────────────── */
 .bo-footer { background: var(--bo-ink); color: var(--bo-footer-text); padding: 46px clamp(16px,5vw,72px); }
-.bo-footer__inner { max-width: 1160px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 40px; flex-wrap: wrap; }
-.bo-footer__brand { display: flex; align-items: center; gap: 18px; }
+.bo-footer__inner { max-width: 1160px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px; }
+.bo-footer__brand { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+/* Stack the wordmark over "Outdoors LLC" (override the baseline row from bo-brand.css). */
+.bo-footer__inner .bo-footer__name { flex-direction: column; align-items: center; gap: .12em; }
 .bo-footer__copy { max-width: 1160px; margin: 22px auto 0; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.12); font-size: 13px; color: var(--bo-footer-text); text-align: center; }
 .bo-footer__logo { width: 112px; height: 112px; display: block; flex: none; }
 .bo-footer__name { font-family: var(--osw); font-size: 17px; font-weight: 600; letter-spacing: .05em; color: var(--bo-footer-strong); display: block; }
 .bo-footer__addr { font-size: 14.5px; display: block; margin-top: 3px; }
-.bo-footer__right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.bo-footer__right { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .bo-footer__phone { font-family: var(--osw); font-size: 24px; font-weight: 600; color: var(--bo-footer-strong); }
 .bo-footer__tag { font-size: 14px; font-style: italic; }
 .bo-footer a { color: var(--bo-footer-strong); }

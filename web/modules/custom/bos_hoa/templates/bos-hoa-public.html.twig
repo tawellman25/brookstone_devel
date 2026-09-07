@@ -1,0 +1,28 @@
+{#
+/**
+ * @file
+ * Public HOA / common-area showcase page.
+ * Vars: name, neighborhood, description (render), timeframe, gallery (render), phone.
+ */
+#}
+<div class="hoa-public">
+  <header class="hoa-public__head">
+    <h1 class="hoa-public__name">{{ name }}</h1>
+    {% if neighborhood %}<p class="hoa-public__hood">{{ neighborhood }}</p>{% endif %}
+    {% if timeframe %}<p class="hoa-public__timeframe">Common areas maintained by Brookstone Outdoors · {{ timeframe }}</p>{% endif %}
+  </header>
+
+  {% if description %}
+    <section class="hoa-public__desc">{{ description }}</section>
+  {% endif %}
+
+  <section class="hoa-public__gallery">
+    {{ gallery }}
+  </section>
+
+  <footer class="hoa-public__cta">
+    <p>Interested in professional common-area maintenance for your HOA?
+      {% if phone %}Call us at <a href="tel:{{ phone|replace({' ': '', '-': '', '(': '', ')': ''}) }}">{{ phone }}</a>.{% endif %}
+    </p>
+  </footer>
+</div>

@@ -14,11 +14,26 @@
 use Drupal\Core\Entity\EntityInterface;
 
 /**
+ * Implements hook_theme().
+ */
+function bos_hoa_theme($existing, $type, $theme, $path) {
+  return [
+    'bos_hoa_public' => [
+      'variables' => [
+        'name' => NULL, 'neighborhood' => NULL, 'description' => NULL,
+        'timeframe' => NULL, 'gallery' => NULL, 'phone' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
  * Implements hook_ENTITY_TYPE_insert() for properties.
  */
 function bos_hoa_properties_insert(EntityInterface $entity) {
   if ($entity->bundle() === 'hoa' && empty($entity->_bos_hoa_scan)) {
     \Drupal::service('bos_hoa.membership')->syncHoa((int) $entity->id(), TRUE);
+    _bos_hoa_ensure_public_alias($entity);
   }
 }
 
@@ -30,6 +45,46 @@ function bos_hoa_properties_update(EntityInterface $entity) {
     // HOAs are few and this is idempotent; re-sync on any HOA save so a changed
     // boundary or discount flag immediately re-flows to member homes.
     \Drupal::service('bos_hoa.membership')->syncHoa((int) $entity->id(), TRUE);
+    _bos_hoa_ensure_public_alias($entity);
+  }
+}
+
+/**
+ * Ensure a readable public alias /hoa/{slug} → /hoa/{id} for an HOA.
+ */
+function _bos_hoa_ensure_public_alias(EntityInterface $entity) {
+  $system = '/hoa/' . $entity->id();
+  $label = (string) $entity->label();
+  if ($label === '') { return; }
+  // Slugify (reuse pathauto's cleaner when present).
+  if (\Drupal::hasService('pathauto.alias_cleaner')) {
+    $slug = \Drupal::service('pathauto.alias_cleaner')->cleanString($label);
+  }
+  else {
+    $slug = preg_replace('/[^a-z0-9]+/', '-', strtolower($label));
+  }
+  $slug = trim((string) $slug, '-');
+  if ($slug === '') { return; }
+  $alias = '/hoa/' . $slug;
+
+  $storage = \Drupal::entityTypeManager()->getStorage('path_alias');
+  // Already correct?
+  $existing = $storage->loadByProperties(['path' => $system]);
+  foreach ($existing as $a) {
+    if ($a->getAlias() === $alias) { return; }
+  }
+  // Alias taken by a different source? Disambiguate with the id.
+  $taken = $storage->loadByProperties(['alias' => $alias]);
+  foreach ($taken as $a) {
+    if ($a->getPath() !== $system) { $alias = '/hoa/' . $slug . '-' . $entity->id(); break; }
+  }
+  // Update the existing alias for this HOA, or create one.
+  if ($existing) {
+    $a = reset($existing);
+    $a->setAlias($alias)->save();
+  }
+  else {
+    $storage->create(['path' => $system, 'alias' => $alias, 'langcode' => 'und'])->save();
   }
 }
 

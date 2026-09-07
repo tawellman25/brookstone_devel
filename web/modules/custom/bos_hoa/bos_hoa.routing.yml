@@ -1,0 +1,12 @@
+bos_hoa.public_page:
+  path: '/hoa/{properties}'
+  defaults:
+    _controller: 'Drupal\bos_hoa\Controller\HoaPublicController::view'
+    _title_callback: 'Drupal\bos_hoa\Controller\HoaPublicController::title'
+  requirements:
+    _custom_access: 'Drupal\bos_hoa\Controller\HoaPublicController::access'
+  options:
+    parameters:
+      properties:
+        type: 'entity:properties'
+    no_cache: FALSE

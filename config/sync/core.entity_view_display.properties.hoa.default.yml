@@ -4,14 +4,37 @@ status: true
 dependencies:
   config:
     - eck.eck_type.properties.hoa
+    - field.field.properties.hoa.field_aerial_view
+    - field.field.properties.hoa.field_app_note
     - field.field.properties.hoa.field_boundary
+    - field.field.properties.hoa.field_call_ahead
+    - field.field.properties.hoa.field_client_app
+    - field.field.properties.hoa.field_cod_customer
+    - field.field.properties.hoa.field_contacts
+    - field.field.properties.hoa.field_county_account_number
+    - field.field.properties.hoa.field_front_view
+    - field.field.properties.hoa.field_full_address
+    - field.field.properties.hoa.field_gate_code
     - field.field.properties.hoa.field_geofield
     - field.field.properties.hoa.field_hoa_contracted
     - field.field.properties.hoa.field_hoa_public_desc
+    - field.field.properties.hoa.field_import_id
+    - field.field.properties.hoa.field_latest_contract
+    - field.field.properties.hoa.field_maps
+    - field.field.properties.hoa.field_must_use_client_app
     - field.field.properties.hoa.field_neighborhood
     - field.field.properties.hoa.field_nickname
+    - field.field.properties.hoa.field_no_services
+    - field.field.properties.hoa.field_parcel_number
+    - field.field.properties.hoa.field_primary_contact_ref
+    - field.field.properties.hoa.field_property_description
     - field.field.properties.hoa.field_service_end
     - field.field.properties.hoa.field_service_start
+    - field.field.properties.hoa.field_street_address
+    - field.field.properties.hoa.field_why_cod_for_this_property
+    - field.field.properties.hoa.field_why_no_services
+    - field.field.properties.hoa.field_work_order_note
+    - field.field.properties.hoa.field_zipcode_reference
   module:
     - datetime
     - text
@@ -40,6 +63,50 @@ content:
     third_party_settings: {  }
     weight: 0
     region: content
+  field_app_note:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 21
+    region: content
+  field_call_ahead:
+    type: boolean
+    label: hidden
+    settings:
+      format: custom
+      format_custom_false: ''
+      format_custom_true: 'Call Ahead'
+    third_party_settings: {  }
+    weight: 22
+    region: content
+  field_client_app:
+    type: entity_reference_entity_view
+    label: hidden
+    settings:
+      view_mode: default
+      link: true
+    third_party_settings: {  }
+    weight: 23
+    region: content
+  field_cod_customer:
+    type: boolean
+    label: hidden
+    settings:
+      format: custom
+      format_custom_false: ''
+      format_custom_true: 'COD Customer'
+    third_party_settings: {  }
+    weight: 24
+    region: content
+  field_gate_code:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 29
+    region: content
   field_hoa_contracted:
     type: boolean
     label: inline
@@ -57,6 +124,16 @@ content:
     third_party_settings: {  }
     weight: 2
     region: content
+  field_must_use_client_app:
+    type: boolean
+    label: inline
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    weight: 33
+    region: content
   field_neighborhood:
     type: string
     label: inline
@@ -64,6 +141,23 @@ content:
       link_to_entity: false
     third_party_settings: {  }
     weight: 0
+    region: content
+  field_no_services:
+    type: boolean
+    label: hidden
+    settings:
+      format: custom
+      format_custom_false: ''
+      format_custom_true: 'NO SERVICES'
+    third_party_settings: {  }
+    weight: 34
+    region: content
+  field_property_description:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 37
     region: content
   field_service_end:
     type: datetime_default
@@ -82,6 +176,28 @@ content:
       format_type: html_date
     third_party_settings: {  }
     weight: 3
+    region: content
+  field_why_cod_for_this_property:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 39
+    region: content
+  field_why_no_services:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 40
+    region: content
+  field_work_order_note:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 41
     region: content
   property_christmas_photos_entity_view_1:
     settings: {  }
@@ -123,7 +239,19 @@ hidden:
   entity_print_view_epub: true
   entity_print_view_pdf: true
   entity_print_view_word_docx: true
+  field_aerial_view: true
   field_boundary: true
+  field_contacts: true
+  field_county_account_number: true
+  field_front_view: true
+  field_full_address: true
   field_geofield: true
+  field_import_id: true
+  field_latest_contract: true
+  field_maps: true
   field_nickname: true
+  field_parcel_number: true
+  field_primary_contact_ref: true
+  field_street_address: true
+  field_zipcode_reference: true
 

@@ -442,6 +442,44 @@ entity_browser) were updated 2026-08-30; see CLAUDE.md changelog.
 
 ---
 
+### 27. Contracted winterizing rate — set the service-count threshold before the January rate card
+
+Surfaced 2026-09-07 (read-only analysis; `web/scripts/analyze_contract_service_distribution.php`).
+Plan: a **Contracted Customer winterizing rate** (e.g. $90 → $85) gated on a signed
+agreement with **N or more services**. Not launch-blocking (contracted rates are a
+renewal-season matter, agreements run March–October) — **but the threshold must be
+set before the January rate card.**
+
+**Analysis done (live, slot-based counting — the reliable method; the `field_contract`
+back-ref undercounts, 14k+ orphan sections):**
+- Typical residential contract carries **median 2 / mean 3.3 services**; a 4-service
+  contract is in the **top ~20%**.
+- Of the **462** 2026 contracts including winterizing: **3+** = 243 (53%), **4+** = 183
+  (40%), **5+** = 146 (32%), **6+** = 112 (24%). A $5 discount costs **$915/yr at 4+**
+  (trivial either way → this is a positioning call, not a cost one).
+- **Tree-treatment stacking is a non-issue** — exactly **1** winterizing contract reaches
+  4+ raw but <4 when the six tree/shrub sprays collapse to one, and a pure-tree customer
+  can't get the rate anyway (no winterizing). **Do NOT collapse the tree treatments.**
+
+**Recommendation:** **4+** as a loyalty *reward* floor (rewards top 40%, ~280 winterizing
+customers just outside → possible "why not me?" calls); **3+** if it's meant as a
+*retention* nudge (majority qualify, +$300/yr).
+
+**Decision owed (Todd):** pick the threshold (4+ recommended) + confirm no tree collapse,
+then the rate-card + billing gate can be built.
+
+**Also surfaced (governance, separate):** §2.2 says services don't carry over between
+seasons, yet the automatic winterizing list drives WOs regardless of a re-signed contract
+— **39 of 500 (8%)** 2026 winterizing-WO properties have no 2026 contract line; **612**
+properties winterized in 2+ of the last 3 seasons. Small, but real. Plus data-quality:
+**22 properties have >1 2026 residential contract** (violates one-per-property-per-year);
+313 zero-service 2026 contracts; `field_estimate` non-zero on only 14% of contracts.
+
+Re-run for current numbers: `drush php:script web/scripts/analyze_contract_service_distribution.php`
+(read-only; writes a per-contract CSV to `~/tmp/`). Full write-up in the 2026-09-07 session.
+
+---
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

@@ -21,9 +21,12 @@ dependencies:
     - field.field.work_order.sprinkler_winterizing.field_service
     - field.field.work_order.sprinkler_winterizing.field_status
     - field.field.work_order.sprinkler_winterizing.field_supervisor
+    - field.field.work_order.sprinkler_winterizing.field_system_type
     - field.field.work_order.sprinkler_winterizing.field_task_rate
     - field.field.work_order.sprinkler_winterizing.field_total_time
     - field.field.work_order.sprinkler_winterizing.field_trip_fee
+    - field.field.work_order.sprinkler_winterizing.field_wo_cost
+    - field.field.work_order.sprinkler_winterizing.field_wo_profit
     - field.field.work_order.sprinkler_winterizing.field_wo_total
     - field.field.work_order.sprinkler_winterizing.field_work_order_id
     - field.field.work_order.sprinkler_winterizing.field_work_order_notes
@@ -210,6 +213,14 @@ content:
     third_party_settings: {  }
     weight: 0
     region: content
+  field_system_type:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: false
+    third_party_settings: {  }
+    weight: -5
+    region: content
   field_work_todo_description:
     type: text_default
     label: above
@@ -277,6 +288,11 @@ content:
     third_party_settings: {  }
     weight: 10
     region: content
+  wo_time_clock_buttons_entity_view_2:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 10
+    region: content
   wo_time_clock_entries_total_entity_view_1:
     settings: {  }
     third_party_settings: {  }
@@ -307,6 +323,8 @@ hidden:
   field_task_rate: true
   field_total_time: true
   field_trip_fee: true
+  field_wo_cost: true
+  field_wo_profit: true
   field_wo_total: true
   field_work_order_id: true
   field_work_order_notes: true

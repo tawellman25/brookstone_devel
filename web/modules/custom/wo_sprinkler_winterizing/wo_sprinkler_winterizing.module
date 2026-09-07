@@ -19,6 +19,17 @@ function wo_sprinkler_winterizing_entity_presave(EntityInterface $entity) {
     // Check if it's a Work Order entity of the 'Sprinkler Repair' bundle.
     if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'sprinkler_winterizing') {
 
+        // Pre-fill System Type from the property on a NEW WO so the crew sees it
+        // and can correct it on site. It drives billing and is frozen at
+        // completion; a later property change never re-prices this WO.
+        if ($entity->isNew() && $entity->hasField('field_system_type') && $entity->get('field_system_type')->isEmpty()) {
+            $newPropertyId = $entity->get('field_property')->target_id ?? null;
+            $primarySystem = _wo_sw_property_primary_system($newPropertyId);
+            if ($primarySystem && !$primarySystem->get('field_system_type')->isEmpty()) {
+                $entity->set('field_system_type', $primarySystem->get('field_system_type')->target_id);
+            }
+        }
+
         // Check if the Work Order is marked as 'Complete'.
         $statusTermId = $entity->get('field_status')->target_id ?? 0;
         if ($statusTermId != 1097) {
@@ -47,7 +58,13 @@ function wo_sprinkler_winterizing_entity_presave(EntityInterface $entity) {
             
             $timeSpent = get_hours_for_sprinkler_winterizing($entity->id()); // Total hours of all man that clocked in.
             $totalZones = fetch_property_sprinkler_winterize_zones_data($propertyId);
-            $propertySystemTypeTotal = calculate_property_sprinkler_system_winterize_type_total($propertyId);
+
+            // System Type total — bill off the WO's own value (a crew correction
+            // on site wins). Fall back to the property's current value when the WO
+            // field is empty, and freeze the effective value onto the WO.
+            $propertySystemTypeTotal = _wo_sw_resolve_system_type_total(
+                $entity, $propertyId, $winterizingBaseRate, $winterizingPumpFee
+            );
 
             // Calculate costs.  These are included above any Startup rate.
             // Material Costs
@@ -345,4 +362,149 @@ function get_hours_for_sprinkler_winterizing($workOrderId) {
     }
 
     return $hoursSpent;
+}
+
+/**
+ * Loads all property_sprinkler_system entities for a property.
+ *
+ * @param int $propertyId
+ *   The property ID.
+ *
+ * @return \Drupal\eck\EckEntityInterface[]
+ *   The system entities (may be empty).
+ */
+function _wo_sw_property_systems($propertyId) {
+    $systems = [];
+    if (empty($propertyId) || !is_numeric($propertyId)) {
+        return $systems;
+    }
+    $ids = \Drupal::entityQuery('property_sprinkler_info')
+        ->condition('field_property', $propertyId)
+        ->accessCheck(FALSE)
+        ->execute();
+    if (!$ids) {
+        return $systems;
+    }
+    $info = \Drupal::entityTypeManager()->getStorage('property_sprinkler_info')->load(reset($ids));
+    if (!$info) {
+        return $systems;
+    }
+    foreach ($info->get('field_systems')->getValue() as $ref) {
+        $sys = \Drupal::entityTypeManager()->getStorage('property_sprinkler_system')->load($ref['target_id']);
+        if ($sys) {
+            $systems[] = $sys;
+        }
+    }
+    return $systems;
+}
+
+/**
+ * Returns the property's primary (first) sprinkler system, or NULL.
+ */
+function _wo_sw_property_primary_system($propertyId) {
+    $systems = _wo_sw_property_systems($propertyId);
+    return $systems ? reset($systems) : null;
+}
+
+/**
+ * Resolves the winterizing System Type charge and freezes the effective System
+ * Type onto the WO.
+ *
+ * The WO's own value wins (a crew correction on site). When the WO field is
+ * empty it falls back to the property's primary system and freezes that value
+ * onto the WO. Multi-system properties keep the per-system property sum.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The work_order (modified in place — the effective System Type is set).
+ * @param int $propertyId
+ *   The property ID.
+ * @param float $base
+ *   Winterizing base fee.
+ * @param float $pump
+ *   Winterizing pump fee (added for Dirty/Duel/Well).
+ *
+ * @return float
+ *   The System Type total to bill.
+ */
+function _wo_sw_resolve_system_type_total($entity, $propertyId, $base, $pump) {
+    // Dirty (15), Duel (16), Well (30742) require a pump; Domestic (13) does not.
+    $pumpTids = [15, 16, 30742];
+
+    $systems = _wo_sw_property_systems($propertyId);
+    $systemCount = count($systems);
+
+    // Effective System Type: WO value wins; else the property's primary system.
+    $woTid = ($entity->hasField('field_system_type') && !$entity->get('field_system_type')->isEmpty())
+        ? (int) $entity->get('field_system_type')->target_id
+        : 0;
+
+    if (!$woTid) {
+        $primary = $systems ? reset($systems) : null;
+        if ($primary && !$primary->get('field_system_type')->isEmpty()) {
+            $woTid = (int) $primary->get('field_system_type')->target_id;
+        }
+        // Freeze the resolved value onto the WO so it is visible + queryable and
+        // never re-prices if the property changes later.
+        if ($woTid && $entity->hasField('field_system_type')) {
+            $entity->set('field_system_type', $woTid);
+        }
+    }
+
+    // Multi-system properties bill per-system (rare — keep the property sum).
+    if ($systemCount > 1) {
+        return calculate_property_sprinkler_system_winterize_type_total($propertyId);
+    }
+
+    if (!$woTid) {
+        return 0;
+    }
+    return in_array($woTid, $pumpTids, true) ? ($base + $pump) : $base;
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function wo_sprinkler_winterizing_entity_insert(EntityInterface $entity) {
+    _wo_sprinkler_winterizing_write_back_system_type($entity);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function wo_sprinkler_winterizing_entity_update(EntityInterface $entity) {
+    _wo_sprinkler_winterizing_write_back_system_type($entity);
+}
+
+/**
+ * Option A write-back: on completion, push the WO's (crew-corrected) System Type
+ * back onto the property's sprinkler system so the property record stays current
+ * for next year. Single-system only — don't guess among multiple systems.
+ */
+function _wo_sprinkler_winterizing_write_back_system_type(EntityInterface $entity) {
+    if ($entity->getEntityTypeId() !== 'work_order' || $entity->bundle() !== 'sprinkler_winterizing') {
+        return;
+    }
+    if (($entity->get('field_status')->target_id ?? 0) != 1097) {
+        return;
+    }
+    if (!$entity->hasField('field_system_type') || $entity->get('field_system_type')->isEmpty()) {
+        return;
+    }
+    $woTid = (int) $entity->get('field_system_type')->target_id;
+    $propertyId = $entity->get('field_property')->target_id ?? null;
+    $systems = _wo_sw_property_systems($propertyId);
+    if (count($systems) !== 1) {
+        // Multi-system or none — leave the property alone.
+        return;
+    }
+    $system = reset($systems);
+    $current = $system->get('field_system_type')->isEmpty() ? 0 : (int) $system->get('field_system_type')->target_id;
+    if ($current !== $woTid) {
+        $system->set('field_system_type', $woTid);
+        $system->save();
+        \Drupal::logger('wo_sprinkler_winterizing')->notice(
+            'WO @wo corrected property system @sys System Type @old → @new.',
+            ['@wo' => $entity->id(), '@sys' => $system->id(), '@old' => $current, '@new' => $woTid]
+        );
+    }
 }

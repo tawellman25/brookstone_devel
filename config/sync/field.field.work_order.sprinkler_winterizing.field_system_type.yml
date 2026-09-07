@@ -1,0 +1,30 @@
+uuid: 4d61e860-9a4c-4c4b-b3f0-f239dd96038a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.sprinkler_system_types.types
+    - eck.eck_type.work_order.sprinkler_winterizing
+    - field.storage.work_order.field_system_type
+id: work_order.sprinkler_winterizing.field_system_type
+field_name: field_system_type
+entity_type: work_order
+bundle: sprinkler_winterizing
+label: 'System Type'
+description: 'Dirty/Duel/Well require a pump ($25 winterizing pump fee). Pre-filled from the property; correct it here on site — it drives billing and is frozen at completion.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:sprinkler_system_types'
+  handler_settings:
+    target_bundles:
+      types: types
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference
+

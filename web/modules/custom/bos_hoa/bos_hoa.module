@@ -2,29 +2,109 @@
 
 /**
  * @file
- * BOS HOA — GPS point-in-polygon membership hooks.
+ * BOS HOA — GPS point-in-polygon membership + role-based rendering of the HOA
+ * property page.
  *
- * When an HOA (properties.hoa) is saved, re-scan its boundary and add/remove the
- * winterizing HOA discount on member homes. When a residential home is saved,
- * (re)assign it to a discounted HOA if its GPS point falls inside one. Homes are
- * auto-managed only while field_hoa is set; manual flags (no field_hoa) are never
- * touched by an outside result.
+ * Membership: a residential home inside a DISCOUNTED HOA boundary is auto-linked
+ * (field_hoa) and flagged (field_hoa_contracted) for the winterizing discount.
+ *
+ * Public/staff rendering: an HOA is a normal property with ONE canonical page.
+ * The public (anon/clients) sees a `public` view mode (showcase — safe fields
+ * only); internal roles see the full property page. Same URL, like the services
+ * pages.
  */
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityPublishedInterface;
+use Drupal\Core\Session\AccountInterface;
 
 /**
- * Implements hook_theme().
+ * Roles that see the full internal property page (everyone else = public view).
  */
-function bos_hoa_theme($existing, $type, $theme, $path) {
-  return [
-    'bos_hoa_public' => [
-      'variables' => [
-        'name' => NULL, 'neighborhood' => NULL, 'description' => NULL,
-        'timeframe' => NULL, 'gallery' => NULL, 'phone' => NULL,
-      ],
-    ],
-  ];
+const BOS_HOA_INTERNAL_ROLES = [
+  'teammates', 'supervisor', 'administration', 'site_assistant', 'site_admin', 'administrator',
+];
+
+/**
+ * Implements hook_ENTITY_TYPE_access() for properties.
+ *
+ * Published HOA records are publicly viewable (their canonical page is the public
+ * showcase); residential properties are unaffected (non-hoa → neutral, so the
+ * normal permissions still gate them).
+ */
+function bos_hoa_properties_access(EntityInterface $entity, $op, AccountInterface $account) {
+  if ($op !== 'view' || $entity->bundle() !== 'hoa') {
+    return AccessResult::neutral();
+  }
+  $published = !($entity instanceof EntityPublishedInterface) || $entity->isPublished();
+  return $published
+    ? AccessResult::allowed()->addCacheableDependency($entity)
+    : AccessResult::neutral()->addCacheableDependency($entity);
+}
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ *
+ * Same canonical URL, audience-specific body: internal roles get the full page;
+ * public/clients get the `public` showcase view mode. Only the canonical full
+ * render is switched.
+ */
+function bos_hoa_entity_view_mode_alter(&$view_mode, EntityInterface $entity) {
+  if ($view_mode !== 'full' || $entity->getEntityTypeId() !== 'properties' || $entity->bundle() !== 'hoa') {
+    return;
+  }
+  if (!array_intersect(BOS_HOA_INTERNAL_ROLES, \Drupal::currentUser()->getRoles())) {
+    $view_mode = 'public';
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for properties.
+ *
+ * The view mode varies by role, so the render MUST vary by user.roles (else the
+ * render cache could serve the full page to the public). In the public view mode
+ * append the public photo gallery + showcase styling.
+ */
+function bos_hoa_properties_view(array &$build, EntityInterface $entity, $display, $view_mode) {
+  if ($entity->bundle() !== 'hoa') {
+    return;
+  }
+  $build['#cache']['contexts'][] = 'user.roles';
+  if ($view_mode === 'public') {
+    $build['#attached']['library'][] = 'bos_hoa/public_page';
+    $build['bos_hoa_gallery'] = [
+      '#weight' => 50,
+      'view' => views_embed_view('property_photos_public', 'default', (string) $entity->id()),
+    ];
+  }
+}
+
+/**
+ * Implements hook_block_access().
+ *
+ * Property-internal blocks (WO-creation links, info/map headers, contract, etc.)
+ * are placed on property pages and render regardless of view mode. Now that the
+ * public can view HOA property pages, deny those blocks to non-internal users so
+ * nothing internal leaks onto the public HOA showcase. Residential property pages
+ * are staff-only anyway, so staff are unaffected everywhere.
+ */
+function bos_hoa_block_access(EntityInterface $block, $operation, AccountInterface $account) {
+  if ($operation !== 'view') {
+    return AccessResult::neutral();
+  }
+  $plugin = method_exists($block, 'getPluginId') ? $block->getPluginId() : '';
+  $internal = $plugin === 'property_work_order_links'
+    || $plugin === 'properties_current_contract_block'
+    || strpos($plugin, 'views_block:property_') === 0
+    || strpos($plugin, 'views_block:wo_property_info') === 0;
+  if (!$internal) {
+    return AccessResult::neutral();
+  }
+  if (!array_intersect(BOS_HOA_INTERNAL_ROLES, $account->getRoles())) {
+    return AccessResult::forbidden()->addCacheContexts(['user.roles']);
+  }
+  return AccessResult::neutral()->addCacheContexts(['user.roles']);
 }
 
 /**
@@ -33,7 +113,6 @@ function bos_hoa_theme($existing, $type, $theme, $path) {
 function bos_hoa_properties_insert(EntityInterface $entity) {
   if ($entity->bundle() === 'hoa' && empty($entity->_bos_hoa_scan)) {
     \Drupal::service('bos_hoa.membership')->syncHoa((int) $entity->id(), TRUE);
-    _bos_hoa_ensure_public_alias($entity);
   }
 }
 
@@ -42,49 +121,7 @@ function bos_hoa_properties_insert(EntityInterface $entity) {
  */
 function bos_hoa_properties_update(EntityInterface $entity) {
   if ($entity->bundle() === 'hoa' && empty($entity->_bos_hoa_scan)) {
-    // HOAs are few and this is idempotent; re-sync on any HOA save so a changed
-    // boundary or discount flag immediately re-flows to member homes.
     \Drupal::service('bos_hoa.membership')->syncHoa((int) $entity->id(), TRUE);
-    _bos_hoa_ensure_public_alias($entity);
-  }
-}
-
-/**
- * Ensure a readable public alias /hoa/{slug} → /hoa/{id} for an HOA.
- */
-function _bos_hoa_ensure_public_alias(EntityInterface $entity) {
-  $system = '/hoa/' . $entity->id();
-  $label = (string) $entity->label();
-  if ($label === '') { return; }
-  // Slugify (reuse pathauto's cleaner when present).
-  if (\Drupal::hasService('pathauto.alias_cleaner')) {
-    $slug = \Drupal::service('pathauto.alias_cleaner')->cleanString($label);
-  }
-  else {
-    $slug = preg_replace('/[^a-z0-9]+/', '-', strtolower($label));
-  }
-  $slug = trim((string) $slug, '-');
-  if ($slug === '') { return; }
-  $alias = '/hoa/' . $slug;
-
-  $storage = \Drupal::entityTypeManager()->getStorage('path_alias');
-  // Already correct?
-  $existing = $storage->loadByProperties(['path' => $system]);
-  foreach ($existing as $a) {
-    if ($a->getAlias() === $alias) { return; }
-  }
-  // Alias taken by a different source? Disambiguate with the id.
-  $taken = $storage->loadByProperties(['alias' => $alias]);
-  foreach ($taken as $a) {
-    if ($a->getPath() !== $system) { $alias = '/hoa/' . $slug . '-' . $entity->id(); break; }
-  }
-  // Update the existing alias for this HOA, or create one.
-  if ($existing) {
-    $a = reset($existing);
-    $a->setAlias($alias)->save();
-  }
-  else {
-    $storage->create(['path' => $system, 'alias' => $alias, 'langcode' => 'und'])->save();
   }
 }
 
@@ -92,21 +129,26 @@ function _bos_hoa_ensure_public_alias(EntityInterface $entity) {
  * Implements hook_ENTITY_TYPE_presave() for properties.
  *
  * Residential home: assign to a discounted HOA by GPS (in-memory — no separate
- * save, so no recursion). Runs for the entity being saved only.
+ * save, so no recursion).
  */
 function bos_hoa_properties_presave(EntityInterface $entity) {
-  if ($entity->bundle() !== 'property') { return; }
-  if (!empty($entity->_bos_hoa_scan)) { return; }
-  if (!$entity->hasField('field_geofield') || $entity->get('field_geofield')->isEmpty()) { return; }
-
+  if ($entity->bundle() !== 'property') {
+    return;
+  }
+  if (!empty($entity->_bos_hoa_scan)) {
+    return;
+  }
+  if (!$entity->hasField('field_geofield') || $entity->get('field_geofield')->isEmpty()) {
+    return;
+  }
   $item = $entity->get('field_geofield')->first();
   $lat = (float) ($item->get('lat')->getValue() ?? 0);
   $lon = (float) ($item->get('lon')->getValue() ?? 0);
-  if ($lat === 0.0 && $lon === 0.0) { return; }
-
+  if ($lat === 0.0 && $lon === 0.0) {
+    return;
+  }
   $match = \Drupal::service('bos_hoa.membership')->hoaForPoint($lon, $lat);
   $hadHoa = $entity->hasField('field_hoa') && !$entity->get('field_hoa')->isEmpty();
-
   if ($match) {
     $entity->set('field_hoa', $match['id']);
     $entity->set('field_hoa_contracted', TRUE);
@@ -115,9 +157,7 @@ function bos_hoa_properties_presave(EntityInterface $entity) {
     }
   }
   elseif ($hadHoa) {
-    // Was auto-assigned, now outside every discounted HOA → release it.
     $entity->set('field_hoa', NULL);
     $entity->set('field_hoa_contracted', FALSE);
   }
-  // Not inside + no field_hoa → manual/none: leave the flag as the office set it.
 }

@@ -1,0 +1,36 @@
+uuid: 29ad1d27-511c-422c-92d2-f0897773aa8d
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.properties.hoa
+    - eck.eck_type.zipcodes.zipcode
+    - field.storage.properties.field_zipcode_reference
+  module:
+    - epp
+third_party_settings:
+  epp:
+    value: ''
+    on_update: 0
+id: properties.hoa.field_zipcode_reference
+field_name: field_zipcode_reference
+entity_type: properties
+bundle: hoa
+label: Zipcode
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:zipcodes'
+  handler_settings:
+    target_bundles:
+      zipcode: zipcode
+    sort:
+      field: field_zipcode
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: zipcode
+field_type: entity_reference
+

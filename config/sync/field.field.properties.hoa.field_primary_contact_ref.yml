@@ -1,0 +1,30 @@
+uuid: 353e0653-dca4-46bf-8e3e-dadddb81983e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.contacts.contact
+    - eck.eck_type.properties.hoa
+    - field.storage.properties.field_primary_contact_ref
+id: properties.hoa.field_primary_contact_ref
+field_name: field_primary_contact_ref
+entity_type: properties
+bundle: hoa
+label: 'Primary Contact'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:contacts'
+  handler_settings:
+    target_bundles:
+      contact: contact
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference
+

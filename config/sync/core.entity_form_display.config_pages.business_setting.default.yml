@@ -155,8 +155,6 @@ third_party_settings:
         - field_sprinkler_technician_rate
         - field_labor_cost_irrigation_crew
         - field_labor_cost_lighting_crew
-        - field_snow_removal_labor
-        - field_labor_cost_snow_removal
         - field_lighting_technician_rate
         - field_lighting_tech_minimum
         - field_other_minimum_time
@@ -352,6 +350,8 @@ third_party_settings:
         required_fields: true
     group_snow_removal:
       children:
+        - field_snow_removal_labor
+        - field_labor_cost_snow_removal
         - field_shoveling_minimum
         - field_default_salt_per_lb
         - field_salt_rate
@@ -548,21 +548,6 @@ third_party_settings:
       region: content
       parent_name: ''
       weight: 2
-      format_type: details
-      format_settings:
-        classes: ''
-        show_empty_fields: false
-        id: ''
-        label_as_html: false
-        open: false
-        description: ''
-        required_fields: true
-    group_snow_removal_labor:
-      children: {  }
-      label: 'Snow Removal'
-      region: content
-      parent_name: ''
-      weight: 14
       format_type: details
       format_settings:
         classes: ''
@@ -1011,7 +996,7 @@ content:
     third_party_settings: {  }
   field_labor_cost_snow_removal:
     type: number
-    weight: 51
+    weight: 125
     region: content
     settings:
       placeholder: ''
@@ -1201,7 +1186,7 @@ content:
     third_party_settings: {  }
   field_snow_removal_labor:
     type: number
-    weight: 50
+    weight: 124
     region: content
     settings:
       placeholder: ''

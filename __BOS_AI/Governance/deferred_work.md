@@ -465,8 +465,16 @@ back-ref undercounts, 14k+ orphan sections):**
 customers just outside → possible "why not me?" calls); **3+** if it's meant as a
 *retention* nudge (majority qualify, +$300/yr).
 
-**Decision owed (Todd):** pick the threshold (4+ recommended) + confirm no tree collapse,
-then the rate-card + billing gate can be built.
+**UPDATE 2026-09-07 — the billing engine SHIPPED** (commits `22a9b6bd`/`82c0245a`,
+live). Base is now **$95** with four auto-applied discounts (single largest wins,
+no stacking): contract/auto-list −$5, **>4 services −$10** (strictly more than 4 =
+5+), new-customer-4+-homes −$15 (office checkbox on the WO), HOA −$35. So the
+"contracted rate" concept is built; the **January decision is now just tuning the
+amounts / the 4-vs-5 service threshold** in Business Settings (no code needed).
+See CLAUDE.md 2026-09-07 + `Modules/wo_bundle_modules.md`.
+
+**Decision owed (Todd):** for the Jan rate card, confirm/adjust the discount amounts
+and whether the services discount should trigger at 4+ vs the current >4 (5+).
 
 **Also surfaced (governance, separate):** §2.2 says services don't carry over between
 seasons, yet the automatic winterizing list drives WOs regardless of a re-signed contract

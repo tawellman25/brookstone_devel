@@ -132,6 +132,25 @@ Rates in `config_pages:business_setting`: `field_winterizing_base_fee` ($90), `f
 
 Setup scripts (entity-API, cim-skip): `web/scripts/setup_wo_winterizing_system_type.php`, `setup_wo_start_up_system_type.php`. Historical WOs backfilled by `backfill_wo_system_type.php` — a **direct DB insert** (no entity save → no billing recompute), which is why 9,831 old WOs gained the field without disturbing any frozen total. Commits `6e92b1de` / `f29f4a74` / `663fc1bb`.
 
+### Winterizing promotional discounts (auto-applied at sign-off)
+
+As of 2026-09-07 the winterizing base fee is **$95** and `wo_sprinkler_winterizing` auto-applies a promotional discount at completion so office staff can't miss a promoted rate. Amounts live in `config_pages:business_setting` (positive dollars, "Winterizing Discounts" group):
+
+| Discount | business_setting field | Amount | Applies when |
+|---|---|---|---|
+| Signed contract / Automatic list | `field_winterize_disc_contract` | $5 | current-year residential contract has a winterizing line, OR a prior-season winterizing WO exists |
+| Contract with >4 services | `field_winterize_disc_services` | $10 | current-year residential contract's selected sections (`field_do_you_want IN 1,4`) count **> 4** |
+| New customer, 4+ homes | `field_winterize_disc_new_cust` | $15 | office ticks **`field_new_customer_discount`** on the WO (per-WO → that year only) |
+| HOA contracted | `field_winterize_disc_hoa` | $35 | property **`field_hoa_contracted`** = TRUE |
+
+**Only the single LARGEST applicable discount is used — they do NOT stack** (`_wo_sw_compute_discount()`). The chosen amount + reason are written to the WO (`field_winterize_discount` / `field_winterize_discount_reason`) and subtracted from `field_wo_total`. Net: new one-off $95 · returning/auto-list $90 · >4 services $85 · new-4-homes $80 · HOA/Bear Creek $60.
+
+**HOA trigger:** property fields `field_hoa_contracted` (boolean) + `field_neighborhood` (text) — added by `web/scripts/setup_property_neighborhood_hoa.php`. **Bear Creek signups auto-set both** via `bos_service_request` insert/update on `service_request` (`field_campaign` starting `bearcreek` → `_bos_service_request_stamp_bearcreek_hoa()`). Existing Bear Creek properties backfilled by `backfill_bearcreek_hoa.php`.
+
+**Public price display:** `/winterize` ($95) and `/winterize/bear-creek` ($95 − $35 = $60) are rendered from the Business Settings base fee + HOA discount (`bos_service_request` winterize preprocess), so the advertised price never drifts from billing.
+
+Setup (cim-skip): `setup_winterizing_discounts_business_setting.php` (base→$95 + 4 discount fields), `setup_property_neighborhood_hoa.php`, `setup_wo_winterize_discount_fields.php`. Scope: **winterizing only** (start-up not included). Commits `22a9b6bd` / `82c0245a`.
+
 ---
 
 ## Cross-Cutting Work Order Modules

@@ -44,6 +44,8 @@ $ensure('field_winterize_discount', 'decimal', ['precision' => 10, 'scale' => 2]
   'Auto-applied at completion — the single largest qualifying discount (contract/auto-list, 4+ services, new-customer 4+ homes, or HOA). Already reflected in the WO total.');
 $ensure('field_winterize_discount_reason', 'string', ['max_length' => 255], 'Winterizing Discount Reason',
   'Which discount was applied (for the office / invoice).');
+$ensure('field_new_customer_discount', 'boolean', [], 'New Customer 4+ Homes Discount',
+  'Check when this is a new customer signing up 4 or more homes (applies the one-time discount to THIS work order only). Office-selected.');
 
 // Form display (read-mostly — office can see/override).
 $fd = EntityFormDisplay::load("$ENTITY.$BUNDLE.default");
@@ -54,8 +56,11 @@ if ($fd) {
   if (!$fd->getComponent('field_winterize_discount_reason')) {
     $fd->setComponent('field_winterize_discount_reason', ['type' => 'string_textfield', 'weight' => 61, 'region' => 'content', 'settings' => ['size' => 40], 'third_party_settings' => []]);
   }
+  if (!$fd->getComponent('field_new_customer_discount')) {
+    $fd->setComponent('field_new_customer_discount', ['type' => 'boolean_checkbox', 'weight' => 59, 'region' => 'content', 'settings' => ['display_label' => TRUE], 'third_party_settings' => []]);
+  }
   $fd->save();
-  $out[] = 'form: added discount + reason';
+  $out[] = 'form: added discount + reason + new-customer checkbox';
 }
 
 // View display.

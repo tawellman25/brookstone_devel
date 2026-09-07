@@ -557,8 +557,8 @@ function _wo_sw_compute_discount($entity, $propertyId, $business_settings) {
         $candidates['Signed contract / Automatic list'] = $amt('field_winterize_disc_contract');
     }
 
-    // New customer signing up 4+ homes (first season).
-    if (_wo_sw_owner_new_multihome($propertyId, $year)) {
+    // New customer, 4+ homes — office-selected on THIS WO (that year only).
+    if ($entity->hasField('field_new_customer_discount') && (bool) $entity->get('field_new_customer_discount')->value) {
         $candidates['New customer, 4+ homes'] = $amt('field_winterize_disc_new_cust');
     }
 
@@ -603,24 +603,3 @@ function _wo_sw_has_prior_winterizing($propertyId, $year) {
         LIMIT 1", [':pid' => $propertyId, ':ys' => $yearStart])->fetchField();
 }
 
-/**
- * TRUE if the property's owner is a client account created this year who owns
- * 4+ distinct properties (a new customer signing up multiple homes).
- */
-function _wo_sw_owner_new_multihome($propertyId, $year) {
-    $db = \Drupal::database();
-    $uid = $db->query("SELECT o.field_property_owner_target_id
-        FROM {ownership_record__field_property_reference} fp
-        JOIN {ownership_record__field_property_owner} o ON o.entity_id = fp.entity_id
-        JOIN {ownership_record_field_data} d ON d.id = fp.entity_id
-        WHERE fp.field_property_reference_target_id=:pid
-        ORDER BY d.created DESC LIMIT 1", [':pid' => $propertyId])->fetchField();
-    if (!$uid) { return FALSE; }
-    $created = (int) $db->query("SELECT created FROM {users_field_data} WHERE uid=:u", [':u' => $uid])->fetchField();
-    if (!$created || (int) date('Y', $created) !== (int) $year) { return FALSE; }
-    $homes = (int) $db->query("SELECT COUNT(DISTINCT fp.field_property_reference_target_id)
-        FROM {ownership_record__field_property_owner} o
-        JOIN {ownership_record__field_property_reference} fp ON fp.entity_id = o.entity_id
-        WHERE o.field_property_owner_target_id=:u", [':u' => $uid])->fetchField();
-    return $homes >= 4;
-}

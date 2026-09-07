@@ -49,6 +49,17 @@ $ok('reason = HOA Contracted', $wo->get('field_winterize_discount_reason')->valu
 $ok('wo_total = 60', abs((float) $wo->get('field_wo_total')->value - 60) < 0.01, $wo->get('field_wo_total')->value);
 $prop = $etm->getStorage('properties')->load($pid); $prop->set('field_hoa_contracted', FALSE)->save();
 
+// ---- E. New-customer 4+ homes checkbox on the WO → -$15 ----
+print "\nE. New-customer 4+ homes checkbox (office-selected on WO) → -\$15\n";
+$wo = $etm->getStorage('work_order')->create(['type' => 'sprinkler_winterizing', 'field_property' => $pid, 'field_service' => $svc, 'field_status' => 1092, 'field_system_type' => 13, 'field_new_customer_discount' => TRUE]);
+$wo->save(); $made['wo'][] = $wo->id();
+$wo = $etm->getStorage('work_order')->load($wo->id());
+$wo->set('field_status', 1097)->set('field_system_type', 13)->set('field_new_customer_discount', TRUE)->save();
+$wo = $etm->getStorage('work_order')->load($wo->id());
+$ok('discount = 15', abs((float) $wo->get('field_winterize_discount')->value - 15) < 0.01, $wo->get('field_winterize_discount')->value);
+$ok('reason = New customer, 4+ homes', $wo->get('field_winterize_discount_reason')->value === 'New customer, 4+ homes', $wo->get('field_winterize_discount_reason')->value);
+$ok('wo_total = 80', abs((float) $wo->get('field_wo_total')->value - 80) < 0.01, $wo->get('field_wo_total')->value);
+
 // ---- C. Current-year contract with 5 services incl winterizing → -$10 (beats -$5) ----
 print "\nC. Contract w/ 5 services incl winterizing → -\$10 (largest of 10/5)\n";
 $contract = $etm->getStorage('contracts')->create(['type' => 'residential', 'field_property' => $pid, 'field_contract_year' => (int) date('Y')]);

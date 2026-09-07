@@ -15,3 +15,13 @@ bos_winback.mark:
     _permission: 'access winterize winback'
     _csrf_request_header_token: 'TRUE'
     property: '\d+'
+
+bos_winback.create:
+  path: '/admin/office/winterize/win-back/create/{property}'
+  defaults:
+    _controller: 'Drupal\bos_winback\Controller\WinbackController::createBooking'
+  methods: [POST]
+  requirements:
+    _permission: 'access winterize winback'
+    _csrf_request_header_token: 'TRUE'
+    property: '\d+'

@@ -82,6 +82,29 @@ final class WinbackListService {
    *   owner_name, phone, email, last_wo_id, last_date, last_total, last_status,
    *   was_canceled, state (['outcome','by','time_ts'] or NULL).
    */
+  /**
+   * The customer's primary contact for a property (for phone opt-in enrollment).
+   * Property refs first, then the latest owner's customer_profile contact.
+   */
+  public function contactForProperty(int $pid): ?\Drupal\Core\Entity\ContentEntityInterface {
+    $property = $this->etm->getStorage('properties')->load($pid);
+    $contact = NULL;
+    if ($property) {
+      foreach (['field_primary_contact_ref', 'field_contacts'] as $f) {
+        if ($contact = $this->refEntity($property, $f)) {
+          break;
+        }
+      }
+    }
+    if (!$contact) {
+      $owner_uid = $this->findLatestOwner($pid);
+      if ($owner_uid) {
+        $contact = $this->profileContact($owner_uid);
+      }
+    }
+    return $contact instanceof \Drupal\Core\Entity\ContentEntityInterface ? $contact : NULL;
+  }
+
   public function getRows(int $lookback_years = 1): array {
     $target_year = $this->targetYear();
     $lookback = $this->clampLookback($lookback_years);

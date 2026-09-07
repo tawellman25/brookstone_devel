@@ -71,6 +71,47 @@
         var resetBtn = card.querySelector('.wb-reset');
         var picker = card.querySelector('.wb-decline');
 
+        // Create WO: builds a service_request (campaign-stamped) + converts it,
+        // with optional phone auto-enroll. Opens the new WO to finish details.
+        var createBtn = card.querySelector('.wb-create');
+        if (createBtn) {
+          createBtn.addEventListener('click', function () {
+            var base = (drupalSettings.bosWinback && drupalSettings.bosWinback.createUrlBase) || '';
+            var enrollCb = card.querySelector('.wb-enroll-cb');
+            var enroll = enrollCb && enrollCb.checked ? 1 : 0;
+            createBtn.disabled = true;
+            createBtn.textContent = 'Creating…';
+            csrfToken().then(function (token) {
+              return fetch(base + pid, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-CSRF-Token': token, 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'enroll=' + enroll
+              });
+            }).then(function (r) { return r.json(); }).then(function (d) {
+              if (d.status === 'ok' && d.wo_url) {
+                if (d.enrolled === 'opted_out') {
+                  window.alert('Booking created. Note: this contact previously opted OUT of email — NOT added to the auto list.');
+                }
+                else if (d.enrolled === 'no_contact' && enroll) {
+                  window.alert('Booking created, but no contact was on file to add to the auto list.');
+                }
+                window.open(d.wo_url, '_blank');
+                createBtn.textContent = 'WO created ✓';
+              }
+              else {
+                window.alert(d.message || 'Could not create the work order.');
+                createBtn.disabled = false;
+                createBtn.textContent = 'Create WO';
+              }
+            }).catch(function () {
+              window.alert('Network error creating the work order.');
+              createBtn.disabled = false;
+              createBtn.textContent = 'Create WO';
+            });
+          });
+        }
+
         // Simple outcomes (left message / no answer / reached).
         card.querySelectorAll('.wb-mark').forEach(function (btn) {
           btn.addEventListener('click', function () {

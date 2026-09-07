@@ -148,6 +148,19 @@ function wo_sprinkler_winterizing_entity_presave(EntityInterface $entity) {
         $billingAdjustment = $entity->get('field_billing_adjustment')->value;
         $grand_total += $billingAdjustment;
 
+        // ── Promotional discount (single LARGEST applicable — they do NOT stack) ──
+        // Auto-applied so office staff can't miss a promoted rate. Recorded on the
+        // WO (amount + reason) for the invoice; already reflected in the total.
+        [$discountAmt, $discountReason] = _wo_sw_compute_discount($entity, $propertyId, $business_settings);
+        if ($entity->hasField('field_winterize_discount')) {
+            $entity->set('field_winterize_discount', number_format((float) $discountAmt, 2, '.', ''));
+            $entity->set('field_winterize_discount_reason', $discountReason);
+        }
+        if ($discountAmt > 0) {
+            $grand_total -= $discountAmt;
+            if ($grand_total < 0) { $grand_total = 0; }
+        }
+
         // Future calculations can modify $grand_total as needed.
         // Set 'field_total' with the final $grand_total value.
         if ($grand_total > 0) {
@@ -507,4 +520,107 @@ function _wo_sprinkler_winterizing_write_back_system_type(EntityInterface $entit
             ['@wo' => $entity->id(), '@sys' => $system->id(), '@old' => $current, '@new' => $woTid]
         );
     }
+}
+
+/**
+ * Computes the single LARGEST applicable winterizing discount for a WO.
+ *
+ * Discounts do NOT stack (per business decision) — the biggest qualifying one
+ * wins. Amounts come from config_pages:business_setting (positive dollars).
+ *
+ * @return array [float $amount, string $reason]
+ */
+function _wo_sw_compute_discount($entity, $propertyId, $business_settings) {
+    if (!$business_settings || !$propertyId) { return [0.0, '']; }
+    $amt = function ($f) use ($business_settings) {
+        return $business_settings->hasField($f) && !$business_settings->get($f)->isEmpty()
+            ? (float) $business_settings->get($f)->value : 0.0;
+    };
+    $created = (int) ($entity->get('created')->value ?: time());
+    $year = (int) date('Y', $created);
+    $candidates = [];
+
+    // HOA contracted — property flag (e.g. Bear Creek).
+    $prop = \Drupal::entityTypeManager()->getStorage('properties')->load($propertyId);
+    if ($prop && $prop->hasField('field_hoa_contracted') && (bool) $prop->get('field_hoa_contracted')->value) {
+        $candidates['HOA Contracted'] = $amt('field_winterize_disc_hoa');
+    }
+
+    // Current-year residential contract facts.
+    [$svcCount, $hasWinterLine] = _wo_sw_contract_info($propertyId, $year);
+    if ($svcCount > 4) {
+        $candidates['Contract with 4+ services'] = $amt('field_winterize_disc_services');
+    }
+
+    // Signed contract with winterizing OR on the automatic (returning) list.
+    if ($hasWinterLine || _wo_sw_has_prior_winterizing($propertyId, $year)) {
+        $candidates['Signed contract / Automatic list'] = $amt('field_winterize_disc_contract');
+    }
+
+    // New customer signing up 4+ homes (first season).
+    if (_wo_sw_owner_new_multihome($propertyId, $year)) {
+        $candidates['New customer, 4+ homes'] = $amt('field_winterize_disc_new_cust');
+    }
+
+    $candidates = array_filter($candidates, fn($v) => $v > 0);
+    if (!$candidates) { return [0.0, '']; }
+    arsort($candidates);
+    $reason = array_key_first($candidates);
+    return [(float) $candidates[$reason], $reason];
+}
+
+/**
+ * Current-year residential contract facts for a property.
+ *
+ * @return array [int $selectedServiceCount, bool $hasWinterizingLine]
+ */
+function _wo_sw_contract_info($propertyId, $year) {
+    $db = \Drupal::database();
+    $cid = $db->query("SELECT c.id FROM {contracts_field_data} c
+        JOIN {contracts__field_property} p ON p.entity_id = c.id
+        JOIN {contracts__field_contract_year} y ON y.entity_id = c.id
+        WHERE c.type='residential' AND p.field_property_target_id=:pid AND y.field_contract_year_value=:yr
+        LIMIT 1", [':pid' => $propertyId, ':yr' => $year])->fetchField();
+    if (!$cid) { return [0, FALSE]; }
+    $count = (int) $db->query("SELECT COUNT(*) FROM {contract_sections__field_contract} fc
+        JOIN {contract_sections__field_do_you_want} dw ON dw.entity_id = fc.entity_id AND dw.field_do_you_want_value IN (1,4)
+        WHERE fc.field_contract_target_id=:cid", [':cid' => $cid])->fetchField();
+    $winter = (bool) $db->query("SELECT 1 FROM {contract_sections__field_contract} fc
+        JOIN {contract_sections_field_data} cs ON cs.id = fc.entity_id AND cs.type='irrigation_shut_down'
+        JOIN {contract_sections__field_do_you_want} dw ON dw.entity_id = fc.entity_id AND dw.field_do_you_want_value IN (1,4)
+        WHERE fc.field_contract_target_id=:cid LIMIT 1", [':cid' => $cid])->fetchField();
+    return [$count, $winter];
+}
+
+/**
+ * TRUE if the property has a winterizing WO from a prior season (auto list).
+ */
+function _wo_sw_has_prior_winterizing($propertyId, $year) {
+    $yearStart = strtotime("$year-01-01 00:00:00");
+    return (bool) \Drupal::database()->query("SELECT 1 FROM {work_order_field_data} w
+        JOIN {work_order__field_property} p ON p.entity_id = w.id
+        WHERE w.type='sprinkler_winterizing' AND p.field_property_target_id=:pid AND w.created < :ys
+        LIMIT 1", [':pid' => $propertyId, ':ys' => $yearStart])->fetchField();
+}
+
+/**
+ * TRUE if the property's owner is a client account created this year who owns
+ * 4+ distinct properties (a new customer signing up multiple homes).
+ */
+function _wo_sw_owner_new_multihome($propertyId, $year) {
+    $db = \Drupal::database();
+    $uid = $db->query("SELECT o.field_property_owner_target_id
+        FROM {ownership_record__field_property_reference} fp
+        JOIN {ownership_record__field_property_owner} o ON o.entity_id = fp.entity_id
+        JOIN {ownership_record_field_data} d ON d.id = fp.entity_id
+        WHERE fp.field_property_reference_target_id=:pid
+        ORDER BY d.created DESC LIMIT 1", [':pid' => $propertyId])->fetchField();
+    if (!$uid) { return FALSE; }
+    $created = (int) $db->query("SELECT created FROM {users_field_data} WHERE uid=:u", [':u' => $uid])->fetchField();
+    if (!$created || (int) date('Y', $created) !== (int) $year) { return FALSE; }
+    $homes = (int) $db->query("SELECT COUNT(DISTINCT fp.field_property_reference_target_id)
+        FROM {ownership_record__field_property_owner} o
+        JOIN {ownership_record__field_property_reference} fp ON fp.entity_id = o.entity_id
+        WHERE o.field_property_owner_target_id=:u", [':u' => $uid])->fetchField();
+    return $homes >= 4;
 }

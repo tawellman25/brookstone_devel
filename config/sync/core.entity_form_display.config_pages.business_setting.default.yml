@@ -16,6 +16,7 @@ dependencies:
     - field.field.config_pages.business_setting.field_atv_and_sprayer_charge
     - field.field.config_pages.business_setting.field_backflow_testing_rate
     - field.field.config_pages.business_setting.field_bio_90_rate_per_gallon
+    - field.field.config_pages.business_setting.field_blended_labor_cost
     - field.field.config_pages.business_setting.field_change_order_threshold_pct
     - field.field.config_pages.business_setting.field_chemical_license_info
     - field.field.config_pages.business_setting.field_cleanup_labor_minimum
@@ -27,6 +28,7 @@ dependencies:
     - field.field.config_pages.business_setting.field_deciduous_over_break_rate
     - field.field.config_pages.business_setting.field_deciduous_tree_number
     - field.field.config_pages.business_setting.field_deciduous_under_break_rate
+    - field.field.config_pages.business_setting.field_default_salt_per_lb
     - field.field.config_pages.business_setting.field_dethatching_pricing
     - field.field.config_pages.business_setting.field_dormant_oil_min_time
     - field.field.config_pages.business_setting.field_dormant_oil_rate
@@ -97,6 +99,13 @@ dependencies:
     - field.field.config_pages.business_setting.field_trunk_bore_rate
     - field.field.config_pages.business_setting.field_variance_green_max
     - field.field.config_pages.business_setting.field_variance_yellow_max
+    - field.field.config_pages.business_setting.field_winterize_disc_contract
+    - field.field.config_pages.business_setting.field_winterize_disc_hoa
+    - field.field.config_pages.business_setting.field_winterize_disc_new_cust
+    - field.field.config_pages.business_setting.field_winterize_disc_services
+    - field.field.config_pages.business_setting.field_winterize_open_from
+    - field.field.config_pages.business_setting.field_winterize_open_until
+    - field.field.config_pages.business_setting.field_winterize_signup_open
     - field.field.config_pages.business_setting.field_winterizing_base_fee
     - field.field.config_pages.business_setting.field_winterizing_extra_zone_fee
     - field.field.config_pages.business_setting.field_winterizing_pump_fee
@@ -578,6 +587,41 @@ third_party_settings:
         open: false
         description: ''
         required_fields: true
+    group_public_service_requests:
+      children:
+        - field_winterize_signup_open
+        - field_winterize_open_from
+        - field_winterize_open_until
+      label: 'Public Service Requests'
+      region: content
+      parent_name: ''
+      weight: 40
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: 'Controls the public /winterize signup form (open/closed + dates).'
+        required_fields: true
+    group_winterizing_discounts:
+      children:
+        - field_winterize_disc_contract
+        - field_winterize_disc_services
+        - field_winterize_disc_new_cust
+        - field_winterize_disc_hoa
+      label: 'Winterizing Discounts'
+      region: content
+      parent_name: ''
+      weight: 5
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: false
+        description: 'Applied automatically at winterizing sign-off. Only the single LARGEST applicable discount is used (they do not stack).'
+        required_fields: false
 id: config_pages.business_setting.default
 targetEntityType: config_pages
 bundle: business_setting
@@ -744,6 +788,13 @@ content:
   field_deciduous_under_break_rate:
     type: number
     weight: 97
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_default_salt_per_lb:
+    type: number
+    weight: 50
     region: content
     settings:
       placeholder: ''
@@ -1258,6 +1309,53 @@ content:
     settings:
       placeholder: ''
     third_party_settings: {  }
+  field_winterize_disc_contract:
+    type: number
+    weight: 0
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_winterize_disc_hoa:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_winterize_disc_new_cust:
+    type: number
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_winterize_disc_services:
+    type: number
+    weight: 1
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_winterize_open_from:
+    type: datetime_default
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_winterize_open_until:
+    type: datetime_default
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_winterize_signup_open:
+    type: boolean_checkbox
+    weight: 0
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
   field_winterizing_base_fee:
     type: number
     weight: 108
@@ -1287,6 +1385,7 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
+  field_blended_labor_cost: true
   field_change_order_threshold_pct: true
   field_mobilization_deposit_pct: true
   field_signing_deposit_amount: true

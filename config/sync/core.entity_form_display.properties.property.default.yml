@@ -15,10 +15,12 @@ dependencies:
     - field.field.properties.property.field_full_address
     - field.field.properties.property.field_gate_code
     - field.field.properties.property.field_geofield
+    - field.field.properties.property.field_hoa_contracted
     - field.field.properties.property.field_import_id
     - field.field.properties.property.field_latest_contract
     - field.field.properties.property.field_maps
     - field.field.properties.property.field_must_use_client_app
+    - field.field.properties.property.field_neighborhood
     - field.field.properties.property.field_nickname
     - field.field.properties.property.field_no_services
     - field.field.properties.property.field_parcel_number
@@ -305,12 +307,20 @@ content:
         hidden: false
         disabled: true
       map_geocoder:
-        control: 0
+        control: 1
         settings:
-          providers: {  }
+          providers:
+            - googlemaps
           min_terms: 4
           delay: 800
           options: ''
+    third_party_settings: {  }
+  field_hoa_contracted:
+    type: boolean_checkbox
+    weight: 21
+    region: content
+    settings:
+      display_label: true
     third_party_settings: {  }
   field_import_id:
     type: string_textfield
@@ -341,6 +351,14 @@ content:
     region: content
     settings:
       display_label: true
+    third_party_settings: {  }
+  field_neighborhood:
+    type: string_textfield
+    weight: 20
+    region: content
+    settings:
+      size: 40
+      placeholder: ''
     third_party_settings: {  }
   field_nickname:
     type: string_textfield
@@ -484,3 +502,4 @@ content:
     third_party_settings: {  }
 hidden:
   title: true
+

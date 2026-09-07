@@ -128,6 +128,48 @@ function bos_service_request_service_request_insert(\Drupal\Core\Entity\EntityIn
     $entity->set('title', 'Service Request #' . $entity->id());
     $entity->save();
   }
+  _bos_service_request_stamp_bearcreek_hoa($entity);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for service_request.
+ */
+function bos_service_request_service_request_update(\Drupal\Core\Entity\EntityInterface $entity) {
+  _bos_service_request_stamp_bearcreek_hoa($entity);
+}
+
+/**
+ * Bear Creek signups auto-flag the property as HOA-contracted so winterizing
+ * billing applies the HOA discount (net $60) without office staff remembering.
+ * Idempotent; never un-sets a flag. Triggered by field_campaign = bearcreek*.
+ */
+function _bos_service_request_stamp_bearcreek_hoa(\Drupal\Core\Entity\EntityInterface $entity) {
+  if (!$entity->hasField('field_campaign') || $entity->get('field_campaign')->isEmpty()) {
+    return;
+  }
+  if (strpos(strtolower((string) $entity->get('field_campaign')->value), 'bearcreek') !== 0) {
+    return;
+  }
+  if (!$entity->hasField('field_property') || $entity->get('field_property')->isEmpty()) {
+    return;
+  }
+  $prop = \Drupal::entityTypeManager()->getStorage('properties')->load((int) $entity->get('field_property')->target_id);
+  if (!$prop) {
+    return;
+  }
+  $changed = FALSE;
+  if ($prop->hasField('field_hoa_contracted') && !(bool) $prop->get('field_hoa_contracted')->value) {
+    $prop->set('field_hoa_contracted', TRUE);
+    $changed = TRUE;
+  }
+  if ($prop->hasField('field_neighborhood') && $prop->get('field_neighborhood')->isEmpty()) {
+    $prop->set('field_neighborhood', 'Bear Creek');
+    $changed = TRUE;
+  }
+  if ($changed) {
+    $prop->save();
+    \Drupal::logger('bos_service_request')->notice('Bear Creek HOA flag set on property @p from service request @s.', ['@p' => $prop->id(), '@s' => $entity->id()]);
+  }
 }
 
 /**
@@ -309,6 +351,15 @@ function bos_service_request_preprocess_page(array &$variables) {
 
   $route = \Drupal::routeMatch()->getRouteName();
   $variables['bo_offer'] = NULL;
+
+  // Winterizing prices come from Business Settings so the pages stay in sync
+  // with billing: base fee, and the HOA discount that sets the Bear Creek rate.
+  $bs = \Drupal::service('config_pages.loader')->load('business_setting');
+  $baseFee = ($bs && $bs->hasField('field_winterizing_base_fee') && !$bs->get('field_winterizing_base_fee')->isEmpty())
+    ? (float) $bs->get('field_winterizing_base_fee')->value : 95.0;
+  $hoaDisc = ($bs && $bs->hasField('field_winterize_disc_hoa') && !$bs->get('field_winterize_disc_hoa')->isEmpty())
+    ? (float) $bs->get('field_winterize_disc_hoa')->value : 35.0;
+  $money = fn($n) => '$' . rtrim(rtrim(number_format((float) $n, 2), '0'), '.');
   $accordions = ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty())
     ? _bos_service_request_accordions((string) $term->get('field_service_public_desc')->value) : NULL;
 
@@ -329,8 +380,8 @@ function bos_service_request_preprocess_page(array &$variables) {
     $variables['bo_headline'] = 'Get your sprinklers ready for winter.';
     $variables['bo_subhead'] = "As Bear Creek HOA's maintenance provider, we're offering residents an exclusive winterization rate this fall.";
     $variables['bo_offer'] = [
-      'price' => '$60',
-      'regular' => 'Regularly $90',
+      'price' => $money($baseFee - $hoaDisc),
+      'regular' => 'Regularly ' . $money($baseFee),
       'note' => 'Exclusive Bear Creek resident rate. Includes professional winterization of residential systems with up to 5 zones.',
       'deadline' => 'Sign up by September 30th, ' . $variables['bo_year'] . '.',
     ];
@@ -346,6 +397,12 @@ function bos_service_request_preprocess_page(array &$variables) {
     $variables['bo_headline'] = 'Fall is on its way.';
     $variables['bo_subhead'] = 'Water left in your lines splits pipe, valves and backflows when it freezes — and underground breaks stay hidden until spring.';
     $variables['bo_cta_text'] = 'Get on the list';
+    $variables['bo_offer'] = [
+      'price' => $money($baseFee),
+      'regular' => '',
+      'note' => 'Standard residential winterization, up to 5 zones. Additional zones and pumped (dirty/well) systems billed as applicable.',
+      'deadline' => NULL,
+    ];
     $variables['bo_formband_h2'] = 'Request your winterization';
     $variables['bo_formband_intro'] = "We start in early October and work through the month, organized by location and water supply. We'll contact you with the week we plan to be in your area. Takes about a minute.";
     $variables['bo_show_detail'] = TRUE;

@@ -222,21 +222,20 @@ body:not(.is-always-mobile-nav) .primary-nav__button-toggle .icon--menu-toggle::
   #block-bos-homepage-phone-mobile .bo-header-phone__icon { font-size: 20px; }
 }
 
-/* Desktop keeps the round emblem + text lockup; the full horizontal logo is
-   hidden until mobile. */
-.bo-brand__longlink, .bo-brand__longlogo { display: none; }
+/* Use the full horizontal logo EVERYWHERE (emblem + wordmark + tagline in one
+   transparent PNG); hide the round emblem + separate text lockup on all sizes. */
+.bo-brand__logo-link, .bo-brand__text { display: none; }
+.bo-brand__longlink { display: block; flex: 0 1 auto; min-width: 0; line-height: 0; }
+.bo-brand__longlogo { display: block; height: auto; width: auto; max-height: 70px; max-width: 100%; }
 
-/* Mobile: use the full horizontal logo (emblem + wordmark + tagline in one
-   transparent PNG) and hide the round emblem + separate text lockup. A little
+/* Mobile: smaller + capped in vw so the phone + hamburger stay clear; a little
    more header room; phone + hamburger vertically centered. */
 @media (max-width: 74.9375em) {
   .site-header__inner { padding-block: 10px; }
   .site-header__inner__container { align-items: center; }
   .mobile-buttons { margin-block-start: 0; align-self: center; }
   #block-bos-homepage-phone-mobile { align-self: center; }
-  .bo-brand__logo-link, .bo-brand__text { display: none; }
-  .bo-brand__longlink { display: block; flex: 0 1 auto; min-width: 0; line-height: 0; }
-  .bo-brand__longlogo { display: block; height: auto; width: auto; max-height: 58px; max-width: 64vw; }
+  .bo-brand__longlogo { max-height: 58px; max-width: 64vw; }
 }
 /* Smallest phones: trim the long logo for clearance. */
 @media (max-width: 26rem) {

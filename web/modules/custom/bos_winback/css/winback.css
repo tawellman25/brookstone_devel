@@ -84,8 +84,11 @@
 .wb-decline__label { font-size: 0.9rem; font-weight: 600; color: #6b5d4f; display: flex; align-items: center; gap: 0.4rem; }
 .wb-decline__reason { padding: 0.25rem 0.4rem; }
 .wb-decline__note { flex: 1 1 240px; min-width: 180px; padding: 0.3rem 0.5rem; }
-/* Competitor + why fields — revealed only for "Using another company". */
-.wb-decline__competitor { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; padding: 0.5rem 0.7rem; background: #f6f4ef; border: 1px solid #e0dcd3; border-radius: 4px; }
+/* Competitor + why fields — revealed only for "Using another company". The
+   :not([hidden]) guard keeps `hidden` working (a class `display` would otherwise
+   override the hidden attribute). */
+.wb-decline__competitor { flex-basis: 100%; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; padding: 0.5rem 0.7rem; background: #f6f4ef; border: 1px solid #e0dcd3; border-radius: 4px; }
+.wb-decline__competitor:not([hidden]) { display: flex; }
 .wb-decline__comp { padding: 0.3rem 0.5rem; min-width: 180px; }
 .wb-decline__why { padding: 0.25rem 0.4rem; }
 .wb-decline__actions { display: flex; gap: 0.4rem; }

@@ -136,6 +136,19 @@ final class WinterizeForm extends FormBase {
         ],
         '#default_value' => 'unsure',
       ],
+      // Zone count — catches the extra-zone charge the way water_supply catches
+      // the pump fee, so a web booking arrives with a real price estimate.
+      'zone_count' => [
+        '#type' => 'select', '#title' => $this->t('How many zones?'),
+        '#options' => [
+          'unsure' => $this->t('Not sure'),
+          '1_5' => $this->t('1–5 zones'),
+          '6_10' => $this->t('6–10 zones'),
+          '11_plus' => $this->t('11 or more'),
+        ],
+        '#default_value' => 'unsure',
+        '#description' => $this->t("A rough count is fine — we'll confirm on site."),
+      ],
     ];
     $form['access_notes'] = ['#type' => 'textarea', '#title' => $this->t('Gate & access notes'), '#rows' => 2];
     // P3.3 #5 — the two near-duplicate textareas merged into one.
@@ -153,7 +166,7 @@ final class WinterizeForm extends FormBase {
     ];
     // P1.2 — two cross-sell opt-ins (recorded intent only; no auto-creation).
     $form['optin_block'] = [
-      '#type' => 'container', '#attributes' => ['class' => ['bo-optin']],
+      '#type' => 'container', '#attributes' => ['class' => ['bo-optin'], 'id' => 'recurring-rate'],
       'wants_recurring' => ['#type' => 'checkbox', '#title' => $this->t('Add me to the automatic winterizing list each fall')],
       'wants_startup' => ['#type' => 'checkbox', '#title' => $this->t('Contact me in the spring about turning my system back on')],
     ];
@@ -373,6 +386,10 @@ final class WinterizeForm extends FormBase {
     }
     if (in_array($waterSupply, ['city', 'ditch', 'well', 'unsure'], TRUE)) {
       $values['field_water_supply'] = $waterSupply;
+    }
+    $zoneCount = (string) $form_state->getValue('zone_count');
+    if (in_array($zoneCount, ['unsure', '1_5', '6_10', '11_plus'], TRUE)) {
+      $values['field_zone_count'] = $zoneCount;
     }
     if ($match['status'] === 'ambiguous' && !empty($match['candidates'])) {
       $values['field_match_candidates'] = json_encode($match['candidates']);

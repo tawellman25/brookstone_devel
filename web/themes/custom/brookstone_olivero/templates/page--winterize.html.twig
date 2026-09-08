@@ -38,6 +38,12 @@
         <span class="bo-hero__offer-price">{{ bo_offer.price }}</span>
         <span class="bo-hero__offer-reg">{{ bo_offer.regular }}</span>
         <span class="bo-hero__offer-note">{{ bo_offer.note }}</span>
+        {% if bo_offer.ladder_recurring_rate %}
+          <span class="bo-hero__offer-ladder">
+            <span class="bo-hero__ladder-line"><strong>{{ bo_offer.ladder_recurring_rate }}</strong> on the automatic winterizing list — <a href="#recurring-rate">check the box below</a> and your rate is held while you stay on it.</span>
+            <span class="bo-hero__ladder-line"><strong>{{ bo_offer.ladder_multi_rate }}</strong> each for first-time customers when four or more homes on one street book together.</span>
+          </span>
+        {% endif %}
         {% if bo_offer.deadline %}<span class="bo-hero__offer-deadline">{{ bo_offer.deadline }}</span>{% endif %}
       </div>
       {% endif %}

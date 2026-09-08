@@ -359,6 +359,12 @@ function bos_service_request_preprocess_page(array &$variables) {
     ? (float) $bs->get('field_winterizing_base_fee')->value : 95.0;
   $hoaDisc = ($bs && $bs->hasField('field_winterize_disc_hoa') && !$bs->get('field_winterize_disc_hoa')->isEmpty())
     ? (float) $bs->get('field_winterize_disc_hoa')->value : 35.0;
+  // Public offer-ladder discounts (same source as billing — change once, moves
+  // everywhere): automatic-list / first-time-4+-homes.
+  $discContract = ($bs && $bs->hasField('field_winterize_disc_contract') && !$bs->get('field_winterize_disc_contract')->isEmpty())
+    ? (float) $bs->get('field_winterize_disc_contract')->value : 5.0;
+  $discNewCust = ($bs && $bs->hasField('field_winterize_disc_new_cust') && !$bs->get('field_winterize_disc_new_cust')->isEmpty())
+    ? (float) $bs->get('field_winterize_disc_new_cust')->value : 15.0;
   $money = fn($n) => '$' . rtrim(rtrim(number_format((float) $n, 2), '0'), '.');
   $accordions = ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty())
     ? _bos_service_request_accordions((string) $term->get('field_service_public_desc')->value) : NULL;
@@ -400,8 +406,12 @@ function bos_service_request_preprocess_page(array &$variables) {
     $variables['bo_offer'] = [
       'price' => $money($baseFee),
       'regular' => '',
-      'note' => 'Standard residential winterization, up to 5 zones. Additional zones and pumped (dirty/well) systems billed as applicable.',
+      'note' => 'Base rate — first 5 domestic zones. Pumps and zones over 5 quoted before we start.',
       'deadline' => NULL,
+      // Offer ladder (subordinate to the $95). Rates derived from Business
+      // Settings so they never drift from billing.
+      'ladder_recurring_rate' => $money($baseFee - $discContract),
+      'ladder_multi_rate' => $money($baseFee - $discNewCust),
     ];
     $variables['bo_formband_h2'] = 'Request your winterization';
     $variables['bo_formband_intro'] = "We start in early October and work through the month, organized by location and water supply. We'll contact you with the week we plan to be in your area. Takes about a minute.";
@@ -580,6 +590,18 @@ function _bos_service_request_build_card(\Drupal\Core\Entity\EntityInterface $sr
 
   $bundleLabel = ['sprinkler_winterizing' => 'Winterize', 'fall_cleanup' => 'Fall Cleanup'][$sr->bundle()] ?? $sr->bundle();
 
+  // System facts that drive the quote: water supply (pump fee) + zone count
+  // (extra-zone fee). Labels pulled from each field's allowed_values.
+  $optLabel = function (string $field, string $key) use ($sr): string {
+    if ($key === '' || !$sr->hasField($field)) { return ''; }
+    $allowed = $sr->get($field)->getFieldDefinition()->getSetting('allowed_values') ?? [];
+    return (string) ($allowed[$key] ?? $key);
+  };
+  $sysParts = [];
+  if (($ws = $get('field_water_supply')) !== '') { $sysParts[] = $optLabel('field_water_supply', $ws); }
+  if (($zc = $get('field_zone_count')) !== '') { $sysParts[] = $optLabel('field_zone_count', $zc); }
+  $system = implode(' · ', array_filter($sysParts));
+
   $phone = $get('field_submitted_phone');
 
   return [
@@ -603,6 +625,7 @@ function _bos_service_request_build_card(\Drupal\Core\Entity\EntityInterface $sr
     'flags' => $get('field_review_flags'),
     'wants' => $wants,
     'needs' => $needs,
+    'system' => $system,
     'wo_id' => $wo_id,
     'wo_url' => $wo_url,
   ];

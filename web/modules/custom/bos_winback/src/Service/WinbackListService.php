@@ -348,21 +348,41 @@ final class WinbackListService {
    * For "declined", $reason (a DECLINE_REASONS key) and an optional free-text
    * $note are captured so the office can see why customers are dropping.
    */
-  public function mark(int $pid, string $outcome, string $by, string $reason = '', string $note = ''): array {
+  public function mark(int $pid, string $outcome, string $by, string $reason = '', string $note = '', string $competitor = '', string $whyLeft = ''): array {
     $valid = ['left_message', 'no_answer', 'reached', 'declined'];
     if (!in_array($outcome, $valid, TRUE)) {
       throw new \InvalidArgumentException('Unknown outcome: ' . $outcome);
     }
-    $rec = [
-      'outcome' => $outcome,
-      'by' => $by,
-      'time_ts' => $this->time->getRequestTime(),
-    ];
+    $kv = \Drupal::keyValue(self::STATE_COLLECTION);
+    $key = (string) $this->stateKey($pid);
+    // Merge into the existing record so we never clobber captured intel.
+    $rec = $kv->get($key) ?: [];
+    $rec['outcome'] = $outcome;
+    $rec['by'] = $by;
+    $rec['time_ts'] = $this->time->getRequestTime();
     if ($outcome === 'declined') {
-      $rec['reason'] = array_key_exists($reason, self::DECLINE_REASONS) ? $reason : 'other';
+      $rsn = array_key_exists($reason, self::DECLINE_REASONS) ? $reason : 'other';
+      $rec['reason'] = $rsn;
       $rec['note'] = mb_substr(trim($note), 0, 500);
+      // Feed the season Report straight from the decline — no separate step.
+      if ($rsn === 'competitor') {
+        $comp = mb_substr(trim($competitor), 0, 200);
+        if ($comp !== '') { $rec['competitor'] = $comp; }
+        if (array_key_exists($whyLeft, self::WHY_LEFT)) { $rec['why_left'] = $whyLeft; }
+        $rec['elsewhere'] = 'yes';
+      }
+      else {
+        // Map the decline reason into a "why they left" bucket for the Report.
+        $map = [
+          'moved' => 'moved', 'sold' => 'moved', 'price' => 'price',
+          'no_need' => 'no_longer', 'diy' => 'other', 'deceased' => 'other', 'other' => 'other',
+        ];
+        if (isset($map[$rsn])) { $rec['why_left'] = $map[$rsn]; }
+      }
+      $rec['intel_by'] = $by;
+      $rec['intel_ts'] = $this->time->getRequestTime();
     }
-    \Drupal::keyValue(self::STATE_COLLECTION)->set((string) $this->stateKey($pid), $rec);
+    $kv->set($key, $rec);
     return $rec;
   }
 

@@ -112,46 +112,6 @@
           });
         }
 
-        // Phase-2 call details (optional, non-blocking): elsewhere / who / why.
-        var intelPanel = card.querySelector('.wb-intel');
-        var intelOpen = card.querySelector('.wb-intel-open');
-        if (intelOpen && intelPanel) {
-          intelOpen.addEventListener('click', function () { intelPanel.hidden = !intelPanel.hidden; });
-          var whySel = intelPanel.querySelector('.wb-intel-why');
-          var whyOther = intelPanel.querySelector('.wb-intel-why-other');
-          if (whySel && whyOther) {
-            whySel.addEventListener('change', function () { whyOther.hidden = whySel.value !== 'other'; });
-          }
-          var intelSave = intelPanel.querySelector('.wb-intel-save');
-          var intelSaved = intelPanel.querySelector('.wb-intel__saved');
-          if (intelSave) {
-            intelSave.addEventListener('click', function () {
-              var base = (drupalSettings.bosWinback && drupalSettings.bosWinback.intelUrlBase) || '';
-              var picked = intelPanel.querySelector('input[name="wb-elsewhere-' + pid + '"]:checked');
-              var comp = intelPanel.querySelector('.wb-intel-competitor');
-              var params = new URLSearchParams();
-              params.set('elsewhere', picked ? picked.value : '');
-              params.set('competitor', comp ? comp.value : '');
-              params.set('why_left', whySel ? whySel.value : '');
-              params.set('why_left_other', whyOther ? whyOther.value : '');
-              intelSave.disabled = true;
-              csrfToken().then(function (token) {
-                return fetch(base + pid, {
-                  method: 'POST', credentials: 'same-origin',
-                  headers: { 'X-CSRF-Token': token, 'Content-Type': 'application/x-www-form-urlencoded' },
-                  body: params.toString()
-                });
-              }).then(function (r) { return r.json(); }).then(function () {
-                if (intelSaved) { intelSaved.hidden = false; }
-                intelSave.disabled = false;
-              }).catch(function () {
-                intelSave.disabled = false;
-                window.alert('Could not save call details.');
-              });
-            });
-          }
-        }
-
         // Simple outcomes (left message / no answer / reached).
         card.querySelectorAll('.wb-mark').forEach(function (btn) {
           btn.addEventListener('click', function () {
@@ -175,18 +135,32 @@
         var openBtn = card.querySelector('.wb-decline-open');
         var cancelBtn = card.querySelector('.wb-decline-cancel');
         var confirmBtn = card.querySelector('.wb-decline-confirm');
-        if (openBtn && picker) {
-          openBtn.addEventListener('click', function () { picker.hidden = false; });
+        var reasonSel = picker ? picker.querySelector('.wb-decline__reason') : null;
+        var compBlock = picker ? picker.querySelector('.wb-decline__competitor') : null;
+        // Reveal the competitor + why fields only when "Using another company".
+        function syncCompBlock() {
+          if (compBlock && reasonSel) { compBlock.hidden = reasonSel.value !== 'competitor'; }
         }
+        if (openBtn && picker) {
+          openBtn.addEventListener('click', function () { picker.hidden = false; syncCompBlock(); });
+        }
+        if (reasonSel) { reasonSel.addEventListener('change', syncCompBlock); }
         if (cancelBtn && picker) {
           cancelBtn.addEventListener('click', function () { picker.hidden = true; });
         }
         if (confirmBtn && picker) {
           confirmBtn.addEventListener('click', function () {
-            var reason = picker.querySelector('.wb-decline__reason').value;
+            var reason = reasonSel ? reasonSel.value : '';
             var note = picker.querySelector('.wb-decline__note').value;
+            var params = { outcome: 'declined', reason: reason, note: note };
+            if (reason === 'competitor' && compBlock) {
+              var comp = compBlock.querySelector('.wb-decline__comp');
+              var why = compBlock.querySelector('.wb-decline__why');
+              params.competitor = comp ? comp.value : '';
+              params.why_left = why ? why.value : '';
+            }
             confirmBtn.disabled = true;
-            post(pid, { outcome: 'declined', reason: reason, note: note }).then(function (res) {
+            post(pid, params).then(function (res) {
               if (res && res.suppress) { removeCard(card); }
               else { confirmBtn.disabled = false; }
             }).catch(function () { confirmBtn.disabled = false; });

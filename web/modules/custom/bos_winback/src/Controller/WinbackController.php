@@ -91,6 +91,8 @@ final class WinbackController extends ControllerBase {
     $outcome = (string) $request->request->get('outcome', '');
     $reason = (string) $request->request->get('reason', '');
     $note = (string) $request->request->get('note', '');
+    $competitor = (string) $request->request->get('competitor', '');
+    $whyLeft = (string) $request->request->get('why_left', '');
     $by = (string) $this->currentUser()->getDisplayName();
 
     if ($outcome === 'clear') {
@@ -99,7 +101,7 @@ final class WinbackController extends ControllerBase {
     }
 
     try {
-      $rec = $this->winback->mark($property, $outcome, $by, $reason, $note);
+      $rec = $this->winback->mark($property, $outcome, $by, $reason, $note, $competitor, $whyLeft);
     }
     catch (\InvalidArgumentException $e) {
       return new JsonResponse(['status' => 'error', 'message' => $e->getMessage()], 400);

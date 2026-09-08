@@ -155,9 +155,7 @@
             var params = { outcome: 'declined', reason: reason, note: note };
             if (reason === 'competitor' && compBlock) {
               var comp = compBlock.querySelector('.wb-decline__comp');
-              var why = compBlock.querySelector('.wb-decline__why');
               params.competitor = comp ? comp.value : '';
-              params.why_left = why ? why.value : '';
             }
             confirmBtn.disabled = true;
             post(pid, params).then(function (res) {

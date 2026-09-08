@@ -46,6 +46,17 @@ function bos_analytics_page_attachments(array &$attachments): void {
     return;
   }
 
+  // ANONYMOUS-ONLY GATE. GTM (and therefore GA4 / Meta Pixel / Google Ads) must
+  // never render for authenticated BOS users — admin paths, titles and query
+  // strings carry customer PII, and sending that to GA4 is a policy violation.
+  // Fail closed: the tag is not rendered at all (not merely filtered). The
+  // cache context is added unconditionally so the anon and authenticated
+  // variants cache correctly; the tag only renders for anonymous.
+  $attachments['#cache']['contexts'][] = 'user.roles:anonymous';
+  if (!\Drupal::currentUser()->isAnonymous()) {
+    return;
+  }
+
   $js = "(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','" . $id . "');";
   $attachments['#attached']['html_head'][] = [
     [
@@ -92,9 +103,14 @@ function bos_analytics_page_top(array &$page): void {
   if ($id === '') {
     return;
   }
+  // Anonymous-only (same gate as the head loader — no GTM behind login).
+  if (!\Drupal::currentUser()->isAnonymous()) {
+    return;
+  }
   $page['bos_analytics_gtm_noscript'] = [
     '#markup' => Markup::create('<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=' . $id . '" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>'),
     '#weight' => -1000,
+    '#cache' => ['contexts' => ['user.roles:anonymous']],
   ];
 }
 

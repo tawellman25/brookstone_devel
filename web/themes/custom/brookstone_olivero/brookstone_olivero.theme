@@ -69,7 +69,7 @@ function brookstone_olivero_preprocess_views_view_fields(array &$variables): voi
   }
   $variables['promo_btn_url'] = '';
   $entity = $variables['row']->_entity ?? NULL;
-  if ($entity && !$entity->get('field_promo_btn_url')->isEmpty()) {
+  if ($entity && $entity->hasField('field_promo_btn_url') && !$entity->get('field_promo_btn_url')->isEmpty()) {
     try {
       $variables['promo_btn_url'] = \Drupal\Core\Url::fromUri($entity->get('field_promo_btn_url')->uri)->toString();
     }

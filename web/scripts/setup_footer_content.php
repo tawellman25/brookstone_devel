@@ -23,11 +23,23 @@ $THEME = 'brookstone_olivero';
 $ROLES = ['anonymous' => 'anonymous', 'client' => 'client'];
 $bcStorage = \Drupal::entityTypeManager()->getStorage('block_content');
 
-/** Create a block_content by info label if missing; return the entity. */
+/**
+ * Create a block_content by info label, or SYNC its field values if it already
+ * exists (keeping the same UUID so block placements stay valid). Syncing matters
+ * because a block created before its fields existed would otherwise stay empty.
+ */
 function _foot_block(string $bundle, string $info, array $values): BlockContent {
   $existing = \Drupal::entityTypeManager()->getStorage('block_content')
     ->loadByProperties(['type' => $bundle, 'info' => $info]);
-  if ($existing) { echo "• block content exists: {$info}\n"; return reset($existing); }
+  if ($existing) {
+    $bc = reset($existing);
+    foreach ($values as $f => $v) {
+      if ($bc->hasField($f)) { $bc->set($f, $v); }
+    }
+    $bc->save();
+    echo "• synced block content: {$info}\n";
+    return $bc;
+  }
   $bc = BlockContent::create(['type' => $bundle, 'info' => $info, 'reusable' => TRUE] + $values);
   $bc->save();
   echo "• created block content: {$info}\n";

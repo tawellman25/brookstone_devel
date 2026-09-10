@@ -1,0 +1,12 @@
+{#
+/**
+ * @file
+ * Footer legal bar — dynamic copyright year (never hardcoded) + lineage line.
+ * Privacy/Accessibility links come from the footer-legal menu block beside it.
+ */
+#}
+{% set b = content['#block_content'] %}
+<div{{ attributes.addClass('footer-legal') }}>
+  <p class="footer-legal__copy">© {{ "now"|date("Y") }} Brookstone Outdoors. All rights reserved.</p>
+  {% if b.field_fl_lineage.value %}<p class="footer-legal__lineage">{{ b.field_fl_lineage.value }}</p>{% endif %}
+</div>

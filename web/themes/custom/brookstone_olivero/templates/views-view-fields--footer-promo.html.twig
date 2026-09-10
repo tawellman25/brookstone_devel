@@ -1,0 +1,18 @@
+{#
+/**
+ * @file
+ * Footer seasonal promo row. `promo_btn_url` is resolved in
+ * brookstone_olivero_preprocess_views_view_fields().
+ */
+#}
+<div class="footer-promo__inner">
+  {% if fields.field_promo_heading.content|render|striptags|trim %}
+    <div class="footer-promo__heading">{{ fields.field_promo_heading.content }}</div>
+  {% endif %}
+  {% if fields.field_promo_body.content|render|striptags|trim %}
+    <div class="footer-promo__body">{{ fields.field_promo_body.content }}</div>
+  {% endif %}
+  {% if promo_btn_url and fields.field_promo_btn_label.content|render|striptags|trim %}
+    <a class="footer-promo__btn" href="{{ promo_btn_url }}">{{ fields.field_promo_btn_label.content }}</a>
+  {% endif %}
+</div>

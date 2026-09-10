@@ -1,0 +1,164 @@
+/**
+ * @file
+ * Sitewide footer (brookstone_olivero). Renders inside Olivero's
+ * <footer class="site-footer"> from role-gated blocks in footer_top /
+ * footer_bottom. Scoped under .site-footer so it can't touch other regions.
+ * Brand tokens (--bo-*) are published sitewide by bos_service_request.
+ */
+
+.site-footer {
+  --osw: "Oswald", "Arial Narrow", sans-serif;
+  background: var(--bo-ink, #1A1613);
+  color: var(--bo-footer-text, #C9BCAA);
+  font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+}
+
+/* ---- Top: four columns + full-width promo band ---- */
+.site-footer .region-footer-top {
+  display: grid;
+  gap: 2rem 2.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 1.75rem;
+  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+  grid-template-areas:
+    "company services companylinks servicearea"
+    "promo   promo    promo        promo";
+}
+#block-brookstone-olivero-foot-company { grid-area: company; }
+#block-brookstone-olivero-foot-services { grid-area: services; }
+#block-brookstone-olivero-foot-companylinks { grid-area: companylinks; }
+#block-brookstone-olivero-foot-servicearea { grid-area: servicearea; }
+#block-brookstone-olivero-foot-promo { grid-area: promo; }
+
+/* Column headings + the menu block titles */
+.site-footer .footer-col__heading,
+.site-footer .region-footer-top h2 {
+  font-family: var(--osw);
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bo-footer-strong, #F5EFE6);
+  margin: 0 0 0.9rem;
+}
+
+/* Menu lists */
+.site-footer .region-footer-top ul { list-style: none; margin: 0; padding: 0; }
+.site-footer .region-footer-top li { margin: 0 0 0.5rem; }
+.site-footer a {
+  color: var(--bo-footer-text, #C9BCAA);
+  text-decoration: none;
+}
+.site-footer a:hover,
+.site-footer a:focus {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.site-footer a:focus-visible {
+  outline: 2px solid var(--bo-orange, #CB6015);
+  outline-offset: 2px;
+}
+
+/* Company / NAP */
+.footer-company__name {
+  font-family: var(--osw);
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: 0.03em;
+  color: var(--bo-footer-strong, #F5EFE6);
+}
+.footer-company__tagline { font-size: 0.92rem; margin: 0.15rem 0 1rem; }
+.footer-company__addr,
+.footer-company__email,
+.footer-company__hours { margin: 0 0 0.6rem; font-size: 0.95rem; line-height: 1.5; }
+.footer-company__phone { margin: 0 0 0.6rem; }
+.footer-company__phone a {
+  font-family: var(--osw);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--bo-orange, #CB6015);
+}
+.footer-company__phone a:hover { color: #fff; text-decoration: none; }
+.footer-company__hours { color: var(--bo-muted-2, #8A7A69); font-size: 0.9rem; }
+.footer-company__social a { display: inline-flex; align-items: center; gap: 0.45rem; margin-top: 0.4rem; }
+.footer-company__social .footer-fb { flex: none; }
+
+/* Service Area */
+.footer-area__body { font-size: 0.95rem; line-height: 1.7; }
+
+/* Seasonal promo band */
+#block-brookstone-olivero-foot-promo {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 1.75rem;
+  margin-top: 0.5rem;
+}
+.footer-promo__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  background: rgba(203, 96, 21, 0.10);
+  border-left: 4px solid var(--bo-orange, #CB6015);
+  border-radius: 6px;
+  padding: 1.1rem 1.4rem;
+}
+.footer-promo__heading {
+  font-family: var(--osw);
+  font-weight: 600;
+  font-size: 1.15rem;
+  color: var(--bo-footer-strong, #F5EFE6);
+  flex: 1 1 100%;
+}
+.footer-promo__body { flex: 1 1 55%; min-width: 260px; font-size: 0.95rem; line-height: 1.5; }
+.footer-promo__btn {
+  flex: 0 0 auto;
+  font-family: var(--osw);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: var(--bo-orange, #CB6015);
+  color: #fff !important;
+  padding: 0.7rem 1.4rem;
+  border-radius: 3px;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+.footer-promo__btn:hover,
+.footer-promo__btn:focus { background: var(--bo-orange-hover, #A54E10); color: #fff; }
+
+/* ---- Bottom: legal bar ---- */
+.site-footer .region-footer-bottom {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.1rem 1.5rem 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 1.5rem;
+  font-size: 0.85rem;
+}
+.footer-legal__copy { margin: 0; color: var(--bo-footer-text, #C9BCAA); }
+.footer-legal__lineage { margin: 0.15rem 0 0; color: var(--bo-muted-2, #8A7A69); }
+.site-footer .region-footer-bottom ul { list-style: none; display: flex; gap: 1rem; margin: 0; padding: 0; }
+
+/* ---- Mobile: single column in the deliberate order (NAP first) ---- */
+@media (max-width: 61.99em) {
+  .site-footer .region-footer-top {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "company"
+      "promo"
+      "services"
+      "companylinks"
+      "servicearea";
+    gap: 2rem;
+    padding: 2.25rem 1.25rem 1.25rem;
+  }
+  .footer-promo__btn { width: 100%; text-align: center; }
+  .site-footer .region-footer-bottom { flex-direction: column; }
+}

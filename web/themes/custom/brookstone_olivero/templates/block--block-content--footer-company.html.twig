@@ -1,0 +1,34 @@
+{#
+/**
+ * @file
+ * Footer column 1 — Company / NAP. Renders the fielded footer_company block
+ * with tap-to-call phone, mailto email, and an address that opens Google Maps.
+ * NAP text is stored verbatim (matches the Google Business Profile).
+ */
+#}
+{% set b = content['#block_content'] %}
+{% set phone = b.field_fc_phone.value %}
+{% set tel = phone|replace({' ': '', '-': '', '(': '', ')': '', '.': ''}) %}
+{% set maps = b.field_fc_maps_url.uri %}
+{% set email = b.field_fc_email.value %}
+{% set fb = b.field_fc_facebook.uri %}
+<div{{ attributes.addClass('footer-col', 'footer-col--company') }}>
+  {% if b.field_fc_name.value %}<div class="footer-company__name">{{ b.field_fc_name.value }}</div>{% endif %}
+  {% if b.field_fc_tagline.value %}<div class="footer-company__tagline">{{ b.field_fc_tagline.value }}</div>{% endif %}
+  {% if b.field_fc_address.value %}
+    <p class="footer-company__addr">
+      {% if maps %}<a href="{{ maps }}" target="_blank" rel="noopener">{{ b.field_fc_address.value|nl2br }}</a>{% else %}{{ b.field_fc_address.value|nl2br }}{% endif %}
+    </p>
+  {% endif %}
+  {% if phone %}<p class="footer-company__phone"><a href="tel:{{ tel }}">{{ phone }}</a></p>{% endif %}
+  {% if email %}<p class="footer-company__email"><a href="mailto:{{ email }}">{{ email }}</a></p>{% endif %}
+  {% if b.field_fc_hours.value %}<p class="footer-company__hours">{{ b.field_fc_hours.value|nl2br }}</p>{% endif %}
+  {% if fb %}
+    <p class="footer-company__social">
+      <a href="{{ fb }}" target="_blank" rel="noopener" aria-label="Brookstone Outdoors on Facebook">
+        <svg class="footer-fb" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.15 8.44 9.94v-7.03H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.9 3.78-3.9 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.78l-.44 2.9h-2.34V22c4.78-.79 8.44-4.94 8.44-9.94Z"/></svg>
+        <span>Facebook</span>
+      </a>
+    </p>
+  {% endif %}
+</div>

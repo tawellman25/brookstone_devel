@@ -1,0 +1,11 @@
+{#
+/**
+ * @file
+ * Footer column 4 — Service Area (plain text, no links; a local-search signal).
+ */
+#}
+{% set b = content['#block_content'] %}
+<div{{ attributes.addClass('footer-col', 'footer-col--area') }}>
+  {% if b.field_fsa_heading.value %}<h2 class="footer-col__heading">{{ b.field_fsa_heading.value }}</h2>{% endif %}
+  {% if b.field_fsa_body.value %}<div class="footer-area__body">{{ b.field_fsa_body.value|nl2br }}</div>{% endif %}
+</div>

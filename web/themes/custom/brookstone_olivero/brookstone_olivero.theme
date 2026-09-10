@@ -1,2 +1,33 @@
 <?php
-// Empty for now.
+
+/**
+ * @file
+ * Theme presentation hooks for brookstone_olivero.
+ */
+
+/**
+ * Implements hook_preprocess_node().
+ *
+ * The /about trust page: add the `about-page` wrapper class and attach the
+ * scoped about.css library. Gated to the single node whose alias is /about, so
+ * no other node is affected. Presentation only — the page's structured data
+ * (Organization JSON-LD, meta description, head title) lives in bos_homepage.
+ */
+function brookstone_olivero_preprocess_node(array &$variables): void {
+  $node = $variables['node'] ?? NULL;
+  if (!$node || $node->bundle() !== 'page') {
+    return;
+  }
+  try {
+    $alias = \Drupal::service('path_alias.manager')
+      ->getAliasByPath('/node/' . $node->id());
+  }
+  catch (\Throwable $e) {
+    return;
+  }
+  if ($alias !== '/about') {
+    return;
+  }
+  $variables['attributes']['class'][] = 'about-page';
+  $variables['#attached']['library'][] = 'brookstone_olivero/about';
+}

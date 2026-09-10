@@ -1,0 +1,214 @@
+/**
+ * @file
+ * /about — public trust page. Reuses the winterize brand language (Oswald
+ * headings + Source Serif body come from the theme global library sitewide; the
+ * --bo-* tokens come from bos_service_request/brand_tokens sitewide) but renders
+ * INSIDE the normal theme (header, primary nav, breadcrumb, footer) rather than
+ * the chrome-only /winterize template — About needs the site nav + breadcrumb.
+ *
+ * Scoped entirely under .about-page (added to the node wrapper by
+ * brookstone_olivero_preprocess_node) so nothing here can affect other pages.
+ */
+
+.about-page {
+  --osw: "Oswald", "Arial Narrow", sans-serif;
+  color: var(--bo-prose, #3B322A);
+  font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+}
+
+/* Constrain the long-form reading measure. */
+.about-page__body,
+.about-page .node__content {
+  max-width: 760px;
+}
+
+/* ---- Hero intro band (top of the body, under the page H1) ---- */
+.about-hero {
+  background: var(--bo-sand, #F2E9DC);
+  border-left: 5px solid var(--bo-orange, #CB6015);
+  border-radius: 6px;
+  padding: 1.5rem 1.75rem;
+  margin: 0 0 2.25rem;
+}
+.about-hero__hook {
+  font-family: var(--osw);
+  font-weight: 500;
+  font-size: clamp(20px, 2.6vw, 27px);
+  line-height: 1.25;
+  color: var(--bo-ink, #1A1613);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  quotes: none;
+}
+.about-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin: 1.25rem 0 0;
+}
+.about-hero__call {
+  font-family: var(--osw);
+  font-size: 17px;
+  color: var(--bo-muted, #6B5D4F);
+}
+.about-hero__call a {
+  color: var(--bo-orange, #CB6015);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.about-hero__trust {
+  font-family: var(--osw);
+  letter-spacing: 0.02em;
+  color: var(--bo-text-2, #4A3F35);
+  margin: 0.9rem 0 0;
+  font-size: 15.5px;
+}
+.about-hero__trust + .about-hero__trust {
+  margin-top: 0.25rem;
+}
+
+/* ---- The exact winterize CTA button, scoped to About ---- */
+.about-page a.bo-btn,
+.about-page .bo-btn {
+  font-family: var(--osw);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bo-orange, #CB6015);
+  color: #fff !important;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 15px 28px;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  line-height: 1;
+}
+.about-page a.bo-btn:hover {
+  background: var(--bo-orange-hover, #A54E10);
+}
+
+/* ---- Body sections ---- */
+.about-sec {
+  margin: 0 0 2.5rem;
+}
+.about-page .about-sec h2 {
+  font-family: var(--osw);
+  font-weight: 600;
+  font-size: clamp(26px, 3.4vw, 34px);
+  line-height: 1.1;
+  color: var(--bo-ink, #1A1613);
+  margin: 0 0 1rem;
+}
+.about-page .about-sec h3 {
+  font-family: var(--osw);
+  font-weight: 600;
+  font-size: 21px;
+  color: var(--bo-ink, #1A1613);
+  margin: 2rem 0 0.75rem;
+}
+.about-page .about-sec p {
+  font-size: 18px;
+  line-height: 1.6;
+  margin: 0 0 1rem;
+}
+/* The bolded lead-in sentence that opens most paragraphs. */
+.about-page .about-sec p > strong:first-child {
+  color: var(--bo-ink, #1A1613);
+}
+.about-page .about-sec a {
+  color: var(--bo-orange, #CB6015);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.about-page .about-sec ul {
+  margin: 0 0 1.25rem;
+  padding-left: 1.25rem;
+}
+.about-page .about-sec li {
+  font-size: 18px;
+  line-height: 1.5;
+  margin: 0 0 0.35rem;
+}
+
+/* ---- Conditional inline photos (added to the body later; absent = nothing) ---- */
+.about-page .about-photo {
+  margin: 1.5rem 0;
+}
+.about-page .about-photo img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+}
+.about-page .about-photo figcaption {
+  font-size: 14px;
+  color: var(--bo-muted, #6B5D4F);
+  margin-top: 0.4rem;
+  font-style: italic;
+}
+
+/* ---- Close block ---- */
+.about-close {
+  background: var(--bo-ink, #1A1613);
+  color: var(--bo-footer-strong, #F5EFE6);
+  border-radius: 6px;
+  padding: 2rem 1.75rem;
+  margin: 2.5rem 0 0;
+}
+.about-page .about-close h2 {
+  color: #fff;
+}
+.about-page .about-close p {
+  color: var(--bo-footer-text, #C9BCAA);
+}
+.about-close__cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin: 1.25rem 0;
+}
+.about-close__phone {
+  font-family: var(--osw);
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.about-close__strip {
+  font-family: var(--osw);
+  letter-spacing: 0.02em;
+  color: var(--bo-footer-text, #C9BCAA);
+  font-size: 15px;
+  margin: 0.5rem 0;
+}
+.about-close__links {
+  margin: 0.75rem 0;
+  font-size: 16px;
+}
+.about-page .about-close__links a {
+  color: var(--bo-blue, #62B5E5);
+  text-decoration: none;
+}
+.about-page .about-close__links a:hover {
+  text-decoration: underline;
+}
+.about-close__signoff {
+  font-family: var(--osw);
+  color: var(--bo-footer-strong, #F5EFE6);
+  margin: 1rem 0 0;
+}
+
+@media (max-width: 48em) {
+  .about-hero { padding: 1.25rem 1.15rem; }
+  .about-close { padding: 1.5rem 1.15rem; }
+  .about-page a.bo-btn { width: 100%; justify-content: center; }
+}

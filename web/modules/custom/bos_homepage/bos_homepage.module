@@ -102,6 +102,15 @@ function bos_homepage_block_access(\Drupal\block\Entity\Block $block, $operation
  * conflict). Business facts are static; the phone comes from config.
  */
 function bos_homepage_page_attachments(array &$attachments) {
+  // The /about trust page: Organization JSON-LD (single block) + meta
+  // description. Kept here beside the front-page LocalBusiness so the site's
+  // structured data lives in one module (see ROADMAP: SEO standardization will
+  // later migrate BOTH into schema_metatag). Neither block is emitted on the
+  // other's page, so a domain never carries two competing blocks on one page.
+  if (_bos_homepage_is_about()) {
+    _bos_homepage_about_attachments($attachments);
+    return;
+  }
   if (!_bos_homepage_is_front()) {
     return;
   }
@@ -132,4 +141,93 @@ function bos_homepage_page_attachments(array &$attachments) {
     ],
     'bos_homepage_localbusiness',
   ];
+}
+
+/**
+ * TRUE when viewing the /about node (the public trust page).
+ *
+ * Identifies the page by its path alias rather than a stored nid, so it needs no
+ * config coupling and survives a rebuild of the node in any environment.
+ */
+function _bos_homepage_is_about(): bool {
+  if (\Drupal::routeMatch()->getRouteName() !== 'entity.node.canonical') {
+    return FALSE;
+  }
+  $node = \Drupal::routeMatch()->getParameter('node');
+  if (!$node || !is_object($node) || $node->bundle() !== 'page') {
+    return FALSE;
+  }
+  try {
+    return \Drupal::service('path_alias.manager')
+      ->getAliasByPath('/node/' . $node->id()) === '/about';
+  }
+  catch (\Throwable $e) {
+    return FALSE;
+  }
+}
+
+/**
+ * Meta description + Organization JSON-LD for /about. One Organization block,
+ * only on this page. foundingDate 1995 is confirmed (same entity changed hands
+ * and name the same day); alternateName is the owned S&E Ward's trade name.
+ */
+function _bos_homepage_about_attachments(array &$attachments): void {
+  $host = \Drupal::request()->getSchemeAndHttpHost();
+  $phone = (string) \Drupal::config('bos_service_request.settings')->get('office_phone');
+
+  $attachments['#attached']['html_head'][] = [
+    [
+      '#type' => 'html_tag',
+      '#tag' => 'meta',
+      '#attributes' => [
+        'name' => 'description',
+        'content' => "Founded in 1995 as S&E Ward's. Now owned by two of the people who worked the crews. Landscaping, irrigation and snow across Delta and Montrose counties.",
+      ],
+    ],
+    'bos_homepage_about_description',
+  ];
+
+  $ld = [
+    '@context' => 'https://schema.org',
+    '@type' => 'Organization',
+    'name' => 'Brookstone Outdoors',
+    'alternateName' => "S&E Ward's",
+    'foundingDate' => '1995',
+    'founder' => [
+      ['@type' => 'Person', 'name' => 'Steve Ward'],
+      ['@type' => 'Person', 'name' => 'Eunice Ward'],
+    ],
+    'telephone' => $phone !== '' ? $phone : '+1-970-835-9661',
+    'url' => $host . '/about',
+    'logo' => $host . '/' . \Drupal::service('extension.list.module')->getPath('bos_homepage') . '/assets/home-hero.jpg',
+    'areaServed' => [
+      ['@type' => 'AdministrativeArea', 'name' => 'Delta County, CO'],
+      ['@type' => 'AdministrativeArea', 'name' => 'Montrose County, CO'],
+    ],
+    // 'sameAs' (Facebook Page URL) intentionally omitted until the real URL is
+    // supplied — shipping a guessed profile link is worse than none.
+  ];
+  $attachments['#attached']['html_head'][] = [
+    [
+      '#type' => 'html_tag',
+      '#tag' => 'script',
+      '#attributes' => ['type' => 'application/ld+json'],
+      // HEX flags escape & < > ' " as \uXXXX — valid JSON that a parser reads
+      // back correctly, and immune to the render layer HTML-escaping the "&" in
+      // "S&E Ward's" (which would otherwise emit &amp; into the JSON-LD).
+      '#value' => json_encode($ld, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_AMP | JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_APOS),
+    ],
+    'bos_homepage_about_organization',
+  ];
+}
+
+/**
+ * Implements hook_preprocess_html().
+ *
+ * Sets the exact SEO <title> on /about (default would append the site name).
+ */
+function bos_homepage_preprocess_html(array &$variables): void {
+  if (_bos_homepage_is_about()) {
+    $variables['head_title'] = ['title' => 'About Brookstone Outdoors | Serving the Valley Since 1995'];
+  }
 }

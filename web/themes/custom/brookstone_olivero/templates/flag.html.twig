@@ -38,5 +38,20 @@
 {% set attributes = attributes.setAttribute('rel', 'nofollow') %}
 
 <div class="{{ classes|join(' ') }}">
-  <a{{ attributes }}>{{ link_text|default('<span class="visually-hidden">' ~ link_text_raw|default(title) ~ '</span>')|raw }}</a>
+  {#
+    link_text / link_text_raw are set by wo_timer_flag_update_preprocess_flag()
+    for the work_order_timer flag only. Every other flag (bookmark, following,
+    invoiced, work_order_complete/printed) leaves them undefined, so fall back to
+    rendering `title` with {{ }} — it can be a render array, and concatenating one
+    with ~ throws "Array to string conversion".
+  #}
+  <a{{ attributes }}>
+    {%- if link_text is defined -%}
+      {{ link_text }}
+    {%- elseif link_text_raw is defined -%}
+      <span class="visually-hidden">{{ link_text_raw|raw }}</span>
+    {%- else -%}
+      {{ title }}
+    {%- endif -%}
+  </a>
 </div>

@@ -231,3 +231,48 @@ function bos_homepage_preprocess_html(array &$variables): void {
     $variables['head_title'] = ['title' => 'About Brookstone Outdoors | Serving the Valley Since 1995'];
   }
 }
+
+/**
+ * Implements hook_system_breadcrumb_alter().
+ *
+ * Core's path-based breadcrumb yields only "Home" on every page (this site adds
+ * no current-page crumb). Give the /about subtree a real trail — Home > About
+ * ( > child ) — so the page reads correctly and a future /about/credentials
+ * child shows its parent instead of skipping it. SCOPED to the /about subtree;
+ * every other page keeps the site's existing "Home"-only breadcrumb untouched.
+ */
+function bos_homepage_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb &$breadcrumb, \Drupal\Core\Routing\RouteMatchInterface $route_match, array $context) {
+  if ($route_match->getRouteName() !== 'entity.node.canonical') {
+    return;
+  }
+  $node = $route_match->getParameter('node');
+  if (!$node || !is_object($node) || $node->bundle() !== 'page') {
+    return;
+  }
+  try {
+    $alias = \Drupal::service('path_alias.manager')->getAliasByPath('/node/' . $node->id());
+  }
+  catch (\Throwable $e) {
+    return;
+  }
+  if ($alias !== '/about' && strpos($alias, '/about/') !== 0) {
+    return;
+  }
+
+  $links = [\Drupal\Core\Link::createFromRoute(t('Home'), '<front>')];
+  if ($alias === '/about') {
+    // Parent page: Home > About (current, unlinked).
+    $links[] = \Drupal\Core\Link::createFromRoute(t('About'), '<none>');
+  }
+  else {
+    // Child of /about (e.g. /about/credentials): Home > About > {title}.
+    $links[] = \Drupal\Core\Link::fromTextAndUrl(t('About'), \Drupal\Core\Url::fromUri('internal:/about'));
+    $links[] = \Drupal\Core\Link::createFromRoute($node->label(), '<none>');
+  }
+
+  $new = new \Drupal\Core\Breadcrumb\Breadcrumb();
+  $new->setLinks($links);
+  $new->addCacheContexts(['route']);
+  $new->addCacheableDependency($node);
+  $breadcrumb = $new;
+}

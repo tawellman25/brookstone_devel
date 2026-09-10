@@ -138,13 +138,19 @@
 .about-page .about-sec p > strong:first-child {
   color: var(--bo-ink, #1A1613);
 }
+/* Plain brand-orange links that darken on hover — like the rest of the site.
+   Olivero draws its content-link "underline" as an inset box-shadow (and grows
+   it to a filled orange background on hover), so both states must be cleared. */
 .about-page .about-sec a {
   color: var(--bo-orange, #CB6015);
   text-decoration: none;
+  box-shadow: none;
 }
-.about-page .about-sec a:hover {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.about-page .about-sec a:hover,
+.about-page .about-sec a:focus {
+  color: var(--color--primary-30, #A54E10);
+  text-decoration: none;
+  box-shadow: none;
 }
 .about-page .about-sec ul {
   margin: 0 0 1.25rem;

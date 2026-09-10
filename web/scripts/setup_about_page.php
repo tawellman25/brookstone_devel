@@ -18,8 +18,10 @@
  *   ddev drush php:script web/scripts/setup_about_page.php          (dev)
  *   drush php:script web/scripts/setup_about_page.php               (live)
  *
- * The two /about/credentials links from the copy are intentionally omitted —
- * that child page is not built yet (a 404 is worse). Add them when it exists.
+ * Copy = Todd's full rewrite (2026-09-11), verbatim. The kicker is a styled
+ * subhead paragraph (.about-kicker), NOT an <h2>. The /about/credentials links
+ * stay omitted until that child page exists (it 404s today). Em-dashes are the
+ * author's unspaced form (word—word) and are preserved as written.
  */
 
 use Drupal\node\Entity\Node;
@@ -30,101 +32,88 @@ $aliasManager = \Drupal::service('path_alias.manager');
 $nodeStorage = \Drupal::entityTypeManager()->getStorage('node');
 
 // ---------------------------------------------------------------------------
-// The approved copy (verbatim, tone-revised 2026-09-10). Nowdoc — no
-// interpolation. Ampersands escaped for valid HTML; they render as "&". The two
-// credentials links are omitted (child page not built).
+// The approved copy (verbatim). Nowdoc — no interpolation. Ampersands escaped
+// for valid HTML; they render as "&". LINK SPEC applied: named phrase, named
+// section, first occurrence only, words unchanged.
 // ---------------------------------------------------------------------------
 $body = <<<'HTML'
-<div class="about-hero">
-  <blockquote class="about-hero__hook">This company has been taking care of property in Delta and Montrose counties since 1995. In March of 2025 it changed hands — from the couple who built it to two of the people who had been doing the work.</blockquote>
-  <p class="about-hero__cta"><a class="bo-btn" href="/request-estimate">Get a Free Estimate</a> <span class="about-hero__call">or call <a href="tel:9708359661">970-835-9661</a></span></p>
-  <p class="about-hero__trust">Founded 1995 · Locally owned · Licensed and insured</p>
-  <p class="about-hero__trust">Six departments, roughly 21 trucks, and a shop on Austin Road</p>
-</div>
+<p class="about-kicker">Creating and Maintaining Outdoor Spaces Since 1995</p>
 
-<section class="about-sec">
-  <h2>The short version</h2>
-  <p>We design and build outdoor spaces, and then we take care of them.</p>
-  <p>That is the whole company, and it is why the sign says <em>Creating and Maintaining Your Outdoor Spaces</em>. One half <a href="/services/landscaping">designs and installs</a> patios, walls, plantings, <a href="/services/sprinkler-system">sprinkler systems</a> and <a href="/lighting">lighting</a>. The other half <a href="/services/landscape-lawn-care">mows, sprays and prunes</a>, <a href="/winterize">winterizes those sprinklers</a> and turns them back on in the spring, and <a href="/services/snow-removal">plows the snow</a> off of it all winter.</p>
-  <p>Most people meet us through the second half. Somebody needs a sprinkler head fixed or a lawn kept up, and a few years later there is a conversation about the back yard. That is the usual order.</p>
-  <p>There is a practical reason to keep both halves in one company. A landscape is never finished — irrigation drifts out of adjustment, plants outgrow their spacing, soil compacts. Because our crews are on the property across all of it, the mowing crew can flag the head that is spraying the fence and the irrigation tech can flag the tree that is failing.</p>
+<section class="about-sec about-intro">
+  <p class="about-hero__lead">Brookstone Outdoors provides complete landscape construction, irrigation, property maintenance, plant health, lighting, and snow-management services throughout Delta and Montrose counties.</p>
+  <p>We design and build outdoor spaces—and then we take care of them.</p>
+  <p>That combination is what makes our company different. The same team that understands how a landscape was constructed can maintain it, adjust its irrigation, care for its plants, improve it as it matures, and manage the property through every season.</p>
+  <p class="about-hero__cta"><a class="bo-btn" href="/request-estimate">Get a Free Estimate</a> <a class="about-hero__call" href="tel:9708359661">970-835-9661</a></p>
+  <p class="about-hero__trust">Locally owned · Licensed and insured · Serving Western Colorado since 1995</p>
 </section>
 
 <section class="about-sec">
-  <h2>How this company got here</h2>
-  <p><strong>Steve and Eunice Ward started it in 1995.</strong> They called it S&amp;E Ward's Landscape Management and they ran it for thirty years. In a valley this size that name meant something specific: they answered the phone, they finished the job, and they were still there the next season.</p>
-  <p><strong>In March of 2025, they sold the business to two of their employees.</strong> Todd and Gerald bought it on March 25, 2025, with the support of <a href="https://www.region10.net/" target="_blank" rel="noopener">Region 10</a>, the regional economic development district in Montrose. Neither of us came in from outside. Todd came up on the design, installation and irrigation side. Gerald's family has deep agricultural roots in this area, and he came up running maintenance crews and field operations. Between us that covers both halves of the company.</p>
-  <p><strong>The name changed with the ownership.</strong> S&amp;E Ward's became Brookstone Outdoors. The company did not start over; it changed hands and changed names on the same day.</p>
-  <p><strong>We bought the S&amp;E Ward's name along with the business, and we kept trading under it for the first few months.</strong> A thirty-year-old name in a valley this size is worth keeping, so we let the two overlap while the transition settled. If you hired S&amp;E Ward's in the spring or summer of 2025, you hired this company.</p>
-  <p><strong>Steve and Eunice are retired, and it was a friendly handoff.</strong> Steve is still a phone call away. Thirty years of knowing which properties are on ditch water, where the old lines run, and what was tried in 1998 and did not work does not transfer in a closing document. We call and ask him.</p>
-
-  <h3>Before any of that</h3>
-  <p>One of us has been doing this work in this valley since 1985.</p>
-  <p>Todd was born and raised in Cedaredge. He installed his first sprinkler system here in 1985, as a high schooler running a landscaping outfit he called Cedaredge Landscaping. He still has one of the flyers.</p>
-  <p>Most of what is useful about that is specific and unglamorous. Which subdivisions were plumbed in a hurry. Which slopes hold. Which properties are on ditch water, and when the ditch goes dry.</p>
-
-  <h3>Why we are telling you this</h3>
-  <p>Because otherwise the arithmetic on this website does not work.</p>
-  <p>We say we have been doing this since 1995, and if you looked us up you would find a company name that nobody around here had heard before 2025. That combination is worth a second look, and some outfits do buy a truck, print a name, and claim a history they do not have.</p>
-  <p>So here is the actual history, with a date on it. Ask anyone who has been in this valley a while about S&amp;E Ward's.</p>
+  <h2>Local Roots and a New Name</h2>
+  <p>Brookstone Outdoors continues the company Steve and Eunice Ward began in 1995 as S&amp;E Ward's Landscape Management.</p>
+  <p>For 30 years, Steve and Eunice built the business by answering the phone, standing behind the work, and returning season after season. In March 2025, they sold the company to two longtime employees, Todd and Gerald.</p>
+  <p>They did not come from outside the company. They learned the properties, customers, crews, and day-to-day work from within the business.</p>
+  <p>Todd leads the landscape design, construction, and irrigation side of the company. A Cedaredge native, he installed his first sprinkler system in the valley in 1985 while still in high school.</p>
+  <p>Gerald, whose family has deep agricultural roots in the area, handles sales, leads spraying operations, maintenance, and field production.</p>
+  <p>The ownership and name changed, but the company's local experience, customer relationships, and commitment to the work continued. If you hired S&amp;E Ward's during the transition, you were working with the company that is now Brookstone Outdoors.</p>
 </section>
 
 <section class="about-sec">
-  <h2>What changed and what did not</h2>
-  <p>A change of ownership in a company this size is not invisible.</p>
-  <p><strong>Some of the crew stayed through the transition and some moved on.</strong> That is what happens when a business changes hands, and it happened here. The people running the departments today know these properties, and the two people who own the company learned the work on these crews.</p>
-  <p><strong>We did not set out to change how the work gets done.</strong> The way this company treated customers is most of what made it worth buying.</p>
-  <p><strong>What did change is the equipment behind the work.</strong> We have put money into the fleet, into the systems that schedule and document every job, and into the departments that were running thin. The company is doing more work than it was two years ago, and that takes trucks, people and organization that were not all here in 2024.</p>
-  <p><strong>We do not get every route right.</strong> In a business running six departments across two counties, some weeks the mowing crew arrives on Thursday instead of Tuesday, and when a storm lands the snow schedule rearranges everything behind it. When that happens, call the office. We would rather hear about it.</p>
+  <h2>One Company for the Entire Property</h2>
+  <p>A landscape is never truly finished.</p>
+  <p>Plants mature. Irrigation systems fall out of adjustment. Soil compacts. Drainage problems appear. Trees need pruning and treatment. Hardscapes settle, and properties change as the people using them change.</p>
+  <p>That is why Brookstone Outdoors operates as one full-service company rather than a collection of unrelated contractors.</p>
+  <p><a href="/services/landscaping">Our landscape crews</a> can design and build the property. <a href="/services/sprinkler-system">Our irrigation department</a> can keep the water going where it belongs. <a href="/services/landscape-lawn-care">Our maintenance and plant-health teams</a> can care for the lawn, trees, shrubs, and planting beds. <a href="/lighting">Our lighting team</a> can extend the use of the property after dark, and <a href="/services/snow-removal">our snow crews</a> can keep commercial and community properties accessible through the winter.</p>
+  <p>Because these departments work together, problems are more likely to be noticed before they become expensive. A mowing crew can report a damaged sprinkler head. An irrigation technician can identify a struggling tree. A maintenance supervisor can spot drainage or landscape problems that should be addressed by the construction team.</p>
+  <p>For the customer, that means fewer contractors to coordinate and one company responsible for understanding the property.</p>
 </section>
 
 <section class="about-sec">
-  <h2>What we run</h2>
-  <p>This section is for property managers and HOA boards, who need to know whether a company can absorb their work before they put it out to bid. Homeowners are welcome to skip it, though it explains a few things about pricing.</p>
-  <p><strong>Six departments.</strong> Landscape, irrigation, spray, maintenance, lighting and snow. Each one has its own crews, its own equipment and its own scheduling. That is how we can be at your property in July for mowing, in October for winterization, and in January with a plow, and have it be the same company each time.</p>
-  <p><strong>What that covers:</strong></p>
+  <h2>What We Do</h2>
+  <p>Brookstone Outdoors provides:</p>
   <ul>
-    <li>Landscape design, installation and renovation</li>
-    <li>Hardscape — patios, retaining walls, rock work and water features</li>
-    <li>Irrigation design, installation and repair, spring startup, mid-season checkups and winterization</li>
-    <li>Lawn and property maintenance for residential, commercial and HOA accounts</li>
-    <li>Mowing, aeration, dethatching, pruning and seasonal cleanup</li>
-    <li>Lawn, tree and shrub fertilization</li>
-    <li>Weed, insect and plant-health treatments</li>
-    <li>Landscape and exterior lighting</li>
-    <li>Snow and ice management</li>
+    <li>Landscape design, installation, and renovation</li>
+    <li>Patios, retaining walls, rockwork, outdoor kitchens and water features</li>
+    <li>Irrigation design, installation, repair, startup, checkups, and <a href="/winterize">winterization</a></li>
+    <li>Residential, commercial, and HOA property maintenance</li>
+    <li>Mowing, aeration, dethatching, pruning, and seasonal cleanup</li>
+    <li>Lawn, tree, and shrub fertilization</li>
+    <li>Weed, insect, and plant-health treatments</li>
+    <li>Landscape, holiday and exterior lighting</li>
+    <li>Commercial snow and ice management</li>
   </ul>
-  <p><strong>Ice, not only snow.</strong> For a commercial lot or an HOA common area the plowing is the straightforward part. What generates the claim is the refreeze at two in the afternoon on a sunny January day, in the low spot by the entrance, after everyone decided the storm was over. Ice management is a scheduled, documented service and we treat it as one.</p>
-  <p><strong>Roughly 21 trucks with equipment and trailers,</strong> working out of the shop on Austin Road, which sits in the middle of the Surface Creek and Delta corridor where most of our work is. The fleet is USDOT registered and subject to federal inspection and maintenance requirements.</p>
-  <p><strong>More than 2,500 properties in our records.</strong> Since we started keeping track in 2017 we have done work at over twenty-five hundred addresses across Delta and Montrose counties. That is not a current customer count — it includes one-time sprinkler repairs and jobs finished years ago. It is the number of properties in this valley our trucks have been to.</p>
-  <p><strong>Roughly two dozen employees,</strong> which is enough to hold multiple crews on a large installation without pulling off the maintenance routes for a week.</p>
-  <p><strong>Nearly all of the work is done by our own crews.</strong> The one exception is electrical. When a job requires a licensed electrician — a lighting system that needs a new circuit at the panel, most often — we bring one in, because that is work an electrician ought to be doing. Everything else is ours: design, installation, irrigation, spray, maintenance, lighting and snow.</p>
-  <p><strong>Every job is scheduled, tracked and documented in our own software.</strong> We built it and we run the company on it. For a homeowner that means the person answering the phone can see your property, your history and what was done last time. For an HOA board or a property manager it means service records, application records and job documentation you can put in front of your own board.</p>
-  <p><strong>We are licensed and insured.</strong> Certificate of insurance, applicator license, backflow certification and W-9 on request, usually within a day.</p>
+  <p>Most of this work is completed by our own crews. When a project requires work outside our licensing—such as installing a new electrical circuit—we coordinate with an appropriately licensed professional.</p>
 </section>
 
 <section class="about-sec">
-  <h2>Where we work</h2>
-  <p>Delta and Montrose counties, on the Western Slope. The bulk of our work is in <strong>Cedaredge, Delta, Austin, Eckert and Orchard City</strong> on the Surface Creek side, out into the North Fork in <strong>Hotchkiss, Paonia and Crawford</strong>, and south through <strong>Olathe and Montrose</strong>.</p>
-  <p>We route by geography, and it affects what we can promise you. Crews work an area at a time — one truck, one setup, one trip through a neighborhood. It is the reason maintenance pricing here is what it is, and the reason we schedule by week rather than by date on routed services.</p>
-  <p>If you are outside those areas, call anyway and we will give you a straight answer about whether we can serve you well. Sometimes the answer is no. A property forty minutes off every route we run gets visited last and gets rescheduled first when weather compresses the week. Better to say that up front.</p>
-  <p><strong>Design-build installation is different.</strong> An installation is a crew on site for days or weeks, not a truck passing through, so the geography matters far less. For a project we will travel.</p>
+  <h2>Built to Serve Properties of Every Size</h2>
+  <p>Brookstone Outdoors operates six specialized departments from our shop on Austin Road. With approximately two dozen employees and a fleet of roughly 21 trucks, along with dedicated equipment and trailers, we can serve individual homeowners while also supporting commercial properties, HOAs, and larger construction projects.</p>
+  <p>Since our current property records began in 2017, our crews have performed work at more than 2,500 addresses across Delta and Montrose counties. That includes long-term maintenance accounts, landscape installations, seasonal services, and individual repairs.</p>
+  <p>Every job is scheduled and documented through BOS—the Brookstone Operating System—our own business-management platform. It gives our office and field teams access to property information, service history, work orders, application records, and job documentation.</p>
+  <p>For homeowners, that means we can see what was done previously and provide better continuity from one visit to the next. For property managers and HOA boards, it provides the service records and documentation needed to manage larger properties responsibly.</p>
 </section>
 
 <section class="about-sec">
-  <h2>A few things worth knowing</h2>
-  <p><strong>We are not the cheapest.</strong> There is usually somebody with a mower in a pickup who will do it for less, and for a small lot that is sometimes the right call. The price here covers a licensed applicator, a covered payroll, insurance, and a company that will be here next season.</p>
-  <p><strong>We do not hand you a drawing and leave.</strong> We design it and our own crews build it, so the person who drew the wall is there when it goes in.</p>
-  <p><strong>Sometimes the answer is to wait.</strong> If you call about aerating in November, we will tell you to wait until spring. If your irrigation controller has six more good years in it, we will say so.</p>
+  <h2>Where We Work</h2>
+  <p>We serve Delta and Montrose counties on Colorado's Western Slope.</p>
+  <p>Our regular service area includes Cedaredge, Delta, Austin, Eckert, Orchard City, Hotchkiss, Paonia, Crawford, Olathe, and Montrose.</p>
+  <p>Recurring maintenance and service work is routed geographically so our crews can operate efficiently and provide dependable service. Larger landscape and irrigation installations are scheduled differently, allowing our construction crews to travel farther when the project is a good fit.</p>
+  <p>If your property is outside our regular service area, call us. We will give you a straightforward answer about whether we can serve it well.</p>
+</section>
+
+<section class="about-sec">
+  <h2>Practical Advice. Long-Term Work.</h2>
+  <p>We believe customers deserve honest recommendations, even when the recommendation is to wait.</p>
+  <p>If equipment still has useful life, we will tell you. If a service would be more effective in another season, we will recommend the better timing. If a project needs a different specialist, we will say so.</p>
+  <p>We are not trying to complete one transaction and disappear. We want to understand the property, do the work correctly, and still be the company you call next season.</p>
+  <p>That was the foundation of S&amp;E Ward's Landscape Management, and it remains the foundation of Brookstone Outdoors:</p>
+  <p>Answer the phone. Do the work right. Be here next season.</p>
 </section>
 
 <div class="about-close">
-  <h2>Come see the work</h2>
-  <p>The job has not changed since 1995. Answer the phone, finish the work, be here the next season.</p>
+  <h2>Let's Talk About Your Property</h2>
+  <p>Whether you need a sprinkler repaired, a property maintained, or an entirely new outdoor space designed and built, Brookstone Outdoors is ready to help.</p>
   <p class="about-close__cta"><a class="bo-btn" href="/request-estimate">Get a Free Estimate</a> <a class="about-close__phone" href="tel:9708359661">970-835-9661</a></p>
-  <p class="about-close__strip">Delta and Montrose counties · Licensed and insured · Founded 1995</p>
-  <p class="about-close__links"><a href="/services">Our services</a> · <a href="/careers">Work with us</a> · <a href="/contact">Contact</a></p>
-  <p class="about-close__signoff">Thank you for choosing Brookstone Outdoors.</p>
+  <p class="about-close__strip">Delta and Montrose counties · Locally owned · Licensed and insured</p>
 </div>
 HTML;
 

@@ -44,3 +44,10 @@ services:
     class: Drupal\bos_service_request\Service\CustomerProvisioningService
     public: true
     arguments: ['@entity_type.manager', '@password_generator']
+
+  # Move core contact form to /contact/feedback so the rebuilt /contact page owns
+  # the path (core form kept reachable during cutover).
+  bos_service_request.route_subscriber:
+    class: Drupal\bos_service_request\Routing\RouteSubscriber
+    tags:
+      - { name: event_subscriber }

@@ -1,0 +1,55 @@
+{#
+/**
+ * @file
+ * Public /contact page. Phone-first, NAP + map, high-intent routing links, then
+ * the general form. H1 comes from the route title (page-title block).
+ * Vars: office_phone, office_email, office_hours, office_address, map_src,
+ * contact_form.
+ */
+#}
+{% set tel = office_phone|replace({' ': '', '-': '', '(': '', ')': '', '.': ''}) %}
+<div class="contact-page">
+
+  <section class="contact-lead">
+    <p class="contact-lead__eyebrow">The fastest way to reach us is the phone.</p>
+    <p class="contact-lead__phone"><a href="tel:{{ tel }}">{{ office_phone }}</a></p>
+    <p>Someone in the office answers during business hours. If we are out on properties, leave a message with your name, your address, and what you need, and we will call you back.</p>
+  </section>
+
+  <div class="contact-cols">
+    <section class="contact-office">
+      <h2>Office</h2>
+      <p class="contact-office__addr">{{ office_address|nl2br }}</p>
+      <p class="contact-office__line"><a href="mailto:{{ office_email }}">{{ office_email }}</a></p>
+      <p class="contact-office__hours">{{ office_hours|nl2br }}</p>
+      {% if map_src %}
+        <div class="contact-map">
+          <iframe src="{{ map_src }}" width="100%" height="260" style="border:0;" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map to Brookstone Outdoors, 20143 Austin Rd, Austin, CO"></iframe>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="contact-routing">
+      <h2>Looking for something specific?</h2>
+      <p>Some requests have their own form, and those forms ask the questions we need answered so that nobody has to call you back to gather basics.</p>
+      <ul class="contact-routing__list">
+        <li><strong>Planning a landscape project, or need work quoted</strong><br><a href="/request-estimate">Request a free estimate →</a></li>
+        <li><strong>Sprinkler winterization</strong><br><a href="/winterize">Schedule winterization →</a></li>
+        <li><strong>Interested in working here</strong><br><a href="/careers">See open positions →</a></li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="contact-message">
+    <h2>Send us a message</h2>
+    <p>For anything else — a question about an invoice, a scheduling change, a problem with work we did, or something that does not fit the categories above.</p>
+    {{ contact_form }}
+  </section>
+
+  <section class="contact-area">
+    <h2>Where we work</h2>
+    <p>Delta and Montrose counties on Colorado's Western Slope, including Cedaredge, Delta, Austin, Eckert, Orchard City, Hotchkiss, Paonia, Crawford, Olathe, and Montrose.</p>
+    <p>If your property is outside that area, call us anyway. We will give you a straightforward answer about whether we can serve it well.</p>
+  </section>
+
+</div>

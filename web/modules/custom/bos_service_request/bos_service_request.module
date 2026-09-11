@@ -260,6 +260,53 @@ function bos_service_request_page_attachments(array &$attachments) {
     ];
     $attachments['#cache']['contexts'][] = 'user.roles';
   }
+
+  // /contact — page-scoped SEO meta description.
+  $routeName = \Drupal::routeMatch()->getRouteName();
+  if ($routeName === 'bos_service_request.contact') {
+    $attachments['#attached']['html_head'][] = [
+      ['#tag' => 'meta', '#attributes' => ['name' => 'description', 'content' => 'Call 970-835-9661 or send us a message. Landscaping, irrigation, maintenance and snow service across Delta and Montrose counties, Colorado.']],
+      'bos_contact_description',
+    ];
+  }
+  // /thank-you/contact — noindex (conversion landing, not for search).
+  if ($routeName === 'bos_service_request.contact_thankyou') {
+    $attachments['#attached']['html_head'][] = [
+      ['#tag' => 'meta', '#attributes' => ['name' => 'robots', 'content' => 'noindex, nofollow']],
+      'bos_contact_thankyou_noindex',
+    ];
+  }
+}
+
+/**
+ * Implements hook_mail().
+ *
+ * Contact-form backstop notification to the monitored office mailbox.
+ */
+function bos_service_request_mail($key, &$message, $params) {
+  if ($key === 'contact_notification') {
+    $message['subject'] = $params['subject'] ?? 'New contact submission';
+    $message['body'][] = $params['body'] ?? '';
+  }
+}
+
+/**
+ * Implements hook_system_breadcrumb_alter().
+ *
+ * Home > Contact on the contact page (default breadcrumb would show only Home).
+ */
+function bos_service_request_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb &$breadcrumb, \Drupal\Core\Routing\RouteMatchInterface $route_match, array $context) {
+  $name = $route_match->getRouteName();
+  if ($name !== 'bos_service_request.contact') {
+    return;
+  }
+  $new = new \Drupal\Core\Breadcrumb\Breadcrumb();
+  $new->setLinks([
+    \Drupal\Core\Link::createFromRoute(t('Home'), '<front>'),
+    \Drupal\Core\Link::createFromRoute(t('Contact'), '<none>'),
+  ]);
+  $new->addCacheContexts(['route']);
+  $breadcrumb = $new;
 }
 
 /**
@@ -454,6 +501,19 @@ function bos_service_request_theme($existing, $type, $theme, $path): array {
   return [
     'views_view_fields__service_request_admin' => [
       'base hook' => 'views_view_fields',
+    ],
+    'bos_contact' => [
+      'variables' => [
+        'office_phone' => NULL,
+        'office_email' => NULL,
+        'office_hours' => NULL,
+        'office_address' => NULL,
+        'map_src' => NULL,
+        'contact_form' => NULL,
+      ],
+    ],
+    'bos_contact_thankyou' => [
+      'variables' => ['show_links' => FALSE],
     ],
   ];
 }

@@ -104,3 +104,24 @@ bos_service_request.action:
     parameters:
       service_request:
         type: 'entity:service_request'
+
+# Public /contact page — rebuild (record in BOS + campaign + topic routing).
+# The core contact.site_page route is moved to /contact/feedback by
+# RouteSubscriber so it stays reachable during cutover.
+bos_service_request.contact:
+  path: '/contact'
+  defaults:
+    _controller: 'Drupal\bos_service_request\Controller\ContactController::page'
+    _title: 'Contact Brookstone Outdoors'
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+
+bos_service_request.contact_thankyou:
+  path: '/thank-you/contact'
+  defaults:
+    _controller: 'Drupal\bos_service_request\Controller\ContactController::thankYou'
+    _title: 'Thank you — we have your message'
+  requirements:
+    _access: 'TRUE'

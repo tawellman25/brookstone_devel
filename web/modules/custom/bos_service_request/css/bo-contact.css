@@ -1,0 +1,44 @@
+/**
+ * /contact page + form. Uses the sitewide --bo-* brand tokens. Normal-themed
+ * content page (renders inside Olivero with nav + breadcrumb + footer).
+ */
+.contact-page { --osw: "Oswald", "Arial Narrow", sans-serif; max-width: 900px; color: var(--bo-prose, #3B322A); }
+.contact-page h2 { font-family: var(--osw); font-weight: 600; color: var(--bo-ink, #1A1613); font-size: clamp(20px, 2.4vw, 26px); margin: 0 0 0.75rem; }
+.contact-page p { font-size: 17px; line-height: 1.6; margin: 0 0 1rem; }
+.contact-page a { color: var(--bo-orange, #CB6015); text-decoration: none; box-shadow: none; }
+.contact-page a:hover, .contact-page a:focus { color: var(--color--primary-30, #A54E10); text-decoration: underline; text-underline-offset: 2px; box-shadow: none; }
+
+.contact-lead { background: var(--bo-sand, #F2E9DC); border-left: 5px solid var(--bo-orange, #CB6015); border-radius: 6px; padding: 1.25rem 1.5rem; margin: 0 0 2rem; }
+.contact-lead__eyebrow { font-family: var(--osw); font-weight: 600; color: var(--bo-ink, #1A1613); font-size: 1.05rem; margin: 0 0 0.25rem; }
+.contact-lead__phone { margin: 0 0 0.75rem; }
+.contact-lead__phone a { font-family: var(--osw); font-size: 2rem; font-weight: 700; color: var(--bo-orange, #CB6015); text-decoration: none; }
+.contact-lead__phone a:hover { color: var(--bo-orange-hover, #A54E10); }
+.contact-lead p:last-child { margin: 0; font-size: 15.5px; color: var(--bo-muted, #6B5D4F); }
+
+.contact-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 0 0 2.25rem; }
+.contact-office__addr { font-family: var(--osw); font-size: 1.05rem; color: var(--bo-ink, #1A1613); margin: 0 0 0.5rem; }
+.contact-office__hours { color: var(--bo-muted, #6B5D4F); font-size: 0.95rem; }
+.contact-map { margin-top: 1rem; border-radius: 6px; overflow: hidden; }
+.contact-routing__list { list-style: none; margin: 0; padding: 0; }
+.contact-routing__list li { margin: 0 0 0.9rem; line-height: 1.5; }
+.contact-routing__list strong { color: var(--bo-ink, #1A1613); }
+
+.contact-message { margin: 0 0 2.25rem; }
+.contact-form__note { font-size: 15px; color: var(--bo-muted, #6B5D4F); border-left: 3px solid var(--bo-hairline, #E2D7C7); padding-left: 0.9rem; margin-top: 1rem; }
+
+/* Form — reuse the winterize field grid; brand submit button. */
+.contact-form .bo-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0 0 1rem; }
+.contact-form .form-item { margin: 0 0 1rem; }
+.contact-form label { font-family: var(--osw); font-weight: 600; color: var(--bo-ink, #1A1613); }
+.contact-form input[type="text"], .contact-form input[type="tel"], .contact-form input[type="email"],
+.contact-form select, .contact-form textarea { width: 100%; padding: 0.6rem 0.7rem; border: 1px solid var(--bo-field-border, #D6C9B6); border-radius: 4px; font-size: 16px; }
+.contact-form .contact-submit { font-family: var(--osw); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; background: var(--bo-orange, #CB6015); color: #fff; border: none; border-radius: 3px; padding: 0.8rem 1.8rem; font-size: 1rem; cursor: pointer; }
+.contact-form .contact-submit:hover { background: var(--bo-orange-hover, #A54E10); }
+
+.contact-thankyou { max-width: 700px; }
+
+@media (max-width: 48em) {
+  .contact-cols { grid-template-columns: 1fr; gap: 1.5rem; }
+  .contact-form .bo-grid-2 { grid-template-columns: 1fr; }
+  .contact-form .contact-submit { width: 100%; }
+}

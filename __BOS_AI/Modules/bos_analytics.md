@@ -68,3 +68,34 @@ Additive; no cim, no DB.
 - **No analytics existed before 2026-09-06** — this is the first tracking on BOS.
 - Dev may or may not carry the container id (set it in dev settings.php only if
   you want to test there; leave it out to keep dev traffic off the container).
+
+## Lead-form conversion events (dataLayer → GTM Custom Event triggers)
+
+GTM triggers (container `GTM-WC8F8PCN`) are **Custom Event** triggers: they are
+inert until the site pushes the matching `event` into `dataLayer`. `bos_analytics`
+is the single push mechanism — a `hook_form_alter` appends a submit handler that,
+on **successful** submission, sets a one-shot session flag consumed on the next
+page render, which pushes `dataLayer.push({event, campaign})` **once**,
+**anonymous-only** (the whole container is anon-gated), **no PII**.
+
+**A form refactor that changes a form ID, or that stops setting its success flag,
+silently kills that event's tracking** (a trigger with no event behind it reports
+a silent zero). Keep this map in sync with the forms.
+
+| Form ID | Route | Event | Success flag |
+|---|---|---|---|
+| `bos_winterize_form` | `/winterize` | `winterize_submit` | `winterize_done` |
+| `bos_fall_cleanup_form` | `/fall-cleanup` (services term) | `cleanup_submit` | `fc_done` |
+| `bos_portal_waitlist_form` | `/user/login` waitlist panel | `portal_waitlist_submit` | redirect form (whitelisted by event name) |
+| `bos_contact_form` | `/contact` | `contact_submit` | redirect form (whitelisted by event name) |
+| `bos_homepage_request_estimate` | `/request-estimate` | `estimate_submit` | `estimate_done` |
+
+- The dataLayer variable is **`campaign`** (the `?c=` code), NOT `campaign_code`
+  — map the GTM variable to `campaign`.
+- **Keep estimate vs contact as separate conversions.** An estimate is a
+  design-build lead (money event → Primary Google Ads conversion); a contact
+  message is frequently a vendor or job-seeker (measurement / Meta Lead only).
+  Merging them teaches Ads to optimize toward the cheaper, more plentiful one.
+- Campaign is also stored on the BOS **record** for each form: `service_request.
+  field_campaign` (winterize/contact) and `estimate_request.field_campaign`
+  (request-estimate), so attribution survives on the lead, not only in GA.

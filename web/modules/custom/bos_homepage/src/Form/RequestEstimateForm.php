@@ -121,10 +121,17 @@ final class RequestEstimateForm extends FormBase {
     $statusTid = $this->termIdByName('estimate_request_status', 'New - Gathering Info');
     $serviceTid = $this->termIdByName('services', $serviceName) ?: $this->termIdByName('services', 'Landscaping');
 
+    // Campaign attribution — store the ?c= code on the lead (allowlist-checked),
+    // so attribution lives on the BOS record, not only in GTM/GA.
+    $allow = $this->configFactory->get('bos_service_request.settings')->get('campaigns') ?? [];
+    $rawC = (string) $this->requestStack->getCurrentRequest()->query->get('c', '');
+    $campaign = $rawC === '' ? 'website' : (in_array($rawC, $allow, TRUE) ? $rawC : 'unknown');
+
     $values = [
       'type' => 'standard',
       'uid' => 0,
       'field_priority' => 'normal',
+      'field_campaign' => $campaign,
       'field_requestor_name' => $name,
       'field_requestor_address' => trim($address . ($zip ? ', ' . $zip : '')),
       'field_requestor_phone' => $phoneIn,

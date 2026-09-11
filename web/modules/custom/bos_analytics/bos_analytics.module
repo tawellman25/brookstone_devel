@@ -123,6 +123,7 @@ function _bos_analytics_form_events(): array {
     'bos_fall_cleanup_form' => 'cleanup_submit',
     'bos_portal_waitlist_form' => 'portal_waitlist_submit',
     'bos_contact_form' => 'contact_submit',
+    'bos_homepage_request_estimate' => 'estimate_submit',
   ];
 }
 
@@ -158,7 +159,7 @@ function bos_analytics_capture_submit(array &$form, FormStateInterface $form_sta
       return;
     }
     // Success gate for the rebuild forms (redirect forms reach here on success).
-    $done = $form_state->get('winterize_done') || $form_state->get('fc_done');
+    $done = $form_state->get('winterize_done') || $form_state->get('fc_done') || $form_state->get('estimate_done');
     // Redirect forms (no rebuild flag) reach the submit handler only on success.
     $isRedirectForm = in_array($event, ['portal_waitlist_submit', 'contact_submit'], TRUE);
     if (!$done && !$isRedirectForm) {

@@ -190,7 +190,7 @@ final class ContactForm extends FormBase {
 
     // 4. Email backstop — subject reflects the topic so complaint / commercial
     // stand out. The record is the system of record; the email is the nudge.
-    $this->sendBackstop($topic, $this->topicOptions(), $fullName, $phone, $email, $address, $message, $ref);
+    $this->sendBackstop($topic, $this->topicOptions(), $fullName, $phone, $email, $address, $message, $ref, (string) $record->id());
 
     // 5. Thank-you page (distinct URL → clean conversion fire).
     $form_state->setRedirect('bos_service_request.contact_thankyou', [], ['query' => ['t' => $topic]]);
@@ -257,10 +257,13 @@ final class ContactForm extends FormBase {
     }
   }
 
-  private function sendBackstop(string $topic, array $topicOptions, string $name, string $phone, string $email, string $address, string $message, string $ref): void {
+  private function sendBackstop(string $topic, array $topicOptions, string $name, string $phone, string $email, string $address, string $message, string $ref, string $id): void {
     $label = $topicOptions[$topic] ?? $topic;
     $prefix = $topic === 'problem' ? '⚠ PROBLEM' : ($topic === 'commercial' ? 'COMMERCIAL/HOA' : ($topic === 'quote' ? 'QUOTE' : 'Contact'));
-    $host = $this->requestStack->getCurrentRequest()->getSchemeAndHttpHost();
+    // Fixed canonical host: the request host is unreliable outside a browser
+    // request (CLI/cron yield "http://default"), and the office is always on
+    // the live domain.
+    $base = 'https://brookstoneoutdoors.com';
     $body = [
       "New contact submission ({$label})",
       '',
@@ -273,7 +276,8 @@ final class ContactForm extends FormBase {
       $message,
       '',
       "Reference: {$ref}",
-      "Open in BOS: {$host}/admin/office/service-requests",
+      "Open this request: {$base}/service_request/{$id}",
+      "Office queue:      {$base}/admin/office/service-requests",
     ];
     $params = [
       'subject' => "[{$prefix}] Contact form — {$name}",

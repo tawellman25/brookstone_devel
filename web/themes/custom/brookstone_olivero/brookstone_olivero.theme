@@ -25,11 +25,16 @@ function brookstone_olivero_preprocess_node(array &$variables): void {
   catch (\Throwable $e) {
     return;
   }
-  if ($alias !== '/about') {
+  if ($alias === '/about') {
+    $variables['attributes']['class'][] = 'about-page';
+    $variables['#attached']['library'][] = 'brookstone_olivero/about';
     return;
   }
-  $variables['attributes']['class'][] = 'about-page';
-  $variables['#attached']['library'][] = 'brookstone_olivero/about';
+  // Long-form legal / policy pages share one readable treatment.
+  if (in_array($alias, ['/privacy', '/terms', '/accessibility'], TRUE)) {
+    $variables['attributes']['class'][] = 'legal-page';
+    $variables['#attached']['library'][] = 'brookstone_olivero/legal';
+  }
 }
 
 /**

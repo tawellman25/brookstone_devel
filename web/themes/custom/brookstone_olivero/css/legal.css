@@ -1,0 +1,73 @@
+/**
+ * @file
+ * Long-form legal / policy pages (/privacy, and future /terms, /accessibility).
+ * Readable measure + brand headings; links are plain brand-orange that darken
+ * on hover (Olivero draws content-link "underlines" as an inset box-shadow that
+ * fills orange on hover — cleared here, same as the About page).
+ * Scoped under .legal-page so nothing else is affected.
+ */
+
+.legal-page {
+  --osw: "Oswald", "Arial Narrow", sans-serif;
+  color: var(--bo-prose, #3B322A);
+  font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+}
+
+.legal-page .node__content,
+.legal-page__body {
+  max-width: 760px;
+}
+
+.legal-page .legal-updated {
+  color: var(--bo-muted, #6B5D4F);
+  font-size: 0.95rem;
+  margin: 0 0 1.5rem;
+}
+
+.legal-page h2 {
+  font-family: var(--osw);
+  font-weight: 600;
+  font-size: clamp(22px, 2.6vw, 28px);
+  line-height: 1.15;
+  color: var(--bo-ink, #1A1613);
+  margin: 2.25rem 0 0.75rem;
+}
+
+.legal-page p,
+.legal-page li {
+  font-size: 17px;
+  line-height: 1.65;
+  margin: 0 0 1rem;
+}
+
+.legal-page ul {
+  margin: 0 0 1.25rem;
+  padding-left: 1.25rem;
+}
+.legal-page li {
+  margin: 0 0 0.4rem;
+}
+
+.legal-page strong {
+  color: var(--bo-ink, #1A1613);
+}
+
+/* Plain brand-orange links that darken on hover (see file header). */
+.legal-page a {
+  color: var(--bo-orange, #CB6015);
+  text-decoration: none;
+  box-shadow: none;
+}
+.legal-page a:hover,
+.legal-page a:focus {
+  color: var(--color--primary-30, #A54E10);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  box-shadow: none;
+}
+
+.legal-page .legal-contact {
+  line-height: 1.6;
+  margin: 0 0 1rem;
+}

@@ -255,7 +255,9 @@ function bos_homepage_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb
   catch (\Throwable $e) {
     return;
   }
-  if ($alias !== '/about' && strpos($alias, '/about/') !== 0) {
+  // Standalone legal / policy pages get a simple Home > {title} trail.
+  $legal = ['/privacy', '/terms', '/accessibility'];
+  if ($alias !== '/about' && strpos($alias, '/about/') !== 0 && !in_array($alias, $legal, TRUE)) {
     return;
   }
 
@@ -263,6 +265,10 @@ function bos_homepage_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb
   if ($alias === '/about') {
     // Parent page: Home > About (current, unlinked).
     $links[] = \Drupal\Core\Link::createFromRoute(t('About'), '<none>');
+  }
+  elseif (in_array($alias, $legal, TRUE)) {
+    // Home > {page title}, e.g. Home > Privacy Policy.
+    $links[] = \Drupal\Core\Link::createFromRoute($node->label(), '<none>');
   }
   else {
     // Child of /about (e.g. /about/credentials): Home > About > {title}.

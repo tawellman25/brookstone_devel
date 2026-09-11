@@ -261,12 +261,37 @@ function bos_service_request_page_attachments(array &$attachments) {
     $attachments['#cache']['contexts'][] = 'user.roles';
   }
 
-  // /contact — page-scoped SEO meta description.
+  // /contact — page-scoped SEO meta description + LocalBusiness NAP schema.
+  // Only on this page (no conflict with the homepage LocalBusiness or /about
+  // Organization — each is scoped to its own page). The footer carries visible
+  // NAP but no JSON-LD, so this is the contact page's single schema block.
   $routeName = \Drupal::routeMatch()->getRouteName();
   if ($routeName === 'bos_service_request.contact') {
     $attachments['#attached']['html_head'][] = [
       ['#tag' => 'meta', '#attributes' => ['name' => 'description', 'content' => 'Call 970-835-9661 or send us a message. Landscaping, irrigation, maintenance and snow service across Delta and Montrose counties, Colorado.']],
       'bos_contact_description',
+    ];
+    $host = \Drupal::request()->getSchemeAndHttpHost();
+    $ld = [
+      '@context' => 'https://schema.org',
+      '@type' => 'LocalBusiness',
+      'name' => 'Brookstone Outdoors',
+      'telephone' => '+1-970-835-9661',
+      'email' => 'office@brookstoneoutdoors.com',
+      'url' => $host . '/contact',
+      'address' => [
+        '@type' => 'PostalAddress',
+        'streetAddress' => '20143 Austin Rd',
+        'addressLocality' => 'Austin',
+        'addressRegion' => 'CO',
+        'postalCode' => '81410',
+        'addressCountry' => 'US',
+      ],
+      'areaServed' => ['Cedaredge', 'Delta', 'Austin', 'Eckert', 'Orchard City', 'Hotchkiss', 'Paonia', 'Crawford', 'Olathe', 'Montrose'],
+    ];
+    $attachments['#attached']['html_head'][] = [
+      ['#type' => 'html_tag', '#tag' => 'script', '#attributes' => ['type' => 'application/ld+json'], '#value' => json_encode($ld, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_AMP | JSON_HEX_TAG)],
+      'bos_contact_localbusiness',
     ];
   }
   // /thank-you/contact — noindex (conversion landing, not for search).

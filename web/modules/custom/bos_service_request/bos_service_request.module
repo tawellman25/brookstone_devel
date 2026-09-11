@@ -674,7 +674,20 @@ function _bos_service_request_build_card(\Drupal\Core\Entity\EntityInterface $sr
     }
   }
 
-  $bundleLabel = ['sprinkler_winterizing' => 'Winterize', 'fall_cleanup' => 'Fall Cleanup'][$sr->bundle()] ?? $sr->bundle();
+  $bundleLabel = ['sprinkler_winterizing' => 'Winterize', 'fall_cleanup' => 'Fall Cleanup', 'general_inquiry' => 'Contact'][$sr->bundle()] ?? $sr->bundle();
+
+  // Contact (general_inquiry): the topic (routing field) + the message. These
+  // are the fields the office works from; empty on the winterize/cleanup cards.
+  $topic = '';
+  if ($sr->hasField('field_topic') && !$sr->get('field_topic')->isEmpty()) {
+    $allowed = $sr->get('field_topic')->getFieldDefinition()->getSetting('allowed_values') ?? [];
+    $key = $sr->get('field_topic')->value;
+    $topic = (string) ($allowed[$key] ?? $key);
+  }
+  $message = '';
+  if ($sr->bundle() === 'general_inquiry' && $sr->hasField('field_customer_notes') && !$sr->get('field_customer_notes')->isEmpty()) {
+    $message = mb_substr(trim((string) $sr->get('field_customer_notes')->value), 0, 240);
+  }
 
   // System facts that drive the quote: water supply (pump fee) + zone count
   // (extra-zone fee). Labels pulled from each field's allowed_values.
@@ -712,6 +725,8 @@ function _bos_service_request_build_card(\Drupal\Core\Entity\EntityInterface $sr
     'wants' => $wants,
     'needs' => $needs,
     'system' => $system,
+    'topic' => $topic,
+    'message' => $message,
     'wo_id' => $wo_id,
     'wo_url' => $wo_url,
   ];

@@ -23,6 +23,14 @@
         {% if c.campaign %}<span class="sr-card__campaign">Campaign: {{ c.campaign }}</span>{% endif %}
       </div>
 
+      {% if c.topic %}
+        <div class="sr-card__topic"><strong>About:</strong> {{ c.topic }}</div>
+      {% endif %}
+
+      {% if c.message %}
+        <div class="sr-card__message">{{ c.message }}</div>
+      {% endif %}
+
       {% if c.needs %}
         <div class="sr-card__needs"><strong>Needs:</strong> {{ c.needs|join(' · ') }}</div>
       {% endif %}

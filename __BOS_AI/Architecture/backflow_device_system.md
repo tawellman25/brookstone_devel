@@ -331,6 +331,16 @@ Mechanical design (`field_device_type` → `backflow_device_types`: PVB/RP/DCVA/
 
 Use codes live on a **dedicated `field_use_code` string**, not the device-type `field_type_code`. In Drupal a `list_string`'s `allowed_values` are a **storage-level** property shared by every vocabulary instance of that field — so reusing `field_type_code` would have merged the 14 use codes and the 4 type codes into one shared dropdown across both vocabs. A separate plain-string field keeps the two code sets independent (decided with Todd; spec had assumed `field_type_code` was a free string).
 
+### 3.12 Content architecture — the type term is the single canonical hub (as-built 2026-09-12, `bd13361e`)
+
+The "how it's tested" content lives **once**, on the `backflow_device_types` term (its `description` = professional procedure; `field_public_description` = public snippet + booking CTA), reached at `/services/backflow-prevention/{type}`. Materials and work orders **link** to it — they never carry their own copy (duplicate procedure text is a duplicate-content SEO negative and drifts).
+
+- **Materials → type.** New `material.field_backflow_type` (→ `backflow_device_types`, single) on the `backflow` bundle. Backfilled by product name: RPA→RP (9), 765 PVB assembly→PVB (5), 805 DCA→DCVA (4). **Parts/repair kits, the 710 AVB, and the 810 Dual Check are left null** — AVB isn't one of the four testable types (≠ SVB), and the 810 is a **non-testable residential dual check**, not a testable Double Check *Assembly* (DCVA); no products map to SVB. The material page renders a hub link via `backflow_device_entity_view` (material branch). The nine appended RP procedure blocks (marked `<!-- rp-test-procedure -->`) + service term 1649's were **stripped** back to their original bodies (`strip_rp_procedure_markers.php`, truncate-at-marker).
+- **WO test card → type.** `_backflow_device_test_card()` follows `field_backflow_device → field_device_type` and adds an **audience-aware** link (rendered outside the card anchor — no nested `<a>`): internal/tester roles get *"View {Type} testing procedure"*, clients/anon get *"{Type} — backflow testing & certification"*; both go to the hub. `user.roles` cache context added to the EVA.
+- **Device label fallback.** `_backflow_device_finalize()` now appends the device **type** to the title when no product is linked (`BF-000006 - Pressure Vacuum Breaker (PVB)`); `retitle_backflow_devices.php` healed the two bare-code PVB devices (BF-000006/7). _Root cause of the "blank" labels: they had a type but no `field_material_backflow`, so the old title was the bare code._
+
+Setup/backfill/heal are idempotent entity-API scripts (no cim): `setup_material_backflow_type.php`, `backfill_material_backflow_type.php`, `strip_rp_procedure_markers.php`, `retitle_backflow_devices.php`.
+
 ## 4. As-Built Status
 
 | Gate | Scope | Status | Commit |

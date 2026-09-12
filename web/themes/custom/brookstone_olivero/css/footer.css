@@ -1,8 +1,20 @@
 /**
  * @file
  * Sitewide footer (brookstone_olivero). Renders inside Olivero's
- * <footer class="site-footer"> from role-gated blocks in footer_top /
- * footer_bottom. Scoped under .site-footer so it can't touch other regions.
+ * <footer class="site-footer"> from role-gated blocks in the footer_top /
+ * footer_bottom regions (gated to anonymous + client; never on the crew/office
+ * admin theme). Ported from the marketing footer reference — layout + spacing
+ * only; every value maps to the theme's own tokens.
+ *
+ * IMPORTANT selector note: Olivero emits the region as `.region--footer-top`
+ * (double hyphen) with an inner `.region--footer_top__inner` (underscore) that
+ * holds the blocks. The grid therefore lives on the *inner* wrapper, and the
+ * grid items are the block wrappers (#block-brookstone-olivero-foot-*).
+ *
+ * Container: reuses the theme's own `.site-footer__inner.container`
+ * (--max-width: 84.375rem) — no second max-width is invented here.
+ *
+ * Scoped entirely under `.site-footer` so nothing leaks to other regions.
  * Brand tokens (--bo-*) are published sitewide by bos_service_request.
  */
 
@@ -13,152 +25,312 @@
   font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
 }
 
-/* ---- Top: four columns + full-width promo band ---- */
-.site-footer .region-footer-top {
-  display: grid;
-  gap: 2rem 2.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 3rem 1.5rem 1.75rem;
-  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
-  grid-template-areas:
-    "company services companylinks servicearea"
-    "promo   promo    promo        promo";
+/* Remove Olivero's 90px black border-inline-start (the stray dark band down
+ * the left edge). Matches Olivero's own selector + media query so it wins. */
+@media (min-width: 75rem) {
+  body:not(.is-always-mobile-nav) .site-footer {
+    border-inline-start: 0;
+  }
 }
-#block-brookstone-olivero-foot-company { grid-area: company; }
-#block-brookstone-olivero-foot-services { grid-area: services; }
-#block-brookstone-olivero-foot-companylinks { grid-area: companylinks; }
-#block-brookstone-olivero-foot-servicearea { grid-area: servicearea; }
-#block-brookstone-olivero-foot-promo { grid-area: promo; }
 
-/* Column headings + the menu block titles */
+/* Kill Olivero's oversized desktop footer bottom padding (--sp13 ≈ 14.6rem),
+ * which left a large empty band under the legal bar. */
+.site-footer__inner {
+  padding-block: clamp(2.5rem, 5vw, 4rem);
+}
+@media (min-width: 75rem) {
+  .site-footer__inner {
+    padding-block: clamp(2.5rem, 5vw, 4rem);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * TOP: full-width promo band above a four-column grid.
+ * The grid container is the region's __inner; its children are the blocks.
+ * ------------------------------------------------------------------------- */
+.site-footer .region--footer_top__inner {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+  gap: clamp(1.75rem, 3.5vw, 3rem);
+  align-items: start;
+  grid-template-areas:
+    "promo   promo    promo        promo"
+    "company services companylinks servicearea";
+}
+#block-brookstone-olivero-foot-promo        { grid-area: promo; }
+#block-brookstone-olivero-foot-company      { grid-area: company; }
+#block-brookstone-olivero-foot-services     { grid-area: services; }
+#block-brookstone-olivero-foot-companylinks { grid-area: companylinks; }
+#block-brookstone-olivero-foot-servicearea  { grid-area: servicearea; }
+
+/* Column 1 stays first at every width so a phone visitor reaches the phone
+ * number before anything else (see responsive block). */
+
+/* Consistent heading treatment for all real column headings — the two menu
+ * block titles (Services / Company) and the Service Area heading. */
 .site-footer .footer-col__heading,
-.site-footer .region-footer-top h2 {
+.site-footer nav.block-menu .block__title {
   font-family: var(--osw);
-  font-weight: 600;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 0.875rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--bo-footer-strong, #F5EFE6);
-  margin: 0 0 0.9rem;
+  margin: 0 0 1.1rem;
+}
+/* The legal-links menu keeps its visually-hidden title — don't unhide it. */
+.site-footer nav.block-menu .visually-hidden.block__title {
+  margin: 0;
 }
 
 /* Menu lists */
-.site-footer .region-footer-top ul { list-style: none; margin: 0; padding: 0; }
-.site-footer .region-footer-top li { margin: 0 0 0.5rem; }
-.site-footer a {
+.site-footer .region--footer_top__inner ul.menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.site-footer .region--footer_top__inner ul.menu li {
+  margin: 0 0 0.6rem;
+}
+
+/* Link affordance: transparent underline that turns accent on hover/focus. */
+.site-footer .footer-col a,
+.site-footer nav.block-menu a {
   color: var(--bo-footer-text, #C9BCAA);
   text-decoration: none;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.12s ease, color 0.12s ease;
 }
-.site-footer a:hover,
-.site-footer a:focus {
+.site-footer .footer-col a:hover,
+.site-footer .footer-col a:focus-visible,
+.site-footer nav.block-menu a:hover,
+.site-footer nav.block-menu a:focus-visible {
   color: #fff;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  border-bottom-color: var(--bo-orange, #CB6015);
 }
 .site-footer a:focus-visible {
   outline: 2px solid var(--bo-orange, #CB6015);
-  outline-offset: 2px;
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
-/* Company / NAP */
+/* ---- Column 1: identity + NAP ---- */
+.footer-company__logo {
+  display: block;
+  width: 84px;
+  height: 84px;
+  margin: 0 0 0.9rem;
+}
 .footer-company__name {
   font-family: var(--osw);
-  font-weight: 600;
-  font-size: 1.25rem;
-  letter-spacing: 0.03em;
+  font-weight: 700;
+  font-size: 1.375rem;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
   color: var(--bo-footer-strong, #F5EFE6);
 }
-.footer-company__tagline { font-size: 0.92rem; margin: 0.15rem 0 1rem; }
+.footer-company__tagline {
+  font-style: italic;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--bo-muted-2, #8A7A69);
+  margin: 0.25rem 0 1.1rem;
+}
 .footer-company__addr,
-.footer-company__email,
-.footer-company__hours { margin: 0 0 0.6rem; font-size: 0.95rem; line-height: 1.5; }
-.footer-company__phone { margin: 0 0 0.6rem; }
+.footer-company__email {
+  margin: 0 0 0.6rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+.footer-company__addr a,
+.footer-company__email a {
+  color: var(--bo-footer-text, #C9BCAA);
+}
+.footer-company__phone {
+  margin: 0.35rem 0 0.6rem;
+}
 .footer-company__phone a {
   font-family: var(--osw);
-  font-size: 1.35rem;
-  font-weight: 600;
+  font-size: 1.3125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   color: var(--bo-orange, #CB6015);
+  text-decoration: none;
+  border-bottom: 0;
 }
-.footer-company__phone a:hover { color: #fff; text-decoration: none; }
-.footer-company__hours { color: var(--bo-muted-2, #8A7A69); font-size: 0.9rem; }
-.footer-company__social a { display: inline-flex; align-items: center; gap: 0.45rem; margin-top: 0.4rem; }
-.footer-company__social .footer-fb { flex: none; }
+.footer-company__phone a:hover,
+.footer-company__phone a:focus-visible {
+  color: #fff;
+  border-bottom: 0;
+}
+/* Hours: WCAG AA on the ink background (~7.8:1) — do not dim further. */
+.footer-company__hours {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #b4a99d;
+}
+.footer-company__social a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  border-bottom: 0;
+}
+.footer-company__social a:hover {
+  border-bottom: 0;
+}
+.footer-company__social .footer-fb {
+  flex: none;
+}
 
-/* Service Area */
-.footer-area__body { font-size: 0.95rem; line-height: 1.7; }
+/* ---- Column 4: Service Area (plain text, local-search signal) ---- */
+.footer-area__body {
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  color: var(--bo-muted-2, #8A7A69);
+}
 
-/* Seasonal promo band */
-#block-brookstone-olivero-foot-promo {
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  padding-top: 1.75rem;
-  margin-top: 0.5rem;
+/* ---- Seasonal promo band ----
+ * All visible treatment lives on __inner, which exists only when the view has
+ * a result. The empty view still emits a block wrapper — collapse it so no
+ * band, border, rule or reserved space survives. */
+#block-brookstone-olivero-foot-promo:not(:has(.footer-promo__inner)) {
+  display: none;
 }
 .footer-promo__inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1.5rem;
+  gap: 0.5rem clamp(1rem, 3vw, 2rem);
   background: rgba(203, 96, 21, 0.10);
   border-left: 4px solid var(--bo-orange, #CB6015);
-  border-radius: 6px;
-  padding: 1.1rem 1.4rem;
+  border-radius: 3px;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
 }
 .footer-promo__heading {
-  font-family: var(--osw);
-  font-weight: 600;
-  font-size: 1.15rem;
-  color: var(--bo-footer-strong, #F5EFE6);
   flex: 1 1 100%;
+  font-family: var(--osw);
+  font-weight: 700;
+  font-size: 1.0625rem;
+  letter-spacing: 0.01em;
+  color: var(--bo-footer-strong, #F5EFE6);
 }
-.footer-promo__body { flex: 1 1 55%; min-width: 260px; font-size: 0.95rem; line-height: 1.5; }
+.footer-promo__body {
+  flex: 1 1 22rem;
+  min-width: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
 .footer-promo__btn {
   flex: 0 0 auto;
   font-family: var(--osw);
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 600;
-  font-size: 0.95rem;
   background: var(--bo-orange, #CB6015);
   color: #fff !important;
-  padding: 0.7rem 1.4rem;
-  border-radius: 3px;
+  padding: 0.85rem 1.5rem;
+  border-radius: 2px;
   text-decoration: none !important;
   white-space: nowrap;
+  border-bottom: 0;
 }
 .footer-promo__btn:hover,
-.footer-promo__btn:focus { background: var(--bo-orange-hover, #A54E10); color: #fff; }
+.footer-promo__btn:focus-visible {
+  background: var(--bo-orange-hover, #A54E10);
+  color: #fff;
+}
 
-/* ---- Bottom: legal bar ---- */
-.site-footer .region-footer-bottom {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1.1rem 1.5rem 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+/* ---------------------------------------------------------------------------
+ * BOTTOM: legal bar — one row (copyright + lineage left, links right).
+ * The bottom region has no __inner; its direct children are the legal block
+ * and the legal-links menu nav.
+ * ------------------------------------------------------------------------- */
+.site-footer .region--footer-bottom {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.4rem 1.5rem;
-  font-size: 0.85rem;
+  gap: 0.75rem 2rem;
+  margin-top: clamp(2.25rem, 4vw, 3.25rem);
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.8125rem;
+  line-height: 1.6;
 }
-.footer-legal__copy { margin: 0; color: var(--bo-footer-text, #C9BCAA); }
-.footer-legal__lineage { margin: 0.15rem 0 0; color: var(--bo-muted-2, #8A7A69); }
-.site-footer .region-footer-bottom ul { list-style: none; display: flex; gap: 1rem; margin: 0; padding: 0; }
+/* Olivero's .layout--pass--content-medium > * forces width:100% (+ a grid
+ * column) on every region child, which stacked the copyright and the Privacy
+ * menu. Size them to content so the flex row can place them left/right. */
+.site-footer .region--footer-bottom > * {
+  width: auto;
+  grid-column: auto;
+  margin: 0;
+}
+.footer-legal__copy {
+  margin: 0;
+  color: var(--bo-footer-text, #C9BCAA);
+}
+.footer-legal__lineage {
+  margin: 0.15rem 0 0;
+  color: var(--bo-muted-2, #8A7A69);
+}
+.site-footer .region--footer-bottom nav.block-menu ul.menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.site-footer .region--footer-bottom nav.block-menu a {
+  color: var(--bo-muted-2, #8A7A69);
+  font-size: 0.8125rem;
+}
+.site-footer .region--footer-bottom nav.block-menu a:hover,
+.site-footer .region--footer-bottom nav.block-menu a:focus-visible {
+  color: var(--bo-footer-text, #C9BCAA);
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+}
 
-/* ---- Mobile: single column in the deliberate order (NAP first) ---- */
-@media (max-width: 61.99em) {
-  .site-footer .region-footer-top {
+/* ---------------------------------------------------------------------------
+ * RESPONSIVE — two breakpoints. Column 1 (NAP) stays first at every width.
+ * ------------------------------------------------------------------------- */
+@media (max-width: 64rem) {
+  .site-footer .region--footer_top__inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 2.25rem;
+    grid-template-areas:
+      "promo       promo"
+      "company     company"
+      "services    companylinks"
+      "servicearea servicearea";
+  }
+}
+@media (max-width: 37.5rem) {
+  .site-footer .region--footer_top__inner {
     grid-template-columns: 1fr;
+    gap: 2rem;
     grid-template-areas:
       "company"
       "promo"
       "services"
       "companylinks"
       "servicearea";
-    gap: 2rem;
-    padding: 2.25rem 1.25rem 1.25rem;
   }
-  .footer-promo__btn { width: 100%; text-align: center; }
-  .site-footer .region-footer-bottom { flex-direction: column; }
+  .footer-promo__inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .footer-promo__btn {
+    width: 100%;
+    text-align: center;
+  }
+  .site-footer .region--footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

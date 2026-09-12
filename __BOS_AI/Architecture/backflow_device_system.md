@@ -75,8 +75,8 @@ Five new structures plus two `teammate_profile` additions. All are ECK except th
 | `field_work_order` | entity_reference → `work_order` [all] | **Required.** The parent testing transaction. |
 | `field_backflow_device` | entity_reference → `property_backflow_device` [all] | Which assembly this test result is for. |
 | `field_test_date` | datetime (date+time) | When the test was performed. |
-| `field_tester` | entity_reference → `user` [all] | The certified tester. Defaults to uid 1 on add (Gate 3a, `hook_entity_prepare_form`). |
-| `field_certification_number` | string | **Snapshot** of the tester's cert number, copied from `teammate_profile` on presave (Gate 3a); frozen once the WO is Complete. |
+| `field_tester` | entity_reference → `user` [all] | The certified tester. Entered value kept; **blank → current user** on form save (`bdb9ccd4`; a form `#entity_builder`, so the programmatic "New Test" create never stamps the WO creator). |
+| `field_certification_number` | string | **Snapshot** of the tester's cert number, copied from the tester's `teammate_profile` on presave **only when empty** (never overwrites/clears); frozen once the WO is Complete. |
 | `field_pass_fail` | list_string `{pass\|fail}` | Test result. |
 | `field_is_initial_test` | boolean | Initial vs. periodic re-test. |
 | `field_line_pressure_psi` | decimal (6,2) | Reading. |
@@ -192,15 +192,32 @@ deterministic from the children, and the log row is gated on a real transition.
 **Not test-produced:** `repaired`, `out_of_service`, and `replaced` are manual
 / future statuses; the write-back never sets them.
 
+**Tester identification (as-built 2026-09-12, `bdb9ccd4`).** The tester is
+`field_tester` (→ `user`) on the test child. Rule: **an entered tester (any uid)
+is kept; a blank tester defaults to the current user** — the person recording the
+test — applied by a form `#entity_builder`
+(`_wo_backflow_testing_default_tester_builder`) that runs **only on a human form
+save**. The "New Test" controller creates the task **programmatically**, which
+does **not** fire the builder, so the WO creator (usually the office, not the
+tester) is never stamped — the record stays tester-blank until whoever records
+the test saves the form. The add form also pre-selects the current user when
+blank. _(Superseded the original Gate-3a "default to uid 1 on add" behavior, and
+a brief 2026-09-12 "default to Todd (uid 1) at creation" pass, `453e02c8`.)_
+**Caveat:** because blank → current user, if the **office** ever keys in readings
+on a tech's behalf, they must set `field_tester` to the actual tech, or it records
+the office user. If multiple certified testers become common, revisit whether the
+tester should be a required manual pick.
+
 **Cert snapshot** (`wo_tasks_list:backflow_testing` presave): the tester's
 `teammate_profile.field_certification_number` is copied onto the test child's
-`field_certification_number`. It **mirrors the currently-selected tester while
-the parent WO is not yet Complete**, and **freezes once the WO is Complete**
+`field_certification_number` **only when the child's cert is empty** — it never
+overwrites a hand-entered value and never clears an existing value to blank when
+the tester has no cert (fails gracefully). It **freezes once the WO is Complete**
 (1097) — the freeze reads the WO status **fresh by id** (not via the cached
 `->entity` reference), so it holds even when a child loaded before completion is
-re-saved in the same request. If the tester has no cert on profile, the snapshot
-is left blank (no error). This is the frozen snapshot the Gate 3b report/tag
-reads — no double entry.
+re-saved in the same request. This is the frozen snapshot the Gate 3b report/tag
+reads — no double entry. _(Was an unconditional "mirror the selected tester"
+until 2026-09-12; changed to fill-if-empty in `453e02c8`.)_
 
 **WO-page surface (EVA + Add Test).** The test children render on the
 `work_order:backflow_testing` page via the `wo_tasks_list` EVA view
@@ -356,5 +373,5 @@ Use codes live on a **dedicated `field_use_code` string**, not the device-type `
 - **Compliance dashboard AREA filter — deferred (focused follow-up owed).** The dashboard ships Status + next-due-range exposed filters. The intended area filter (by `field_property → properties → field_zipcode_reference`) needs a Views relationship from `property_backflow_device` to `properties`; building that relationship in the Views API threw query errors (e.g. `addcslashes`/empty-table during execute), so area/zip filtering was deferred rather than ship a broken dashboard. Owed as a focused follow-up (add the property relationship, then expose the zipcode/area).
 - **Public test-history EVA (§5)** — the reduced, anonymous-facing test history on the device `full` page (date/result/tester/cert/next-due only; no report/WO/repairs links) is the Gate 4 §5 follow-up, pending the field-exposure decision. A clean seam is left (the office Test History EVA is a separate display and is not loosened).
 - **⚠ SOP NEEDED — now owed.** Gate 3a/3b built the human field-testing workflow (tech enters a test on the WO, signs off via `irrigation_crew`, the device updates and a frozen report PDF + reprintable HB25-1077 tag are produced). Per CLAUDE.md SOP governance this human-facing workflow needs an SOP — flag raised; SOP content is authored by Claude Chat, not written inline.
-- **`field_tester` form default = uid 1** — a Gate 3 form-level default (not a field default, which would be env-specific by UUID).
+- **`field_tester` default (as-built 2026-09-12, `bdb9ccd4`)** — entered value kept; blank → current user on a human form save (form `#entity_builder`, so the programmatic New Test create doesn't stamp the WO creator); add form pre-selects current user. Cert snapshot is fill-if-empty (never overwrites/clears). _Root cause it fixed:_ tests came out cert-blank because the tester was never set — the New Test controller creates the task without one and the old uid-1 default only applied on the add form for a new entity, so controller-created tasks stayed tester-less. _Watch item:_ if the office keys in a tech's readings, they must set the tester manually; consider a required manual pick once several certified testers exist.
 - **`field_used_for` form-display config is committed separately by Todd.** The field is on the device add/edit form (active, weight 5 next to Device Type) and on the default + `full` view displays. The two **view**-display configs are committed with this work; the **form**-display config is left to Todd's in-progress UI reorg (an `Office Admin` field_group, weight changes) — it'll carry `field_used_for` when he exports it.

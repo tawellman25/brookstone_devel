@@ -10,11 +10,11 @@
  *   RP   (1892): "Reduced Pressure Assembly (RPA)"   -> 825Y + 825YA RPAs
  *   PVB  (1891): "Pressure Vacuum Breaker (PVB)"      -> 765 PVB assemblies
  *   DCVA (1890): "Double Check Assembly (DCA)"        -> 805 DCAs
+ *   AVB  (1949): "Atmospheric Vacuum Breaker (AVB)"   -> 710 AVBs (non-testable)
+ *   DuC  (1950): "Dual Check Valve"                   -> 810 dual checks (non-testable)
  *
- * NOT mapped (left null, by design): 710 Atmospheric Vacuum Breaker (AVB — not
- * one of the four types, and AVB != SVB), 810 Dual Check Valve (residential
- * dual check, not a testable DCVA), and every part / repair kit. No products
- * map to SVB (1893).
+ * NOT mapped (left null): every part / repair kit. No products map to SVB (1893).
+ * (AVB + DuC terms were added later — tids 1949/1950 — so those products now map.)
  *
  * Dry-run by default; set BOS_APPLY=1 to write.
  *
@@ -29,16 +29,18 @@ print $APPLY ? "=== APPLY ===\n" : "=== DRY RUN (set BOS_APPLY=1 to write) ===\n
 // assembly products, never the parts (parts are "765 PVB Bonnet", "805 and 825
 // Rubber Part Kit", etc. — none contain these full assembly phrases).
 $MAP = [
-  'Reduced Pressure Assembly (RPA)' => 1892, // RP
-  'Pressure Vacuum Breaker (PVB)'   => 1891, // PVB
-  'Double Check Assembly (DCA)'     => 1890, // DCVA
+  'Reduced Pressure Assembly (RPA)'    => 1892, // RP
+  'Pressure Vacuum Breaker (PVB)'      => 1891, // PVB
+  'Double Check Assembly (DCA)'        => 1890, // DCVA
+  'Atmospheric Vacuum Breaker (AVB)'   => 1949, // AVB (non-testable)
+  'Dual Check Valve'                   => 1950, // DuC (non-testable)
 ];
 
 $etm = \Drupal::entityTypeManager();
 $ids = $etm->getStorage('material')->getQuery()
   ->accessCheck(FALSE)->condition('type', 'backflow')->execute();
 
-$counts = [1892 => 0, 1891 => 0, 1890 => 0];
+$counts = [];
 $filled = $skipped_set = $left_null = 0;
 
 foreach ($etm->getStorage('material')->loadMultiple($ids) as $m) {
@@ -63,7 +65,7 @@ foreach ($etm->getStorage('material')->loadMultiple($ids) as $m) {
     continue;
   }
   print sprintf("  %s  %-46s -> %d\n", $m->id(), mb_substr($name, 0, 46), $tid);
-  $counts[$tid]++;
+  $counts[$tid] = ($counts[$tid] ?? 0) + 1;
   $filled++;
   if ($APPLY) {
     $m->set('field_backflow_type', $tid)->save();
@@ -71,8 +73,11 @@ foreach ($etm->getStorage('material')->loadMultiple($ids) as $m) {
 }
 
 print "\n";
-print "RP (1892):   {$counts[1892]}\n";
-print "PVB (1891):  {$counts[1891]}\n";
-print "DCVA (1890): {$counts[1890]}\n";
-print "would fill / filled: $filled | already set (skipped): $skipped_set | left null (parts/AVB/810): $left_null\n";
+$labels = [1892 => 'RP', 1891 => 'PVB', 1890 => 'DCVA', 1949 => 'AVB', 1950 => 'DuC'];
+foreach ($labels as $tid => $lbl) {
+  if (!empty($counts[$tid])) {
+    print sprintf("%-5s (%d): %d\n", $lbl, $tid, $counts[$tid]);
+  }
+}
+print "would fill / filled: $filled | already set (skipped): $skipped_set | left null (parts): $left_null\n";
 print $APPLY ? "APPLIED.\n" : "DRY RUN — re-run with BOS_APPLY=1 to write.\n";

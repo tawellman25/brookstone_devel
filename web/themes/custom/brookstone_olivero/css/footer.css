@@ -116,27 +116,44 @@
   border-radius: 2px;
 }
 
-/* ---- Column 1: identity + NAP ---- */
+/* ---- Column 1: identity + NAP — centered brand lockup (matches the home
+ *      footer): round emblem, "Brookstone" wordmark artwork + "Outdoors LLC",
+ *      split tagline. The whole column is centered per design. ---- */
+.footer-col--company {
+  text-align: center;
+}
 .footer-company__logo {
   display: block;
   width: 84px;
   height: 84px;
-  margin: 0 0 0.9rem;
+  margin: 0 auto 0.9rem;
 }
 .footer-company__name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15em;
   font-family: var(--osw);
   font-weight: 700;
   font-size: 1.375rem;
-  letter-spacing: 0.04em;
-  line-height: 1.1;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
   color: var(--bo-footer-strong, #F5EFE6);
 }
+.footer-company__name .bo-wordmark {
+  display: block;
+  height: 1.6em;
+  width: auto;
+  max-width: 100%;
+}
 .footer-company__tagline {
+  max-width: 15em;
+  margin: 0.35rem auto 1.1rem;
   font-style: italic;
   font-size: 0.9375rem;
   line-height: 1.5;
   color: var(--bo-muted-2, #8A7A69);
-  margin: 0.25rem 0 1.1rem;
+  text-wrap: balance;
 }
 .footer-company__addr,
 .footer-company__email {
@@ -332,5 +349,9 @@
   .site-footer .region--footer-bottom {
     flex-direction: column;
     align-items: flex-start;
+  }
+  /* Smaller "Brookstone" wordmark on phones. */
+  .footer-company__name .bo-wordmark {
+    height: 1.2em;
   }
 }

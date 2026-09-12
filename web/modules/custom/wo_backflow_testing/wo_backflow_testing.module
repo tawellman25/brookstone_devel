@@ -57,14 +57,6 @@ const WO_BACKFLOW_TESTING_TYPE_READINGS = [
 function wo_backflow_testing_entity_presave(EntityInterface $entity) {
     // Cert-number snapshot onto the test child (separate concern from billing).
     if ($entity->getEntityTypeId() === 'wo_tasks_list' && $entity->bundle() === 'backflow_testing') {
-        // Default the tester to Todd (uid 1) on creation when none is set. The
-        // add form pre-selects uid 1, but tasks created by the "New Test"
-        // controller (and any other programmatic path) arrive with no tester,
-        // which left the cert blank. This covers every creation path; the tester
-        // stays editable afterward.
-        if ($entity->isNew() && $entity->get('field_tester')->isEmpty() && User::load(1)) {
-            $entity->set('field_tester', 1);
-        }
         _wo_backflow_testing_snapshot_cert($entity);
         return;
     }
@@ -346,18 +338,41 @@ function _wo_backflow_testing_add_months($stored_datetime, $months) {
 /**
  * Implements hook_entity_prepare_form().
  *
- * Form-level default: on the wo_tasks_list:backflow_testing add form, default the tester to
- * uid 1 (set on the in-memory new entity before the widget builds — not a
- * stored field default, which would be env-specific by UUID).
+ * Form-level default: on the wo_tasks_list:backflow_testing ADD form, pre-select
+ * the current user as the tester when none is set, so the person filling in the
+ * test sees themselves and can change it. Only the add form (isNew) — a task
+ * created by the "New Test" controller arrives on the EDIT form with no tester,
+ * where the save-time default (_wo_backflow_testing_default_tester_builder)
+ * applies the same rule: blank -> current user, an entered value is kept.
  */
 function wo_backflow_testing_entity_prepare_form(EntityInterface $entity, $operation, FormStateInterface $form_state) {
+  $uid = (int) \Drupal::currentUser()->id();
   if ($entity->getEntityTypeId() === 'wo_tasks_list'
       && $entity->bundle() === 'backflow_testing'
       && $entity->isNew()
       && $entity->hasField('field_tester')
       && $entity->get('field_tester')->isEmpty()
-      && User::load(1)) {
-    $entity->set('field_tester', 1);
+      && $uid > 0) {
+    $entity->set('field_tester', $uid);
+  }
+}
+
+/**
+ * Entity builder for the backflow-testing task form.
+ *
+ * Applies the tester rule at save: an entered tester (any uid) is kept; a blank
+ * tester defaults to the current user. Registered from
+ * wo_backflow_testing_form_alter(), so it fires only on a human form save — the
+ * "New Test" controller's programmatic create is unaffected and leaves the
+ * tester blank until the person recording the test saves the form. The cert then
+ * fills from that tester's teammate_profile via the presave snapshot.
+ */
+function _wo_backflow_testing_default_tester_builder($entity_type, EntityInterface $entity, array $form, FormStateInterface $form_state) {
+  if ($entity->hasField('field_tester') && $entity->get('field_tester')->isEmpty()) {
+    $uid = (int) \Drupal::currentUser()->id();
+    if ($uid > 0) {
+      $entity->set('field_tester', $uid);
+    }
   }
 }
 
@@ -380,6 +395,12 @@ function wo_backflow_testing_form_alter(array &$form, FormStateInterface $form_s
   if ($entity->getEntityTypeId() !== 'wo_tasks_list' || $entity->bundle() !== 'backflow_testing') {
     return;
   }
+
+  // Save-time tester rule (all backflow task form saves): if the tester is left
+  // blank, record the current user (the person entering the test); a tester the
+  // user picked — same or different — is kept. Runs on form submit only, so the
+  // "New Test" controller's programmatic create never stamps the WO creator.
+  $form['#entity_builders'][] = '_wo_backflow_testing_default_tester_builder';
 
   // Wrap the device field, readings, and create-UI in one AJAX section.
   $form['bf_device_section'] = [

@@ -544,6 +544,46 @@ function bos_service_request_theme($existing, $type, $theme, $path): array {
 }
 
 /**
+ * Implements hook_views_pre_view().
+ *
+ * Default the office queue's exposed Status filter to New + Needs Review on a
+ * fresh load (the actionable statuses), without hiding the rest — every status
+ * stays selectable in the multi-select. An exposed filter's stored value is not
+ * used as its default, so the default must be injected as exposed input before
+ * the query runs. Skipped once the user submits the filter (a status param is
+ * present); deselecting all reverts to this actionable default.
+ */
+function bos_service_request_views_pre_view($view, $display_id, array &$args): void {
+  if ($view->id() !== 'service_request_admin') {
+    return;
+  }
+  if (\Drupal::request()->query->has('status')) {
+    return;
+  }
+  $tids = _bos_service_request_default_status_tids();
+  if ($tids) {
+    $input = $view->getExposedInput();
+    $input['status'] = $tids;
+    $view->setExposedInput($input);
+  }
+}
+
+/**
+ * TIDs of the actionable service_request statuses (New + Needs Review), resolved
+ * by name (status is content; tids differ per environment).
+ */
+function _bos_service_request_default_status_tids(): array {
+  $ids = [];
+  foreach (\Drupal::entityTypeManager()->getStorage('taxonomy_term')
+    ->loadByProperties(['vid' => 'service_request_status']) as $t) {
+    if (in_array($t->label(), ['New', 'Needs Review'], TRUE)) {
+      $ids[] = (string) $t->id();
+    }
+  }
+  return $ids;
+}
+
+/**
  * Implements hook_views_pre_render().
  *
  * Attach the service-request card CSS to the admin queue.

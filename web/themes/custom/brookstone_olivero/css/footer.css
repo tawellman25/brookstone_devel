@@ -48,10 +48,14 @@
  * TOP: full-width promo band above a four-column grid.
  * The grid container is the region's __inner; its children are the blocks.
  * ------------------------------------------------------------------------- */
+/* Keep the grid at Olivero's content-medium inset (its default). That inset
+ * reserves the left ~90px (--content-left) for Olivero's fixed sticky-header
+ * toggle — widening to the full container slid the identity column under it.
+ * The promo band already spans these four columns, so it aligns with the grid. */
 .site-footer .region--footer_top__inner {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
-  gap: clamp(1.75rem, 3.5vw, 3rem);
+  grid-template-columns: 1.1fr 1.4fr 0.9fr 1.2fr;
+  gap: clamp(1.5rem, 3vw, 2.75rem);
   align-items: start;
   grid-template-areas:
     "promo   promo    promo        promo"
@@ -90,7 +94,7 @@
   padding: 0;
 }
 .site-footer .region--footer_top__inner ul.menu li {
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.85rem;
 }
 
 /* Link affordance: transparent underline that turns accent on hover/focus. */
@@ -99,7 +103,7 @@
   color: var(--bo-footer-text, #C9BCAA);
   text-decoration: none;
   font-size: 0.9375rem;
-  line-height: 1.4;
+  line-height: 1.3;
   border-bottom: 1px solid transparent;
   transition: border-color 0.12s ease, color 0.12s ease;
 }
@@ -120,6 +124,8 @@
  *      footer): round emblem, "Brookstone" wordmark artwork + "Outdoors LLC",
  *      split tagline. The whole column is centered per design. ---- */
 .footer-col--company {
+  max-width: 18rem;
+  margin-inline: auto;
   text-align: center;
 }
 .footer-company__logo {
@@ -206,7 +212,7 @@
 /* ---- Column 4: Service Area (plain text, local-search signal) ---- */
 .footer-area__body {
   font-size: 0.9375rem;
-  line-height: 1.75;
+  line-height: 1.5;
   color: var(--bo-muted-2, #8A7A69);
 }
 
@@ -273,7 +279,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem 2rem;
-  margin-top: clamp(2.25rem, 4vw, 3.25rem);
+  margin-top: clamp(1.5rem, 3vw, 2.25rem);
   padding-top: 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 0.8125rem;

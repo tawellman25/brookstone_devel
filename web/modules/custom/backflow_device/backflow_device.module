@@ -75,6 +75,15 @@ function _backflow_device_finalize(ContentEntityInterface $device) {
         : trim((string) $material->label());
     }
   }
+  // Fall back to the device TYPE (RP/PVB/DCVA/SVB) when no product model is
+  // linked, so the title is never a bare code with no context
+  // (e.g. "BF-000006 - Pressure Vacuum Breaker (PVB)").
+  if ($model === '' && $device->hasField('field_device_type') && !$device->get('field_device_type')->isEmpty()) {
+    $type_term = $device->get('field_device_type')->entity;
+    if ($type_term) {
+      $model = trim((string) $type_term->label());
+    }
+  }
   $expected_title = $model !== '' ? $device_code . ' - ' . $model : $device_code;
   $needs_title = $device->label() !== $expected_title;
   $needs_qr = $device->get('field_qr_code')->isEmpty();
@@ -175,6 +184,30 @@ function _backflow_device_generate_qr(ContentEntityInterface $device, string $ti
  * code, notes, or link — and does not change properties entity access.
  */
 function backflow_device_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
+  // Material (backflow) product page: surface a link to the canonical type hub
+  // page (the taxonomy_term for RP/PVB/DCVA/SVB), which is the SINGLE source of
+  // the "how it's tested" content — no per-product procedure text (that would be
+  // duplicate content). Rendered just under the product Description.
+  if ($entity->getEntityTypeId() === 'material'
+      && $entity->bundle() === 'backflow'
+      && in_array($view_mode, ['default', 'full'], TRUE)
+      && $entity->hasField('field_backflow_type')
+      && !$entity->get('field_backflow_type')->isEmpty()
+      && ($type_term = $entity->get('field_backflow_type')->entity)) {
+    $desc_weight = $display->getComponent('field_description')['weight'] ?? 0;
+    $build['backflow_type_hub'] = [
+      '#type' => 'link',
+      '#title' => $type_term->label() . ' — Testing & Certification',
+      '#url' => $type_term->toUrl(),
+      '#prefix' => '<div class="material-backflow-type-hub">',
+      '#suffix' => '</div>',
+      '#weight' => $desc_weight + 1,
+      '#cache' => ['tags' => $type_term->getCacheTags()],
+      '#attached' => ['library' => ['backflow_device/backflow_cards']],
+    ];
+    return;
+  }
+
   // "Enter Test Results" on the WO page: creates ANOTHER backflow test on this
   // WO (e.g. a before- and after-repair test on the same device) and opens its
   // readings form. Renders just below the Backflow Tests group (group is field-
@@ -305,6 +338,10 @@ function backflow_device_views_pre_render($view) {
   if ($view->id() === 'backflow_property_devices_eva'
       || ($view->id() === 'wo_tasks_list' && $view->current_display === 'entity_view_5')) {
     $view->element['#attached']['library'][] = 'backflow_device/backflow_cards';
+  }
+  // The WO test cards carry an audience-aware type link, so vary by role.
+  if ($view->id() === 'wo_tasks_list' && $view->current_display === 'entity_view_5') {
+    $view->element['#cache']['contexts'][] = 'user.roles';
   }
 }
 
@@ -508,6 +545,29 @@ function _backflow_device_test_card(array &$variables) {
     $options['query']['destination'] = $wo->toUrl()->toString();
   }
 
+  // Audience-aware link to the canonical type hub page, reached via
+  // field_backflow_device -> field_device_type. Testers get the "testing
+  // procedure" framing (the professional `description`); clients/anon get the
+  // public "backflow testing & certification" framing (`field_public_description`
+  // + booking CTA). Both link to the same hub — the single source, no duplicated
+  // text on the WO. (user.roles cache context added in views_pre_render.)
+  $type_link = NULL;
+  if (!$test->get('field_backflow_device')->isEmpty()
+      && ($device = $test->get('field_backflow_device')->entity)
+      && $device->hasField('field_device_type')
+      && !$device->get('field_device_type')->isEmpty()
+      && ($type_term = $device->get('field_device_type')->entity)) {
+    $internal_roles = ['teammates', 'supervisor', 'administration', 'site_assistant', 'site_admin', 'administrator'];
+    $is_internal = (bool) array_intersect($internal_roles, \Drupal::currentUser()->getRoles());
+    $type_link = [
+      'url' => $type_term->toUrl()->toString(),
+      'label' => $is_internal
+        ? 'View ' . $type_term->label() . ' testing procedure'
+        : $type_term->label() . ' — backflow testing & certification',
+      'internal' => $is_internal,
+    ];
+  }
+
   $variables['bf_test_card'] = [
     'result' => $result !== '' ? $result : 'pending',
     'result_label' => _backflow_device_result_label($result),
@@ -519,6 +579,7 @@ function _backflow_device_test_card(array &$variables) {
     'repairs' => $repairs,
     'has_data' => $has_data,
     'url' => $test->toUrl('edit-form', $options)->toString(),
+    'type_link' => $type_link,
   ];
 }
 

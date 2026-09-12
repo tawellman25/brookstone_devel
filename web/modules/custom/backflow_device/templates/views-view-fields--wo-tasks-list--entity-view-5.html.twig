@@ -48,4 +48,12 @@
     {% endif %}
 
   </a>
+
+  {# Audience-aware link to the canonical type hub — sits OUTSIDE the card
+     anchor (no nested <a>). Testers: testing procedure; clients: public info. #}
+  {% if bf_test_card.type_link %}
+    <div class="bf-card-typelink">
+      <a href="{{ bf_test_card.type_link.url }}">{{ bf_test_card.type_link.label }} &rarr;</a>
+    </div>
+  {% endif %}
 {% endif %}

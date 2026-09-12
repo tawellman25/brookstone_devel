@@ -57,6 +57,14 @@ const WO_BACKFLOW_TESTING_TYPE_READINGS = [
 function wo_backflow_testing_entity_presave(EntityInterface $entity) {
     // Cert-number snapshot onto the test child (separate concern from billing).
     if ($entity->getEntityTypeId() === 'wo_tasks_list' && $entity->bundle() === 'backflow_testing') {
+        // Default the tester to Todd (uid 1) on creation when none is set. The
+        // add form pre-selects uid 1, but tasks created by the "New Test"
+        // controller (and any other programmatic path) arrive with no tester,
+        // which left the cert blank. This covers every creation path; the tester
+        // stays editable afterward.
+        if ($entity->isNew() && $entity->get('field_tester')->isEmpty() && User::load(1)) {
+            $entity->set('field_tester', 1);
+        }
         _wo_backflow_testing_snapshot_cert($entity);
         return;
     }
@@ -275,9 +283,10 @@ function _wo_backflow_testing_handle_work_order(EntityInterface $entity) {
 /**
  * Snapshots the tester's certification number onto a wo_tasks_list:backflow_testing child.
  *
- * Mirrors the currently-selected tester while the parent WO is not yet
- * Complete; freezes once the WO is Complete (1097). If the tester has no cert
- * on their teammate_profile, the snapshot is cleared (no error this gate).
+ * Fills the task's cert from the tester's teammate_profile ONLY when the task's
+ * cert is currently empty — it never overwrites a hand-entered value, and never
+ * clears an existing value to blank when the tester has no cert (fails
+ * gracefully). Frozen once the WO is Complete (1097).
  */
 function _wo_backflow_testing_snapshot_cert(EntityInterface $child) {
     // Freeze once the parent WO is Complete. Load the WO fresh by id rather
@@ -308,8 +317,12 @@ function _wo_backflow_testing_snapshot_cert(EntityInterface $child) {
         }
     }
 
-    // Mirror the currently-selected tester (cert or blank).
-    $child->set('field_certification_number', $cert);
+    // Fill from the tester's profile ONLY when the task's cert is empty — never
+    // overwrite a hand-entered value, and never clear it to blank when the
+    // tester has no cert.
+    if ($cert !== '' && $child->get('field_certification_number')->isEmpty()) {
+        $child->set('field_certification_number', $cert);
+    }
 }
 
 /**

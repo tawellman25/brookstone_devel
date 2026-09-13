@@ -360,6 +360,14 @@ Setup/backfill/heal are idempotent entity-API scripts (no cim): `setup_material_
 - **No trip fee.** `field_trip_fee` is **zeroed** for this bundle (the $90 is all-in for the visit), so the WO total and the trip line agree — even if `wo_sign_off` computed one. Re-enable later by adding trip back to the total (a per-bundle setting is the clean seam).
 - Rentals + `field_billing_adjustment` still apply. Applies to **future completions only**; existing completed WOs keep their frozen totals unless re-saved.
 
+### 3.14 Test form layout (as-built 2026-09-12, `092441a9`)
+
+The `wo_tasks_list:backflow_testing` default form display is tidied for crews (`setup_backflow_test_form.php`, idempotent, no cim):
+
+- **Title hidden + auto-generated.** The required Title field is removed from the form and set in code (`_wo_backflow_testing_generate_title()` → "Backflow Test — BF-000005 — 09/12/2026"), applied in the form-defaults `#entity_builder` (before validation) and finalized in presave (deterministic from device + test date). So a crew never types a title and the required label is never blank.
+- **Field groups:** *Test Details* (date, tester, cert, initial, pass/fail) · **Test Readings** (the 6 gauge fields — were loose and interspersed with meta fields; per-device-type visibility still applied by `hook_form_alter`) · *Repairs & Report* (repairs + generated PDF) · **Office Admin** (collapsed: `uid` Authored-by, `created` Authored-on, `path` URL alias, `field_report_image` legacy scan — moved out of Repairs & Report).
+- **Field-format note:** `field_test_date` is a `datetime` (date+time); a bare date-only value ('Y-m-d') won't render in the `datetime_default` widget (shows blank). Values must be stored full ('Y-m-d\TH:i:s'); the auto-default and `fix_backflow_test_dates.php` both write the full form.
+
 ## 4. As-Built Status
 
 | Gate | Scope | Status | Commit |

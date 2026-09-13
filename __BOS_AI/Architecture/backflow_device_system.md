@@ -208,6 +208,15 @@ on a tech's behalf, they must set `field_tester` to the actual tech, or it recor
 the office user. If multiple certified testers become common, revisit whether the
 tester should be a required manual pick.
 
+**Test date default (as-built 2026-09-12, `15a676c9`).** The same form-defaults
+`#entity_builder` also defaults **`field_test_date` → now** on save when it is
+blank **and** a result (`field_pass_fail`) has been entered — so a tester
+recording a result need not type the date, an entered date is kept, and a blank
+shell (no result) is never stamped. The test date is load-bearing: it sets the
+device's `field_last_test_date` / `field_last_pass_date` and drives
+`field_next_due_date` (= test date + `field_test_frequency_months`), plus the
+report/tag date. Stored UTC (`Y-m-d\TH:i:s`), displayed in site TZ.
+
 **Cert snapshot** (`wo_tasks_list:backflow_testing` presave): the tester's
 `teammate_profile.field_certification_number` is copied onto the test child's
 `field_certification_number` **only when the child's cert is empty** — it never

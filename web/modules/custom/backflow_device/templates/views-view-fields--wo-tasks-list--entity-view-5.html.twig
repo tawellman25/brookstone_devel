@@ -4,11 +4,13 @@
  * Backflow Tests EVA row (WO page) — test result card.
  *
  * One clickable card per wo_tasks_list:backflow_testing child. The whole card
- * links to that test's edit form (the readings form). Card data is computed in
+ * links to that test's canonical view page (the test-results display; editors
+ * reach the readings form via the Edit tab there). Card data is computed in
  * backflow_device_preprocess_views_view_fields() -> _backflow_device_test_card()
  * and passed as `bf_test_card` (result, result_label, test_date, tester, cert,
  * initial, url). The default `fields` are intentionally not rendered — no WO
- * title, no creator.
+ * title, no creator. The audience-aware type-hub link renders once above the
+ * Backflow Tests group (backflow_device_entity_view), not per card.
  */
 #}
 {% if bf_test_card %}
@@ -49,11 +51,11 @@
 
   </a>
 
-  {# Audience-aware link to the canonical type hub — sits OUTSIDE the card
-     anchor (no nested <a>). Testers: testing procedure; clients: public info. #}
-  {% if bf_test_card.type_link %}
-    <div class="bf-card-typelink">
-      <a href="{{ bf_test_card.type_link.url }}">{{ bf_test_card.type_link.label }} &rarr;</a>
+  {# Report PDF (view/download) — sits OUTSIDE the card anchor (no nested <a>).
+     Opens in a new tab; the viewer can save/share it to a customer. #}
+  {% if bf_test_card.pdf_url %}
+    <div class="bf-card-report">
+      <a href="{{ bf_test_card.pdf_url }}" target="_blank" rel="noopener">View / download report (PDF) &darr;</a>
     </div>
   {% endif %}
 {% endif %}

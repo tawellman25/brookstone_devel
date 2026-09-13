@@ -19,6 +19,7 @@
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Url;
 use Drupal\Core\File\FileExists;
 use Drupal\Core\File\FileSystemInterface;
@@ -208,23 +209,46 @@ function backflow_device_entity_view(array &$build, EntityInterface $entity, Ent
     return;
   }
 
-  // "Enter Test Results" on the WO page: creates ANOTHER backflow test on this
-  // WO (e.g. a before- and after-repair test on the same device) and opens its
-  // readings form. Renders just below the Backflow Tests group (group is field-
-  // group weight 5; this sits at weight 6). Per-test editing is the clickable
-  // test cards in the Backflow Tests EVA, so no per-child edit link here.
+  // Backflow-testing WO page additions.
   if ($entity->getEntityTypeId() === 'work_order'
       && $entity->bundle() === 'backflow_testing'
       && in_array($view_mode, ['default', 'full'], TRUE)) {
+
+    // Audience-aware link to the canonical type hub page, rendered ABOVE the
+    // Backflow Tests field group (group weight 5; this sits at 4.5). The device
+    // type is reached through the WO's child tests (one device type per WO).
+    // Testers get the "testing procedure" framing (professional description);
+    // clients/anon get the public "testing & certification" framing. One link,
+    // not per-card — the per-card link was retired in favor of this.
+    if ($type_term = _backflow_device_wo_type_term($entity)) {
+      $internal_roles = ['teammates', 'supervisor', 'administration', 'site_assistant', 'site_admin', 'administrator'];
+      $is_internal = (bool) array_intersect($internal_roles, \Drupal::currentUser()->getRoles());
+      $build['backflow_procedure_link'] = [
+        '#type' => 'link',
+        '#title' => Markup::create(_backflow_device_type_hub_label($type_term, $is_internal) . ' &rarr;'),
+        '#url' => $type_term->toUrl(),
+        '#prefix' => '<div class="bf-card-typelink bf-wo-procedure-link">',
+        '#suffix' => '</div>',
+        '#weight' => 4.5,
+        '#cache' => ['contexts' => ['user.roles'], 'tags' => $type_term->getCacheTags()],
+        '#attached' => ['library' => ['backflow_device/backflow_cards']],
+      ];
+    }
+
+    // "Enter Test Results" — creates ANOTHER backflow test on this WO (e.g. a
+    // before- and after-repair test) and opens its readings form. Nested INTO
+    // the Backflow Tests group (see backflow_device_entity_view_alter) so it
+    // renders inside the group's bordered container; weight 100 places it below
+    // the test cards. Per-test editing is the clickable cards in the EVA.
     if (\Drupal::currentUser()->hasPermission('create wo_tasks_list entities of bundle backflow_testing')) {
       $build['backflow_add_test'] = [
         '#type' => 'link',
         '#title' => 'Enter Test Results',
         '#url' => Url::fromRoute('backflow_device.add_test', ['work_order' => $entity->id()]),
         '#attributes' => [
-          'style' => 'display:inline-block;background:#2E7D32;color:#fff;font-weight:bold;text-decoration:none;padding:8px 16px;border-radius:4px;font-family:Calibri,Arial,sans-serif;margin:0 0 1rem;',
+          'style' => 'display:inline-block;background:#2E7D32;color:#fff;font-weight:bold;text-decoration:none;padding:8px 16px;border-radius:4px;font-family:Calibri,Arial,sans-serif;margin:0.75rem 0 0.25rem;',
         ],
-        '#weight' => 6,
+        '#weight' => 100,
         '#cache' => ['contexts' => ['user.permissions']],
       ];
     }
@@ -329,6 +353,67 @@ function backflow_device_entity_view(array &$build, EntityInterface $entity, Ent
 }
 
 /**
+ * Implements hook_preprocess_HOOK() for eck_entity.
+ *
+ * Nest the "Enter Test Results" button INTO the Backflow Tests field group so
+ * it renders inside the group's bordered container (below the test cards),
+ * instead of after the group. work_order is an ECK entity, so field_group does
+ * its group nesting in a preprocess appended to the eck_entity theme (see
+ * field_group_theme_registry_alter) that reads #group_children. This normal
+ * preprocess runs BEFORE that appended one, so registering the button as a
+ * child of group_backflow_tests here makes field_group move it into the group.
+ */
+function backflow_device_preprocess_eck_entity(array &$variables) {
+  $entity = $variables['elements']['#eck_entity'] ?? NULL;
+  if ($entity instanceof ContentEntityInterface
+      && $entity->getEntityTypeId() === 'work_order'
+      && $entity->bundle() === 'backflow_testing'
+      && isset($variables['elements']['backflow_add_test'])
+      && isset($variables['elements']['#fieldgroups']['group_backflow_tests'])) {
+    $variables['elements']['#group_children']['backflow_add_test'] = 'group_backflow_tests';
+  }
+}
+
+/**
+ * Audience-aware label for the canonical type-hub link. Testers get the
+ * professional "testing procedure" framing; everyone else the public framing.
+ */
+function _backflow_device_type_hub_label(ContentEntityInterface $type_term, bool $is_internal): string {
+  return $is_internal
+    ? 'View ' . $type_term->label() . ' testing procedure'
+    : $type_term->label() . ' — backflow testing & certification';
+}
+
+/**
+ * Finds the device type term for a backflow-testing WO via its child tests
+ * (wo_tasks_list:backflow_testing -> field_backflow_device -> field_device_type).
+ * Returns the first resolvable type term, or NULL. One device type per WO.
+ */
+function _backflow_device_wo_type_term(ContentEntityInterface $work_order) {
+  $ids = \Drupal::entityQuery('wo_tasks_list')
+    ->accessCheck(FALSE)
+    ->condition('type', 'backflow_testing')
+    ->condition('field_work_order', $work_order->id())
+    ->sort('id', 'ASC')
+    ->execute();
+  if (!$ids) {
+    return NULL;
+  }
+  $tests = \Drupal::entityTypeManager()->getStorage('wo_tasks_list')->loadMultiple($ids);
+  foreach ($tests as $test) {
+    if ($test->hasField('field_backflow_device')
+        && !$test->get('field_backflow_device')->isEmpty()
+        && ($device = $test->get('field_backflow_device')->entity)
+        && $device->hasField('field_device_type')
+        && !$device->get('field_device_type')->isEmpty()
+        && ($term = $device->get('field_device_type')->entity)) {
+      return $term;
+    }
+  }
+  return NULL;
+}
+
+/**
  * Implements hook_views_pre_render().
  *
  * Attaches the status-card CSS to the Property Devices EVA (mirrors the way
@@ -338,10 +423,6 @@ function backflow_device_views_pre_render($view) {
   if ($view->id() === 'backflow_property_devices_eva'
       || ($view->id() === 'wo_tasks_list' && $view->current_display === 'entity_view_5')) {
     $view->element['#attached']['library'][] = 'backflow_device/backflow_cards';
-  }
-  // The WO test cards carry an audience-aware type link, so vary by role.
-  if ($view->id() === 'wo_tasks_list' && $view->current_display === 'entity_view_5') {
-    $view->element['#cache']['contexts'][] = 'user.roles';
   }
 }
 
@@ -482,9 +563,11 @@ function _backflow_device_result_label(string $value): string {
 
 /**
  * Builds the test-card data for one wo_tasks_list:backflow_testing row on the
- * WO's Backflow Tests EVA. The whole card links to the test's edit form (the
- * readings form), returning to the WO after save. Shows the result, test date,
- * and tester + certification — not the WO title or the creator.
+ * WO's Backflow Tests EVA. The whole card links to the test's canonical view
+ * page (the test-results display); editors reach the readings form via the Edit
+ * tab there. Shows the result, test date, and tester + certification — not the
+ * WO title or the creator. When a report PDF has been generated it is offered as
+ * a view/download link below the card (for sending to a customer).
  */
 function _backflow_device_test_card(array &$variables) {
   $test = $variables['row']->_entity ?? NULL;
@@ -539,35 +622,17 @@ function _backflow_device_test_card(array &$variables) {
   // filled-but-undated test is not mislabeled "no readings yet".
   $has_data = $result !== '' || $tester !== '' || $cert !== '' || !empty($readings) || $repairs !== '';
 
-  // Whole-card link -> the test edit form, returning to the WO after save.
-  $options = [];
-  if (!$test->get('field_work_order')->isEmpty() && ($wo = $test->get('field_work_order')->entity)) {
-    $options['query']['destination'] = $wo->toUrl()->toString();
+  // Report PDF (generated + frozen on completion): offer view/download below the
+  // card so a team member can pull it up or send it to a customer. Rendered as a
+  // link OUTSIDE the card anchor (no nested <a>).
+  $pdf_url = '';
+  if ($test->hasField('field_report_pdf') && !$test->get('field_report_pdf')->isEmpty()
+      && ($pdf = $test->get('field_report_pdf')->entity)) {
+    $pdf_url = $pdf->createFileUrl(FALSE);
   }
 
-  // Audience-aware link to the canonical type hub page, reached via
-  // field_backflow_device -> field_device_type. Testers get the "testing
-  // procedure" framing (the professional `description`); clients/anon get the
-  // public "backflow testing & certification" framing (`field_public_description`
-  // + booking CTA). Both link to the same hub — the single source, no duplicated
-  // text on the WO. (user.roles cache context added in views_pre_render.)
-  $type_link = NULL;
-  if (!$test->get('field_backflow_device')->isEmpty()
-      && ($device = $test->get('field_backflow_device')->entity)
-      && $device->hasField('field_device_type')
-      && !$device->get('field_device_type')->isEmpty()
-      && ($type_term = $device->get('field_device_type')->entity)) {
-    $internal_roles = ['teammates', 'supervisor', 'administration', 'site_assistant', 'site_admin', 'administrator'];
-    $is_internal = (bool) array_intersect($internal_roles, \Drupal::currentUser()->getRoles());
-    $type_link = [
-      'url' => $type_term->toUrl()->toString(),
-      'label' => $is_internal
-        ? 'View ' . $type_term->label() . ' testing procedure'
-        : $type_term->label() . ' — backflow testing & certification',
-      'internal' => $is_internal,
-    ];
-  }
-
+  // The audience-aware type-hub link now renders ONCE above the Backflow Tests
+  // group (backflow_device_entity_view), not per card.
   $variables['bf_test_card'] = [
     'result' => $result !== '' ? $result : 'pending',
     'result_label' => _backflow_device_result_label($result),
@@ -578,8 +643,9 @@ function _backflow_device_test_card(array &$variables) {
     'readings' => $readings,
     'repairs' => $repairs,
     'has_data' => $has_data,
-    'url' => $test->toUrl('edit-form', $options)->toString(),
-    'type_link' => $type_link,
+    // Whole card -> the test-results view page (canonical); Edit tab there for editors.
+    'url' => $test->toUrl('canonical')->toString(),
+    'pdf_url' => $pdf_url,
   ];
 }
 

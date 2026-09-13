@@ -341,6 +341,16 @@ The "how it's tested" content lives **once**, on the `backflow_device_types` ter
 
 Setup/backfill/heal are idempotent entity-API scripts (no cim): `setup_material_backflow_type.php`, `backfill_material_backflow_type.php`, `strip_rp_procedure_markers.php`, `retitle_backflow_devices.php`.
 
+### 3.13 Certification billing — base fee + repair addition, no trip (as-built 2026-09-12, `cdf1d0ed`)
+
+`wo_backflow_testing_entity_presave` on a Complete (1097) `work_order:backflow_testing` bills:
+
+- **Base fee** = `business_setting.field_backflow_testing_rate` (**$90**) covering the base testing time = `field_sprinkler_tech_minimum` (**0.5 hr / 30 min**). _(field_backflow_testing_rate already existed but was never wired in — the prior code billed `field_sprinkler_technician_rate` × time with a $35 minimum. No new settings were added.)_
+- **Repair addition (labor)** = time beyond the base at `field_sprinkler_technician_rate` (**$70/hr**), rounded **up** to `field_hour_billing_increment` (0.25 hr). E.g. 45 min → +$17.50 = $107.50; 50–60 min → +$35 = $125; 90 min → +$70 = $160.
+- **Repair addition (materials)** = `get_backflow_testing_total_material_price()` (Σ `field_subtotal_w_markup`, i.e. marked up) — unchanged.
+- **No trip fee.** `field_trip_fee` is **zeroed** for this bundle (the $90 is all-in for the visit), so the WO total and the trip line agree — even if `wo_sign_off` computed one. Re-enable later by adding trip back to the total (a per-bundle setting is the clean seam).
+- Rentals + `field_billing_adjustment` still apply. Applies to **future completions only**; existing completed WOs keep their frozen totals unless re-saved.
+
 ## 4. As-Built Status
 
 | Gate | Scope | Status | Commit |

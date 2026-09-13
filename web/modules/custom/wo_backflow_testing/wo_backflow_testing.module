@@ -58,6 +58,25 @@ function wo_backflow_testing_entity_presave(EntityInterface $entity) {
     // Cert-number snapshot onto the test child (separate concern from billing).
     if ($entity->getEntityTypeId() === 'wo_tasks_list' && $entity->bundle() === 'backflow_testing') {
         _wo_backflow_testing_snapshot_cert($entity);
+        // Normalize a date-only test date (e.g. '2026-09-13' entered
+        // programmatically) to a full datetime: field_test_date is a datetime
+        // field, so a bare date won't render in the widget (shows blank) and is
+        // read as midnight UTC (displays the prior day in our TZ). Interpret it
+        // as 2:00 PM site-local. Full datetimes are left untouched. This makes
+        // storage robust regardless of how a test is entered (form or API).
+        if (!$entity->get('field_test_date')->isEmpty()) {
+            $tdv = (string) $entity->get('field_test_date')->value;
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $tdv)) {
+                try {
+                    $d = new \DateTime($tdv . ' 14:00:00', new \DateTimeZone(date_default_timezone_get()));
+                    $d->setTimezone(new \DateTimeZone('UTC'));
+                    $entity->set('field_test_date', $d->format('Y-m-d\TH:i:s'));
+                }
+                catch (\Exception $e) {
+                    // Leave a malformed value alone.
+                }
+            }
+        }
         // Auto-title the test (the Title field is hidden on the form) so the
         // required label is never blank and reads meaningfully in lists/reports.
         $entity->set('title', _wo_backflow_testing_generate_title($entity));

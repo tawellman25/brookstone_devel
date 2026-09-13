@@ -81,21 +81,26 @@ function wo_backflow_testing_entity_presave(EntityInterface $entity) {
         $business_settings = $config_pages_loader->load('business_setting');
 
         if ($business_settings) {
-            $hourlyRate = $business_settings->get('field_sprinkler_technician_rate')->value;
-            $hourlyBillingIncrement = $business_settings->get('field_hour_billing_increment')->value;
-            $hourlyMinimum = $business_settings->get('field_sprinkler_tech_minimum')->value;
+            // Certification billing = the flat BASE FEE (Business Settings:
+            // field_backflow_testing_rate, $90) covering the base testing time
+            // (field_sprinkler_tech_minimum, 0.5 hr / 30 min), PLUS a repair
+            // addition for time beyond that — billed at the sprinkler technician
+            // rate (field_sprinkler_technician_rate, $70/hr), rounded UP to the
+            // standard billing increment. Materials (below) are the other half
+            // of the repair addition.
+            $hourlyRate = (float) ($business_settings->get('field_sprinkler_technician_rate')->value ?? 0); // overage $/hr
+            $hourlyBillingIncrement = (float) ($business_settings->get('field_hour_billing_increment')->value ?? 0); // hours (e.g. 0.25)
+            $baseFee = (float) ($business_settings->get('field_backflow_testing_rate')->value ?? 90);
+            $baseHours = (float) ($business_settings->get('field_sprinkler_tech_minimum')->value ?? 0.5); // hours included in the base
 
             // field_total_time is set by wo_sign_off before this presave runs.
-            $totalTime = $entity->get('field_total_time')->value;
+            $totalTime = (float) ($entity->get('field_total_time')->value ?? 0); // hours
 
-            if ($totalTime > $hourlyMinimum) {
-                $totalMinutes = $totalTime * 60;
-                $totalTimeIncrements = ceil($totalMinutes / $hourlyBillingIncrement);
-                $hourlyIncrement = $hourlyBillingIncrement / 60;
-                $hourlyRateIncrement = $hourlyRate * $hourlyIncrement;
-                $labor_subtotal = $hourlyRateIncrement * $totalTimeIncrements;
-            } else {
-                $labor_subtotal = $hourlyRate * $hourlyMinimum;
+            $labor_subtotal = $baseFee;
+            if ($totalTime > $baseHours && $hourlyBillingIncrement > 0 && $hourlyRate > 0) {
+                $overageHours = $totalTime - $baseHours;
+                $increments = ceil($overageHours / $hourlyBillingIncrement);
+                $labor_subtotal += $increments * $hourlyBillingIncrement * $hourlyRate;
             }
 
             $entity->set('field_labor_total', $labor_subtotal);
@@ -113,11 +118,11 @@ function wo_backflow_testing_entity_presave(EntityInterface $entity) {
             $grand_total += $material_subtotal;
         }
 
-        // Trip Fee calculated by wo_sign_off and written to field_trip_fee.
-        $totalTrip = $entity->get('field_trip_fee')->value;
-        if ($totalTrip > 0) {
-            $grand_total += $totalTrip;
-        }
+        // No trip fee on backflow certifications (policy, 2026-09-12): the $90
+        // base is all-in for the visit. Zero any value wo_sign_off computed so
+        // the WO total and the trip-fee line agree. (To re-enable later, add the
+        // trip back to $grand_total — e.g. behind a per-bundle setting.)
+        $entity->set('field_trip_fee', 0);
 
         // Rental Fees from related 'wo_rental_equipment' entities.
         $rental_fee_total = get_backflow_testing_total_rental_fees($workOrderId);

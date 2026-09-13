@@ -58,6 +58,9 @@ function wo_backflow_testing_entity_presave(EntityInterface $entity) {
     // Cert-number snapshot onto the test child (separate concern from billing).
     if ($entity->getEntityTypeId() === 'wo_tasks_list' && $entity->bundle() === 'backflow_testing') {
         _wo_backflow_testing_snapshot_cert($entity);
+        // Auto-title the test (the Title field is hidden on the form) so the
+        // required label is never blank and reads meaningfully in lists/reports.
+        $entity->set('title', _wo_backflow_testing_generate_title($entity));
         return;
     }
 
@@ -389,6 +392,37 @@ function _wo_backflow_testing_form_defaults_builder($entity_type, EntityInterfac
       && $entity->hasField('field_pass_fail') && !$entity->get('field_pass_fail')->isEmpty()) {
     $entity->set('field_test_date', gmdate('Y-m-d\TH:i:s'));
   }
+  // Title is hidden on the form + auto-generated (presave finalizes it); set it
+  // here too so the required title is non-empty before form validation runs.
+  if ($entity->get('title')->isEmpty()) {
+    $entity->set('title', _wo_backflow_testing_generate_title($entity));
+  }
+}
+
+/**
+ * Builds the auto-title for a backflow test child.
+ *
+ * The Title field is hidden on the form; this keeps the required label populated
+ * and meaningful: "Backflow Test — BF-000005 — 09/12/2026" (device code + test
+ * date when available; graceful fallbacks). Deterministic from device + date.
+ */
+function _wo_backflow_testing_generate_title(EntityInterface $task): string {
+  $parts = ['Backflow Test'];
+  if ($task->hasField('field_backflow_device') && !$task->get('field_backflow_device')->isEmpty()
+      && ($devid = $task->get('field_backflow_device')->target_id)) {
+    $parts[] = 'BF-' . str_pad((string) $devid, 6, '0', STR_PAD_LEFT);
+  }
+  if ($task->hasField('field_test_date') && !$task->get('field_test_date')->isEmpty()) {
+    try {
+      $d = new \DateTime((string) $task->get('field_test_date')->value, new \DateTimeZone('UTC'));
+      $d->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+      $parts[] = $d->format('m/d/Y');
+    }
+    catch (\Exception $e) {
+      // Leave the date off on a malformed value.
+    }
+  }
+  return implode(' — ', $parts);
 }
 
 /**

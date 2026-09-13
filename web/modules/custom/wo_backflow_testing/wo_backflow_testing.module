@@ -52,6 +52,18 @@ const WO_BACKFLOW_TESTING_TYPE_READINGS = [
 ];
 
 /**
+ * Per-reading gauge photo field for each reading field.
+ */
+const WO_BACKFLOW_TESTING_READING_PHOTOS = [
+  'field_line_pressure_psi' => 'field_photo_line_pressure',
+  'field_check_valve_1_psid' => 'field_photo_cv1',
+  'field_check_valve_2_psid' => 'field_photo_cv2',
+  'field_relief_valve_psid' => 'field_photo_relief',
+  'field_air_inlet_psid' => 'field_photo_air_inlet',
+  'field_check_valve_psid' => 'field_photo_cv',
+];
+
+/**
  * Implements hook_entity_presave().
  */
 function wo_backflow_testing_entity_presave(EntityInterface $entity) {
@@ -329,18 +341,26 @@ function _wo_backflow_testing_snapshot_cert(EntityInterface $child) {
         'type' => 'teammate_profile',
     ]);
     $cert = '';
+    $assoc = '';
     if ($profiles) {
         $profile = reset($profiles);
         if ($profile->hasField('field_certification_number') && !$profile->get('field_certification_number')->isEmpty()) {
             $cert = $profile->get('field_certification_number')->value;
         }
+        if ($profile->hasField('field_certification_association') && !$profile->get('field_certification_association')->isEmpty()) {
+            $assoc = $profile->get('field_certification_association')->value;
+        }
     }
 
-    // Fill from the tester's profile ONLY when the task's cert is empty — never
+    // Fill from the tester's profile ONLY when the task's value is empty — never
     // overwrite a hand-entered value, and never clear it to blank when the
-    // tester has no cert.
+    // tester's profile has none.
     if ($cert !== '' && $child->get('field_certification_number')->isEmpty()) {
         $child->set('field_certification_number', $cert);
+    }
+    if ($assoc !== '' && $child->hasField('field_certification_association')
+        && $child->get('field_certification_association')->isEmpty()) {
+        $child->set('field_certification_association', $assoc);
     }
 }
 
@@ -411,10 +431,50 @@ function _wo_backflow_testing_form_defaults_builder($entity_type, EntityInterfac
       && $entity->hasField('field_pass_fail') && !$entity->get('field_pass_fail')->isEmpty()) {
     $entity->set('field_test_date', gmdate('Y-m-d\TH:i:s'));
   }
+  // Test gauge: default to the gauge assigned to the tester (blank kept if the
+  // tester holds no gauge; an entered gauge is kept).
+  if ($entity->hasField('field_test_gauge') && $entity->get('field_test_gauge')->isEmpty()
+      && !$entity->get('field_tester')->isEmpty()
+      && ($gid = _wo_backflow_testing_gauge_for_user($entity->get('field_tester')->target_id))) {
+    $entity->set('field_test_gauge', $gid);
+  }
   // Title is hidden on the form + auto-generated (presave finalizes it); set it
   // here too so the required title is non-empty before form validation runs.
   if ($entity->get('title')->isEmpty()) {
     $entity->set('title', _wo_backflow_testing_generate_title($entity));
+  }
+}
+
+/**
+ * Form validate: warn (do not block) if the selected test gauge's latest
+ * calibration expired on or before the test date.
+ */
+function _wo_backflow_testing_gauge_cal_validate(array &$form, FormStateInterface $form_state) {
+  $gid = $form_state->getValue(['field_test_gauge', 0, 'target_id']);
+  if (empty($gid)) {
+    return;
+  }
+  $gauge = \Drupal::entityTypeManager()->getStorage('equipment')->load($gid);
+  $cal = _wo_backflow_testing_latest_calibration($gauge);
+  if (!$cal || $cal->get('field_next_service_due_date')->isEmpty()) {
+    \Drupal::messenger()->addWarning(t('The selected test gauge has no recorded calibration — verify its calibration before certifying.'));
+    return;
+  }
+  $due = (string) $cal->get('field_next_service_due_date')->value;   // Y-m-d
+  // Test date (datetime widget) -> Y-m-d in site TZ; fall back to today.
+  $test_ymd = date('Y-m-d');
+  $tv = $form_state->getValue(['field_test_date', 0, 'value']);
+  if ($tv instanceof \Drupal\Core\Datetime\DrupalDateTime) {
+    $test_ymd = $tv->format('Y-m-d');
+  }
+  elseif (is_string($tv) && $tv !== '') {
+    $test_ymd = substr($tv, 0, 10);
+  }
+  if ($due < $test_ymd) {
+    \Drupal::messenger()->addWarning(t('Heads up: the selected gauge\'s calibration expired @due, before this test date (@test). Verify calibration.', [
+      '@due' => _wo_backflow_testing_date_only_us($due),
+      '@test' => _wo_backflow_testing_date_only_us($test_ymd),
+    ]));
   }
 }
 
@@ -470,6 +530,10 @@ function wo_backflow_testing_form_alter(array &$form, FormStateInterface $form_s
   // values are always kept.
   $form['#entity_builders'][] = '_wo_backflow_testing_form_defaults_builder';
 
+  // Non-blocking warning if the chosen gauge's calibration is expired as of the
+  // test date (compliance heads-up; never blocks the save).
+  $form['#validate'][] = '_wo_backflow_testing_gauge_cal_validate';
+
   // Wrap the device field, readings, and create-UI in one AJAX section.
   $form['bf_device_section'] = [
     '#type' => 'container',
@@ -523,8 +587,14 @@ function wo_backflow_testing_form_alter(array &$form, FormStateInterface $form_s
   if ($type_code !== NULL) {
     $applicable = WO_BACKFLOW_TESTING_TYPE_READINGS[$type_code] ?? WO_BACKFLOW_TESTING_READING_FIELDS;
     foreach (WO_BACKFLOW_TESTING_READING_FIELDS as $rf) {
+      $show = in_array($rf, $applicable, TRUE);
       if (isset($form[$rf])) {
-        $form[$rf]['#access'] = in_array($rf, $applicable, TRUE);
+        $form[$rf]['#access'] = $show;
+      }
+      // The companion gauge-photo slot follows its reading's visibility.
+      $pf = WO_BACKFLOW_TESTING_READING_PHOTOS[$rf] ?? NULL;
+      if ($pf && isset($form[$pf])) {
+        $form[$pf]['#access'] = $show;
       }
     }
   }
@@ -842,6 +912,46 @@ function _wo_backflow_testing_us_date($stored) {
 }
 
 /**
+ * Formats a DATE-ONLY value (Y-m-d) as m/d/Y with NO timezone shift.
+ * (us_date() is for datetime values; a bare date read as midnight UTC would
+ * display the prior day in our TZ.)
+ */
+function _wo_backflow_testing_date_only_us($stored) {
+    if (empty($stored)) {
+        return '';
+    }
+    $d = \DateTime::createFromFormat('Y-m-d', substr((string) $stored, 0, 10));
+    return $d ? $d->format('m/d/Y') : (string) $stored;
+}
+
+/**
+ * The test_gauges equipment id soft-assigned to a user, or NULL.
+ */
+function _wo_backflow_testing_gauge_for_user($uid) {
+    if (!$uid) {
+        return NULL;
+    }
+    $ids = \Drupal::entityTypeManager()->getStorage('equipment')->getQuery()
+        ->accessCheck(FALSE)->condition('type', 'test_gauges')
+        ->condition('field_assigned_to', $uid)->range(0, 1)->execute();
+    return $ids ? (int) reset($ids) : NULL;
+}
+
+/**
+ * The most-recent calibration maintenance event for a gauge, or NULL.
+ */
+function _wo_backflow_testing_latest_calibration($gauge) {
+    if (!$gauge) {
+        return NULL;
+    }
+    $ids = \Drupal::entityTypeManager()->getStorage('equipment_maintenance_event')->getQuery()
+        ->accessCheck(FALSE)->condition('field_equipment', $gauge->id())
+        ->condition('field_event_type', 'calibration')
+        ->sort('field_event_date', 'DESC')->range(0, 1)->execute();
+    return $ids ? \Drupal::entityTypeManager()->getStorage('equipment_maintenance_event')->load(reset($ids)) : NULL;
+}
+
+/**
  * Returns a base64 data: URI for a managed image file, or NULL.
  *
  * Reads via the stream wrapper (works for public:// and s3://) and embeds the
@@ -857,6 +967,46 @@ function _wo_backflow_testing_image_data_uri($file) {
         return NULL;
     }
     $mime = $file->getMimeType() ?: 'image/png';
+    return 'data:' . $mime . ';base64,' . base64_encode($data);
+}
+
+/**
+ * Returns a base64 data: URI for a managed image, resized via an image style.
+ *
+ * Used for report photos so a full-res phone photo doesn't bloat the PDF — the
+ * derivative is generated (public:// or s3://) and its bytes embedded. Falls
+ * back to the original on any derivative failure.
+ */
+function _wo_backflow_testing_styled_image_data_uri($file, string $style_name = 'backflow_report_photo') {
+    if (!$file) {
+        return NULL;
+    }
+    $style = \Drupal\image\Entity\ImageStyle::load($style_name);
+    if ($style) {
+        $src = $file->getFileUri();
+        $deriv = $style->buildUri($src);
+        if (!file_exists($deriv)) {
+            @$style->createDerivative($src, $deriv);
+        }
+        $data = @file_get_contents($deriv);
+        if ($data !== FALSE && $data !== '') {
+            return 'data:' . ($file->getMimeType() ?: 'image/jpeg') . ';base64,' . base64_encode($data);
+        }
+    }
+    return _wo_backflow_testing_image_data_uri($file);
+}
+
+/**
+ * Data: URI for a theme image asset (not a managed file), e.g. the report logo.
+ */
+function _wo_backflow_testing_asset_data_uri(string $relative) {
+    $path = \Drupal::root() . '/' . ltrim($relative, '/');
+    $data = @file_get_contents($path);
+    if ($data === FALSE || $data === '') {
+        return NULL;
+    }
+    $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    $mime = $ext === 'jpg' || $ext === 'jpeg' ? 'image/jpeg' : ($ext === 'gif' ? 'image/gif' : 'image/png');
     return 'data:' . $mime . ';base64,' . base64_encode($data);
 }
 
@@ -878,11 +1028,24 @@ function _wo_backflow_testing_report_data(EntityInterface $child) {
         'is_initial' => (bool) $child->get('field_is_initial_test')->value,
         'tester_name' => '',
         'cert_number' => $child->get('field_certification_number')->value ?? '',
+        'cert_association' => ($child->hasField('field_certification_association') ? ($child->get('field_certification_association')->value ?? '') : ''),
         'passed' => $passed,
         'readings' => [],
         'repairs' => $child->get('field_repairs_recommended')->value ?? '',
         'signature_uri' => NULL,
         'qr_uri' => NULL,
+        'logo_uri' => _wo_backflow_testing_asset_data_uri('themes/custom/brookstone_olivero/images/brookstone-logo-long.png'),
+        'company_address' => '20143 Austin Rd, Austin, CO 81410',
+        'company_phone' => '970-835-9661',
+        'company_email' => 'office@brookstoneoutdoors.com',
+        'company_website' => 'brookstoneoutdoors.com',
+        'cert_line' => 'State of Colorado · Certified through ' . (($child->hasField('field_certification_association') && !$child->get('field_certification_association')->isEmpty()) ? $child->get('field_certification_association')->value : 'ABPA'),
+        'next_due' => '',
+        'assembly_make' => '',
+        'assembly_model' => '',
+        'assembly_size' => '',
+        'gauge' => NULL,
+        'tag_photos' => [],
         'generated_date' => \Drupal::service('date.formatter')->format(\Drupal::time()->getRequestTime(), 'custom', 'm/d/Y'),
     ];
 
@@ -898,6 +1061,18 @@ function _wo_backflow_testing_report_data(EntityInterface $child) {
         $data['serial'] = $device->get('field_serial_number')->value ?? '';
         $data['location'] = $device->get('field_physical_location')->value ?? '';
         $data['qr_uri'] = _wo_backflow_testing_image_data_uri($device->get('field_qr_code')->entity);
+        $data['next_due'] = $device->hasField('field_next_due_date')
+          ? _wo_backflow_testing_date_only_us($device->get('field_next_due_date')->value ?? '') : '';
+
+        // Assembly make/model/size from the device's linked material.
+        if ($device->hasField('field_material_backflow') && !$device->get('field_material_backflow')->isEmpty()
+            && ($mat = $device->get('field_material_backflow')->entity)) {
+            if ($mat->hasField('field_manufacturer') && !$mat->get('field_manufacturer')->isEmpty() && ($mfr = $mat->get('field_manufacturer')->entity)) {
+                $data['assembly_make'] = (string) $mfr->label();
+            }
+            $data['assembly_model'] = $mat->hasField('field_name') ? (string) ($mat->get('field_name')->value ?? '') : '';
+            $data['assembly_size'] = $mat->hasField('field_size') ? (string) ($mat->get('field_size')->value ?? '') : '';
+        }
 
         if (!$device->get('field_device_type')->isEmpty() && ($term = $device->get('field_device_type')->entity)) {
             $data['device_type'] = (string) $term->label();
@@ -949,10 +1124,38 @@ function _wo_backflow_testing_report_data(EntityInterface $child) {
         ? WO_BACKFLOW_TESTING_TYPE_READINGS[$data['type_code']]
         : WO_BACKFLOW_TESTING_READING_FIELDS;
     foreach ($applicable as $field) {
+        $photo_uri = NULL;
+        $pf = WO_BACKFLOW_TESTING_READING_PHOTOS[$field] ?? NULL;
+        if ($pf && $child->hasField($pf) && !$child->get($pf)->isEmpty()) {
+            $photo_uri = _wo_backflow_testing_styled_image_data_uri($child->get($pf)->entity);
+        }
         $data['readings'][] = [
             'label' => $labels[$field] ?? $field,
             'value' => $child->get($field)->value,
+            'photo_uri' => $photo_uri,
         ];
+    }
+
+    // Test gauge + its latest calibration (compliance-critical).
+    if ($child->hasField('field_test_gauge') && !$child->get('field_test_gauge')->isEmpty()
+        && ($gauge = $child->get('field_test_gauge')->entity)) {
+        $cal = _wo_backflow_testing_latest_calibration($gauge);
+        $data['gauge'] = [
+            'make' => (string) ($gauge->get('field_equipment_make')->value ?? ''),
+            'model' => (string) ($gauge->get('field_model')->value ?? ''),
+            'serial' => (string) ($gauge->get('field_serial_code_number')->value ?? ''),
+            'cal_date' => $cal ? _wo_backflow_testing_date_only_us($cal->get('field_event_date')->value ?? '') : '',
+            'cal_due' => $cal ? _wo_backflow_testing_date_only_us($cal->get('field_next_service_due_date')->value ?? '') : '',
+        ];
+    }
+
+    // Tag photos (close-up + hooked-to-assembly).
+    if ($child->hasField('field_tag_photos') && !$child->get('field_tag_photos')->isEmpty()) {
+        foreach ($child->get('field_tag_photos') as $item) {
+            if ($item->entity && ($uri = _wo_backflow_testing_styled_image_data_uri($item->entity))) {
+                $data['tag_photos'][] = ['uri' => $uri, 'alt' => (string) ($item->alt ?? '')];
+            }
+        }
     }
 
     return $data;

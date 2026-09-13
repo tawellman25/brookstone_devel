@@ -10,59 +10,99 @@
 <head>
 <meta charset="utf-8">
 <style>
-  @page { margin: 0.75in; }
-  body { font-family: DejaVu Sans, sans-serif; color: #1a1a1a; font-size: 11pt; }
-  .hdr { border-bottom: 3px solid #1f5c2f; padding-bottom: 8px; margin-bottom: 14px; }
-  .hdr h1 { margin: 0; font-size: 16pt; color: #1f5c2f; }
-  .hdr .sub { font-size: 10pt; color: #555; }
-  .meta { width: 100%; margin-bottom: 12px; }
+  @page { margin: 0.55in; }
+  body { font-family: DejaVu Sans, sans-serif; color: #1a1a1a; font-size: 9.5pt; padding-bottom: 26px; }
+  .hdr { border-bottom: 3px solid #1f5c2f; padding-bottom: 6px; margin-bottom: 10px; }
+  .hdr h1 { margin: 6px 0 0; font-size: 15pt; color: #1f5c2f; }
+  .hdr .company { font-size: 9pt; color: #333; margin-top: 2px; }
+  .hdr .cert { font-size: 9pt; color: #1f5c2f; font-weight: bold; margin-top: 3px; text-align: center; }
+  table.cols { width: 100%; border-collapse: collapse; }
+  table.cols td.col { width: 50%; vertical-align: top; }
+  table.cols td.col-left { padding-right: 14px; }
+  table.cols td.col-right { padding-left: 14px; }
+  .col h2 { margin-top: 0; }
+  .col .meta .lbl { width: 44%; }
+  .meta { width: 100%; margin-bottom: 6px; }
   .meta td { vertical-align: top; padding: 1px 0; }
   .meta .lbl { color: #555; width: 38%; }
-  h2 { font-size: 11pt; color: #1f5c2f; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin: 16px 0 6px; }
+  h2 { font-size: 11pt; color: #1f5c2f; border-bottom: 1px solid #ccc; padding-bottom: 1px; margin: 7px 0 3px; }
   table.readings { width: 100%; border-collapse: collapse; }
-  table.readings th, table.readings td { border: 1px solid #bbb; padding: 5px 8px; text-align: left; }
+  table.readings th, table.readings td { border: 1px solid #bbb; padding: 1px 6px; text-align: left; vertical-align: middle; }
   table.readings th { background: #eef3ee; }
-  .result { font-size: 13pt; font-weight: bold; padding: 4px 10px; display: inline-block; }
+  .result { font-size: 13pt; font-weight: bold; padding: 2px 8px; display: inline-block; }
   .result.pass { color: #1f5c2f; }
   .result.fail { color: #b00020; }
-  .sig { margin-top: 18px; }
-  .sig img { max-height: 70px; }
-  .sig .line { border-top: 1px solid #333; width: 280px; margin-top: 2px; padding-top: 2px; font-size: 9pt; color: #555; }
-  .foot { margin-top: 24px; font-size: 8pt; color: #777; }
+  .sig { text-align: right; }
+  .sig img { max-height: 38px; }
+  .sig .line { border-top: 1px solid #333; width: 240px; margin: 2px 0 0 auto; padding-top: 2px; font-size: 8pt; color: #555; }
+  table.closeout { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  table.closeout td { vertical-align: bottom; }
+  table.closeout td.qr-cell { width: 118px; text-align: center; }
+  table.closeout .qr { width: 78px; height: 78px; }
+  table.closeout .qrcap { font-size: 7.5pt; color: #555; margin-top: 2px; }
+  table.closeout td.close-right { text-align: right; }
+  table.closeout .gen { font-size: 8pt; color: #777; margin-bottom: 8px; }
+  .page-footer { position: fixed; left: 0; right: 0; bottom: 0; text-align: center; font-size: 8.5pt; color: #444; border-top: 1px solid #ccc; padding-top: 4px; }
+  .hdr .logo { max-height: 96px; margin-bottom: 8px; }
+  table.readings td.rphoto { text-align: center; width: 46px; }
+  table.readings td.rphoto img { max-height: 30px; max-width: 40px; }
+  .tagphotos { margin-top: 2px; }
+  .tagitem { display: inline-block; vertical-align: top; text-align: center; margin: 0 12px 2px 0; }
+  .tagitem img { max-height: 54px; max-width: 80px; border: 1px solid #ccc; }
+  .tagitem .cap { display: block; font-size: 7.5pt; color: #555; margin-top: 1px; }
 </style>
 </head>
 <body>
   <div class="hdr">
+    {% if report.logo_uri %}<img class="logo" src="{{ report.logo_uri }}" alt="Brookstone Outdoors">{% endif %}
+    {% if report.cert_line %}<div class="cert">{{ report.cert_line }}</div>{% endif %}
     <h1>Backflow Prevention Assembly Test Report</h1>
-    <div class="sub">Brookstone Outdoors LLC &middot; State of Colorado</div>
   </div>
 
-  <table class="meta">
-    <tr><td class="lbl">Device ID</td><td><strong>{{ report.device_id }}</strong></td></tr>
-    <tr><td class="lbl">Assembly Type</td><td>{{ report.device_type }}</td></tr>
-    <tr><td class="lbl">Serial Number</td><td>{{ report.serial|default('—') }}</td></tr>
-    <tr><td class="lbl">Physical Location</td><td>{{ report.location|default('—') }}</td></tr>
-    <tr><td class="lbl">Service Address</td><td>
-      {% for line in report.address_lines %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}
-    </td></tr>
-  </table>
-
-  <h2>Test</h2>
-  <table class="meta">
-    <tr><td class="lbl">Test Date</td><td>{{ report.test_date|default('—') }}</td></tr>
-    <tr><td class="lbl">Test Type</td><td>{{ report.is_initial ? 'Initial' : 'Periodic' }}</td></tr>
-    <tr><td class="lbl">Certified Tester</td><td>{{ report.tester_name|default('—') }}</td></tr>
-    <tr><td class="lbl">Certification Number</td><td>{{ report.cert_number|default('—') }}</td></tr>
-    <tr><td class="lbl">Result</td><td>
-      <span class="result {{ report.passed ? 'pass' : 'fail' }}">{{ report.passed ? 'PASS' : 'FAIL' }}</span>
-    </td></tr>
-  </table>
+  <table class="cols"><tr>
+    <td class="col col-left">
+      <h2>Test</h2>
+      <table class="meta">
+        <tr><td class="lbl">Test Date</td><td>{{ report.test_date|default('—') }}</td></tr>
+        <tr><td class="lbl">Test Type</td><td>{{ report.is_initial ? 'Initial' : 'Periodic' }}</td></tr>
+        <tr><td class="lbl">Certified Tester</td><td>{{ report.tester_name|default('—') }}</td></tr>
+        <tr><td class="lbl">Cert. Number</td><td>{{ report.cert_number|default('—') }}{% if report.cert_association %} &middot; {{ report.cert_association }}{% endif %}</td></tr>
+        {% if report.gauge %}
+          <tr><td class="lbl">Test Gauge</td><td>{{ report.gauge.make }} {{ report.gauge.model }}{% if report.gauge.serial %}<br>SN {{ report.gauge.serial }}{% endif %}</td></tr>
+          <tr><td class="lbl">Gauge Calibration</td><td>{% if report.gauge.cal_date %}{{ report.gauge.cal_date }} &ndash; valid through {{ report.gauge.cal_due|default('—') }}{% else %}&mdash;{% endif %}</td></tr>
+        {% endif %}
+        <tr><td class="lbl">Result</td><td>
+          <span class="result {{ report.passed ? 'pass' : 'fail' }}">{{ report.passed ? 'PASS' : 'FAIL' }}</span>
+        </td></tr>
+      </table>
+    </td>
+    <td class="col col-right">
+      <h2>Backflow Assembly</h2>
+      <table class="meta">
+        <tr><td class="lbl">Device ID</td><td><strong>{{ report.device_id }}</strong></td></tr>
+        <tr><td class="lbl">Assembly Type</td><td>{{ report.device_type }}</td></tr>
+        {% if report.assembly_make or report.assembly_model or report.assembly_size %}
+          <tr><td class="lbl">Make / Model</td><td>{{ report.assembly_make }} {{ report.assembly_model }}{% if report.assembly_size %}, {{ report.assembly_size }}{% endif %}</td></tr>
+        {% endif %}
+        <tr><td class="lbl">Serial Number</td><td>{{ report.serial|default('—') }}</td></tr>
+        <tr><td class="lbl">Physical Location</td><td>{{ report.location|default('—') }}</td></tr>
+        <tr><td class="lbl">Service Address</td><td>
+          {% for line in report.address_lines %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}
+        </td></tr>
+        <tr><td class="lbl">Next Test Due</td><td>{{ report.next_due|default('—') }}</td></tr>
+      </table>
+    </td>
+  </tr></table>
 
   <h2>Readings</h2>
   <table class="readings">
-    <tr><th>Test Point</th><th>Reading (psid / psi)</th></tr>
+    <tr><th>Test Point</th><th>Reading (psid / psi)</th><th>Gauge Photo</th></tr>
     {% for r in report.readings %}
-      <tr><td>{{ r.label }}</td><td>{{ r.value is not null and r.value != '' ? r.value : '—' }}</td></tr>
+      <tr>
+        <td>{{ r.label }}</td>
+        <td>{{ r.value is not null and r.value != '' ? r.value : '—' }}</td>
+        <td class="rphoto">{% if r.photo_uri %}<img src="{{ r.photo_uri }}" alt="{{ r.label }} gauge">{% else %}&mdash;{% endif %}</td>
+      </tr>
     {% endfor %}
   </table>
 
@@ -71,16 +111,30 @@
     <div>{{ report.repairs }}</div>
   {% endif %}
 
-  <div class="sig">
-    {% if report.signature_uri %}
-      <img src="{{ report.signature_uri }}" alt="Tester signature">
-    {% endif %}
-    <div class="line">Certified Tester Signature &mdash; {{ report.tester_name|default('') }}</div>
-  </div>
+  {% if report.tag_photos %}
+    <h2>Tag Photos</h2>
+    <div class="tagphotos">
+      {% for p in report.tag_photos %}
+        <span class="tagitem"><img src="{{ p.uri }}" alt="{{ p.alt|default('Backflow tag') }}">{% if p.alt %}<span class="cap">{{ p.alt }}</span>{% endif %}</span>
+      {% endfor %}
+    </div>
+  {% endif %}
 
-  <div class="foot">
-    Report generated {{ report.generated_date }} from Brookstone Operating System.
-    Device ID {{ report.device_id }} &middot; canonical record retained in BOS.
+  <table class="closeout"><tr>
+    <td class="qr-cell">
+      {% if report.qr_uri %}<img class="qr" src="{{ report.qr_uri }}" alt="Backflow record QR"><div class="qrcap">Scan for test history</div>{% endif %}
+    </td>
+    <td class="close-right">
+      <div class="gen">Report generated {{ report.generated_date }} from Brookstone Operating System. Device ID {{ report.device_id }} &middot; canonical record retained in BOS.</div>
+      <div class="sig">
+        {% if report.signature_uri %}<img src="{{ report.signature_uri }}" alt="Tester signature">{% endif %}
+        <div class="line">Certified Tester Signature &mdash; {{ report.tester_name|default('') }}</div>
+      </div>
+    </td>
+  </tr></table>
+
+  <div class="page-footer">
+    {{ report.company_address }} &middot; {{ report.company_phone }} &middot; {{ report.company_email }} &middot; {{ report.company_website }}
   </div>
 </body>
 </html>

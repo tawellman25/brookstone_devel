@@ -1201,6 +1201,34 @@ real inner links still work. A `<div>` may legally contain `<a>`. De-scope any
 `32121479`). Applies to the whole BOS status-card pattern (`ui_patterns.md`) —
 whenever card content might contain a link, the card wrapper must not be an anchor.
 
+## xmlsitemap rebuild dies on an entity with an empty `changed` (NULL lastmod)
+
+`XmlSitemapLinkStorage::create()` assigns `$entity->getChangedTime()` straight to
+the link's `lastmod`, and the `{xmlsitemap}.lastmod` column is **NOT NULL**. So
+any entity whose changed time is NULL crashes the whole rebuild batch with an
+`IntegrityConstraintViolationException` ("Column 'lastmod' cannot be null") — and
+because it's a batch, the UI shows a 500 AJAX error mid-rebuild.
+
+Two ways an entity ends up with a NULL changed time in BOS:
+
+- **Migrated/imported rows** left `changed` NULL in the DB (found 184
+  `taxonomy_term` rows this way).
+- **ECK types that declare `changed: false`** (no changed field) — e.g.
+  `city` / `county` / `state`. ECK's `EckEntity` **always** uses
+  `EntityChangedTrait` and implements `EntityChangedInterface` regardless of the
+  `changed` flag, so `getChangedTime()` returns NULL (there's no field to read).
+  Enabling xmlsitemap for such a type guarantees the crash.
+
+Fix (2026-09-14, `bos_xmlsitemap`, `6beb7b3b`): implement
+`hook_xmlsitemap_link_alter()` and coalesce an empty `lastmod` to the entity's
+changed → created → request time. It runs in `XmlSitemapLinkStorage::save()`
+after the link is built (the last hook before the DB write), so it catches every
+entity type. Leave a genuine timestamp (including a legitimate `0`) untouched.
+
+Related: a view mode / xmlsitemap being **enabled** for an entity type does not
+make its pages public — anon still needs view access, and until then xmlsitemap
+stores each link `access=0` and omits it from the output sitemap (see `bos_geo`).
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

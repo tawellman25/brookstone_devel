@@ -1,0 +1,100 @@
+<?php
+
+/**
+ * @file
+ * BOS Geo — role-aware geographic landing pages (city, county, state).
+ *
+ * Same canonical URL per record — /colorado (state), /colorado/delta-county
+ * (county), /colorado/delta-county/delta (city) — rendered by audience, the
+ * Services/HOA pattern extended to three tiers:
+ *   - Public   (anon + clients): the `public` view mode — public info only.
+ *   - Teammate (crew):           the `teammate` view mode.
+ *   - Admin    (office/admin):   the `admin` view mode — everything.
+ * A published record is publicly viewable (its canonical page IS the public
+ * page); the view modes + displays are created by setup_geo_view_modes.php.
+ */
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityPublishedInterface;
+use Drupal\Core\Session\AccountInterface;
+
+/**
+ * Geographic entity types this module governs.
+ */
+const BOS_GEO_TYPES = ['city', 'county', 'state'];
+
+/**
+ * Office/admin roles — see the `admin` view mode (settings + everything).
+ */
+const BOS_GEO_ADMIN_ROLES = [
+  'administration',
+  'site_assistant',
+  'site_admin',
+  'administrator',
+];
+
+/**
+ * Crew roles — see the `teammate` view mode. Everyone else gets `public`.
+ * (Supervisor sits with the crew here; move it to BOS_GEO_ADMIN_ROLES if office
+ * treats supervisors as admin on these pages.)
+ */
+const BOS_GEO_TEAMMATE_ROLES = [
+  'teammates',
+  'supervisor',
+];
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ *
+ * Pick the view mode by the viewer's role on the canonical full-page render
+ * only (token/admin/embedded renders keep their own view mode).
+ */
+function bos_geo_entity_view_mode_alter(&$view_mode, EntityInterface $entity) {
+  if ($view_mode !== 'full' || !in_array($entity->getEntityTypeId(), BOS_GEO_TYPES, TRUE)) {
+    return;
+  }
+  $roles = \Drupal::currentUser()->getRoles();
+  if (array_intersect(BOS_GEO_ADMIN_ROLES, $roles)) {
+    $view_mode = 'admin';
+  }
+  elseif (array_intersect(BOS_GEO_TEAMMATE_ROLES, $roles)) {
+    $view_mode = 'teammate';
+  }
+  else {
+    $view_mode = 'public';
+  }
+}
+
+/**
+ * Implements hook_entity_access().
+ *
+ * A published city/county/state record is publicly viewable (the canonical page
+ * is the public geo-landing page). Non-published records fall through to the
+ * normal eck_bundle_permissions handler (staff only). Only 'view' is opened —
+ * create/update/delete keep their permission gates.
+ */
+function bos_geo_entity_access(EntityInterface $entity, $operation, AccountInterface $account) {
+  if ($operation !== 'view' || !in_array($entity->getEntityTypeId(), BOS_GEO_TYPES, TRUE)) {
+    return AccessResult::neutral();
+  }
+  $published = !($entity instanceof EntityPublishedInterface) || $entity->isPublished();
+  if ($published) {
+    return AccessResult::allowed()->addCacheableDependency($entity);
+  }
+  return AccessResult::neutral()->addCacheableDependency($entity);
+}
+
+/**
+ * Implements hook_entity_view().
+ *
+ * The view mode is chosen by role, so the render MUST vary by user.roles — else
+ * Dynamic Page Cache / render cache could serve one audience's view mode (e.g.
+ * the admin body) to another (the public). hook_entity_view_mode_alter has no
+ * render array to tag, so the cache context is added here.
+ */
+function bos_geo_entity_view(array &$build, EntityInterface $entity, $display, $view_mode) {
+  if (in_array($entity->getEntityTypeId(), BOS_GEO_TYPES, TRUE)) {
+    $build['#cache']['contexts'][] = 'user.roles';
+  }
+}

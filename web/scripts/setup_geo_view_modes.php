@@ -2,7 +2,7 @@
 
 /**
  * Public / Teammate / Admin view modes + displays for the geographic entity
- * types (city, county, state) — the role-aware geo-landing pages.
+ * types (city, county, state, zipcodes) — the role-aware geo-landing pages.
  *
  *   Public   -> anon + clients: public info only.
  *   Teammate -> crew: public info + operational hierarchy.
@@ -24,6 +24,14 @@ $out = [];
 
 $modes = ['public' => 'Public', 'teammate' => 'Teammate', 'admin' => 'Admin'];
 
+// Bundle per entity type (usually the same name; zipcodes uses 'zipcode').
+$bundles = [
+  'city' => 'city',
+  'county' => 'county',
+  'state' => 'state',
+  'zipcodes' => 'zipcode',
+];
+
 // Starting field sets per (type, mode). Everything else on the display is hidden.
 $fieldsets = [
   'city' => [
@@ -41,12 +49,21 @@ $fieldsets = [
     'teammate' => ['field_banner_image', 'field_state_name', 'field_state_description', 'field_abbreviation'],
     'admin'    => ['field_banner_image', 'field_state_name', 'field_state_description', 'field_abbreviation', 'field_type'],
   ],
+  // zipcodes: field_trip_fee is pricing (admin only); field_check_up_route_day
+  // is internal routing (teammate + admin). Public sees the zip + description +
+  // its city/county/state hierarchy.
+  'zipcodes' => [
+    'public'   => ['field_zipcode', 'field_zipcode_description', 'field_city', 'field_county', 'field_state'],
+    'teammate' => ['field_zipcode', 'field_zipcode_description', 'field_city', 'field_county', 'field_state', 'field_check_up_route_day'],
+    'admin'    => ['field_zipcode', 'field_zipcode_description', 'field_city', 'field_county', 'field_state', 'field_check_up_route_day', 'field_trip_fee'],
+  ],
 ];
 
 $repo = \Drupal::service('entity_display.repository');
-$efm = \Drupal::service('entity_field.manager');
 
 foreach ($fieldsets as $type => $byMode) {
+  $bundle = $bundles[$type] ?? $type;
+
   // 1) View modes.
   foreach ($modes as $mode => $label) {
     $id = "$type.$mode";
@@ -60,14 +77,11 @@ foreach ($fieldsets as $type => $byMode) {
     }
   }
 
-  // 2) Displays. Copy formatter settings from the type's default display.
-  $default = $repo->getViewDisplay($type, $type, 'default');
-  $allFields = array_filter(array_keys($efm->getFieldDefinitions($type, $type)), function ($f) {
-    return strpos($f, 'field_') === 0;
-  });
+  // 2) Displays. Copy formatter settings from the bundle's default display.
+  $default = $repo->getViewDisplay($type, $bundle, 'default');
 
   foreach ($byMode as $mode => $show) {
-    $display = $repo->getViewDisplay($type, $type, $mode);
+    $display = $repo->getViewDisplay($type, $bundle, $mode);
     $display->setStatus(TRUE);
     $weight = 0;
     foreach ($show as $field) {
@@ -80,14 +94,15 @@ foreach ($fieldsets as $type => $byMode) {
       $comp['region'] = 'content';
       $display->setComponent($field, $comp);
     }
-    // Hide everything not explicitly shown.
-    foreach ($allFields as $field) {
-      if (!in_array($field, $show, TRUE)) {
-        $display->removeComponent($field);
+    // Hide everything not explicitly shown — fields AND extra components
+    // (title/created/langcode/links); the page h1 already renders the label.
+    foreach (array_keys($display->getComponents()) as $name) {
+      if (!in_array($name, $show, TRUE)) {
+        $display->removeComponent($name);
       }
     }
     $display->save();
-    $out[] = "display $type.$type.$mode (" . count($show) . " fields)";
+    $out[] = "display $type.$bundle.$mode (" . count($show) . " fields)";
   }
 }
 

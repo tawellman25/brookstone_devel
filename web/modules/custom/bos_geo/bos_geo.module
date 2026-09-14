@@ -2,10 +2,11 @@
 
 /**
  * @file
- * BOS Geo — role-aware geographic landing pages (city, county, state).
+ * BOS Geo — role-aware geographic landing pages (city, county, state, zipcodes).
  *
  * Same canonical URL per record — /colorado (state), /colorado/delta-county
- * (county), /colorado/delta-county/delta (city) — rendered by audience, the
+ * (county), /colorado/delta-county/delta (city),
+ * /colorado/delta-county/cedaredge/81413 (zipcode) — rendered by audience, the
  * Services/HOA pattern extended to three tiers:
  *   - Public   (anon + clients): the `public` view mode — public info only.
  *   - Teammate (crew):           the `teammate` view mode.
@@ -22,7 +23,7 @@ use Drupal\Core\Session\AccountInterface;
 /**
  * Geographic entity types this module governs.
  */
-const BOS_GEO_TYPES = ['city', 'county', 'state'];
+const BOS_GEO_TYPES = ['city', 'county', 'state', 'zipcodes'];
 
 /**
  * Office/admin roles — see the `admin` view mode (settings + everything).

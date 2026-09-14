@@ -6,6 +6,12 @@
  */
 
 /**
+ * Path alias of the public About page (and its subtree root). Single source of
+ * truth — the About-page JSON-LD gate, SEO title and breadcrumb all key on this.
+ */
+const BOS_HOMEPAGE_ABOUT_PATH = '/about-us';
+
+/**
  * Implements hook_theme().
  */
 function bos_homepage_theme($existing, $type, $theme, $path): array {
@@ -159,7 +165,7 @@ function _bos_homepage_is_about(): bool {
   }
   try {
     return \Drupal::service('path_alias.manager')
-      ->getAliasByPath('/node/' . $node->id()) === '/about';
+      ->getAliasByPath('/node/' . $node->id()) === BOS_HOMEPAGE_ABOUT_PATH;
   }
   catch (\Throwable $e) {
     return FALSE;
@@ -198,7 +204,7 @@ function _bos_homepage_about_attachments(array &$attachments): void {
       ['@type' => 'Person', 'name' => 'Eunice Ward'],
     ],
     'telephone' => $phone !== '' ? $phone : '+1-970-835-9661',
-    'url' => $host . '/about',
+    'url' => $host . BOS_HOMEPAGE_ABOUT_PATH,
     'logo' => $host . '/' . \Drupal::service('extension.list.module')->getPath('bos_homepage') . '/assets/home-hero.jpg',
     'areaServed' => [
       ['@type' => 'AdministrativeArea', 'name' => 'Delta County, CO'],
@@ -257,12 +263,12 @@ function bos_homepage_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb
   }
   // Standalone legal / policy pages get a simple Home > {title} trail.
   $legal = ['/privacy', '/terms', '/accessibility'];
-  if ($alias !== '/about' && strpos($alias, '/about/') !== 0 && !in_array($alias, $legal, TRUE)) {
+  if ($alias !== BOS_HOMEPAGE_ABOUT_PATH && strpos($alias, BOS_HOMEPAGE_ABOUT_PATH . '/') !== 0 && !in_array($alias, $legal, TRUE)) {
     return;
   }
 
   $links = [\Drupal\Core\Link::createFromRoute(t('Home'), '<front>')];
-  if ($alias === '/about') {
+  if ($alias === BOS_HOMEPAGE_ABOUT_PATH) {
     // Parent page: Home > About (current, unlinked).
     $links[] = \Drupal\Core\Link::createFromRoute(t('About'), '<none>');
   }
@@ -271,8 +277,8 @@ function bos_homepage_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb
     $links[] = \Drupal\Core\Link::createFromRoute($node->label(), '<none>');
   }
   else {
-    // Child of /about (e.g. /about/credentials): Home > About > {title}.
-    $links[] = \Drupal\Core\Link::fromTextAndUrl(t('About'), \Drupal\Core\Url::fromUri('internal:/about'));
+    // Child of the About subtree (e.g. /about-us/credentials): Home > About > {title}.
+    $links[] = \Drupal\Core\Link::fromTextAndUrl(t('About'), \Drupal\Core\Url::fromUri('internal:' . BOS_HOMEPAGE_ABOUT_PATH));
     $links[] = \Drupal\Core\Link::createFromRoute($node->label(), '<none>');
   }
 

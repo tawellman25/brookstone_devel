@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * @file
+ * BOS xmlsitemap robustness.
+ *
+ * Some BOS entities have a NULL `changed` value (e.g. 184 migrated/imported
+ * taxonomy terms) or no changed field at all (ECK reference types like
+ * city/county/state declare `changed: false` yet still implement
+ * EntityChangedInterface via ECK's EntityChangedTrait). xmlsitemap's link
+ * storage assigns getChangedTime() straight to `lastmod`
+ * (XmlSitemapLinkStorage::create()), so those entities yield a NULL lastmod and
+ * the sitemap rebuild dies on the NOT NULL {xmlsitemap}.lastmod column with an
+ * IntegrityConstraintViolationException. Coalesce an empty lastmod to a real
+ * timestamp so the rebuild can never crash, whatever the entity's data.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_xmlsitemap_link_alter().
+ *
+ * Runs in XmlSitemapLinkStorage::save() after the link array is assembled — the
+ * last hook before the DB write — so it is the right place to sanitize lastmod.
+ * Only touches links whose lastmod is missing/NULL/empty; a genuine timestamp
+ * (including a legitimate 0) is left untouched. Prefers the entity's changed
+ * time, then created time, then the request time.
+ */
+function bos_xmlsitemap_xmlsitemap_link_alter(array &$link, array $context) {
+  // A real value (including 0) is fine; only NULL/'' / missing needs fixing.
+  if (isset($link['lastmod']) && $link['lastmod'] !== '' && $link['lastmod'] !== NULL) {
+    return;
+  }
+
+  $ts = 0;
+  $entity = $context['entity'] ?? NULL;
+  if ($entity instanceof EntityInterface) {
+    if (method_exists($entity, 'getChangedTime')) {
+      $ts = (int) ($entity->getChangedTime() ?? 0);
+    }
+    if (!$ts && method_exists($entity, 'getCreatedTime')) {
+      $ts = (int) ($entity->getCreatedTime() ?? 0);
+    }
+  }
+  if (!$ts) {
+    $ts = \Drupal::time()->getRequestTime();
+  }
+
+  $link['lastmod'] = $ts;
+}

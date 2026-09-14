@@ -89,6 +89,15 @@ function wo_backflow_testing_entity_presave(EntityInterface $entity) {
                 }
             }
         }
+        // Test gauge (all save paths): fill from the tester's assigned gauge
+        // when blank, so programmatic entries (e.g. the 2nd Brain, which bypass
+        // the form builder) capture the gauge too. Never overwrites an entered
+        // gauge. Mirrors _wo_backflow_testing_form_defaults_builder for the form.
+        if ($entity->hasField('field_test_gauge') && $entity->get('field_test_gauge')->isEmpty()
+            && $entity->hasField('field_tester') && !$entity->get('field_tester')->isEmpty()
+            && ($gid = _wo_backflow_testing_gauge_for_user($entity->get('field_tester')->target_id))) {
+            $entity->set('field_test_gauge', $gid);
+        }
         // Auto-title the test (the Title field is hidden on the form) so the
         // required label is never blank and reads meaningfully in lists/reports.
         $entity->set('title', _wo_backflow_testing_generate_title($entity));

@@ -150,33 +150,42 @@ function _backflow_device_finalize(ContentEntityInterface $device) {
 }
 
 /**
- * Builds a PNG QR of the device's absolute canonical URL and saves it.
+ * The device's absolute canonical URL — for the QR and the report PDF link.
  *
- * @return \Drupal\file\FileInterface|null
- *   The managed file, or NULL on failure.
+ * Canonical route (immutable) — NOT the pathauto alias. The 'alias' => TRUE
+ * option suppresses alias substitution so we encode the raw
+ * /property_backflow_device/{id} path (Redirect 301s it to the property-path
+ * alias). setAbsolute() yields a full https URL scannable/clickable off-site;
+ * toString(TRUE) avoids leaked-metadata exceptions in a non-render context.
+ *
+ * Hardened for non-web contexts (Drush / import / queue): with no HTTP request
+ * to resolve the host, setAbsolute() falls back to "http://default/". Detect
+ * that and rebuild against the canonical site base — $settings['base_url'] if
+ * configured, else the production host constant.
  */
-function _backflow_device_generate_qr(ContentEntityInterface $device, string $title) {
-  // Canonical route (immutable) — NOT the pathauto alias. The 'alias' => TRUE
-  // option suppresses alias substitution so we encode the raw
-  // /property_backflow_device/{id} path (Redirect 301s it to the property-path
-  // alias). setAbsolute() yields a full https URL scannable off-site;
-  // toString(TRUE) avoids leaked-metadata exceptions in this non-render context.
+function _backflow_device_canonical_absolute_url(ContentEntityInterface $device): string {
   $url = $device->toUrl('canonical', ['alias' => TRUE])
     ->setAbsolute()
     ->toString(TRUE)
     ->getGeneratedUrl();
 
-  // Harden for non-web contexts (Drush / import / queue): with no HTTP request
-  // to resolve the host, setAbsolute() falls back to "http://default/", which
-  // would bake an unscannable URL into this permanent QR. Detect that and
-  // rebuild the absolute URL against the canonical site base — $settings
-  // ['base_url'] if configured, else the production host.
   $host = parse_url($url, PHP_URL_HOST);
   if ($host === FALSE || $host === NULL || $host === '' || $host === 'default') {
     $base = rtrim((string) (Settings::get('base_url') ?: BACKFLOW_DEVICE_CANONICAL_BASE_URL), '/');
     $path = $device->toUrl('canonical', ['alias' => TRUE])->toString(TRUE)->getGeneratedUrl();
     $url = $base . '/' . ltrim($path, '/');
   }
+  return $url;
+}
+
+/**
+ * Builds a PNG QR of the device's absolute canonical URL and saves it.
+ *
+ * @return \Drupal\file\FileInterface|null
+ *   The managed file, or NULL on failure.
+ */
+function _backflow_device_generate_qr(ContentEntityInterface $device, string $title) {
+  $url = _backflow_device_canonical_absolute_url($device);
 
   $result = (new Builder(
     writer: new PngWriter(),

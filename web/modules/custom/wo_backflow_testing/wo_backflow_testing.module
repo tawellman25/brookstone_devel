@@ -1043,6 +1043,7 @@ function _wo_backflow_testing_report_data(EntityInterface $child) {
         'repairs' => $child->get('field_repairs_recommended')->value ?? '',
         'signature_uri' => NULL,
         'qr_uri' => NULL,
+        'device_url' => '',
         'logo_uri' => _wo_backflow_testing_asset_data_uri('themes/custom/brookstone_olivero/images/brookstone-logo-long.png'),
         'company_address' => '20143 Austin Rd, Austin, CO 81410',
         'company_phone' => '970-835-9661',
@@ -1070,6 +1071,11 @@ function _wo_backflow_testing_report_data(EntityInterface $child) {
         $data['serial'] = $device->get('field_serial_number')->value ?? '';
         $data['location'] = $device->get('field_physical_location')->value ?? '';
         $data['qr_uri'] = _wo_backflow_testing_image_data_uri($device->get('field_qr_code')->entity);
+        // Absolute canonical device URL — same target the QR encodes — so the
+        // PDF QR and the visible link are clickable to the backflow record.
+        if (function_exists('_backflow_device_canonical_absolute_url')) {
+          $data['device_url'] = _backflow_device_canonical_absolute_url($device);
+        }
         $data['next_due'] = $device->hasField('field_next_due_date')
           ? _wo_backflow_testing_date_only_us($device->get('field_next_due_date')->value ?? '') : '';
 

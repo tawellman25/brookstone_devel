@@ -122,7 +122,14 @@
 
   <table class="closeout"><tr>
     <td class="qr-cell">
-      {% if report.qr_uri %}<img class="qr" src="{{ report.qr_uri }}" alt="Backflow record QR"><div class="qrcap">Scan for test history</div>{% endif %}
+      {% if report.qr_uri %}
+        {% if report.device_url %}
+          <a href="{{ report.device_url }}"><img class="qr" src="{{ report.qr_uri }}" alt="Backflow record QR"></a>
+          <div class="qrcap">Scan or <a href="{{ report.device_url }}">tap to view</a> test history</div>
+        {% else %}
+          <img class="qr" src="{{ report.qr_uri }}" alt="Backflow record QR"><div class="qrcap">Scan for test history</div>
+        {% endif %}
+      {% endif %}
     </td>
     <td class="close-right">
       <div class="gen">Report generated {{ report.generated_date }} from Brookstone Operating System. Device ID {{ report.device_id }} &middot; canonical record retained in BOS.</div>

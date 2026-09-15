@@ -10,10 +10,10 @@
 <head>
 <meta charset="utf-8">
 <style>
-  @page { margin: 0.55in; }
-  body { font-family: DejaVu Sans, sans-serif; color: #1a1a1a; font-size: 9.5pt; padding-bottom: 26px; }
-  .hdr { border-bottom: 3px solid #1f5c2f; padding-bottom: 6px; margin-bottom: 10px; }
-  .hdr h1 { margin: 6px 0 0; font-size: 15pt; color: #1f5c2f; }
+  @page { margin: 0.45in; }
+  body { font-family: DejaVu Sans, sans-serif; color: #1a1a1a; font-size: 9.5pt; line-height: 1.15; padding-bottom: 24px; }
+  .hdr { border-bottom: 3px solid #1f5c2f; padding-bottom: 4px; margin-bottom: 7px; }
+  .hdr h1 { margin: 3px 0 0; font-size: 14pt; color: #1f5c2f; }
   .hdr .company { font-size: 9pt; color: #333; margin-top: 2px; }
   .hdr .cert { font-size: 9pt; color: #1f5c2f; font-weight: bold; margin-top: 3px; text-align: center; }
   table.cols { width: 100%; border-collapse: collapse; }
@@ -22,10 +22,10 @@
   table.cols td.col-right { padding-left: 14px; }
   .col h2 { margin-top: 0; }
   .col .meta .lbl { width: 44%; }
-  .meta { width: 100%; margin-bottom: 6px; }
-  .meta td { vertical-align: top; padding: 1px 0; }
+  .meta { width: 100%; margin-bottom: 4px; }
+  .meta td { vertical-align: top; padding: 0; }
   .meta .lbl { color: #555; width: 38%; }
-  h2 { font-size: 11pt; color: #1f5c2f; border-bottom: 1px solid #ccc; padding-bottom: 1px; margin: 7px 0 3px; }
+  h2 { font-size: 11pt; color: #1f5c2f; border-bottom: 1px solid #ccc; padding-bottom: 1px; margin: 5px 0 2px; }
   table.readings { width: 100%; border-collapse: collapse; }
   table.readings th, table.readings td { border: 1px solid #bbb; padding: 1px 6px; text-align: left; vertical-align: middle; }
   table.readings th { background: #eef3ee; }
@@ -35,15 +35,16 @@
   .sig { text-align: right; }
   .sig img { max-height: 38px; }
   .sig .line { border-top: 1px solid #333; width: 240px; margin: 2px 0 0 auto; padding-top: 2px; font-size: 8pt; color: #555; }
-  table.closeout { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  table.closeout { width: 100%; border-collapse: collapse; margin-top: 4px; }
   table.closeout td { vertical-align: bottom; }
   table.closeout td.qr-cell { width: 118px; text-align: center; }
   table.closeout .qr { width: 78px; height: 78px; }
   table.closeout .qrcap { font-size: 7.5pt; color: #555; margin-top: 2px; }
   table.closeout td.close-right { text-align: right; }
-  table.closeout .gen { font-size: 8pt; color: #777; margin-bottom: 8px; }
+  table.closeout .gen { font-size: 8pt; color: #777; margin-bottom: 5px; }
+  table.closeout .prov { font-size: 8pt; color: #777; margin-top: 5px; }
   .page-footer { position: fixed; left: 0; right: 0; bottom: 0; text-align: center; font-size: 8.5pt; color: #444; border-top: 1px solid #ccc; padding-top: 4px; }
-  .hdr .logo { max-height: 96px; margin-bottom: 8px; }
+  .hdr .logo { max-height: 64px; margin-bottom: 5px; }
   table.readings td.rphoto { text-align: center; width: 46px; }
   table.readings td.rphoto img { max-height: 30px; max-width: 40px; }
   .tagphotos { margin-top: 2px; }
@@ -132,11 +133,12 @@
       {% endif %}
     </td>
     <td class="close-right">
-      <div class="gen">Report generated {{ report.generated_date }} from Brookstone Operating System. Device ID {{ report.device_id }} &middot; canonical record retained in BOS.</div>
+      <div class="gen">Report generated {{ report.generated_date }} from Brookstone Operating System.</div>
       <div class="sig">
         {% if report.signature_uri %}<img src="{{ report.signature_uri }}" alt="Tester signature">{% endif %}
         <div class="line">Certified Tester Signature &mdash; {{ report.tester_name|default('') }}</div>
       </div>
+      <div class="prov">Device ID {{ report.device_id }} &middot; canonical record retained in BOS.</div>
     </td>
   </tr></table>
 

@@ -14,7 +14,7 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
  */
 function wo_sign_off_entity_presave(EntityInterface $entity) {
   // Set allowed bundles for this presave.
-  $allowedBundles = ['complete', 'landscape_crew', 'clean_up_crew', 'fertilizing_crew', 'irrigation_crew', 'spray_crew'];
+  $allowedBundles = ['complete', 'landscape_crew', 'clean_up_crew', 'fertilizing_crew', 'irrigation_crew', 'spray_crew', 'lighting_crew'];
 
   // Check if the entity type is 'wo_complete_info' and bundle is allowed.
   if ($entity->getEntityTypeId() !== 'wo_complete_info' || !in_array($entity->bundle(), $allowedBundles)) {

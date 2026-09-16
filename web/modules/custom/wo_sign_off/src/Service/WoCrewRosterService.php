@@ -55,6 +55,7 @@ final class WoCrewRosterService {
     'fertilizing_crew',
     'irrigation_crew',
     'spray_crew',
+    'lighting_crew',
   ];
 
   /**
@@ -80,6 +81,7 @@ final class WoCrewRosterService {
   public const COMPLEX_BUNDLES = [
     'landscape_crew',
     'irrigation_crew',
+    'lighting_crew',
   ];
 
   /**

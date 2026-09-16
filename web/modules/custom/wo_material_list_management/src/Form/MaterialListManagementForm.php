@@ -83,6 +83,14 @@ class MaterialListManagementForm extends FormBase {
 
     foreach ($items as $item) {
       $label = $item->get('field_alternate_name_description')->value ?? 'Unnamed Item';
+      // When freight rides on this line, note it so the office sees why the line
+      // runs higher — still ONE line to the customer.
+      $parts_label = $this->getPartsUsedLabel($item) ?: $label;
+      if ($item->hasField('field_add_freight') && (bool) $item->get('field_add_freight')->value
+        && $item->hasField('field_freight') && $item->get('field_freight')->value !== NULL
+        && $item->get('field_freight')->value !== '') {
+        $parts_label .= ' <span class="wo-ml-freight-note">(incl. $' . number_format((float) $item->get('field_freight')->value, 2) . ' freight)</span>';
+      }
       $form['items'][$item->id()] = [
         'select' => [
           '#type' => 'checkbox',
@@ -94,7 +102,7 @@ class MaterialListManagementForm extends FormBase {
           '#markup' => $item->get('field_quantity')->value,
         ],
         'parts_used' => [
-          '#markup' => $this->getPartsUsedLabel($item) ?: $label,
+          '#markup' => $parts_label,
         ],
         'subtotal_with_markup' => [
           '#markup' => $item->get('field_subtotal_w_markup')->value,

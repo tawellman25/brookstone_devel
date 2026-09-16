@@ -6,6 +6,7 @@
  */
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Implements hook_entity_presave().
@@ -16,5 +17,18 @@ function wo_material_list_form_entity_presave(EntityInterface $entity) {
     if ($parent_list) {
       $entity->set('field_list_id', ['target_id' => $parent_list->id()]);
     }
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * On any material-line add/edit form (all form modes), hide the freight amount
+ * until "Add Freight" is checked — so a normal line looks unchanged. Keyed on
+ * the presence of both fields, so it is inert on every other form.
+ */
+function wo_material_list_form_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
+  if (isset($form['field_add_freight']) && isset($form['field_freight'])) {
+    $form['field_freight']['#states']['visible'][':input[name="field_add_freight[value]"]'] = ['checked' => TRUE];
   }
 }

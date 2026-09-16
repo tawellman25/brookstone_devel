@@ -296,3 +296,41 @@ When a new Work Order bundle is created:
 4. Update this file with the new module entry.
 5. Update `__BOS_AI/Entities/work_orders.md` with the new bundle.
 6. Update `CLAUDE.md` bundle lists.
+
+---
+
+## Freight on material line items (Add Freight)
+
+**Standing policy: recover shipping AT COST on special-order parts via "Add Freight" — enter freight ONCE per shipment. Never mark up freight; never eat it.**
+
+Material lines (`wo_material_list_item` / `items`) carry two optional fields:
+
+- `field_add_freight` (boolean, default OFF) — the toggle.
+- `field_freight` (decimal 10,2, min 0) — total freight for the shipment, entered
+  once on the special-order part it shipped with (not on every line).
+
+Freight rides **inside the part's own line** — ONE clean line to the customer — and
+is only touched when the box is on. Because freight is a real cost, it is added
+**after** the markup multiply and is **never marked up**. Both subtotal paths compute
+it identically (`wo_material_item_subtotal`, `wo_material_list_management`), via a
+`_wo_material_*_freight()` helper:
+
+```
+freight        = (add_freight ON && freight set) ? (float) field_freight : 0
+subtotal_w_markup = (qty × cost × markup) + freight   // customer price
+subtotal          = (qty × cost)          + freight   // landed cost (honest margin)
+```
+
+Landed cost lands in `field_subtotal`, which `wo_profit` sums as COGS — so freight
+counts as cost and contributes **$0 margin** (customer pays it, we paid it). The
+customer invoice (all `wo_*` `get_total_*_material_list_price()` + `wo_profit` revenue)
+sums `field_subtotal_w_markup`, so freight flows through to `field_wo_total`.
+
+Form UX: `field_freight` is hidden until `field_add_freight` is checked
+(`wo_material_list_form_form_alter` #states). An unchecked line is byte-identical to
+pre-freight behavior. Display: `MaterialListManagementForm` appends
+"(incl. $X freight)" to the part label when freight is on. Fields are created by
+`web/scripts/setup_material_item_freight_fields.php` (entity-API, no cim).
+
+Example: $127.12 part × 1.30 markup + $15.08 freight → customer $180.34
+($165.26 part + $15.08 freight), landed cost $142.20, margin $38.14.

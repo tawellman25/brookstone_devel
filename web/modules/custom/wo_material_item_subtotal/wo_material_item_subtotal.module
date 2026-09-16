@@ -37,9 +37,15 @@ function wo_material_item_subtotal_entity_presave(EntityInterface $entity) {
             $quantity = $entity->get('field_quantity')->value;
 
             if (!empty($material_cost) && !empty($quantity)) {
+                // Freight rides inside this line at COST (never marked up) — enter
+                // once per shipment on the special-order part. See policy in
+                // __BOS_AI/Modules/wo_bundle_modules.md.
+                $freight = _wo_material_item_freight($entity);
+
                 $subtotal = $material_cost * $quantity;
                 if ($entity->hasField('field_subtotal')) {
-                    $entity->set('field_subtotal', $subtotal);
+                    // Landed cost = parts + freight, so margin math stays honest.
+                    $entity->set('field_subtotal', $subtotal + $freight);
                 }
 
                 // Add markup calculation if configuration exists.
@@ -48,7 +54,8 @@ function wo_material_item_subtotal_entity_presave(EntityInterface $entity) {
                 $markup_value = isset($markup_array[0]['value']) ? (float) $markup_array[0]['value'] : 1.0;
 
                 if (!empty($markup_value) && is_numeric($markup_value)) {
-                    $subtotal_with_markup = $subtotal * $markup_value;
+                    // Customer price = marked-up parts + freight at cost.
+                    $subtotal_with_markup = ($subtotal * $markup_value) + $freight;
                     if ($entity->hasField('field_subtotal_w_markup')) {
                         $entity->set('field_subtotal_w_markup', $subtotal_with_markup);
                     }
@@ -114,4 +121,20 @@ function wo_material_item_subtotal_entity_insert(EntityInterface $entity) {
             \Drupal::logger('wo_material_item_subtotal')->notice('No redirect URL found in session, skipping redirect.');
         }
     }
+}
+
+/**
+ * Freight amount for a material line — at cost, never marked up.
+ *
+ * Returns field_freight only when field_add_freight is ON and an amount is set;
+ * otherwise 0 (so an unchecked line behaves exactly as before). Kept identical
+ * to wo_material_list_management's copy — both subtotal paths must agree.
+ */
+function _wo_material_item_freight(EntityInterface $entity): float {
+  if ($entity->hasField('field_add_freight') && (bool) $entity->get('field_add_freight')->value
+    && $entity->hasField('field_freight') && $entity->get('field_freight')->value !== NULL
+    && $entity->get('field_freight')->value !== '') {
+    return (float) $entity->get('field_freight')->value;
+  }
+  return 0.0;
 }

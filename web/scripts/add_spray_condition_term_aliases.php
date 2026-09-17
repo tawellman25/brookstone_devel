@@ -14,10 +14,12 @@
 
 use Drupal\pathauto\PathautoState;
 
+// Client-facing glossary pages linked from the digitized spray reports, so they
+// live under the public Spraying service.
 $patterns = [
-  'spraying_locations_aliases' => ['spraying_locations', 'Spraying - Location - Path',       '/spraying/location/[term:name]'],
-  'spraying_frequency_aliases' => ['spraying_frequency', 'Spraying - Frequency - Path',      '/spraying/frequency/[term:name]'],
-  'wind_direction_aliases'     => ['wind_direction',     'Spraying - Wind Direction - Path', '/spraying/wind-direction/[term:name]'],
+  'spraying_locations_aliases' => ['spraying_locations', 'Spraying - Location - Path',       '/services/landscape-lawn-care/spraying/location/[term:name]'],
+  'spraying_frequency_aliases' => ['spraying_frequency', 'Spraying - Frequency - Path',      '/services/landscape-lawn-care/spraying/frequency/[term:name]'],
+  'wind_direction_aliases'     => ['wind_direction',     'Spraying - Wind Direction - Path', '/services/landscape-lawn-care/spraying/wind-direction/[term:name]'],
 ];
 
 $out = [];
@@ -27,7 +29,8 @@ $aliasStorage = \Drupal::entityTypeManager()->getStorage('path_alias');
 $am = \Drupal::service('path_alias.manager');
 
 foreach ($patterns as $id => [$vocab, $label, $pat]) {
-  if (!$patStorage->load($id)) {
+  $p = $patStorage->load($id);
+  if (!$p) {
     $p = $patStorage->create([
       'id' => $id,
       'label' => $label,
@@ -43,8 +46,12 @@ foreach ($patterns as $id => [$vocab, $label, $pat]) {
     $p->save();
     $out[] = "pattern $id created ($pat)";
   }
+  elseif ($p->getPattern() !== $pat) {
+    $p->setPattern($pat)->save();
+    $out[] = "pattern $id updated -> $pat";
+  }
   else {
-    $out[] = "pattern $id exists";
+    $out[] = "pattern $id already $pat";
   }
 
   $tids = \Drupal::entityQuery('taxonomy_term')->accessCheck(FALSE)->condition('vid', $vocab)->execute();

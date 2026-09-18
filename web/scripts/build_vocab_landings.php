@@ -98,6 +98,8 @@ $landings = [
   ['land_sprinkler_checkup', 'irrigation_check_up_frequency', 'services/sprinkler-system/sprinkler-system-check', 'Sprinkler Check-Up'],
   ['land_christmas_lights', 'christmas_light_types', 'services/christmas-decorations/lights', 'Christmas Lights'],
   ['land_light_colors', 'christmas_light_colors', 'services/christmas-decorations/lights/colors', 'Light Colors'],
+  ['land_our_equipment', 'equipment_types', 'about-us/our-equipment', 'Our Equipment'],
+  ['land_seasons', 'season', 'about-us/seasons', 'Seasons'],
 ];
 
 $out = [];

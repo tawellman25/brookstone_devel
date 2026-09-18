@@ -89,3 +89,17 @@ links. Descriptions are placeholders — refine in the Views UI (edit the view �
 
 **Pattern reference:** vocab landing = `build_vocab_landings.php`; category-of-a-field =
 `build_characteristics_tree.php`; non-entity index (categories) = a Basic page.
+
+## Status — 2026-09-18 (round 2)
+
+**Also built (live):**
+- `/about-us/our-equipment` (equipment_types, 54) and `/about-us/seasons` (season, 5) —
+  vocab landings (`build_vocab_landings.php`).
+- `/services/landscape-lawn-care/spraying/chemicals` — Basic index page linking to Signal Words
+  (`build_spray_chemicals_index.php`).
+
+That clears the public list. Remaining: only the internal `/teammate/*` paths (behind login;
+likely no public landing needed).
+
+**Known nit:** the season term "Winter" has a capital-W alias (`/about-us/seasons/Winter`) while
+the other seasons are lowercase — worth normalizing to `/winter` + 301 for consistency.

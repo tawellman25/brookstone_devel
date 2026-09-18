@@ -63,3 +63,29 @@ prefixes → path.validator).
 - Prototype: `/material/plants/characteristics/aesthetic-features` built as a Basic
   page (description + auto-generated child links) via
   `web/scripts/build_aesthetic_features_landing.php`.
+
+---
+
+## Status — 2026-09-18 (built)
+
+**Done (live):**
+- Plant-characteristics tree — 8 category views + `/material/plants/characteristics` index page
+  (`web/scripts/build_characteristics_tree.php`).
+- 18 vocabulary landings (`web/scripts/build_vocab_landings.php`): `/material/rock`, `/material/bulk`,
+  `/material/hardscape`, `/material/plants/bloom-time`, `/material/plants/growth-zone`,
+  spraying location/wind-direction/methods/frequency/wind-speed/carrier/chemicals-signal-words,
+  `/services/backflow-prevention/uses`, `/services/christmas-decorations/lights` + `/lights/colors`,
+  `/services/snow-removal/levels`, `/services/sprinkler-system/operation` + `/sprinkler-system-check`.
+
+Each = its own View: editable header description (Views UI) + auto-updating child list with aliased
+links. Descriptions are placeholders — refine in the Views UI (edit the view → Header text).
+
+**Still to do:**
+- `/about-us/our-equipment` (54) and `/about-us/seasons` (5) — same vocab-landing pattern; confirm
+  the exact child vocab + path first.
+- `/services/landscape-lawn-care/spraying/chemicals` — an index page (its only sub-list is
+  signal-words); needs a small Basic index page or fold signal-words up.
+- Internal `/teammate/*` — likely no public landing needed.
+
+**Pattern reference:** vocab landing = `build_vocab_landings.php`; category-of-a-field =
+`build_characteristics_tree.php`; non-entity index (categories) = a Basic page.

@@ -131,11 +131,13 @@ place, exactly what each audience gets plus the internal data:
 
 Inside a single-content section, set the **field's own label to Hidden** so the
 group heading is the only title (no double heading). Section headings are styled
-as brand section bars by `bos_equipment/admin_labels` (the `.equipment-admin-view`
-wrapper + `css/equipment-admin.css`) — it targets Olivero's `details.olivero-details
-> summary` (and fieldset/html-element group formats), so any group format picks up
-the look. **Reuse that CSS** (or a per-module copy of it) when applying this pattern
-to another content type.
+as brand section bars by the shared theme library **`brookstone_olivero/audience_admin`**
+(the `.bos-admin-view` wrapper + `css/audience-admin.css`) — it targets Olivero's
+`details.olivero-details > summary` (and fieldset/html-element group formats), so
+any group format picks up the look. **Reuse this shared library** when applying the
+pattern to another content type: in the module's `hook_preprocess_HOOK` for the
+entity, on the `admin_view` render add class `bos-admin-view` and attach
+`brookstone_olivero/audience_admin` (see `bos_equipment` / `bos_services`).
 
 **Public description wording.** The public tier shows a *public-facing*
 description. Two accepted forms (the per-content-type variance):
@@ -190,8 +192,9 @@ pattern and quietly leaking the office display to the public.
 
 ### Reference implementations
 
-- **`bos_equipment`** — `equipment_types`, full 3-tier (public / crew / office), 2026-09-19.
-- **`bos_services`** — `services`, 2-tier (public / internal), 2026-08-22.
+- **`bos_equipment`** — `equipment_types`, full 3-tier (public / crew / office), reference layout, 2026-09-19.
+- **`bos_services`** — `services`, full 3-tier (public / crew / office), 2026-09-19.
+- Shared section-heading CSS: **`brookstone_olivero/audience_admin`** (`.bos-admin-view` + `css/audience-admin.css`) — each content module adds the `.bos-admin-view` class and attaches this library on its `admin_view` render. Reuse it; don't re-copy the CSS.
 - **`bos_hoa`** — `properties.hoa`, public view mode on the canonical page (2026-09-07); same principle applied to an ECK entity rather than a taxonomy.
 
 ## Status

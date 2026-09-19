@@ -746,8 +746,10 @@ public minimum: icon + public description). Route with
 `hook_entity_view_mode_alter` (office → `admin_view`, crew → `teammate_view`,
 else `full`; office checked first) **plus a `user.roles` cache context** in
 `hook_ENTITY_TYPE_view_alter` (mandatory — else render cache leaks one audience's
-body to another). Reference impls: `bos_equipment` (equipment_types, 3-tier),
-`bos_services` (services, 2-tier). Public description = a dedicated
+body to another). Section headings on `admin_view` use the shared theme library
+`brookstone_olivero/audience_admin` (`.bos-admin-view` wrapper). Reference impls:
+`bos_equipment` (equipment_types), `bos_services` (services) — both 3-tier. Public
+description = a dedicated
 `field_*_public_desc` or the core taxonomy `description` relabeled "Public
 Description" per bundle (`relabel_term_description_public.php`).
 

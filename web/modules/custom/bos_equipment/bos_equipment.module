@@ -2,7 +2,9 @@
 
 /**
  * @file
- * Equipment Labels — fills two auto_entitylabel gaps.
+ * BOS Equipment — cross-cutting equipment behavior.
+ *
+ * Formerly "equipment_labels". Currently:
  *
  *  1. Equipment bundles with NO auto_entitylabel pattern (e.g. power_tools,
  *     which also has no field_equipment_number) never got a generated title, so
@@ -24,13 +26,13 @@ use Drupal\Core\Entity\EntityInterface;
 /**
  * Implements hook_entity_presave().
  */
-function equipment_labels_entity_presave(EntityInterface $entity) {
+function bos_equipment_entity_presave(EntityInterface $entity) {
   $type = $entity->getEntityTypeId();
   if ($type === 'taxonomy_term' && $entity->bundle() === 'equipment_types') {
-    _equipment_labels_term_common_name($entity);
+    _bos_equipment_term_common_name($entity);
   }
   elseif ($type === 'equipment') {
-    _equipment_labels_equipment_title($entity);
+    _bos_equipment_equipment_title($entity);
   }
 }
 
@@ -41,18 +43,18 @@ function equipment_labels_entity_presave(EntityInterface $entity) {
  * name → field_common_name copy happens before auto_entitylabel rebuilds the
  * name from field_common_name.
  */
-function equipment_labels_module_implements_alter(&$implementations, $hook) {
-  if ($hook === 'entity_presave' && isset($implementations['equipment_labels'])) {
-    $ours = $implementations['equipment_labels'];
-    unset($implementations['equipment_labels']);
-    $implementations = ['equipment_labels' => $ours] + $implementations;
+function bos_equipment_module_implements_alter(&$implementations, $hook) {
+  if ($hook === 'entity_presave' && isset($implementations['bos_equipment'])) {
+    $ours = $implementations['bos_equipment'];
+    unset($implementations['bos_equipment']);
+    $implementations = ['bos_equipment' => $ours] + $implementations;
   }
 }
 
 /**
  * Copy a typed term name into field_common_name when the latter is empty.
  */
-function _equipment_labels_term_common_name(EntityInterface $term) {
+function _bos_equipment_term_common_name(EntityInterface $term) {
   if (!$term->hasField('field_common_name')) {
     return;
   }
@@ -66,7 +68,7 @@ function _equipment_labels_term_common_name(EntityInterface $term) {
 /**
  * Compose an equipment title for bundles without an auto_entitylabel pattern.
  */
-function _equipment_labels_equipment_title(EntityInterface $equip) {
+function _bos_equipment_equipment_title(EntityInterface $equip) {
   // Leave bundles that have an active auto_entitylabel pattern to that module.
   if (\Drupal::config('auto_entitylabel.settings.equipment.' . $equip->bundle())->get('status')) {
     return;
@@ -80,10 +82,10 @@ function _equipment_labels_equipment_title(EntityInterface $equip) {
     return;
   }
 
-  $make = _equipment_labels_field($equip, 'field_equipment_make');
-  $model = _equipment_labels_field($equip, 'field_model');
-  $number = _equipment_labels_field($equip, 'field_equipment_number');
-  $type = _equipment_labels_type_name($equip);
+  $make = _bos_equipment_field($equip, 'field_equipment_make');
+  $model = _bos_equipment_field($equip, 'field_model');
+  $number = _bos_equipment_field($equip, 'field_equipment_number');
+  $type = _bos_equipment_type_name($equip);
 
   $base = trim(implode(' ', array_filter([$make, $type, $model], 'strlen')));
   if ($base === '' && $number === '') {
@@ -96,7 +98,7 @@ function _equipment_labels_equipment_title(EntityInterface $equip) {
 /**
  * Type name = the referenced equipment_types term's common name (or its label).
  */
-function _equipment_labels_type_name(EntityInterface $equip) {
+function _bos_equipment_type_name(EntityInterface $equip) {
   if (!$equip->hasField('field_equipment_type') || $equip->get('field_equipment_type')->isEmpty()) {
     return '';
   }
@@ -111,7 +113,7 @@ function _equipment_labels_type_name(EntityInterface $equip) {
 /**
  * Trimmed scalar value of a field, or '' when missing/empty.
  */
-function _equipment_labels_field(EntityInterface $entity, string $field) {
+function _bos_equipment_field(EntityInterface $entity, string $field) {
   if (!$entity->hasField($field) || $entity->get($field)->isEmpty()) {
     return '';
   }

@@ -738,10 +738,11 @@ card data computed in `hook_preprocess_views_view_fields` + CSS attached via
 **Audience view-mode tiers (public-facing pages):** a content type with both a
 public and an internal face serves **one canonical URL** and swaps the body by
 the viewer's role — never a separate route. Author these view modes on the
-bundle: **Default** (everything), **Admin View** (`admin_view` — most fields +
-an "Office Admin" group at the bottom, for office/admin roles), **Teammate View**
-(`teammate_view` — crew operational: icon + crew description + SOP links),
-**Public View** (`full` — public minimum: icon + public description). Route with
+bundle: **Default** (everything), **Admin View** (`admin_view` — office/admin:
+identity on top, then collapsible `field_group` **Details** sections mirroring the
+audiences — "Public View" / "Crew View" / "Office Admin"), **Teammate View**
+(`teammate_view` — crew: icon + crew description), **Public View** (`full` —
+public minimum: icon + public description). Route with
 `hook_entity_view_mode_alter` (office → `admin_view`, crew → `teammate_view`,
 else `full`; office checked first) **plus a `user.roles` cache context** in
 `hook_ENTITY_TYPE_view_alter` (mandatory — else render cache leaks one audience's

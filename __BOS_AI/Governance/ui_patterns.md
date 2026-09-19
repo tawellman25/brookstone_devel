@@ -108,14 +108,34 @@ Author these on the bundle's **Manage Display**, most-detailed → least:
 
 | View mode | Machine name | Audience | Contains |
 |---|---|---|---|
-| **Default** | `default` | editing baseline / fallback | **everything** — the full field set |
-| **Admin View** | `admin_view` | office & admin | most fields, with the internal-only fields collected in an **"Office Admin" field group at the bottom** |
-| **Teammate View** | `teammate_view` | crew | operational essentials — icon/image + the **crew "how we do it"** description + SOP/task links; no pricing/office fields |
+| **Default** | `default` | editing baseline / fallback | **everything** — the full field set, labels hidden |
+| **Admin View** | `admin_view` | office & admin | identity (icon/name) on top, then **collapsible `field_group` "Details" sections that mirror the audiences** — see below |
+| **Teammate View** | `teammate_view` | crew | operational minimum — icon + the **crew "how we do it"** description; nothing else |
 | **Public View** | `full` | public & clients | the **public minimum** — icon + **public description** only |
 
 The public tier is the entity's native canonical mode (`full` for taxonomy terms),
 so anonymous/cached visitors get the safe display by default and the internal
 modes are only ever reached by an explicit role match.
+
+**Admin View structure (reference layout — `equipment_types`).** The office/admin
+display is not a flat field list. Identity fields (icon, name — labels hidden) sit
+at the top, then the rest is organized into collapsible **`field_group` "Details"**
+sections whose labels **mirror the audience tiers**, so office can see, in one
+place, exactly what each audience gets plus the internal data:
+
+- **"Public View"** group → the public description (the same field the `full`
+  display shows).
+- **"Crew View"** group → the crew description (the same field `teammate_view` shows).
+- **"Office Admin"** group → all internal-only fields (classification, department,
+  imagery, etc.), with **inline** labels.
+
+Inside a single-content section, set the **field's own label to Hidden** so the
+group heading is the only title (no double heading). Section headings are styled
+as brand section bars by `bos_equipment/admin_labels` (the `.equipment-admin-view`
+wrapper + `css/equipment-admin.css`) — it targets Olivero's `details.olivero-details
+> summary` (and fieldset/html-element group formats), so any group format picks up
+the look. **Reuse that CSS** (or a per-module copy of it) when applying this pattern
+to another content type.
 
 **Public description wording.** The public tier shows a *public-facing*
 description. Two accepted forms (the per-content-type variance):

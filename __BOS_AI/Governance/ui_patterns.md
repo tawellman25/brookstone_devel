@@ -190,6 +190,14 @@ function MODULE_ENTITYTYPE_view_alter(array &$build, EntityInterface $entity, $d
 Never skip the `user.roles` cache context — it is the difference between a working
 pattern and quietly leaking the office display to the public.
 
+**Gotcha — duplicate title on taxonomy-term pages.** Core keys the term template's
+`page` flag to the **`full`** view mode. Switching a term's canonical render to
+`admin_view`/`teammate_view` makes `page` FALSE, so the template renders the linked
+term-name `<h2>` a second time (a duplicate title under the page-title block) for
+internal viewers, while the public `full` render stays single. In the module's
+`hook_preprocess_HOOK` set `$variables['page'] = TRUE` for the switched view modes.
+Reference: `bos_services` / `bos_equipment` (2026-09-19).
+
 ### Reference implementations
 
 - **`bos_equipment`** — `equipment_types`, full 3-tier (public / crew / office), reference layout, 2026-09-19.

@@ -24,10 +24,9 @@
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * Internal roles that see the teammate equipment-type display.
+ * Office/admin roles that see the admin_view equipment-type display (top tier).
  */
-const BOS_EQUIPMENT_INTERNAL_ROLES = [
-  'teammates',
+const BOS_EQUIPMENT_OFFICE_ROLES = [
   'supervisor',
   'administration',
   'site_assistant',
@@ -36,13 +35,22 @@ const BOS_EQUIPMENT_INTERNAL_ROLES = [
 ];
 
 /**
+ * Crew role that sees the teammate_view equipment-type display (middle tier).
+ */
+const BOS_EQUIPMENT_CREW_ROLES = [
+  'teammates',
+];
+
+/**
  * Implements hook_entity_view_mode_alter().
  *
- * Same /equipment-type page URL, different body by audience: crew/office members
- * see the teammate display (teammate_view); everyone else (public, clients) sees
- * the public "Public page" display (full). Mirrors bos_services. Only the
- * canonical full-page render is rewritten — token/admin/embedded renders keep
- * their own view mode.
+ * Same /equipment-type page URL, three displays by audience:
+ *   - office / admin roles  -> admin_view    (top tier)
+ *   - crew (teammates)      -> teammate_view (middle tier)
+ *   - public / clients      -> full          (Public page, default)
+ * Office is checked first, so a supervisor who is also a teammate gets the
+ * office display. Only the canonical full-page render is rewritten —
+ * token/admin/embedded renders keep their own view mode.
  */
 function bos_equipment_entity_view_mode_alter(&$view_mode, EntityInterface $entity) {
   if ($view_mode !== 'full'
@@ -50,7 +58,11 @@ function bos_equipment_entity_view_mode_alter(&$view_mode, EntityInterface $enti
     || $entity->bundle() !== 'equipment_types') {
     return;
   }
-  if (array_intersect(BOS_EQUIPMENT_INTERNAL_ROLES, \Drupal::currentUser()->getRoles())) {
+  $roles = \Drupal::currentUser()->getRoles();
+  if (array_intersect(BOS_EQUIPMENT_OFFICE_ROLES, $roles)) {
+    $view_mode = 'admin_view';
+  }
+  elseif (array_intersect(BOS_EQUIPMENT_CREW_ROLES, $roles)) {
     $view_mode = 'teammate_view';
   }
 }

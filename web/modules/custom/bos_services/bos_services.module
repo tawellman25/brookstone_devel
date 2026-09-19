@@ -96,27 +96,47 @@ function bos_services_preprocess_taxonomy_term(array &$variables) {
  * admin_view/teammate_view with no banner, so no hero.
  */
 function bos_services_preprocess_page(array &$variables) {
+  $term = _bos_services_hero_term();
+  if (!$term) {
+    return;
+  }
+  $variables['page']['hero']['bo_hero_banner'] = [
+    '#theme' => 'bo_hero_banner',
+    '#images' => _bos_services_banner_images($term),
+    '#title' => $term->label(),
+    '#subtitle' => $term->hasField('field_subtitle') ? (string) $term->get('field_subtitle')->value : '',
+  ];
+  $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
+  $variables['#cache']['contexts'][] = 'user.roles';
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for html.
+ *
+ * Tag the page when the banner hero is showing so CSS can collapse Olivero's
+ * large top padding above the breadcrumb (the hero already provides the top
+ * separation).
+ */
+function bos_services_preprocess_html(array &$variables) {
+  if (_bos_services_hero_term()) {
+    $variables['attributes']['class'][] = 'has-bo-hero';
+  }
+}
+
+/**
+ * The services term whose public banner hero should render, or NULL.
+ *
+ * Services term + public viewer (no office/crew role) + has banner image(s).
+ */
+function _bos_services_hero_term(): ?EntityInterface {
   $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
   if (!$term instanceof EntityInterface || $term->bundle() !== 'services') {
-    return;
+    return NULL;
   }
-  $internal = array_intersect(
-    array_merge(BOS_SERVICES_OFFICE_ROLES, BOS_SERVICES_CREW_ROLES),
-    \Drupal::currentUser()->getRoles()
-  );
-  if ($internal) {
-    return;
+  if (array_intersect(array_merge(BOS_SERVICES_OFFICE_ROLES, BOS_SERVICES_CREW_ROLES), \Drupal::currentUser()->getRoles())) {
+    return NULL;
   }
-  if ($images = _bos_services_banner_images($term)) {
-    $variables['page']['hero']['bo_hero_banner'] = [
-      '#theme' => 'bo_hero_banner',
-      '#images' => $images,
-      '#title' => $term->label(),
-      '#subtitle' => $term->hasField('field_subtitle') ? (string) $term->get('field_subtitle')->value : '',
-    ];
-    $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
-    $variables['#cache']['contexts'][] = 'user.roles';
-  }
+  return _bos_services_banner_images($term) ? $term : NULL;
 }
 
 /**

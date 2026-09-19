@@ -90,7 +90,20 @@ function bos_equipment_taxonomy_term_view_alter(array &$build, EntityInterface $
  */
 function bos_equipment_preprocess_taxonomy_term(array &$variables) {
   $term = $variables['term'] ?? NULL;
-  if ($term && $term->bundle() === 'equipment_types' && ($variables['view_mode'] ?? '') === 'admin_view') {
+  if (!$term || $term->bundle() !== 'equipment_types') {
+    return;
+  }
+  $view_mode = $variables['view_mode'] ?? '';
+
+  // The role-based view-mode switch (full -> admin_view/teammate_view) makes the
+  // taxonomy-term template render the linked term-name <h2> a second time (core
+  // keys its `page` flag to the 'full' view mode). These ARE the canonical page,
+  // so mark them as such to suppress that duplicate title.
+  if (in_array($view_mode, ['admin_view', 'teammate_view'], TRUE)) {
+    $variables['page'] = TRUE;
+  }
+
+  if ($view_mode === 'admin_view') {
     // Shared audience-admin section styling (see __BOS_AI/Governance/ui_patterns.md).
     $variables['attributes']['class'][] = 'bos-admin-view';
     $variables['#attached']['library'][] = 'brookstone_olivero/audience_admin';

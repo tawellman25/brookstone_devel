@@ -73,6 +73,16 @@ function bos_services_preprocess_taxonomy_term(array &$variables) {
   }
   $view_mode = $variables['view_mode'] ?? '';
 
+  // The role-based view-mode switch (full -> admin_view/teammate_view) makes the
+  // taxonomy-term template treat this as NOT the canonical page (core keys the
+  // `page` flag to the 'full' view mode), so it renders the linked term-name
+  // <h2> — a SECOND title (the lower orange "Snow Removal") under the page-title
+  // block. These renders ARE the canonical page, so mark them as such to
+  // suppress that duplicate heading (public 'full' already has page = TRUE).
+  if (in_array($view_mode, ['admin_view', 'teammate_view'], TRUE)) {
+    $variables['page'] = TRUE;
+  }
+
   if ($view_mode === 'admin_view') {
     $variables['attributes']['class'][] = 'bos-admin-view';
     $variables['#attached']['library'][] = 'brookstone_olivero/audience_admin';

@@ -215,6 +215,20 @@ body:not(.is-always-mobile-nav) .primary-nav__button-toggle .icon--menu-toggle::
   #block-bos-homepage-phone-mobile .bo-header-phone { font-size: .95rem; white-space: nowrap; }
   .mobile-buttons { flex: 0 0 auto; }
 }
+/* Whenever the mobile (hamburger) header is active — at ANY width, including the
+   tablet band above 75em where Olivero still shows the hamburger — push the
+   phone to the right, next to the Menu button. The width-based rule above misses
+   that band and leaves the phone stranded mid-header. */
+body.is-always-mobile-nav .site-header__inner__container {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+body.is-always-mobile-nav #block-bos-homepage-phone-mobile {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  margin-inline-end: 1rem;
+}
+
 /* On the smallest phones, drop the phone number text to the glyph only so the
    logo + wordmark + call button + hamburger still fit one line. */
 @media (max-width: 26rem) {
@@ -240,4 +254,20 @@ body:not(.is-always-mobile-nav) .primary-nav__button-toggle .icon--menu-toggle::
 /* Smallest phones: trim the long logo for clearance. */
 @media (max-width: 26rem) {
   .bo-brand__longlogo { max-height: 50px; max-width: 66vw; }
+}
+
+/* Breadcrumb: set it apart from the serif body with the display font and a
+   faint underline rule so it reads as a wayfinding strip, not body text. */
+.breadcrumb {
+  padding-block-end: 0.5rem;
+  border-bottom: 1px solid var(--bo-sand, #E7DCC9);
+}
+.breadcrumb__list {
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.breadcrumb__link {
+  color: var(--bo-orange, #CB6015);
 }

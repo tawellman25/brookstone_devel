@@ -261,6 +261,23 @@ function bos_service_request_page_attachments(array &$attachments) {
     $attachments['#cache']['contexts'][] = 'user.roles';
   }
 
+  // /winterize (+ /winterize/bear-creek, /winterize/week) are seasonal SALES
+  // landing pages driven by ads / postcards / QR — NOT organic targets. Keep
+  // them out of the index so they don't cannibalize the evergreen service page
+  // /services/sprinkler-system/winterizing, which is the organic SEO target.
+  // noindex,follow: don't rank the page, but still pass link equity onward.
+  $winterizeRoutes = [
+    'bos_service_request.winterize',
+    'bos_service_request.bear_creek',
+    'bos_service_request.check_week',
+  ];
+  if (in_array(\Drupal::routeMatch()->getRouteName(), $winterizeRoutes, TRUE)) {
+    $attachments['#attached']['html_head'][] = [
+      ['#tag' => 'meta', '#attributes' => ['name' => 'robots', 'content' => 'noindex, follow']],
+      'bos_winterize_noindex',
+    ];
+  }
+
   // /contact — page-scoped SEO meta description + LocalBusiness NAP schema.
   // Only on this page (no conflict with the homepage LocalBusiness or /about
   // Organization — each is scoped to its own page). The footer carries visible

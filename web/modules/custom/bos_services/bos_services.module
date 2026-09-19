@@ -82,11 +82,36 @@ function bos_services_preprocess_taxonomy_term(array &$variables) {
   // Public page: the banner renders as a full-bleed hero in the theme's top
   // "hero" region (see bos_services_preprocess_page) — here just hide the raw
   // stacked field so it doesn't also render inside the content.
-  if ($view_mode === 'full' && !$term->get('field_banner_image')->isEmpty()
-    && isset($variables['content']['field_banner_image'])) {
-    $variables['content']['field_banner_image']['#access'] = FALSE;
+  if ($view_mode === 'full') {
+    if (!$term->get('field_banner_image')->isEmpty() && isset($variables['content']['field_banner_image'])) {
+      $variables['content']['field_banner_image']['#access'] = FALSE;
+    }
+    // Services with a public intake/sales page get a prominent CTA button so the
+    // evergreen educational page funnels readers to the conversion page (the
+    // sales page is noindex, so the service page is the organic entry point).
+    $bundle = $term->hasField('field_service_bundle') ? $term->get('field_service_bundle')->value : '';
+    if (isset(BOS_SERVICES_INTAKE_CTA[$bundle])) {
+      [$path, $label] = BOS_SERVICES_INTAKE_CTA[$bundle];
+      $variables['content']['bo_service_cta'] = [
+        '#type' => 'link',
+        '#title' => $label,
+        '#url' => \Drupal\Core\Url::fromUserInput($path),
+        '#attributes' => ['class' => ['button', 'button--primary', 'bo-service-cta']],
+        '#weight' => -50,
+      ];
+    }
   }
 }
+
+/**
+ * Service bundle => [intake/sales page path, CTA label].
+ *
+ * The service's evergreen public page shows this button linking to its (noindex)
+ * conversion page. Add rows as more public intakes ship.
+ */
+const BOS_SERVICES_INTAKE_CTA = [
+  'sprinkler_winterizing' => ['/winterize', 'Get on the winterizing list'],
+];
 
 /**
  * Implements hook_preprocess_HOOK() for page.

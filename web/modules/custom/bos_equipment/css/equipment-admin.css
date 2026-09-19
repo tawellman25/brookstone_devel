@@ -1,0 +1,58 @@
+/**
+ * Admin view of equipment_types: make sections read as clear headers.
+ *
+ * Works whether sections are built as field_group (recommended — fieldset /
+ * details / html_element with an h3-h4 label) or left as pronounced field
+ * labels. Scoped to .equipment-admin-view (added by
+ * bos_equipment_preprocess_taxonomy_term) so public / teammate / other pages
+ * are untouched.
+ */
+
+/* --- field_group section headings (fieldset legend, details summary, heading) --- */
+.equipment-admin-view fieldset.field-group-fieldset > legend,
+.equipment-admin-view details.field-group-details > summary,
+.equipment-admin-view .field-group-html-element > h2,
+.equipment-admin-view .field-group-html-element > h3,
+.equipment-admin-view .field-group-html-element > h4 {
+  display: block;
+  width: 100%;
+  margin: 1.5rem 0 0.75rem;
+  padding: 0 0 0.3rem;
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: 1.2rem;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--bo-ink, #1a1613);
+  border-bottom: 2px solid var(--bo-orange, #cb6015);
+}
+
+/* First section shouldn't push a big gap at the very top. */
+.equipment-admin-view .field-group-fieldset:first-child > legend,
+.equipment-admin-view details.field-group-details:first-child > summary,
+.equipment-admin-view .field-group-html-element:first-child > :is(h2, h3, h4) {
+  margin-top: 0;
+}
+
+/* Fieldset chrome off — we want a heading + rule, not a boxed border. */
+.equipment-admin-view fieldset.field-group-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* --- ungrouped field labels: still make them read as section headers --- */
+.equipment-admin-view > .field > .field__label,
+.equipment-admin-view .field-group-fieldset > .field > .field__label,
+.equipment-admin-view .field-group-details > .field > .field__label {
+  display: block;
+  float: none;
+  margin: 1.1rem 0 0.35rem;
+  padding-bottom: 0.25rem;
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  color: var(--bo-ink, #1a1613);
+  border-bottom: 1px solid var(--bo-sand, #e7dcc9);
+}

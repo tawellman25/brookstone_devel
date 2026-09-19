@@ -82,6 +82,21 @@ function bos_equipment_taxonomy_term_view_alter(array &$build, EntityInterface $
 }
 
 /**
+ * Implements hook_preprocess_HOOK() for taxonomy_term.
+ *
+ * On the equipment_types admin_view page, add a wrapper class + section-heading
+ * CSS so field_group sections (and any pronounced field labels) read as clear
+ * headers. Scoped to admin_view so public/teammate pages are untouched.
+ */
+function bos_equipment_preprocess_taxonomy_term(array &$variables) {
+  $term = $variables['term'] ?? NULL;
+  if ($term && $term->bundle() === 'equipment_types' && ($variables['view_mode'] ?? '') === 'admin_view') {
+    $variables['attributes']['class'][] = 'equipment-admin-view';
+    $variables['#attached']['library'][] = 'bos_equipment/admin_labels';
+  }
+}
+
+/**
  * Implements hook_entity_presave().
  */
 function bos_equipment_entity_presave(EntityInterface $entity) {

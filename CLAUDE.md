@@ -735,6 +735,21 @@ card data computed in `hook_preprocess_views_view_fields` + CSS attached via
 `hook_views_pre_render`. Reference impl: `backflow_device`
 (`backflow-cards.css` + the Property Devices EVA).
 
+**Audience view-mode tiers (public-facing pages):** a content type with both a
+public and an internal face serves **one canonical URL** and swaps the body by
+the viewer's role — never a separate route. Author these view modes on the
+bundle: **Default** (everything), **Admin View** (`admin_view` — most fields +
+an "Office Admin" group at the bottom, for office/admin roles), **Teammate View**
+(`teammate_view` — crew operational: icon + crew description + SOP links),
+**Public View** (`full` — public minimum: icon + public description). Route with
+`hook_entity_view_mode_alter` (office → `admin_view`, crew → `teammate_view`,
+else `full`; office checked first) **plus a `user.roles` cache context** in
+`hook_ENTITY_TYPE_view_alter` (mandatory — else render cache leaks one audience's
+body to another). Reference impls: `bos_equipment` (equipment_types, 3-tier),
+`bos_services` (services, 2-tier). Public description = a dedicated
+`field_*_public_desc` or the core taxonomy `description` relabeled "Public
+Description" per bundle (`relabel_term_description_public.php`).
+
 Full details: `__BOS_AI/Governance/ui_patterns.md`.
 
 ## SOP Governance

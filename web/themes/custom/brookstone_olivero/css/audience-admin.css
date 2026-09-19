@@ -1,5 +1,5 @@
 /**
- * Admin view of equipment_types: make the field_group section headings read as
+ * Audience admin_view (any BOS content type): make the field_group section headings read as
  * clear H4-style section bars.
  *
  * The admin_view is laid out as collapsible field_group "Details" sections
@@ -7,16 +7,16 @@
  * <summary class="olivero-details__summary">). Fieldset / HTML-element group
  * formats are also covered so the same look holds if a section uses them.
  *
- * Scoped to .equipment-admin-view (added by
- * bos_equipment_preprocess_taxonomy_term) so public / teammate / other pages
- * are untouched.
+ * Scoped to .bos-admin-view (added by the content type's module preprocess on
+ * its admin_view render) so public / teammate / other pages are untouched.
+ * Shared across content types — see __BOS_AI/Governance/ui_patterns.md.
  */
 
 /* --- collapsible Details sections (the layout in use) --- */
-.equipment-admin-view details.olivero-details > summary,
+.bos-admin-view details.olivero-details > summary,
 /* --- fieldset / html-element section formats (same treatment) --- */
-.equipment-admin-view fieldset > legend,
-.equipment-admin-view .field-group-html-element > :is(h2, h3, h4) {
+.bos-admin-view fieldset > legend,
+.bos-admin-view .field-group-html-element > :is(h2, h3, h4) {
   display: block;
   width: 100%;
   margin: 0;
@@ -31,20 +31,20 @@
 }
 
 /* Space each section from the one above. */
-.equipment-admin-view details.olivero-details,
-.equipment-admin-view fieldset,
-.equipment-admin-view .field-group-html-element {
+.bos-admin-view details.olivero-details,
+.bos-admin-view fieldset,
+.bos-admin-view .field-group-html-element {
   margin-block: 1.4rem 0.5rem;
 }
 
 /* Strip fieldset box chrome — we want a heading + rule, not a border box. */
-.equipment-admin-view fieldset {
+.bos-admin-view fieldset {
   border: 0;
   padding-inline: 0;
 }
 
 /* --- any ungrouped field label still reads as a header --- */
-.equipment-admin-view > .field > .field__label {
+.bos-admin-view > .field > .field__label {
   display: block;
   float: none;
   margin: 1.1rem 0 0.35rem;

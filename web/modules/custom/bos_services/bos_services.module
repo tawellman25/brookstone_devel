@@ -3,15 +3,19 @@
 /**
  * @file
  * BOS Services — role-based rendering of the services taxonomy.
+ *
+ * Follows the BOS audience view-mode tier pattern (see
+ * __BOS_AI/Governance/ui_patterns.md): one /services/{name} URL, different body
+ * by audience — office/admin -> admin_view, crew -> teammate_view, public/clients
+ * -> full.
  */
 
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * Internal roles that see the teammate "how we do it" training display.
+ * Office/admin roles that see the admin_view services display (top tier).
  */
-const BOS_SERVICES_INTERNAL_ROLES = [
-  'teammates',
+const BOS_SERVICES_OFFICE_ROLES = [
   'supervisor',
   'administration',
   'site_assistant',
@@ -20,12 +24,22 @@ const BOS_SERVICES_INTERNAL_ROLES = [
 ];
 
 /**
+ * Crew role that sees the teammate_view services display (middle tier).
+ */
+const BOS_SERVICES_CREW_ROLES = [
+  'teammates',
+];
+
+/**
  * Implements hook_entity_view_mode_alter().
  *
- * Same /services/{name} URL, different body by audience: crew/office members see
- * the teammate training display (teammate_view), everyone else (public, clients)
- * sees the public "what we do" display (full). Only the canonical full-page
- * render is rewritten — token/admin/embedded renders keep their own view mode.
+ * Same /services/{name} URL, three displays by audience:
+ *   - office / admin roles  -> admin_view    (top tier)
+ *   - crew (teammates)      -> teammate_view (middle tier)
+ *   - public / clients      -> full          (Public page, default)
+ * Office is checked first, so a supervisor who is also a teammate gets the office
+ * display. Only the canonical full-page render is rewritten — token/admin/embedded
+ * renders keep their own view mode.
  */
 function bos_services_entity_view_mode_alter(&$view_mode, EntityInterface $entity) {
   if ($view_mode !== 'full'
@@ -33,8 +47,27 @@ function bos_services_entity_view_mode_alter(&$view_mode, EntityInterface $entit
     || $entity->bundle() !== 'services') {
     return;
   }
-  if (array_intersect(BOS_SERVICES_INTERNAL_ROLES, \Drupal::currentUser()->getRoles())) {
+  $roles = \Drupal::currentUser()->getRoles();
+  if (array_intersect(BOS_SERVICES_OFFICE_ROLES, $roles)) {
+    $view_mode = 'admin_view';
+  }
+  elseif (array_intersect(BOS_SERVICES_CREW_ROLES, $roles)) {
     $view_mode = 'teammate_view';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for taxonomy_term.
+ *
+ * On the services admin_view page, add the shared audience-admin wrapper class +
+ * section-heading CSS so field_group sections read as clear headers. Scoped to
+ * admin_view so public/teammate pages are untouched.
+ */
+function bos_services_preprocess_taxonomy_term(array &$variables) {
+  $term = $variables['term'] ?? NULL;
+  if ($term && $term->bundle() === 'services' && ($variables['view_mode'] ?? '') === 'admin_view') {
+    $variables['attributes']['class'][] = 'bos-admin-view';
+    $variables['#attached']['library'][] = 'brookstone_olivero/audience_admin';
   }
 }
 

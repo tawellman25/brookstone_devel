@@ -91,8 +91,9 @@ function bos_equipment_taxonomy_term_view_alter(array &$build, EntityInterface $
 function bos_equipment_preprocess_taxonomy_term(array &$variables) {
   $term = $variables['term'] ?? NULL;
   if ($term && $term->bundle() === 'equipment_types' && ($variables['view_mode'] ?? '') === 'admin_view') {
-    $variables['attributes']['class'][] = 'equipment-admin-view';
-    $variables['#attached']['library'][] = 'bos_equipment/admin_labels';
+    // Shared audience-admin section styling (see __BOS_AI/Governance/ui_patterns.md).
+    $variables['attributes']['class'][] = 'bos-admin-view';
+    $variables['#attached']['library'][] = 'brookstone_olivero/audience_admin';
   }
 }
 

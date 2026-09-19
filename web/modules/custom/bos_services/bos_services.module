@@ -10,7 +10,10 @@
  * -> full.
  */
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\image\Entity\ImageStyle;
 
 /**
  * Office/admin roles that see the admin_view services display (top tier).
@@ -65,10 +68,77 @@ function bos_services_entity_view_mode_alter(&$view_mode, EntityInterface $entit
  */
 function bos_services_preprocess_taxonomy_term(array &$variables) {
   $term = $variables['term'] ?? NULL;
-  if ($term && $term->bundle() === 'services' && ($variables['view_mode'] ?? '') === 'admin_view') {
+  if (!$term || $term->bundle() !== 'services') {
+    return;
+  }
+  $view_mode = $variables['view_mode'] ?? '';
+
+  if ($view_mode === 'admin_view') {
     $variables['attributes']['class'][] = 'bos-admin-view';
     $variables['#attached']['library'][] = 'brookstone_olivero/audience_admin';
+    return;
   }
+
+  // Public page: render field_banner_image as a full-bleed rotating hero with
+  // the service name + subtitle overlaid, and hide the raw stacked field.
+  if ($view_mode === 'full' && ($images = _bos_services_banner_images($term))) {
+    $variables['content']['bo_hero_banner'] = [
+      '#theme' => 'bo_hero_banner',
+      '#images' => $images,
+      '#title' => $term->label(),
+      '#subtitle' => $term->hasField('field_subtitle') ? (string) $term->get('field_subtitle')->value : '',
+      '#weight' => -100,
+    ];
+    if (isset($variables['content']['field_banner_image'])) {
+      $variables['content']['field_banner_image']['#access'] = FALSE;
+    }
+    $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
+  }
+}
+
+/**
+ * Implements hook_block_access().
+ *
+ * The banner hero carries the service name as the page's H1, so hide the core
+ * page-title block for public viewers on a services term that has a banner
+ * (internal viewers get admin_view/teammate_view with no hero, so they keep the
+ * normal title).
+ */
+function bos_services_block_access($block, $operation, AccountInterface $account) {
+  if ($operation !== 'view' || $block->getPluginId() !== 'page_title_block') {
+    return AccessResult::neutral();
+  }
+  $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
+  $hide = $term instanceof EntityInterface
+    && $term->bundle() === 'services'
+    && !array_intersect(array_merge(BOS_SERVICES_OFFICE_ROLES, BOS_SERVICES_CREW_ROLES), $account->getRoles())
+    && _bos_services_banner_images($term);
+  return AccessResult::forbiddenIf((bool) $hide)
+    ->addCacheContexts(['user.roles', 'route'])
+    ->addCacheableDependency($term instanceof EntityInterface ? $term : $block);
+}
+
+/**
+ * Build the banner image list [{src, alt}] for a services term, or [] if none.
+ */
+function _bos_services_banner_images(EntityInterface $term): array {
+  if (!$term->hasField('field_banner_image') || $term->get('field_banner_image')->isEmpty()) {
+    return [];
+  }
+  $style = ImageStyle::load('max_2600x2600');
+  $images = [];
+  foreach ($term->get('field_banner_image') as $item) {
+    $file = $item->entity;
+    if (!$file) {
+      continue;
+    }
+    $uri = $file->getFileUri();
+    $images[] = [
+      'src' => $style ? $style->buildUrl($uri) : \Drupal::service('file_url_generator')->generateAbsoluteString($uri),
+      'alt' => (string) ($item->alt ?: $term->label()),
+    ];
+  }
+  return $images;
 }
 
 /**

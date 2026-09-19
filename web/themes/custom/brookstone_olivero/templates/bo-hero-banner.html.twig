@@ -1,0 +1,35 @@
+{#
+/**
+ * @file
+ * Full-bleed rotating banner hero with title overlay.
+ *
+ * Variables:
+ * - images: list of { src, alt }.
+ * - title: overlay heading (H1).
+ * - subtitle: optional overlay line under the title.
+ *
+ * JS (brookstone_olivero/bo_hero) crossfades the slides, wires the dots and
+ * swipe, and honors prefers-reduced-motion. With one image it's a static hero.
+ */
+#}
+<section class="bo-hero{{ images|length > 1 ? ' bo-hero--rotating' : '' }}" data-bo-hero>
+  <div class="bo-hero__slides">
+    {% for img in images %}
+      <img class="bo-hero__img{{ loop.first ? ' is-active' : '' }}"
+           src="{{ img.src }}" alt="{{ img.alt }}"
+           {{ loop.first ? '' : 'loading="lazy"' }}>
+    {% endfor %}
+  </div>
+  <div class="bo-hero__scrim">
+    {% if title %}<h1 class="bo-hero__title">{{ title }}</h1>{% endif %}
+    {% if subtitle %}<p class="bo-hero__subtitle">{{ subtitle }}</p>{% endif %}
+  </div>
+  {% if images|length > 1 %}
+    <div class="bo-hero__dots" role="tablist" aria-label="Banner images">
+      {% for img in images %}
+        <button type="button" class="bo-hero__dot{{ loop.first ? ' is-active' : '' }}"
+                aria-label="Show image {{ loop.index }}"></button>
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>

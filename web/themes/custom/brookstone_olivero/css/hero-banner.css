@@ -7,12 +7,23 @@
 
 .bo-hero {
   position: relative;
+  z-index: 0; /* keep the image behind Olivero's left bar / sticky toggle */
   width: 100vw;
-  margin-left: calc(50% - 50vw);
+  margin-inline-start: calc(50% - 50vw);
   margin-block: 0 1.5rem;
   height: clamp(220px, 42vw, 520px);
   overflow: hidden;
   background: var(--bo-ink, #1a1613);
+}
+
+/* Wide screens: the layout reserves --content-left on the left (Olivero's
+   sticky-header / social bar). Break the image out over it to the true left
+   edge — edge-to-edge, behind that bar — using Olivero's own gutter idiom. */
+@media (min-width: 75rem) {
+  .bo-hero {
+    width: calc(100% + var(--content-left, 5.625rem));
+    margin-inline-start: calc(-1 * var(--content-left, 5.625rem));
+  }
 }
 
 .bo-hero__slides,
@@ -43,10 +54,17 @@
   position: absolute;
   inset-inline: 0;
   inset-block-end: 0;
-  padding: 3.5rem clamp(1rem, 5vw, 4rem) clamp(1.1rem, 3vw, 2.25rem);
+  padding: 3.5rem clamp(1.25rem, 5vw, 4rem) clamp(1.1rem, 3vw, 2.25rem);
   background: linear-gradient(to top, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.28) 45%, rgba(0, 0, 0, 0) 100%);
   color: #fff;
   pointer-events: none;
+}
+
+/* Wide screens: inset the wording past the left bar so it clears it. */
+@media (min-width: 75rem) {
+  .bo-hero__scrim {
+    padding-inline-start: calc(var(--content-left, 5.625rem) + clamp(1rem, 3vw, 2.5rem));
+  }
 }
 
 .bo-hero__title {

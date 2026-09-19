@@ -197,6 +197,32 @@ pattern and quietly leaking the office display to the public.
 - Shared section-heading CSS: **`brookstone_olivero/audience_admin`** (`.bos-admin-view` + `css/audience-admin.css`) — each content module adds the `.bos-admin-view` class and attaches this library on its `admin_view` render. Reuse it; don't re-copy the CSS.
 - **`bos_hoa`** — `properties.hoa`, public view mode on the canonical page (2026-09-07); same principle applied to an ECK entity rather than a taxonomy.
 
+## Public banner hero (full-bleed rotating)
+
+Public pages whose content type has a multi-value banner image field show it as a
+**full-bleed rotating hero** at the top, with the record's name + subtitle overlaid
+on a bottom gradient scrim (crossfade auto-advance, dots, swipe, honors
+`prefers-reduced-motion`; one image → static hero).
+
+**Reusable piece (theme):**
+- Theme hook **`bo_hero_banner`** (`brookstone_olivero.theme`) + template
+  `templates/bo-hero-banner.html.twig`.
+- Library **`brookstone_olivero/bo_hero`** (`css/hero-banner.css` + `js/hero-banner.js`) —
+  full-bleed via the `width:100vw; margin-left:calc(50% - 50vw)` break-out so it
+  fills edge-to-edge even inside Olivero's constrained content region.
+
+**Wiring (per content type, in the module's `hook_preprocess_HOOK`):** on the
+**public** render, build `['#theme' => 'bo_hero_banner', '#images' => [{src, alt}…],
+'#title' => …, '#subtitle' => …]` (style the source with `max_2600x2600`), add it
+to `content` with a low weight, set the raw image field `#access = FALSE`, and attach
+`brookstone_olivero/bo_hero`. Because the hero carries the page's single H1, also
+**suppress the core `page_title_block`** for public viewers on those records
+(`hook_block_access`, with `user.roles` + `route` cache contexts) so there's no
+duplicate title. Reference impl: `bos_services` (`field_banner_image`), 2026-09-19.
+
+> **Field-name variance:** `services` uses `field_banner_image`; `equipment_types`
+> uses `field_banner_images` (plural). Read the bundle's actual field when reusing.
+
 ## Status
 
 - Created 2026-06-21 (status-card pattern, from the My Schedule + backflow card work).

@@ -79,20 +79,43 @@ function bos_services_preprocess_taxonomy_term(array &$variables) {
     return;
   }
 
-  // Public page: render field_banner_image as a full-bleed rotating hero with
-  // the service name + subtitle overlaid, and hide the raw stacked field.
-  if ($view_mode === 'full' && ($images = _bos_services_banner_images($term))) {
-    $variables['content']['bo_hero_banner'] = [
+  // Public page: the banner renders as a full-bleed hero in the theme's top
+  // "hero" region (see bos_services_preprocess_page) — here just hide the raw
+  // stacked field so it doesn't also render inside the content.
+  if ($view_mode === 'full' && !$term->get('field_banner_image')->isEmpty()
+    && isset($variables['content']['field_banner_image'])) {
+    $variables['content']['field_banner_image']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for page.
+ *
+ * Render a services term's banner as a full-bleed rotating hero in the top
+ * "hero" region (above the breadcrumb) for public viewers — internal viewers get
+ * admin_view/teammate_view with no banner, so no hero.
+ */
+function bos_services_preprocess_page(array &$variables) {
+  $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
+  if (!$term instanceof EntityInterface || $term->bundle() !== 'services') {
+    return;
+  }
+  $internal = array_intersect(
+    array_merge(BOS_SERVICES_OFFICE_ROLES, BOS_SERVICES_CREW_ROLES),
+    \Drupal::currentUser()->getRoles()
+  );
+  if ($internal) {
+    return;
+  }
+  if ($images = _bos_services_banner_images($term)) {
+    $variables['page']['hero']['bo_hero_banner'] = [
       '#theme' => 'bo_hero_banner',
       '#images' => $images,
       '#title' => $term->label(),
       '#subtitle' => $term->hasField('field_subtitle') ? (string) $term->get('field_subtitle')->value : '',
-      '#weight' => -100,
     ];
-    if (isset($variables['content']['field_banner_image'])) {
-      $variables['content']['field_banner_image']['#access'] = FALSE;
-    }
     $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
+    $variables['#cache']['contexts'][] = 'user.roles';
   }
 }
 

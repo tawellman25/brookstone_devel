@@ -44,19 +44,31 @@ if (!$fd->getComponent('field_meta_tags')) {
 }
 
 // Seed Sprinkler Systems as the first example.
+// NOTE: Metatag 2.x stores field_meta_tags as JSON — read/write with json,
+// and MERGE so we never clobber an existing og_image / other tags.
 $ts = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
 $hits = $ts->loadByProperties(['vid' => 'services', 'name' => 'Sprinkler Systems']);
 if ($hits) {
   $term = reset($hits);
-  if ($term->get('field_meta_tags')->isEmpty()) {
-    $term->set('field_meta_tags', ['value' => serialize([
-      'title' => 'Sprinkler Systems | Brookstone Outdoors | Delta & Montrose CO',
-      'description' => 'Sprinkler system design, installation, repair, start-up, check-ups and winterizing across Delta and Montrose counties, Colorado.',
-    ])])->save();
-    $out[] = 'Sprinkler Systems (' . $term->id() . ') meta tags seeded';
+  $raw = $term->get('field_meta_tags')->value;
+  $tags = $raw ? (json_decode($raw, TRUE) ?: []) : [];
+  $want = [
+    'title' => 'Sprinkler Systems | Brookstone Outdoors | Delta & Montrose CO',
+    'description' => 'Sprinkler system design, installation, repair, start-up, check-ups and winterizing across Delta and Montrose counties, Colorado.',
+  ];
+  $merged = $tags + $want;
+  // Only fill missing title/description; never overwrite office edits.
+  foreach ($want as $k => $v) {
+    if (empty($tags[$k])) {
+      $merged[$k] = $v;
+    }
+  }
+  if ($merged !== $tags) {
+    $term->set('field_meta_tags', ['value' => json_encode($merged)])->save();
+    $out[] = 'Sprinkler Systems (' . $term->id() . ') title/description restored (JSON merge)';
   }
   else {
-    $out[] = 'Sprinkler Systems already has meta tags — left as-is';
+    $out[] = 'Sprinkler Systems already complete — left as-is';
   }
 }
 else {

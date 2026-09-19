@@ -210,6 +210,67 @@ function _bos_services_banner_images(EntityInterface $term): array {
 }
 
 /**
+ * Implements hook_metatags_attachments_alter().
+ *
+ * Serve a service's og:image (Facebook share image) through an image style
+ * derivative of its Home Page Slide instead of the raw original — a phone-shot
+ * slide can be 9+ MB, over Facebook's 8 MB og:image limit, so FB refuses it.
+ * The max_1300x1300 derivative is a few hundred KB and well within limits.
+ */
+function bos_services_metatags_attachments_alter(array &$metatag_attachments) {
+  $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
+  if (!$term instanceof EntityInterface || $term->bundle() !== 'services'
+    || !$term->hasField('field_home_page_slide') || $term->get('field_home_page_slide')->isEmpty()) {
+    return;
+  }
+  $file = $term->get('field_home_page_slide')->entity;
+  $style = ImageStyle::load('max_1300x1300');
+  if (!$file || !$style) {
+    return;
+  }
+  $url = $style->buildUrl($file->getFileUri());
+
+  // Pass 1: read this page's meta description (to mirror into og:description).
+  $desc = '';
+  foreach ($metatag_attachments['#attached']['html_head'] ?? [] as $item) {
+    if (preg_replace('/_\d+$/', '', $item[1] ?? '') === 'description') {
+      $desc = $item[0]['#attributes']['content'] ?? '';
+      break;
+    }
+  }
+
+  // Pass 2: override og:image (styled) + og:description (page-specific) in place;
+  // add either if absent. Metatag suffixes og:image as og_image_0.
+  $seenImage = FALSE;
+  $seenOgDesc = FALSE;
+  foreach ($metatag_attachments['#attached']['html_head'] as &$item) {
+    $norm = preg_replace('/_\d+$/', '', $item[1] ?? '');
+    if ($norm === 'og_image') {
+      $item[0]['#attributes']['content'] = $url;
+      $seenImage = TRUE;
+    }
+    elseif ($norm === 'og_description' && $desc !== '') {
+      $item[0]['#attributes']['content'] = $desc;
+      $seenOgDesc = TRUE;
+    }
+  }
+  unset($item);
+
+  if (!$seenImage) {
+    $metatag_attachments['#attached']['html_head'][] = [
+      ['#tag' => 'meta', '#attributes' => ['property' => 'og:image', 'content' => $url]],
+      'og_image_0',
+    ];
+  }
+  if (!$seenOgDesc && $desc !== '') {
+    $metatag_attachments['#attached']['html_head'][] = [
+      ['#tag' => 'meta', '#attributes' => ['property' => 'og:description', 'content' => $desc]],
+      'og_description',
+    ];
+  }
+}
+
+/**
  * Implements hook_ENTITY_TYPE_view_alter() for taxonomy_term.
  *
  * The view mode above is chosen by the viewer's role, so the render MUST vary by

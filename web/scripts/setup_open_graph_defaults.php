@@ -31,8 +31,10 @@ if ($global) {
   $tags['og_type'] = 'website';
   $tags['og_image'] = $DEFAULT_IMAGE;
   $tags['og_title'] = '[current-page:title] | Brookstone Outdoors';
+  $tags['og_url'] = '[current-page:url]';
+  $tags['og_description'] = 'Landscaping, lawn care, irrigation, and snow removal across Delta and Montrose counties, Colorado — over 30 years.';
   $global->set('tags', $tags)->save();
-  $out[] = 'global: og:site_name + og:type + og:image + og:title set';
+  $out[] = 'global: og:site_name + og:type + og:image + og:title + og:url + og:description set';
 }
 
 // Remove any services BUNDLE default og:image so slide-less services fall back
@@ -51,27 +53,10 @@ if ($svc) {
   }
 }
 
-// Per-service: set og:image = the service's own Home Page Slide, only where one
-// exists. Merge into any existing field_meta_tags (title/description) overrides.
-$ts = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
-$tids = \Drupal::entityQuery('taxonomy_term')->accessCheck(FALSE)->condition('vid', 'services')->execute();
-$set = 0;
-foreach ($ts->loadMultiple($tids) as $term) {
-  $hasSlide = $term->hasField('field_home_page_slide') && !$term->get('field_home_page_slide')->isEmpty();
-  if (!$hasSlide || !$term->hasField('field_meta_tags')) {
-    continue;
-  }
-  $raw = $term->get('field_meta_tags')->value;
-  $tags = $raw ? @unserialize($raw) : [];
-  if (!is_array($tags)) {
-    $tags = [];
-  }
-  if (($tags['og_image'] ?? NULL) !== $SLIDE_TOKEN) {
-    $tags['og_image'] = $SLIDE_TOKEN;
-    $term->set('field_meta_tags', ['value' => serialize($tags)])->save();
-    $set++;
-  }
-}
-$out[] = "per-service og:image (Home Page Slide) set on $set service(s) with a slide";
+// Per-service og:image is produced in code (bos_services_metatags_attachments_alter)
+// as an image-style derivative of the Home Page Slide (a raw slide can exceed
+// Facebook's 8 MB limit); it overrides in place, so any field og_image token is
+// harmless and we deliberately do NOT rewrite field_meta_tags here.
+// NOTE: Metatag 2.x stores field_meta_tags as JSON, not PHP serialize().
 
 print implode("\n", $out) . "\nDONE.\n";

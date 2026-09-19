@@ -352,6 +352,58 @@ function bos_service_request_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Bre
 }
 
 /**
+ * Implements hook_metatags_attachments_alter().
+ *
+ * Winterize sales pages get a winterize-specific Open Graph share card (image /
+ * title / description) instead of the generic global default, so a shared link
+ * shows the right photo + copy. Editing Metatag's own attachment build (rather
+ * than adding tags in hook_page_attachments_alter) avoids duplicate og: tags.
+ * OG still matters here even though the pages are noindex — noindex blocks
+ * search indexing, not social sharing.
+ */
+function bos_service_request_metatags_attachments_alter(array &$metatag_attachments) {
+  $winterizeRoutes = [
+    'bos_service_request.winterize',
+    'bos_service_request.bear_creek',
+    'bos_service_request.check_week',
+  ];
+  if (!in_array(\Drupal::routeMatch()->getRouteName(), $winterizeRoutes, TRUE)) {
+    return;
+  }
+  $host = \Drupal::request()->getSchemeAndHttpHost();
+  $img = $host . '/' . \Drupal::service('extension.list.module')->getPath('bos_service_request') . '/assets/winterize-hero.jpg';
+  $ogTitle = 'Sprinkler Winterizing — Get on the List | Brookstone Outdoors';
+  $ogDesc = 'Protect your sprinkler system from winter freeze damage. Get on the Brookstone Outdoors winterizing list — over 30 years serving Delta & Montrose counties, CO.';
+  $values = ['og_image' => $img, 'og_title' => $ogTitle, 'og_description' => $ogDesc, 'description' => $ogDesc];
+
+  // Edit existing tags in place; track which we still need to add. Metatag
+  // suffixes multi-value tags (e.g. og:image renders as key "og_image_0"), so
+  // normalize a trailing _N before matching.
+  $seen = [];
+  if (!empty($metatag_attachments['#attached']['html_head'])) {
+    foreach ($metatag_attachments['#attached']['html_head'] as &$item) {
+      $norm = preg_replace('/_\d+$/', '', $item[1] ?? '');
+      if (isset($values[$norm])) {
+        $item[0]['#attributes']['content'] = $values[$norm];
+        $seen[$norm] = TRUE;
+      }
+    }
+    unset($item);
+  }
+  // Add any that weren't in the global defaults (e.g. og:description).
+  $meta = ['og_image' => 'og:image', 'og_title' => 'og:title', 'og_description' => 'og:description', 'description' => 'description'];
+  foreach ($values as $key => $content) {
+    if (empty($seen[$key])) {
+      $attr = ($key === 'description') ? 'name' : 'property';
+      $metatag_attachments['#attached']['html_head'][] = [
+        ['#tag' => 'meta', '#attributes' => [$attr => $meta[$key], 'content' => $content]],
+        $key,
+      ];
+    }
+  }
+}
+
+/**
  * Implements hook_page_attachments_alter().
  *
  * Remove the default Drupal favicon link (/core/misc/favicon.ico, added by

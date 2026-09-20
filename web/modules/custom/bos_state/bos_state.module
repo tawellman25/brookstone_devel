@@ -1,0 +1,97 @@
+<?php
+
+/**
+ * @file
+ * BOS State — render a state's Top Banner as a full-bleed hero.
+ *
+ * Mirrors the services banner hero (bos_services): the field_banner_image images
+ * render as a full-bleed rotating hero in the theme's top "hero" region (above
+ * the breadcrumb) with the state name overlaid, instead of stacked in content.
+ * Reuses the shared theme piece brookstone_olivero/bo_hero + bo_hero_banner.
+ */
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\image\Entity\ImageStyle;
+
+/**
+ * Implements hook_preprocess_HOOK() for page.
+ *
+ * Put the state's banner hero in the top "hero" region on its canonical page.
+ */
+function bos_state_preprocess_page(array &$variables) {
+  if ($state = _bos_state_banner_entity()) {
+    $variables['page']['hero']['bo_hero_banner'] = [
+      '#theme' => 'bo_hero_banner',
+      '#images' => _bos_state_banner_images($state),
+      '#title' => $state->label(),
+      '#subtitle' => '',
+    ];
+    $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for eck_entity.
+ *
+ * Hide the raw stacked banner field on the state render — it shows as the hero.
+ */
+function bos_state_preprocess_eck_entity(array &$variables) {
+  $entity = $variables['entity'] ?? ($variables['elements']['#eck_entity'] ?? NULL);
+  if ($entity instanceof EntityInterface && $entity->getEntityTypeId() === 'state'
+    && isset($variables['content']['field_banner_image'])) {
+    $variables['content']['field_banner_image']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_block_access().
+ *
+ * The hero carries the state name as the page's H1, so hide the core page-title
+ * block on a state page that has a banner (avoids a duplicate title).
+ */
+function bos_state_block_access($block, $operation, AccountInterface $account) {
+  if ($operation !== 'view' || $block->getPluginId() !== 'page_title_block') {
+    return AccessResult::neutral();
+  }
+  $state = _bos_state_banner_entity();
+  return AccessResult::forbiddenIf((bool) $state)
+    ->addCacheContexts(['route'])
+    ->addCacheableDependency($state ?: $block);
+}
+
+/**
+ * The state entity on the current canonical page that has a banner, or NULL.
+ */
+function _bos_state_banner_entity(): ?EntityInterface {
+  if (\Drupal::routeMatch()->getRouteName() !== 'entity.state.canonical') {
+    return NULL;
+  }
+  $state = \Drupal::routeMatch()->getParameter('state');
+  if ($state instanceof EntityInterface && $state->hasField('field_banner_image')
+    && !$state->get('field_banner_image')->isEmpty()) {
+    return $state;
+  }
+  return NULL;
+}
+
+/**
+ * Build the banner image list [{src, alt}] for a state, or [].
+ */
+function _bos_state_banner_images(EntityInterface $state): array {
+  $style = ImageStyle::load('max_2600x2600');
+  $images = [];
+  foreach ($state->get('field_banner_image') as $item) {
+    $file = $item->entity;
+    if (!$file) {
+      continue;
+    }
+    $uri = $file->getFileUri();
+    $images[] = [
+      'src' => $style ? $style->buildUrl($uri) : \Drupal::service('file_url_generator')->generateAbsoluteString($uri),
+      'alt' => (string) ($item->alt ?: $state->label()),
+    ];
+  }
+  return $images;
+}

@@ -46,15 +46,22 @@ const BOS_STATE_CREW_ROLES = [
 ];
 
 /**
+ * Geographic entity types that use the public / teammate / admin audience tiers.
+ */
+const BOS_STATE_GEO_ENTITIES = ['state', 'county'];
+
+/**
  * Implements hook_entity_view_mode_alter().
  *
- * Same /state/{state} URL, three displays by audience (state's view modes are
- * named public / teammate / admin): office -> admin, crew -> teammate, else
- * public. Office is checked first. Only the canonical page render is switched.
+ * Same canonical URL, three displays by audience (view modes named public /
+ * teammate / admin): office -> admin, crew -> teammate, else public. Office is
+ * checked first. Only the canonical page render is switched. Applies to every
+ * geographic entity type in BOS_STATE_GEO_ENTITIES (state, county).
  */
 function bos_state_entity_view_mode_alter(&$view_mode, EntityInterface $entity) {
-  if ($entity->getEntityTypeId() !== 'state'
-    || \Drupal::routeMatch()->getRouteName() !== 'entity.state.canonical') {
+  $type = $entity->getEntityTypeId();
+  if (!in_array($type, BOS_STATE_GEO_ENTITIES, TRUE)
+    || \Drupal::routeMatch()->getRouteName() !== "entity.$type.canonical") {
     return;
   }
   $roles = \Drupal::currentUser()->getRoles();
@@ -70,13 +77,15 @@ function bos_state_entity_view_mode_alter(&$view_mode, EntityInterface $entity) 
 }
 
 /**
- * Implements hook_ENTITY_TYPE_view_alter() for state.
+ * Implements hook_entity_view_alter().
  *
  * The display is chosen by role, so the render MUST vary by user.roles or the
  * render cache could serve one audience's display to another.
  */
-function bos_state_state_view_alter(array &$build, EntityInterface $entity, $display) {
-  $build['#cache']['contexts'][] = 'user.roles';
+function bos_state_entity_view_alter(array &$build, EntityInterface $entity, $display) {
+  if (in_array($entity->getEntityTypeId(), BOS_STATE_GEO_ENTITIES, TRUE)) {
+    $build['#cache']['contexts'][] = 'user.roles';
+  }
 }
 
 /**

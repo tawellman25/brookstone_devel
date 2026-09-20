@@ -20,11 +20,19 @@
         let index = 0;
         let timer = null;
         const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const altSubtitle = hero.hasAttribute('data-bo-alt-subtitle');
+        const subtitleEl = hero.querySelector('[data-bo-hero-subtitle]');
 
         const show = (next) => {
           index = (next + slides.length) % slides.length;
           slides.forEach((s, i) => s.classList.toggle('is-active', i === index));
           dots.forEach((d, i) => d.classList.toggle('is-active', i === index));
+          // Rotate the caption (image alt) under the title.
+          if (altSubtitle && subtitleEl) {
+            const caption = slides[index].getAttribute('data-bo-caption') || '';
+            subtitleEl.textContent = caption;
+            subtitleEl.hidden = caption === '';
+          }
         };
 
         const start = () => {

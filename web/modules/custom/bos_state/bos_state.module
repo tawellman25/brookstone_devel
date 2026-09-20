@@ -49,7 +49,7 @@ const BOS_STATE_CREW_ROLES = [
  * Geographic entity types that use the public / teammate / admin audience tiers
  * and the banner hero.
  */
-const BOS_STATE_GEO_ENTITIES = ['state', 'county'];
+const BOS_STATE_GEO_ENTITIES = ['state', 'county', 'city'];
 
 /**
  * Per-geo-type description field (for the meta description).
@@ -57,6 +57,7 @@ const BOS_STATE_GEO_ENTITIES = ['state', 'county'];
 const BOS_STATE_GEO_DESC = [
   'state' => 'field_state_description',
   'county' => 'field_county_description',
+  'city' => 'field_city_description',
 ];
 
 /**
@@ -108,7 +109,8 @@ function bos_state_preprocess_page(array &$variables) {
       '#theme' => 'bo_hero_banner',
       '#images' => _bos_state_banner_images($state),
       '#title' => $state->label(),
-      '#subtitle' => '',
+      // Rotating caption under the title = each banner image's alt text.
+      '#alt_subtitle' => TRUE,
     ];
     $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
   }
@@ -226,9 +228,13 @@ function _bos_state_banner_images(EntityInterface $state): array {
       continue;
     }
     $uri = $file->getFileUri();
+    $alt = (string) $item->alt;
     $images[] = [
       'src' => $style ? $style->buildUrl($uri) : \Drupal::service('file_url_generator')->generateAbsoluteString($uri),
-      'alt' => (string) ($item->alt ?: $state->label()),
+      // alt for the <img> falls back to the label (a11y); caption is the raw
+      // alt used as the rotating subtitle (empty = no caption for that slide).
+      'alt' => $alt !== '' ? $alt : $state->label(),
+      'caption' => $alt,
     ];
   }
   return $images;

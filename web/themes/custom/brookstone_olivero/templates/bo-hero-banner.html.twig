@@ -4,25 +4,33 @@
  * Full-bleed rotating banner hero with title overlay.
  *
  * Variables:
- * - images: list of { src, alt }.
+ * - images: list of { src, alt, caption }.
  * - title: overlay heading (H1).
- * - subtitle: optional overlay line under the title.
+ * - subtitle: optional static line under the title.
+ * - alt_subtitle: when TRUE, the subtitle shows the current image's caption
+ *   (its alt text) and changes as the slides rotate.
  *
  * JS (brookstone_olivero/bo_hero) crossfades the slides, wires the dots and
- * swipe, and honors prefers-reduced-motion. With one image it's a static hero.
+ * swipe, updates the rotating caption, and honors prefers-reduced-motion. With
+ * one image it's a static hero.
  */
 #}
-<section class="bo-hero{{ images|length > 1 ? ' bo-hero--rotating' : '' }}" data-bo-hero>
+<section class="bo-hero{{ images|length > 1 ? ' bo-hero--rotating' : '' }}" data-bo-hero{{ alt_subtitle ? ' data-bo-alt-subtitle' : '' }}>
   <div class="bo-hero__slides">
     {% for img in images %}
       <img class="bo-hero__img{{ loop.first ? ' is-active' : '' }}"
            src="{{ img.src }}" alt="{{ img.alt }}"
+           data-bo-caption="{{ img.caption }}"
            {{ loop.first ? '' : 'loading="lazy"' }}>
     {% endfor %}
   </div>
   <div class="bo-hero__scrim">
     {% if title %}<h1 class="bo-hero__title">{{ title }}</h1>{% endif %}
-    {% if subtitle %}<p class="bo-hero__subtitle">{{ subtitle }}</p>{% endif %}
+    {% if alt_subtitle %}
+      <p class="bo-hero__subtitle" data-bo-hero-subtitle{{ images.0.caption ? '' : ' hidden' }}>{{ images.0.caption }}</p>
+    {% elseif subtitle %}
+      <p class="bo-hero__subtitle">{{ subtitle }}</p>
+    {% endif %}
   </div>
   {% if images|length > 1 %}
     <div class="bo-hero__dots" role="tablist" aria-label="Banner images">

@@ -107,14 +107,6 @@ $default = [
       'query_aggregation' => FALSE, 'inherit_arguments' => FALSE, 'inherit_exposed_filters' => FALSE,
       'hide_empty' => TRUE, 'empty' => '', 'view_to_insert' => 'state_county_towns:default',
     ],
-    // Edit link — only renders for users with edit access (office/admin).
-    // hide_empty so anon (no access = empty) doesn't get an empty wrapper.
-    'edit_county' => [
-      'id' => 'edit_county', 'table' => 'county', 'field' => 'edit_county', 'relationship' => 'none',
-      'plugin_id' => 'entity_link_edit', 'label' => '', 'exclude' => FALSE,
-      'text' => 'Edit county', 'output_url_as_text' => FALSE,
-      'hide_empty' => TRUE, 'empty_zero' => FALSE, 'hide_alter_empty' => TRUE,
-    ],
   ],
   'arguments' => [
     'field_state_target_id' => [

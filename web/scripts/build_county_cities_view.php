@@ -40,12 +40,6 @@ $default = [
       'relationship' => 'none', 'plugin_id' => 'field', 'label' => '', 'exclude' => FALSE,
       'type' => 'text_trimmed', 'settings' => ['trim_length' => 180],
     ],
-    'edit_city' => [
-      'id' => 'edit_city', 'table' => 'city', 'field' => 'edit_city', 'relationship' => 'none',
-      'plugin_id' => 'entity_link_edit', 'label' => '', 'exclude' => FALSE,
-      'text' => 'Edit town', 'output_url_as_text' => FALSE,
-      'hide_empty' => TRUE, 'hide_alter_empty' => TRUE,
-    ],
   ],
   'arguments' => [
     'field_county_target_id' => [

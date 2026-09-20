@@ -134,19 +134,34 @@ function bos_state_metatags_alter(array &$metatags, array $context) {
   if (!isset(BOS_STATE_GEO_DESC[$type])) {
     return;
   }
+
+  // Honor a per-entity Meta tags override (field_meta_tags): whatever the office
+  // set there wins, so only auto-fill the tags they left blank. Metatag 2.x
+  // stores the field as JSON.
+  $override = [];
+  if ($entity->hasField('field_meta_tags') && !$entity->get('field_meta_tags')->isEmpty()) {
+    $override = json_decode((string) $entity->get('field_meta_tags')->value, TRUE) ?: [];
+  }
+
   $descField = BOS_STATE_GEO_DESC[$type];
-  if ($entity->hasField($descField) && !$entity->get($descField)->isEmpty()) {
+  if ($entity->hasField($descField) && !$entity->get($descField)->isEmpty()
+    && (empty($override['description']) || empty($override['og_description']))) {
     // Replace tags with a space (not strip) so block breaks don't glue words.
     $desc = trim(preg_replace('/\s+/', ' ', preg_replace('/<[^>]+>/', ' ', (string) $entity->get($descField)->value)));
     if (mb_strlen($desc) > 300) {
       $desc = rtrim(mb_substr($desc, 0, 297)) . '…';
     }
     if ($desc !== '') {
-      $metatags['description'] = $desc;
-      $metatags['og_description'] = $desc;
+      if (empty($override['description'])) {
+        $metatags['description'] = $desc;
+      }
+      if (empty($override['og_description'])) {
+        $metatags['og_description'] = $desc;
+      }
     }
   }
-  if ($entity->hasField('field_banner_image') && !$entity->get('field_banner_image')->isEmpty()) {
+  if (empty($override['og_image'])
+    && $entity->hasField('field_banner_image') && !$entity->get('field_banner_image')->isEmpty()) {
     $file = $entity->get('field_banner_image')->entity;
     $style = ImageStyle::load('max_1300x1300');
     if ($file && $style) {

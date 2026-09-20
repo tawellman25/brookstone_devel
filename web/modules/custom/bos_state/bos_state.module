@@ -85,6 +85,18 @@ function bos_state_preprocess_page(array &$variables) {
 }
 
 /**
+ * Implements hook_preprocess_HOOK() for html.
+ *
+ * Tag state hero pages so the shared hero CSS collapses Olivero's large top
+ * padding above the breadcrumb (same as the services hero pages).
+ */
+function bos_state_preprocess_html(array &$variables) {
+  if (_bos_state_banner_entity()) {
+    $variables['attributes']['class'][] = 'has-bo-hero';
+  }
+}
+
+/**
  * Implements hook_preprocess_HOOK() for eck_entity.
  *
  * Hide the raw stacked banner field on the state render — it shows as the hero.

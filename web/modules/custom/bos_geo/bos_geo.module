@@ -13,12 +13,20 @@
  *   - Admin    (office/admin):   the `admin` view mode — everything.
  * A published record is publicly viewable (its canonical page IS the public
  * page); the view modes + displays are created by setup_geo_view_modes.php.
+ *
+ * This module also owns the geo pages' presentation (merged from the former
+ * bos_state module, 2026-09-20): the Top Banner full-bleed rotating hero, the
+ * SEO meta tags (auto description/OG + the per-entity field_meta_tags override),
+ * and the footer "Service Area" name→page links.
  */
 
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityPublishedInterface;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\image\Entity\ImageStyle;
 
 /**
  * Geographic entity types this module governs.
@@ -27,8 +35,11 @@ const BOS_GEO_TYPES = ['city', 'county', 'state', 'zipcodes'];
 
 /**
  * Office/admin roles — see the `admin` view mode (settings + everything).
+ * Supervisor is here (preserving the pre-consolidation behavior, when the former
+ * bos_state module placed supervisors in the office/admin tier).
  */
 const BOS_GEO_ADMIN_ROLES = [
+  'supervisor',
   'administration',
   'site_assistant',
   'site_admin',
@@ -37,12 +48,20 @@ const BOS_GEO_ADMIN_ROLES = [
 
 /**
  * Crew roles — see the `teammate` view mode. Everyone else gets `public`.
- * (Supervisor sits with the crew here; move it to BOS_GEO_ADMIN_ROLES if office
- * treats supervisors as admin on these pages.)
  */
 const BOS_GEO_TEAMMATE_ROLES = [
   'teammates',
-  'supervisor',
+];
+
+/**
+ * Geo entity types that carry a Top Banner hero + SEO meta (state/county/city).
+ * Maps each to its own description field (used for the auto meta description).
+ * Zipcodes have no hero/description page, so they are excluded here.
+ */
+const BOS_GEO_BANNER_DESC = [
+  'state' => 'field_state_description',
+  'county' => 'field_county_description',
+  'city' => 'field_city_description',
 ];
 
 /**
@@ -98,4 +117,282 @@ function bos_geo_entity_view(array &$build, EntityInterface $entity, $display, $
   if (in_array($entity->getEntityTypeId(), BOS_GEO_TYPES, TRUE)) {
     $build['#cache']['contexts'][] = 'user.roles';
   }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for block.
+ *
+ * Link the county + city names in the footer "Service Area" block to their geo
+ * landing pages. The block body is plain editorial text (two lines — a counties
+ * line and a "·"-separated city line); this leaves the wording exactly as typed
+ * and only wraps names that have a PUBLISHED geo page in a link. Names on the
+ * counties line link to counties (+ "Colorado" to the state); names on the city
+ * line link to cities — so "Delta" resolves to the county on one line and the
+ * city on the other. Unknown names stay plain text.
+ */
+function bos_geo_preprocess_block(array &$variables) {
+  if (($variables['elements']['#base_plugin_id'] ?? '') !== 'block_content') {
+    return;
+  }
+  $bc = $variables['content']['#block_content'] ?? NULL;
+  if (!$bc instanceof EntityInterface || $bc->bundle() !== 'footer_service_area'
+    || !$bc->hasField('field_fsa_body') || $bc->get('field_fsa_body')->isEmpty()) {
+    return;
+  }
+
+  [$countyMap, $cityMap, $stateMap] = _bos_geo_footer_link_maps();
+  if (!$countyMap && !$cityMap && !$stateMap) {
+    return;
+  }
+
+  $lines = preg_split('/\r\n|\r|\n/', (string) $bc->get('field_fsa_body')->value);
+  $out = [];
+  foreach ($lines as $line) {
+    if (trim($line) === '') {
+      $out[] = '';
+    }
+    elseif (mb_strpos($line, '·') !== FALSE) {
+      // The city list — exact segment match keeps multi-word names ("Orchard
+      // City") intact.
+      $segments = [];
+      foreach (explode('·', $line) as $part) {
+        $label = trim($part);
+        if ($label === '') {
+          continue;
+        }
+        $url = $cityMap[mb_strtolower($label)] ?? NULL;
+        $segments[] = $url
+          ? '<a href="' . Html::escape($url) . '">' . Html::escape($label) . '</a>'
+          : Html::escape($label);
+      }
+      $out[] = implode(' · ', $segments);
+    }
+    else {
+      // Prose (counties + state) — one left-to-right pass so freshly inserted
+      // link markup is never re-scanned.
+      $out[] = _bos_geo_footer_link_prose($line, $countyMap + $stateMap);
+    }
+  }
+
+  $variables['fsa_body'] = Markup::create(implode("<br>\n", $out));
+  // Rebuild the footer when a geo record is published/renamed/removed.
+  $variables['#cache']['tags'][] = 'county_list';
+  $variables['#cache']['tags'][] = 'city_list';
+  $variables['#cache']['tags'][] = 'state_list';
+}
+
+/**
+ * Build published short-name => URL maps for [counties, cities, state].
+ */
+function _bos_geo_footer_link_maps(): array {
+  $etm = \Drupal::entityTypeManager();
+  $countyMap = $cityMap = $stateMap = [];
+
+  $strip = [
+    'county' => '/\s+County$/i',
+    'city' => '/^(?:City|Town)\s+of\s+/i',
+    'state' => '/^State\s+of\s+/i',
+  ];
+  foreach (['county' => &$countyMap, 'city' => &$cityMap, 'state' => &$stateMap] as $type => &$map) {
+    $storage = $etm->getStorage($type);
+    foreach ($storage->loadMultiple($storage->getQuery()->accessCheck(FALSE)->execute()) as $entity) {
+      if ($entity instanceof EntityPublishedInterface && !$entity->isPublished()) {
+        continue;
+      }
+      $short = trim(preg_replace($strip[$type], '', $entity->label()));
+      if ($short !== '') {
+        $map[mb_strtolower($short)] = $entity->toUrl()->toString();
+      }
+    }
+  }
+  unset($map);
+
+  return [$countyMap, $cityMap, $stateMap];
+}
+
+/**
+ * Link known whole-word names in a prose line (longest name first), one pass.
+ */
+function _bos_geo_footer_link_prose(string $line, array $map): string {
+  $keys = array_keys($map);
+  usort($keys, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
+  $alt = implode('|', array_map(fn($k) => preg_quote($k, '/'), $keys));
+  if ($alt === '') {
+    return Html::escape($line);
+  }
+  return preg_replace_callback('/\b(' . $alt . ')\b/iu', function ($m) use ($map) {
+    $url = $map[mb_strtolower($m[1])] ?? NULL;
+    return $url
+      ? '<a href="' . Html::escape($url) . '">' . Html::escape($m[1]) . '</a>'
+      : $m[0];
+  }, Html::escape($line));
+}
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * Attach the county-card styling when the "Counties/Towns We Serve" EVAs render.
+ */
+function bos_geo_views_pre_render(\Drupal\views\ViewExecutable $view) {
+  if (in_array($view->id(), ['state_counties', 'county_cities'], TRUE)) {
+    $view->element['#attached']['library'][] = 'bos_geo/county_cards';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for page.
+ *
+ * Put the geo record's banner hero in the top "hero" region on its canonical
+ * page (reuses the shared brookstone_olivero bo_hero piece, like services).
+ */
+function bos_geo_preprocess_page(array &$variables) {
+  if ($entity = _bos_geo_banner_entity()) {
+    $variables['page']['hero']['bo_hero_banner'] = [
+      '#theme' => 'bo_hero_banner',
+      '#images' => _bos_geo_banner_images($entity),
+      '#title' => $entity->label(),
+      // Rotating caption under the title = each banner image's alt text.
+      '#alt_subtitle' => TRUE,
+    ];
+    $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
+  }
+}
+
+/**
+ * Implements hook_metatags_alter().
+ *
+ * Give the geo page a real meta description + og:description from its own
+ * description field and its banner as the og:image (image-style derivative,
+ * FB-safe). A per-entity Meta tags override (field_meta_tags) wins — only the
+ * tags the office left blank are auto-filled. Altering the tag VALUES during
+ * generation sticks on entity pages where editing rendered attachments does not.
+ */
+function bos_geo_metatags_alter(array &$metatags, array $context) {
+  $entity = $context['entity'] ?? NULL;
+  if (!$entity instanceof EntityInterface) {
+    return;
+  }
+  $type = $entity->getEntityTypeId();
+  if (!isset(BOS_GEO_BANNER_DESC[$type])) {
+    return;
+  }
+
+  // Honor a per-entity Meta tags override (field_meta_tags): whatever the office
+  // set there wins, so only auto-fill the tags they left blank. Metatag 2.x
+  // stores the field as JSON.
+  $override = [];
+  if ($entity->hasField('field_meta_tags') && !$entity->get('field_meta_tags')->isEmpty()) {
+    $override = json_decode((string) $entity->get('field_meta_tags')->value, TRUE) ?: [];
+  }
+
+  $descField = BOS_GEO_BANNER_DESC[$type];
+  if ($entity->hasField($descField) && !$entity->get($descField)->isEmpty()
+    && (empty($override['description']) || empty($override['og_description']))) {
+    // Replace tags with a space (not strip) so block breaks don't glue words.
+    $desc = trim(preg_replace('/\s+/', ' ', preg_replace('/<[^>]+>/', ' ', (string) $entity->get($descField)->value)));
+    if (mb_strlen($desc) > 300) {
+      $desc = rtrim(mb_substr($desc, 0, 297)) . '…';
+    }
+    if ($desc !== '') {
+      if (empty($override['description'])) {
+        $metatags['description'] = $desc;
+      }
+      if (empty($override['og_description'])) {
+        $metatags['og_description'] = $desc;
+      }
+    }
+  }
+  if (empty($override['og_image'])
+    && $entity->hasField('field_banner_image') && !$entity->get('field_banner_image')->isEmpty()) {
+    $file = $entity->get('field_banner_image')->entity;
+    $style = ImageStyle::load('max_1300x1300');
+    if ($file && $style) {
+      $metatags['og_image'] = $style->buildUrl($file->getFileUri());
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for html.
+ *
+ * Tag geo hero pages so the shared hero CSS collapses Olivero's large top
+ * padding above the breadcrumb (same as the services hero pages).
+ */
+function bos_geo_preprocess_html(array &$variables) {
+  if (_bos_geo_banner_entity()) {
+    $variables['attributes']['class'][] = 'has-bo-hero';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for eck_entity.
+ *
+ * Hide the raw stacked banner field on the geo render — it shows as the hero.
+ */
+function bos_geo_preprocess_eck_entity(array &$variables) {
+  $entity = $variables['entity'] ?? ($variables['elements']['#eck_entity'] ?? NULL);
+  if ($entity instanceof EntityInterface && isset(BOS_GEO_BANNER_DESC[$entity->getEntityTypeId()])
+    && isset($variables['content']['field_banner_image'])) {
+    $variables['content']['field_banner_image']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_block_access().
+ *
+ * The hero carries the geo name as the page's H1, so hide the core page-title
+ * block on a geo page that has a banner (avoids a duplicate title).
+ */
+function bos_geo_block_access($block, $operation, AccountInterface $account) {
+  if ($operation !== 'view' || $block->getPluginId() !== 'page_title_block') {
+    return AccessResult::neutral();
+  }
+  $entity = _bos_geo_banner_entity();
+  return AccessResult::forbiddenIf((bool) $entity)
+    ->addCacheContexts(['route'])
+    ->addCacheableDependency($entity ?: $block);
+}
+
+/**
+ * The geo entity (state/county/city) on the current canonical page that has a
+ * banner, or NULL.
+ */
+function _bos_geo_banner_entity(): ?EntityInterface {
+  $rm = \Drupal::routeMatch();
+  $route = $rm->getRouteName();
+  foreach (array_keys(BOS_GEO_BANNER_DESC) as $type) {
+    if ($route === "entity.$type.canonical") {
+      $e = $rm->getParameter($type);
+      if ($e instanceof EntityInterface && $e->hasField('field_banner_image')
+        && !$e->get('field_banner_image')->isEmpty()) {
+        return $e;
+      }
+      return NULL;
+    }
+  }
+  return NULL;
+}
+
+/**
+ * Build the banner image list [{src, alt, caption}] for a geo entity, or [].
+ */
+function _bos_geo_banner_images(EntityInterface $entity): array {
+  $style = ImageStyle::load('max_2600x2600');
+  $images = [];
+  foreach ($entity->get('field_banner_image') as $item) {
+    $file = $item->entity;
+    if (!$file) {
+      continue;
+    }
+    $uri = $file->getFileUri();
+    $alt = (string) $item->alt;
+    $images[] = [
+      'src' => $style ? $style->buildUrl($uri) : \Drupal::service('file_url_generator')->generateAbsoluteString($uri),
+      // alt for the <img> falls back to the label (a11y); caption is the raw
+      // alt used as the rotating subtitle (empty = no caption for that slide).
+      'alt' => $alt !== '' ? $alt : $entity->label(),
+      'caption' => $alt,
+    ];
+  }
+  return $images;
 }

@@ -7,5 +7,10 @@
 {% set b = content['#block_content'] %}
 <div{{ attributes.addClass('footer-col', 'footer-col--area') }}>
   {% if b.field_fsa_heading.value %}<h2 class="footer-col__heading">{{ b.field_fsa_heading.value }}</h2>{% endif %}
-  {% if b.field_fsa_body.value %}<div class="footer-area__body">{{ b.field_fsa_body.value|nl2br }}</div>{% endif %}
+  {% if fsa_body is defined and fsa_body %}
+    {# bos_geo links the county/city names to their landing pages. #}
+    <div class="footer-area__body">{{ fsa_body }}</div>
+  {% elseif b.field_fsa_body.value %}
+    <div class="footer-area__body">{{ b.field_fsa_body.value|nl2br }}</div>
+  {% endif %}
 </div>

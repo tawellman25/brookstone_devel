@@ -1,0 +1,98 @@
+/**
+ * "Counties We Serve" cards on the state page (state_counties EVA), with the
+ * per-county towns list (state_county_towns) rendered inline, dot-separated.
+ */
+
+.state-counties__title {
+  margin: 2.5rem 0 1rem;
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  color: var(--bo-ink, #1a1613);
+}
+
+.view-state-counties .view-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.state-county-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--bo-sand, #e7dcc9);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.state-county-card .views-field-field-banner-image img {
+  display: block;
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+}
+
+.state-county-card .views-field-title {
+  padding: 1rem 1.1rem 0;
+}
+
+.state-county-card .views-field-title a {
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  color: var(--bo-ink, #1a1613);
+  text-decoration: none;
+}
+
+.state-county-card .views-field-title a:hover {
+  color: var(--bo-orange, #cb6015);
+}
+
+.state-county-card .views-field-field-county-description {
+  padding: 0.4rem 1.1rem 0;
+  color: var(--bo-muted, #6b5d4f);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.state-county-card .views-field-view {
+  padding: 0.75rem 1.1rem 1.1rem;
+  margin-top: auto;
+}
+
+.state-county-card .views-field-view .views-label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bo-muted, #6b5d4f);
+}
+
+/* Towns: the nested view (views_field_view) renders bare .views-row rows inside
+   the towns field — flow them inline, " · " separated. Scoped under
+   .views-field-view so it never touches the county cards (also .views-row). */
+.state-county-card .views-field-view .field-content,
+.state-county-card .views-field-view .views-row,
+.state-county-card .views-field-view .views-row .views-field,
+.state-county-card .views-field-view .views-row .field-content {
+  display: inline;
+}
+
+.state-county-card .views-field-view .views-row:not(:last-child)::after {
+  content: " · ";
+  color: var(--bo-muted, #6b5d4f);
+}
+
+.state-county-card .views-field-view a {
+  color: var(--bo-orange, #cb6015);
+  text-decoration: none;
+}
+
+.state-county-card .views-field-view a:hover {
+  text-decoration: underline;
+}

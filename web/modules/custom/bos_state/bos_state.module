@@ -14,6 +14,18 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\image\Entity\ImageStyle;
+use Drupal\views\ViewExecutable;
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * Attach the county-card styling when the "Counties We Serve" EVA renders.
+ */
+function bos_state_views_pre_render(ViewExecutable $view) {
+  if ($view->id() === 'state_counties') {
+    $view->element['#attached']['library'][] = 'bos_state/county_cards';
+  }
+}
 
 /**
  * Office/admin roles that see the `admin` state display (top tier).

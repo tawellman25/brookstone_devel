@@ -73,10 +73,12 @@
   color: var(--bo-muted, #6b5d4f);
 }
 
-/* Towns: the nested view (views_field_view) renders bare .views-row rows inside
-   the towns field — flow them inline, " · " separated. Scoped under
-   .views-field-view so it never touches the county cards (also .views-row). */
+/* Towns: the nested view (views_field_view) renders a .view wrapper of bare
+   .views-row rows inside the towns field — flow them inline, " · " separated.
+   Scoped under .views-field-view so it never touches the county cards (which are
+   also .views-row). */
 .state-county-card .views-field-view .field-content,
+.state-county-card .views-field-view .view,
 .state-county-card .views-field-view .views-row,
 .state-county-card .views-field-view .views-row .views-field,
 .state-county-card .views-field-view .views-row .field-content {
@@ -94,5 +96,21 @@
 }
 
 .state-county-card .views-field-view a:hover {
+  text-decoration: underline;
+}
+
+/* Edit link (admins only) — subtle, at the bottom of the card. */
+.state-county-card .views-field-edit-county {
+  padding: 0 1.1rem 1rem;
+}
+
+.state-county-card .views-field-edit-county a {
+  font-size: 0.85rem;
+  color: var(--bo-muted, #6b5d4f);
+  text-decoration: none;
+}
+
+.state-county-card .views-field-edit-county a:hover {
+  color: var(--bo-orange, #cb6015);
   text-decoration: underline;
 }

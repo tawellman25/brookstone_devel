@@ -85,6 +85,73 @@ function bos_state_preprocess_page(array &$variables) {
 }
 
 /**
+ * Implements hook_metatags_attachments_alter().
+ *
+ * Give the state page a real meta description + og:description from its own
+ * field_state_description (the page had none — only the generic global default),
+ * and use its banner as the og:image (image-style derivative, FB-safe). Editing
+ * Metatag's build avoids duplicate tags.
+ */
+function bos_state_metatags_attachments_alter(array &$metatag_attachments) {
+  $state = _bos_state_current();
+  if (!$state) {
+    return;
+  }
+  $values = [];
+  if ($state->hasField('field_state_description') && !$state->get('field_state_description')->isEmpty()) {
+    $desc = trim(preg_replace('/\s+/', ' ', strip_tags((string) $state->get('field_state_description')->value)));
+    if (mb_strlen($desc) > 300) {
+      $desc = rtrim(mb_substr($desc, 0, 297)) . '…';
+    }
+    if ($desc !== '') {
+      $values['description'] = $desc;
+      $values['og_description'] = $desc;
+    }
+  }
+  if ($state->hasField('field_banner_image') && !$state->get('field_banner_image')->isEmpty()) {
+    $file = $state->get('field_banner_image')->entity;
+    $style = ImageStyle::load('max_1300x1300');
+    if ($file && $style) {
+      $values['og_image'] = $style->buildUrl($file->getFileUri());
+    }
+  }
+  if (!$values) {
+    return;
+  }
+  // Edit existing tags in place (Metatag suffixes multi-value tags e.g. og_image_0);
+  // add any that weren't in the defaults.
+  $seen = [];
+  foreach ($metatag_attachments['#attached']['html_head'] ?? [] as &$item) {
+    $norm = preg_replace('/_\d+$/', '', $item[1] ?? '');
+    if (isset($values[$norm])) {
+      $item[0]['#attributes']['content'] = $values[$norm];
+      $seen[$norm] = TRUE;
+    }
+  }
+  unset($item);
+  $meta = ['description' => ['name', 'description'], 'og_description' => ['property', 'og:description'], 'og_image' => ['property', 'og:image']];
+  foreach ($values as $key => $content) {
+    if (empty($seen[$key])) {
+      $metatag_attachments['#attached']['html_head'][] = [
+        ['#tag' => 'meta', '#attributes' => [$meta[$key][0] => $meta[$key][1], 'content' => $content]],
+        $key === 'og_image' ? 'og_image_0' : $key,
+      ];
+    }
+  }
+}
+
+/**
+ * The state entity on the current canonical page, or NULL.
+ */
+function _bos_state_current(): ?EntityInterface {
+  if (\Drupal::routeMatch()->getRouteName() !== 'entity.state.canonical') {
+    return NULL;
+  }
+  $state = \Drupal::routeMatch()->getParameter('state');
+  return $state instanceof EntityInterface ? $state : NULL;
+}
+
+/**
  * Implements hook_preprocess_HOOK() for html.
  *
  * Tag state hero pages so the shared hero CSS collapses Olivero's large top

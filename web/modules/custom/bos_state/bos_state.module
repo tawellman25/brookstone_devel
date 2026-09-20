@@ -22,7 +22,7 @@ use Drupal\views\ViewExecutable;
  * Attach the county-card styling when the "Counties We Serve" EVA renders.
  */
 function bos_state_views_pre_render(ViewExecutable $view) {
-  if ($view->id() === 'state_counties') {
+  if (in_array($view->id(), ['state_counties', 'county_cities'], TRUE)) {
     $view->element['#attached']['library'][] = 'bos_state/county_cards';
   }
 }
@@ -46,9 +46,18 @@ const BOS_STATE_CREW_ROLES = [
 ];
 
 /**
- * Geographic entity types that use the public / teammate / admin audience tiers.
+ * Geographic entity types that use the public / teammate / admin audience tiers
+ * and the banner hero.
  */
 const BOS_STATE_GEO_ENTITIES = ['state', 'county'];
+
+/**
+ * Per-geo-type description field (for the meta description).
+ */
+const BOS_STATE_GEO_DESC = [
+  'state' => 'field_state_description',
+  'county' => 'field_county_description',
+];
 
 /**
  * Implements hook_entity_view_mode_alter().
@@ -116,12 +125,17 @@ function bos_state_preprocess_page(array &$variables) {
  */
 function bos_state_metatags_alter(array &$metatags, array $context) {
   $entity = $context['entity'] ?? NULL;
-  if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'state') {
+  if (!$entity instanceof EntityInterface) {
     return;
   }
-  if ($entity->hasField('field_state_description') && !$entity->get('field_state_description')->isEmpty()) {
+  $type = $entity->getEntityTypeId();
+  if (!isset(BOS_STATE_GEO_DESC[$type])) {
+    return;
+  }
+  $descField = BOS_STATE_GEO_DESC[$type];
+  if ($entity->hasField($descField) && !$entity->get($descField)->isEmpty()) {
     // Replace tags with a space (not strip) so block breaks don't glue words.
-    $desc = trim(preg_replace('/\s+/', ' ', preg_replace('/<[^>]+>/', ' ', (string) $entity->get('field_state_description')->value)));
+    $desc = trim(preg_replace('/\s+/', ' ', preg_replace('/<[^>]+>/', ' ', (string) $entity->get($descField)->value)));
     if (mb_strlen($desc) > 300) {
       $desc = rtrim(mb_substr($desc, 0, 297)) . '…';
     }
@@ -158,7 +172,7 @@ function bos_state_preprocess_html(array &$variables) {
  */
 function bos_state_preprocess_eck_entity(array &$variables) {
   $entity = $variables['entity'] ?? ($variables['elements']['#eck_entity'] ?? NULL);
-  if ($entity instanceof EntityInterface && $entity->getEntityTypeId() === 'state'
+  if ($entity instanceof EntityInterface && in_array($entity->getEntityTypeId(), BOS_STATE_GEO_ENTITIES, TRUE)
     && isset($variables['content']['field_banner_image'])) {
     $variables['content']['field_banner_image']['#access'] = FALSE;
   }
@@ -181,22 +195,27 @@ function bos_state_block_access($block, $operation, AccountInterface $account) {
 }
 
 /**
- * The state entity on the current canonical page that has a banner, or NULL.
+ * The geo entity (state/county) on the current canonical page that has a banner,
+ * or NULL.
  */
 function _bos_state_banner_entity(): ?EntityInterface {
-  if (\Drupal::routeMatch()->getRouteName() !== 'entity.state.canonical') {
-    return NULL;
-  }
-  $state = \Drupal::routeMatch()->getParameter('state');
-  if ($state instanceof EntityInterface && $state->hasField('field_banner_image')
-    && !$state->get('field_banner_image')->isEmpty()) {
-    return $state;
+  $rm = \Drupal::routeMatch();
+  $route = $rm->getRouteName();
+  foreach (BOS_STATE_GEO_ENTITIES as $type) {
+    if ($route === "entity.$type.canonical") {
+      $e = $rm->getParameter($type);
+      if ($e instanceof EntityInterface && $e->hasField('field_banner_image')
+        && !$e->get('field_banner_image')->isEmpty()) {
+        return $e;
+      }
+      return NULL;
+    }
   }
   return NULL;
 }
 
 /**
- * Build the banner image list [{src, alt}] for a state, or [].
+ * Build the banner image list [{src, alt}] for a geo entity, or [].
  */
 function _bos_state_banner_images(EntityInterface $state): array {
   $style = ImageStyle::load('max_2600x2600');

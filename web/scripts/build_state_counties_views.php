@@ -85,11 +85,6 @@ $default = [
   'style' => ['type' => 'default', 'options' => ['row_class' => 'state-county-card', 'default_row_class' => TRUE]],
   'row' => ['type' => 'fields'],
   'fields' => [
-    'field_banner_image' => [
-      'id' => 'field_banner_image', 'table' => 'county__field_banner_image', 'field' => 'field_banner_image',
-      'relationship' => 'none', 'plugin_id' => 'field', 'label' => '', 'exclude' => FALSE,
-      'type' => 'image', 'settings' => ['image_style' => 'medium', 'image_link' => 'content'],
-    ],
     'title' => [
       'id' => 'title', 'table' => 'county_field_data', 'field' => 'title', 'relationship' => 'none',
       'entity_type' => 'county', 'entity_field' => 'title', 'plugin_id' => 'field', 'label' => '',

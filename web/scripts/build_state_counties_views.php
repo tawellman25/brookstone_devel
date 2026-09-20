@@ -95,10 +95,10 @@ $default = [
       'entity_type' => 'county', 'entity_field' => 'title', 'plugin_id' => 'field', 'label' => '',
       'exclude' => FALSE, 'type' => 'string', 'settings' => ['link_to_entity' => TRUE],
     ],
-    'field_county_description' => [
-      'id' => 'field_county_description', 'table' => 'county__field_county_description', 'field' => 'field_county_description',
+    'field_county_summary' => [
+      'id' => 'field_county_summary', 'table' => 'county__field_county_summary', 'field' => 'field_county_summary',
       'relationship' => 'none', 'plugin_id' => 'field', 'label' => '', 'exclude' => FALSE,
-      'type' => 'text_trimmed', 'settings' => ['trim_length' => 220],
+      'type' => 'basic_string', 'settings' => [],
     ],
     'id' => [
       'id' => 'id', 'table' => 'county_field_data', 'field' => 'id', 'relationship' => 'none',

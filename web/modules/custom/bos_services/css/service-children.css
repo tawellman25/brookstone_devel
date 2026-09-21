@@ -5,24 +5,31 @@
  */
 
 .service-children__title {
-  margin: 2.5rem 0 1rem;
+  margin: 2.5rem 0 0;
   font-family: Oswald, "Arial Narrow", sans-serif;
   font-weight: 600;
   font-size: clamp(1.4rem, 3vw, 1.9rem);
   color: var(--bo-ink, #1a1613);
 }
 
-.view-service-children .view-content {
+/* The EVA renders rows directly under .view (no .view-content wrapper), with the
+   heading in a <header>. Grid the view itself; the header spans all columns. */
+.view-service-children {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.9rem;
 }
 
 @media (min-width: 34rem) {
-  .view-service-children .view-content {
+  .view-service-children {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 1.1rem;
   }
+}
+
+.view-service-children > header {
+  grid-column: 1 / -1;
+  margin-bottom: 0.25rem;
 }
 
 .view-service-children .service-card {

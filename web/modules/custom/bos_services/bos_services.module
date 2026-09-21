@@ -40,6 +40,28 @@ function bos_services_views_pre_render(ViewExecutable $view) {
 }
 
 /**
+ * Implements hook_preprocess_HOOK() for views_view_field.
+ *
+ * Child-service cards use the public-description field's SUMMARY as the blurb
+ * (office writes a short, card-specific line there; the full description is the
+ * in-depth copy on the service page itself). Show the summary ONLY — blank when
+ * there is none — so a card never dumps trimmed body HTML (headings, etc.).
+ */
+function bos_services_preprocess_views_view_field(array &$variables) {
+  if ($variables['view']->id() !== 'service_children'
+    || ($variables['field']->field ?? '') !== 'field_service_public_desc') {
+    return;
+  }
+  $term = $variables['row']->_entity ?? NULL;
+  $summary = '';
+  if ($term instanceof EntityInterface && $term->hasField('field_service_public_desc')
+    && ($item = $term->get('field_service_public_desc')->first())) {
+    $summary = trim(strip_tags((string) ($item->summary ?? '')));
+  }
+  $variables['output'] = $summary !== '' ? Html::escape($summary) : '';
+}
+
+/**
  * Office/admin roles that see the admin_view services display (top tier).
  */
 const BOS_SERVICES_OFFICE_ROLES = [

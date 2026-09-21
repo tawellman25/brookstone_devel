@@ -265,6 +265,29 @@ matching on the short name (stripping "County" / "City of" / "Town of"), **only 
 published records**, leaving the wording exactly as typed. Cache-tagged
 `county_list` / `city_list` / `state_list` so it rebuilds as records are published.
 
+## Child-listing cards (EVA of a term's children)
+
+To surface a taxonomy term's **direct children** as cards on the term's own page
+(e.g. "Our {Category} Services" on a services page), use an **EVA** — same shape as
+the geo "We Serve" cards but the argument is the term's *parent* field:
+- View base `taxonomy_term_field_data`; contextual argument
+  `taxonomy_term__parent.parent_target_id` (plugin `numeric`) fed the host term id
+  via EVA `argument_mode: id` → returns the terms whose parent IS the host = its
+  children. Filter `vid` + `status=1`.
+- Header area with `empty: false` so it renders **only when there are children** (a
+  leaf term shows nothing). A module `hook_views_pre_render` attaches the grid CSS
+  and rewrites the header to name the current term (read `$view->args[0]`).
+- **Compact responsive grid** (2-up mobile / 3–4-up desktop) so a long child list
+  never runs down the page — `grid-template-columns: repeat(2,1fr)` then
+  `repeat(auto-fill, minmax(220px,1fr))` at ≥34rem.
+- **Nests for free** at every depth (child page shows *its* children). Prefer this
+  over deepening the nav: Olivero's primary nav only collapses **two** levels (a
+  third renders flat), and in-page contextual links are better SEO than a giant
+  menu (descriptive anchors, topical clustering, no link-equity dilution).
+
+Reference impl: `bos_services` `service_children`
+(`web/scripts/build_service_children_view.php`), 2026-09-21.
+
 ## Status
 
 - Created 2026-06-21 (status-card pattern, from the My Schedule + backflow card work).
@@ -275,4 +298,6 @@ published records**, leaving the wording exactly as typed. Cache-tagged
 - 2026-09-20 — consolidated `bos_state` into `bos_geo` (one geo-presentation
   module); added the **per-entity meta-tags override** and **footer name-links**
   patterns; noted the ECK title-suppression opcache trap.
+- 2026-09-21 — added the **child-listing cards** pattern (EVA of a term's children,
+  `bos_services` service_children); note that Olivero's nav is two-level only.
 - Living document — add reusable BOS UI patterns here as they're established.

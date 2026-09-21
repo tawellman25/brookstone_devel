@@ -256,6 +256,22 @@ body.is-always-mobile-nav #block-bos-homepage-phone-mobile {
   .bo-brand__longlogo { max-height: 50px; max-width: 66vw; }
 }
 
+/* Off-canvas mobile menu: the secondary-menu utility row (phone + account +
+   search) collapses into the menu panel, where the phone number was butting
+   right against "My account" / "Log in". Stack those blocks with breathing room
+   so each sits on its own line. Scoped to the hamburger-active state only — the
+   desktop top-right utility row (>=75rem) keeps its inline layout. */
+body.is-always-mobile-nav .region--secondary-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding-block-start: 0.75rem;
+}
+body.is-always-mobile-nav .region--secondary-menu #block-bos-homepage-phone .bo-header-phone {
+  min-height: 44px;
+}
+
 /* Breadcrumb: set it apart from the serif body with the display font and a
    faint underline rule so it reads as a wayfinding strip, not body text. */
 .breadcrumb {

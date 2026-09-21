@@ -10,10 +10,34 @@
  * -> full.
  */
 
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\image\Entity\ImageStyle;
+use Drupal\taxonomy\Entity\Term;
+use Drupal\views\ViewExecutable;
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * The "Our {Category} Services" child-service cards EVA (service_children):
+ * attach the compact-grid styling and rewrite the header to name the current
+ * term. The view lists a term's direct children (arg = current term id); the
+ * header only renders when there ARE children, so a leaf service shows nothing.
+ */
+function bos_services_views_pre_render(ViewExecutable $view) {
+  if ($view->id() !== 'service_children') {
+    return;
+  }
+  $view->element['#attached']['library'][] = 'bos_services/service_children';
+
+  if (!empty($view->args[0]) && isset($view->header['area'])
+    && ($term = Term::load($view->args[0]))) {
+    $view->header['area']->options['content']['value'] =
+      '<h2 class="service-children__title">Our ' . Html::escape($term->label()) . ' Services</h2>';
+  }
+}
 
 /**
  * Office/admin roles that see the admin_view services display (top tier).

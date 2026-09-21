@@ -1,0 +1,65 @@
+/**
+ * "Our {Category} Services" child-service cards on a services term page
+ * (service_children EVA). Compact responsive grid — 2-up on phones, 3-4-up on
+ * wider screens — so a category's sub-services never run long down the page.
+ */
+
+.service-children__title {
+  margin: 2.5rem 0 1rem;
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  color: var(--bo-ink, #1a1613);
+}
+
+.view-service-children .view-content {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.9rem;
+}
+
+@media (min-width: 34rem) {
+  .view-service-children .view-content {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.1rem;
+  }
+}
+
+.view-service-children .service-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--bo-sand, #e7dcc9);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.9rem 1rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.view-service-children .service-card:hover {
+  border-color: var(--bo-orange, #cb6015);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.view-service-children .views-field-name {
+  margin-bottom: 0.25rem;
+}
+
+.view-service-children .views-field-name a {
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.02rem, 2.4vw, 1.2rem);
+  line-height: 1.15;
+  color: var(--bo-ink, #1a1613);
+  text-decoration: none;
+}
+
+.view-service-children .service-card:hover .views-field-name a,
+.view-service-children .views-field-name a:hover {
+  color: var(--bo-orange, #cb6015);
+}
+
+.view-service-children .views-field-field-service-public-desc {
+  color: var(--bo-muted, #6b5d4f);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}

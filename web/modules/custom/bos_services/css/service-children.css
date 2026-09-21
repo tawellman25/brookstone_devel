@@ -14,20 +14,20 @@
 
 /* The EVA renders rows directly under .view (no .view-content wrapper), with the
    heading in a <header>. Grid the view itself; the header spans all columns. */
-.view-service-children {
+.view.view-service-children {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.9rem;
 }
 
 @media (min-width: 34rem) {
-  .view-service-children {
+  .view.view-service-children {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 1.1rem;
   }
 }
 
-.view-service-children > header {
+.view.view-service-children > header {
   grid-column: 1 / -1;
   margin-bottom: 0.25rem;
 }

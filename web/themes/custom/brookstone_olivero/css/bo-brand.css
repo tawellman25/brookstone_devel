@@ -258,18 +258,35 @@ body.is-always-mobile-nav #block-bos-homepage-phone-mobile {
 
 /* Off-canvas mobile menu: the secondary-menu utility row (phone + account +
    search) collapses into the menu panel, where the phone number was butting
-   right against "My account" / "Log in". Stack those blocks with breathing room
-   so each sits on its own line. Scoped to the hamburger-active state only — the
-   desktop top-right utility row (>=75rem) keeps its inline layout. */
-body.is-always-mobile-nav .region--secondary-menu {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1.25rem;
+   right against "My account" / "Log in". Force each block onto its own full-width
+   line so they can't run together. Scoped to the hamburger state — keyed on BOTH
+   the viewport width (deterministic) and the JS `is-always-mobile-nav` class
+   (covers the wide band where a wrapped primary nav forces the hamburger). The
+   `#header-nav` id out-specifies Olivero's base `.region--secondary-menu` flex.
+   Desktop top-right utility row (>=75rem, not mobile-nav) keeps its inline row. */
+@media (max-width: 74.9375em) {
+  #header-nav .region--secondary-menu {
+    display: block;
+    padding-block-start: 0.75rem;
+  }
+  #header-nav .region--secondary-menu > * {
+    display: block;
+    width: 100%;
+    margin-block-end: 1.25rem;
+  }
+  #header-nav .region--secondary-menu > *:last-child { margin-block-end: 0; }
+}
+body.is-always-mobile-nav #header-nav .region--secondary-menu {
+  display: block;
   padding-block-start: 0.75rem;
 }
-body.is-always-mobile-nav .region--secondary-menu #block-bos-homepage-phone .bo-header-phone {
-  min-height: 44px;
+body.is-always-mobile-nav #header-nav .region--secondary-menu > * {
+  display: block;
+  width: 100%;
+  margin-block-end: 1.25rem;
+}
+body.is-always-mobile-nav #header-nav .region--secondary-menu > *:last-child {
+  margin-block-end: 0;
 }
 
 /* Breadcrumb: set it apart from the serif body with the display font and a

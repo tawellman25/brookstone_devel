@@ -1229,6 +1229,42 @@ Related: a view mode / xmlsitemap being **enabled** for an entity type does not
 make its pages public — anon still needs view access, and until then xmlsitemap
 stores each link `access=0` and omits it from the output sitemap (see `bos_geo`).
 
+## Module swap on live: restart lsphp before priming caches, or stale opcode bakes wrong results
+
+**Discovered 2026-09-20** (consolidating `bos_state` → `bos_geo`). After
+rsyncing new module code and swapping which module owns a set of hooks (uninstall
+one, its hooks now live in another), a `drush cr` alone is **not** enough on live.
+`drush` runs in **CLI**, which has its own fresh opcache and correctly rebuilds the
+hook registry — so CLI diagnostics (`function_exists`, `hasImplementations`, even a
+manual `$view->render()`) all look correct. But the **web `lsphp` workers keep a
+separate opcache**, and until they revalidate they run the **old** compiled module.
+A single web request from a stale worker then renders a page with old behavior and
+**bakes the wrong result into a render/block cache** — which then persists past
+further `drush cr` runs, because the cache entry is "valid," just wrong.
+
+Two concrete symptoms hit in one deploy:
+- **CSS vanished** — a `hook_views_pre_render` that attaches a library
+  (`bos_geo/county_cards`) didn't fire in the stale render, and the cached view
+  output had no attachment; cards rendered unstyled.
+- **Duplicate title** — a `hook_block_access` that forbids `page_title_block` on
+  hero pages was absent in the stale render, so the block's access cached as
+  *allowed*.
+
+Both looked like code bugs (dev worked, live didn't, identical code). They were
+**cache poisoning by a stale worker**, not code.
+
+**Fix / correct order when swapping module ownership on live:**
+1. rsync the new code, uninstall the old module, delete its dir.
+2. **Restart the web PHP workers** so every one picks up new opcode:
+   `pkill -u <cpanel-user> lsphp` (LiteSpeed respawns them fresh). A per-request
+   `opcache_reset()` via a one-shot script is **unreliable** — it only resets the
+   worker that served that one hit, not the pool.
+3. `drush cr` to clear render/block caches.
+4. Prime with a couple of fresh page hits, then verify.
+
+`opcache_reset()` alone, `drush cr` alone, and CLI diagnostics are all
+insufficient/misleading here — the tell is "dev is fine, live isn't, same code."
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

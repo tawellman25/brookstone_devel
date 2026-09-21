@@ -204,6 +204,7 @@ Reference: `bos_services` / `bos_equipment` (2026-09-19).
 - **`bos_services`** — `services`, full 3-tier (public / crew / office), 2026-09-19.
 - Shared section-heading CSS: **`brookstone_olivero/audience_admin`** (`.bos-admin-view` + `css/audience-admin.css`) — each content module adds the `.bos-admin-view` class and attaches this library on its `admin_view` render. Reuse it; don't re-copy the CSS.
 - **`bos_hoa`** — `properties.hoa`, public view mode on the canonical page (2026-09-07); same principle applied to an ECK entity rather than a taxonomy.
+- **`bos_geo`** — `state` / `county` / `city` ECK geo entities, 3-tier via the `public` / `teammate` / `admin` view modes (created by `web/scripts/setup_geo_view_modes.php`). Here **supervisor sits in the office/admin tier** (they get the `admin` view). `bos_geo` also owns the geo pages' hero, SEO meta tags, and footer links (see below). It absorbed the former `bos_state` module on 2026-09-20 — geo presentation now lives in one module.
 
 ## Public banner hero (full-bleed rotating)
 
@@ -226,10 +227,43 @@ to `content` with a low weight, set the raw image field `#access = FALSE`, and a
 `brookstone_olivero/bo_hero`. Because the hero carries the page's single H1, also
 **suppress the core `page_title_block`** for public viewers on those records
 (`hook_block_access`, with `user.roles` + `route` cache contexts) so there's no
-duplicate title. Reference impl: `bos_services` (`field_banner_image`), 2026-09-19.
+duplicate title. Reference impl: `bos_services` (`field_banner_image`), 2026-09-19;
+also `bos_geo` for the `state`/`county`/`city` geo pages (2026-09-20).
 
 > **Field-name variance:** `services` uses `field_banner_image`; `equipment_types`
 > uses `field_banner_images` (plural). Read the bundle's actual field when reusing.
+
+> **ECK title suppression — opcache trap (2026-09-20).** The `page_title_block`
+> suppression is `hook_block_access` returning `forbidden` when the record has a
+> banner; the decision is render-cached. On live, restarting/rebuilding is not
+> enough on its own — a stale `lsphp` worker can render the page once with old
+> opcode and **bake the wrong decision (allowed) into the block cache**, which
+> then persists past `drush cr`. See `drupal_bos_gotchas.md` → "Module swap on
+> live: restart lsphp before priming caches."
+
+## Public SEO: per-entity meta tags + auto description
+
+Geo/public pages get their SEO from the **Metatag** module. Two layers:
+1. **Auto** — `hook_metatags_alter` fills `description` / `og_description` from the
+   record's own description field (tags→space, trimmed to 300) and `og_image` from
+   its banner via the `max_1300x1300` image style (FB-safe). Alter the tag **values**
+   during generation (value stage) — editing rendered attachments does not stick on
+   entity pages.
+2. **Override** — a per-entity `field_meta_tags` (type `metatag`, widget
+   `metatag_firehose`) box on the edit form lets the office set a custom title /
+   description / OG; whatever they fill **wins**, and only the blank tags are
+   auto-filled. Reference impls: `bos_services` (services taxonomy) + `bos_geo`
+   (state/county/city, `web/scripts/setup_geo_metatag_field.php`), both 2026-09.
+
+## Footer "Service Area" name links
+
+The footer Service-Area block is plain editorial text (a counties line + a
+"·"-separated city line). `bos_geo` (`hook_preprocess_block` on
+`block_content:footer_service_area`) links each name to its geo landing page —
+counties line → county pages (+ "Colorado" → the state), city line → city pages —
+matching on the short name (stripping "County" / "City of" / "Town of"), **only for
+published records**, leaving the wording exactly as typed. Cache-tagged
+`county_list` / `city_list` / `state_list` so it rebuilds as records are published.
 
 ## Status
 
@@ -238,4 +272,7 @@ duplicate title. Reference impl: `bos_services` (`field_banner_image`), 2026-09-
 - 2026-09-19 — added the **audience view-mode tier** rule for public-facing pages
   (Default / Admin View / Teammate View / Public View + role routing + user.roles
   cache context), generalized from `bos_services` + `bos_equipment`.
+- 2026-09-20 — consolidated `bos_state` into `bos_geo` (one geo-presentation
+  module); added the **per-entity meta-tags override** and **footer name-links**
+  patterns; noted the ECK title-suppression opcache trap.
 - Living document — add reusable BOS UI patterns here as they're established.

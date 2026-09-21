@@ -26,6 +26,12 @@ $default = [
   'style' => ['type' => 'default', 'options' => ['row_class' => 'service-card', 'default_row_class' => TRUE]],
   'row' => ['type' => 'fields'],
   'fields' => [
+    'field_iconic_image' => [
+      'id' => 'field_iconic_image', 'table' => 'taxonomy_term__field_iconic_image',
+      'field' => 'field_iconic_image', 'relationship' => 'none', 'plugin_id' => 'field',
+      'label' => '', 'exclude' => FALSE, 'type' => 'image',
+      'settings' => ['image_style' => 'large', 'image_link' => 'content'],
+    ],
     'name' => [
       'id' => 'name', 'table' => 'taxonomy_term_field_data', 'field' => 'name',
       'relationship' => 'none', 'entity_type' => 'taxonomy_term', 'entity_field' => 'name',

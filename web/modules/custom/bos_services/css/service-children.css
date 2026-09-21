@@ -1,7 +1,8 @@
 /**
  * "Our {Category} Services" child-service cards on a services term page
  * (service_children EVA). Compact responsive grid — 2-up on phones, 3-4-up on
- * wider screens — so a category's sub-services never run long down the page.
+ * wider screens. Each card: a clipped iconic-image strip down the LEFT edge +
+ * name/blurb on the right. Cards with no iconic image go full-width text.
  */
 
 .service-children__title {
@@ -22,7 +23,7 @@
 
 @media (min-width: 34rem) {
   .view.view-service-children {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 1.1rem;
   }
 }
@@ -32,13 +33,14 @@
   margin-bottom: 0.25rem;
 }
 
+/* Card shell. Default = single column (text only). */
 .view-service-children .service-card {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   border: 1px solid var(--bo-sand, #e7dcc9);
   border-radius: 8px;
   background: #fff;
-  padding: 0.9rem 1rem;
+  overflow: hidden;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -47,8 +49,36 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
 }
 
+/* With an iconic image: a full-height clip down the LEFT, text on the right. */
+.view-service-children .service-card:has(.views-field-field-iconic-image img) {
+  grid-template-columns: 96px 1fr;
+  grid-template-rows: auto 1fr;
+}
+
+.view-service-children .service-card:has(.views-field-field-iconic-image img) .views-field-field-iconic-image {
+  grid-column: 1;
+  grid-row: 1 / -1;
+}
+
+.view-service-children .service-card:has(.views-field-field-iconic-image img) .views-field-name,
+.view-service-children .service-card:has(.views-field-field-iconic-image img) .views-field-field-service-public-desc {
+  grid-column: 2;
+}
+
+.view-service-children .views-field-field-iconic-image {
+  line-height: 0;
+}
+
+.view-service-children .views-field-field-iconic-image img {
+  display: block;
+  width: 96px;
+  height: 100%;
+  object-fit: cover;
+}
+
 .view-service-children .views-field-name {
-  margin-bottom: 0.25rem;
+  align-self: start;
+  padding: 0.8rem 1rem 0.4rem;
 }
 
 .view-service-children .views-field-name a {
@@ -66,6 +96,7 @@
 }
 
 .view-service-children .views-field-field-service-public-desc {
+  padding: 0 1rem 0.9rem;
   color: var(--bo-muted, #6b5d4f);
   font-size: 0.9rem;
   line-height: 1.4;

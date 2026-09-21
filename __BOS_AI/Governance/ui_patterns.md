@@ -277,9 +277,17 @@ the geo "We Serve" cards but the argument is the term's *parent* field:
 - Header area with `empty: false` so it renders **only when there are children** (a
   leaf term shows nothing). A module `hook_views_pre_render` attaches the grid CSS
   and rewrites the header to name the current term (read `$view->args[0]`).
+- **Card blurb = the field SUMMARY, not the trimmed body.** The public-description
+  field is `text_with_summary`; a `hook_preprocess_views_view_field` outputs the
+  summary only (stripped to plain text, blank when empty) so the office writes a
+  short card-specific line and the card never dumps trimmed body HTML (headings,
+  etc.). The full body stays the in-depth copy on the service page.
 - **Compact responsive grid** (2-up mobile / 3–4-up desktop) so a long child list
   never runs down the page — `grid-template-columns: repeat(2,1fr)` then
-  `repeat(auto-fill, minmax(220px,1fr))` at ≥34rem.
+  `repeat(auto-fill, minmax(220px,1fr))` at ≥34rem. **Grid the `.view` element
+  itself** (make the `<header>` span `1 / -1`) — an EVA default-style display
+  renders its `.views-row`s directly under `.view` with **no `.view-content`
+  wrapper**, so targeting `.view-content` silently does nothing.
 - **Nests for free** at every depth (child page shows *its* children). Prefer this
   over deepening the nav: Olivero's primary nav only collapses **two** levels (a
   third renders flat), and in-page contextual links are better SEO than a giant

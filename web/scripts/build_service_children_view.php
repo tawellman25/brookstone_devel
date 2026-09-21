@@ -30,7 +30,7 @@ $default = [
       'id' => 'field_iconic_image', 'table' => 'taxonomy_term__field_iconic_image',
       'field' => 'field_iconic_image', 'relationship' => 'none', 'plugin_id' => 'field',
       'label' => '', 'exclude' => FALSE, 'type' => 'image',
-      'settings' => ['image_style' => 'large', 'image_link' => 'content'],
+      'settings' => ['image_style' => 'service_card_strip', 'image_link' => 'content'],
     ],
     'name' => [
       'id' => 'name', 'table' => 'taxonomy_term_field_data', 'field' => 'name',

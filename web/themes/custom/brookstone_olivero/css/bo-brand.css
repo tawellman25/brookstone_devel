@@ -189,18 +189,17 @@ body:not(.is-always-mobile-nav) .header-nav { background-color: var(--bo-sand, #
    on top, so this black shows only in the vacated area during the slide. */
 .site-header { background-color: var(--bo-ink, #1A1613); }
 
-/* Services dropdown caret: the box behind the arrow was white (wrong on sand) —
-   blend it into the header with a brand-blue chevron. */
-body:not(.is-always-mobile-nav) .primary-nav__button-toggle .icon--menu-toggle {
+/* Primary-nav dropdown toggle (e.g. Services): recolor Olivero's native +/-
+   icon to brand blue and drop the white box behind it. Keep Olivero's own two
+   bars (+ that becomes - on expand) — an earlier override turned ::after into a
+   chevron but left ::before showing, so an orange bar and a blue corner rendered
+   as two competing icons. One clean icon now, correct expand/collapse. */
+.primary-nav__button-toggle .icon--menu-toggle {
   background-color: transparent;
 }
-body:not(.is-always-mobile-nav) .primary-nav__button-toggle .icon--menu-toggle::after {
-  /* Bolder + larger chevron so it doesn't get lost in the header. */
-  width: 0.62rem;
-  height: 0.62rem;
-  border-right: solid 3px var(--bo-blue, #62B5E5);
-  border-bottom: solid 3px var(--bo-blue, #62B5E5);
-  opacity: 1;
+.primary-nav__button-toggle .icon--menu-toggle::before,
+.primary-nav__button-toggle .icon--menu-toggle::after {
+  border-top-color: var(--bo-blue, #62B5E5);
 }
 
 /* M1 (round 2b) — keep the mobile header on ONE line so the phone doesn't wrap

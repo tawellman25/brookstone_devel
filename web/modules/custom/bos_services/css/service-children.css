@@ -74,6 +74,14 @@
   line-height: 0;
 }
 
+/* Force the whole wrapper chain (field-content > a > img) to full height so the
+   photo fills the stretched grid cell top-to-bottom, not just its own height. */
+.view-service-children .service-card:has(.views-field-field-iconic-image img) .views-field-field-iconic-image > .field-content,
+.view-service-children .service-card:has(.views-field-field-iconic-image img) .views-field-field-iconic-image .field-content > a {
+  display: block;
+  height: 100%;
+}
+
 .view-service-children .views-field-field-iconic-image img {
   display: block;
   width: 100%;

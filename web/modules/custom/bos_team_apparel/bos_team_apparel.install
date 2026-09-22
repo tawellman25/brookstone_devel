@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for BOS Team Apparel.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * Grant the report permission to the office/admin roles.
+ */
+function bos_team_apparel_install() {
+  $roles = ['administration', 'supervisor', 'site_assistant', 'site_admin', 'administrator'];
+  foreach ($roles as $rid) {
+    $role = \Drupal\user\Entity\Role::load($rid);
+    if ($role) {
+      $role->grantPermission('view team apparel report')->save();
+    }
+  }
+}

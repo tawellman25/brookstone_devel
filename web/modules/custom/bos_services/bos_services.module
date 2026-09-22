@@ -58,7 +58,9 @@ function bos_services_preprocess_views_view_field(array &$variables) {
     && ($item = $term->get('field_service_public_desc')->first())) {
     $summary = trim(strip_tags((string) ($item->summary ?? '')));
   }
-  $variables['output'] = $summary !== '' ? Html::escape($summary) : '';
+  // Plain string — the views-view-field template escapes it once. (Escaping it
+  // here too double-encoded apostrophes into a literal &#039;.)
+  $variables['output'] = $summary;
 }
 
 /**

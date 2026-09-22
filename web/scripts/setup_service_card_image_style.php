@@ -12,20 +12,27 @@
 
 use Drupal\image\Entity\ImageStyle;
 
-if (!ImageStyle::load('service_card_strip')) {
-  $style = ImageStyle::create([
-    'name' => 'service_card_strip',
-    'label' => 'Service card strip (64px)',
-  ]);
-  $style->addImageEffect([
-    'id' => 'image_scale_and_crop',
-    'weight' => 1,
-    'data' => ['width' => 128, 'height' => 256, 'anchor' => 'center-center'],
-  ]);
-  $style->save();
-  print "created image style service_card_strip\n";
+// Tall portrait crop so a full-card-height left strip stays crisp even on long
+// cards. Width is generous for retina; the card CSS displays it ~104px wide.
+$style = ImageStyle::load('service_card_strip');
+$new = FALSE;
+if (!$style) {
+  $style = ImageStyle::create(['name' => 'service_card_strip', 'label' => 'Service card strip']);
+  $new = TRUE;
 }
 else {
-  print "image style service_card_strip already exists\n";
+  // Clear existing effects so re-running updates the dimensions.
+  foreach ($style->getEffects() as $effect) {
+    $style->deleteImageEffect($effect);
+  }
 }
+$style->set('label', 'Service card strip');
+$style->addImageEffect([
+  'id' => 'image_scale_and_crop',
+  'weight' => 1,
+  'data' => ['width' => 240, 'height' => 640, 'anchor' => 'center-center'],
+]);
+$style->save();
+$style->flush();
+print ($new ? 'created' : 'updated') . " image style service_card_strip (240x640) + flushed derivatives\n";
 print "DONE.\n";

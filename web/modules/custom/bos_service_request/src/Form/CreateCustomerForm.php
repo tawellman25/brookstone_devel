@@ -66,7 +66,8 @@ final class CreateCustomerForm extends FormBase {
     $form['property'] = ['#type' => 'fieldset', '#title' => $this->t('Property')];
     $form['property']['nickname'] = [
       '#type' => 'textfield', '#title' => $this->t('Nickname'), '#required' => TRUE,
-      '#default_value' => trim($last . ($street ? ' — ' . $street : '')),
+      // "Last, First" — the BOS property-nickname convention.
+      '#default_value' => trim($last . ($first ? ', ' . $first : '')),
     ];
     $form['property']['street_address'] = [
       '#type' => 'textfield', '#title' => $this->t('Street address'), '#required' => TRUE, '#default_value' => $street,

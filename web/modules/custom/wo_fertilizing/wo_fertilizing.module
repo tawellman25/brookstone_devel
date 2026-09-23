@@ -206,8 +206,13 @@ function _wo_fertilizing_handle_work_order(EntityInterface $entity, $operation) 
     if ($statusTermId != 1097) {
         //If the Work Order is not 'Complete', exit the function early to avoid performing further calculations.
         return;
-    }        
-    
+    }
+
+    // Write the tech-entered turf square footage back to the property, so the
+    // property page + future work orders stay current (billing on THIS WO is
+    // already handled from the same value in presave).
+    _wo_fertilizing_sync_turf_sqft($entity);
+
     // Get Work Order Complete Info
     $workOrderId = $entity->id();
 
@@ -254,6 +259,59 @@ function _wo_fertilizing_handle_work_order(EntityInterface $entity, $operation) 
             // Save the updated Property Fertilizing Info entity.
             $sprayingInfoEntity->save();
         }
+    }
+}
+
+/**
+ * Sync the turf square footage from a completed fertilizing WO back to the
+ * property's landscape details (property_landscape_details:current →
+ * field_turf_sq_footage). When a tech measures and enters a new/changed
+ * square footage on the WO, this keeps the property record — and its page, the
+ * mow list, and future WOs that read this value — current. Only writes when the
+ * value actually differs; creates the landscape-details record if none exists.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   The completed fertilizing work order.
+ */
+function _wo_fertilizing_sync_turf_sqft(EntityInterface $entity) {
+    $woSqFt = (int) ($entity->get('field_current_turf_sq_footage')->value ?? 0);
+    if ($woSqFt <= 0) {
+        return;
+    }
+    $propertyId = $entity->get('field_property')->target_id ?? NULL;
+    if (!$propertyId) {
+        return;
+    }
+
+    $storage = \Drupal::entityTypeManager()->getStorage('property_landscape_details');
+    $existing = $storage->loadByProperties([
+        'type' => 'current',
+        'field_property' => $propertyId,
+    ]);
+
+    if (!empty($existing)) {
+        $details = reset($existing);
+        $current = (int) ($details->get('field_turf_sq_footage')->value ?? 0);
+        if ($current === $woSqFt) {
+            // Unchanged (e.g. the value was pulled from the property to begin with).
+            return;
+        }
+        $details->set('field_turf_sq_footage', $woSqFt);
+        $details->save();
+        \Drupal::logger('wo_fertilizing')->notice('Turf sq ft for property @p updated @old → @new from fertilizing WO @wo.', [
+            '@p' => $propertyId, '@old' => $current, '@new' => $woSqFt, '@wo' => $entity->id(),
+        ]);
+    }
+    else {
+        $details = $storage->create([
+            'type' => 'current',
+            'field_property' => $propertyId,
+            'field_turf_sq_footage' => $woSqFt,
+        ]);
+        $details->save();
+        \Drupal::logger('wo_fertilizing')->notice('Created landscape details for property @p with turf sq ft @new from fertilizing WO @wo.', [
+            '@p' => $propertyId, '@new' => $woSqFt, '@wo' => $entity->id(),
+        ]);
     }
 }
 

@@ -313,9 +313,14 @@ final class MaterialListImportService {
   /**
    * Import resolved rows into a material list. Merges duplicates by quantity.
    *
+   * A row with no material_id (never matched, or the Material reference was
+   * cleared in the preview) is created as a PURCHASED free-text line using its
+   * description (identifier as fallback) — no catalog reference — mirroring the
+   * old-style paper material list. Rows with a material_id import as stocked.
+   *
    * @param array $rows
    *   Each: material_id, quantity, unit_cost, supplier_id, supplier_item_number,
-   *   include (bool).
+   *   description, identifier, include (bool).
    *
    * @return array
    *   created, merged, skipped counts.
@@ -326,17 +331,56 @@ final class MaterialListImportService {
     $links_created = $links_updated = 0;
 
     foreach ($rows as $r) {
-      $mid = (int) ($r['material_id'] ?? 0);
-      if (empty($r['include']) || $mid <= 0) {
+      if (empty($r['include'])) {
         $skipped++;
         continue;
       }
+      $mid = (int) ($r['material_id'] ?? 0);
       $qty = (int) ($r['quantity'] ?? 0);
       if ($qty < 1) {
         $qty = 1;
       }
       $cost = (isset($r['unit_cost']) && $r['unit_cost'] !== '' && is_numeric($r['unit_cost'])) ? $r['unit_cost'] : NULL;
       $sku = trim((string) ($r['supplier_item_number'] ?? ''));
+
+      // No catalog material referenced → import as a plain PURCHASED line
+      // (free-text name from the receipt), the way paper material lists worked.
+      // This also covers a matched row whose Material reference was cleared in
+      // the preview to force a purchased line.
+      if ($mid <= 0) {
+        $name = trim((string) ($r['description'] ?? ''));
+        if ($name === '') {
+          $name = trim((string) ($r['identifier'] ?? ''));
+        }
+        if ($name === '') {
+          // Nothing to name the line by — don't create a blank record.
+          $skipped++;
+          continue;
+        }
+        $values = [
+          'type' => 'items',
+          'field_list_id' => ['target_id' => $listId],
+          'field_material_type' => 'purchased',
+          'field_alternate_name_description' => $name,
+          'field_quantity' => $qty,
+        ];
+        // Receipt cost if given; no catalog fallback exists for a purchased line.
+        if ($cost !== NULL) {
+          $values['field_material_cost'] = $cost;
+        }
+        if ($supplierId) {
+          $values['field_purchased_supplier'] = ['target_id' => $supplierId];
+        }
+        elseif (!empty($r['supplier_id'])) {
+          $values['field_purchased_supplier'] = ['target_id' => $r['supplier_id']];
+        }
+        if ($sku !== '') {
+          $values['field_supplier_item_number'] = $sku;
+        }
+        $storage->create($values)->save();
+        $created++;
+        continue;
+      }
 
       // Merge into an existing line for the same material on this list.
       $existing = $storage->getQuery()->accessCheck(FALSE)
@@ -354,6 +398,7 @@ final class MaterialListImportService {
         $values = [
           'type' => 'items',
           'field_list_id' => ['target_id' => $listId],
+          'field_material_type' => 'stocked_item',
           'field_parts_used' => ['target_id' => $mid],
           'field_quantity' => $qty,
         ];

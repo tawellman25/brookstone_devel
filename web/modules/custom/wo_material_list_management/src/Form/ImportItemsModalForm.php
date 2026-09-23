@@ -122,8 +122,10 @@ final class ImportItemsModalForm extends FormBase {
     $unmatched = count(array_filter($rows, fn($r) => ($r['status'] ?? '') === 'unmatched'));
 
     $form['summary'] = [
-      '#markup' => "<p><strong>" . count($rows) . "</strong> rows — {$matched} matched, {$ambiguous} to confirm, {$unmatched} unmatched. "
-        . "Adjust below, then import. Unmatched rows: pick a material or leave unchecked to skip.</p>",
+      '#markup' => "<p><strong>" . count($rows) . "</strong> rows — {$matched} matched, {$ambiguous} to confirm, {$unmatched} not in the catalog. "
+        . "Adjust below, then import. <strong>Leave the Material box empty</strong> (or clear it) on any row to bring it in as a "
+        . "purchased item — a plain line with the receipt's name, quantity and cost, not tied to a catalog material. "
+        . "Uncheck a row to skip it.</p>",
     ];
 
     // Vision-extraction context: vendor guess + case/return warnings.
@@ -153,9 +155,11 @@ final class ImportItemsModalForm extends FormBase {
     $form['rows'] = ['#type' => 'table', '#header' => ['Include', 'Item #', 'Description', 'Status', 'Material', 'Qty', 'Unit cost']];
     foreach ($rows as $i => $r) {
       $status = $r['status'] ?? 'unmatched';
+      // Default every parsed row ON — unmatched rows import as purchased lines
+      // rather than being silently dropped.
       $form['rows'][$i]['include'] = [
         '#type' => 'checkbox',
-        '#default_value' => ($status !== 'unmatched'),
+        '#default_value' => TRUE,
       ];
       $form['rows'][$i]['identifier'] = ['#markup' => '<code>' . htmlspecialchars($r['identifier']) . '</code>'];
       $form['rows'][$i]['description'] = ['#markup' => '<span class="wo-import-desc">' . htmlspecialchars($r['description'] ?? '') . '</span>'];
@@ -168,6 +172,7 @@ final class ImportItemsModalForm extends FormBase {
         '#target_type' => 'material',
         '#default_value' => $default_material,
         '#selection_handler' => 'default:material',
+        '#placeholder' => $this->t('empty = purchased item'),
       ];
       $form['rows'][$i]['quantity'] = [
         '#type' => 'number', '#min' => 1, '#default_value' => is_numeric($r['quantity']) ? (int) $r['quantity'] : 1, '#size' => 5,
@@ -177,6 +182,10 @@ final class ImportItemsModalForm extends FormBase {
       ];
       $form['rows'][$i]['supplier_id'] = ['#type' => 'value', '#value' => $r['supplier_id'] ?? NULL];
       $form['rows'][$i]['supplier_item_number'] = ['#type' => 'value', '#value' => $r['supplier_item_number'] ?? ($r['identifier'] ?? '')];
+      // Carried through so an unmatched/cleared row can be imported as a
+      // purchased free-text line (name = description, else identifier).
+      $form['rows'][$i]['identifier_raw'] = ['#type' => 'value', '#value' => $r['identifier'] ?? ''];
+      $form['rows'][$i]['description_raw'] = ['#type' => 'value', '#value' => $r['description'] ?? ''];
     }
 
     $form['actions'] = ['#type' => 'actions'];
@@ -258,6 +267,8 @@ final class ImportItemsModalForm extends FormBase {
         'unit_cost' => $r['unit_cost'] ?? '',
         'supplier_id' => $r['supplier_id'] ?? NULL,
         'supplier_item_number' => $r['supplier_item_number'] ?? '',
+        'description' => $r['description_raw'] ?? '',
+        'identifier' => $r['identifier_raw'] ?? '',
       ];
     }
     $supplierId = $form_state->get('supplier_id');

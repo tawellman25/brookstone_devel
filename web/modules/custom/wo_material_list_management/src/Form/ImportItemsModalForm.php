@@ -122,10 +122,11 @@ final class ImportItemsModalForm extends FormBase {
     $unmatched = count(array_filter($rows, fn($r) => ($r['status'] ?? '') === 'unmatched'));
 
     $form['summary'] = [
-      '#markup' => "<p><strong>" . count($rows) . "</strong> rows — {$matched} matched, {$ambiguous} to confirm, {$unmatched} not in the catalog. "
-        . "Adjust below, then import. <strong>Leave the Material box empty</strong> (or clear it) on any row to bring it in as a "
-        . "purchased item — a plain line with the receipt's name, quantity and cost, not tied to a catalog material. "
-        . "Uncheck a row to skip it.</p>",
+      '#markup' => "<p><strong>" . count($rows) . "</strong> rows — {$matched} exact match, {$ambiguous} possible match, {$unmatched} not in the catalog. "
+        . "<strong>Only exact matches are pre-checked.</strong> Check any other row you want to bring in. "
+        . "For a possible match, confirm or fix the Material; for anything not in the catalog, "
+        . "<strong>leave the Material box empty</strong> and it imports as a purchased item — a plain line with the receipt's name, "
+        . "quantity and cost, not tied to a catalog material.</p>",
     ];
 
     // Vision-extraction context: vendor guess + case/return warnings.
@@ -155,11 +156,13 @@ final class ImportItemsModalForm extends FormBase {
     $form['rows'] = ['#type' => 'table', '#header' => ['Include', 'Item #', 'Description', 'Status', 'Material', 'Qty', 'Unit cost']];
     foreach ($rows as $i => $r) {
       $status = $r['status'] ?? 'unmatched';
-      // Default every parsed row ON — unmatched rows import as purchased lines
-      // rather than being silently dropped.
+      // Only a CONFIDENT exact match (material ID or a known supplier item
+      // number) is pre-checked. Fuzzy "ambiguous" title guesses and unmatched
+      // rows default OFF so a wrong guess never imports itself — the crew ticks
+      // the ones they actually want (matching, or bringing in as purchased).
       $form['rows'][$i]['include'] = [
         '#type' => 'checkbox',
-        '#default_value' => TRUE,
+        '#default_value' => ($status === 'matched'),
       ];
       $form['rows'][$i]['identifier'] = ['#markup' => '<code>' . htmlspecialchars($r['identifier']) . '</code>'];
       $form['rows'][$i]['description'] = ['#markup' => '<span class="wo-import-desc">' . htmlspecialchars($r['description'] ?? '') . '</span>'];

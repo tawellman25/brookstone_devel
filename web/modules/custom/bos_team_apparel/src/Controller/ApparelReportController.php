@@ -132,9 +132,17 @@ class ApparelReportController extends ControllerBase {
         ['data' => $n, 'class' => array_merge(['apparel-count'], $n === 0 ? ['apparel-zero'] : [])],
       ];
     }
+    // Grand total to order = every recorded size added up.
+    $rows[] = [
+      'data' => [
+        ['data' => $this->t('Total to order')],
+        ['data' => $total, 'class' => ['apparel-count']],
+      ],
+      'class' => ['apparel-total-row'],
+    ];
     if ($missing > 0) {
       $rows[] = [
-        ['data' => $this->t('Not recorded'), 'class' => ['apparel-missing']],
+        ['data' => $this->t('Not recorded yet'), 'class' => ['apparel-missing']],
         ['data' => $missing, 'class' => ['apparel-count', 'apparel-missing']],
       ];
     }
@@ -148,7 +156,7 @@ class ApparelReportController extends ControllerBase {
         '#rows' => $rows,
         '#attributes' => ['class' => ['apparel-tally-table']],
       ],
-      'total' => ['#markup' => '<p class="apparel-tally-total">' . $this->t('@n sized', ['@n' => $total]) . '</p>'],
+      'note' => ['#markup' => '<p class="apparel-tally-total">' . $this->t('@n of @all team members have a size recorded.', ['@n' => $total, '@all' => $total + $missing]) . '</p>'],
     ];
   }
 

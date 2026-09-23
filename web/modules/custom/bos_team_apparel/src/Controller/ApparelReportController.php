@@ -4,6 +4,7 @@ namespace Drupal\bos_team_apparel\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\Url;
 use Drupal\field\Entity\FieldStorageConfig;
 
 /**
@@ -24,6 +25,9 @@ class ApparelReportController extends ControllerBase {
       ->accessCheck(FALSE)
       ->condition('type', 'teammate_profile')
       ->execute();
+
+    // Return here after editing a profile.
+    $dest = Url::fromRoute('bos_team_apparel.report')->toString();
 
     $roster = [];
     $shirtTally = array_fill_keys(array_keys($shirtLabels), 0);
@@ -52,6 +56,9 @@ class ApparelReportController extends ControllerBase {
       }
       $roster[] = [
         'name' => $user->getDisplayName(),
+        // Link the name to the teammate profile edit form (with a return here),
+        // for anyone allowed to edit it; otherwise plain text.
+        'edit_url' => $profile->access('update') ? $profile->toUrl('edit-form', ['query' => ['destination' => $dest]]) : NULL,
         'shirt' => $shirt !== '' ? ($shirtLabels[$shirt] ?? $shirt) : '—',
         'hat' => $hat !== '' ? ($hatLabels[$hat] ?? $hat) : '—',
       ];
@@ -88,8 +95,11 @@ class ApparelReportController extends ControllerBase {
     // Full roster.
     $rows = [];
     foreach ($roster as $r) {
+      $nameCell = $r['edit_url']
+        ? ['data' => ['#type' => 'link', '#title' => $r['name'], '#url' => $r['edit_url']]]
+        : $r['name'];
       $rows[] = [
-        $r['name'],
+        $nameCell,
         ['data' => $r['shirt'], 'class' => $r['shirt'] === '—' ? ['apparel-missing'] : []],
         ['data' => $r['hat'], 'class' => $r['hat'] === '—' ? ['apparel-missing'] : []],
       ];

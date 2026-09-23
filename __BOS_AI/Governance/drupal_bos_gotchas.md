@@ -1265,6 +1265,39 @@ Both looked like code bugs (dev worked, live didn't, identical code). They were
 `opcache_reset()` alone, `drush cr` alone, and CLI diagnostics are all
 insufficient/misleading here — the tell is "dev is fine, live isn't, same code."
 
+## Portrait photos render sideways in image-style derivatives (EXIF orientation), and flushing derivatives on S3 is very slow
+
+**Discovered 2026-09-22.** Phones store portrait photos with the pixels in
+landscape plus an EXIF **Orientation** flag. Browsers honor that flag on the
+*original* (`image-orientation: from-image`), but Drupal's GD toolkit **drops the
+flag when it generates an image-style derivative** and does not rotate the pixels
+— so every styled thumbnail/crop of a portrait phone photo shows sideways while
+the raw original looks fine.
+
+Fix (two parts, both shipped):
+- **`drupal/exif_orientation`** — `hook_file_presave` rotates the pixels + strips
+  the flag at **upload** time, so new photos are correct at the source (and in
+  every derivative, download, and PDF).
+- **`drupal/auto_rotate_lite`** — an image **effect** (`auto_rotate_lite`) added as
+  the first effect (weight −50) on **every** image style, so derivatives of
+  *existing* photos rotate per EXIF. Non-EXIF images are unaffected. Add via
+  `web/scripts/add_auto_orient_to_image_styles.php`.
+
+**The trap:** to make *existing* photos correct you must **flush** the styles'
+cached derivatives so they regenerate — and on this **S3-backed** site that is a
+per-file delete of every derivative (the property gallery alone is thousands), so
+it is extremely slow and will blow past any interactive timeout. Two specifics:
+1. **Saving an image style entity flushes that style's derivatives** in
+   `ImageStyle::postSave()` — so merely *adding the effect via the entity API*
+   triggers the slow flush. To add the effect **without** flushing (config only),
+   write `image.style.<name>` via `\Drupal::configFactory()->getEditable(...)`
+   (it bypasses `postSave`), then flush deliberately.
+2. Run the actual flush **detached** on the server
+   (`nohup drush image:flush --all -y > ~/image_flush.log 2>&1 &`), not through a
+   drush call your session waits on. It also exhibits the usual long-bulk-op
+   **post-completion hang** — the log shows all styles "flushed" but the process
+   lingers; kill it once the log confirms completion.
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

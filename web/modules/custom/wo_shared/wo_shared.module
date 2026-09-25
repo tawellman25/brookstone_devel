@@ -306,4 +306,15 @@ function wo_shared_form_views_exposed_form_alter(array &$form, \Drupal\Core\Form
       }
     }
   }
+
+  // Compact the widgets via HTML attributes (server-rendered — immune to CSS
+  // specificity fights with Olivero and to stale cached stylesheets). The status
+  // multiselect defaults to size=9 (one row per option → a tall box); cap it at
+  // 5 visible rows (scrolls), and narrow the text inputs.
+  $form['field_status_target_id']['#size'] = 5;
+  foreach (['field_nickname_value', 'field_street_address_value', 'field_city_name_value'] as $tf) {
+    if (isset($form[$tf])) {
+      $form[$tf]['#size'] = 22;
+    }
+  }
 }

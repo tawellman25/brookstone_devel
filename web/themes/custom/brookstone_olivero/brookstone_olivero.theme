@@ -94,3 +94,40 @@ function brookstone_olivero_preprocess_views_view_fields(array &$variables): voi
     }
   }
 }
+
+/**
+ * Implements hook_form_FORM_ID_alter() for views_exposed_form.
+ *
+ * Crew fertilizing WO views: trim the exposed Status dropdown to the ACTIVE
+ * statuses only. The taxonomy_index_tid "limit" scopes the option list to the
+ * whole wo_status vocabulary (all 15 terms, incl. Complete/Invoiced/Paid/
+ * Canceled/Warrantied + Accepted), and these views now lock done work orders out
+ * entirely — so offering a done status is dead UI that returns nothing. The
+ * allowed set is read from the filter's own configured default value (the active
+ * statuses), so the list self-maintains if that value ever changes.
+ */
+function brookstone_olivero_form_views_exposed_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state): void {
+  $view = $form_state->get('view');
+  if (!$view || !in_array($view->id(), ['teammate_lawn_fertilizer', 'teammate_fertilize_trees_and_shrubs_wos'], TRUE)) {
+    return;
+  }
+  if (empty($form['field_status_target_id']['#options'])) {
+    return;
+  }
+  // Hide the statuses a crew can never work a live fertilizing WO by: the five
+  // DONE/terminal statuses (Complete 1097, Warrantied 1283, Invoiced 1281,
+  // Paid 1504, Canceled 1098 — the same set the view now locks off the map) plus
+  // Accepted (1503, an estimate status no work order is ever in). Everything else
+  // in wo_status stays, so a genuinely new active status would still appear.
+  $hide = [1097 => 1, 1283 => 1, 1281 => 1, 1504 => 1, 1098 => 1, 1503 => 1];
+  foreach ($form['field_status_target_id']['#options'] as $key => $opt) {
+    // Options are stdClass {option: [tid => label]} (hierarchy widget); keep any
+    // non-object entry (e.g. an "- Any -" placeholder) untouched.
+    if (is_object($opt) && isset($opt->option)) {
+      $tid = (int) array_key_first((array) $opt->option);
+      if (isset($hide[$tid])) {
+        unset($form['field_status_target_id']['#options'][$key]);
+      }
+    }
+  }
+}

@@ -121,13 +121,21 @@ function bos_homepage_page_attachments(array &$attachments) {
     return;
   }
   $phone = (string) \Drupal::config('bos_service_request.settings')->get('office_phone');
+  $host = \Drupal::request()->getSchemeAndHttpHost();
+  $modPath = \Drupal::service('extension.list.module')->getPath('bos_homepage');
   $ld = [
     '@context' => 'https://schema.org',
     '@type' => 'LocalBusiness',
-    'name' => 'Brookstone Outdoors LLC',
-    'image' => \Drupal::request()->getSchemeAndHttpHost() . '/' . \Drupal::service('extension.list.module')->getPath('bos_homepage') . '/assets/home-hero.jpg',
-    'telephone' => $phone,
-    'url' => \Drupal::request()->getSchemeAndHttpHost() . '/',
+    // Public brand name; the LLC is the legal name, not the display name.
+    'name' => 'Brookstone Outdoors',
+    'legalName' => 'Brookstone Outdoors LLC',
+    // The owned S&E Ward's trade name (former name), same as the /about block.
+    'alternateName' => "S&E Ward's Landscape Management",
+    'foundingDate' => '1995',
+    'image' => $host . '/' . $modPath . '/assets/home-hero.jpg',
+    'telephone' => $phone !== '' ? $phone : '+1-970-835-9661',
+    'email' => 'office@brookstoneoutdoors.com',
+    'url' => $host . '/',
     'address' => [
       '@type' => 'PostalAddress',
       'streetAddress' => '20143 Austin Rd',
@@ -136,14 +144,35 @@ function bos_homepage_page_attachments(array &$attachments) {
       'postalCode' => '81410',
       'addressCountry' => 'US',
     ],
-    'areaServed' => ['Cedaredge', 'Delta', 'Montrose', 'Olathe', 'Eckert', 'Paonia', 'Hotchkiss', 'Crawford'],
+    // Office hours (matches the contact page): Mon–Thu 9–4, Fri 9–12.
+    'openingHoursSpecification' => [
+      [
+        '@type' => 'OpeningHoursSpecification',
+        'dayOfWeek' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday'],
+        'opens' => '09:00',
+        'closes' => '16:00',
+      ],
+      [
+        '@type' => 'OpeningHoursSpecification',
+        'dayOfWeek' => 'Friday',
+        'opens' => '09:00',
+        'closes' => '12:00',
+      ],
+    ],
+    'areaServed' => [
+      'Austin', 'Cedaredge', 'Cory', 'Crawford', 'Delta', 'Eckert',
+      'Hotchkiss', 'Montrose', 'Olathe', 'Orchard City', 'Paonia',
+    ],
+    'sameAs' => ['https://www.facebook.com/brookstoneoutdoors'],
   ];
   $attachments['#attached']['html_head'][] = [
     [
       '#type' => 'html_tag',
       '#tag' => 'script',
       '#attributes' => ['type' => 'application/ld+json'],
-      '#value' => json_encode($ld, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+      // HEX flags escape & < > ' " to \uXXXX so the render layer can't turn the
+      // "&" in "S&E Ward's" into &amp; inside the JSON-LD (same as /about).
+      '#value' => json_encode($ld, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_AMP | JSON_HEX_TAG | JSON_HEX_QUOT | JSON_HEX_APOS),
     ],
     'bos_homepage_localbusiness',
   ];
@@ -210,8 +239,7 @@ function _bos_homepage_about_attachments(array &$attachments): void {
       ['@type' => 'AdministrativeArea', 'name' => 'Delta County, CO'],
       ['@type' => 'AdministrativeArea', 'name' => 'Montrose County, CO'],
     ],
-    // 'sameAs' (Facebook Page URL) intentionally omitted until the real URL is
-    // supplied — shipping a guessed profile link is worse than none.
+    'sameAs' => ['https://www.facebook.com/brookstoneoutdoors'],
   ];
   $attachments['#attached']['html_head'][] = [
     [

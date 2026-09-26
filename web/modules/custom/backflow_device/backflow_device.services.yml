@@ -1,0 +1,11 @@
+services:
+  backflow_device.list_path_processor:
+    class: Drupal\backflow_device\PathProcessor\BackflowListPathProcessor
+    arguments: ['@path_alias.manager']
+    tags:
+      # Higher than the core alias processor (100); it does its own alias lookup,
+      # so order is not load-bearing, but running early keeps the rewrite clean.
+      - { name: path_processor_inbound, priority: 200 }
+      # Outbound so the list route renders as the pretty /{alias}/backflow URL
+      # (keeps the redirect route-normalizer from 301-ing it to the system path).
+      - { name: path_processor_outbound, priority: 200 }

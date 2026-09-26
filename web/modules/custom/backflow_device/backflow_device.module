@@ -700,3 +700,40 @@ function backflow_device_theme($existing, $type, $theme, $path) {
     ],
   ];
 }
+
+/**
+ * Implements hook_token_info().
+ *
+ * Exposes [property_backflow_device:bf_number] — the stable zero-padded device
+ * code (BF-NNNNNN) — so pathauto can build a clean URL segment from it without
+ * the device model/description. Reuses _backflow_device_code() (single source of
+ * truth for the padding format).
+ */
+function backflow_device_token_info() {
+  return [
+    'tokens' => [
+      'property_backflow_device' => [
+        'bf_number' => [
+          'name' => t('BF number'),
+          'description' => t('Stable zero-padded device code, e.g. BF-000027 (clean URL segment; pathauto lower-cases it to bf-000027).'),
+        ],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function backflow_device_tokens($type, $tokens, array $data, array $options, \Drupal\Core\Render\BubbleableMetadata $bubbleable_metadata) {
+  $replacements = [];
+  if ($type === 'property_backflow_device' && !empty($data['property_backflow_device'])) {
+    $device = $data['property_backflow_device'];
+    foreach ($tokens as $name => $original) {
+      if ($name === 'bf_number' && $device instanceof \Drupal\Core\Entity\ContentEntityInterface) {
+        $replacements[$original] = _backflow_device_code($device);
+      }
+    }
+  }
+  return $replacements;
+}

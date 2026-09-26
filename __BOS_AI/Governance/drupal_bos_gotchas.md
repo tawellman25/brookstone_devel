@@ -6,6 +6,62 @@ This document captures hard-learned lessons. Most entries cite a specific commit
 
 ---
 
+## `auto_rotate_lite` image effect reads EXIF from the source file on EVERY render (S3 = disaster)
+
+**Discovered 2026-09-26** (property pages taking 30–120s; cold-cache loads 500'd
+at the timeout). The 2026-09-22 EXIF fix added the `auto_rotate_lite` image effect
+to all 13 image styles so existing sideways portrait photos would rotate in their
+derivatives. The trap: `auto_rotate_lite`'s `transformDimensions()` /
+`getImageOrientation()` **reads each image's EXIF from the SOURCE file every time
+an `<img>` is rendered** (to decide whether to swap width/height for the
+`width`/`height` attributes) — not just when the derivative is generated. BOS
+files live on **S3 (s3fs)**, so that is a remote S3 read **per image, per page
+load**. A property page with many service photos stacked to ~33s; it scales with
+work-order count (more WOs → more photos). It slowed *every* page that renders
+images.
+
+**How it was found:** signal-based sampling profiler (no xhprof on the box) —
+`pcntl_signal(SIGALRM, …)` capturing `debug_backtrace()` every second during the
+render showed 100% of samples in `AutoRotateLiteImageEffect::getImageOrientation`
+→ `transformDimensions` → `template_preprocess_image_style`. **Keep that sampler
+trick** for "slow but SQL is cheap" mysteries: DB query logging showed only 0.21s
+of SQL in a 5s render, proving the cost was PHP/IO, not the database.
+
+**Fix:** removed the effect from all image styles via **configFactory raw config**
+(`web/scripts/remove_auto_orient_from_image_styles.php`) — NOT the ImageStyle
+entity API, which would trigger `ImageStyle::postSave()`'s full derivative flush.
+Derivatives were intentionally **not** flushed, so already-rotated derivatives
+stay correct; new uploads are corrected at the *source* by the `exif_orientation`
+module (rotates on upload — the right layer for this). **Lesson: never add a
+derivative-time image effect that reads the source file on S3; fix orientation at
+upload (`exif_orientation`) instead.** Busy property entity render 33.3s → 0.36s.
+
+---
+
+## admin_toolbar_tools expands the WHOLE admin structure inline — deadly on many-view/entity sites
+
+**Discovered 2026-09-26** (every admin page carried a constant ~5–6s, on top of
+the image issue above). `admin_toolbar_tools` injects the entire admin structure
+into the toolbar menu tree so it hover-expands. On BOS that is **545 per-view edit
+links, per-bundle field-UI / form-display / view-display links, and one permission
+form per ECK entity type** — and the site has **5,710 permissions** (ECK generates
+per-bundle perms across 90+ entity types), so each `*.entity_permissions_form`
+link's access check calls `EntityPermissionsForm::permissionsByProvider()` which
+groups all 5,710 every time. All of it is access-checked **inline on every admin
+page render**. `admin_toolbar`'s only size lever in 3.6 is `menu_depth` (no
+`max_bin_size`), and lowering depth also hides real BOS office menus.
+
+**Fix:** new **`bos_toolbar_perf`** module — `hook_menu_links_discovered_alter`
+removes the heavy link families (`entity.view.edit_form`,
+`*.entity_permissions_form`, `*.field_ui_fields`, `entity.entity_form_display.*`,
+`entity.entity_view_display.*`), guarded to only `admin_toolbar_tools.`-prefixed
+plugin ids so no core/BOS menu item is touched. `/admin/content` 5.8s → 1.0s.
+**Lesson: `admin_toolbar_tools` does not scale to a site with hundreds of views /
+ECK types / bundles — prune its generated link families (or disable the submodule)
+rather than shipping a toolbar that access-checks thousands of links per request.**
+
+---
+
 ## Resizing the Olivero sticky header breaks the toggle unless FOUR constants scale together
 
 Shrinking the desktop header (`brookstone_olivero`) repeatedly "lost the hamburger"

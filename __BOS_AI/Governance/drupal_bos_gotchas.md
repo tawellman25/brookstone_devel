@@ -6,6 +6,28 @@ This document captures hard-learned lessons. Most entries cite a specific commit
 
 ---
 
+## Adding a Views page display via raw configFactory leaves the route unregistered (404)
+
+**Discovered 2026-09-26** (backflow device list page). A script added a new `page`
+display to an existing view by editing the view config through
+`\Drupal::configFactory()->getEditable('views.view.X')->set('display', …)->save()`.
+The display showed up in config and even in `$view->get('display')`, but the
+page's URL returned **404** and `Url::fromUserInput('/the/path')->isRouted()` was
+`NONE` — even after `drush cr`. Raw config saves bypass the View **config entity's**
+`postSave()`, which is what tells Views to (re)register its display routes; a plain
+`cr` rebuilds the router from providers but Views' route info wasn't refreshed.
+
+**Fix:** edit the view through the **entity API** so `postSave` fires —
+`$view = \Drupal::entityTypeManager()->getStorage('view')->load('X'); $displays =
+$view->get('display'); $displays['page_1'] = […]; $view->set('display', $displays);
+$view->save();` (belt-and-suspenders: `\Drupal::service('router.builder')->rebuild()`).
+Same lesson as the 2026-09-26 backflow list page: **for anything that must register
+a route/menu (view page displays), go through the entity, not raw config.** (Raw
+configFactory is still fine — and preferred — for config that has no route/postSave
+side effects, e.g. pathauto patterns, image styles, exposed-filter tweaks.)
+
+---
+
 ## `auto_rotate_lite` image effect reads EXIF from the source file on EVERY render (S3 = disaster)
 
 **Discovered 2026-09-26** (property pages taking 30–120s; cold-cache loads 500'd

@@ -2,15 +2,19 @@
 
 /**
  * @file
- * BOS Backflow Device Types — role-based rendering of the device-type vocab.
+ * BOS Backflow Device Types — role-based rendering of the backflow vocabs.
  *
  * Follows the BOS audience view-mode tier pattern (see
- * __BOS_AI/Governance/ui_patterns.md): one
- * /services/backflow-prevention/{type} URL, different body by audience —
- * office/admin -> admin_view, crew -> teammate_view, public/clients -> full —
- * plus a full-bleed rotating hero banner (field_banner_images) for public
- * viewers. Mirrors bos_services (that vocab uses field_banner_image singular;
- * this one uses field_banner_images multi).
+ * __BOS_AI/Governance/ui_patterns.md): one canonical term URL, different body by
+ * audience — office/admin -> admin_view, crew -> teammate_view, public/clients
+ * -> full. Governs two vocabularies (BOS_BACKFLOW_TYPES_VIDS):
+ *   - backflow_device_types (/services/backflow-prevention/{type}) — also gets a
+ *     full-bleed rotating hero banner (field_banner_images) for public viewers
+ *     and the landing-view CSS.
+ *   - backflow_uses (/services/backflow-prevention/uses/{use}) — audience tiers
+ *     only; it has no banner field, so the hero / landing hooks no-op for it.
+ * Mirrors bos_services (that vocab uses field_banner_image singular; device
+ * types use field_banner_images multi).
  */
 
 use Drupal\Core\Access\AccessResult;
@@ -42,9 +46,23 @@ const BOS_BACKFLOW_TYPES_CREW_ROLES = [
 ];
 
 /**
- * The vocabulary this module governs.
+ * The device-type vocabulary — the one with the rotating hero + landing view.
  */
 const BOS_BACKFLOW_TYPES_VID = 'backflow_device_types';
+
+/**
+ * All backflow vocabularies that use the audience view-mode tiers.
+ *
+ * Both route the canonical term page by role (office -> admin_view, crew ->
+ * teammate_view, else full). Only `backflow_device_types` carries the hero
+ * banner + landing view — `backflow_uses` has no banner field, so the hero /
+ * landing-CSS hooks below stay scoped to BOS_BACKFLOW_TYPES_VID and simply
+ * no-op for `backflow_uses`.
+ */
+const BOS_BACKFLOW_TYPES_VIDS = [
+  'backflow_device_types',
+  'backflow_uses',
+];
 
 /**
  * Implements hook_entity_view_mode_alter().
@@ -56,7 +74,7 @@ const BOS_BACKFLOW_TYPES_VID = 'backflow_device_types';
 function bos_backflow_types_entity_view_mode_alter(&$view_mode, EntityInterface $entity) {
   if ($view_mode !== 'full'
     || $entity->getEntityTypeId() !== 'taxonomy_term'
-    || $entity->bundle() !== BOS_BACKFLOW_TYPES_VID) {
+    || !in_array($entity->bundle(), BOS_BACKFLOW_TYPES_VIDS, TRUE)) {
     return;
   }
   $roles = \Drupal::currentUser()->getRoles();
@@ -73,7 +91,7 @@ function bos_backflow_types_entity_view_mode_alter(&$view_mode, EntityInterface 
  */
 function bos_backflow_types_preprocess_taxonomy_term(array &$variables) {
   $term = $variables['term'] ?? NULL;
-  if (!$term || $term->bundle() !== BOS_BACKFLOW_TYPES_VID) {
+  if (!$term || !in_array($term->bundle(), BOS_BACKFLOW_TYPES_VIDS, TRUE)) {
     return;
   }
   $view_mode = $variables['view_mode'] ?? '';
@@ -175,7 +193,7 @@ function bos_backflow_types_block_access($block, $operation, AccountInterface $a
  * page cache can serve one audience's body to another.
  */
 function bos_backflow_types_taxonomy_term_view_alter(array &$build, EntityInterface $entity, $display) {
-  if ($entity->bundle() === BOS_BACKFLOW_TYPES_VID) {
+  if (in_array($entity->bundle(), BOS_BACKFLOW_TYPES_VIDS, TRUE)) {
     $build['#cache']['contexts'][] = 'user.roles';
   }
 }

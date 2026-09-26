@@ -1,0 +1,70 @@
+<?php
+
+/**
+ * @file
+ * Prune heavy admin_toolbar_tools developer links for performance.
+ *
+ * See the 2026-09-26 perf investigation: property pages (and every admin page)
+ * were slow because admin_toolbar_tools expands the whole admin structure into
+ * the toolbar — on BOS that is 545 per-view edit links, per-bundle field-UI /
+ * form-display / view-display links, and one permission form per ECK entity type
+ * (each grouping 5,710 permissions). All of those are access-checked inline on
+ * every admin page render (~5-6s). Office/admin staff navigate via the normal
+ * admin menu + BOS custom menus, never these deep developer shortcuts, so we
+ * drop them from the toolbar. Reversible: disable this module to restore them.
+ */
+
+/**
+ * Implements hook_menu_links_discovered_alter().
+ *
+ * Removes the heavy admin_toolbar_tools-generated link families from the menu.
+ * Only touches links whose plugin id is provided by admin_toolbar_tools, so no
+ * real (core/BOS) menu item is ever removed.
+ */
+function bos_toolbar_perf_menu_links_discovered_alter(array &$links): void {
+  // Exact route matches to prune (per-instance developer links).
+  $kill_exact = [
+    'entity.view.edit_form' => TRUE,
+  ];
+  // Route suffixes to prune (one per bundle / entity type).
+  $kill_suffix = [
+    '.entity_permissions_form',
+    '.field_ui_fields',
+  ];
+  // Route prefixes to prune (per-bundle form/view display management).
+  $kill_prefix = [
+    'entity.entity_form_display.',
+    'entity.entity_view_display.',
+  ];
+
+  foreach ($links as $key => $def) {
+    // Safety: only ever remove admin_toolbar_tools-generated links.
+    if (strpos((string) $key, 'admin_toolbar_tools.') !== 0) {
+      continue;
+    }
+    $route = $def['route_name'] ?? '';
+    if ($route === '') {
+      continue;
+    }
+    $remove = isset($kill_exact[$route]);
+    if (!$remove) {
+      foreach ($kill_suffix as $s) {
+        if (substr($route, -strlen($s)) === $s) {
+          $remove = TRUE;
+          break;
+        }
+      }
+    }
+    if (!$remove) {
+      foreach ($kill_prefix as $p) {
+        if (strpos($route, $p) === 0) {
+          $remove = TRUE;
+          break;
+        }
+      }
+    }
+    if ($remove) {
+      unset($links[$key]);
+    }
+  }
+}

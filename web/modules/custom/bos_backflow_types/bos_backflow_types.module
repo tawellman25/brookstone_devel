@@ -17,20 +17,11 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\image\Entity\ImageStyle;
-use Drupal\views\ViewExecutable;
 
 /**
- * Implements hook_views_pre_render().
- *
- * Attach the landing-page styling (compact group sub-headers + bolder device
- * titles) only when the device-types landing view renders. Scoped in CSS by the
- * display's `backflow-types-landing` css_class.
+ * Route name of the device-types landing view page.
  */
-function bos_backflow_types_views_pre_render(ViewExecutable $view) {
-  if ($view->id() === 'backflow_device_types_landing') {
-    $view->element['#attached']['library'][] = 'bos_backflow_types/landing';
-  }
-}
+const BOS_BACKFLOW_TYPES_LANDING_ROUTE = 'view.backflow_device_types_landing.page_1';
 
 /**
  * Office/admin roles that see the admin_view display (top tier).
@@ -118,6 +109,14 @@ function bos_backflow_types_preprocess_taxonomy_term(array &$variables) {
  * "hero" region for public viewers.
  */
 function bos_backflow_types_preprocess_page(array &$variables) {
+  // Device-types landing view page: attach the compact group sub-headers +
+  // bolder device titles (scoped in CSS by the `backflow-types-landing`
+  // css_class). Attached here rather than in hook_views_pre_render because a
+  // hook added to an already-enabled module is not always re-registered by cr.
+  if (\Drupal::routeMatch()->getRouteName() === BOS_BACKFLOW_TYPES_LANDING_ROUTE) {
+    $variables['#attached']['library'][] = 'bos_backflow_types/landing';
+  }
+
   $term = _bos_backflow_types_hero_term();
   if (!$term) {
     return;

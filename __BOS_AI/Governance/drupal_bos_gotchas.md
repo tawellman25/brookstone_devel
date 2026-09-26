@@ -6,6 +6,28 @@ This document captures hard-learned lessons. Most entries cite a specific commit
 
 ---
 
+## A hook ADDED to an already-enabled module is not registered by `drush cr`
+
+**Discovered 2026-09-26** (`bos_backflow_types` landing CSS). A new
+`bos_backflow_types_views_pre_render()` was added to a module that was already
+enabled, then rsynced + `drush cr`. `function_exists()` returned TRUE (the file
+was deployed and loaded), the library was defined, **but the hook never fired** —
+`ModuleHandler::invokeAllWith('views_pre_render', …)` did not list the module. The
+module's OTHER hooks (added at install time) kept firing fine. So `cr` refreshed
+the code but did **not** re-register a hook the module had *never previously
+implemented*.
+
+**Fixes:** (a) reinstall the module (`drush pmu` + `drush en`) to rebuild its hook
+registration, or (b) — pragmatic, no downtime — implement the behavior in a hook
+the module **already** implements (there, the CSS library was attached from the
+existing `hook_preprocess_page`, gated to the view's route, instead of
+`hook_views_pre_render`). **Lesson: prefer extending an already-registered hook;
+if you must add a brand-new hook to a live module, reinstall it, don't trust `cr`.**
+(Also restart `lsphp` after deploying a changed `.module` so workers drop the old
+opcached body — the stale-worker gotcha below.)
+
+---
+
 ## Adding a Views page display via raw configFactory leaves the route unregistered (404)
 
 **Discovered 2026-09-26** (backflow device list page). A script added a new `page`

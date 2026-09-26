@@ -109,11 +109,15 @@ function bos_backflow_types_preprocess_taxonomy_term(array &$variables) {
  * "hero" region for public viewers.
  */
 function bos_backflow_types_preprocess_page(array &$variables) {
-  // Device-types landing view page: attach the compact group sub-headers +
-  // bolder device titles (scoped in CSS by the `backflow-types-landing`
-  // css_class). Attached here rather than in hook_views_pre_render because a
-  // hook added to an already-enabled module is not always re-registered by cr.
-  if (\Drupal::routeMatch()->getRouteName() === BOS_BACKFLOW_TYPES_LANDING_ROUTE) {
+  // Attach the landing stylesheet (compact group sub-headers + bolder device
+  // titles, scoped by the `backflow-types-landing` css_class; plus the .bo-btn
+  // brand button) on the device-types landing view page AND on any backflow
+  // device-type term page, so the button class is available across these views.
+  // Attached here rather than hook_views_pre_render because a hook added to an
+  // already-enabled module is not always re-registered by cr.
+  $term_param = \Drupal::routeMatch()->getParameter('taxonomy_term');
+  $on_type_term = $term_param instanceof EntityInterface && $term_param->bundle() === BOS_BACKFLOW_TYPES_VID;
+  if (\Drupal::routeMatch()->getRouteName() === BOS_BACKFLOW_TYPES_LANDING_ROUTE || $on_type_term) {
     $variables['#attached']['library'][] = 'bos_backflow_types/landing';
   }
 

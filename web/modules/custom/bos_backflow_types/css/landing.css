@@ -47,3 +47,18 @@
 .backflow-types-landing .backflow-device-type-item {
   margin-bottom: 1rem;
 }
+
+/* Brand button (.bo-btn) — the orange pill CTA used on the marketing pages,
+   made available on the backflow device-type views (landing + term pages).
+   Copied from bos_homepage/css/homepage.css so the class works here; vars fall
+   back to the brand hexes when the token sheet isn't present. */
+.bo-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--bo-orange, #CB6015); color: #fff !important;
+  font-family: var(--osw, "Oswald", sans-serif); font-weight: 600; font-size: 17px; line-height: 1;
+  padding: 13px 26px; border: 2px solid transparent; border-radius: 4px;
+  text-decoration: none; cursor: pointer;
+}
+.bo-btn:hover { background: var(--bo-orange-hover, #A94E11); color: #fff !important; text-decoration: none; }
+.bo-btn--ghost { background: transparent; color: var(--bo-orange, #CB6015) !important; border-color: var(--bo-orange, #CB6015); }
+.bo-btn--ghost:hover { background: rgba(203,96,21,.10); }

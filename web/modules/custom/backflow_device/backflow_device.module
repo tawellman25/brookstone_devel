@@ -737,3 +737,87 @@ function backflow_device_tokens($type, $tokens, array $data, array $options, \Dr
   }
   return $replacements;
 }
+
+/**
+ * TIDs of non-testable backflow device types (field_is_testable = FALSE).
+ *
+ * Non-testable devices (AVB, dual check) have no test cocks, so they must never
+ * get a next-due date or appear in compliance reminders. Statically cached.
+ */
+function _backflow_device_nontestable_type_tids(): array {
+  $cache = &drupal_static(__FUNCTION__);
+  if ($cache === NULL) {
+    $cache = array_values(\Drupal::entityQuery('taxonomy_term')
+      ->accessCheck(FALSE)
+      ->condition('vid', 'backflow_device_types')
+      ->condition('field_is_testable', 0)
+      ->execute());
+  }
+  return $cache;
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * On the backflow device add/edit form, suppress the test-scheduling fields
+ * (next-due date + test frequency) when the device's selected type is
+ * non-testable — wrong data that never gets entered beats data that has to be
+ * filtered everywhere. Server-side #access keyed on the type's field_is_testable
+ * flag (deliberately NOT conditional_fields), matching the Gate 3a pattern; the
+ * compliance dashboard exclusion (hook_views_query_alter below) is the backstop
+ * for a type changed in-form without a reload.
+ */
+function backflow_device_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  $obj = $form_state->getFormObject();
+  if (!$obj instanceof \Drupal\Core\Entity\EntityFormInterface) {
+    return;
+  }
+  $entity = $obj->getEntity();
+  if (!$entity instanceof \Drupal\Core\Entity\ContentEntityInterface
+    || $entity->getEntityTypeId() !== 'property_backflow_device'
+    || !$entity->hasField('field_device_type')
+    || $entity->get('field_device_type')->isEmpty()) {
+    return;
+  }
+  $term = $entity->get('field_device_type')->entity;
+  if (!$term || !$term->hasField('field_is_testable')) {
+    return;
+  }
+  $testable = $term->get('field_is_testable')->isEmpty()
+    ? TRUE
+    : (bool) $term->get('field_is_testable')->value;
+  if ($testable) {
+    return;
+  }
+  // Non-testable type: hide the test-scheduling fields.
+  foreach (['field_next_due_date', 'field_test_frequency_months'] as $f) {
+    if (isset($form[$f])) {
+      $form[$f]['#access'] = FALSE;
+    }
+  }
+}
+
+/**
+ * Implements hook_views_query_alter().
+ *
+ * Exclude non-testable devices from the compliance dashboard (Gate 4) so a
+ * device with no test capability never shows as due/overdue. Done as a query
+ * exclusion (a NOT IN subquery on the device id) rather than a Views
+ * relationship + filter: it is environment-independent (resolves the flag →
+ * TIDs at runtime, no hard-coded TIDs) and sidesteps this entity's documented
+ * Views-relationship fragility.
+ */
+function backflow_device_views_query_alter(\Drupal\views\ViewExecutable $view, \Drupal\views\Plugin\views\query\QueryPluginBase $query) {
+  if ($view->id() !== 'backflow_compliance') {
+    return;
+  }
+  $nontestable = _backflow_device_nontestable_type_tids();
+  if (!$nontestable || !$query instanceof \Drupal\views\Plugin\views\query\Sql) {
+    return;
+  }
+  $base = $view->storage->get('base_table');
+  $sub = \Drupal::database()->select('property_backflow_device__field_device_type', 'dt')
+    ->fields('dt', ['entity_id']);
+  $sub->condition('dt.field_device_type_target_id', $nontestable, 'IN');
+  $query->addWhere(0, "{$base}.id", $sub, 'NOT IN');
+}

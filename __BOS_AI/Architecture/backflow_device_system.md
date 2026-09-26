@@ -101,7 +101,7 @@ The existing `backflow_testing` work order bundle, brought to **sibling parity**
 
 ### 2.5 `backflow_device_types` taxonomy vocabulary
 
-Vocabulary `backflow_device_types`, **six seed terms** — the four testable assemblies **PVB, RP, DCVA, SVB** plus two **non-testable** devices **AVB** (Atmospheric Vacuum Breaker) and **DuC** (Dual Check Valve), added to production after the 2026-06-20 seed (see §5). Type is a taxonomy (not a list field) because public/training landing pages were wanted for *types* (see §3.5).
+Vocabulary `backflow_device_types`, **seven seed terms** — the four testable assemblies **PVB, RP, DCVA, SVB** plus **three non-testable** devices **AVB** (Atmospheric Vacuum Breaker), **DuC** (Dual Check Valve), and **HBVB** (Hose Bibb Vacuum Breaker, added 2026-09-26 — see §3.11). AVB/DuC were added to production after the 2026-06-20 seed; all seven are now in the seed script (see §5). Type is a taxonomy (not a list field) because public/training landing pages were wanted for *types* (see §3.5).
 
 | Field | Type | Notes |
 |---|---|---|
@@ -335,7 +335,9 @@ The compliance dashboard (`backflow_compliance`, `/admin/operations/backflow`) i
 
 ### 3.11 Two-axis classification: device *type* vs *use* are independent fields
 
-Mechanical design (`field_device_type` → `backflow_device_types`: PVB/RP/DCVA/SVB) and application (`field_used_for` → `backflow_uses`: irrigation/domestic/fire/…) are **orthogonal** — the same device type serves many uses, and a given use can be met by several device types. They are deliberately two separate single-value reference fields, not one merged taxonomy.
+Mechanical design (`field_device_type` → `backflow_device_types`: PVB/RP/DCVA/SVB/AVB/DuC/HBVB) and application (`field_used_for` → `backflow_uses`: irrigation/domestic/fire/…) are **orthogonal** — the same device type serves many uses, and a given use can be met by several device types. They are deliberately two separate single-value reference fields, not one merged taxonomy.
+
+**HBVB closes the type-axis gap opposite the `HOSE_BIBB` use (2026-09-26).** `backflow_uses` has long carried a `HOSE_BIBB` term, but there was no matching device *type* — a tech inventorying a hose bibb connection could set `field_used_for` = HOSE_BIBB and had no correct `field_device_type` (AVB is mechanically different; blank was the only alternative). The **Hose Bibb Vacuum Breaker (HBVB)** term fills that. The axes stay independent: an HBVB is the common device on a hose bibb connection but not the only one, and a hose bibb connection that needs certified testing takes a PVB or RP instead — so `HOSE_BIBB` use does not imply `HBVB` type. HBVB is non-testable (`field_is_testable` = FALSE).
 
 `field_used_for` defaults: **single-value (cardinality 1) and optional.** *[Flagged for Todd — change to unlimited if multi-use devices must be recorded, or required if every device must carry a use. Confirm before relying on either.]*
 
@@ -418,6 +420,7 @@ Full test-report rebuild (`backflow-test-report.html.twig`, entity_print/dompdf)
 - **`field_gps`** — deferred; needs the `geofield` contrib module. (Note: `geofield` is in fact already enabled, so the dependency rationale is moot — deferral is scope-only.)
 - **Per-water-district test frequency** — `field_test_frequency_months` exists (default 12); per-district variation is data-entry, no schema change needed.
 - **Automated reminders engine** — not built; `field_next_due_date` is the intended hook point. **Constraint (2026-09-26):** the reminders query MUST exclude devices whose type is non-testable (`field_device_type.field_is_testable` = FALSE) — AVB and dual-check devices have no test and must never be reminded. The compliance dashboard already enforces this via `backflow_device_views_query_alter` (excludes non-testable TIDs); the reminders engine must apply the same exclusion.
+- **HBVB inventory policy — open, Todd's call (raised 2026-09-26).** An HBVB sits on nearly every outdoor tap, so a single residential property could justify four to six device records that will never carry a test date. Whether HBVBs get inventoried everywhere, only on commercial / high-hazard properties, or only when one is found missing or failed is undecided. **No enforcement, validation, or default behaviour is built around this** — it is recorded here so the decision isn't lost.
 - **Customer portal exposure** — not built.
 - **Water-district compliance export** — not built.
 - **Compliance dashboard AREA filter — deferred (focused follow-up owed).** The dashboard ships Status + next-due-range exposed filters. The intended area filter (by `field_property → properties → field_zipcode_reference`) needs a Views relationship from `property_backflow_device` to `properties`; building that relationship in the Views API threw query errors (e.g. `addcslashes`/empty-table during execute), so area/zip filtering was deferred rather than ship a broken dashboard. Owed as a focused follow-up (add the property relationship, then expose the zipcode/area).

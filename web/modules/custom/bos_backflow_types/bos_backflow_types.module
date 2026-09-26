@@ -28,6 +28,12 @@ use Drupal\image\Entity\ImageStyle;
 const BOS_BACKFLOW_TYPES_LANDING_ROUTE = 'view.backflow_device_types_landing.page_1';
 
 /**
+ * Route name of the backflow-uses landing view page. Styled with the same
+ * landing stylesheet (it reuses the device-types landing css/row/title classes).
+ */
+const BOS_BACKFLOW_USES_LANDING_ROUTE = 'view.land_backflow_uses.page_1';
+
+/**
  * Office/admin roles that see the admin_view display (top tier).
  */
 const BOS_BACKFLOW_TYPES_OFFICE_ROLES = [
@@ -135,7 +141,9 @@ function bos_backflow_types_preprocess_page(array &$variables) {
   // already-enabled module is not always re-registered by cr.
   $term_param = \Drupal::routeMatch()->getParameter('taxonomy_term');
   $on_type_term = $term_param instanceof EntityInterface && $term_param->bundle() === BOS_BACKFLOW_TYPES_VID;
-  if (\Drupal::routeMatch()->getRouteName() === BOS_BACKFLOW_TYPES_LANDING_ROUTE || $on_type_term) {
+  $route = \Drupal::routeMatch()->getRouteName();
+  $on_landing = in_array($route, [BOS_BACKFLOW_TYPES_LANDING_ROUTE, BOS_BACKFLOW_USES_LANDING_ROUTE], TRUE);
+  if ($on_landing || $on_type_term) {
     $variables['#attached']['library'][] = 'bos_backflow_types/landing';
   }
 

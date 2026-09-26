@@ -1,0 +1,201 @@
+<?php
+
+/**
+ * @file
+ * BOS Backflow Device Types — role-based rendering of the device-type vocab.
+ *
+ * Follows the BOS audience view-mode tier pattern (see
+ * __BOS_AI/Governance/ui_patterns.md): one
+ * /services/backflow-prevention/{type} URL, different body by audience —
+ * office/admin -> admin_view, crew -> teammate_view, public/clients -> full —
+ * plus a full-bleed rotating hero banner (field_banner_images) for public
+ * viewers. Mirrors bos_services (that vocab uses field_banner_image singular;
+ * this one uses field_banner_images multi).
+ */
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\image\Entity\ImageStyle;
+
+/**
+ * Office/admin roles that see the admin_view display (top tier).
+ */
+const BOS_BACKFLOW_TYPES_OFFICE_ROLES = [
+  'supervisor',
+  'administration',
+  'site_assistant',
+  'site_admin',
+  'administrator',
+];
+
+/**
+ * Crew role that sees the teammate_view display (middle tier).
+ */
+const BOS_BACKFLOW_TYPES_CREW_ROLES = [
+  'teammates',
+];
+
+/**
+ * The vocabulary this module governs.
+ */
+const BOS_BACKFLOW_TYPES_VID = 'backflow_device_types';
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ *
+ * Same URL, three displays by audience (office checked first). Only the
+ * canonical full-page render is rewritten — token/admin/embedded renders keep
+ * their own view mode.
+ */
+function bos_backflow_types_entity_view_mode_alter(&$view_mode, EntityInterface $entity) {
+  if ($view_mode !== 'full'
+    || $entity->getEntityTypeId() !== 'taxonomy_term'
+    || $entity->bundle() !== BOS_BACKFLOW_TYPES_VID) {
+    return;
+  }
+  $roles = \Drupal::currentUser()->getRoles();
+  if (array_intersect(BOS_BACKFLOW_TYPES_OFFICE_ROLES, $roles)) {
+    $view_mode = 'admin_view';
+  }
+  elseif (array_intersect(BOS_BACKFLOW_TYPES_CREW_ROLES, $roles)) {
+    $view_mode = 'teammate_view';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for taxonomy_term.
+ */
+function bos_backflow_types_preprocess_taxonomy_term(array &$variables) {
+  $term = $variables['term'] ?? NULL;
+  if (!$term || $term->bundle() !== BOS_BACKFLOW_TYPES_VID) {
+    return;
+  }
+  $view_mode = $variables['view_mode'] ?? '';
+
+  // The role-based view-mode switch makes the term template treat these as NOT
+  // the canonical page (core keys `page` to 'full'), which renders a duplicate
+  // linked term-name heading. These renders ARE the canonical page, so mark them.
+  if (in_array($view_mode, ['admin_view', 'teammate_view'], TRUE)) {
+    $variables['page'] = TRUE;
+  }
+
+  if ($view_mode === 'admin_view') {
+    $variables['attributes']['class'][] = 'bos-admin-view';
+    $variables['#attached']['library'][] = 'brookstone_olivero/audience_admin';
+    return;
+  }
+
+  // Public page: the banner renders as a full-bleed hero in the theme's top
+  // "hero" region (see bos_backflow_types_preprocess_page) — hide the raw stacked
+  // field here so it doesn't also render inside the content.
+  if ($view_mode === 'full'
+    && $term->hasField('field_banner_images')
+    && !$term->get('field_banner_images')->isEmpty()
+    && isset($variables['content']['field_banner_images'])) {
+    $variables['content']['field_banner_images']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for page.
+ *
+ * Render the type's banner images as a full-bleed rotating hero in the top
+ * "hero" region for public viewers.
+ */
+function bos_backflow_types_preprocess_page(array &$variables) {
+  $term = _bos_backflow_types_hero_term();
+  if (!$term) {
+    return;
+  }
+  $subtitle = '';
+  if ($term->hasField('field_short_description') && !$term->get('field_short_description')->isEmpty()) {
+    $subtitle = trim(strip_tags((string) $term->get('field_short_description')->value));
+  }
+  $variables['page']['hero']['bo_hero_banner'] = [
+    '#theme' => 'bo_hero_banner',
+    '#images' => _bos_backflow_types_banner_images($term),
+    '#title' => $term->label(),
+    '#subtitle' => $subtitle,
+  ];
+  $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
+  $variables['#cache']['contexts'][] = 'user.roles';
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for html.
+ */
+function bos_backflow_types_preprocess_html(array &$variables) {
+  if (_bos_backflow_types_hero_term()) {
+    $variables['attributes']['class'][] = 'has-bo-hero';
+  }
+}
+
+/**
+ * Implements hook_block_access().
+ *
+ * The hero carries the type name as the page H1, so hide the core page-title
+ * block for public viewers on a type term that has banner images.
+ */
+function bos_backflow_types_block_access($block, $operation, AccountInterface $account) {
+  if ($operation !== 'view' || $block->getPluginId() !== 'page_title_block') {
+    return AccessResult::neutral();
+  }
+  $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
+  $hide = $term instanceof EntityInterface
+    && $term->bundle() === BOS_BACKFLOW_TYPES_VID
+    && !array_intersect(array_merge(BOS_BACKFLOW_TYPES_OFFICE_ROLES, BOS_BACKFLOW_TYPES_CREW_ROLES), $account->getRoles())
+    && _bos_backflow_types_banner_images($term);
+  return AccessResult::forbiddenIf((bool) $hide)
+    ->addCacheContexts(['user.roles', 'route'])
+    ->addCacheableDependency($term instanceof EntityInterface ? $term : $block);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view_alter() for taxonomy_term.
+ *
+ * The view mode is chosen by role, so the render MUST vary by user.roles or the
+ * page cache can serve one audience's body to another.
+ */
+function bos_backflow_types_taxonomy_term_view_alter(array &$build, EntityInterface $entity, $display) {
+  if ($entity->bundle() === BOS_BACKFLOW_TYPES_VID) {
+    $build['#cache']['contexts'][] = 'user.roles';
+  }
+}
+
+/**
+ * The device-type term whose public banner hero should render, or NULL.
+ */
+function _bos_backflow_types_hero_term(): ?EntityInterface {
+  $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
+  if (!$term instanceof EntityInterface || $term->bundle() !== BOS_BACKFLOW_TYPES_VID) {
+    return NULL;
+  }
+  if (array_intersect(array_merge(BOS_BACKFLOW_TYPES_OFFICE_ROLES, BOS_BACKFLOW_TYPES_CREW_ROLES), \Drupal::currentUser()->getRoles())) {
+    return NULL;
+  }
+  return _bos_backflow_types_banner_images($term) ? $term : NULL;
+}
+
+/**
+ * Build the banner image list [{src, alt}] for a type term, or [] if none.
+ */
+function _bos_backflow_types_banner_images(EntityInterface $term): array {
+  if (!$term->hasField('field_banner_images') || $term->get('field_banner_images')->isEmpty()) {
+    return [];
+  }
+  $style = ImageStyle::load('max_2600x2600');
+  $images = [];
+  foreach ($term->get('field_banner_images') as $item) {
+    $file = $item->entity;
+    if (!$file) {
+      continue;
+    }
+    $uri = $file->getFileUri();
+    $images[] = [
+      'src' => $style ? $style->buildUrl($uri) : \Drupal::service('file_url_generator')->generateAbsoluteString($uri),
+      'alt' => (string) ($item->alt ?: $term->label()),
+    ];
+  }
+  return $images;
+}

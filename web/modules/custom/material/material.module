@@ -1,9 +1,13 @@
 <?php
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityFormInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\taxonomy\Entity\Term;
 use Drupal\views\ViewExecutable;
 use Symfony\Component\Validator\ConstraintViolation;
@@ -36,6 +40,79 @@ const MATERIAL_OFFICE_ROLES = [
 ];
 const MATERIAL_CREW_ROLES = ['teammates'];
 const MATERIAL_CLIENT_ROLES = ['client'];
+
+/**
+ * Field-level VIEW access on the material entity (all bundles).
+ *
+ * The audience view-mode displays only HIDE cost/supplier fields from the
+ * client/public tiers — that is presentation, not security: JSON:API (enabled,
+ * read-only), REST, Views and tokens all ignore display config and would return
+ * these fields to anyone with entity-view access, since the fields carry no
+ * access control of their own. This is the real guard, honoured by every render
+ * path, so the catalog can be opened to clients/anon without leaking cost or
+ * sourcing data. Matches the display tiers:
+ *   OFFICE-ONLY  — cost, pack internals, marketing hero images: office roles only.
+ *   OFFICE+CREW  — supplier/manufacturer sourcing, stock, lifecycle, docs.
+ * Everything not listed (image, description, specs, price, UOM…) stays public.
+ */
+const MATERIAL_FIELD_OFFICE_ONLY = [
+  'field_cost_integer',
+  'field_cost_unit_of_measure',
+  'field_supplier_unit_cost',
+  'field_banner_images',
+  'field_slideshow_image',
+  'field_front_promoted',
+  'field_pack_qty_mid',
+  'field_pack_qty_case',
+  'field_pack_qty_mid_label',
+  'field_pack_family',
+  'field_pack_data_source',
+];
+const MATERIAL_FIELD_OFFICE_CREW = [
+  'field_supplier',
+  'field_suppliers',
+  'field_supplier_item_number',
+  'field_supplier_website_item_link',
+  'field_manufacturer_item_number',
+  'field_manufacturer_website_item',
+  'field_quantity_in_stock',
+  'field_lead_time',
+  'field_last_restocked_date',
+  'field_discontinued',
+  'field_replaced_by',
+  'field_price_updated',
+  'field_material_tags',
+  'field_carton_quantity',
+  'field_documentation',
+  'field_safety_data_sheet',
+  'field_instructional_video',
+];
+
+/**
+ * Implements hook_entity_field_access().
+ *
+ * Enforce the cost/supplier field protection above on the `material` entity for
+ * the VIEW operation only (edit/forms are untouched, so office editing is
+ * unaffected). Denies at the field level for the wrong audience, which JSON:API,
+ * REST, Views and the render pipeline all honour.
+ */
+function material_entity_field_access($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, ?FieldItemListInterface $items = NULL) {
+  if ($operation !== 'view' || $field_definition->getTargetEntityTypeId() !== 'material') {
+    return AccessResult::neutral();
+  }
+  $field = $field_definition->getName();
+  $roles = $account->getRoles();
+  $is_office = (bool) array_intersect(MATERIAL_OFFICE_ROLES, $roles);
+  $is_crew = (bool) array_intersect(MATERIAL_CREW_ROLES, $roles);
+
+  if (in_array($field, MATERIAL_FIELD_OFFICE_ONLY, TRUE)) {
+    return AccessResult::forbiddenIf(!$is_office)->addCacheContexts(['user.roles']);
+  }
+  if (in_array($field, MATERIAL_FIELD_OFFICE_CREW, TRUE)) {
+    return AccessResult::forbiddenIf(!($is_office || $is_crew))->addCacheContexts(['user.roles']);
+  }
+  return AccessResult::neutral();
+}
 
 /**
  * Implements hook_entity_view_mode_alter().

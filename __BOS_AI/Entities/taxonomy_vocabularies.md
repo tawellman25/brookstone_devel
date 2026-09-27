@@ -151,6 +151,7 @@ All taxonomy vocabularies used in BOS. Base fields (name, description, weight, p
 | Field | Type | Label |
 |---|---|---|
 | `field_applicable_services` | entity_reference → taxonomy_term | Applicable Services |
+| `field_meta_tags` | metatag | Meta tags (per-term SEO override; form sidebar only, on no view display; added 2026-09-27) |
 | `field_public_description` | text_long | Public Description (public term-page body; added 2026-09-27) |
 | `field_short_description` | text_long | Short Description (one-line teaser — rendered by the **parent landing view**, and on `admin_view`; NOT on the public term page; added 2026-09-27) |
 | `field_teammate_description` | text_long | Teammate Instructions (crew only — gated, see the audience note above) |
@@ -167,6 +168,8 @@ All taxonomy vocabularies used in BOS. Base fields (name, description, weight, p
 >
 > `field_applicable_services` is on `default` + `admin_view`, not on the public tier. Live active config is the source of truth for these displays; `setup_spraying_locations_fields.php` encodes the shape above.
 >
+> **Meta descriptions (2026-09-27):** retiring core `description` left every leaf page with **no** meta description — `metatag.metatag_defaults.taxonomy_term` is `description: '[term:description]'` and `metatag.metatag_defaults.global` defines no `description` tag, so there is no fallback (see `Governance/drupal_bos_gotchas.md`). Fixed per-vocabulary rather than sitewide: `field_meta_tags` instance added (`setup_spraying_locations_meta_tags.php`) and each term's `description` override **entered from its `field_short_description`** verbatim — plain-texted, not truncated or rewritten (`seed_spraying_locations_meta_descriptions.php`, idempotent, preserves any office-written override unless `BOS_META_FORCE=1`). `title` still comes from the global taxonomy pattern and `og_description` from the global line; neither is overridden. **11 of the 20 run 162–234 chars**, so Google will clip the tail — flagged for marketing to tighten (worst: Arena 234, Driveway 190, both derived from their first paragraph). The landing page keeps its own description from `page_1`'s metatag extender.
+
 > **Landing page (2026-09-27):** `/services/landscape-lawn-care/spraying/location` renders the 20 children as the BOS child-listing **card grid** (name + `field_short_description`), replacing a bulleted `html_list` whose teaser was the now-empty core `description` — see `Governance/ui_patterns.md` → Child-listing cards.
 
 ### spraying_methods

@@ -1462,6 +1462,12 @@ curl -s <term-url> | grep -oP '<meta name="description" content="\K[^"]{0,80}'
 **Lesson:** before clearing a field that public copy lived in, grep the metatag defaults
 for a token referencing it.
 
+**Applied 2026-09-27 on `spraying_locations`** via fix 1: `field_meta_tags` instance
+(`setup_spraying_locations_meta_tags.php`) + each term's `description` entered from its
+`field_short_description` (`seed_spraying_locations_meta_descriptions.php`). Use those two
+scripts as the template for the next vocabulary that needs it — `wind_direction` has the
+same hole.
+
 ---
 
 ## Status

@@ -1,6 +1,6 @@
 # Credential entity — Gate 0 findings & design decisions
 
-**Status:** Gate 1 stages 1–3 BUILT on DDEV, 9/9 verified. **Not on live.** Displays + backflow integration + profile retirement remain (§E 5–7).
+**Status:** Gate 1 BUILT on DDEV — stages 1–4 + 6 + 7a, **19/19 verified**. **Not on live.** Remaining: the five displays (§5) and the profile-field retirement (§8/§E-7b).
 **Tier:** T3 — sits behind the estimating epic. Does not block `/about-us/credentials`.
 **Spec source:** "BOS — Credentials entity" (marketing project, 2026-09-27).
 **Inspection tool:** `web/scripts/inspect_credential_gate0.php` (read-only, re-runnable per env).
@@ -82,6 +82,39 @@ hides its policy number because its TYPE forbids it — §11's exact test case.
 5. **§12.5** Is your insurance agent already a `contacts` record? (3,705 exist; I have not searched for a specific one.)
 6. **§8 confirmation** OK to migrate `06-2512234` / `ABPA` into a credential record and retire the two profile fields?
 7. **B1 confirmation** OK to target `user` instead of `teammate_profile`?
+
+## E2. Built so far (DDEV, verified)
+
+| Stage | State | Verification |
+|---|---|---|
+| 1 · vocab + 10 types | ✅ | seeded, resolved by stable code |
+| 2 · entity + 17 fields + perms | ✅ | add form renders; **no delete permission for anyone** (script revokes it) |
+| 3 · field access | ✅ | 3×3 matrix exact, incl. a publishable GL record still hiding its policy number |
+| 4 · date-driven status (`hook_cron`) | ✅ | 3/3 transitions: active → pending_renewal → expired |
+| 6 · backflow integration | ✅ | 7/7 — snapshot reads the credential as of the **test date**, and does **not** move when the credential is later superseded |
+| 7a · contact delete-cleanup | ✅ | credential survives; dangling reference cleared |
+| 5 · displays | ⬜ | not started |
+| 7b · profile-field retirement | ⬜ | credential record exists; fields not yet removed |
+
+**Chosen for §4's open question:** `hook_cron`, because it lets the expiring-soon view filter a
+STORED status (`pending_renewal`) instead of doing cross-field date maths against the type's
+lead-days in Views, which Views cannot express. The query is filtered to credentials that have
+an expiration date and an auto-managed status, and saves only on a real change.
+
+**Correction to a Gate 0 finding:** the certification snapshot lives in
+**`wo_backflow_testing.module`** (`_wo_backflow_testing_snapshot_cert`), not
+`backflow_device.module` — the inspection scanned only three module directories and missed it.
+The rewrite kept the semantics exactly (fill-only-if-empty, never overwrite a typed value,
+never clear to blank, frozen at WO Complete) and changed only the source, with a fallback to
+the profile fields until they are retired.
+
+**Tester filtering (§6) deliberately NOT built.** The spec's own framing is "with several
+certified testers" — BOS has **one**. A hard filter on the `field_tester` autocomplete would
+make it impossible to record a test for anyone whose credential has not been entered yet. The
+non-blocking **warning** is built instead (mirroring the existing
+`_wo_backflow_testing_gauge_cal_validate` gauge-calibration warning in the same file), and it
+distinguishes "no certification recorded" from "lapsed by that test date" — different fixes.
+Revisit the selector filter when a second tester is certified.
 
 ## E. Build order once unblocked
 

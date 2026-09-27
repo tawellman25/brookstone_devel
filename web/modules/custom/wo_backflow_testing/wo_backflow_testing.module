@@ -323,10 +323,17 @@ function _wo_backflow_testing_handle_work_order(EntityInterface $entity) {
 /**
  * Snapshots the tester's certification number onto a wo_tasks_list:backflow_testing child.
  *
- * Fills the task's cert from the tester's teammate_profile ONLY when the task's
- * cert is currently empty — it never overwrites a hand-entered value, and never
- * clears an existing value to blank when the tester has no cert (fails
- * gracefully). Frozen once the WO is Complete (1097).
+ * Fills the task's cert ONLY when the task's cert is currently empty — it never
+ * overwrites a hand-entered value, and never clears an existing value to blank
+ * when the tester has no cert (fails gracefully). Frozen once the WO is Complete
+ * (1097).
+ *
+ * SOURCE (changed 2026-09-27): the `credential` entity, read AS OF THE TEST DATE,
+ * falling back to the tester's teammate_profile fields while those still exist.
+ * The snapshot stays a snapshot and must NOT become a live reference — a filed
+ * report has to show the number as it was on the test date, not as it is now, so
+ * a later renewal (which supersedes rather than overwrites) can never retro-change
+ * a filed report.
  */
 function _wo_backflow_testing_snapshot_cert(EntityInterface $child) {
     // Freeze once the parent WO is Complete. Load the WO fresh by id rather
@@ -345,19 +352,37 @@ function _wo_backflow_testing_snapshot_cert(EntityInterface $child) {
     }
     $tester_id = $child->get('field_tester')->target_id;
 
-    $profiles = \Drupal::entityTypeManager()->getStorage('profile')->loadByProperties([
-        'uid' => $tester_id,
-        'type' => 'teammate_profile',
-    ]);
     $cert = '';
     $assoc = '';
-    if ($profiles) {
-        $profile = reset($profiles);
-        if ($profile->hasField('field_certification_number') && !$profile->get('field_certification_number')->isEmpty()) {
-            $cert = $profile->get('field_certification_number')->value;
+
+    // Preferred source: the tester's backflow credential as it stood on the test
+    // date (or today when undated).
+    if (function_exists('bos_credential_find_for_user')) {
+        $credential = bos_credential_find_for_user(
+            (int) $tester_id,
+            BOS_CREDENTIAL_BACKFLOW_CODES,
+            _wo_backflow_testing_task_test_ymd($child)
+        );
+        if ($credential) {
+            $cert = (string) ($credential->get('field_credential_number')->value ?? '');
+            $assoc = (string) ($credential->get('field_issuing_authority')->value ?? '');
         }
-        if ($profile->hasField('field_certification_association') && !$profile->get('field_certification_association')->isEmpty()) {
-            $assoc = $profile->get('field_certification_association')->value;
+    }
+
+    // Fallback: the legacy teammate_profile fields, until they are retired.
+    if ($cert === '') {
+        $profiles = \Drupal::entityTypeManager()->getStorage('profile')->loadByProperties([
+            'uid' => $tester_id,
+            'type' => 'teammate_profile',
+        ]);
+        if ($profiles) {
+            $profile = reset($profiles);
+            if ($profile->hasField('field_certification_number') && !$profile->get('field_certification_number')->isEmpty()) {
+                $cert = $profile->get('field_certification_number')->value;
+            }
+            if ($profile->hasField('field_certification_association') && !$profile->get('field_certification_association')->isEmpty()) {
+                $assoc = $profile->get('field_certification_association')->value;
+            }
         }
     }
 
@@ -542,6 +567,11 @@ function wo_backflow_testing_form_alter(array &$form, FormStateInterface $form_s
   // Non-blocking warning if the chosen gauge's calibration is expired as of the
   // test date (compliance heads-up; never blocks the save).
   $form['#validate'][] = '_wo_backflow_testing_gauge_cal_validate';
+
+  // Same shape for the tester's backflow certification: Reg 11.39 requires the
+  // certification number AND its expiration on every report, so a report filed
+  // against a lapsed certification is a compliance problem. Warn, never block.
+  $form['#validate'][] = '_wo_backflow_testing_cert_validate';
 
   // Wrap the device field, readings, and create-UI in one AJAX section.
   $form['bf_device_section'] = [
@@ -1216,4 +1246,65 @@ function _wo_backflow_testing_generate_report_pdf(EntityInterface $child) {
             '@msg' => $e->getMessage(),
         ]);
     }
+}
+
+/**
+ * The test date of a backflow_testing task as Y-m-d (site-local), or today.
+ */
+function _wo_backflow_testing_task_test_ymd(EntityInterface $child): string {
+    if ($child->hasField('field_test_date') && !$child->get('field_test_date')->isEmpty()) {
+        $raw = (string) $child->get('field_test_date')->value;
+        if ($raw !== '') {
+            return substr($raw, 0, 10);
+        }
+    }
+    return date('Y-m-d');
+}
+
+/**
+ * Non-blocking warning when the tester held no current backflow certification on
+ * the test date.
+ *
+ * Mirrors _wo_backflow_testing_gauge_cal_validate(). Reg 11.39 requires the
+ * certification number and its expiration on every report, so this is the
+ * compliance problem that is currently found by the water provider rather than by
+ * us. It warns and never blocks — the office may legitimately be recording
+ * historical paperwork.
+ */
+function _wo_backflow_testing_cert_validate(array &$form, FormStateInterface $form_state) {
+    if (!function_exists('bos_credential_find_for_user')) {
+        return;
+    }
+    $uid = $form_state->getValue(['field_tester', 0, 'target_id']);
+    if (empty($uid)) {
+        return;
+    }
+
+    $test_ymd = date('Y-m-d');
+    $tv = $form_state->getValue(['field_test_date', 0, 'value']);
+    if ($tv instanceof \Drupal\Core\Datetime\DrupalDateTime) {
+        $test_ymd = $tv->format('Y-m-d');
+    }
+    elseif (is_string($tv) && $tv !== '') {
+        $test_ymd = substr($tv, 0, 10);
+    }
+
+    $credential = bos_credential_find_for_user((int) $uid, BOS_CREDENTIAL_BACKFLOW_CODES, $test_ymd);
+    if ($credential) {
+        return;
+    }
+
+    $user = \Drupal::entityTypeManager()->getStorage('user')->load($uid);
+    $name = $user ? $user->getDisplayName() : t('the selected tester');
+
+    // Distinguish "never recorded" from "lapsed by that date" — different fixes.
+    $any = bos_credential_find_for_user((int) $uid, BOS_CREDENTIAL_BACKFLOW_CODES, NULL);
+    if (!$any && !bos_credential_find_for_user((int) $uid, BOS_CREDENTIAL_BACKFLOW_CODES, '2000-01-01')) {
+        \Drupal::messenger()->addWarning(t('Heads up: no backflow certification is recorded in BOS for @name. Reg 11.39 requires the certification number and its expiration on the report — add the credential, or verify the number entered here.', ['@name' => $name]));
+        return;
+    }
+    \Drupal::messenger()->addWarning(t('Heads up: @name held no current backflow certification on this test date (@test). A report filed against a lapsed certification is a compliance problem — verify before certifying.', [
+        '@name' => $name,
+        '@test' => _wo_backflow_testing_date_only_us($test_ymd),
+    ]));
 }

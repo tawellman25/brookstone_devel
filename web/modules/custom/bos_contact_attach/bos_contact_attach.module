@@ -210,6 +210,61 @@ function bos_contact_attach_entity_predelete(EntityInterface $entity): void {
   if ($etm->hasDefinition('properties')) {
     bos_contact_attach_cleanup_refs_on_host('properties', 'property', $contact_id);
   }
+  // Credentials reference a contact as the renewal contact (who to call to renew
+  // a licence or policy). That is a different field name from the two above, so
+  // it needs its own pass — without it, deleting a contact leaves a DANGLING
+  // reference on the credential. Kept separate rather than reshaping
+  // cleanup_refs_on_host(), so the proven property/profile path is untouched.
+  if ($etm->hasDefinition('credential')) {
+    bos_contact_attach_cleanup_credential_renewal_contacts($contact_id);
+  }
+}
+
+/**
+ * Removes a deleted contact from every credential's field_renewal_contact.
+ *
+ * The credential itself is never deleted — credentials are permanent history a
+ * filed report may reference. Only the reference is removed.
+ *
+ * Prefer setting the contact's field_contact_status to inactive over deleting it:
+ * a lapsed agent relationship is history worth keeping on an old credential.
+ */
+function bos_contact_attach_cleanup_credential_renewal_contacts(int $contact_id): void {
+  $etm = \Drupal::entityTypeManager();
+  if (!$etm->hasDefinition('credential')) {
+    return;
+  }
+
+  $ids = \Drupal::entityQuery('credential')->accessCheck(FALSE)
+    ->condition('field_renewal_contact.target_id', $contact_id)
+    ->execute();
+  if (empty($ids)) {
+    return;
+  }
+
+  foreach ($etm->getStorage('credential')->loadMultiple($ids) as $credential) {
+    if (!$credential->hasField('field_renewal_contact') || $credential->get('field_renewal_contact')->isEmpty()) {
+      continue;
+    }
+    $kept = [];
+    $changed = FALSE;
+    foreach ($credential->get('field_renewal_contact')->getValue() as $item) {
+      if ((int) ($item['target_id'] ?? 0) !== $contact_id) {
+        $kept[] = $item;
+      }
+      else {
+        $changed = TRUE;
+      }
+    }
+    if ($changed) {
+      $credential->set('field_renewal_contact', $kept);
+      $credential->save();
+      \Drupal::logger('bos_contact_attach')->info(
+        'Removed deleted contact @cid from credential @id renewal contacts.',
+        ['@cid' => $contact_id, '@id' => $credential->id()]
+      );
+    }
+  }
 }
 
 /**

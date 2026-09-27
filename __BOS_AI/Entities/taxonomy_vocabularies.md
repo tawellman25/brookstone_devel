@@ -151,7 +151,11 @@ All taxonomy vocabularies used in BOS. Base fields (name, description, weight, p
 | Field | Type | Label |
 |---|---|---|
 | `field_applicable_services` | entity_reference → taxonomy_term | Applicable Services |
-| `field_teammate_description` | text_long | Teammate Instructions |
+| `field_public_description` | text_long | Public Description (public page body; added 2026-09-27) |
+| `field_short_description` | text_long | Short Description (public one-line lead; added 2026-09-27) |
+| `field_teammate_description` | text_long | Teammate Instructions (crew only — gated, see the audience note above) |
+
+> **Content (2026-09-27):** 18 of the 20 location children carry full copy — `field_short_description` (lead) + `field_public_description` (body) + `field_teammate_description` (crew, teammate_view only); core `description` cleared on those 18. **Arena** and **Driveway** are deliberately left as-is (their good public copy lives in core `description`, which the public display keeps for exactly that reason).
 
 ### spraying_methods
 **Label:** Spraying Methods

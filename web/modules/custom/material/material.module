@@ -108,6 +108,32 @@ function material_views_pre_render(ViewExecutable $view): void {
 }
 
 /**
+ * Implements hook_preprocess_HOOK() for views_view_field.
+ *
+ * Compute the material_children card blurb from the term's public description
+ * ourselves: drop any <style>/<script> block (content included) BEFORE stripping
+ * tags, so a stray pasted stylesheet can never dump raw CSS text into a card,
+ * then a plain-text teaser. Plain string — the template escapes it once.
+ */
+function material_preprocess_views_view_field(array &$variables): void {
+  if (($variables['view']->id() ?? '') !== 'material_children'
+    || ($variables['field']->field ?? '') !== 'field_public_description') {
+    return;
+  }
+  $term = $variables['row']->_entity ?? NULL;
+  $blurb = '';
+  if ($term instanceof EntityInterface && $term->hasField('field_public_description')
+    && ($item = $term->get('field_public_description')->first())) {
+    $raw = preg_replace('#<(style|script)\b[^>]*>.*?</\1>#is', '', (string) $item->value);
+    $blurb = trim(preg_replace('/\s+/', ' ', strip_tags($raw)));
+    if (mb_strlen($blurb) > 160) {
+      $blurb = mb_substr($blurb, 0, 160) . '…';
+    }
+  }
+  $variables['output'] = $blurb;
+}
+
+/**
  * Implements hook_form_alter().
  *
  * material.pavers only: show field_setback (Setback / Batter) exclusively when

@@ -16,10 +16,11 @@ declare(strict_types=1);
  *                      wind_direction shows field_short_description (the new one-
  *                      line public copy) instead of the legacy `description`
  *                      travelogue. spraying_locations likewise renders
- *                      field_short_description + field_public_description and never
- *                      core `description` (all 20 terms were migrated onto the
- *                      dedicated fields; see
+ *                      field_public_description and never core `description` (all 20
+ *                      terms were migrated onto the dedicated fields; see
  *                      migrate_spraying_locations_descriptions.php).
+ *                      field_short_description is NOT a term-page field there — it is
+ *                      the one-line teaser the parent landing view renders.
  *   - teammate_view:   name + field_teammate_description (crew instruction only).
  *   - admin_view:      everything (name, description, short_desc, applicable
  *                      services, teammate_description) under the .bos-admin-view
@@ -39,7 +40,7 @@ $etm = \Drupal::entityTypeManager();
 // Public fields per vocab (field_teammate_description deliberately excluded).
 $FULL = [
   'carrier' => ['name', 'description'],
-  'spraying_locations' => ['name', 'field_short_description', 'field_public_description', 'field_applicable_services'],
+  'spraying_locations' => ['name', 'field_public_description'],
   'spraying_methods' => ['name', 'description', 'field_applicable_services'],
   'wind_direction' => ['name', 'field_short_description'],
   'spraying_wind_speed' => ['name', 'description'],

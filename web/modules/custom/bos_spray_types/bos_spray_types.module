@@ -114,3 +114,25 @@ function bos_spray_types_taxonomy_term_view_alter(array &$build, EntityInterface
     $build['#cache']['contexts'][] = 'user.roles';
   }
 }
+
+/**
+ * Implements hook_preprocess_HOOK() for views_view.
+ *
+ * Attaches the landing card grid CSS to the Spraying Locations landing view
+ * (/services/landscape-lawn-care/spraying/location), which renders its child
+ * terms as cards — name + the field_short_description one-liner.
+ *
+ * Deliberately a PREPROCESS hook rather than hook_views_pre_render(): preprocess
+ * implementations are gathered by the theme registry, which `drush cr` rebuilds,
+ * so this fires on an already-enabled module. A brand-new hook_views_pre_render()
+ * on a live module would NOT be registered by `cr` — see
+ * Governance/drupal_bos_gotchas.md → "A hook ADDED to an already-enabled module
+ * is not registered by `drush cr`". This module already implements
+ * hook_preprocess_taxonomy_term(), so preprocess is established here.
+ */
+function bos_spray_types_preprocess_views_view(array &$variables) {
+  $view = $variables['view'] ?? NULL;
+  if ($view && $view->id() === 'land_spray_location') {
+    $variables['#attached']['library'][] = 'bos_spray_types/landing_cards';
+  }
+}

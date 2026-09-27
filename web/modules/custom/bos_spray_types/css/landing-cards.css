@@ -1,0 +1,89 @@
+/**
+ * Spraying Locations landing card grid
+ * (/services/landscape-lawn-care/spraying/location — view land_spray_location).
+ *
+ * Same component as the service_children / material_children child-listing
+ * cards: compact responsive grid, one card per child term, name + one-line
+ * teaser (field_short_description). Tokens reused from
+ * material/css/material-children.css so the three read as one component.
+ *
+ * Scoped by the display css_class `spray-locations-landing`. NOTE: this view
+ * renders its .views-row elements DIRECTLY under the wrapper — there is no
+ * .view-content element — so the grid goes on the wrapper itself and the
+ * header/footer areas span every column. (Verified against rendered HTML;
+ * targeting .view-content here would be silently inert.)
+ */
+
+.spray-locations-landing {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+}
+
+@media (min-width: 34rem) {
+  .spray-locations-landing {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.1rem;
+  }
+}
+
+/* Intro copy and the closing copy/CTA run full width, above and below the grid. */
+.spray-locations-landing > header,
+.spray-locations-landing > footer,
+.spray-locations-landing > .view-empty {
+  grid-column: 1 / -1;
+}
+
+.spray-locations-landing > header {
+  margin-bottom: 0.25rem;
+}
+
+.spray-locations-landing > footer {
+  margin-top: 1.5rem;
+}
+
+/* The card. */
+.spray-locations-landing .spray-location-card {
+  border: 1px solid var(--bo-sand, #e7dcc9);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.85rem 1rem 0.95rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.spray-locations-landing .spray-location-card:hover {
+  border-color: var(--bo-orange, #cb6015);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+/* Card title — Oswald, ink, orange on hover (matches the child-listing cards). */
+.spray-locations-landing .spray-location-card__title {
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.02rem, 2.4vw, 1.18rem);
+  line-height: 1.15;
+  margin-bottom: 0.35rem;
+}
+
+.spray-locations-landing .spray-location-card__title a {
+  color: var(--bo-ink, #1a1613);
+  text-decoration: none;
+}
+
+.spray-locations-landing .spray-location-card:hover .spray-location-card__title a,
+.spray-locations-landing .spray-location-card__title a:hover,
+.spray-locations-landing .spray-location-card__title a:focus {
+  color: var(--bo-orange, #cb6015);
+  text-decoration: none;
+}
+
+/* The one-line teaser. */
+.spray-locations-landing .spray-location-card__blurb {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #4a4440;
+}
+
+.spray-locations-landing .spray-location-card__blurb p:last-child {
+  margin-bottom: 0;
+}

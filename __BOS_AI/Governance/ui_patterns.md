@@ -298,6 +298,30 @@ the geo "We Serve" cards but the argument is the term's *parent* field:
 Reference impl: `bos_services` `service_children`
 (`web/scripts/build_service_children_view.php`), 2026-09-21.
 
+### Variant — a standalone *landing view* of child terms
+
+Where the parent is not a term page but its own **landing View** (the spray axes:
+`land_spray_location`, `land_backflow_uses`, …), apply the same card component to
+that view instead of adding an EVA:
+- Style = **Unformatted list** — the Views plugin id is **`default`**, not
+  `unformatted`; set `row_class` for the card and the display's **`css_class`** for
+  the CSS scope. Copy a working field/style block from an existing landing
+  (`land_backflow_uses`) rather than hand-writing one.
+- **Check the rendered HTML before writing the CSS.** These landing views render
+  their `.views-row`s **directly under the wrapper with no `.view-content`
+  element**, so the grid goes on the wrapper and the header/footer areas need
+  `grid-column: 1 / -1`. A rule targeting `.view-content` is silently inert.
+- Teaser field = the vocabulary's `field_short_description` (that is what it is
+  for). Render it whole — it is authored as a one-liner, so trimming reads worse.
+- Attach the CSS from **`hook_preprocess_views_view()`**, gated on the view id, NOT
+  `hook_views_pre_render()`: preprocess comes from the theme registry (rebuilt by
+  `drush cr`), so it works on an already-enabled module, whereas a brand-new
+  `hook_views_pre_render()` is not registered by `cr` (see
+  `drupal_bos_gotchas.md`).
+
+Reference impl: `bos_spray_types` + `web/scripts/build_spray_location_landing_cards.php`
+(`css/landing-cards.css`), 2026-09-27.
+
 ## Status
 
 - Created 2026-06-21 (status-card pattern, from the My Schedule + backflow card work).
@@ -310,4 +334,5 @@ Reference impl: `bos_services` `service_children`
   patterns; noted the ECK title-suppression opcache trap.
 - 2026-09-21 — added the **child-listing cards** pattern (EVA of a term's children,
   `bos_services` service_children); note that Olivero's nav is two-level only.
+- 2026-09-27 — added the **landing-view variant** of child-listing cards (Unformatted style id is `default`; grid the wrapper because these views have no `.view-content`; attach CSS from `hook_preprocess_views_view`).
 - Living document — add reusable BOS UI patterns here as they're established.

@@ -151,11 +151,23 @@ All taxonomy vocabularies used in BOS. Base fields (name, description, weight, p
 | Field | Type | Label |
 |---|---|---|
 | `field_applicable_services` | entity_reference → taxonomy_term | Applicable Services |
-| `field_public_description` | text_long | Public Description (public page body; added 2026-09-27) |
-| `field_short_description` | text_long | Short Description (public one-line lead; added 2026-09-27) |
+| `field_public_description` | text_long | Public Description (public term-page body; added 2026-09-27) |
+| `field_short_description` | text_long | Short Description (one-line teaser — rendered by the **parent landing view**, and on `admin_view`; NOT on the public term page; added 2026-09-27) |
 | `field_teammate_description` | text_long | Teammate Instructions (crew only — gated, see the audience note above) |
 
-> **Content (2026-09-27):** 18 of the 20 location children carry full copy — `field_short_description` (lead) + `field_public_description` (body) + `field_teammate_description` (crew, teammate_view only); core `description` cleared on those 18. **Arena** and **Driveway** are deliberately left as-is (their good public copy lives in core `description`, which the public display keeps for exactly that reason).
+> **Content (2026-09-27):** **All 20** location children carry full copy in the three dedicated fields, and **core `description` is empty on all 20 and rendered on no display.** 18 were seeded from the marketing copy; **Arena** and **Driveway** were then migrated off core `description` onto the same fields (first paragraph → `field_short_description`, remaining paragraphs → `field_public_description`; their own words, split structurally — `migrate_spraying_locations_descriptions.php`).
+>
+> **⚠ The three text fields are all ENTERED on every term but they do NOT share a display** — this is the model, don't "helpfully" stack them:
+>
+> | Field | Where it renders |
+> |---|---|
+> | `field_public_description` | the public term page (`full`) — the body, and the ONLY text field there |
+> | `field_teammate_description` | the crew tier (`teammate_view`) only — never public |
+> | `field_short_description` | the **parent landing view** `land_spray_location` as the card teaser (+ `admin_view` so office can see/edit it) |
+>
+> `field_applicable_services` is on `default` + `admin_view`, not on the public tier. Live active config is the source of truth for these displays; `setup_spraying_locations_fields.php` encodes the shape above.
+>
+> **Landing page (2026-09-27):** `/services/landscape-lawn-care/spraying/location` renders the 20 children as the BOS child-listing **card grid** (name + `field_short_description`), replacing a bulleted `html_list` whose teaser was the now-empty core `description` — see `Governance/ui_patterns.md` → Child-listing cards.
 
 ### spraying_methods
 **Label:** Spraying Methods

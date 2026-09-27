@@ -11,8 +11,15 @@ declare(strict_types=1);
  *
  * Display model (governed by bos_spray_types — office->admin_view, crew->
  * teammate_view, else full, with the user.roles cache context):
- *   - full (public):  name, field_short_description (lead), field_public_description
- *                     (body), field_applicable_services. NO crew field.
+ *   - full (public):  name + field_public_description (the public page body) ONLY.
+ *                     The three text fields are all ENTERED on every term but they
+ *                     do NOT share a display: field_public_description is the public
+ *                     page, field_teammate_description is the crew tier, and
+ *                     field_short_description is the ONE-LINE TEASER consumed by the
+ *                     parent landing view (land_spray_location) — never stacked above
+ *                     the body on the term page. field_applicable_services is not on
+ *                     the public tier either. This mirrors live, which is the source
+ *                     of truth for displays.
  *   - teammate_view:  name, field_teammate_description (crew instruction only).
  *   - admin_view:     everything except core description.
  *   - default:        left as-is apart from dropping core description.
@@ -69,7 +76,7 @@ if ($formDisplay) {
 }
 
 /* 2. Rebuild the three displays. */
-$FULL = ['name', 'field_short_description', 'field_public_description', 'field_applicable_services'];
+$FULL = ['name', 'field_public_description'];
 $TEAMMATE = ['name', 'field_teammate_description'];
 $ADMIN = ['name', 'field_short_description', 'field_public_description', 'field_teammate_description', 'field_applicable_services'];
 // The `default` display is not an audience tier (bos_spray_types routes the term

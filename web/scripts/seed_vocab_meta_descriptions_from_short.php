@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 /**
- * Enter each Spraying Location's meta description FROM its short description.
+ * Enter each term's meta description FROM its short description.
  *
- * Sets `field_meta_tags.description` on every spraying_locations term to the
+ * Vocabulary comes from BOS_VID (required). Sets `field_meta_tags.description`
+ * on every term of that vocabulary to the
  * plain-text value of field_short_description — that field is already the
  * authored public one-liner, so it is the right source and nothing new is
  * written. Verbatim: tags stripped, entities decoded, whitespace collapsed, and
@@ -23,8 +24,8 @@ declare(strict_types=1);
  * so anything longer is flagged for marketing to tighten rather than cut
  * mid-thought here.
  *
- *   drush php:script web/scripts/seed_spraying_locations_meta_descriptions.php
- *   BOS_META_APPLY=1 drush php:script web/scripts/seed_spraying_locations_meta_descriptions.php
+ *   BOS_VID=spraying_locations drush php:script web/scripts/seed_vocab_meta_descriptions_from_short.php
+ *   BOS_VID=wind_direction BOS_META_APPLY=1 drush php:script web/scripts/seed_vocab_meta_descriptions_from_short.php
  */
 
 use Drupal\Core\Cache\Cache;
@@ -32,8 +33,14 @@ use Drupal\Core\Cache\Cache;
 $apply = getenv('BOS_META_APPLY') === '1';
 $force = getenv('BOS_META_FORCE') === '1';
 $etm = \Drupal::entityTypeManager();
-$vid = 'spraying_locations';
+$vid = getenv('BOS_VID') ?: '';
 $SOFT_LIMIT = 160;
+
+if ($vid === '') {
+  print "ERROR: set BOS_VID to the vocabulary machine name. Aborting.\n";
+  return;
+}
+print "VOCAB: $vid\n";
 
 /** text_long value -> single-line plain text. */
 $toPlain = function (?string $html): string {
@@ -56,7 +63,7 @@ $empty = 0;
 $long = [];
 foreach ($terms as $t) {
   if (!$t->hasField('field_meta_tags')) {
-    print "  ERROR field_meta_tags missing on {$t->label()} — run setup_spraying_locations_meta_tags.php first\n";
+    print "  ERROR field_meta_tags missing on {$t->label()} — run setup_vocab_meta_tags.php first\n";
     return;
   }
   $short = $toPlain($t->get('field_short_description')->value ?? '');

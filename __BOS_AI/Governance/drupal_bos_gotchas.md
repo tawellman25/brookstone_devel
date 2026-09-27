@@ -1462,11 +1462,25 @@ curl -s <term-url> | grep -oP '<meta name="description" content="\K[^"]{0,80}'
 **Lesson:** before clearing a field that public copy lived in, grep the metatag defaults
 for a token referencing it.
 
-**Applied 2026-09-27 on `spraying_locations`** via fix 1: `field_meta_tags` instance
-(`setup_spraying_locations_meta_tags.php`) + each term's `description` entered from its
-`field_short_description` (`seed_spraying_locations_meta_descriptions.php`). Use those two
-scripts as the template for the next vocabulary that needs it — `wind_direction` has the
-same hole.
+**Applied 2026-09-27** on `spraying_locations` and `wind_direction` via fix 1. The scripts
+are **vocabulary-agnostic — pass `BOS_VID`** (required; they abort without it):
+
+| Script | Does |
+|---|---|
+| `setup_vocab_meta_tags.php` | adds the `field_meta_tags` instance + `metatag_firehose` sidebar widget (no view display) |
+| `seed_vocab_meta_descriptions_from_short.php` | enters each term's `description` override from its `field_short_description`, verbatim; preserves an existing office-written override unless `BOS_META_FORCE=1` |
+| `retire_vocab_core_description.php` | clears the stored core `description`, **refusing** any term whose text is not provably duplicated in a dedicated field |
+| `drop_vocab_core_description.php` | removes `description` from that vocabulary's view displays, preserving every other Manage Display choice |
+
+**Order is load-bearing:** enter the override FIRST, then clear `description`. Clearing first
+strips the page's meta description, because the taxonomy default resolves `[term:description]`
+and there is no global fallback.
+
+**`wind_direction` was NOT an instance of this bug** (an earlier assumption, corrected by
+checking live): its `description` was *populated* with the same one-liner as
+`field_short_description`, so it had a meta description all along. Its problem was the
+duplicate source, fixed by the same sequence with the meta description verified
+byte-identical before and after.
 
 ---
 

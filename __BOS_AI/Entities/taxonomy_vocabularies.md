@@ -206,8 +206,11 @@ All taxonomy vocabularies used in BOS. Base fields (name, description, weight, p
 
 | Field | Type | Label |
 |---|---|---|
-| `field_short_description` | text_long | Short Description (public leaf copy + meta description; added 2026-09-27) |
+| `field_meta_tags` | metatag | Meta tags (per-term SEO override; form sidebar only, on no view display; added 2026-09-27) |
+| `field_short_description` | text_long | Short Description (**the public body** — this vocab has no `field_public_description`; rendered on `full`; also the source of the meta description) |
 | `field_teammate_description` | text_long | Teammate Instructions (crew only — see gate below) |
+
+> **Core `description` retired (2026-09-27).** The one-liner had been written into **both** core `description` and `field_short_description` — the same text in two fields (verified identical on all 9 terms, live), so an edit to one would silently leave the other stale. The duplicate was removed: the meta description was first moved onto a `field_meta_tags` override sourced from `field_short_description`, **then** core `description` was cleared (`retire_vocab_core_description.php`, which refuses any term whose description text is not provably duplicated) and dropped from the `default` display. Rendered meta descriptions were confirmed **byte-identical before and after**, so the change is SEO-neutral. Order matters: clearing before entering the override would have stripped the meta description outright, because the taxonomy default is `[term:description]` with no global fallback.
 
 ### weed_categories
 **Label:** Weed Categories

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Drop core `description` from every spraying_locations view display.
+ * Drop core `description` from every view display of a vocabulary (BOS_VID).
  *
  * Surgical counterpart to setup_spraying_locations_fields.php: it removes ONLY
  * the `description` component and leaves every other component — and every
@@ -11,16 +11,23 @@ declare(strict_types=1);
  * an environment whose displays have been curated through the UI and must not be
  * rebuilt wholesale.
  *
- * All 20 spraying_locations terms carry their public copy in
- * field_short_description + field_public_description, so `description` is inert;
- * this makes that explicit. Idempotent.
+ * Run it once the vocabulary's public copy lives in its dedicated
+ * fields (field_short_description / field_public_description) so `description` is
+ * inert — retire_vocab_core_description.php clears the stored values.
+ * Idempotent.
  *
- *   drush php:script web/scripts/drop_spraying_locations_core_description.php
+ *   BOS_VID=spraying_locations drush php:script web/scripts/drop_vocab_core_description.php
  */
 
 $etm = \Drupal::entityTypeManager();
-$vid = 'spraying_locations';
+$vid = getenv('BOS_VID') ?: '';
 $field = 'description';
+
+if ($vid === '') {
+  print "ERROR: set BOS_VID to the vocabulary machine name. Aborting.\n";
+  return;
+}
+print "VOCAB: $vid\n";
 
 $storage = $etm->getStorage('entity_view_display');
 $ids = $storage->getQuery()->accessCheck(FALSE)

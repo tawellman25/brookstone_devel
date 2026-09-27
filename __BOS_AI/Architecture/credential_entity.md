@@ -1,6 +1,6 @@
 # Credential entity — Gate 0 findings & design decisions
 
-**Status:** Gate 0 complete (read-only inspection). **NOT built.** Awaiting Todd's decisions in §D.
+**Status:** Gate 1 stages 1–3 BUILT on DDEV, 9/9 verified. **Not on live.** Displays + backflow integration + profile retirement remain (§E 5–7).
 **Tier:** T3 — sits behind the estimating epic. Does not block `/about-us/credentials`.
 **Spec source:** "BOS — Credentials entity" (marketing project, 2026-09-27).
 **Inspection tool:** `web/scripts/inspect_credential_gate0.php` (read-only, re-runnable per env).
@@ -43,7 +43,37 @@ Both existing `field_teammate` instances (`wo_time_clock.entry`, `contacts.emerg
 | `bos_contact_attach` (§2b ⚠) | Extend `_entity_predelete()` to clean `credential.field_renewal_contact` too, **and** add credentials to the "do not delete referenced contacts" warning in the entity docs. Prefer the bundle's `field_contact_status` = inactive over deletion. |
 | Issuing authority / regulators | Agreed — string + `field_verification_url` on the type. No contact records for CDA/ABPA. Not `supplier` (that is procurement and feeds the price-ingest pipeline). |
 
-## D. Questions only Todd can answer — blocking the build
+## D-answered. Todd's decisions (2026-09-27)
+
+| Question | Answer |
+|---|---|
+| B1 — `field_teammate` target | **`user`** (not `teammate_profile`). Implemented, handler-filtered to the `teammates` role. |
+| §8 migration | **Approved.** `06-2512234` / ABPA migrated into credential record id 1 on DDEV. Profile fields not yet retired (§E step 7). |
+| §7 / §12.3 visibility | **Any teammate may see credentials**; only their own list on their own profile page (the profile EVA is scoped to the profile owner). |
+
+**Access conflict this surfaced, and how it was resolved.** §7 gates `field_credential_number`
+to office/admin, but §5d wants a tech pulling up *their own applicator card at a customer's
+door*. Those contradict. Resolved on the axis the spec already established —
+`credential_types.field_number_is_public`:
+
+| Viewer | License/cert number (type public) | Insurance policy number (type not public) | Documents · internal notes · renewal contact/URL |
+|---|---|---|---|
+| office/admin | ✅ | ✅ | ✅ |
+| teammate | ✅ | ❌ | ❌ |
+| anonymous / client | only if the record is also `publish_publicly` | ❌ | ❌ |
+
+Verified by `verify_credential_gate1.php` (9/9). A GL record flagged `publish_publicly` still
+hides its policy number because its TYPE forbids it — §11's exact test case.
+
+## D2. Still open (not blocking)
+
+1. **§12.1** Which credential types are missing from the 10 seeded?
+2. **§12.5** Is the insurance agent already a `contacts` record? (`field_renewal_contact` is optional, so this is data entry.)
+3. `field_verification_url` is **empty on all 10 types** — deliberately not invented; the agency lookup links live in marketing's Credentials Page Copy.
+4. `field_renewal_lead_days` seeded at **60 for every type**; office tunes per type.
+5. `BORGERT` default scope was guessed as **company** (installer certification usually sits with the business) — correct it on the term if it is personal.
+
+## D3. Original questions (for the record)
 
 1. **§12.1** Which credential types are missing from the seed list?
 2. **§12.2** Who besides you sees the company credentials list — office only, or all staff?

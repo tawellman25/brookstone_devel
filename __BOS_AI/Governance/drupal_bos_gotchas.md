@@ -1398,6 +1398,72 @@ it is extremely slow and will blow past any interactive timeout. Two specifics:
    **post-completion hang** — the log shows all styles "flushed" but the process
    lingers; kill it once the log confirms completion.
 
+## Live entity view displays are hand-curated — a wholesale "rebuild from a field list" script clobbers them
+
+**Discovered 2026-09-27** (spraying_locations audience displays). The BOS setup-script
+idiom for displays is a builder that does `removeComponent()` for everything then
+`setComponent()` for each field in a hard-coded `$FULL` / `$ADMIN` list (see
+`setup_spraying_locations_fields.php`, `build_spray_audience_displays.php`,
+`build_material_audience_displays.php`). That is safe on DDEV, where the script IS the
+only author. **It is not safe on live, where Manage Display has also been used.**
+
+Concretely: `taxonomy_term.spraying_locations.full` on **live** carried only
+`field_public_description` in `content`, with `description`, `field_short_description`,
+`field_applicable_services` and `field_teammate_description` all in `hidden` — a UI save
+(the tell is `entity_print_view_epub/pdf/word_docx: true` sitting in `hidden`, which the
+Manage Display form writes and a script never does). **Dev**, built by the script, had
+all of them enabled. Running the builder on live would have silently published a lead
+paragraph and a services list onto 20 live public pages — no error, no diff to review.
+
+**Rules:**
+- **Dump the live display config before running any display builder**:
+  `drush config:get core.entity_view_display.<entity>.<bundle>.<mode>`. Compare `content`
+  AND `hidden` against what the script intends to write.
+- When the change is "add or remove ONE component", write a **surgical** script that
+  touches only that component and leaves every other enabled/disabled choice alone
+  (reference: `drop_spraying_locations_core_description.php`). Prefer it over a rebuild.
+- Treat display configs like the rest of BOS config: **live active is the source of
+  truth** (see [never a full cim](#) discipline in CLAUDE.md). A builder script's field
+  list is an *intent from the day it was written*, not the current state.
+- If a builder must run on live, say so explicitly and show the before/after component
+  lists in the deploy report.
+
+---
+
+## Clearing a taxonomy term's core `description` silently removes its meta description
+
+**Discovered 2026-09-27** (spraying_locations). `metatag.metatag_defaults.taxonomy_term`
+sets `description: '[term:description]'`, and `metatag.metatag_defaults.global` defines
+**no `description` tag at all** (it has `og_description`, which is a different tag). So
+there is **no fallback**: the moment a term's core `description` is emptied — e.g. when
+migrating public copy onto a dedicated `field_public_description` — that page ships with
+**no meta description whatsoever**. Nothing errors; the tag is simply absent from the
+page source.
+
+This bit the 18 seeded Spraying Locations children (2026-09-27, `c11a8c4f`) and then
+Arena/Driveway. Verify with:
+
+```bash
+curl -s <term-url> | grep -oP '<meta name="description" content="\K[^"]{0,80}'
+```
+
+**Fixes, in order of preference:**
+1. **Add a `field_meta_tags` instance to the vocabulary** (type `metatag`, widget
+   `metatag_firehose`) so the office can set a real per-page description. Precedent:
+   `backflow_uses` (2026-09-26), the geo entities
+   (`setup_geo_metatag_field.php`). Scoped to the vocabulary — no blast radius.
+2. Repoint the taxonomy metatag default's `description` at a field token.
+   **`[term:field_short_description]` is verified to resolve** — but that default governs
+   **every** vocabulary in BOS (~1,300 operational term pages plus services,
+   material_types, backflow, brookstone_tags…), several of which also carry
+   `field_short_description`, so their meta descriptions would change too. Sitewide
+   decision, not a drive-by.
+
+**Lesson:** before clearing a field that public copy lived in, grep the metatag defaults
+for a token referencing it.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

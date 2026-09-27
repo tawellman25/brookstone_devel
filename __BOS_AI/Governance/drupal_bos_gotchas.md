@@ -1484,6 +1484,61 @@ byte-identical before and after.
 
 ---
 
+## A Views filter on a list_string field with operator `in` emits NO SQL, silently
+
+**Discovered 2026-09-27** (credential views). A filter on a `list_string` field
+column (`{entity}__{field}.{field}_value`) is handled by
+`Drupal\options\Plugin\views\filter\ListField`, which extends
+**`ManyToOne`** → `InOperator`.
+
+`ManyToOne::operators()` defines **only**:
+
+| Operator | Label |
+|---|---|
+| `or` | Is one of |
+| `and` | Is all of |
+| `not` | Is none of |
+| `empty` / `not empty` | only when the views-data definition sets `allow empty` |
+
+**There is no `in` operator.** `InOperator::query()` dispatches through
+`$info[$this->operator]['method']`, so `operator: in` matches nothing, no method
+runs, and the filter contributes **no JOIN and no WHERE**. The view returns every
+row. Nothing errors, nothing is logged, and the handler still instantiates with the
+correct table, value and operator — so the saved config and a handler dump both
+look perfectly right.
+
+```php
+// WRONG — silently filters nothing:
+'operator' => 'in',  'value' => ['company' => 'company'],
+// RIGHT:
+'operator' => 'or',  'value' => ['company' => 'company'],
+```
+
+**Two dead ends worth not repeating** (both were tried first):
+- **You cannot swap the plugin.** `ViewsHandlerManager::getHandler()` picks the
+  handler from **views data** (`$data[$field]['filter']['id']`), so a `plugin_id` of
+  `in_operator` in saved config is ignored — the ListField handler is still built.
+- **Contrib `token_views_filter` is not the culprit.** It does register
+  `id = "list_field"`, which makes its subclass appear in a handler dump and looks
+  damning, but `TokensListFieldFilter extends ListField` and overrides only
+  `replaceTokens()`. Query behaviour is core's.
+
+`ViewExecutable::addHandler()` — the call the Views UI makes — does **not** rescue
+this either; it saves what you pass and does not correct the operator.
+
+**How to catch it:** never trust a saved Views filter. Build the display and dump
+the SQL:
+
+```php
+$v = Views::getView('my_view'); $v->setDisplay('page_1'); $v->build();
+print (string) $v->build_info['query'];   // no JOIN to the field table == the filter is inert
+```
+
+Filters on **numeric, boolean and datetime** columns in the same view behave
+normally — it is specific to the ManyToOne chain that list fields use.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

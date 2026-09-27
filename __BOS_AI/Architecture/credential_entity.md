@@ -1,6 +1,6 @@
 # Credential entity — Gate 0 findings & design decisions
 
-**Status:** Gate 1 BUILT on DDEV — stages 1–4 + 6 + 7a, **19/19 verified**. **Not on live.** Remaining: the five displays (§5) and the profile-field retirement (§8/§E-7b).
+**Status:** **LIVE 2026-09-27**, 18/18 read-only verification on production. Remaining: card CSS for the two card displays, and the profile-field retirement (§8/§E-7b).
 **Tier:** T3 — sits behind the estimating epic. Does not block `/about-us/credentials`.
 **Spec source:** "BOS — Credentials entity" (marketing project, 2026-09-27).
 **Inspection tool:** `web/scripts/inspect_credential_gate0.php` (read-only, re-runnable per env).
@@ -93,7 +93,7 @@ hides its policy number because its TYPE forbids it — §11's exact test case.
 | 4 · date-driven status (`hook_cron`) | ✅ | 3/3 transitions: active → pending_renewal → expired |
 | 6 · backflow integration | ✅ | 7/7 — snapshot reads the credential as of the **test date**, and does **not** move when the credential is later superseded |
 | 7a · contact delete-cleanup | ✅ | credential survives; dangling reference cleared |
-| 5 · displays | ⬜ | not started |
+| 5 · displays | ✅ | 12/12 on dev, all five executed; live 18/18 |
 | 7b · profile-field retirement | ⬜ | credential record exists; fields not yet removed |
 
 **Chosen for §4's open question:** `hook_cron`, because it lets the expiring-soon view filter a
@@ -129,3 +129,42 @@ Revisit the selector filter when a second tester is certified.
 ## F. Explicitly not building (§9)
 
 No notification engine · no document generation · no public expiration dates · no public copy (lives in `Website Copy/Credentials Page Copy.md`) · nothing storing an SSN, DOB or licence-card image.
+
+## G. Live state (2026-09-27)
+
+Deployed: vocabulary + 10 types, entity + 17 fields, permissions (view for teammates,
+create/edit for office, **delete for nobody** — the script revokes it), `bos_credential`,
+the five displays, and the §8 migration of Todd's ABPA certification
+(`06-2512234`, ABPA, **expires 2028-12-31** — supplied by Todd, never invented).
+
+Read-only live verification: **18/18** (`verify_credential_live.php` — creates nothing, so
+the dev verifiers' throwaway records stay off production). Live holds exactly **one**
+credential record; no test data.
+
+Two findings from the live run:
+- The first run reported a false FAIL because the check asserted `LEFT JOIN`. ManyToOne
+  (list_string) filters emit **INNER JOIN**. The live query was correct all along
+  (`WHERE field_scope_value = 'company'`, 0 rows because there are no company credentials
+  yet). Assertion fixed; the lesson is that a verifier can be wrong in the reassuring
+  direction as easily as the alarming one.
+- `drush updatedb:status` warns that **`migrate_devel`** has a stale `system.schema`
+  key/value entry. **Pre-existing and unrelated** — the module was removed from
+  `core.extension` on 2026-06-20 and the schema row was left behind. No enabled module or
+  theme is missing from disk and **no database updates are required**. Harmless noise;
+  clearing the row would silence it.
+
+## H. Remaining
+
+1. **Card CSS** for `page_expiring` + `page_mine` + the profile block — they carry the
+   `credential-card` row class but no stylesheet yet, so they render as unstyled rows. §5c
+   requires the expiring view to be phone-legible.
+2. **§8 retirement** — remove `teammate_profile.field_certification_number` and
+   `field_certification_association` once the credential path has been exercised in the
+   field. The backflow snapshot currently falls back to them, so retirement is safe to defer
+   and unsafe to rush.
+3. **Office data entry**: the insurance agent as a `contacts` record (Todd 2026-09-27: not in
+   BOS, lives in QuickBooks — this is the single highest-value entry, since it is what makes
+   `field_renewal_contact` answer "who do I call at 4pm"); company GL/WC/Auto records; each
+   type's `field_verification_url`.
+4. Place the public block once a public credentials page exists (neither `/credentials` nor
+   `/about-us/credentials` exists today).

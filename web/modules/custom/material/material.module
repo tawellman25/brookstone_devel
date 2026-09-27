@@ -1,8 +1,11 @@
 <?php
 
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityFormInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\taxonomy\Entity\Term;
+use Drupal\views\ViewExecutable;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
@@ -80,6 +83,28 @@ function material_preprocess_eck_entity(array &$variables): void {
   }
   $variables['attributes']['class'][] = 'bos-admin-view';
   $variables['#attached']['library'][] = 'brookstone_olivero/audience_admin';
+}
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * The "{Category} Categories" child-category cards EVA (material_children) on a
+ * material_types term page: attach the card-grid styling and name the current
+ * term in the header. The view lists the term's direct children (arg = current
+ * term id); the header only renders when there ARE children, so a leaf category
+ * shows nothing.
+ */
+function material_views_pre_render(ViewExecutable $view): void {
+  if ($view->id() !== 'material_children') {
+    return;
+  }
+  $view->element['#attached']['library'][] = 'material/material_children';
+
+  if (!empty($view->args[0]) && isset($view->header['area'])
+    && ($term = Term::load($view->args[0]))) {
+    $view->header['area']->options['content']['value'] =
+      '<h2 class="material-children__title">' . Html::escape($term->label()) . ' Categories</h2>';
+  }
 }
 
 /**

@@ -117,6 +117,8 @@ All taxonomy vocabularies used in BOS. Base fields (name, description, weight, p
 
 ## Operational — Spraying / Chemical
 
+> **Audience view-mode gate (`bos_spray_types`, 2026-09-27).** Six of these vocabs carry `field_teammate_description` — `carrier`, `spraying_locations`, `spraying_methods`, `wind_direction`, `spraying_wind_speed`, `spraying_soil_moisture_levels` — and their canonical term pages are governed by the BOS audience view-mode tiers (office→`admin_view`, crew→`teammate_view`, else `full`) with a `user.roles` cache context. `field_teammate_description` renders on the crew/office tiers ONLY, never publicly (it had been leaking on the `default` display before this). The public `full` display shows the vocab's public fields (`description`, and for `wind_direction` the new `field_short_description`) but never the crew field. See `Governance/ui_patterns.md` → Reference implementations. The public **parent landing pages** for these axes are separate Views (`land_*` / `soil_moisture_page`) and two `page` nodes (`chemicals`, `stages-weed-growth`), each carrying a header + footer of public copy.
+
 ### carrier
 **Label:** Spraying Carrier
 **Purpose:** The liquid base mixed with chemicals (water, oil, etc.). Required for Colorado state inspection records — must be documented on spray applications for compliance.
@@ -185,7 +187,8 @@ All taxonomy vocabularies used in BOS. Base fields (name, description, weight, p
 
 | Field | Type | Label |
 |---|---|---|
-| `field_teammate_description` | text_long | Teammate Instructions |
+| `field_short_description` | text_long | Short Description (public leaf copy + meta description; added 2026-09-27) |
+| `field_teammate_description` | text_long | Teammate Instructions (crew only — see gate below) |
 
 ### weed_categories
 **Label:** Weed Categories

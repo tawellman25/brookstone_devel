@@ -1,0 +1,116 @@
+<?php
+
+/**
+ * @file
+ * BOS Spray Types — role-based rendering of the spray vocabularies.
+ *
+ * Follows the BOS audience view-mode tier pattern (see
+ * __BOS_AI/Governance/ui_patterns.md): one canonical term URL, different body by
+ * audience — office/admin -> admin_view, crew -> teammate_view, public/clients
+ * -> full.
+ *
+ * These vocabularies carry a crew-only field (field_teammate_description) that
+ * was previously rendered on the single `default` display, so the crew notes
+ * leaked to anonymous visitors on every leaf term page. The three-tier displays
+ * built by web/scripts/build_spray_audience_displays.php put field_teammate_
+ * description on the teammate/admin tiers ONLY; this module chooses the tier by
+ * role and adds the mandatory user.roles cache context so the page cache can
+ * never serve one audience's body to another.
+ *
+ * Governs BOS_SPRAY_VIDS. These are pure audience tiers — no hero banner or
+ * landing CSS (unlike bos_backflow_types). The spray parent LANDING pages are
+ * separate Views/nodes, not governed here.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Office/admin roles that see the admin_view display (top tier).
+ */
+const BOS_SPRAY_TYPES_OFFICE_ROLES = [
+  'supervisor',
+  'administration',
+  'site_assistant',
+  'site_admin',
+  'administrator',
+];
+
+/**
+ * Crew role that sees the teammate_view display (middle tier).
+ */
+const BOS_SPRAY_TYPES_CREW_ROLES = [
+  'teammates',
+];
+
+/**
+ * The spray vocabularies that use the audience view-mode tiers.
+ *
+ * All six carry field_teammate_description; the canonical term page is routed
+ * by role (office -> admin_view, crew -> teammate_view, else full).
+ */
+const BOS_SPRAY_TYPES_VIDS = [
+  'carrier',
+  'spraying_locations',
+  'spraying_methods',
+  'wind_direction',
+  'spraying_wind_speed',
+  'spraying_soil_moisture_levels',
+];
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ *
+ * Same URL, three displays by audience (office checked first). Only the
+ * canonical full-page render is rewritten — token/admin/embedded renders keep
+ * their own view mode.
+ */
+function bos_spray_types_entity_view_mode_alter(&$view_mode, EntityInterface $entity) {
+  if ($view_mode !== 'full'
+    || $entity->getEntityTypeId() !== 'taxonomy_term'
+    || !in_array($entity->bundle(), BOS_SPRAY_TYPES_VIDS, TRUE)) {
+    return;
+  }
+  $roles = \Drupal::currentUser()->getRoles();
+  if (array_intersect(BOS_SPRAY_TYPES_OFFICE_ROLES, $roles)) {
+    $view_mode = 'admin_view';
+  }
+  elseif (array_intersect(BOS_SPRAY_TYPES_CREW_ROLES, $roles)) {
+    $view_mode = 'teammate_view';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for taxonomy_term.
+ *
+ * The role-based view-mode switch makes the term template treat admin_view /
+ * teammate_view renders as NOT the canonical page (core keys `page` to 'full'),
+ * which renders a duplicate linked term-name heading. These renders ARE the
+ * canonical page, so mark them — and add the shared admin-view wrapper on the
+ * office tier.
+ */
+function bos_spray_types_preprocess_taxonomy_term(array &$variables) {
+  $term = $variables['term'] ?? NULL;
+  if (!$term || !in_array($term->bundle(), BOS_SPRAY_TYPES_VIDS, TRUE)) {
+    return;
+  }
+  $view_mode = $variables['view_mode'] ?? '';
+  if (in_array($view_mode, ['admin_view', 'teammate_view'], TRUE)) {
+    $variables['page'] = TRUE;
+  }
+  if ($view_mode === 'admin_view') {
+    $variables['attributes']['class'][] = 'bos-admin-view';
+    $variables['#attached']['library'][] = 'brookstone_olivero/audience_admin';
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view_alter() for taxonomy_term.
+ *
+ * The view mode is chosen by role, so the render MUST vary by user.roles or the
+ * page cache can serve one audience's body (crew instructions) to another.
+ */
+function bos_spray_types_taxonomy_term_view_alter(array &$build, EntityInterface $entity, $display) {
+  if (in_array($entity->bundle(), BOS_SPRAY_TYPES_VIDS, TRUE)) {
+    $build['#cache']['contexts'][] = 'user.roles';
+  }
+}

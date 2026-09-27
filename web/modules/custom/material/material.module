@@ -7,6 +7,82 @@ use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 /**
+ * Audience view-mode tiers for the material entity (all bundles).
+ *
+ * One canonical /material/{bundle}/{name} URL, body swapped by the viewer's
+ * role — the BOS audience pattern (see __BOS_AI/Governance/ui_patterns.md;
+ * reference impls bos_services, bos_backflow_types). Office/admin -> `admin`,
+ * crew -> `teammate`, client -> `client`, everyone else -> `full` (Public).
+ * A `user.roles` cache context is added on the material render so the page
+ * cache can't leak one audience's body to another.
+ *
+ * View modes are entity-level, so this routing covers every material bundle
+ * automatically. A bundle with no display configured for the chosen mode falls
+ * back to its `default` display (core behaviour) — harmless, and it lights up
+ * as soon as that bundle's admin/teammate/client display is built.
+ *
+ * Access is NOT touched here (it is per-bundle and deliberately set elsewhere);
+ * this only chooses the view mode for whoever is already allowed to view.
+ */
+const MATERIAL_OFFICE_ROLES = [
+  'supervisor',
+  'administration',
+  'site_assistant',
+  'site_admin',
+  'administrator',
+];
+const MATERIAL_CREW_ROLES = ['teammates'];
+const MATERIAL_CLIENT_ROLES = ['client'];
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ *
+ * Route the canonical material page to the audience view mode by role. Only the
+ * full-page (`full`) render is rewritten — teaser/token/embedded renders keep
+ * their own view mode. Office is checked first (most privileged), then crew,
+ * then client; anyone else keeps `full` (Public).
+ */
+function material_entity_view_mode_alter(string &$view_mode, EntityInterface $entity): void {
+  if ($view_mode !== 'full' || $entity->getEntityTypeId() !== 'material') {
+    return;
+  }
+  $roles = \Drupal::currentUser()->getRoles();
+  if (array_intersect(MATERIAL_OFFICE_ROLES, $roles)) {
+    $view_mode = 'admin';
+  }
+  elseif (array_intersect(MATERIAL_CREW_ROLES, $roles)) {
+    $view_mode = 'teammate';
+  }
+  elseif (array_intersect(MATERIAL_CLIENT_ROLES, $roles)) {
+    $view_mode = 'client';
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view_alter() for material.
+ *
+ * The view mode is chosen by role, so the render MUST vary by user.roles or the
+ * page/render cache can serve one audience's body to another.
+ */
+function material_material_view_alter(array &$build, EntityInterface $entity, $display): void {
+  $build['#cache']['contexts'][] = 'user.roles';
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for eck_entity.
+ *
+ * Give the office `admin` render the shared audience-admin wrapper + library so
+ * its section headings match the other audience-tiered pages.
+ */
+function material_preprocess_eck_entity(array &$variables): void {
+  if (($variables['entity_type'] ?? '') !== 'material' || ($variables['view_mode'] ?? '') !== 'admin') {
+    return;
+  }
+  $variables['attributes']['class'][] = 'bos-admin-view';
+  $variables['#attached']['library'][] = 'brookstone_olivero/audience_admin';
+}
+
+/**
  * Implements hook_form_alter().
  *
  * material.pavers only: show field_setback (Setback / Batter) exclusively when

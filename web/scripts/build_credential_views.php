@@ -28,8 +28,45 @@ use Drupal\views\Entity\View;
 $ENTITY = 'credential';
 $ID = 'credentials';
 
+/**
+ * The FULL default option set every Views field handler needs.
+ *
+ * Views does NOT merge plugin defaults into options written straight into config,
+ * so a sparse field definition renders as `$item + $this->options['alter']` with
+ * alter NULL → "Unsupported operand types: array + null" in
+ * FieldPluginBase::advancedRender(). Executing a view does not hit that path; only
+ * RENDERING a row does. (Recorded in memory as feedback_views_pattern: always the
+ * full field definition, never a sparse one.)
+ */
+$FIELD_DEFAULTS = [
+  'label' => '',
+  'exclude' => FALSE,
+  'alter' => [
+    'alter_text' => FALSE, 'text' => '', 'make_link' => FALSE, 'path' => '',
+    'absolute' => FALSE, 'external' => FALSE, 'replace_spaces' => FALSE,
+    'path_case' => 'none', 'trim_whitespace' => FALSE, 'alt' => '', 'rel' => '',
+    'link_class' => '', 'prefix' => '', 'suffix' => '', 'target' => '',
+    'nl2br' => FALSE, 'max_length' => 0, 'word_boundary' => TRUE, 'ellipsis' => TRUE,
+    'more_link' => FALSE, 'more_link_text' => '', 'more_link_path' => '',
+    'strip_tags' => FALSE, 'trim' => FALSE, 'preserve_tags' => '', 'html' => FALSE,
+  ],
+  'element_type' => '', 'element_class' => '',
+  'element_label_type' => '', 'element_label_class' => '', 'element_label_colon' => TRUE,
+  'element_wrapper_type' => '', 'element_wrapper_class' => '',
+  'element_default_classes' => TRUE,
+  'empty' => '', 'hide_empty' => FALSE, 'empty_zero' => FALSE, 'hide_alter_empty' => TRUE,
+  'group_column' => 'value', 'group_columns' => [], 'group_rows' => TRUE,
+  'delta_limit' => 0, 'delta_offset' => 0, 'delta_reversed' => FALSE,
+  'delta_first_last' => FALSE, 'multi_type' => 'separator', 'separator' => ', ',
+  'field_api_classes' => FALSE,
+  'click_sort_column' => 'value',
+  'settings' => [], 'type' => 'string',
+  'relationship' => 'none', 'group_type' => 'group', 'admin_label' => '',
+  'plugin_id' => 'field',
+];
+
 /** A field handler on the credential base/data table. */
-$baseField = function (string $name, string $label, array $extra = []): array {
+$baseField = function (string $name, string $label, array $extra = []) use ($FIELD_DEFAULTS): array {
   return $extra + [
     'id' => $name, 'table' => 'credential_field_data', 'field' => $name,
     'relationship' => 'none', 'group_type' => 'group', 'admin_label' => '',
@@ -41,25 +78,25 @@ $baseField = function (string $name, string $label, array $extra = []): array {
 };
 
 /** A field handler on a credential field table. */
-$field = function (string $name, string $label, string $type = 'string', array $settings = []): array {
+$field = function (string $name, string $label, string $type = 'string', array $settings = []) use ($FIELD_DEFAULTS): array {
   return [
     'id' => $name, 'table' => 'credential__' . $name, 'field' => $name,
     'relationship' => 'none', 'group_type' => 'group', 'admin_label' => '',
     'entity_type' => 'credential', 'entity_field' => $name,
     'plugin_id' => 'field', 'label' => $label, 'exclude' => FALSE,
     'element_label_colon' => TRUE, 'type' => $type, 'settings' => $settings,
-  ];
+  ] + $FIELD_DEFAULTS;
 };
 
 $US_DATE = ['type' => 'datetime_custom', 'settings' => ['date_format' => 'm/d/Y', 'timezone_override' => '']];
-$dateField = function (string $name, string $label) use ($US_DATE): array {
+$dateField = function (string $name, string $label) use ($US_DATE, $FIELD_DEFAULTS): array {
   return [
     'id' => $name, 'table' => 'credential__' . $name, 'field' => $name,
     'relationship' => 'none', 'group_type' => 'group', 'admin_label' => '',
     'entity_type' => 'credential', 'entity_field' => $name,
     'plugin_id' => 'field', 'label' => $label, 'exclude' => FALSE,
     'element_label_colon' => TRUE,
-  ] + $US_DATE;
+  ] + $US_DATE + $FIELD_DEFAULTS;
 };
 
 $titleLinked = [
@@ -68,7 +105,7 @@ $titleLinked = [
   'entity_type' => 'credential', 'entity_field' => 'title', 'plugin_id' => 'field',
   'label' => '', 'exclude' => FALSE, 'element_label_colon' => FALSE,
   'type' => 'string', 'settings' => ['link_to_entity' => TRUE],
-];
+] + $FIELD_DEFAULTS;
 
 $bundleFilter = [
   'id' => 'type', 'table' => 'credential_field_data', 'field' => 'type',
@@ -117,6 +154,15 @@ $sortTitle = [
   'entity_field' => 'title', 'plugin_id' => 'standard', 'order' => 'ASC',
 ];
 
+/** The raw status key, excluded from output, purely to feed the row class. */
+$statusKeyField = [
+  'id' => 'field_status_key', 'table' => 'credential__field_status', 'field' => 'field_status',
+  'relationship' => 'none', 'group_type' => 'group', 'admin_label' => '',
+  'entity_type' => 'credential', 'entity_field' => 'field_status',
+  'plugin_id' => 'field', 'label' => '', 'exclude' => TRUE,
+  'element_label_colon' => FALSE, 'type' => 'list_key', 'settings' => [],
+] + $FIELD_DEFAULTS;
+
 /* ---------- the default display: everything shared ---------- */
 $default = [
   'id' => 'default', 'display_title' => 'Default', 'display_plugin' => 'default', 'position' => 0,
@@ -137,6 +183,7 @@ $default = [
       'field_credential_number' => $field('field_credential_number', 'Number'),
       'field_expiration_date' => $dateField('field_expiration_date', 'Expires'),
       'field_status' => $field('field_status', 'Status', 'list_default'),
+      'field_status_key' => $statusKeyField,
     ],
     'filters' => ['type' => $bundleFilter],
     'sorts' => ['title' => $sortTitle],
@@ -165,7 +212,16 @@ $child = function (string $id, string $plugin, string $title, array $opts, int $
   ];
 };
 
-$cardStyle = ['type' => 'default', 'options' => ['grouping' => [], 'row_class' => 'credential-card', 'default_row_class' => TRUE, 'uses_fields' => FALSE]];
+/* The row class carries the status MACHINE value via a Views token, so CSS can
+   colour the status accent without a row template — which would need a new
+   hook_theme() on a module that is already enabled on live (see the
+   "hook ADDED to an already-enabled module" gotcha). The token resolves from the
+   EXCLUDED field_status_key field added below, because the visible field_status
+   uses the list_default formatter and would emit the human label ("Pending
+   renewal"), not a usable class. Views runs the value through Html::getClass(),
+   so pending_renewal becomes pending-renewal. */
+$cardStyle = ['type' => 'default', 'options' => ['grouping' => [], 'row_class' => 'credential-card credential-card--{{ field_status_key }}', 'default_row_class' => TRUE, 'uses_fields' => TRUE]];
+
 
 $displays = ['default' => $default];
 
@@ -182,6 +238,7 @@ $displays['page_company'] = $child('page_company', 'page', 'Company credentials'
     'field_coverage_limits' => $field('field_coverage_limits', 'Limits'),
     'field_expiration_date' => $dateField('field_expiration_date', 'Expires'),
     'field_status' => $field('field_status', 'Status', 'list_default'),
+    'field_status_key' => $statusKeyField,
   ],
   'menu' => ['type' => 'normal', 'title' => 'Credentials', 'weight' => 40, 'menu_name' => 'admin', 'parent' => ''],
 ], 1);

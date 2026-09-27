@@ -50,10 +50,10 @@ $PATTERNS = [
   'backflow' => '[material:field_size] [material:field_name]',
   'supplies' => '[material:field_size] [material:field_name]',
   'pavers' => '[material:field_size] [material:field_name]',
-  // pumps — field_pump_size is a coded list (keys like 00.75) that a token
-  // can't render as "3/4 HP", so the title is just the name (which carries the
-  // HP after backfill); the coded size stays a separate structured spec field.
-  'pumps' => '[material:field_name]',
+  // pumps — field_pump_size is a coded list, but the token renders its LABEL
+  // ("3/4 HP"), so title = "{HP} {name}". fix_pumps_size_title.php moves the HP
+  // out of the name into field_pump_size for existing records.
+  'pumps' => '[material:field_pump_size] [material:field_name]',
   // nursery
   'plants' => '[material:field_name] [material:field_container_size]',
   'shrubs' => '[material:field_name] [material:field_container_size]',

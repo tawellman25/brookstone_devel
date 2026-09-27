@@ -1539,6 +1539,53 @@ normally — it is specific to the ManyToOne chain that list fields use.
 
 ---
 
+## A hand-built Views field definition must be COMPLETE, and only RENDERING proves it
+
+**Discovered 2026-09-27** (credential views; the same trap `feedback_views_pattern`
+already warned about). Views does **not** merge a field plugin's default options into
+options written straight into config by a script. A sparse definition survives
+`$view->execute()` — the query builds and returns rows — and then throws on render:
+
+```
+TypeError: Unsupported operand types: array + null
+  FieldPluginBase::advancedRender()   $alter = $item + $this->options['alter'];
+```
+
+**`execute()` is not verification.** It never reaches `advancedRender()`. A
+script-built view can pass every row-count assertion and still 500 for real users.
+Always render each display, with rows:
+
+```php
+$sw = \Drupal::service('account_switcher');
+$sw->switchTo($privileged_user);          // a drush render is ANONYMOUS by default
+$build = Views::getView('v')->buildRenderable('page_1', $args);
+$html = (string) \Drupal::service('renderer')->renderPlain($build);
+$sw->switchBack();
+```
+
+Three related traps from the same session:
+- **`drush php:script` renders as anonymous.** Without an account switch a display
+  silently returns an empty view — a false green, not an error.
+- **Array-merge direction.** `$DEFAULTS + $specific` keeps the **left** operand on key
+  collision, so defaults override the field's `type` and `settings` and quietly
+  destroy the formatters. Write `$specific + $DEFAULTS`.
+- **PHP variable order in the build script.** A field array referenced by a display
+  defined *earlier* in the file evaluates to `NULL`, producing a handler with no
+  `table`/`field`/`alter`. Symptom: `Undefined array key "table"` in
+  `ViewsHandlerManager`.
+
+Required keys per field: `alter` (the full sub-array), `element_*`, `empty`,
+`hide_empty`, `empty_zero`, `hide_alter_empty`, `group_column`, `group_rows`,
+`delta_*`, `multi_type`, `separator`, `field_api_classes`, `click_sort_column`. See
+`$FIELD_DEFAULTS` in `web/scripts/build_credential_views.php`.
+
+**Two assertion traps** — a verifier can be wrong in the *reassuring* direction:
+`renderPlain()` emits no `<link>` tags, so read attachments from
+`$build['#attached']['library']`, not the HTML; and a **table**-style display emits
+`<tr>`, not `.views-row`.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

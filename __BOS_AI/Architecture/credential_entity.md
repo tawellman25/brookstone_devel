@@ -1,6 +1,6 @@
 # Credential entity — Gate 0 findings & design decisions
 
-**Status:** **LIVE 2026-09-27**, 18/18 read-only verification on production. Remaining: card CSS for the two card displays, and the profile-field retirement (§8/§E-7b).
+**Status:** **LIVE 2026-09-27** — 18/18 config verification + **11/11 render verification** on production. Remaining: the profile-field retirement (§8/§E-7b) and office data entry.
 **Tier:** T3 — sits behind the estimating epic. Does not block `/about-us/credentials`.
 **Spec source:** "BOS — Credentials entity" (marketing project, 2026-09-27).
 **Inspection tool:** `web/scripts/inspect_credential_gate0.php` (read-only, re-runnable per env).
@@ -155,9 +155,12 @@ Two findings from the live run:
 
 ## H. Remaining
 
-1. **Card CSS** for `page_expiring` + `page_mine` + the profile block — they carry the
-   `credential-card` row class but no stylesheet yet, so they render as unstyled rows. §5c
-   requires the expiring view to be phone-legible.
+1. ~~Card CSS~~ **DONE and live.** My Schedule tokens; status colour keyed on the machine
+   value via a tokenized `row_class` fed by an excluded `list_key` field (no row template, so
+   no new `hook_theme()` on a live module); badge inline below 30rem. **The first deploy of
+   these views would have 500'd** on any display returning rows — sparse field definitions,
+   caught only by rendering. See `drupal_bos_gotchas.md` → "A hand-built Views field
+   definition must be COMPLETE".
 2. **§8 retirement** — remove `teammate_profile.field_certification_number` and
    `field_certification_association` once the credential path has been exercised in the
    field. The backflow snapshot currently falls back to them, so retirement is safe to defer

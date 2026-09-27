@@ -12,11 +12,16 @@ declare(strict_types=1);
  * Display model (governed by bos_spray_types — office->admin_view, crew->
  * teammate_view, else full, with the user.roles cache context):
  *   - full (public):  name, field_short_description (lead), field_public_description
- *                     (body), description (kept ONLY so Arena/Driveway — whose good
- *                     copy lives in core description and which we do NOT touch —
- *                     keep rendering), field_applicable_services. NO crew field.
+ *                     (body), field_applicable_services. NO crew field.
  *   - teammate_view:  name, field_teammate_description (crew instruction only).
- *   - admin_view:     everything.
+ *   - admin_view:     everything except core description.
+ *   - default:        left as-is apart from dropping core description.
+ *
+ * Core `description` is NOT rendered on any tier: all 20 terms carry their public
+ * copy in field_short_description + field_public_description (the last two, Arena
+ * and Driveway, were moved across by
+ * migrate_spraying_locations_descriptions.php). The stored values are cleared, so
+ * the field is inert — it is dropped from the displays so the intent is explicit.
  *
  * Idempotent. Field configs skip on cim, so this script is the deploy path.
  *
@@ -64,9 +69,13 @@ if ($formDisplay) {
 }
 
 /* 2. Rebuild the three displays. */
-$FULL = ['name', 'field_short_description', 'field_public_description', 'description', 'field_applicable_services'];
+$FULL = ['name', 'field_short_description', 'field_public_description', 'field_applicable_services'];
 $TEAMMATE = ['name', 'field_teammate_description'];
-$ADMIN = ['name', 'field_short_description', 'field_public_description', 'description', 'field_teammate_description', 'field_applicable_services'];
+$ADMIN = ['name', 'field_short_description', 'field_public_description', 'field_teammate_description', 'field_applicable_services'];
+// The `default` display is not an audience tier (bos_spray_types routes the term
+// page to one of the three above). Keep whatever it renders, minus core
+// description.
+$DEFAULT_DROP = ['description'];
 
 $default = $etm->getStorage('entity_view_display')->load("taxonomy_term.$vid.default");
 $defaultComponents = $default ? ($default->get('content') ?? []) : [];
@@ -109,5 +118,23 @@ $build = function (string $mode, array $fields) use ($etm, $vid, $defaultCompone
 $build('full', $FULL);
 $build('teammate_view', $TEAMMATE);
 $build('admin_view', $ADMIN);
+
+/* 3. Drop core description from the non-tier `default` display too. */
+if ($default) {
+  $dropped = [];
+  foreach ($DEFAULT_DROP as $field) {
+    if ($default->getComponent($field)) {
+      $default->removeComponent($field);
+      $dropped[] = $field;
+    }
+  }
+  if ($dropped) {
+    $default->save();
+    print '  default: dropped [' . implode(',', $dropped) . "]\n";
+  }
+  else {
+    print "  default: already clear of [" . implode(',', $DEFAULT_DROP) . "]\n";
+  }
+}
 
 print "DONE.\n";

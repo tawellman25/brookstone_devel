@@ -15,7 +15,11 @@ declare(strict_types=1);
  *   - full (public):   the current public fields MINUS field_teammate_description.
  *                      wind_direction shows field_short_description (the new one-
  *                      line public copy) instead of the legacy `description`
- *                      travelogue.
+ *                      travelogue. spraying_locations likewise renders
+ *                      field_short_description + field_public_description and never
+ *                      core `description` (all 20 terms were migrated onto the
+ *                      dedicated fields; see
+ *                      migrate_spraying_locations_descriptions.php).
  *   - teammate_view:   name + field_teammate_description (crew instruction only).
  *   - admin_view:      everything (name, description, short_desc, applicable
  *                      services, teammate_description) under the .bos-admin-view
@@ -35,7 +39,7 @@ $etm = \Drupal::entityTypeManager();
 // Public fields per vocab (field_teammate_description deliberately excluded).
 $FULL = [
   'carrier' => ['name', 'description'],
-  'spraying_locations' => ['name', 'description', 'field_applicable_services'],
+  'spraying_locations' => ['name', 'field_short_description', 'field_public_description', 'field_applicable_services'],
   'spraying_methods' => ['name', 'description', 'field_applicable_services'],
   'wind_direction' => ['name', 'field_short_description'],
   'spraying_wind_speed' => ['name', 'description'],
@@ -44,7 +48,7 @@ $FULL = [
 // Office tier: everything the vocab has.
 $ADMIN = [
   'carrier' => ['name', 'description', 'field_teammate_description'],
-  'spraying_locations' => ['name', 'description', 'field_applicable_services', 'field_teammate_description'],
+  'spraying_locations' => ['name', 'field_short_description', 'field_public_description', 'field_applicable_services', 'field_teammate_description'],
   'spraying_methods' => ['name', 'description', 'field_applicable_services', 'field_teammate_description'],
   // wind_direction: the legacy `description` travelogue is replaced entirely by
   // field_short_description (public) + field_teammate_description (crew), so it

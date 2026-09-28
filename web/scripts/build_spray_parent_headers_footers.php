@@ -225,7 +225,7 @@ $F_CHEMICALS = <<<'HTML'
 
 <p>Every application we make is recorded — what was applied, where, at what rate, by whom, under what conditions — and you get a notice of it. If anything on that notice is unclear, the pages here explain it, and if they do not, ask us.</p>
 
-<p>We are licensed by the Colorado Department of Agriculture to apply these products commercially. <a href="/credentials">Our licences and certifications</a>.</p>
+<p>We are licensed by the Colorado Department of Agriculture to apply these products commercially. <a href="/about-us/credentials">Our licences and certifications</a>.</p>
 HTML;
 // The child navigation list to keep between header and footer on the chemicals node.
 $CHEMICALS_CHILDREN = <<<'HTML'

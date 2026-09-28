@@ -11,7 +11,7 @@ declare(strict_types=1);
  *
  *   1. ADD custom links for the spray parent VIEW pages that are not already in
  *      the sitemap, plus the conversion pages /request-estimate, /contact,
- *      /credentials. Matched by loc so re-runs and already-present links
+ *      /about-us/credentials. Matched by loc so re-runs and already-present links
  *      (location, methods on live) are no-ops — no duplicates. The two NODE
  *      parents (chemicals, stages-weed-growth) are auto-included as nodes and are
  *      deliberately NOT added here (that would duplicate them).
@@ -46,7 +46,7 @@ $ADD = [
   '/services/landscape-lawn-care/spraying/chemicals/signal-words',
   '/request-estimate',
   '/contact',
-  '/credentials',
+  '/about-us/credentials',
 ];
 
 $router = \Drupal::service('router.no_access_checks');
@@ -55,7 +55,7 @@ $skipped = 0;
 $unresolved = [];
 foreach ($ADD as $path) {
   $loc = $aliasManager->getPathByAlias($path);
-  // Never submit a URL that does not resolve to a route (e.g. /credentials is
+  // Never submit a URL that does not resolve to a route (e.g. /about-us/credentials is
   // not built yet). Self-correcting: a re-run adds it once the page exists.
   try {
     $router->match($loc);

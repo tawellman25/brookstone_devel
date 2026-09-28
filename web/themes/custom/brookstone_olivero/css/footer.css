@@ -370,6 +370,16 @@
     flex-direction: column;
     align-items: flex-start;
   }
+  /* Flipping the main axis to vertical re-points the children's flex basis at
+     HEIGHT: `flex: 1 1 100%` on the heading and `flex: 1 1 22rem` on the body
+     became a 100%-tall and a 352px-tall box that also GREW, which opened a large
+     empty gap between the copy and the button on phones. Reset both to their
+     natural height and let width do the work instead. */
+  .footer-promo__heading,
+  .footer-promo__body {
+    flex: 0 0 auto;
+    width: 100%;
+  }
   .footer-promo__btn {
     width: 100%;
     text-align: center;

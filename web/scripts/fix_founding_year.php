@@ -43,8 +43,19 @@ $swap = function (string $text, array $pairs, int &$n): string {
   return $text;
 };
 
-// The year itself, plus the claims derived from it.
-$YEAR = ['/\b1995\b/' => '1997'];
+// The founding claims — matched by PHRASE, not by the bare year.
+//
+// A blanket \b1995\b on a page body is a trap: /about-us now also carries
+// Gerald's bio, which says he "started his first landscaping company in 1995".
+// That is a different company and a true statement about his career, and a
+// year-only rule would rewrite it to 1997 the next time anyone ran this. The
+// same reasoning that kept this script off street addresses and work-order
+// numbers applies inside a page body.
+$YEAR = [
+  '/(Outdoor Spaces Since) 1995/i' => '$1 1997',
+  '/(serving|Serving|since|Since) 1995/' => '$1 1997',
+  '/(Ward began in) 1995/i' => '$1 1997',
+];
 $DERIVED = [
   '/\bOver 30 years on the Western Slope\b/i' => 'On the Western Slope since 1997',
   '/\b30\+ years on the Western Slope\b/i' => 'On the Western Slope since 1997',
@@ -86,6 +97,14 @@ foreach ($targets as [$type, $id, $field, $prop, $pairs, $where]) {
   foreach (preg_split('/(?<=[.!?])\s+/', strip_tags($new)) as $sentence) {
     if (preg_match('/1997/', $sentence)) {
       printf("           → %s\n", trim(preg_replace('/\s+/', ' ', $sentence)));
+    }
+  }
+  // Refuse to touch a sentence that is someone's own career history.
+  if (preg_match('/first landscaping company in 199\d/i', $new, $m)) {
+    if (!preg_match('/first landscaping company in 1995/i', $new)) {
+      printf("  ABORT  %s %s — would have rewritten \"%s\"; that is a personal\n"
+        . "         bio, not the company founding year. Nothing saved.\n", $type, $id, $m[0]);
+      continue;
     }
   }
   $backup[] = ['type' => $type, 'id' => $id, 'field' => $field, 'prop' => $prop, 'old' => $old];

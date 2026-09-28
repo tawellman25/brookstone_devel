@@ -3,7 +3,9 @@
  * @file
  * Footer column 1 — Company / NAP. Renders the fielded footer_company block
  * with tap-to-call phone, mailto email, and an address that opens Google Maps.
- * NAP text is stored verbatim (matches the Google Business Profile).
+ * NAP text is stored verbatim (matches the Google Business Profile). The
+ * credentials trust line links to /about-us/credentials so the claim sits one
+ * click from the records that substantiate it.
  */
 #}
 {% set b = content['#block_content'] %}
@@ -19,6 +21,9 @@
     <img class="bo-wordmark" src="/themes/custom/brookstone_olivero/images/brookstone-wordmark-white.png" alt="Brookstone" /><span>Outdoors LLC</span>
   </div>
   {% if b.field_fc_tagline.value %}<div class="footer-company__tagline">{{ b.field_fc_tagline.value }}</div>{% endif %}
+  {% if b.field_fc_credentials.value %}
+    <p class="footer-company__credentials"><a href="/about-us/credentials">{{ b.field_fc_credentials.value }}</a></p>
+  {% endif %}
   {% if b.field_fc_address.value %}
     <p class="footer-company__addr">
       {% if maps %}<a href="{{ maps }}" target="_blank" rel="noopener">{{ b.field_fc_address.value|nl2br }}</a>{% else %}{{ b.field_fc_address.value|nl2br }}{% endif %}

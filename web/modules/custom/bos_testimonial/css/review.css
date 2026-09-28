@@ -78,3 +78,28 @@
 
 .review-card__img { margin-top: 0.8rem; }
 .review-card__img img { border-radius: 6px; max-width: 100%; height: auto; }
+
+/* ---------------------------------------------------------------------------
+ * Reviews shown on a service page (service_testimonials EVA). Sits below the
+ * service copy, so it needs its own separation; the cards themselves reuse the
+ * .review-card rules above unchanged.
+ * ------------------------------------------------------------------------- */
+.service-reviews {
+  margin-block-start: 2.5rem;
+  padding-block-start: 1.5rem;
+  border-top: 1px solid var(--bo-sand, #E7DCC9);
+}
+.service-reviews .views-field-area-text-custom,
+.service-reviews h3 {
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  margin-block-end: 1rem;
+}
+@media (min-width: 48rem) {
+  .service-reviews .view-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: 1rem;
+  }
+}

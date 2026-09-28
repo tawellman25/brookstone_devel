@@ -160,3 +160,44 @@ function bos_testimonial_tokens($type, $tokens, array $data, array $options, \Dr
   }
   return $replacements;
 }
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * Two jobs:
+ *
+ *  - Attach the review card stylesheet. It was only ever attached by the
+ *    /review controller, so the public reviews page has been rendering the
+ *    card classes with no CSS behind them.
+ *  - On a service page, name the block after the service, and say nothing at
+ *    all when that service has no approved reviews yet — an empty "What
+ *    customers say" heading reads worse than no heading.
+ */
+function bos_testimonial_views_pre_render(\Drupal\views\ViewExecutable $view): void {
+  if (!in_array($view->id(), ['testimonials', 'service_testimonials'], TRUE)) {
+    return;
+  }
+  $view->element['#attached']['library'][] = 'bos_testimonial/review';
+
+  if ($view->id() !== 'service_testimonials') {
+    return;
+  }
+
+  if (empty($view->result)) {
+    // Drop the heading rather than render it over nothing.
+    unset($view->header['area_text_custom']);
+    return;
+  }
+
+  $tid = $view->args[0] ?? NULL;
+  if (!$tid || empty($view->header['area_text_custom'])) {
+    return;
+  }
+  $term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->load($tid);
+  if (!$term) {
+    return;
+  }
+  $view->header['area_text_custom']->options['content'] = (string) t('What customers say about @service', [
+    '@service' => $term->label(),
+  ]);
+}

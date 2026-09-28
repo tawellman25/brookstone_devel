@@ -354,6 +354,25 @@
       "services    companylinks"
       "servicearea servicearea";
   }
+
+  /* Landscape phones and tablets: the identity column is meant to run the full
+     width of this two-column band and sit centered. Named grid areas alone were
+     leaving it stranded in the right-hand column with dead space beside it, so
+     pin the full-row span and the centering explicitly rather than relying on
+     the area name resolving and on `margin-inline: auto` winning against the
+     item's stretch. Same for the two other full-width rows, which fail the same
+     way. Harmless where the areas already place them correctly. */
+  .site-footer #block-brookstone-olivero-foot-promo,
+  .site-footer #block-brookstone-olivero-foot-company,
+  .site-footer #block-brookstone-olivero-foot-servicearea {
+    grid-column: 1 / -1;
+  }
+  .site-footer #block-brookstone-olivero-foot-company {
+    justify-self: center;
+    width: 100%;
+    max-width: 18rem;
+    margin-inline: auto;
+  }
 }
 @media (max-width: 37.5rem) {
   .site-footer .region--footer_top__inner {

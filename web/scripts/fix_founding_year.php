@@ -45,9 +45,9 @@ $swap = function (string $text, array $pairs, int &$n): string {
 
 // The founding claims — matched by PHRASE, not by the bare year.
 //
-// A blanket \b1995\b on a page body is a trap: /about-us now also carries
-// Gerald's bio, which says he "started his first landscaping company in 1995".
-// That is a different company and a true statement about his career, and a
+// A blanket \b1995\b on a page body is a trap: /about-us also carries Todd's
+// bio, which says he "started his first landscaping company in 1995". That is
+// a different company and a true statement about his own career, and a
 // year-only rule would rewrite it to 1997 the next time anyone ran this. The
 // same reasoning that kept this script off street addresses and work-order
 // numbers applies inside a page body.

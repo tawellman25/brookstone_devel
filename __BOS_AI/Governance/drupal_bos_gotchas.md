@@ -1586,6 +1586,47 @@ Required keys per field: `alter` (the full sub-array), `element_*`, `empty`,
 
 ---
 
+## Flipping a flex container to `column` re-points every child's flex BASIS at height
+
+**Discovered 2026-09-28** (footer seasonal promo on a phone). A responsive rule did the
+usual thing:
+
+```css
+@media (max-width: 37.5rem) {
+  .footer-promo__inner { flex-direction: column; }   /* children NOT reset */
+}
+```
+
+The children kept their row-oriented bases — `flex: 1 1 100%` on the heading and
+`flex: 1 1 22rem` on the body. **`flex-basis` follows the main axis**, so once the
+axis is vertical those mean *100% of the container's height* and *352px of height*,
+and both still had `flex-grow: 1`, so they absorbed all free height. Result: a
+~700px empty gap between the copy and the button, with the card's accent border
+stretched down the whole thing. Nothing errors; it just looks broken, and only on
+phones.
+
+**Fix — reset the children in the same query:**
+
+```css
+.footer-promo__heading,
+.footer-promo__body { flex: 0 0 auto; width: 100%; }
+```
+
+**Rule:** any `flex-direction: column` override inside a media query must also
+neutralise its children's `flex` shorthand, or state the basis in axis-neutral terms.
+A basis of `auto`, or `flex-grow: 0`, is safe in both directions; a percentage or a
+`rem` basis with `flex-grow: 1` is not.
+
+**Sweep for it** — the pattern is a container flipped to column whose children still
+carry a growing row basis:
+
+```bash
+grep -rn "flex-direction: column" web/themes/custom/*/css web/modules/custom/*/css
+# then check each child rule for `flex: 1 1 <length|%>`
+```
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

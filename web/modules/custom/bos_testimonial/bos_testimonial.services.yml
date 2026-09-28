@@ -1,0 +1,14 @@
+services:
+  logger.channel.bos_testimonial:
+    parent: logger.channel_base
+    arguments: ['bos_testimonial']
+
+  bos_testimonial.note_vision:
+    class: Drupal\bos_testimonial\Service\NoteVisionExtractor
+    public: true
+    arguments: ['@ai.provider', '@config.factory', '@entity_type.manager', '@logger.channel.bos_testimonial']
+
+  bos_testimonial.note_redactor:
+    class: Drupal\bos_testimonial\Service\NoteRedactor
+    public: true
+    arguments: ['@logger.channel.bos_testimonial']

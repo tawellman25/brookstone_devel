@@ -90,3 +90,28 @@ function bos_testimonial_testimonial_presave(EntityInterface $testimonial) {
     $testimonial->set('title', $title);
   }
 }
+
+/**
+ * Implements hook_entity_operation().
+ *
+ * Offers "Read the note" on a testimonial that actually has a scan, and only
+ * when a vision provider is configured — a dead button is worse than none.
+ */
+function bos_testimonial_entity_operation(EntityInterface $entity): array {
+  if ($entity->getEntityTypeId() !== 'testimonial'
+    || !$entity->hasField('field_testimonial_scan')
+    || $entity->get('field_testimonial_scan')->isEmpty()
+    || !$entity->access('update')) {
+    return [];
+  }
+  if (!\Drupal::service('bos_testimonial.note_vision')->isAvailable()) {
+    return [];
+  }
+  return [
+    'read_note' => [
+      'title' => t('Read the note'),
+      'weight' => 20,
+      'url' => \Drupal\Core\Url::fromRoute('bos_testimonial.read_note', ['testimonial' => $entity->id()]),
+    ],
+  ];
+}

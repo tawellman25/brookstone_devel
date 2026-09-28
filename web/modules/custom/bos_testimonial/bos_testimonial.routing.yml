@@ -22,3 +22,15 @@ bos_testimonial.qr_image:
     _controller: '\Drupal\bos_testimonial\Controller\TestimonialQrController::image'
   requirements:
     _permission: 'access testimonial entity listing'
+
+bos_testimonial.read_note:
+  path: '/testimonial/{testimonial}/read-note'
+  defaults:
+    _form: '\Drupal\bos_testimonial\Form\ReadNoteForm'
+    _title: 'Read the handwritten note'
+  requirements:
+    _entity_access: 'testimonial.update'
+  options:
+    parameters:
+      testimonial:
+        type: 'entity:testimonial'

@@ -66,11 +66,20 @@ $check('approved tab keeps the quote-card markup', str_contains($appr, 'review-c
 $check('approved tab uses office-voice copy', str_contains($appr, 'for marketing copy'), 'no public CTA wording');
 
 /* Anonymous must get nothing from any of them. */
+/* Anonymous must get nothing from the OFFICE surfaces... */
 foreach (['page_all', 'page_pending', 'page_public'] as $disp) {
   [$out] = $render($disp, $anon);
   $rows = substr_count($out, '<tr') + substr_count($out, 'views-row');
-  $check("anon gets no rows from $disp", $rows === 0, "$rows row(s)");
+  $check("anon gets no rows from office $disp", $rows === 0, "$rows row(s)");
 }
+
+/* ...but the PUBLIC page must show approved reviews to anon, and only those. */
+[$pub, $pubErr] = $render('page_site', $anon);
+$check('anon renders the public page', $pubErr === '', $pubErr ?: strlen($pub) . ' bytes');
+$check('public page shows the APPROVED review', str_contains($pub, 'Approved Alice'));
+$check('public page HIDES the pending one', !str_contains($pub, 'Pending Pete'), 'content-safety check');
+$check('public page uses customer voice + CTA', str_contains($pub, 'Leave a review'));
+$check('public page does NOT use office voice', !str_contains($pub, 'for marketing copy'));
 
 foreach ($made as $t) { $t->delete(); }
 print "  (test testimonials removed)\n";

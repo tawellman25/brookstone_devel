@@ -9,6 +9,14 @@
  * accent tokens below to those if you prefer the print-brand values; everything
  * inherits from here.
  */
+/* The page owns its colours. Every value below is an explicit hex, nothing
+ * derives from the system scheme, so declaring this changes nothing about how
+ * the page renders — it only stops a browser's automatic dark-mode pass from
+ * re-colouring a design that is already handling light and dark itself. */
+:root {
+  color-scheme: light;
+}
+
 :root {
   --bo-paper: #FAF7F2;        /* warm page background */
   --bo-sand: #F2E9DC;         /* form band */
@@ -25,8 +33,16 @@
   --bo-text-2: #4A3F35;       /* secondary body */
   --bo-muted: #6B5D4F;        /* labels, captions */
   --bo-muted-2: #8A7A69;      /* faint helper text */
-  --bo-footer-text: #C9BCAA;  /* body text on the dark footer */
-  --bo-footer-strong: #F5EFE6;/* headings on the dark footer */
+  --bo-footer-text: #D9CEC0;  /* body text on the dark footer — 11.6:1 on --bo-ink */
+  --bo-footer-strong: #F5EFE6;/* headings on the dark footer — 15.7:1 */
+  --bo-footer-muted: #A99A88; /* secondary text on the dark footer — 6.6:1.
+                                 NOT --bo-muted-2: that is 4.34:1 on ink, which
+                                 fails WCAG AA for body text, and it is the
+                                 colour the copyright, privacy link, tagline and
+                                 lineage line were using. */
+  --bo-footer-accent: #E3813A;/* the brand orange lifted for the dark ground —
+                                 #CB6015 is only 4.47:1 there. Footer only; the
+                                 light pages keep the real brand orange. */
 
   --bo-hairline: #E2D7C7;     /* section dividers */
   --bo-border-card: #DFD2BF;  /* card border */

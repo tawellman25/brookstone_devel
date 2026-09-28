@@ -115,3 +115,48 @@ function bos_testimonial_entity_operation(EntityInterface $entity): array {
     ],
   ];
 }
+
+/**
+ * The public-facing reference for a testimonial: ID0002.
+ *
+ * Same idea as the backflow device's bf_number — a short, stable, padded
+ * handle that reads as an identifier rather than a database row, and sorts
+ * properly. It is what the URL and the image filename are built from, so it
+ * must never change for a given record: it is derived from the entity id,
+ * which does not change.
+ */
+function _bos_testimonial_ref(int $id): string {
+  return 'ID' . str_pad((string) $id, 4, '0', STR_PAD_LEFT);
+}
+
+/**
+ * Implements hook_token_info().
+ */
+function bos_testimonial_token_info(): array {
+  return [
+    'tokens' => [
+      'testimonial' => [
+        'ref' => [
+          'name' => t('Reference'),
+          'description' => t('The padded public reference, e.g. ID0002.'),
+        ],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function bos_testimonial_tokens($type, $tokens, array $data, array $options, \Drupal\Core\Render\BubbleableMetadata $bubbleable_metadata): array {
+  $replacements = [];
+  if ($type !== 'testimonial' || empty($data['testimonial'])) {
+    return $replacements;
+  }
+  foreach ($tokens as $name => $original) {
+    if ($name === 'ref') {
+      $replacements[$original] = _bos_testimonial_ref((int) $data['testimonial']->id());
+    }
+  }
+  return $replacements;
+}

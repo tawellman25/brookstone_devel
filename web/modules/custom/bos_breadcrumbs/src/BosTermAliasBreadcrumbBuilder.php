@@ -112,7 +112,17 @@ class BosTermAliasBreadcrumbBuilder implements BreadcrumbBuilderInterface {
     $breadcrumb = new Breadcrumb();
     // The trail depends on the parent path and on the viewer (access-gated
     // crumbs). Access results merged below also carry their own contexts/tags.
-    $breadcrumb->addCacheContexts(['url.path.parent', 'url.path.is_front', 'user.permissions']);
+    //
+    // `route` is REQUIRED even though nothing here reads it: applies() gates on
+    // the route name and the term's vocabulary, so whether this builder runs at
+    // all varies by route. Without it the breadcrumb block cached one context set
+    // on an allowlisted term page (url.path.parent, url.path.is_front,
+    // user.permissions) and a disjoint one elsewhere (route), and VariationCache
+    // warned "Trying to overwrite a cache redirect ... with one that has nothing
+    // in common" — visible to anonymous visitors while error display was on.
+    // Declaring it makes the sets overlap so the redirects nest instead of
+    // colliding. Rule: if applies() depends on something, build() must declare it.
+    $breadcrumb->addCacheContexts(['route', 'url.path.parent', 'url.path.is_front', 'user.permissions']);
 
     if ($this->pathMatcher->isFrontPage()) {
       return $breadcrumb;

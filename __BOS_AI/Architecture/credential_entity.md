@@ -1,5 +1,14 @@
 # Credential entity — Gate 0 findings & design decisions
 
+> ⚠ **This is a BUILD DIARY, not the spec.** It records the Gate 0 inspection,
+> the four places the original spec was wrong, Todd's decisions and the build
+> order — written while the work was in progress, so it reads like an
+> unfinished plan with open questions.
+>
+> **For what actually exists, read [`credential.md`](credential.md)** (the
+> as-built entity reference). If the two disagree, `credential.md` is right and
+> this file is history.
+
 **Status:** **LIVE 2026-09-27** — 18/18 config verification + **11/11 render verification** on production. Remaining: the profile-field retirement (§8/§E-7b) and office data entry.
 **Tier:** T3 — sits behind the estimating epic. Does not block `/about-us/credentials`.
 **Spec source:** "BOS — Credentials entity" (marketing project, 2026-09-27).

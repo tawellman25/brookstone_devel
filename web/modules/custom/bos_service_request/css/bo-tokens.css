@@ -9,11 +9,30 @@
  * accent tokens below to those if you prefer the print-brand values; everything
  * inherits from here.
  */
-/* The page owns its colours. Every value below is an explicit hex, nothing
- * derives from the system scheme, so declaring this changes nothing about how
- * the page renders — it only stops a browser's automatic dark-mode pass from
- * re-colouring a design that is already handling light and dark itself. */
+/* Opt OUT of the browser's automatic dark-mode pass.
+ *
+ * This has to say `light dark`, not `light`. Chrome's auto-dark applies to
+ * pages that declare they do NOT handle dark mode — so `light` is an invitation,
+ * not a defence. Declaring support for both is what makes Chrome stand down and
+ * render the colours as authored. (Confirmed from a phone screenshot where the
+ * brand-orange button rendered dark maroon under `color-scheme: light`.)
+ *
+ * Safe to claim: every colour in this design is an explicit hex and nothing
+ * derives from the system scheme, so the page renders identically either way.
+ * The one thing that would follow the system is native form controls, so those
+ * are pinned to light below — otherwise a dark-mode visitor gets dark inputs on
+ * a light form card. */
 :root {
+  color-scheme: light dark;
+}
+
+/* Native widgets stay light regardless of the viewer's system setting: the
+ * forms sit on a light card and there is no dark variant of them. */
+input,
+select,
+textarea,
+button,
+::-webkit-calendar-picker-indicator {
   color-scheme: light;
 }
 
@@ -48,9 +67,6 @@
                                  fails WCAG AA for body text, and it is the
                                  colour the copyright, privacy link, tagline and
                                  lineage line were using. */
-  --bo-footer-accent: #E3813A;/* the brand orange lifted for the dark ground —
-                                 #CB6015 is only 4.47:1 there. Footer only; the
-                                 light pages keep the real brand orange. */
 
   --bo-hairline: #E2D7C7;     /* section dividers */
   --bo-border-card: #DFD2BF;  /* card border */

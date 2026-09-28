@@ -228,14 +228,14 @@ function _bos_service_request_is_winterize(): bool {
  * custom properties changes nothing until something uses them.
  */
 function bos_service_request_page_attachments(array &$attachments) {
-  // Say the page owns its colours. Without this a browser's automatic dark
-  // mode re-colours the design algorithmically — which is what turns an
-  // already-dark footer muddy on an Android phone with dark theme on.
+  // Opt out of the browser's automatic dark-mode pass. Must be "light dark":
+  // Chrome auto-darkens pages that declare they do NOT support dark, so
+  // "light" alone invites the very re-colouring we are trying to stop.
   $attachments['#attached']['html_head'][] = [
     [
       '#type' => 'html_tag',
       '#tag' => 'meta',
-      '#attributes' => ['name' => 'color-scheme', 'content' => 'light'],
+      '#attributes' => ['name' => 'color-scheme', 'content' => 'light dark'],
     ],
     'bos_color_scheme',
   ];

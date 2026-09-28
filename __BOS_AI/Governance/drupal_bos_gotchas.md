@@ -1627,6 +1627,50 @@ grep -rn "flex-direction: column" web/themes/custom/*/css web/modules/custom/*/c
 
 ---
 
+## If `applies()` depends on it, `build()` must declare it — or VariationCache warns
+
+**Discovered 2026-09-28** (`bos_breadcrumbs`, visible to anonymous visitors). A
+breadcrumb builder whose `applies()` gates on the route:
+
+```php
+public function applies(RouteMatchInterface $route_match) {
+  return $route_match->getRouteName() === 'entity.taxonomy_term.canonical'
+    && in_array($this->termVid(...), self::ALLOWED_VIDS, TRUE);
+}
+```
+
+…but whose `build()` declared only `url.path.parent`, `url.path.is_front`,
+`user.permissions`. The breadcrumb **block** therefore cached one context set on an
+allowlisted term page and a **disjoint** one (`route`, from core's builder)
+everywhere else, and every such render logged:
+
+```
+Trying to overwrite a cache redirect for "entity_view:block:…breadcrumbs:…"
+with one that has nothing in common, old one … pointing to
+"url.path.parent, url.path.is_front", new one points to "route"
+```
+
+VariationCache can nest redirects whose context sets **overlap**; it refuses when
+they have nothing in common. Adding `route` to the builder's contexts fixes it.
+
+**The general rule:** whatever `applies()` (or any other "does this plugin run"
+decision) depends on must be declared as a cache context by `build()`, even when
+nothing in the built output reads it. The decision is part of the result.
+
+**It is also a cheap thing to regression-test** — the warning goes to dblog, so:
+
+```bash
+drush watchdog:delete all -y && drush cr
+# hit a handled page and an unhandled one as anon, a few of each
+drush watchdog:show --count=50 | grep -c "cache redirect"   # expect 0
+```
+
+⚠ **Deploying the fix needs the lsphp restart** (see the module-swap gotcha above):
+changing a PHP class and running `drush cr` left live still warning, because the web
+workers were running the old opcode. `pkill -u <user> lsphp` → `cr` → prime.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

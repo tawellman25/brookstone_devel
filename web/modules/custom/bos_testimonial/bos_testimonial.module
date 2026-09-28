@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * @file
+ * Testimonial moderation + title composition.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+
+/** Roles allowed to create an already-approved testimonial. */
+const BOS_TESTIMONIAL_OFFICE_ROLES = [
+  'administration', 'supervisor', 'site_assistant', 'site_admin', 'administrator',
+];
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for testimonial.
+ *
+ * Two jobs:
+ *  - Compose the title, so a public submission is identifiable in the admin list
+ *    without anybody typing one.
+ *  - FORCE `pending` on any record created by a non-office user. The public form
+ *    already sets pending, but this is the backstop that holds on every path — a
+ *    crafted POST cannot arrive pre-approved.
+ */
+function bos_testimonial_testimonial_presave(EntityInterface $testimonial) {
+  if ($testimonial->isNew() && $testimonial->hasField('field_status')) {
+    $account = \Drupal::currentUser();
+    $office = (bool) array_intersect(BOS_TESTIMONIAL_OFFICE_ROLES, $account->getRoles());
+    if (!$office) {
+      $testimonial->set('field_status', 'pending');
+    }
+    elseif (trim((string) $testimonial->get('field_status')->value) === '') {
+      $testimonial->set('field_status', 'pending');
+    }
+  }
+
+  if (!$testimonial->hasField('title')) {
+    return;
+  }
+  $by = $testimonial->hasField('field_testimonial_by')
+    ? trim((string) $testimonial->get('field_testimonial_by')->value) : '';
+  $service = NULL;
+  if ($testimonial->hasField('field_testimony_service') && !$testimonial->get('field_testimony_service')->isEmpty()) {
+    $term = $testimonial->get('field_testimony_service')->entity;
+    $service = $term ? $term->label() : NULL;
+  }
+  $parts = array_filter([$by !== '' ? $by : 'Anonymous', $service]);
+  $title = implode(' — ', $parts);
+  if (trim((string) $testimonial->label()) === '' || $testimonial->isNew()) {
+    $testimonial->set('title', $title);
+  }
+}

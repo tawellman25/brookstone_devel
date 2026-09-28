@@ -1,0 +1,24 @@
+bos_testimonial.review:
+  path: '/review'
+  defaults:
+    _controller: '\Drupal\bos_testimonial\Controller\ReviewController::page'
+    _title: 'Leave a review'
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE
+
+bos_testimonial.qr:
+  path: '/admin/operations/system_content/testimonials/qr'
+  defaults:
+    _controller: '\Drupal\bos_testimonial\Controller\TestimonialQrController::page'
+    _title: 'Review QR code'
+  requirements:
+    _permission: 'access testimonial entity listing'
+
+bos_testimonial.qr_image:
+  path: '/admin/operations/system_content/testimonials/qr/image'
+  defaults:
+    _controller: '\Drupal\bos_testimonial\Controller\TestimonialQrController::image'
+  requirements:
+    _permission: 'access testimonial entity listing'

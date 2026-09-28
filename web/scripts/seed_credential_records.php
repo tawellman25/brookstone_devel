@@ -43,7 +43,7 @@ $D['CDA_COMM_APP'] = ['order' => 10, 'scope' => 'company', 'publish' => FALSE, '
 <p>A licensed applicator carries records, training and accountability for that. An unlicensed one carries nothing, and when the damage shows up three weeks later there is no one to call.</p>
 HTML];
 
-$D['CDA_QS'] = ['order' => 20, 'scope' => 'teammate', 'uid' => 1, 'publish' => FALSE, 'desc' => <<<'HTML'
+$D['CDA_QS'] = ['order' => 20, 'scope' => 'teammate', 'uid' => 1443, 'publish' => FALSE, 'desc' => <<<'HTML'
 <p>The business licence covers the company. The Qualified Supervisor is the person — tested, certified and named on the licence — who is responsible for what actually goes in the tank, at what rate, and in what conditions.</p>
 
 <p>Those are two different things, and the difference is worth knowing. A company can be operating without a Qualified Supervisor on staff. If a company sprays your lawn, ask who theirs is. It is a fair question and it takes five seconds to answer if the answer exists.</p>
@@ -97,12 +97,31 @@ foreach ($D as $code => $c) {
     continue;
   }
 
+  /* Look up by TYPE + SCOPE, deliberately NOT by teammate: the seeder owns the
+     copy, the OFFICE owns the assignment. Matching on the teammate too meant that
+     reassigning a credential (the Qualified Supervisor moving from one person to
+     another) made a re-run miss the record and create a DUPLICATE. On update the
+     teammate is left exactly as it is; it is only set on CREATE. */
   $props = ['field_credential_type' => $term->id(), 'field_scope' => $c['scope']];
-  if ($c['scope'] === 'teammate') {
-    $props['field_teammate'] = $c['uid'];
-  }
   $existing = $storage->loadByProperties($props);
-  $record = $existing ? reset($existing) : NULL;
+  $record = NULL;
+  if (count($existing) === 1) {
+    $record = reset($existing);
+  }
+  elseif (count($existing) > 1) {
+    // More than one holder of this type (e.g. a second certified tester). Match
+    // the spec's holder if present; never guess.
+    foreach ($existing as $candidate) {
+      if ((int) ($candidate->get('field_teammate')->target_id ?? 0) === (int) ($c['uid'] ?? 0)) {
+        $record = $candidate;
+        break;
+      }
+    }
+    if (!$record) {
+      printf("  SKIP   %-14s %d records of this type exist and none matches the spec holder — resolve by hand\n", $code, count($existing));
+      continue;
+    }
+  }
 
   $verb = $record ? 'update' : 'create';
   $number = $record ? (string) ($record->get('field_credential_number')->value ?? '') : '';
@@ -112,6 +131,10 @@ foreach ($D as $code => $c) {
   if ($apply) {
     if (!$record) {
       $values = ['type' => 'credential'] + $props + ['field_status' => 'active'];
+      if ($c['scope'] === 'teammate') {
+        // Only ever set on create — see the lookup note above.
+        $values['field_teammate'] = $c['uid'];
+      }
       $record = $storage->create($values);
     }
     // Never clobber a real number that has replaced the placeholder.

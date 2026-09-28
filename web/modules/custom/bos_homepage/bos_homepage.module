@@ -131,7 +131,7 @@ function bos_homepage_page_attachments(array &$attachments) {
     'legalName' => 'Brookstone Outdoors LLC',
     // The owned S&E Ward's trade name (former name), same as the /about block.
     'alternateName' => "S&E Ward's Landscape Management",
-    'foundingDate' => '1995',
+    'foundingDate' => '1997',
     'image' => $host . '/' . $modPath . '/assets/home-hero.jpg',
     'telephone' => $phone !== '' ? $phone : '+1-970-835-9661',
     'email' => 'office@brookstoneoutdoors.com',
@@ -203,8 +203,9 @@ function _bos_homepage_is_about(): bool {
 
 /**
  * Meta description + Organization JSON-LD for /about. One Organization block,
- * only on this page. foundingDate 1995 is confirmed (same entity changed hands
- * and name the same day); alternateName is the owned S&E Ward's trade name.
+ * only on this page. foundingDate 1997 is the company's founding year
+ * (corrected from 1995 on 2026-09-28; same entity changed hands and name the
+ * same day, so the date carries across the rename); alternateName is the owned S&E Ward's trade name.
  */
 function _bos_homepage_about_attachments(array &$attachments): void {
   $host = \Drupal::request()->getSchemeAndHttpHost();
@@ -216,7 +217,7 @@ function _bos_homepage_about_attachments(array &$attachments): void {
       '#tag' => 'meta',
       '#attributes' => [
         'name' => 'description',
-        'content' => "Landscape construction, irrigation, maintenance, lighting and snow across Delta and Montrose counties. Continuing S&E Ward's Landscape Management since 1995.",
+        'content' => "Landscape construction, irrigation, maintenance, lighting and snow across Delta and Montrose counties. Continuing S&E Ward's Landscape Management since 1997.",
       ],
     ],
     'bos_homepage_about_description',
@@ -227,7 +228,7 @@ function _bos_homepage_about_attachments(array &$attachments): void {
     '@type' => 'Organization',
     'name' => 'Brookstone Outdoors',
     'alternateName' => "S&E Ward's Landscape Management",
-    'foundingDate' => '1995',
+    'foundingDate' => '1997',
     'founder' => [
       ['@type' => 'Person', 'name' => 'Steve Ward'],
       ['@type' => 'Person', 'name' => 'Eunice Ward'],
@@ -262,7 +263,7 @@ function _bos_homepage_about_attachments(array &$attachments): void {
  */
 function bos_homepage_preprocess_html(array &$variables): void {
   if (_bos_homepage_is_about()) {
-    $variables['head_title'] = ['title' => 'About Brookstone Outdoors | Serving the Valley Since 1995'];
+    $variables['head_title'] = ['title' => 'About Brookstone Outdoors | Serving the Valley Since 1997'];
   }
 }
 

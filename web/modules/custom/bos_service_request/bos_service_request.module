@@ -489,6 +489,7 @@ function bos_service_request_preprocess_page(array &$variables) {
   $variables['bo_tagline'] = 'Creating and Maintaining Your Outdoor Spaces';
   $variables['bo_year'] = (int) ($cfg->get('bundles.sprinkler_winterizing.service_year') ?: date('Y'));
   $variables['bo_address'] = '20143 Austin Rd, Austin, CO 81410';
+  $variables['bo_trust'] = _bos_service_request_trust_line();
 
   $route = \Drupal::routeMatch()->getRouteName();
   $variables['bo_offer'] = NULL;
@@ -866,6 +867,7 @@ function _bos_service_request_preprocess_fall_cleanup(array &$variables): void {
   $variables['bo_phone'] = (string) $cfg->get('office_phone');
   $variables['bo_tagline'] = 'Creating and Maintaining Your Outdoor Spaces';
   $variables['bo_address'] = '20143 Austin Rd, Austin, CO 81410';
+  $variables['bo_trust'] = _bos_service_request_trust_line();
 
   // The intake form.
   $variables['bo_form'] = \Drupal::formBuilder()->getForm(\Drupal\bos_service_request\Form\FallCleanupForm::class);
@@ -910,3 +912,31 @@ function _bos_service_request_preprocess_fall_cleanup(array &$variables): void {
   $variables['bo_close_thanks'] = 'Thank you for choosing Brookstone Outdoors.';
 }
 
+/**
+ * The credentials trust line, read from the footer_company block.
+ *
+ * The campaign landing pages (/winterize, /winterize/week, /winterize/bear-creek,
+ * fall cleanup) render a BESPOKE footer and deliberately none of the site regions,
+ * so they do not inherit the sitewide footer's trust line. These are conversion
+ * pages, where "Licensed, Bonded & Insured" arguably earns the most, so the line is
+ * passed through to their templates — read from the SAME field rather than
+ * hardcoded, so an office edit changes every surface at once.
+ */
+function _bos_service_request_trust_line(): string {
+  try {
+    $blocks = \Drupal::entityTypeManager()->getStorage('block_content')
+      ->loadByProperties(['type' => 'footer_company']);
+    foreach ($blocks as $block) {
+      if ($block->hasField('field_fc_credentials')) {
+        $v = trim((string) $block->get('field_fc_credentials')->value);
+        if ($v !== '') {
+          return $v;
+        }
+      }
+    }
+  }
+  catch (\Throwable $e) {
+    // A missing block must never break a landing page.
+  }
+  return '';
+}

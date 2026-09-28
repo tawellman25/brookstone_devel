@@ -234,3 +234,34 @@
 @media (max-width: 360px) {
   .bo-winterize .g-recaptcha { transform: scale(0.78); transform-origin: 0 0; height: 62px; }
 }
+
+/* ---------------------------------------------------------------------------
+ * DARK MODE — the campaign pages carry their own literal surfaces.
+ * The hero fade is painted to meet the photograph, so it follows the page.
+ * ------------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  .bo-hero__fade {
+    background: linear-gradient(to right, rgba(20, 17, 14, 0) 0%, #14110E 82%);
+  }
+  .bo-form-card,
+  .bo-hero__offer {
+    background: var(--bo-card);
+    border-color: var(--bo-border-card);
+    color: var(--bo-prose);
+  }
+  .bo-optin {
+    background: var(--bo-sand);
+    border-color: var(--bo-field-border);
+  }
+  .bo-optin label {
+    color: var(--bo-prose);
+  }
+  .bo-hero__stats {
+    border-top-color: var(--bo-hairline);
+  }
+  .bo-winterize a.bo-btn,
+  .bo-winterize .bo-btn,
+  .bo-form-card .winterize-submit {
+    color: var(--bo-on-accent) !important;
+  }
+}

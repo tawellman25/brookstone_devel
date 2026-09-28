@@ -9,31 +9,14 @@
  * accent tokens below to those if you prefer the print-brand values; everything
  * inherits from here.
  */
-/* Opt OUT of the browser's automatic dark-mode pass.
- *
- * This has to say `light dark`, not `light`. Chrome's auto-dark applies to
- * pages that declare they do NOT handle dark mode — so `light` is an invitation,
- * not a defence. Declaring support for both is what makes Chrome stand down and
- * render the colours as authored. (Confirmed from a phone screenshot where the
- * brand-orange button rendered dark maroon under `color-scheme: light`.)
- *
- * Safe to claim: every colour in this design is an explicit hex and nothing
- * derives from the system scheme, so the page renders identically either way.
- * The one thing that would follow the system is native form controls, so those
- * are pinned to light below — otherwise a dark-mode visitor gets dark inputs on
- * a light form card. */
+/* This design supports dark mode for real — see the block at the foot of this
+ * file. Declaring both schemes is what stops a browser inventing its own dark
+ * version: an algorithmic pass assumes a light page, so it darkens our already
+ * dark footer into mud and drags every authored colour down with it. With a
+ * genuine dark variant we render the same on every browser instead of getting
+ * a different guess from each one. */
 :root {
   color-scheme: light dark;
-}
-
-/* Native widgets stay light regardless of the viewer's system setting: the
- * forms sit on a light card and there is no dark variant of them. */
-input,
-select,
-textarea,
-button,
-::-webkit-calendar-picker-indicator {
-  color-scheme: light;
 }
 
 :root {
@@ -68,7 +51,64 @@ button,
                                  colour the copyright, privacy link, tagline and
                                  lineage line were using. */
 
+  --bo-on-accent: #fff;       /* text that sits on --bo-orange (flips in dark) */
   --bo-hairline: #E2D7C7;     /* section dividers */
   --bo-border-card: #DFD2BF;  /* card border */
   --bo-field-border: #D6C9B6; /* input border */
+}
+
+
+/* ---------------------------------------------------------------------------
+ * DARK MODE
+ *
+ * Every token below is re-pointed, so anything written against var(--bo-*)
+ * follows automatically. Contrast was computed, not eyeballed — the weakest
+ * text pairing here is 5.1:1 and most are 8:1 or better.
+ *
+ * Two things are deliberately NOT a mechanical inversion:
+ *
+ *  - The footer keeps its own near-black, a shade LIGHTER than the page, so it
+ *    still reads as a separate band. Inverted literally it would have vanished
+ *    into the page, which is the one thing the footer must not do.
+ *
+ *  - Button labels flip to near-black. On the lifted orange, white text is
+ *    2.81:1 and fails outright, while near-black is 6.69:1. The instinct to
+ *    keep white-on-orange is wrong here.
+ * ------------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    /* Surfaces — warm near-blacks, not neutral grey, to keep the brand's warmth */
+    --bo-paper: #14110E;        /* page background */
+    --bo-sand: #272119;         /* form band / section band */
+    --bo-card: #1F1A16;         /* cards + form card, lifted off the page */
+    --bo-hero: #14110E;         /* hero band matches the page in dark */
+    --bo-ink: #1C1713;          /* footer band — lighter than the page on purpose */
+
+    /* Accents — lifted so they clear AA on a dark ground */
+    --bo-orange: #E3813A;       /* 6.7:1 on the page; brand #CB6015 is only 3.0 */
+    --bo-orange-hover: #F09A5C;
+    --bo-green: #5FBE7E;
+    --bo-blue: #7CC4EE;
+
+    /* Text */
+    --bo-prose: #E8E0D4;        /* 14.4:1 */
+    --bo-text-2: #D2C7B8;       /* 11.3:1 */
+    --bo-muted: #B6A897;        /*  8.1:1 */
+    --bo-muted-2: #9E907F;      /*  6.1:1 */
+
+    /* Footer — already light-on-dark, so it barely moves */
+    --bo-footer-text: #D9CEC0;
+    --bo-footer-strong: #F5EFE6;
+    --bo-footer-muted: #A99A88;
+
+    /* Lines and edges — dark mode wants them lighter than the surface, not darker */
+    --bo-hairline: #332C24;
+    --bo-border-card: #3D352C;
+    --bo-field-border: #4A4137;
+
+    /* What sits ON the orange. Read the note above before "fixing" this. */
+    --bo-on-accent: #14110E;
+  }
 }

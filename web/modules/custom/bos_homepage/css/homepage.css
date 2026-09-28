@@ -34,11 +34,14 @@
 
 /* BAND 1 — HERO (full-bleed photo, dark overlay, left-aligned text) */
 .home-hero { position: relative; background-size: cover; background-position: center; min-height: clamp(440px, 60vh, 600px); display: flex; align-items: center; }
-.home-hero__overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(20,24,20,.82) 0%, rgba(20,24,20,.55) 55%, rgba(20,24,20,.25) 100%); }
+.home-hero__overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(20,24,20,.70) 0%, rgba(20,24,20,.42) 55%, rgba(20,24,20,.15) 100%); }
 .home-hero__inner { position: relative; max-width: var(--home-content, 1040px); width: 100%; margin: 0 auto; padding: 3rem clamp(20px,5vw,64px); display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 .home-hero__eyebrow { color: #fff; letter-spacing: .16em; text-transform: uppercase; font-size: 12px; font-weight: 600; opacity: .92; }
 .home-hero__h1 { font-family: var(--osw, "Oswald", sans-serif); color: #fff; font-weight: 600; font-size: clamp(34px, 4.2vw, 54px); line-height: 1.04; letter-spacing: -.01em; margin: 0; max-width: 18ch; }
 .home-hero__sub { color: #f4efe8; font-size: clamp(17px, 2.2vw, 20px); line-height: 1.5; max-width: 48ch; margin: 0; }
+.home-hero__eyebrow,
+.home-hero__h1,
+.home-hero__sub { text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55); }
 .home-hero__cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
 
 /* Trust strip */
@@ -129,7 +132,7 @@
 }
 @media (max-width: 560px) {
   .home-cards, .home-grid, .home-steps__list, .home-footer__grid { grid-template-columns: 1fr; }
-  .home-hero__overlay { background: linear-gradient(180deg, rgba(20,18,16,.5) 0%, rgba(20,18,16,.8) 100%); }
+  .home-hero__overlay { background: linear-gradient(180deg, rgba(20,18,16,.32) 0%, rgba(20,18,16,.64) 100%); }
   .home-careers .bo-btn { margin-left: 0; }
   .home-footer__bar { flex-direction: column; gap: .5rem; }
 }
@@ -165,5 +168,49 @@
 
 /* M3 — stronger scrim on mobile so the paragraph clears 4.5:1 over the photo. */
 @media (max-width: 48rem) {
-  .home-hero__overlay { background: linear-gradient(180deg, rgba(20,24,20,.6) 0%, rgba(20,24,20,.72) 45%, rgba(20,24,20,.88) 100%); }
+  .home-hero__overlay { background: linear-gradient(180deg, rgba(20,24,20,.30) 0%, rgba(20,24,20,.52) 45%, rgba(20,24,20,.72) 100%); }
+}
+
+/* ---------------------------------------------------------------------------
+ * DARK MODE — the surfaces here are literal #fff rather than tokens, so they
+ * need re-pointing by hand. Text that sits over the hero photograph stays
+ * white: it is on an image, not on the page, so the page scheme does not apply.
+ * ------------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  .home-card,
+  .home-stat {
+    background: var(--bo-card);
+    border-color: var(--bo-border-card);
+  }
+  .home-card,
+  .home-card p {
+    color: var(--bo-prose);
+  }
+  .home-stat__l {
+    color: var(--bo-muted);
+  }
+  .home-step__n {
+    color: var(--bo-on-accent);
+  }
+  .home-shot figcaption {
+    background: rgba(0, 0, 0, 0.72);
+  }
+  /* Labels on the accent flip to near-black — white is 2.8:1 on the lifted
+     orange, near-black is 6.7:1. */
+  .bo-btn,
+  .bo-btn:hover,
+  .home-promo,
+  .home-promo:hover {
+    color: var(--bo-on-accent) !important;
+  }
+  .bo-btn--ghost {
+    color: var(--bo-prose) !important;
+    border-color: var(--bo-prose);
+  }
+  /* The reversed promo button: white plate, orange text -> dark plate. */
+  .home-promo__btn {
+    background: var(--bo-card);
+    color: var(--bo-orange);
+    border-color: var(--bo-card);
+  }
 }

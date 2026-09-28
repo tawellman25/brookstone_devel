@@ -15,6 +15,44 @@ const BOS_TESTIMONIAL_OFFICE_ROLES = [
 ];
 
 /**
+ * Fields nobody outside the office may READ.
+ *
+ * field_testimonial_scan — the photo of the original handwritten card. It
+ *   carries a signature, and often a name, address or phone number the customer
+ *   never agreed to publish. The typed quote in field_testimony is the public
+ *   artifact; this is only the record of where it came from.
+ * field_submitter_email — how we reach someone about their own review, not
+ *   something to hand to whoever reads the page.
+ *
+ * Keeping these off the public displays is presentation, not access: Views,
+ * JSON:API and REST each render fields by their own rules. This is the guard
+ * that holds whatever the render path.
+ */
+const BOS_TESTIMONIAL_OFFICE_ONLY_FIELDS = [
+  'field_testimonial_scan',
+  'field_submitter_email',
+];
+
+/**
+ * Implements hook_entity_field_access().
+ *
+ * VIEW only — editing is already behind the entity permissions, and the office
+ * form must keep working.
+ */
+function bos_testimonial_entity_field_access($operation, \Drupal\Core\Field\FieldDefinitionInterface $field_definition, \Drupal\Core\Session\AccountInterface $account, ?\Drupal\Core\Field\FieldItemListInterface $items = NULL) {
+  if ($operation !== 'view'
+    || $field_definition->getTargetEntityTypeId() !== 'testimonial'
+    || !in_array($field_definition->getName(), BOS_TESTIMONIAL_OFFICE_ONLY_FIELDS, TRUE)) {
+    return \Drupal\Core\Access\AccessResult::neutral();
+  }
+
+  $office = (bool) array_intersect(BOS_TESTIMONIAL_OFFICE_ROLES, $account->getRoles());
+
+  return \Drupal\Core\Access\AccessResult::forbiddenIf(!$office)
+    ->addCacheContexts(['user.roles']);
+}
+
+/**
  * Implements hook_ENTITY_TYPE_presave() for testimonial.
  *
  * Two jobs:

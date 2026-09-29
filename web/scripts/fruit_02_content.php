@@ -27,7 +27,13 @@ $terms = $etm->getStorage('taxonomy_term');
 
 // ---------------------------------------------------------------- FRUIT TREES
 $deciduous = NULL;
-foreach ($terms->loadByProperties(['vid' => 'material_types', 'name' => 'Deciduous']) as $t) {
+// Matched by prefix, not exact name: the office renamed this term
+// "Deciduous" -> "Deciduous Trees" after the page was first built, and an
+// exact-name lookup aborts silently once that happens.
+foreach ($terms->loadByProperties(['vid' => 'material_types']) as $t) {
+  if (stripos($t->label(), 'Deciduous') !== 0) {
+    continue;
+  }
   $deciduous = $t;
 }
 if (!$deciduous) {

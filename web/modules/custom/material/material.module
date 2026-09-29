@@ -140,6 +140,14 @@ function material_entity_view_mode_alter(string &$view_mode, EntityInterface $en
     elseif (array_intersect(MATERIAL_CLIENT_ROLES, $roles)) {
       $view_mode = 'client';
     }
+    else {
+      // The material entity's public view mode is named `public`, NOT `full`.
+      // Leaving $view_mode as 'full' here meant anonymous visitors requested a
+      // view mode that is not registered for this entity type at all, so Drupal
+      // fell back to `default` — the everything display — and an item page
+      // served the internal panel to the public.
+      $view_mode = 'public';
+    }
     return;
   }
 
@@ -147,10 +155,8 @@ function material_entity_view_mode_alter(string &$view_mode, EntityInterface $en
   // audience set — office -> admin_view, crew -> teammate_view, signed-in
   // customers -> client_view, everyone else -> full (Public).
   //
-  // Clients get their own tier here rather than falling through to Public,
-  // because an authenticated customer can be shown more than an anonymous
-  // visitor. material_types above predates that decision and still has no
-  // client tier; worth revisiting, but not silently changed here.
+  // Clients get their own tier rather than falling through to Public, because
+  // an authenticated customer can be shown more than an anonymous visitor.
   if ($type === 'taxonomy_term'
     && in_array($entity->bundle(), ['plant_characteristics', 'plant_character_categories'], TRUE)) {
     if (array_intersect(MATERIAL_OFFICE_ROLES, $roles)) {
@@ -165,15 +171,19 @@ function material_entity_view_mode_alter(string &$view_mode, EntityInterface $en
     return;
   }
 
-  // Material category pages (material_types taxonomy vocab): office -> admin_view,
-  // crew -> teammate_view, everyone else -> full (Public). Taxonomy view-mode
-  // names differ from the entity's; there is no client tier here.
+  // Material category pages (material_types taxonomy vocab): the same four
+  // tiers. The client_view display existed and was enabled here long before
+  // anything routed to it, so a signed-in customer was served the anonymous
+  // Public page; that is fixed below.
   if ($type === 'taxonomy_term' && $entity->bundle() === 'material_types') {
     if (array_intersect(MATERIAL_OFFICE_ROLES, $roles)) {
       $view_mode = 'admin_view';
     }
     elseif (array_intersect(MATERIAL_CREW_ROLES, $roles)) {
       $view_mode = 'teammate_view';
+    }
+    elseif (array_intersect(MATERIAL_CLIENT_ROLES, $roles)) {
+      $view_mode = 'client_view';
     }
   }
 }

@@ -52,6 +52,13 @@ const BOS_BACKFLOW_TYPES_CREW_ROLES = [
 ];
 
 /**
+ * Roles served the Client tier — signed-in customers.
+ */
+const BOS_BACKFLOW_TYPES_CLIENT_ROLES = [
+  'client',
+];
+
+/**
  * The device-type vocabulary — the one with the rotating hero + landing view.
  */
 const BOS_BACKFLOW_TYPES_VID = 'backflow_device_types';
@@ -89,6 +96,14 @@ function bos_backflow_types_entity_view_mode_alter(&$view_mode, EntityInterface 
   }
   elseif (array_intersect(BOS_BACKFLOW_TYPES_CREW_ROLES, $roles)) {
     $view_mode = 'teammate_view';
+  }
+  // Signed-in customers get their own tier rather than the anonymous Public
+  // page. client_view starts as a copy of `full` until the office differentiates
+  // it — created by setup_client_view_displays.php, which MUST have run first:
+  // routing to a view mode with no display falls back to `default`, and
+  // `default` on these bundles carries the crew copy.
+  elseif (array_intersect(BOS_BACKFLOW_TYPES_CLIENT_ROLES, $roles)) {
+    $view_mode = 'client_view';
   }
 }
 

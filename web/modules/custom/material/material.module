@@ -235,6 +235,16 @@ function material_preprocess_eck_entity(array &$variables): void {
  * shows nothing.
  */
 function material_views_pre_render(ViewExecutable $view): void {
+  // The botanical block takes its argument from the route, and the
+  // `views_url_path` default plugin declares NO cache context of its own. Left
+  // alone, Drupal caches the block once and serves the first plant's botanical
+  // name on every material page — correct on a cold cache, wrong an hour later.
+  if ($view->id() === 'material_botanical_name') {
+    $view->element['#cache']['contexts'][] = 'route';
+    $view->element['#attached']['library'][] = 'material/botanical_title';
+    return;
+  }
+
   if ($view->id() !== 'material_children') {
     return;
   }
@@ -305,6 +315,130 @@ function material_form_alter(array &$form, FormStateInterface $form_state, strin
       ':input[name="field_hardscape_type"]' => ['value' => $tid],
     ],
   ];
+}
+
+/**
+ * Implements hook_theme().
+ */
+function material_theme($existing, $type, $theme, $path) {
+  return [
+    'views_view_fields__material_botanical_name' => [
+      'base hook' => 'views_view_fields',
+    ],
+  ];
+}
+
+/**
+ * Normalise one cultivar list into roman, single-straight-quoted names.
+ *
+ * Stored values are a comma list already wrapped in typographic quotes —
+ * "'Compacta', 'Tovar'" — so re-quoting blindly would double them. Each name is
+ * stripped of any surrounding quote (straight or typographic) and re-quoted
+ * once. An apostrophe INSIDE a name survives, because only the outermost pair is
+ * removed.
+ */
+function _material_format_cultivars(string $raw): string {
+  $out = [];
+  foreach (explode(',', $raw) as $name) {
+    $name = trim($name);
+    // Strip one leading and one trailing quote of any flavour.
+    $name = preg_replace('/^[\'"\x{2018}\x{2019}\x{201C}\x{201D}]+/u', '', $name);
+    $name = preg_replace('/[\'"\x{2018}\x{2019}\x{201C}\x{201D}]+$/u', '', $name);
+    $name = trim($name);
+    if ($name === '') {
+      continue;
+    }
+    $out[] = "'" . \Drupal\Component\Utility\Html::escape($name) . "'";
+  }
+  return implode(', ', $out);
+}
+
+/**
+ * Compose the botanical name: italic, with the hybrid mark left roman.
+ *
+ * `field_plant_species` already holds the FULL binomial on this catalogue
+ * ("Pinus edulis"), so genus is only used when species is missing. Per ICNCP the
+ * multiplication sign is not part of the italicised name, so the string is split
+ * on it and each side italicised separately. A literal " x " used as a hybrid
+ * mark is promoted to U+00D7.
+ */
+function _material_format_botanical(string $species, string $genus): string {
+  $raw = trim($species) !== '' ? trim($species) : trim($genus);
+  if ($raw === '') {
+    return '';
+  }
+
+  // Several records list more than one species ("Thuja occidentalis, Thuja
+  // plicata"). Each is italicised on its own so the separating comma stays
+  // roman.
+  $names = [];
+  foreach (explode(',', $raw) as $one) {
+    $one = trim($one);
+    if ($one === '') {
+      continue;
+    }
+    $names[] = _material_italicise_name($one);
+  }
+  return implode(', ', array_filter($names));
+}
+
+/**
+ * Italicise one botanical name, leaving what convention keeps roman.
+ *
+ * Rank abbreviations (spp., var., subsp., f., cv.) and the hybrid × are NOT part
+ * of the italicised name, so "Acer spp." is *Acer* spp., not *Acer spp.*
+ */
+function _material_italicise_name(string $name): string {
+  // A lone "x" between words is a hybrid mark typed the easy way.
+  $name = preg_replace('/\\s+[xX]\\s+/u', ' × ', $name);
+
+  $roman = ['spp.', 'sp.', 'var.', 'subsp.', 'ssp.', 'cv.', 'f.', '×'];
+  $out = [];
+  $italic = [];
+  $flush = static function () use (&$italic, &$out): void {
+    if ($italic) {
+      $out[] = '<em>' . \Drupal\Component\Utility\Html::escape(implode(' ', $italic)) . '</em>';
+      $italic = [];
+    }
+  };
+  foreach (preg_split('/\\s+/u', $name) as $word) {
+    if ($word === '') {
+      continue;
+    }
+    if (in_array(mb_strtolower($word), $roman, TRUE)) {
+      $flush();
+      $out[] = \Drupal\Component\Utility\Html::escape($word);
+      continue;
+    }
+    $italic[] = $word;
+  }
+  $flush();
+
+  return implode(' ', $out);
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for the botanical title block.
+ */
+function material_preprocess_views_view_fields__material_botanical_name(array &$variables) {
+  $row = $variables['row'] ?? NULL;
+  $view = $variables['view'] ?? NULL;
+  if (!$row || !$view) {
+    return;
+  }
+  $value = static function (string $field) use ($view, $row): string {
+    if (empty($view->field[$field])) {
+      return '';
+    }
+    return trim(strip_tags((string) $view->field[$field]->advancedRender($row)));
+  };
+
+  $variables['bo_common'] = $value('title');
+  $variables['bo_botanical'] = \Drupal\Core\Render\Markup::create(
+    _material_format_botanical($value('field_plant_species'), $value('field_plant_genus'))
+  );
+  $cultivars = _material_format_cultivars($value('field_cultivar'));
+  $variables['bo_cultivars'] = $cultivars === '' ? '' : \Drupal\Core\Render\Markup::create($cultivars);
 }
 
 /**

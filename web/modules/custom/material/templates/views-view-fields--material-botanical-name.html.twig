@@ -1,0 +1,22 @@
+{#
+/**
+ * @file
+ * Title lockup for a material item page.
+ *
+ * This block replaces the core page-title block on the paths it covers, so the
+ * common name here MUST be a real <h1> — with core's block hidden, a <div>
+ * would leave the page with no first-level heading at all.
+ *
+ * Available:
+ * - bo_common:    the stored common name ("Pinyon Pine")
+ * - bo_botanical: composed markup, genus/species italic, hybrid × roman (or empty)
+ * - bo_cultivars: normalised cultivar list, roman, single straight quotes (or empty)
+ */
+#}
+<h1 class="bo-title__common">{{ bo_common }}</h1>
+{% if bo_botanical %}
+  <p class="bo-title__botanical">{{ bo_botanical }}</p>
+{% endif %}
+{% if bo_cultivars %}
+  <p class="bo-title__cultivars"><span class="bo-title__cultivars-label">Cultivars:</span> {{ bo_cultivars }}</p>
+{% endif %}

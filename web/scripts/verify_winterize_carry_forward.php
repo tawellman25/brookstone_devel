@@ -141,8 +141,14 @@ echo "== 6. Route order unique and contiguous per (date, tech) ==\n";
 // the ones this command created. Command records legitimately start above 1
 // now: an incremental batch appends after whatever is already on the day, so
 // asserting that command records alone form 1..N was wrong as of 2026-09-29.
+//
+// Asserted on TODAY FORWARD only. A route that has already been driven cannot
+// be corrected -- renumbering it would rewrite history that next season's
+// carry-forward reads as a signal -- so a tied order back there is a fact, not
+// a fault. Past anomalies are counted and reported beneath the assertion.
+$todayTs = (new DrupalDateTime('today', $tz))->getTimestamp();
 $seen = [];
-$denseFail = 0; $groupCount = 0; $detail = [];
+$denseFail = 0; $groupCount = 0; $detail = []; $pastBad = 0;
 foreach ($cmdRecords as $s) {
   $ts = (int) $s->get('field_date')->value;
   $day = DrupalDateTime::createFromTimestamp($ts, $tz)->format('Y-m-d');
@@ -150,7 +156,8 @@ foreach ($cmdRecords as $s) {
   $key = $day . '|' . ($tech ?? '0');
   if (isset($seen[$key])) { continue; }
   $seen[$key] = TRUE;
-  $groupCount++;
+  $isPast = $ts < $todayTs;
+  if (!$isPast) { $groupCount++; }
 
   // Day bounds in PHP against the RAW timestamp: FROM_UNIXTIME renders in
   // MariaDB's session timezone (fixed UTC-7 here) while the site is
@@ -172,15 +179,19 @@ foreach ($cmdRecords as $s) {
   $vals = array_map('intval', array_filter($orders, fn($x) => $x !== NULL));
   sort($vals);
   $bad = $nulls > 0 || count($vals) !== count(array_unique($vals)) || $vals !== range(1, count($vals));
-  if ($bad) {
+  if ($bad && $isPast) {
+    $pastBad++;
+  }
+  elseif ($bad) {
     $denseFail++;
     if (count($detail) < 4) {
       $detail[] = sprintf('%s tech=%s [%s]%s', $day, $tech ?? 'none', implode(',', $vals), $nulls ? " +$nulls null" : '');
     }
   }
 }
-$ok('route order unique and contiguous from 1 across the whole day',
-  $denseFail === 0, "$denseFail of $groupCount groups off" . ($detail ? ' — ' . implode('; ', $detail) : ''));
+$ok('route order unique and contiguous from 1 across the whole day (today forward)',
+  $denseFail === 0, "$denseFail of $groupCount upcoming groups off" . ($detail ? ' — ' . implode('; ', $detail) : ''));
+printf("  (%d already-driven group%s also carries tied or gapped orders — history, not fixable)\n", $pastBad, $pastBad === 1 ? '' : 's');
 
 echo "== 7. UI smoke (http_kernel sub-request) ==\n";
 $switcher = \Drupal::service('account_switcher');

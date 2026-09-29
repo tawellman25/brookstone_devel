@@ -776,7 +776,11 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
       // Year comparison is INFORMATIONAL only (recency wins) — collapsed into a
       // single year_check column so it never clutters the actionable flags.
       $diffs = [];
-      if ($altOrd !== $ordinal) { $diffs[] = 'ordinal'; }
+      // $ordinal was a local of the nth-weekday rule, removed on 2026-08-30 when
+      // the carry-forward moved to the calendar-date rule; this comparison kept
+      // referencing it, so it was always TRUE and every row reported
+      // "differs: ordinal". The value still exists on the row.
+      if ($altOrd !== (int) $row['prior_ordinal']) { $diffs[] = 'ordinal'; }
       if ((int) $altDt->format('N') !== $iso) { $diffs[] = 'weekday'; }
       if ((int) $altDt->format('n') !== $month) { $diffs[] = 'month'; }
       if ($altTech && $techUid && $altTech !== $techUid) { $diffs[] = 'tech'; }

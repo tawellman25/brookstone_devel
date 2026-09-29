@@ -141,6 +141,19 @@ These are shipped, live systems whose only blocker is human adoption, not engine
 |---|---|---|---|---|
 | Reconcile online handbook with the printed employee handbook | `handbook` | T2 | M | The online `handbook` entity (14 covers + 87 pages) and the PRINTED employee handbook are **one document in two formats and must stay aligned**. One-time pass: diff the online pages against the printed master, reconcile drift; then mirror every future edit both ways. Alignment invariant documented in `Entities/content_knowledge_entities.md`. |
 
+### Plant catalogue — public plant pages (T2/T3)
+**Shipped & live:** the `plant_characteristics` vocabulary (41 terms) + `plant_character_categories` (8 terms) with the four audience view-mode tiers; `/material/plants/characteristics` as a view; Trees and Shrubs reparented under Plants (131 redirects); breadcrumbs across all 25 public catalogue vocabularies; and — 2026-09-29 — **`material_characteristic_items`**, the EVA that finally renders the plants tagged with a characteristic on that characteristic's page (28 of 41 terms carry tagged plants).
+
+| Item | Area | Tier | Effort | Notes |
+|---|---|---|---|---|
+| **Subcategory pages list no items** | `material_types` | T2 | M | Evergreens / Junipers / Deciduous / Shade / Ornamental / **Fruit Trees** all render header + footer over an empty list. A `material_types` term binds to items only through `field_material_bundle` → the material's BUNDLE, and no subcategory has one (there is no `fruit_trees` bundle). Needs a category reference field on `material` (→ `material_types`) plus a listing view filtered on it — then item assignment, which is data entry, not a script. Same shape as the characteristic EVA just shipped. |
+| `/material/plants` renders "No materials found for this type." | `material_type_items` | T3 | S | Its header area is `empty: TRUE` with an empty-area message, so a bundle-less category shows a heading over a "none found" line. `material_characteristic_items` deliberately does the opposite (`empty: FALSE`, no empty area) — carry that back once the subcategory work above settles what these pages should list. |
+| 13 characteristics have zero tagged plants | `field_plant_characteristics` | T3 | S | Pest-Resistant, Rabbit-Resistant, Well-Drained Soil and 10 others. Their pages now correctly render nothing below the copy. Office tagging, not code. |
+| Only Cherry Tree is tagged Fruit-Bearing | `field_plant_characteristics` | T3 | S | Apple / Apricot / Peach / Pear / Plum Tree are in the catalogue but untagged, so they are absent from the Fruit-Bearing page that exists to list them. Office tagging. |
+| Remaining characteristic leaf copy | `plant_characteristics` | T2 | M | Wildlife 3, Special Uses 4, Maintenance 8, Aesthetic 5 still on Rev. 1 copy. Chat authors. |
+| Plants / Trees / Shrubs Rev. 2 copy | `material_types` | T2 | M | Headers, footers, metatags — and the only inbound link to the Characteristics tree, which is currently reachable only by URL. |
+| Junipers placement | `material_types` | T3 | S | A genus filed beside a growth form (Evergreens / Deciduous). Decide whether it stays a sibling. |
+
 ### Supplier pricing pipeline (ongoing sub-project, T2/T3)
 **Core pipeline SHIPPED & live** (`supplier_price_ingest`, enabled on live; Phases 3.1–3.7, commits `05-25`…`05-31`): materials intake = **parse → match → dry-run report → approve → commit**, with a tiered matcher (Tier 1/2 exact + SKU-normalized/prefix, Tier 1.5 title-substring, Tier 3 fuzzy), a Discovery Queue + resolve forms, and office-manager dashboards. `wo_material_price_sync`, `material`, `material_supplier` all on. Docs: `Modules/supplier_pricing_pipeline_phase3_sequencing.md`. The rows below are the **remaining tuning/backfill/authoring** work, not a from-zero build.
 

@@ -98,9 +98,17 @@ $ft_crew = <<<'HTML'
 <p><strong>Years to bearing, plainly:</strong> nobody is picking fruit next summer. Two to three years on dwarf, three to four on semi-dwarf, five or more on standard. Said up front it is a reasonable wait. Discovered later it is a complaint.</p>
 HTML;
 
+// Match on the RELATIONSHIP, not the name. This term shipped as "Fruit Trees"
+// and the office renamed it to "Fruit" (it already sits under /trees/, so the
+// old name said trees twice). Matching by exact name would have found nothing
+// on a re-run and created a SECOND fruit category beside the real one. The
+// office owns the name; this script only owns creating the term once.
 $existing = NULL;
-foreach ($terms->loadByProperties(['vid' => 'material_types', 'name' => 'Fruit Trees']) as $t) {
-  $existing = $t;
+foreach ($terms->loadTree('material_types', (int) $deciduous->id(), 1, TRUE) as $child) {
+  if (stripos($child->label(), 'fruit') === 0) {
+    $existing = $child;
+    break;
+  }
 }
 if (!$existing) {
   printf("  create  Fruit Trees under Deciduous (%s)\n", $deciduous->id());
@@ -119,7 +127,7 @@ if (!$existing) {
   }
 }
 else {
-  printf("  exists  Fruit Trees tid %s at %s\n", $existing->id(), $existing->toUrl()->toString());
+  printf("  exists  \"%s\" tid %s at %s\n", $existing->label(), $existing->id(), $existing->toUrl()->toString());
 }
 
 if ($apply && $existing) {

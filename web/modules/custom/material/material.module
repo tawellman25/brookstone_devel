@@ -298,6 +298,86 @@ function material_form_alter(array &$form, FormStateInterface $form_state, strin
 }
 
 /**
+ * Implements hook_pathauto_alias_alter().
+ *
+ * Keeps every material URL under /material/, whatever its pattern does.
+ *
+ * Bundles whose pathauto pattern builds the path from a category reference —
+ * `[material:field_material_category:entity:url:path]/[material:title]` — have
+ * no hardcoded prefix to fall back on. With the category unset the token clears
+ * and the alias collapses to /{title} at the site root, which was measured, not
+ * assumed. decorative_rock does not have this problem because its pattern
+ * hardcodes `material/rock/` in front of its token.
+ *
+ * Rather than give that up and hardcode the hierarchy into the pattern (which
+ * is what made Trees and Shrubs need hand-edited patterns when they moved under
+ * Plants), the floor lives here: an alias that escaped /material/ is rebuilt
+ * from the bundle's OWN category term — the material_types term whose
+ * field_material_bundle names this bundle. That term is also the page the item
+ * belongs on, and it is resolved at run time, so the fallback follows the
+ * taxonomy instead of restating it.
+ *
+ * The practical effect is that the category field can ship before the data
+ * entry: an item with no category keeps exactly the URL it has today, and moves
+ * to its nested URL — old one redirecting — when the office assigns one.
+ */
+function material_pathauto_alias_alter(&$alias, array $context): void {
+  $entity = $context['data']['material'] ?? NULL;
+  if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'material') {
+    return;
+  }
+  // The normal case: the pattern produced a path under /material/.
+  if (str_starts_with((string) $alias, '/material/')) {
+    return;
+  }
+
+  $prefix = _material_bundle_category_path($entity->bundle());
+  if ($prefix === NULL) {
+    // No category term claims this bundle, so there is nothing to rebuild from.
+    // Leave the alias alone rather than invent a prefix.
+    return;
+  }
+
+  $alias = rtrim($prefix, '/') . '/' . ltrim((string) $alias, '/');
+}
+
+/**
+ * The URL path of the material_types term that represents a material bundle.
+ *
+ * @param string $bundle
+ *   A material bundle machine name.
+ *
+ * @return string|null
+ *   The term's alias (e.g. /material/plants/trees), or NULL if no term claims
+ *   the bundle.
+ */
+function _material_bundle_category_path(string $bundle): ?string {
+  $cache = &drupal_static(__FUNCTION__, []);
+  if (array_key_exists($bundle, $cache)) {
+    return $cache[$bundle];
+  }
+
+  $cache[$bundle] = NULL;
+  $ids = \Drupal::entityQuery('taxonomy_term')
+    ->accessCheck(FALSE)
+    ->condition('vid', 'material_types')
+    ->condition('field_material_bundle', $bundle)
+    ->range(0, 1)
+    ->execute();
+  if ($ids) {
+    $path = \Drupal::service('path_alias.manager')
+      ->getAliasByPath('/taxonomy/term/' . reset($ids));
+    // getAliasByPath returns the system path unchanged when there is no alias;
+    // that is not a category path, so treat it as no answer.
+    if (!str_starts_with($path, '/taxonomy/term/')) {
+      $cache[$bundle] = $path;
+    }
+  }
+
+  return $cache[$bundle];
+}
+
+/**
  * Implements hook_entity_validate().
  *
  * BOS invariants for material_suppliers:

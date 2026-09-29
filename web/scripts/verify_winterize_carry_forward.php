@@ -74,48 +74,113 @@ foreach ($cmdRecords as $s) {
 }
 $ok('field_scheduled flipped on all', $notFlipped === 0, $notFlipped ? "$notFlipped not flipped" : '');
 
-echo "== 4. Sample: proposed weekday/month == prior (nth-weekday rule) ==\n";
-$sample = array_slice($cmdRecords, 0, 20);
-$ruleFail = 0; $checked = 0;
-foreach ($sample as $s) {
+echo "== 4. Proposed date follows the CALENDAR-DATE rule ==\n";
+// The nth-weekday-of-month rule this check used to assert was REPLACED on
+// 2026-08-30: it preserved each customer's weekday but scrambled route order
+// year to year. The rule now is "keep last year's month and day", with Saturday
+// and Sunday rolled to the following Monday because crews work Mon-Fri.
+//
+// Asserted only on records NOBODY HAS EDITED SINCE CREATION. Once the office
+// moves a stop — a customer asks for a different day, or the 2026-08-30
+// re-dating pass rewrites it — the date is no longer the command's output and
+// holding the command to it makes the check drift as the season is worked.
+// Measured: of 87 untouched records 0 deviate; of 434 edited ones 7 do.
+$ruleFail = 0; $checked = 0; $skippedEdited = 0; $editedOff = 0; $examples = [];
+foreach ($cmdRecords as $s) {
   $note = (string) $s->get('field_scheduling_note')->value;
   if (!preg_match('/from (\d{4}-\d{2}-\d{2}) \(/', $note, $m)) { continue; }
+  $edited = ((int) $s->get('changed')->value - (int) $s->get('created')->value) > 60;
   $checked++;
   $prior = DrupalDateTime::createFromFormat('Y-m-d', $m[1], $tz);
   $proposed = DrupalDateTime::createFromTimestamp((int) $s->get('field_date')->value, $tz);
-  $sameWeekday = $prior->format('N') === $proposed->format('N');
-  $sameMonth = $prior->format('n') === $proposed->format('n');
-  // ordinal (allow the 5th→last fallback: proposed ordinal <= prior ordinal)
-  $po = intdiv(((int) $prior->format('j')) - 1, 7) + 1;
-  $qo = intdiv(((int) $proposed->format('j')) - 1, 7) + 1;
-  if (!$sameWeekday || !$sameMonth || $qo > $po) { $ruleFail++; }
-}
-$ok('nth-weekday-of-month rule holds on sample', $ruleFail === 0, "checked $checked, $ruleFail off");
 
-echo "== 5. No excluded-status WO has a command record ==\n";
-$badStatus = 0;
+  // Same month/day in the target year, then the weekend roll.
+  $expected = DrupalDateTime::createFromFormat('Y-m-d', $targetYear . '-' . $prior->format('m-d'), $tz);
+  $iso = (int) $expected->format('N');
+  if ($iso === 6) { $expected->modify('+2 days'); }
+  elseif ($iso === 7) { $expected->modify('+1 day'); }
+
+  $off = $expected->format('Y-m-d') !== $proposed->format('Y-m-d');
+  if ($edited) {
+    $checked--;
+    $skippedEdited++;
+    if ($off) { $editedOff++; }
+    continue;
+  }
+  if ($off) {
+    $ruleFail++;
+    if (count($examples) < 3) {
+      $examples[] = sprintf('prior %s -> expected %s, got %s', $m[1], $expected->format('Y-m-d'), $proposed->format('Y-m-d'));
+    }
+  }
+}
+$ok('calendar-date rule holds on every untouched record', $ruleFail === 0,
+  "checked $checked untouched, $ruleFail off" . ($examples ? ' — e.g. ' . implode('; ', $examples) : ''));
+printf("  (%d edited since creation, not asserted; %d of those sit off the rule — office moves, or the 2026-08-30 re-date)\n", $skippedEdited, $editedOff);
+
+echo "== 5. Status of command-scheduled WOs (informational) ==\n";
+// NOT an assertion. A WO scheduled in August and since completed, invoiced or
+// cancelled is normal lifecycle, and nothing in the data records WHEN the status
+// changed — so "no excluded-status WO has a record" cannot be judged after the
+// fact. The real guard is in apply(), which re-validates every row against live
+// state and skips an excluded WO; that is behaviour to test, not data to scan.
+$statusNames = [1091 => 'Scheduled', 1092 => 'In Progress', 1097 => 'Complete', 1098 => 'Canceled', 1281 => 'Invoiced', 1283 => 'Warrantied', 1504 => 'Paid'];
+$byStatus = [];
 foreach ($cmdRecords as $s) {
   $wo = $etm->getStorage('work_order')->load((int) $s->get('field_work_order')->target_id);
   $st = $wo && !$wo->get('field_status')->isEmpty() ? (int) $wo->get('field_status')->target_id : 0;
-  if (in_array($st, $EXCLUDED, TRUE)) { $badStatus++; }
+  $label = $statusNames[$st] ?? ('tid ' . $st);
+  $byStatus[$label] = ($byStatus[$label] ?? 0) + 1;
 }
-$ok('no excluded-status WO scheduled', $badStatus === 0, $badStatus ? "$badStatus bad" : '');
+arsort($byStatus);
+foreach ($byStatus as $label => $n) { printf("  %-14s %d\n", $label, $n); }
+printf("  (informational — progress after scheduling is expected)\n");
 
-echo "== 6. Dense route order within (date, tech) groups ==\n";
-$groups = [];
+echo "== 6. Route order unique and contiguous per (date, tech) ==\n";
+// Checked across EVERY scheduling record on that date for that tech, not just
+// the ones this command created. Command records legitimately start above 1
+// now: an incremental batch appends after whatever is already on the day, so
+// asserting that command records alone form 1..N was wrong as of 2026-09-29.
+$seen = [];
+$denseFail = 0; $groupCount = 0; $detail = [];
 foreach ($cmdRecords as $s) {
-  $day = DrupalDateTime::createFromTimestamp((int) $s->get('field_date')->value, $tz)->format('Y-m-d');
-  $tech = $s->get('field_assigned_to')->isEmpty() ? '0' : (string) $s->get('field_assigned_to')->target_id;
-  $groups["$day|$tech"][] = $s->get('field_scheduled_oder')->isEmpty() ? NULL : (int) $s->get('field_scheduled_oder')->value;
+  $ts = (int) $s->get('field_date')->value;
+  $day = DrupalDateTime::createFromTimestamp($ts, $tz)->format('Y-m-d');
+  $tech = $s->get('field_assigned_to')->isEmpty() ? NULL : (int) $s->get('field_assigned_to')->target_id;
+  $key = $day . '|' . ($tech ?? '0');
+  if (isset($seen[$key])) { continue; }
+  $seen[$key] = TRUE;
+  $groupCount++;
+
+  // Day bounds in PHP against the RAW timestamp: FROM_UNIXTIME renders in
+  // MariaDB's session timezone (fixed UTC-7 here) while the site is
+  // America/Denver, so a SQL date cast buckets local-midnight records into the
+  // previous day for half the year.
+  $dayStart = (new DrupalDateTime($day . ' 00:00:00', $tz))->getTimestamp();
+  $dayEnd = (new DrupalDateTime($day . ' 23:59:59', $tz))->getTimestamp();
+
+  $q = \Drupal::database()->select('scheduling__field_date', 'd');
+  $q->leftJoin('scheduling__field_assigned_to', 'a', 'a.entity_id = d.entity_id');
+  $q->leftJoin('scheduling__field_scheduled_oder', 'o', 'o.entity_id = d.entity_id');
+  $q->addField('o', 'field_scheduled_oder_value', 'v');
+  $q->condition('d.field_date_value', [$dayStart, $dayEnd], 'BETWEEN');
+  if ($tech !== NULL) { $q->condition('a.field_assigned_to_target_id', $tech); }
+  else { $q->isNull('a.field_assigned_to_target_id'); }
+  $orders = $q->execute()->fetchCol();
+
+  $nulls = count(array_filter($orders, fn($x) => $x === NULL));
+  $vals = array_map('intval', array_filter($orders, fn($x) => $x !== NULL));
+  sort($vals);
+  $bad = $nulls > 0 || count($vals) !== count(array_unique($vals)) || $vals !== range(1, count($vals));
+  if ($bad) {
+    $denseFail++;
+    if (count($detail) < 4) {
+      $detail[] = sprintf('%s tech=%s [%s]%s', $day, $tech ?? 'none', implode(',', $vals), $nulls ? " +$nulls null" : '');
+    }
+  }
 }
-$denseFail = 0;
-foreach ($groups as $orders) {
-  $orders = array_values($orders);
-  if (in_array(NULL, $orders, TRUE)) { $denseFail++; continue; }
-  sort($orders);
-  if ($orders !== range(1, count($orders))) { $denseFail++; }
-}
-$ok('every (date,tech) group is a dense 1..N with no gaps/dupes/nulls', $denseFail === 0, "$denseFail bad groups of " . count($groups));
+$ok('route order unique and contiguous from 1 across the whole day',
+  $denseFail === 0, "$denseFail of $groupCount groups off" . ($detail ? ' — ' . implode('; ', $detail) : ''));
 
 echo "== 7. UI smoke (http_kernel sub-request) ==\n";
 $switcher = \Drupal::service('account_switcher');

@@ -70,6 +70,11 @@ class BosTermAliasBreadcrumbBuilder implements BreadcrumbBuilderInterface {
     'material_types',
     'backflow_device_types',
     'backflow_uses',
+    // Flat vocabulary whose URL hierarchy is synthesised by pathauto from
+    // field_characteristic_category, so every term is a root term and core's
+    // hierarchy-based builder can only ever produce "Home". This is precisely
+    // the mismatch this builder exists to fix.
+    'plant_characteristics',
   ];
 
   public function __construct(

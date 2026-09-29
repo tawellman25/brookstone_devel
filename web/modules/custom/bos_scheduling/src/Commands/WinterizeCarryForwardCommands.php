@@ -883,6 +883,46 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
     return [is_numeric($lat) ? (float) $lat : NULL, is_numeric($lon) ? (float) $lon : NULL];
   }
 
+  /**
+   * The highest route order already scheduled for a date and technician.
+   *
+   * Day boundaries are computed in PHP and compared against the RAW timestamp.
+   * FROM_UNIXTIME() renders in MariaDB's session timezone — SYSTEM, a fixed
+   * UTC-7 on this server — while the site runs America/Denver, UTC-6 under DST.
+   * These are all-day records stamped at local midnight, so a SQL-side date cast
+   * would bucket them into the previous day for half the year. That exact bug
+   * cost us the scheduling calendar on 2026-07-14.
+   *
+   * @return int
+   *   The highest existing order, or 0 when the day is empty for that tech.
+   */
+  private function existingRouteOrderMax(string $date, $techUid): int {
+    if ($date === '') {
+      return 0;
+    }
+    $tz = new \DateTimeZone(date_default_timezone_get());
+    try {
+      $start = (new \DateTime($date . ' 00:00:00', $tz))->getTimestamp();
+      $end = (new \DateTime($date . ' 23:59:59', $tz))->getTimestamp();
+    }
+    catch (\Exception $e) {
+      return 0;
+    }
+
+    $q = $this->db->select('scheduling__field_date', 'd');
+    $q->leftJoin('scheduling__field_assigned_to', 'a', 'a.entity_id = d.entity_id');
+    $q->leftJoin('scheduling__field_scheduled_oder', 'o', 'o.entity_id = d.entity_id');
+    $q->addExpression('MAX(o.field_scheduled_oder_value)', 'mx');
+    $q->condition('d.field_date_value', [$start, $end], 'BETWEEN');
+    if ($techUid !== NULL && $techUid !== '') {
+      $q->condition('a.field_assigned_to_target_id', (int) $techUid);
+    }
+    else {
+      $q->isNull('a.field_assigned_to_target_id');
+    }
+    return (int) $q->execute()->fetchField();
+  }
+
   /** Dense 1..N route order within each (proposed_date, proposed_tech) group. */
   private function assignRouteOrder(array &$rows): void {
     $groups = [];
@@ -899,7 +939,13 @@ final class WinterizeCarryForwardCommands extends DrushCommands {
           <=> [$rows[$b]['_order_tier'], $rows[$b]['_order_value'], $rows[$b]['property_nickname']];
       });
       $sources = [];
-      $rank = 1;
+      // Start AFTER anything already scheduled on this date for this tech.
+      // The rank used to start at 1 unconditionally, which was right for the
+      // first run of a season and wrong for every run after it: an incremental
+      // batch dropped every new stop at order 1, on top of the existing first
+      // stop, so the Route Editor had no meaningful order for them.
+      $first = $rows[$idxs[0]];
+      $rank = $this->existingRouteOrderMax($first['proposed_date'], $first['proposed_tech_uid']) + 1;
       foreach ($idxs as $i) {
         $rows[$i]['proposed_route_order'] = $rank++;
         if (in_array($rows[$i]['order_source'], ['signoff', 'clock', 'status'], TRUE)) {

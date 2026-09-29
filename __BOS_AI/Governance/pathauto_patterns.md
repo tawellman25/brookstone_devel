@@ -106,13 +106,26 @@ All active Pathauto patterns as of March 2026.
 | Material - Poly - Path | `material/poly/[material:title]` | material_poly_path |
 | Material - Pumps - Path | `material/pumps/[material:title]` | material_pumps_path |
 | Material - PVC - Path | `material/pvc/[material:title]` | material_pvc_path |
-| Material - Rock - Path | `material/rock/[material:title]` | material_rock_path |
-| Material - Shrubs - Path | `material/shrubs/[material:title]` | material_shrubs_path |
+| Material - Rock - Path | `material/rock/[material:field_rock_type:entity:name]/[material:title]` | material_rock_path |
+| Material - Shrubs - Path | `material/plants/shrubs/[material:title]` | material_shrubs_path |
 | Material - Sod - Path | `material/sod/[material:title]` | material_sod_path |
-| Material - Trees - Path | `material/trees/[material:title]` | material_trees_path |
+| Material - Trees - Path | `material/plants/trees/[material:title]` | material_trees_path |
 | Material - Supplier Info Path | `[material_suppliers:field_material:entity:url:path]/suppliers/[material_suppliers:field_supplier:entity:field_supplier_name]` | material_supplier_info_path |
 | Manufacturer Paths | `material/[manufacturer:title]` | manufacturer_paths |
 | Supplier Aliases | `materials/[supplier:title]` | supplier_aliases |
+
+> **Rock, Shrubs and Trees moved.** Rock gained its `field_rock_type` segment
+> (`fix_rock_material_pathauto.php`); Shrubs and Trees moved under Plants when
+> those categories were reparented on 2026-09-29. A **duplicate** rock pattern,
+> `materials_rock_aliases`, sat alongside `material_rock_path` with an identical
+> pattern string and a lower weight — so it, not the documented one, was
+> generating rock URLs. Deleted 2026-09-29
+> (`delete_duplicate_rock_pathauto_pattern.php`); aliases are unchanged.
+>
+> Note the ordering rule it exposed: when two patterns match the same bundle,
+> **pathauto uses the lowest weight**, not the one in `config/sync` and not the
+> one the docs name. A duplicate is therefore not always inert — it can quietly
+> take over.
 
 ---
 

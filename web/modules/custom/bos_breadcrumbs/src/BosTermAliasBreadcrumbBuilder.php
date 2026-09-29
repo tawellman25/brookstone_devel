@@ -75,6 +75,42 @@ class BosTermAliasBreadcrumbBuilder implements BreadcrumbBuilderInterface {
     // hierarchy-based builder can only ever produce "Home". This is precisely
     // the mismatch this builder exists to fix.
     'plant_characteristics',
+
+    // The rest of the public catalogue and reference vocabularies. Every term
+    // in these sits under /material/ or /services/ and is publicly reachable,
+    // and most are flat vocabularies whose hierarchy is synthesised into the
+    // URL by pathauto — so core's hierarchy-based builder gives them "Home"
+    // and nothing else.
+    //
+    // This list stays an ALLOWLIST rather than becoming "everything except the
+    // operational ones". Around 1,300 operational term pages are publicly
+    // indexed and must not grow breadcrumbs by accident; naming what is in is
+    // safe, naming what is out is one new vocabulary away from a mistake.
+    'bloom_time',
+    'bulk_material_types',
+    'carrier',
+    'christmas_light_colors',
+    'christmas_light_types',
+    'deer_protection',
+    'emergence_types',
+    'growth_zone',
+    'hardscape_types',
+    'irrigation_check_up_frequency',
+    'mowing_frequency',
+    'rock_types',
+    'signal_words',
+    'snow_levels',
+    'snow_plows',
+    'spraying_frequency',
+    'spraying_locations',
+    'spraying_methods',
+    'spraying_soil_moisture_levels',
+    'spraying_stages_of_weed_growth',
+    'spraying_wind_speed',
+    'system_complexity',
+    'system_operation',
+    'weed_categories',
+    'wind_direction',
   ];
 
   public function __construct(

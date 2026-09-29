@@ -106,6 +106,33 @@ class AdminCalendarCompletedController extends ControllerBase {
     );
     $query->addField('nick', 'field_nickname_value', 'property_nickname');
 
+    // Street address + town, for the hover card (shared with the scheduled
+    // layer). The clean town name is city.field_city_name ("Delta"), not the
+    // city entity title ("City of Delta").
+    $query->leftJoin(
+      'properties__field_street_address',
+      'pstreet',
+      'pstreet.entity_id = wop.field_property_target_id AND pstreet.deleted = 0'
+    );
+    $query->addField('pstreet', 'field_street_address_value', 'property_street');
+
+    $query->leftJoin(
+      'properties__field_zipcode_reference',
+      'pzip',
+      'pzip.entity_id = wop.field_property_target_id AND pzip.deleted = 0'
+    );
+    $query->leftJoin(
+      'zipcodes__field_city',
+      'zipcity',
+      'zipcity.entity_id = pzip.field_zipcode_reference_target_id AND zipcity.deleted = 0'
+    );
+    $query->leftJoin(
+      'city__field_city_name',
+      'cityname',
+      'cityname.entity_id = zipcity.field_city_target_id AND cityname.deleted = 0'
+    );
+    $query->addField('cityname', 'field_city_name_value', 'property_town');
+
     // Service + SOP code.
     $query->leftJoin(
       'work_order__field_service',
@@ -235,6 +262,13 @@ class AdminCalendarCompletedController extends ControllerBase {
         ? mb_substr($property, 0, 21) . '…'
         : $property;
 
+      // Hover-card address: street, town. Either half may be missing, so join
+      // only what is present.
+      $property_address = implode(', ', array_filter([
+        trim($row->property_street ?? ''),
+        trim($row->property_town ?? ''),
+      ], 'strlen'));
+
       $service_code = strtoupper(trim($row->service_code ?? ''))
         ?: (trim($row->service_name ?? '') ?: '?');
 
@@ -276,6 +310,7 @@ class AdminCalendarCompletedController extends ControllerBase {
         'extendedProps' => [
           'woEntityId'     => (int) $row->field_work_order_target_id,
           'propertyNickname' => $property,
+          'propertyAddress'  => $property_address,
           'serviceName'    => trim($row->service_name ?? ''),
           'serviceCode'    => $service_code,
           'departmentName' => trim($row->department_title ?? '') ?: 'Unassigned',

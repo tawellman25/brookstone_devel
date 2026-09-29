@@ -32,6 +32,7 @@
       function showTooltip(event, jsEvent) {
         const p = event.extendedProps;
         tooltip.querySelector('.bos-tooltip-property').textContent  = p.propertyNickname || '';
+        tooltip.querySelector('.bos-tooltip-address').textContent   = p.propertyAddress || '';
         tooltip.querySelector('.bos-tooltip-service').textContent   = p.serviceName || '';
         tooltip.querySelector('.bos-tooltip-order').textContent     = p.orderCode ? 'Order: ' + p.orderCode : '';
         tooltip.querySelector('.bos-tooltip-department').textContent = p.departmentName || '';

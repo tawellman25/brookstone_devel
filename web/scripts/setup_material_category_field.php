@@ -52,10 +52,19 @@ const BOS_CAT_FIELD = 'field_material_category';
 const BOS_CAT_VOCAB = 'material_types';
 
 /** Bundles that get the field. Add a bundle here and to $PATTERNS together. */
-const BOS_CAT_BUNDLES = ['trees'];
+const BOS_CAT_BUNDLES = ['trees', 'shrubs', 'annuals', 'plants'];
 
-/** Bundle => pathauto pattern id whose pattern is rewritten to use the field. */
-$PATTERNS = ['trees' => 'material_trees_path'];
+/**
+ * Bundle => pathauto pattern id whose pattern is rewritten to use the field.
+ * `annuals` has never had a pattern, so its items sat on the raw /material/NNN
+ * path; it is created here rather than assumed to exist.
+ */
+$PATTERNS = [
+  'trees' => 'material_trees_path',
+  'shrubs' => 'material_shrubs_path',
+  'annuals' => 'material_annuals_path',
+  'plants' => 'material_plants_path',
+];
 
 $NEW_PATTERN = '[material:' . BOS_CAT_FIELD . ':entity:url:path]/[material:title]';
 
@@ -135,7 +144,24 @@ $patternStorage = \Drupal::entityTypeManager()->getStorage('pathauto_pattern');
 foreach ($PATTERNS as $bundle => $patternId) {
   $pattern = $patternStorage->load($patternId);
   if (!$pattern) {
-    $out[] = "WARNING: pathauto pattern $patternId not found — URLs unchanged for $bundle";
+    // annuals never had one, so its items had no alias at all.
+    $pattern = $patternStorage->create([
+      'id' => $patternId,
+      'label' => 'Material - ' . ucfirst($bundle) . ' - Path',
+      'type' => 'canonical_entities:material',
+      'pattern' => $NEW_PATTERN,
+      'selection_criteria' => [],
+      'selection_logic' => 'and',
+      'weight' => -2,
+    ]);
+    $pattern->addSelectionCondition([
+      'id' => 'entity_bundle:material',
+      'bundles' => [$bundle => $bundle],
+      'negate' => FALSE,
+      'context_mapping' => ['material' => 'material'],
+    ]);
+    $pattern->save();
+    $out[] = "created pathauto pattern $patternId for $bundle";
     continue;
   }
   if ($pattern->getPattern() === $NEW_PATTERN) {

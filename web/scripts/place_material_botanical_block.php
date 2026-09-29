@@ -36,42 +36,107 @@ const BOS_BOT_PLUGIN = 'views_block:material_botanical_name-block_1';
 $apply = getenv('BOS_BOTANICAL_APPLY') === '1';
 
 // ---- derive the paths ------------------------------------------------------
-$db = \Drupal::database();
+// TWO SOURCES, because two things have to be true at once: a plant ITEM page
+// must be covered, and a CATEGORY page must not be.
+//
+//  1. A glob per LEAF category — "/material/plants/trees/evergreens/*". Exact,
+//     because an item lives one segment below its category and "/a/b/*" does not
+//     match "/a/b". Only leaves: "/material/plants/trees/*" would swallow the
+//     Evergreens category page itself. Globs are emitted for every leaf whether
+//     or not it holds items today, so a plant added to Perennials next month is
+//     covered with no re-run.
+//
+//  2. An explicit alias per item that no glob covers — the 62 shrubs and the one
+//     uncategorised tree, which sit at the same depth as category pages, where
+//     no pattern can separate them. These collapse into globs automatically once
+//     the items are categorised.
 $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
 $aliases = \Drupal::service('path_alias.manager');
+$materials = \Drupal::entityTypeManager()->getStorage('material');
 
-if (!$db->schema()->tableExists('material__field_material_category')) {
-  print "material__field_material_category missing — nothing to derive. Aborting.\n";
+/** Plant bundles — the ones whose items carry a botanical name. */
+$PLANT_BUNDLES = ['trees', 'shrubs', 'annuals', 'plants'];
+
+// The Plants root: the term backing the `plants` bundle.
+$root = NULL;
+foreach ($terms->loadByProperties(['vid' => 'material_types']) as $t) {
+  if ($t->get('field_material_bundle')->value === 'plants') {
+    $root = $t;
+    break;
+  }
+}
+if (!$root) {
+  print "no material_types term backs the `plants` bundle — aborting.\n";
   return;
 }
 
-$tids = $db->query('SELECT DISTINCT field_material_category_target_id FROM {material__field_material_category}')->fetchCol();
-$paths = [];
-foreach ($tids as $tid) {
-  $term = $terms->load($tid);
-  if (!$term) {
+$tree = $terms->loadTree('material_types', (int) $root->id(), NULL, TRUE);
+$hasChildren = [];
+foreach ($tree as $t) {
+  foreach ($t->get('parent') as $parent) {
+    $hasChildren[(int) $parent->target_id] = TRUE;
+  }
+}
+
+$globs = [];
+foreach ($tree as $t) {
+  if (!empty($hasChildren[(int) $t->id()])) {
+    // A branch. Globbing it would capture its own child category pages.
     continue;
   }
-  $alias = $aliases->getAliasByPath('/taxonomy/term/' . $tid);
+  $alias = $aliases->getAliasByPath('/taxonomy/term/' . $t->id());
   if (!str_starts_with($alias, '/material/')) {
-    // No real alias, or somewhere unexpected — never guess a path.
-    printf("  WARN  %s (tid %s) has no /material/ alias — skipped\n", $term->label(), $tid);
+    printf("  WARN  leaf category %s has no /material/ alias — skipped\n", $t->label());
     continue;
   }
-  $paths[$alias . '/*'] = $term->label();
+  $globs[$alias . '/*'] = $t->label();
 }
-ksort($paths);
+ksort($globs);
 
-if (!$paths) {
-  print "no categorised items found — nothing to place. Aborting.\n";
+// Items no glob reaches.
+$covered = static function (string $alias) use ($globs): bool {
+  foreach (array_keys($globs) as $g) {
+    if (str_starts_with($alias, rtrim($g, '*'))) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+};
+
+$explicit = [];
+$ids = $materials->getQuery()->accessCheck(FALSE)->condition('type', $PLANT_BUNDLES, 'IN')->execute();
+foreach ($materials->loadMultiple($ids) as $m) {
+  $alias = $aliases->getAliasByPath('/material/' . $m->id());
+  if (!str_starts_with($alias, '/material/') || preg_match('#^/material/\d+$#', $alias)) {
+    // No real alias yet; a raw path would be a meaningless condition.
+    continue;
+  }
+  if (!$covered($alias)) {
+    $explicit[$alias] = $m->label();
+  }
+}
+ksort($explicit);
+
+printf("leaf-category globs (%d) — cover every item filed in them, now and later:\n", count($globs));
+foreach ($globs as $g => $label) {
+  printf("  %-52s %s\n", $g, $label);
+}
+printf("\nexplicit item paths (%d) — items no category covers yet:\n", count($explicit));
+$shown = 0;
+foreach ($explicit as $a => $label) {
+  if ($shown++ < 5) { printf("  %-52s %s\n", $a, $label); }
+}
+if (count($explicit) > 5) {
+  printf("  … and %d more\n", count($explicit) - 5);
+}
+
+$all = array_merge(array_keys($globs), array_keys($explicit));
+if (!$all) {
+  print "nothing to cover — aborting.\n";
   return;
 }
-
-print "derived item paths (one per category that holds items):\n";
-foreach ($paths as $p => $label) {
-  printf("  %-52s %s\n", $p, $label);
-}
-$pathList = implode("\r\n", array_keys($paths));
+$pathList = implode("\r\n", $all);
+$paths = array_flip($all);
 
 // ---- 1. the block that SHOWS the custom title ------------------------------
 $blockStorage = \Drupal::entityTypeManager()->getStorage('block');

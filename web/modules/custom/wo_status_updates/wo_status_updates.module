@@ -40,11 +40,29 @@ function wo_status_updates_entity_presave(EntityInterface $entity) {
           ->getStorage('work_order')
           ->loadUnchanged($work_order_id);
         $persisted_status = $persisted ? (int) ($persisted->get('field_status')->target_id ?? 0) : 0;
-        if ((int) $wo_status_updates_status_tid === 1092
-          && in_array($persisted_status, $terminal_statuses, TRUE)) {
+        //
+        // 2026-09-29 — WIDENED FROM 1092 TO EVERY NON-TERMINAL STATUS. The guard
+        // named In Progress explicitly and said nothing about Scheduled (1091),
+        // so it did not fire when a route-order fix re-saved scheduling records:
+        // wo_schedule wrote a "Scheduled" record for each one and 17 work orders
+        // that crews had finished and the office had invoiced THAT MORNING were
+        // knocked back to Scheduled. Six of them had been invoiced eleven
+        // minutes earlier.
+        //
+        // THE RULE, and it is absolute: a work order that is Complete,
+        // Invoiced, Paid, Warrantied or Canceled is NOT rescheduled and NOT
+        // reopened by a status-update record. Enumerating which reopen is
+        // forbidden was the bug; anything that is not terminal is now blocked.
+        $reopening = !in_array((int) $wo_status_updates_status_tid, $terminal_statuses, TRUE);
+        if ($reopening && in_array($persisted_status, $terminal_statuses, TRUE)) {
           \Drupal::logger('wo_status_updates')->warning(
-            'Suppressed reopen of billed/closed WO @id (status @s) to In Progress from status-update record @r.',
-            ['@id' => $work_order_id, '@s' => $persisted_status, '@r' => $entity->id() ?: '(new)']
+            'Suppressed reopen of billed/closed WO @id (status @s) to @to from status-update record @r.',
+            [
+              '@id' => $work_order_id,
+              '@s' => $persisted_status,
+              '@to' => $wo_status_updates_status_tid,
+              '@r' => $entity->id() ?: '(new)',
+            ]
           );
         }
         else {

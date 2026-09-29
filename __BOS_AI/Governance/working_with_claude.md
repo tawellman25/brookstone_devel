@@ -37,6 +37,45 @@ For any non-trivial work, the verification-then-build pattern catches issues bef
 
 ---
 
+## Look it up; don't recall it
+
+Any claim about software we do not control — browser behaviour, standards
+support, an API or library's semantics, a third-party service — is **looked up
+or measured before it is stated or acted on**. Recall about third-party
+behaviour is the least reliable output and the most expensive to get wrong,
+because a confident wrong answer is indistinguishable from a right one until
+something ships.
+
+Worked example, 2026-09-28. A footer looked wrong on a phone. Three confident
+diagnoses in a row, all wrong:
+
+1. "`color-scheme: light` stops the browser's forced dark mode." It is the
+   opposite — that declares the page has *no* dark mode, which is the trigger.
+2. "A real `prefers-color-scheme` variant will fix it." Samsung Internet
+   **ignores that media query entirely**: it renders the *light* CSS and filters
+   the result. The dark variant shipped was inert, and it handed the filter
+   darker input, so the symptom got worse.
+3. A bio sentence on /about-us was attributed to the wrong person by reading a
+   paragraph boundary rather than checking whose paragraph it was.
+
+One web search settled all of it in seconds, with a citation.
+
+**In practice:**
+
+- Look it up (WebSearch/WebFetch) or measure it. Not "I believe", not "should".
+- Prefer measuring the real thing over both recall *and* documentation where
+  measurement is possible: compute the contrast ratio, sample the pixels, query
+  live, render the view. Sampling a screenshot proved a colour was arriving at
+  46% of its authored brightness — no amount of reasoning about the CSS would
+  have revealed that, because the CSS was correct.
+- State which kind of claim it is. "I verified" and "I think" are different
+  claims and the reader is entitled to know which one they are getting.
+- **Two wrong diagnoses on the same problem means stop shipping fixes.** Get one
+  hard fact first. Three speculative deploys cost more than one pause, and they
+  erode trust faster than the original bug.
+- Attribution to a named person — a bio, a quote, an action — is a fact to
+  check, never inferred from adjacency.
+
 ## Targeted commits over bundled scope
 
 Each commit should have a single coherent purpose. The git log is part of the project documentation; future readers should be able to understand a change from its commit message alone.

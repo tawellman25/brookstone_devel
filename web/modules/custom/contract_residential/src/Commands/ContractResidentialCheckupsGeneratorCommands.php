@@ -35,7 +35,18 @@ public function generate(array $options = ['force' => FALSE]) : void {
       $this->logger()->success($force ? 'Forced dispatch enqueued.' : 'Dispatch enqueued.');
     }
     else {
-      $this->logger()->notice('Already dispatched today — skipped. Use --force to override.');
+      // The enqueue helper returns FALSE for three different reasons and this
+      // message used to assume the friendliest one, telling the operator to
+      // retry with --force even when the kill switch had made that impossible.
+      if ((bool) \Drupal::state()->get('contract_residential.checkups_disabled', FALSE)) {
+        $this->logger()->warning('Checkup generation is DISABLED (state: contract_residential.checkups_disabled). --force will not override it. Re-enable with: drush sdel contract_residential.checkups_disabled');
+      }
+      elseif (\Drupal::queue('contract_residential_checkup_generator')->numberOfItems() > 0) {
+        $this->logger()->notice('Items are still pending in the queue — skipped so a slow drain cannot snowball it.');
+      }
+      else {
+        $this->logger()->notice('Already dispatched today — skipped. Use --force to override.');
+      }
     }
     return;
   }

@@ -76,12 +76,14 @@ $BOTANY = [
 
 $SHELF = [
   // Shade — large deciduous canopy, planted for the canopy.
+  'Birch' => 'Shade',
   'Boxelder' => 'Shade',
   'Buckeye / Horsechestnut' => 'Shade',
   'Cottonwood' => 'Shade',
   'Elm' => 'Shade',
   'Hackberry' => 'Shade',
   'Hornbeam' => 'Shade',
+  'Japanese Pagoda Tree' => 'Shade',
   'Kentucky Coffeetree' => 'Shade',
   'Linden' => 'Shade',
   'Maple' => 'Shade',
@@ -102,6 +104,7 @@ $SHELF = [
   'Mountain Ash' => 'Ornamental',
   'Ornamental Pear' => 'Ornamental',
   'Serviceberry' => 'Ornamental',
+  'Thinleaf Alder' => 'Ornamental',
   'Tree Lilac' => 'Ornamental',
   'Weeping Mulberry' => 'Ornamental',
 ];
@@ -111,10 +114,7 @@ $SHELF = [
  * and an unassigned tree simply keeps the URL it has today.
  */
 $HELD = [
-  'Eastern Red Cedar' => 'Juniperus virginiana — a juniper by genus, but nobody shops for it under Junipers. Genus or shelf?',
-  'Birch' => 'Sold here for its bark, which argues Ornamental; it is a fair mid-size shade tree, which argues Shade.',
-  'Japanese Pagoda Tree' => 'Reaches 50–75ft, so Shade by size, but it is sold as a specimen.',
-  'Thinleaf Alder' => 'Native riparian, small and multi-stem. Fits neither Shade nor Ornamental well.',
+  'Eastern Red Cedar' => 'Juniperus virginiana. Junipers is the botanically correct home and Rocky Mountain / One-Seed Juniper are already there as uprights — awaiting Todd.',
 ];
 
 // ---- resolve the category terms, by relationship, never by exact name -------

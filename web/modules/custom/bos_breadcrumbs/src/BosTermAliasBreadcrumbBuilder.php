@@ -75,6 +75,9 @@ class BosTermAliasBreadcrumbBuilder implements BreadcrumbBuilderInterface {
     // hierarchy-based builder can only ever produce "Home". This is precisely
     // the mismatch this builder exists to fix.
     'plant_characteristics',
+    // The eight groupings the characteristics belong to. Their URLs sit one
+    // level up from the characteristics and are equally public.
+    'plant_character_categories',
 
     // The rest of the public catalogue and reference vocabularies. Every term
     // in these sits under /material/ or /services/ and is publicly reachable,

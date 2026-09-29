@@ -143,6 +143,28 @@ function material_entity_view_mode_alter(string &$view_mode, EntityInterface $en
     return;
   }
 
+  // Plant characteristics (categories and leaves alike): the full four-tier
+  // audience set — office -> admin_view, crew -> teammate_view, signed-in
+  // customers -> client_view, everyone else -> full (Public).
+  //
+  // Clients get their own tier here rather than falling through to Public,
+  // because an authenticated customer can be shown more than an anonymous
+  // visitor. material_types above predates that decision and still has no
+  // client tier; worth revisiting, but not silently changed here.
+  if ($type === 'taxonomy_term'
+    && in_array($entity->bundle(), ['plant_characteristics', 'plant_character_categories'], TRUE)) {
+    if (array_intersect(MATERIAL_OFFICE_ROLES, $roles)) {
+      $view_mode = 'admin_view';
+    }
+    elseif (array_intersect(MATERIAL_CREW_ROLES, $roles)) {
+      $view_mode = 'teammate_view';
+    }
+    elseif (array_intersect(MATERIAL_CLIENT_ROLES, $roles)) {
+      $view_mode = 'client_view';
+    }
+    return;
+  }
+
   // Material category pages (material_types taxonomy vocab): office -> admin_view,
   // crew -> teammate_view, everyone else -> full (Public). Taxonomy view-mode
   // names differ from the entity's; there is no client tier here.
@@ -169,11 +191,12 @@ function material_material_view_alter(array &$build, EntityInterface $entity, $d
 /**
  * Implements hook_ENTITY_TYPE_view_alter() for taxonomy_term.
  *
- * material_types category pages are routed by role (above), so their render MUST
- * vary by user.roles or the cache can leak one audience's body to another.
+ * material_types and plant_characteristics pages are routed by role (above), so
+ * their render MUST vary by user.roles or the cache can leak one audience's
+ * body to another.
  */
 function material_taxonomy_term_view_alter(array &$build, EntityInterface $entity, $display): void {
-  if ($entity->bundle() === 'material_types') {
+  if (in_array($entity->bundle(), ['material_types', 'plant_characteristics', 'plant_character_categories'], TRUE)) {
     $build['#cache']['contexts'][] = 'user.roles';
   }
 }

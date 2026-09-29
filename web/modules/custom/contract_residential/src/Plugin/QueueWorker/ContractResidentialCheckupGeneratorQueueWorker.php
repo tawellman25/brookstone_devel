@@ -314,11 +314,54 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
   }
 
   private function isWithinIrrigationSeason(DrupalDateTime $date) : bool {
+    [$start_md, $end_md] = $this->seasonWindow();
     $year = (int) $date->format('Y');
     $tz = $date->getTimezone();
-    $season_start = new DrupalDateTime("$year-05-01", $tz);
-    $season_end = new DrupalDateTime("$year-10-15", $tz);
+    $season_start = new DrupalDateTime("$year-$start_md", $tz);
+    $season_end = new DrupalDateTime("$year-$end_md", $tz);
     return ($date >= $season_start && $date <= $season_end);
+  }
+
+  /**
+   * The irrigation-season window, as MM-DD strings.
+   *
+   * Was hardcoded 05-01 to 10-15. Now settable without a deploy, because
+   * "when may this generate?" is an operational question and the only control
+   * that existed was an all-or-nothing switch:
+   *
+   *   drush sset contract_residential.checkups_season_start 05-01
+   *   drush sset contract_residential.checkups_season_end   10-15
+   *   drush sdel contract_residential.checkups_season_start   (back to default)
+   *
+   * A malformed or impossible value falls back to the default rather than
+   * being coerced — generating outside a sane window is the failure mode worth
+   * avoiding, and a typo should not silently widen the season.
+   *
+   * Read once per queue item; this is called inside date loops.
+   *
+   * @return array
+   *   [start MM-DD, end MM-DD].
+   */
+  private function seasonWindow() : array {
+    static $window = NULL;
+    if ($window !== NULL) {
+      return $window;
+    }
+    $state = \Drupal::state();
+    $valid = static function ($value, string $default): string {
+      $value = is_string($value) ? trim($value) : '';
+      if ($value === '' || !preg_match('/^\d{2}-\d{2}$/', $value)) {
+        return $default;
+      }
+      [$m, $d] = array_map('intval', explode('-', $value));
+      // 2024 is a leap year, so 02-29 validates.
+      return checkdate($m, $d, 2024) ? $value : $default;
+    };
+    $window = [
+      $valid($state->get('contract_residential.checkups_season_start'), '05-01'),
+      $valid($state->get('contract_residential.checkups_season_end'), '10-15'),
+    ];
+    return $window;
   }
 
   private function nextWeekdayOnOrAfter(?DrupalDateTime $start, int $weekday_iso) : DrupalDateTime {

@@ -4,6 +4,7 @@ namespace Drupal\bos_scheduling\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class SchedulingHubController extends ControllerBase {
@@ -94,6 +95,10 @@ class SchedulingHubController extends ControllerBase {
         'active_tools'      => count($active_tools),
         'planned_tools'     => count($planned_tools),
       ],
+      // The cards above bulk-schedule what is unscheduled, by service type. The
+      // Route Editor works the other end — arranging what is already scheduled —
+      // so it is linked separately rather than shown as a fifth service card.
+      '#route_editor_url' => Url::fromRoute('bos_scheduling.route_editor')->toString(),
       '#attached' => ['library' => ['bos_scheduling/scheduling_hub']],
     ];
   }

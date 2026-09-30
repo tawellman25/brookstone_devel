@@ -12,6 +12,7 @@ use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -112,6 +113,21 @@ final class RouteEditorController extends ControllerBase {
       ],
       '#cache' => ['max-age' => 0],
     ];
+  }
+
+  /**
+   * Permanent redirect from the retired /teammates/calendar/route-editor path.
+   *
+   * The editor is gated to office + supervisor (no teammates), so it never
+   * belonged under /teammates/; it now sits beside the sprinkler bulk scheduler
+   * under /admin/office/work-orders/scheduling/. The query string is carried over
+   * so a bookmarked day or range still lands where it used to.
+   */
+  public function legacyRedirect(Request $request): RedirectResponse {
+    $url = Url::fromRoute('bos_scheduling.route_editor', [], [
+      'query' => $request->query->all(),
+    ])->toString();
+    return new RedirectResponse($url, 301);
   }
 
   /**

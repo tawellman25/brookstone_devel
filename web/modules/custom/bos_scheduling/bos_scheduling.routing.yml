@@ -48,7 +48,7 @@ bos_scheduling.scheduling_hub:
     _admin_route: TRUE
 
 bos_scheduling.route_editor:
-  path: '/teammates/calendar/route-editor'
+  path: '/admin/office/work-orders/scheduling/route-editor'
   defaults:
     _controller: '\Drupal\bos_scheduling\Controller\RouteEditorController::page'
     _title: 'Route Editor'
@@ -58,7 +58,7 @@ bos_scheduling.route_editor:
     _admin_route: TRUE
 
 bos_scheduling.route_editor_data:
-  path: '/teammates/calendar/route-editor/data'
+  path: '/admin/office/work-orders/scheduling/route-editor/data'
   defaults:
     _controller: '\Drupal\bos_scheduling\Controller\RouteEditorController::data'
   requirements:
@@ -66,7 +66,7 @@ bos_scheduling.route_editor_data:
   methods: [GET]
 
 bos_scheduling.route_editor_assign:
-  path: '/teammates/calendar/route-editor/assign'
+  path: '/admin/office/work-orders/scheduling/route-editor/assign'
   defaults:
     _controller: '\Drupal\bos_scheduling\Controller\RouteEditorController::assign'
   requirements:
@@ -75,7 +75,7 @@ bos_scheduling.route_editor_assign:
   methods: [POST]
 
 bos_scheduling.route_editor_reorder:
-  path: '/teammates/calendar/route-editor/reorder'
+  path: '/admin/office/work-orders/scheduling/route-editor/reorder'
   defaults:
     _controller: '\Drupal\bos_scheduling\Controller\RouteEditorController::reorder'
   requirements:
@@ -84,10 +84,21 @@ bos_scheduling.route_editor_reorder:
   methods: [POST]
 
 bos_scheduling.route_editor_reschedule:
-  path: '/teammates/calendar/route-editor/reschedule'
+  path: '/admin/office/work-orders/scheduling/route-editor/reschedule'
   defaults:
     _controller: '\Drupal\bos_scheduling\Controller\RouteEditorController::reschedule'
   requirements:
     _role: 'administrator+administration+supervisor+site_admin+site_assistant'
     _csrf_request_header_token: 'TRUE'
   methods: [POST]
+
+# The Route Editor used to live at /teammates/calendar/route-editor, which was
+# wrong: it is gated to office + supervisor (no teammates). Kept as a permanent
+# redirect so existing bookmarks land on the new URL rather than a 404.
+bos_scheduling.route_editor_legacy:
+  path: '/teammates/calendar/route-editor'
+  defaults:
+    _controller: '\Drupal\bos_scheduling\Controller\RouteEditorController::legacyRedirect'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+  methods: [GET]

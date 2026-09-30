@@ -22,7 +22,7 @@ $check = function (string $label, bool $ok, string $detail = '') use (&$pass, &$
 };
 
 $post = function (array $payload) use ($controller) {
-  $r = Request::create('/teammates/calendar/route-editor/reschedule', 'POST', [], [], [], [], json_encode($payload));
+  $r = Request::create('/admin/office/work-orders/scheduling/route-editor/reschedule', 'POST', [], [], [], [], json_encode($payload));
   return json_decode($controller->reschedule($r)->getContent(), TRUE);
 };
 

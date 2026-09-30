@@ -4,13 +4,26 @@ Map-backed tool for **seeing and fixing crew routing** on scheduled work orders,
 plus the **winterize carry-forward** rules that let this year's routing seed next
 year. Lives in the existing `bos_scheduling` module.
 
-- **Page:** `/teammates/calendar/route-editor` (Office → Calendar). Supervisor-gated
+- **Page:** `/admin/office/work-orders/scheduling/route-editor` (Office → Calendar). Supervisor-gated
   (`administrator+administration+supervisor+site_admin+site_assistant`).
 - **Controller:** `src/Controller/RouteEditorController.php`
 - **Front end:** `js/route-editor.js`, `css/route-editor.css`,
   `templates/bos-scheduling-route-editor.html.twig` (library `route_editor`).
 - **Shipped:** 2026-08-30, branch `feature/scheduling-route-editor`. Deployed by
   rsync (no cim/DB migration).
+
+## Where it lives
+
+**`/admin/office/work-orders/scheduling/route-editor`** — admin menu at **Office ▸ Work
+Orders ▸ Scheduling ▸ Route Editor**, and linked from the Scheduling hub body under
+"Already scheduled" (the hub's cards bulk-schedule what is *un*scheduled by service
+type; this arranges what is *already* scheduled — a different axis, so not a fifth
+card). Role-gated to `administrator + administration + supervisor + site_admin +
+site_assistant` — **no `teammates`**.
+
+It lived at `/teammates/calendar/route-editor` until 2026-09-30, which was wrong for
+an office-only tool; that path now **301s** to the new one, carrying the query string
+so a bookmarked day or range still lands where it did.
 
 ## What it shows
 

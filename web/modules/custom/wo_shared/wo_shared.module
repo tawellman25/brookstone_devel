@@ -110,6 +110,7 @@ function wo_shared_entity_insert(EntityInterface $entity) {
  * cabb8a6e check-up title fix this generalizes.
  */
 function wo_shared_work_order_insert(EntityInterface $entity) {
+  wo_shared_once_per_year_log($entity);
   if (!$entity->hasField('title')) {
     return;
   }
@@ -316,5 +317,177 @@ function wo_shared_form_views_exposed_form_alter(array &$form, \Drupal\Core\Form
     if (isset($form[$tf])) {
       $form[$tf]['#size'] = 22;
     }
+  }
+}
+
+/**
+ * Work order bundles that should only be created once per property per year.
+ *
+ * Both are once-a-season jobs off the contract, so a second one usually means it
+ * was entered by hand after the batch had already created it. Calendar year is a
+ * correct season key for both because neither season straddles a year boundary:
+ * measured over four years, winterizing is 99.7% Aug–Dec and start-up 99.8%
+ * Feb–Jun, and the two never overlap.
+ */
+const WO_SHARED_ONCE_PER_YEAR_BUNDLES = ['sprinkler_winterizing', 'sprinkler_start_up'];
+
+/**
+ * Other work orders of the same service, on the same property, the same year.
+ *
+ * Canceled (1098) is excluded deliberately: cancel-and-recreate is a real office
+ * workflow — seven of the 2026 start-up pairs are exactly that — and warning on
+ * it would train people to click through the warning.
+ *
+ * @return \Drupal\Core\Entity\EntityInterface[]
+ *   Keyed by work order id, newest first. Empty when there is no duplicate.
+ */
+function wo_shared_same_year_duplicates(string $bundle, int $property_id, ?int $exclude_wo = NULL): array {
+  if (!$property_id || !in_array($bundle, WO_SHARED_ONCE_PER_YEAR_BUNDLES, TRUE)) {
+    return [];
+  }
+  // Year bounds in the SITE timezone, compared as timestamps. Never a SQL date
+  // cast: MariaDB runs UTC on this VPS while the site is America/Denver.
+  $tz = new \DateTimeZone(date_default_timezone_get());
+  $now = new \DateTime('now', $tz);
+  $start = (clone $now)->setDate((int) $now->format('Y'), 1, 1)->setTime(0, 0, 0)->getTimestamp();
+  $end = (clone $now)->setDate((int) $now->format('Y'), 12, 31)->setTime(23, 59, 59)->getTimestamp();
+
+  $query = \Drupal::entityTypeManager()->getStorage('work_order')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', $bundle)
+    ->condition('field_property', $property_id)
+    ->condition('created', $start, '>=')
+    ->condition('created', $end, '<=')
+    ->condition('field_status', 1098, '<>')
+    ->sort('created', 'DESC');
+  if ($exclude_wo) {
+    $query->condition('id', $exclude_wo, '<>');
+  }
+  $ids = $query->execute();
+  return $ids ? \Drupal::entityTypeManager()->getStorage('work_order')->loadMultiple($ids) : [];
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Warn — do not block — when someone is about to create a second winterizing or
+ * start-up work order for a property that already has one this year. The office
+ * asked for a confirmation rather than a hard gate, and there are legitimate
+ * second visits, so the confirmation IS the override: tick the box and save.
+ */
+function wo_shared_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id): void {
+  foreach (WO_SHARED_ONCE_PER_YEAR_BUNDLES as $bundle) {
+    if ($form_id !== 'work_order_' . $bundle . '_form') {
+      continue;
+    }
+    $entity = $form_state->getFormObject()->getEntity();
+    // Editing an existing work order is never second-guessed.
+    if (!$entity->isNew()) {
+      return;
+    }
+    $form['wo_shared_duplicate_confirm'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Yes — record a second one anyway'),
+      '#description' => t('Tick this only if this property genuinely needs another one this year.'),
+      // Hidden until the warning fires, so a normal entry never sees it.
+      '#access' => (bool) $form_state->get('wo_shared_duplicate_warned'),
+      '#weight' => -50,
+    ];
+    // Append, never array_unshift: FormBuilder seeds $form['#validate'] with
+    // '::validateForm' AFTER hook_form_alter runs, so at this point the key may
+    // not exist yet and unshifting a missing key is a fatal in PHP 8. Appending
+    // leaves entity validation first and this second, which is the right order.
+    $form['#validate'][] = '_wo_shared_duplicate_validate';
+    return;
+  }
+}
+
+/**
+ * Validate: one warning, then let it through if confirmed.
+ */
+function _wo_shared_duplicate_validate(array &$form, \Drupal\Core\Form\FormStateInterface $form_state): void {
+  // Read the RAW submitted input, not the processed value. The processed value of
+  // an element carrying '#access' => FALSE is decided by Drupal's own value
+  // juggling rather than by what the person did, and on a programmed submission
+  // it came back as 1 for an unticked box — measured, not assumed. Raw input is
+  // unambiguous: a browser omits an unticked checkbox entirely.
+  $input = $form_state->getUserInput();
+  if (!empty($input['wo_shared_duplicate_confirm'])) {
+    // Confirmed — remember it so the insert hook can record why.
+    $form_state->getFormObject()->getEntity()->_wo_shared_duplicate_confirmed = TRUE;
+    return;
+  }
+  $entity = $form_state->getFormObject()->getEntity();
+  // Read the SUBMITTED property, not the entity's: on the add form it arrives
+  // from the form (or a prefilled query parameter), not from storage.
+  $submitted = $form_state->getValue(['field_property', 0, 'target_id']);
+  $property_id = (int) (is_array($submitted) ? ($submitted['target_id'] ?? 0) : $submitted);
+  if (!$property_id) {
+    $property_id = (int) ($entity->get('field_property')->target_id ?? 0);
+  }
+  $existing = wo_shared_same_year_duplicates($entity->bundle(), $property_id, (int) $entity->id());
+  if (!$existing) {
+    return;
+  }
+
+  $service = ucwords(str_replace('_', ' ', $entity->bundle()));
+  $links = [];
+  foreach ($existing as $wo) {
+    $links[] = $wo->toLink('WO ' . $wo->id() . ' (' . date('m/d/Y', (int) $wo->get('created')->value) . ')')->toString();
+  }
+  // Reveal the confirm box on the rebuilt form, and say plainly what exists.
+  $form_state->set('wo_shared_duplicate_warned', TRUE);
+  $form_state->setRebuild(TRUE);
+  $form_state->setErrorByName('field_property', t(
+    'This property already has a @service work order this year: @list. Are you sure you want to record a second one? If so, tick "Yes — record a second one anyway" below and save again.',
+    ['@service' => $service, '@list' => \Drupal\Core\Render\Markup::create(implode(', ', $links))]
+  ));
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for work_order.
+ *
+ * Leave a trail for both halves of this: a deliberately confirmed second one, and
+ * a second one created by a path with no form (the contract generator, a bulk
+ * action, a script) which gets no warning at all. One of the 2026 winterizing
+ * duplicates came from the bulk batch itself, so the log matters.
+ */
+function wo_shared_once_per_year_log(Drupal\Core\Entity\EntityInterface $entity): void {
+  if (!in_array($entity->bundle(), WO_SHARED_ONCE_PER_YEAR_BUNDLES, TRUE)) {
+    return;
+  }
+  $property_id = (int) ($entity->get('field_property')->target_id ?? 0);
+  $existing = wo_shared_same_year_duplicates($entity->bundle(), $property_id, (int) $entity->id());
+  if (!$existing) {
+    return;
+  }
+  $confirmed = !empty($entity->_wo_shared_duplicate_confirmed);
+  $others = implode(', ', array_map(fn($w) => 'WO ' . $w->id(), $existing));
+  \Drupal::logger('wo_shared')->warning(
+    'Second @bundle work order for property @pid this year: WO @new alongside @others. @how',
+    [
+      '@bundle' => $entity->bundle(),
+      '@pid' => $property_id,
+      '@new' => $entity->id(),
+      '@others' => $others,
+      '@how' => $confirmed ? 'Confirmed on the form.' : 'Created without a form warning.',
+    ]
+  );
+  // A note on the work order itself, so it is visible where the job is, not only
+  // in the log. wo_notes is the established structured-note entity.
+  try {
+    \Drupal::entityTypeManager()->getStorage('wo_notes')->create([
+      'type' => 'note',
+      'field_work_order' => $entity->id(),
+      'field_is_system_note' => TRUE,
+      'field_note_kind' => 'other',
+      'field_change_summary' => 'Second ' . str_replace('_', ' ', $entity->bundle())
+        . ' this year for this property (also ' . $others . ').'
+        . ($confirmed ? ' Confirmed by the person who entered it.' : ' Created without a form warning.'),
+    ])->save();
+  }
+  catch (\Throwable $e) {
+    // A note is a nice-to-have; never fail the work order over it.
+    \Drupal::logger('wo_shared')->warning('Could not note the duplicate on WO @id: @m', ['@id' => $entity->id(), '@m' => $e->getMessage()]);
   }
 }

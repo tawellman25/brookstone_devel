@@ -754,3 +754,34 @@ function _properties_ensure_property_sprinkler_info(EntityInterface $property): 
     ]
   );
 }
+
+/**
+ * Implements hook_views_data_alter().
+ *
+ * Make the sprinkler System Type filterable as a DROPDOWN.
+ *
+ * `property_sprinkler_system.field_system_type` references the `sprinkler_system_types`
+ * ECK entity (Domestic / Dirty / Duel / Well Water System). Views' field data
+ * declares a `numeric` filter for its target_id column, which gives the office a
+ * box to type an entity id into — useless for picking a water source type.
+ *
+ * The handler plugin comes from views DATA, so a `plugin_id` in a view's config
+ * cannot swap it (a documented BOS trap — see Governance/drupal_bos_gotchas.md).
+ * Altering the data here is the only place it can be changed. Core's
+ * `entity_reference` filter renders a select of the referenced entities, which is
+ * what a four-value list wants.
+ *
+ * Scoped to this one field so no other numeric filter in BOS is affected.
+ *
+ * Core's `entity_reference` filter was tried first and does NOT filter in this
+ * install — the dropdown renders and every selection returns the unfiltered
+ * result (measured over HTTP: all four types gave an identical 963 rows). See
+ * SprinklerSystemType for why, and Governance/drupal_bos_gotchas.md.
+ */
+function properties_views_data_alter(array &$data): void {
+  $table = 'property_sprinkler_system__field_system_type';
+  $column = 'field_system_type_target_id';
+  if (isset($data[$table][$column]['filter']['id'])) {
+    $data[$table][$column]['filter']['id'] = 'properties_sprinkler_system_type';
+  }
+}

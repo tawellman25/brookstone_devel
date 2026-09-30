@@ -125,6 +125,105 @@ class AdminCalendarEventsController extends ControllerBase {
    * Builds initials code from first and last name.
    * Format: First 2 chars of first name + first char of last name, e.g. ToW.
    */
+  /**
+   * Water source (sprinkler system type) for a set of work orders.
+   *
+   * Two sources, in this order of authority:
+   *
+   * 1. work_order.field_system_type — present on sprinkler_winterizing and
+   *    sprinkler_start_up, frozen at completion, and the value those jobs
+   *    actually bill the pump fee from. If the crew corrected it on site, this is
+   *    the correction, so it wins.
+   * 2. The property's sprinkler system, for every other bundle and for jobs where
+   *    the work order carries nothing.
+   *
+   * The property link is resolved by BOTH available paths — the system's own
+   * field_property, and the longer hop through the sprinkler info record — because
+   * neither alone is complete: measured on live, 1,147 of 1,253 systems carry the
+   * direct reference and 1,246 carry the info reference. Taking both raises
+   * coverage to effectively all of them.
+   *
+   * Thirteen properties have more than one sprinkler system. Rather than pick one
+   * arbitrarily, distinct labels are joined ("Domestic, Well") — on a hover card
+   * the honest answer is that there are two.
+   *
+   * Resolved in one batched pass per request rather than as more joins on the
+   * event query, which already carries fifteen.
+   *
+   * @param int[] $wo_ids
+   * @param int[] $property_ids
+   *
+   * @return array{wo: array<int,string>, property: array<int,string>}
+   */
+  public static function resolveWaterSources(Connection $database, array $wo_ids, array $property_ids): array {
+    $out = ['wo' => [], 'property' => []];
+
+    // 1. The frozen value on the work order itself.
+    if ($wo_ids) {
+      $q = $database->select('work_order__field_system_type', 'wst');
+      $q->condition('wst.deleted', 0);
+      $q->condition('wst.entity_id', $wo_ids, 'IN');
+      $q->addField('wst', 'entity_id', 'wo_id');
+      $q->join('sprinkler_system_types_field_data', 'st', 'st.id = wst.field_system_type_target_id');
+      $q->addField('st', 'title', 'label');
+      foreach ($q->execute() as $r) {
+        $out['wo'][(int) $r->wo_id] = self::shortWaterSource((string) $r->label);
+      }
+    }
+
+    // 2. The property's system(s), by whichever link path is populated.
+    if ($property_ids) {
+      $mapping = \Drupal::entityTypeManager()->getStorage('property_sprinkler_system')->getTableMapping();
+      // Ask the table mapping for these names: field_property_system_info hashes
+      // to property_sprinkler_system__74a6fe4c98, which no amount of guessing
+      // would produce.
+      $t_type = $mapping->getFieldTableName('field_system_type');
+      $t_prop = $mapping->getFieldTableName('field_property');
+      $t_info = $mapping->getFieldTableName('field_property_system_info');
+
+      $found = [];
+      // Direct: system -> property.
+      $q = $database->select($t_prop, 'sp');
+      $q->condition('sp.deleted', 0);
+      $q->condition('sp.field_property_target_id', $property_ids, 'IN');
+      $q->addField('sp', 'field_property_target_id', 'pid');
+      $q->join($t_type, 'sty', 'sty.entity_id = sp.entity_id AND sty.deleted = 0');
+      $q->join('sprinkler_system_types_field_data', 'st', 'st.id = sty.field_system_type_target_id');
+      $q->addField('st', 'title', 'label');
+      foreach ($q->execute() as $r) {
+        $found[(int) $r->pid][(string) $r->label] = TRUE;
+      }
+      // Indirect: system -> sprinkler info -> property.
+      $q = $database->select($t_info, 'si');
+      $q->condition('si.deleted', 0);
+      $q->join('property_sprinkler_info__field_property', 'ip', 'ip.entity_id = si.field_property_system_info_target_id AND ip.deleted = 0');
+      $q->condition('ip.field_property_target_id', $property_ids, 'IN');
+      $q->addField('ip', 'field_property_target_id', 'pid');
+      $q->join($t_type, 'sty', 'sty.entity_id = si.entity_id AND sty.deleted = 0');
+      $q->join('sprinkler_system_types_field_data', 'st', 'st.id = sty.field_system_type_target_id');
+      $q->addField('st', 'title', 'label');
+      foreach ($q->execute() as $r) {
+        $found[(int) $r->pid][(string) $r->label] = TRUE;
+      }
+      foreach ($found as $pid => $labels) {
+        $short = [];
+        foreach (array_keys($labels) as $l) { $short[self::shortWaterSource($l)] = TRUE; }
+        ksort($short);
+        $out['property'][$pid] = implode(', ', array_keys($short));
+      }
+    }
+
+    return $out;
+  }
+
+  /**
+   * "Domestic Water System" -> "Domestic". The hover card has one line.
+   */
+  protected static function shortWaterSource(string $label): string {
+    $short = trim(preg_replace('/\s*Water\s*System\s*$/i', '', $label));
+    return $short !== '' ? $short : $label;
+  }
+
   protected function buildInitials(string $first_name, string $last_name): string {
     $first = trim($first_name);
     $last = trim($last_name);
@@ -223,6 +322,7 @@ class AdminCalendarEventsController extends ControllerBase {
       'nick.entity_id = wop.field_property_target_id AND nick.deleted = 0'
     );
     $query->addField('nick', 'field_nickname_value', 'property_nickname');
+    $query->addField('wop', 'field_property_target_id', 'property_id');
 
     // Street address + town, for the hover card. Street is on every property;
     // the clean town name lives on the city entity (field_city_name -> "Delta",
@@ -362,6 +462,14 @@ class AdminCalendarEventsController extends ControllerBase {
 
     $results = $query->execute()->fetchAll();
 
+    // Water source, resolved once for the whole page rather than per row.
+    $wo_ids = $prop_ids = [];
+    foreach ($results as $r) {
+      if (!empty($r->field_work_order_target_id)) { $wo_ids[] = (int) $r->field_work_order_target_id; }
+      if (!empty($r->property_id)) { $prop_ids[] = (int) $r->property_id; }
+    }
+    $water = self::resolveWaterSources($this->database, array_unique($wo_ids), array_unique($prop_ids));
+
     // ── Build FullCalendar event objects ─────────────────────────────────
     $events = [];
     foreach ($results as $row) {
@@ -493,6 +601,8 @@ class AdminCalendarEventsController extends ControllerBase {
           'propertyNickname' => $property_full,
           'propertyShort'    => $property_short,
           'propertyAddress'  => $property_address,
+          'waterSource'      => $water['wo'][(int) $row->field_work_order_target_id]
+            ?? ($water['property'][(int) ($row->property_id ?? 0)] ?? ''),
           'serviceName'      => trim($row->service_name ?? ''),
           'serviceCode'      => $service_code,
           'departmentName'   => trim($row->department_title ?? '') ?: 'Unassigned',

@@ -105,6 +105,7 @@ class AdminCalendarCompletedController extends ControllerBase {
       'nick.entity_id = wop.field_property_target_id AND nick.deleted = 0'
     );
     $query->addField('nick', 'field_nickname_value', 'property_nickname');
+    $query->addField('wop', 'field_property_target_id', 'property_id');
 
     // Street address + town, for the hover card (shared with the scheduled
     // layer). The clean town name is city.field_city_name ("Delta"), not the
@@ -242,6 +243,15 @@ class AdminCalendarCompletedController extends ControllerBase {
       }
     }
 
+    // Water source, one batched pass for the whole page. Shared with the
+    // scheduled layer so both halves of the tooltip agree.
+    $wo_ids = $prop_ids = [];
+    foreach ($grouped as $r) {
+      if (!empty($r->field_work_order_target_id)) { $wo_ids[] = (int) $r->field_work_order_target_id; }
+      if (!empty($r->property_id)) { $prop_ids[] = (int) $r->property_id; }
+    }
+    $water = AdminCalendarEventsController::resolveWaterSources($this->database, array_unique($wo_ids), array_unique($prop_ids));
+
     $events = [];
     foreach ($grouped as $row) {
       try {
@@ -311,6 +321,8 @@ class AdminCalendarCompletedController extends ControllerBase {
           'woEntityId'     => (int) $row->field_work_order_target_id,
           'propertyNickname' => $property,
           'propertyAddress'  => $property_address,
+          'waterSource'      => $water['wo'][(int) ($row->field_work_order_target_id ?? 0)]
+            ?? ($water['property'][(int) ($row->property_id ?? 0)] ?? ''),
           'serviceName'    => trim($row->service_name ?? ''),
           'serviceCode'    => $service_code,
           'departmentName' => trim($row->department_title ?? '') ?: 'Unassigned',

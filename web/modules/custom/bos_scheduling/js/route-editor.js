@@ -96,13 +96,16 @@
     return state.colorForDay[g.day] || '#888';
   }
 
-  function markerIcon(color, selected) {
+  function markerIcon(color, selected, locked) {
+    // Finished stops render hollow: still on the route (they occupy the driving
+    // order) but visibly not editable.
     return {
       path: google.maps.SymbolPath.CIRCLE,
       scale: selected ? 13 : 11,
-      fillColor: color, fillOpacity: 0.95,
-      strokeColor: selected ? SELECT_RING : '#fff',
-      strokeWeight: selected ? 4 : 1.5,
+      fillColor: locked ? '#fff' : color,
+      fillOpacity: locked ? 0.9 : 0.95,
+      strokeColor: selected ? SELECT_RING : (locked ? color : '#fff'),
+      strokeWeight: selected ? 4 : (locked ? 3 : 1.5),
     };
   }
 
@@ -146,17 +149,15 @@
         bounds.extend(pos);
         var sel = !!state.selected[s.scheduling_id];
         var marker = new google.maps.Marker({
-          position: pos, map: map, label: { text: String(idx + 1), color: '#fff', fontSize: '11px', fontWeight: '700' },
-          icon: markerIcon(color, sel),
-          title: (idx + 1) + '. ' + s.nickname + ' (' + s.service_code + ') — ' + s.tech + ' · ' + s.date,
+          position: pos, map: map,
+          icon: markerIcon(color, sel, s.locked),
+          label: { text: String(idx + 1), color: s.locked ? color : '#fff', fontSize: '11px', fontWeight: '700' },
+          title: (idx + 1) + '. ' + s.nickname + ' (' + s.service_code + ') — ' + s.tech + ' · ' + s.date +
+            (s.locked ? ' · ' + s.status_label + ' (not editable)' : ''),
         });
         marker.reBaseColor = color;
         marker.addListener('click', function () {
-          infoWindow.setContent(
-            '<strong>' + esc(s.nickname) + '</strong> <span>' + esc(s.service_code) + '</span><br>' +
-            'Stop ' + (idx + 1) + ' · ' + esc(s.tech) + ' · ' + esc(s.date) + '<br>' +
-            esc(s.status_label) + ' · <a href="' + esc(s.wo_url) + '">WO ' + s.wo_id + '</a>'
-          );
+          infoWindow.setContent(infoContent(s, idx));
           infoWindow.open(map, marker);
         });
         marker.addListener('mouseover', function () { highlightRow(key, idx, true); });
@@ -291,18 +292,32 @@
           var sid = s.scheduling_id;
           sids.push(sid);
           var r = document.createElement('div');
-          r.className = 'bos-re__stoprow' + (state.selected[sid] ? ' is-selected' : '');
-          r.setAttribute('draggable', 'true');
+          r.className = 'bos-re__stoprow' + (state.selected[sid] ? ' is-selected' : '') + (s.locked ? ' is-locked' : '');
           r.dataset.sid = sid;
-          r.innerHTML =
-            '<span class="bos-re__grip" title="Drag to reorder">⠿</span>' +
-            '<input type="checkbox" class="bos-re__pick"' + (state.selected[sid] ? ' checked' : '') + '> ' +
-            '<span class="bos-re__seq" style="background:' + color + '">' + (idx + 1) + '</span> ' +
-            esc(s.nickname) + ' <span class="bos-re__svc">' + esc(s.service_code) + '</span>';
-          r.querySelector('.bos-re__pick').addEventListener('change', function (e) { toggleSelect(sid, s, e.target.checked); });
+          // A finished stop (Complete/Warrantied/Invoiced/Paid/Canceled) shows on
+          // the route for context but cannot be selected, moved or dragged. The
+          // endpoints refuse it too — this only spares the office a refusal.
+          if (s.locked) {
+            var why = 'Finished work (' + (s.status_label || 'closed') + ') — not rescheduled or reassigned.';
+            r.title = why;
+            r.innerHTML =
+              '<span class="bos-re__lock" title="' + esc(why) + '">🔒</span>' +
+              '<span class="bos-re__seq" style="background:' + color + '">' + (idx + 1) + '</span> ' +
+              esc(s.nickname) + ' <span class="bos-re__svc">' + esc(s.service_code) + '</span>' +
+              ' <span class="bos-re__done">' + esc(s.status_label) + '</span>';
+          }
+          else {
+            r.setAttribute('draggable', 'true');
+            r.innerHTML =
+              '<span class="bos-re__grip" title="Drag to reorder">⠿</span>' +
+              '<input type="checkbox" class="bos-re__pick"' + (state.selected[sid] ? ' checked' : '') + '> ' +
+              '<span class="bos-re__seq" style="background:' + color + '">' + (idx + 1) + '</span> ' +
+              esc(s.nickname) + ' <span class="bos-re__svc">' + esc(s.service_code) + '</span>';
+            r.querySelector('.bos-re__pick').addEventListener('change', function (e) { toggleSelect(sid, s, e.target.checked); });
+            attachDrag(r, col);
+          }
           r.addEventListener('mouseover', function () { bounceMarker(key, idx, true); });
           r.addEventListener('mouseout', function () { bounceMarker(key, idx, false); });
-          attachDrag(r, col);
           col.appendChild(r);
           overlays.listRows[key].push(r);
           overlays.rowBySid[sid] = r;
@@ -310,7 +325,10 @@
 
         head.querySelector('.bos-re__pickall').addEventListener('change', function (e) {
           var on = e.target.checked;
-          g.stops.forEach(function (s) { toggleSelect(s.scheduling_id, s, on); });
+          g.stops.forEach(function (s) {
+            if (s.locked) { return; }
+            toggleSelect(s.scheduling_id, s, on);
+          });
         });
 
         wrap.appendChild(col);
@@ -337,6 +355,7 @@
   // ---- Selection + assignment -------------------------------------------
 
   function toggleSelect(sid, stop, on) {
+    if (on && stop && stop.locked) { return; }
     if (on) { state.selected[sid] = stop; } else { delete state.selected[sid]; }
     var row = overlays.rowBySid[sid];
     if (row) {
@@ -345,7 +364,7 @@
       if (cb && cb.checked !== on) { cb.checked = on; }
     }
     var m = overlays.markerBySid[sid];
-    if (m) { m.setIcon(markerIcon(m.reBaseColor || '#888', on)); }
+    if (m) { m.setIcon(markerIcon(m.reBaseColor || '#888', on, stop && stop.locked)); }
     updateAssignBar();
   }
 
@@ -370,6 +389,8 @@
   function wireAssignBar() {
     var go = document.querySelector('.bos-re__assign-go');
     var clear = document.querySelector('.bos-re__assign-clear');
+    var moveGo = document.querySelector('.bos-re__move-go');
+    if (moveGo) { moveGo.addEventListener('click', doMove); }
     if (go && !go.dataset.bosWired) { go.dataset.bosWired = '1'; go.addEventListener('click', doAssign); }
     if (clear && !clear.dataset.bosWired) {
       clear.dataset.bosWired = '1';
@@ -406,22 +427,123 @@
       .then(function (res) {
         if (go) { go.disabled = false; }
         var b = res.body || {};
-        if (res.status >= 400 || (!b.ok && !b.updated)) {
+        if (res.status >= 400 || (!b.ok && !b.updated && !(b.blocked || []).length)) {
           window.alert('Assignment failed: ' + (b.error || (b.errors || []).join('; ') || ('HTTP ' + res.status)));
           setStatus('Assignment failed.');
           return;
         }
         // Success (full or partial): clear selection + refetch so grouping,
         // colors, and the audit-driven state reflect the new assignment.
+        reportBlocked(b, 'reassigned');
         state.selected = {};
         if (sel) { sel.value = ''; }
         fetchData();
-        var msg = b.updated + ' stop(s) reassigned' +
-          (b.skipped ? ', ' + b.skipped + ' unchanged' : '') +
-          (b.errors && b.errors.length ? ', ' + b.errors.length + ' error(s)' : '') + '.';
-        setStatus(msg);
+        setStatus(summarise(b, 'reassigned'));
       })
       .catch(function (e) { if (go) { go.disabled = false; } window.alert('Assignment error: ' + e); });
+  }
+
+  /**
+   * Move the selected stops to another DAY.
+   *
+   * One save per stop through the normal scheduling path, so wo_schedule writes
+   * the "Rescheduled" audit note on each work order. Teammate emails are
+   * suppressed server-side — a bulk map move must not fire a blast.
+   *
+   * Route order is NOT touched: a stop keeps its sequence number on the new day,
+   * which may collide with one already there. That is deliberate — the receiving
+   * route's driving order is the office's call, one Optimize or drag away.
+   */
+  function doMove() {
+    var input = document.querySelector('.bos-re__move-date');
+    var btn = document.querySelector('.bos-re__move-go');
+    var date = input ? String(input.value || '').trim() : '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { window.alert('Pick a date to move the selected stops to.'); return; }
+
+    var ids = Object.keys(state.selected).map(Number);
+    if (!ids.length) { return; }
+    if (!window.confirm('Move ' + ids.length + ' stop(s) to ' + fmtDay(date) + '?\n\nTheir stop numbers carry over — run Optimize on the receiving route afterwards if the order needs sorting.')) { return; }
+
+    if (btn) { btn.disabled = true; }
+    setStatus('Moving stops…');
+    getCsrf().then(function (token) {
+      return fetch(state.cfg.rescheduleUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token, 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ scheduling_ids: ids, date: date }),
+      });
+    }).then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
+      .then(function (res) {
+        if (btn) { btn.disabled = false; }
+        var b = res.body || {};
+        if (res.status >= 400 || (!b.ok && !b.updated && !(b.blocked || []).length)) {
+          window.alert('Move failed: ' + (b.error || (b.errors || []).join('; ') || ('HTTP ' + res.status)));
+          setStatus('Move failed.');
+          return;
+        }
+        reportBlocked(b, 'moved');
+        // Moved stops may leave the visible window entirely, so always refetch.
+        state.selected = {};
+        fetchData();
+        setStatus(summarise(b, 'moved to ' + fmtDay(date)));
+      })
+      .catch(function (e) { if (btn) { btn.disabled = false; } window.alert('Move error: ' + e); });
+  }
+
+  /**
+   * Tell the office plainly when the server refused stops, and why. A silent
+   * partial success is how a "finished work orders were rescheduled" surprise
+   * gets started.
+   */
+  function reportBlocked(body, verb) {
+    var blocked = body.blocked || [];
+    if (!blocked.length) { return; }
+    window.alert(blocked.length + ' stop(s) were NOT ' + verb + ' — finished work is never rescheduled:\n\n• ' +
+      blocked.join('\n• '));
+  }
+
+  function summarise(b, verb) {
+    return (b.updated || 0) + ' stop(s) ' + verb +
+      (b.skipped ? ', ' + b.skipped + ' unchanged' : '') +
+      (b.blocked && b.blocked.length ? ', ' + b.blocked.length + ' blocked (finished)' : '') +
+      (b.errors && b.errors.length ? ', ' + b.errors.length + ' error(s)' : '') + '.';
+  }
+
+  /**
+   * Info-window body for a stop, built as a DOM node (not an HTML string) so the
+   * Select control can carry a real listener. Clicking a pin is the map-native
+   * way into the selection: pick stops off the map, then set crew or date in the
+   * bar on the left. A finished stop offers no Select — it says why instead.
+   */
+  function infoContent(s, idx) {
+    var box = document.createElement('div');
+    box.className = 'bos-re__iw';
+    box.innerHTML =
+      '<strong>' + esc(s.nickname) + '</strong> <span>' + esc(s.service_code) + '</span><br>' +
+      'Stop ' + (idx + 1) + ' · ' + esc(s.tech) + ' · ' + esc(fmtDay(s.date)) + '<br>' +
+      esc(s.status_label) + ' · <a href="' + esc(s.wo_url) + '">WO ' + s.wo_id + '</a>';
+
+    var foot = document.createElement('div');
+    foot.className = 'bos-re__iw-foot';
+    if (s.locked) {
+      foot.innerHTML = '<span class="bos-re__iw-locked">🔒 Finished work — not rescheduled or reassigned.</span>';
+    }
+    else {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bos-re__iw-pick';
+      var on = !!state.selected[s.scheduling_id];
+      btn.textContent = on ? '✓ Selected — click to remove' : 'Select this stop';
+      btn.addEventListener('click', function () {
+        var nowOn = !state.selected[s.scheduling_id];
+        toggleSelect(s.scheduling_id, s, nowOn);
+        btn.textContent = nowOn ? '✓ Selected — click to remove' : 'Select this stop';
+      });
+      foot.appendChild(btn);
+    }
+    box.appendChild(foot);
+    return box;
   }
 
   function getCsrf() {

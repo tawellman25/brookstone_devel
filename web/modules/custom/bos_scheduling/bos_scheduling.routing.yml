@@ -82,3 +82,12 @@ bos_scheduling.route_editor_reorder:
     _role: 'administrator+administration+supervisor+site_admin+site_assistant'
     _csrf_request_header_token: 'TRUE'
   methods: [POST]
+
+bos_scheduling.route_editor_reschedule:
+  path: '/teammates/calendar/route-editor/reschedule'
+  defaults:
+    _controller: '\Drupal\bos_scheduling\Controller\RouteEditorController::reschedule'
+  requirements:
+    _role: 'administrator+administration+supervisor+site_admin+site_assistant'
+    _csrf_request_header_token: 'TRUE'
+  methods: [POST]

@@ -6,6 +6,7 @@ namespace Drupal\bos_scheduling\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Cache\CacheableJsonResponse;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Url;
@@ -40,6 +41,27 @@ final class RouteEditorController extends ControllerBase {
    * bucket, never plotted (a bad point silently drags the viewport to the sea).
    */
   private const BBOX = ['lat_min' => 36.5, 'lat_max' => 41.5, 'lng_min' => -109.5, 'lng_max' => -105.0];
+
+  /**
+   * Work-order statuses that CLOSE a stop to schedule edits, no exceptions:
+   * Complete (1097), Warrantied (1283), Invoiced (1281), Paid (1504),
+   * Canceled (1098). The crews have done the work and/or the office has billed
+   * it — re-dating or reassigning it rewrites finished history, and a
+   * scheduling save fires wo_schedule, which writes a "Scheduled" (1091)
+   * status record back onto the work order (see the 2026-09-29 incident, where
+   * an order-only re-save knocked 17 invoiced work orders back to Scheduled).
+   *
+   * Every write endpoint here checks this set and refuses. Stated as a RULE —
+   * "a finished work order is never rescheduled" — not as a list of the
+   * transitions we happened to think of: enumerating the forbidden case is
+   * exactly what let that incident through (the older guard in wo_schedule
+   * names 1097 and 1098 and says nothing about 1281, 1504 or 1283).
+   *
+   * Note VISIBLE_STATUSES puts 1097 and 1283 stops ON this map, so the editor
+   * shows finished stops (useful context — they occupy the route) and must
+   * refuse to edit them rather than rely on them being absent.
+   */
+  private const LOCKED_STATUSES = [1097, 1283, 1281, 1504, 1098];
 
   public function __construct(protected Connection $database) {}
 
@@ -81,6 +103,7 @@ final class RouteEditorController extends ControllerBase {
             'gmapKey'  => $gmap_key,
             'assignUrl' => Url::fromRoute('bos_scheduling.route_editor_assign')->toString(),
             'reorderUrl' => Url::fromRoute('bos_scheduling.route_editor_reorder')->toString(),
+            'rescheduleUrl' => Url::fromRoute('bos_scheduling.route_editor_reschedule')->toString(),
           ],
         ],
       ],
@@ -128,6 +151,8 @@ final class RouteEditorController extends ControllerBase {
         'service_code' => strtoupper(trim((string) ($r->service_code ?? ''))) ?: '?',
         'status_tid' => (int) ($r->status_tid ?? 0),
         'status_label' => DispatchController::STATUS_LABELS[(int) ($r->status_tid ?? 0)] ?? 'Unknown',
+        // Finished work: the UI renders it as read-only, the endpoints refuse it.
+        'locked' => in_array((int) ($r->status_tid ?? 0), self::LOCKED_STATUSES, TRUE),
       ];
       $coord = $this->parsePoint((string) ($r->geofield ?? ''));
       if ($coord === NULL) {
@@ -192,11 +217,18 @@ final class RouteEditorController extends ControllerBase {
     $updated = 0;
     $skipped = 0;
     $errors = [];
+    $blocked = [];
     foreach ($ids as $id) {
       try {
         $entity = $storage->load($id);
         if (!$entity || $entity->bundle() !== 'work_order') {
           $skipped++;
+          continue;
+        }
+        // A finished work order is never reassigned. See LOCKED_STATUSES.
+        $woId = (int) ($entity->get('field_work_order')->target_id ?? 0);
+        if ($woId && ($why = $this->lockedReason($woId)) !== NULL) {
+          $blocked[] = $this->stopLabel($entity) . ' is ' . $why;
           continue;
         }
         $current = (int) ($entity->get('field_assigned_to')->target_id ?? 0);
@@ -221,8 +253,121 @@ final class RouteEditorController extends ControllerBase {
       'ok' => empty($errors),
       'updated' => $updated,
       'skipped' => $skipped,
+      'blocked' => $blocked,
       'errors' => $errors,
     ]);
+  }
+
+  /**
+   * STAGE 6 (write): move one or more stops to a different DAY.
+   *
+   * POST JSON: {scheduling_ids: [int], date: 'YYYY-MM-DD'}.
+   * CSRF-guarded (see routing).
+   *
+   * Writes field_date in exactly ScheduleWriter's shape — an all-day smart-date
+   * span at LOCAL midnight (duration 1439) — so a moved stop is indistinguishable
+   * from one the bulk scheduler or the carry-forward created. The legacy
+   * field_scheduled_date_and_time daterange and the all-day flag are NOT written
+   * here: wo_schedule's presave syncs the daterange from field_date and
+   * custom_date_all_day sets the flag on every scheduling save.
+   *
+   * Midnight is computed in the SITE timezone and stored as a Unix timestamp.
+   * Doing this in SQL would bucket the day wrong for half the year — MariaDB runs
+   * UTC on this VPS while the site is America/Denver (drupal_bos_gotchas.md).
+   *
+   * Route order is deliberately left alone. A stop landing on a new day keeps its
+   * old sequence number, which may collide with a stop already there; the office
+   * fixes that by dragging or hitting Optimize on the receiving route, which is a
+   * decision about driving order, not something to guess at here.
+   *
+   * field_scheduled_firm (the "we told the customer this day" commitment flag) is
+   * also untouched — moving a firm stop does not quietly un-promise it.
+   *
+   * wo_schedule writes the "Rescheduled" audit note and the status record for us,
+   * so the move is traceable on the work order without anything written directly.
+   */
+  public function reschedule(Request $request): JsonResponse {
+    $data = json_decode((string) $request->getContent(), TRUE) ?: [];
+    $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($data['scheduling_ids'] ?? [])))));
+    $date = trim((string) ($data['date'] ?? ''));
+
+    if (!$ids) {
+      return new JsonResponse(['ok' => FALSE, 'error' => 'No stops selected.'], 400);
+    }
+    // Strict Y-m-d, and a real calendar date (rejects 2026-02-31).
+    $tz = new \DateTimeZone(date_default_timezone_get());
+    $target = \DateTime::createFromFormat('!Y-m-d', $date, $tz);
+    if (!$target || $target->format('Y-m-d') !== $date) {
+      return new JsonResponse(['ok' => FALSE, 'error' => 'Pick a valid date (YYYY-MM-DD).'], 400);
+    }
+    $startTs = (clone $target)->setTime(0, 0, 0)->getTimestamp();
+
+    $storage = $this->entityTypeManager()->getStorage('scheduling');
+    $updated = 0;
+    $skipped = 0;
+    $blocked = [];
+    $errors = [];
+    foreach ($ids as $id) {
+      try {
+        $entity = $storage->load($id);
+        if (!$entity || $entity->bundle() !== 'work_order') {
+          $skipped++;
+          continue;
+        }
+        // THE RULE: a finished work order is never rescheduled. Read live.
+        $woId = (int) ($entity->get('field_work_order')->target_id ?? 0);
+        if ($woId && ($why = $this->lockedReason($woId)) !== NULL) {
+          $blocked[] = $this->stopLabel($entity) . ' is ' . $why;
+          continue;
+        }
+        if ((int) ($entity->get('field_date')->value ?? 0) === $startTs) {
+          $skipped++;
+          continue;
+        }
+        $entity->set('field_date', [
+          'value' => $startTs,
+          'end_value' => $startTs + 86340,
+          'duration' => 1439,
+        ]);
+        // Never fire teammate notification emails on a bulk map move: the update
+        // hook emails on ANY save where notify == 1, not just on reassignment.
+        if ($entity->hasField('field_notify_assigned_teammate')) {
+          $entity->set('field_notify_assigned_teammate', FALSE);
+        }
+        $entity->save();
+        $updated++;
+      }
+      catch (\Throwable $e) {
+        $errors[] = "#$id: " . $e->getMessage();
+      }
+    }
+
+    return new JsonResponse([
+      'ok' => empty($errors),
+      'updated' => $updated,
+      'skipped' => $skipped,
+      'blocked' => $blocked,
+      'errors' => $errors,
+      'date' => $date,
+    ]);
+  }
+
+  /**
+   * Short human label for a stop, for refusal messages ("Corn, Larry (WO 52582)").
+   */
+  protected function stopLabel(EntityInterface $entity): string {
+    $woId = (int) ($entity->get('field_work_order')->target_id ?? 0);
+    $name = '';
+    if ($woId) {
+      $q = $this->database->select('work_order__field_property', 'wop');
+      $q->condition('wop.entity_id', $woId);
+      $q->condition('wop.deleted', 0);
+      $q->leftJoin('properties__field_nickname', 'nick', 'nick.entity_id = wop.field_property_target_id AND nick.deleted = 0');
+      $q->addField('nick', 'field_nickname_value', 'nickname');
+      $q->range(0, 1);
+      $name = trim((string) ($q->execute()->fetchField() ?: ''));
+    }
+    return ($name !== '' ? $name : 'Stop #' . $entity->id()) . ($woId ? " (WO $woId)" : '');
   }
 
   /**
@@ -263,6 +408,13 @@ final class RouteEditorController extends ControllerBase {
           $skipped++;
           continue;
         }
+        // A finished stop holds its position: its slot is still counted above,
+        // so the stops around it keep coherent numbering, but it is not saved.
+        $woId = (int) ($entity->get('field_work_order')->target_id ?? 0);
+        if ($woId && $this->lockedReason($woId) !== NULL) {
+          $skipped++;
+          continue;
+        }
         $needOrder = (int) ($entity->get('field_scheduled_oder')->value ?? 0) !== $pos;
         $hasSetField = $entity->hasField('field_route_order_set');
         $needStamp = $hasSetField && !((bool) $entity->get('field_route_order_set')->value);
@@ -294,6 +446,40 @@ final class RouteEditorController extends ControllerBase {
       'errors' => $errors,
     ]);
   }
+
+  /**
+   * Is this scheduling record's work order closed to schedule edits?
+   *
+   * Reads the work order's CURRENT status straight from the field table — never
+   * a value the browser sent, and never the one baked into the page, which may
+   * be minutes stale (on 2026-09-29 six work orders were invoiced inside the
+   * window between two runs of a repair script, and a clock-time cutoff got
+   * them wrong).
+   *
+   * @return string|null
+   *   The blocking status label, or NULL when the stop may be edited.
+   */
+  protected function lockedReason(int $woId): ?string {
+    $tid = (int) ($this->database->select('work_order__field_status', 'wos')
+      ->fields('wos', ['field_status_target_id'])
+      ->condition('wos.entity_id', $woId)
+      ->condition('wos.deleted', 0)
+      ->range(0, 1)
+      ->execute()->fetchField() ?: 0);
+
+    if (!in_array($tid, self::LOCKED_STATUSES, TRUE)) {
+      return NULL;
+    }
+    return DispatchController::STATUS_LABELS[$tid]
+      ?? (self::LOCKED_STATUS_LABELS[$tid] ?? 'a closed status');
+  }
+
+  /**
+   * Labels for the locked statuses DispatchController doesn't name (they sit
+   * outside VISIBLE_STATUSES, so its map has no entry for them). Only reached
+   * if a stop's status changes to one of these after the page was drawn.
+   */
+  private const LOCKED_STATUS_LABELS = [1281 => 'Invoiced', 1504 => 'Paid', 1098 => 'Canceled'];
 
   /**
    * Active teammates assignable to a route (uid + display name), last-name sort.

@@ -570,16 +570,173 @@ HTML,
 ];
 
 // Its two siblings keep their place in the order; their copy is a separate batch.
-$fruitOrderOnly = ['Shade' => 10, 'Ornamental' => 20];
-$fruitOrderAliases = [
-  'Shade' => '/material/plants/trees/deciduous/shade',
-  'Ornamental' => '/material/plants/trees/deciduous/ornamental',
+// Shade and Ornamental carry their own copy in the 'deciduous' batch, which
+// sets their order there.
+$fruitOrderOnly = [];
+$fruitOrderAliases = [];
+
+
+// --- Batch: the Deciduous branch, under Trees --------------------------------
+// Resolved by alias: live names these Shade / Ornamental while the source doc
+// calls them Shade Trees / Ornamental Trees. Renaming is the office's call, so
+// the terms keep their names and the copy does not depend on them.
+$deciduousCopy = [];
+
+$deciduousCopy['Deciduous Trees'] = [
+  'alias' => '/material/plants/trees/deciduous',
+  'short' => 'Trees that drop their leaves and grow them back. Nearly all the shade, nearly all the flowering, and all of the fruit — split three ways by what you want the tree to do.',
+  'title' => 'Deciduous Trees for Colorado | Brookstone Outdoors',
+  'meta' => 'Shade, ornamental or fruit — three different trees for three different jobs. Why deciduous is the easier half of the tree catalog on the Western Slope.',
+  'public' => <<<'HTML'
+<p>Almost every tree that does a job here is deciduous. The shade over a patio, the flowering tree by the front door, the apple in the back corner — all of them drop their leaves in October and start again in April.</p>
+
+<p>They are also the easier half of the tree catalog on this ground, for a reason that is not obvious. A deciduous tree is dormant through the hardest four months, losing almost no water while the ground is frozen. An evergreen beside it is still transpiring into a dry January wind and cannot replace what it loses. That is why winter burn is an evergreen problem, and why the deciduous list is longer, cheaper and more forgiving.</p>
+
+<p>The trade is five months of bare branches, and the first real decision is not which tree — it is which of three jobs you are buying.</p>
+HTML,
+  'cta' => <<<'HTML'
+<h2>Three jobs, three different trees</h2>
+
+<p><strong>A shade tree is infrastructure.</strong> Forty to seventy feet at maturity, planted for cooling, structure and the value it puts on a property. It needs real room, it takes twenty years to do its job properly, and where it goes is a decision somebody lives with for decades.</p>
+
+<p><strong>An ornamental is scale.</strong> Under about twenty-five feet, and therefore the right answer in all the places a shade tree is wrong — close to the house, under a power line, in a courtyard, beside an entry. Bought for flowers, bark, form or fall colour rather than for canopy.</p>
+
+<p><strong>A fruit tree is a commitment.</strong> It produces something, and it asks for annual pruning, thinning and a spray calendar in return. Entirely doable, and not a plant to buy without knowing that.</p>
+
+<h2>One thing all three have in common</h2>
+
+<p>They are bare from roughly November to April. A planting built only from deciduous trees is a planting with nothing in it for five months — which is fine if that was the plan, and a surprise if it was not. Some evergreen mass, or shrubs with winter bark and fruit, is what keeps the yard from reading as empty in January.</p>
+
+<p>If you are not sure which of the three a spot wants, that is a short conversation and usually the site answers it.</p>
+
+<p><a class="button" href="/request-estimate?c=plantchar">Request an Estimate</a> or call <a href="tel:9708359661">970-835-9661</a></p>
+HTML,
+  'crew' => <<<'HTML'
+<p><strong>Establish the job before the species, every time.</strong> Shade, ornamental or fruit is the first question on any tree conversation and it eliminates most of the catalog in one answer.</p>
+
+<ul>
+<li><strong>Shade:</strong> is there room for forty to seventy feet, in every direction, forever? If not, it is an ornamental conversation.</li>
+<li><strong>Ornamental:</strong> near the house, under wires, tight space, or wanted for flowers rather than canopy.</li>
+<li><strong>Fruit:</strong> do they actually want to pick something, and did anybody explain the pruning and spray calendar?</li>
+<li><strong>Lead with deciduous on exposed sites.</strong> Dormant trees do not winter-burn. It is the honest recommendation on a windy southwest corner.</li>
+<li><strong>Raise the winter question on any all-deciduous plan.</strong> "What does this look like in January?" Most people have not thought about it, and it usually adds an evergreen to the job.</li>
+</ul>
+
+<p><strong>What to tell a customer:</strong> deciduous trees are the easier and wider half of what we carry, and they give you flowers, shade and fall colour that evergreens cannot. What they do not give you is anything to look at between November and April, so a yard needs a little of both.</p>
+HTML,
+];
+
+$deciduousCopy['Shade Trees'] = [
+  'alias' => '/material/plants/trees/deciduous/shade',
+  'order' => 10,
+  'short' => 'The big ones — forty to seventy feet at maturity. The only thing you can plant that measurably cools a house, and the longest-lived decision on a property.',
+  'title' => 'Shade Trees for Western Colorado | Brookstone',
+  'meta' => 'West-side shade is what cools a house. Placing a shade tree around power lines, sewer laterals and foundations, and the planting depth that kills young trees.',
+  'public' => <<<'HTML'
+<p>A shade tree is the highest-value plant decision anybody makes on a property, and it is the one with the longest tail. Everything else in a yard can be changed in a weekend or a season. A tree planted this spring is making its case in 2060, and where it goes is a choice somebody lives with for decades — usually somebody who was not there when it was planted.</p>
+
+<p>It is also the only thing in this catalog that measurably changes how a house works. A mature canopy on the west and southwest side takes the afternoon sun off the wall and the windows in July, and that shows up on a power bill rather than only in a photograph. East shade is pleasant. <strong>West shade is functional</strong>, and it is worth deciding where a tree goes on that basis before deciding which tree it is.</p>
+
+<p>Here is what we plant.</p>
+HTML,
+  'cta' => <<<'HTML'
+<h2>Mature size is the entire game</h2>
+
+<p>Nearly every serious problem with a shade tree traces back to the same thing: it was planted where it fit at the time. Fifteen or twenty years later the consequences arrive all at once, and they are expensive.</p>
+
+<p>Before a shade tree goes in the ground, four things get measured:</p>
+
+<ul>
+<li><strong>Overhead.</strong> A power line means a shade tree is the wrong plant. The utility will eventually top it, and a topped shade tree is permanently ruined — structurally weakened and ugly for the rest of its life. Under wires, plant an ornamental.</li>
+<li><strong>Underground.</strong> Sewer laterals, septic tanks and leach fields. Cottonwood, willow and silver maple are the classic offenders here — their roots find a joint in a line and grow into it, and the repair bill dwarfs what the tree cost.</li>
+<li><strong>Distance from the house.</strong> Roughly half the mature canopy width from the foundation, minimum. Closer than that and you are pruning it off the roof every few years.</li>
+<li><strong>Drives and walks.</strong> Surface roots lift concrete. It is slow and it is not repairable without taking the tree or the slab.</li>
+</ul>
+
+<h2>Fast growth is a trade, and here so is the species list</h2>
+
+<p>Cottonwood, willow, boxelder and silver maple grow quickly, which is exactly why people plant them. They also make weak, low-density wood, they tend to be shorter-lived, and they are the trees we get called about after a wind event with a limb through something. That does not make them the wrong choice — a windbreak on acreage, a riparian corner, a fast screen while something slower fills in — but they get chosen knowingly, and with a bit of room around them.</p>
+
+<p>And the soil narrows the list further. Alkaline ground here locks up iron, and several of the most-requested shade trees show it badly — silver and red maple, birch, pin oak. Those go yellow between green veins, decline over years, and no amount of feeding fixes it. There are better choices that want to be here, and they are on the list above.</p>
+
+<h2>The detail that kills more young trees than anything else</h2>
+
+<p>Planting depth. A tree set too deep, with the root flare buried under soil or mulch, declines slowly for five or ten years and nobody connects the two. <strong>The flare — where the trunk widens into the roots — belongs at or slightly above finished grade, visible.</strong> If you cannot see where the trunk widens, it is too deep. It is the most common installation error in the trade and it is entirely avoidable.</p>
+
+<p><a class="button" href="/request-estimate?c=plantchar">Request an Estimate</a> or call <a href="tel:9708359661">970-835-9661</a></p>
+HTML,
+  'crew' => <<<'HTML'
+<p><strong>Walk the site and look up, look down, and measure before you quote a shade tree.</strong> Everything expensive about shade trees is decided on install day.</p>
+
+<ul>
+<li><strong>Look up first. Power lines mean no shade tree.</strong> Offer an ornamental and explain what topping does. Do not let a customer talk us into it.</li>
+<li><strong>Ask where the sewer lateral and the leach field run.</strong> No cottonwood, willow or silver maple anywhere near either. If they do not know, that is a call to make before the hole is dug.</li>
+<li><strong>Half the mature canopy width off the foundation, minimum.</strong> Measure it, do not eyeball it.</li>
+<li><strong>Root flare at or slightly above grade, visible, every tree.</strong> If the flare is not showing when we leave, we planted it wrong. Check the nursery ball too — they are often already too deep in the pot and have to be lifted.</li>
+<li><strong>Do not volcano-mulch.</strong> Mulch pulled back off the trunk, a flat ring, not a cone. Mulch against the bark rots it.</li>
+<li><strong>Chlorosis-prone species need the soil conversation before the sale</strong> — silver and red maple, birch, pin oak. If a customer wants one anyway, the iron treatment goes in the estimate as a recurring line item, not as a rescue in year three.</li>
+<li><strong>Selling a fast grower: say what the trade is</strong> and put mature size in writing if it is near a structure, a drive or a line.</li>
+</ul>
+
+<p><strong>What to tell a customer:</strong> a shade tree is the best money in a landscape and the most expensive thing to get wrong. Twenty minutes deciding where it goes is worth more than the difference between any two species on the list.</p>
+HTML,
+];
+
+$deciduousCopy['Ornamental Trees'] = [
+  'alias' => '/material/plants/trees/deciduous/ornamental',
+  'order' => 20,
+  'short' => 'Small trees, generally under twenty-five feet. The right answer everywhere a shade tree is wrong — near the house, under a power line, in a courtyard, beside a door.',
+  'title' => 'Ornamental Trees for Colorado | Brookstone Outdoors',
+  'meta' => 'Small trees for under power lines, near the house and in tight spaces. Plus the fire blight and cedar-apple rust running through the rose-family list.',
+  'public' => <<<'HTML'
+<p>An ornamental tree is defined by scale before anything else. Under about twenty-five feet at maturity, which sounds like a limitation and is the entire point — it is what makes them the right tree for all the places a shade tree cannot go.</p>
+
+<p><strong>The clearest case is a power line.</strong> A large tree under wires will eventually be topped by the utility, and a topped tree is finished: the structure is gone, the regrowth is weak and badly attached, and it never looks right again. Anything under the lines should be a tree that never reaches them. That single constraint decides more front-yard plantings in this valley than any aesthetic preference does.</p>
+
+<p>The same logic applies near a foundation, in a courtyard, beside an entry, between a walk and a drive, or anywhere the canopy has somewhere it is not allowed to go. And within that constraint the list is the most interesting one we carry — this is where the spring flowering, the fall colour, the berries and the winter bark live.</p>
+HTML,
+  'cta' => <<<'HTML'
+<h2>Most of this list is one plant family, and that matters</h2>
+
+<p>Crabapple, hawthorn, mountain ash, serviceberry and ornamental pear are all in the rose family, along with every apple, pear, plum and cherry. Family is usually an academic detail. Here it is practical, because <strong>disease runs along family lines.</strong></p>
+
+<p>Two things move through that group in this county. <strong>Fire blight</strong> is a bacterial infection that moves fast in a warm wet spring — shoot tips blacken and curl over like a shepherd's crook, and it can take large limbs in a season. <strong>Cedar-apple rust</strong> needs a juniper and a rose-family host within about a mile of each other and shuttles between them year after year, spotting leaves and weakening the tree.</p>
+
+<p>Neither is a reason to avoid these trees — they are among the best small trees available here. It is a reason to look at what is already on the property before planting a row of them, to choose resistant varieties where the pressure is real, and to know that a crabapple by the drive and an apple orchard down the road are part of the same conversation. <a href="/material/plants/trees/deciduous/fruit">Fruit trees</a> covers the other end of it.</p>
+
+<h2>Check what is underneath before you check the flowers</h2>
+
+<p>Several of the best ornamentals fruit, and fruit falls. A crabapple or a mulberry in a border is a good decision; the same tree over a patio, a walk, a drive or a parking space means a few weeks of stain, wasps and a slick surface every autumn for the life of the tree.</p>
+
+<p>Look at what is under the canopy before choosing the tree. It is the easiest mistake to avoid and one of the most annoying to live with.</p>
+
+<h2>One form question worth asking early</h2>
+
+<p>Many of these are available as either a single-trunk tree or a multi-stem clump, and they are different plants in a design. Single-stem reads formal and lifts the canopy for walking under. Multi-stem is wider, lower and more naturalistic, and it usually reads better against a house or in a bed. Decide which before ordering — it is not something that can be changed later.</p>
+
+<p><a class="button" href="/request-estimate?c=plantchar">Request an Estimate</a> or call <a href="tel:9708359661">970-835-9661</a></p>
+HTML,
+  'crew' => <<<'HTML'
+<p><strong>Ornamental is the answer whenever a shade tree will not fit.</strong> Lead with the constraint, not with the flowers — the constraint is what makes the recommendation right.</p>
+
+<ul>
+<li><strong>Under power lines, always ornamental.</strong> Never let a customer put a shade tree under wires, however much they want it. Explain topping once and most people understand immediately.</li>
+<li><strong>Check what is underneath before you check the bloom.</strong> Nothing that drops fruit over a patio, walk, drive or parking. Crabapple and mulberry are the usual culprits.</li>
+<li><strong>⚠ Rose family: crabapple, hawthorn, mountain ash, serviceberry, ornamental pear.</strong> Fire blight and cedar-apple rust both run through this group. Look at the property and the neighbours for junipers and apples before planting several.</li>
+<li><strong>Fire blight is blackened shoot tips curled like a shepherd's crook.</strong> Prune well below the damage in dry weather, sanitise between every cut, and get the prunings off site. Do not prune it in wet weather — that spreads it.</li>
+<li><strong>Ask single-stem or multi-stem at the design stage.</strong> It changes the look substantially and it cannot be changed after.</li>
+<li><strong>Do not oversell redbud.</strong> It is marginal at elevation and in exposed sites. Sheltered, east-facing, it is lovely; on an open west corner it struggles.</li>
+</ul>
+
+<p><strong>What to tell a customer:</strong> an ornamental is not a compromise on a shade tree, it is a different tool. It goes where a big tree would eventually become a problem, and it gives you flowers and interest at eye level where you actually see them.</p>
+HTML,
 ];
 
 $batches = [
   'shrubs' => ['parent' => 'Shrubs', 'copy' => $shrubCopy, 'order_only' => $shrubOrderOnly],
   'evergreen_genus' => ['parent' => 'Evergreens', 'copy' => $evergreenCopy, 'order_only' => []],
   'fruit' => ['parent' => 'Deciduous Trees', 'copy' => $fruitCopy, 'order_only' => $fruitOrderOnly, 'order_aliases' => $fruitOrderAliases],
+  'deciduous' => ['parent' => 'Trees', 'copy' => $deciduousCopy, 'order_only' => []],
 ];
 if ($only !== '') {
   if (!isset($batches[$only])) {
@@ -606,8 +763,11 @@ foreach ($batch['copy'] as $name => $c) {
     'field_public_description' => ['value' => $c['public'], 'format' => 'full_html'],
     'field_call_to_action' => ['value' => $c['cta'], 'format' => 'full_html'],
     'field_teammate_description' => ['value' => $c['crew'], 'format' => 'full_html'],
-    'field_list_order' => $c['order'],
   ];
+  // A parent category takes no list order of its own.
+  if (array_key_exists('order', $c)) {
+    $set['field_list_order'] = $c['order'];
+  }
   $changes = [];
   foreach ($set as $f => $val) {
     if (!$term->hasField($f)) { $changes[] = "$f (field missing)"; continue; }

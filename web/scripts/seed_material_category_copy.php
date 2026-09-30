@@ -450,7 +450,24 @@ HTML,
 // ---------------------------------------------------------------------------
 // 3. Seed.
 // ---------------------------------------------------------------------------
-$resolve = function (string $name, string $parent) use ($ts) {
+/**
+ * Resolve a term, preferring its URL alias.
+ *
+ * The office renames these categories, and the environments genuinely disagree:
+ * live calls one "Fruit Trees" under "Deciduous Trees" while dev calls the same
+ * page "Fruit" under "Deciduous". The ALIAS is identical on both and is what the
+ * public and the cross-links use, so it is the stable identifier. Name-under-
+ * parent stays as the fallback for terms where no alias is given.
+ */
+$resolve = function (string $name, string $parent, ?string $alias = NULL) use ($ts) {
+  if ($alias) {
+    $path = \Drupal::service('path_alias.manager')->getPathByAlias($alias);
+    if ($path !== $alias && preg_match('#^/taxonomy/term/(\d+)$#', $path, $m)) {
+      $t = $ts->load((int) $m[1]);
+      if ($t && $t->bundle() === VID) { return [$t]; }
+    }
+    return [];
+  }
   $found = $ts->loadByProperties(['vid' => VID, 'name' => $name]);
   $under = [];
   foreach ($found as $t) {
@@ -470,7 +487,8 @@ $resolve = function (string $name, string $parent) use ($ts) {
 // Fruit-Bearing characteristic page already points there correctly.
 $fruitCopy = [];
 
-$fruitCopy['Fruit'] = [
+$fruitCopy['Fruit Trees'] = [
+  'alias' => '/material/plants/trees/deciduous/fruit',
   'order' => 30,
   'short' => 'Trees grown for a harvest rather than for shade or for looks. In this valley the first question is not what you like to eat — it is when the tree blooms.',
   'title' => 'Fruit Trees for Delta County | Brookstone Outdoors',
@@ -553,11 +571,15 @@ HTML,
 
 // Its two siblings keep their place in the order; their copy is a separate batch.
 $fruitOrderOnly = ['Shade' => 10, 'Ornamental' => 20];
+$fruitOrderAliases = [
+  'Shade' => '/material/plants/trees/deciduous/shade',
+  'Ornamental' => '/material/plants/trees/deciduous/ornamental',
+];
 
 $batches = [
   'shrubs' => ['parent' => 'Shrubs', 'copy' => $shrubCopy, 'order_only' => $shrubOrderOnly],
   'evergreen_genus' => ['parent' => 'Evergreens', 'copy' => $evergreenCopy, 'order_only' => []],
-  'fruit' => ['parent' => 'Deciduous', 'copy' => $fruitCopy, 'order_only' => $fruitOrderOnly],
+  'fruit' => ['parent' => 'Deciduous Trees', 'copy' => $fruitCopy, 'order_only' => $fruitOrderOnly, 'order_aliases' => $fruitOrderAliases],
 ];
 if ($only !== '') {
   if (!isset($batches[$only])) {
@@ -569,9 +591,10 @@ if ($only !== '') {
 
 foreach ($batches as $batchName => $batch) {
   $parent = $batch['parent'];
+  $batch += ['order_aliases' => []];
   printf("\n--- %s (under %s) ---\n", $batchName, $parent);
 foreach ($batch['copy'] as $name => $c) {
-  $hits = $resolve($name, $parent);
+  $hits = $resolve($name, $parent, $c['alias'] ?? NULL);
   if (count($hits) !== 1) {
     printf("SKIP %s — found %d terms named that under %s. The office owns the name; not guessing.\n",
       $name, count($hits), $parent);
@@ -616,7 +639,7 @@ foreach ($batch['copy'] as $name => $c) {
 }
 
 foreach ($batch['order_only'] as $name => $order) {
-  $hits = $resolve($name, $parent);
+  $hits = $resolve($name, $parent, ($batch['order_aliases'][$name] ?? NULL));
   if (count($hits) !== 1) { printf("SKIP %s (order) — %d matches\n", $name, count($hits)); continue; }
   $term = reset($hits);
   if (!$term->hasField('field_list_order')) { continue; }

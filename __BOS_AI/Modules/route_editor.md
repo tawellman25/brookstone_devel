@@ -93,30 +93,34 @@ Three things about how this is written are load-bearing:
   save fires `wo_schedule`, which writes a "Scheduled" (1091) status record back
   onto the WO. The guard closes that, not just the new endpoint.
 
-### Finished work is not shown at all
+### Finished work: greyed in the list, never on the map
 
-`fetch()` filters on **`editableStatuses()`** = `VISIBLE_STATUSES` **minus**
-`LOCKED_STATUSES` (computed, not a third hardcoded list). A finished stop gets **no
-pin, no row, and no place in the counts** — the editor is for arranging the driving
-that is still to be done, so a stop that is done is not a stop. Its route line skips
-it, and **Optimize** on a part-finished route now sequences only what is left, which
-is what you want mid-day.
+A finished stop is **listed** in its day column — greyed, 🔒, status named, no
+checkbox, undraggable, skipped by select-all — so the office can see what the crew
+has already knocked out. It is **not plotted**: no pin, and the route line skips it,
+so the map shows only the driving still to be done. **Optimize** on a part-finished
+route therefore sequences only what is left, which is what you want mid-day, and the
+status line reads "N stops to run · M finished".
 
-The guard is **not** made redundant by that filter, and the two must not be confused:
-the filter decides what is **shown**, the guard decides what may be **written**, and
-only the guard sees current truth. This page is long-lived and refetches only on load
-or after a write, so a crew can sign a job off while it sits on someone's screen; the
-POST is then refused and named in the dialog.
+Everything keys off the **`locked`** flag in the data payload, computed from
+`LOCKED_STATUSES`; the query still fetches on `VISIBLE_STATUSES`, because filtering
+at the query would empty the list too.
 
-The client still renders a finished stop read-only if it ever sees one — hollow pin,
-🔒 row, no checkbox, undraggable, skipped by select-all — which should not normally
-be reachable. It stays because the row keys "editable" on the **data** (`locked`)
-rather than on the assumption that the filter held, so loosening that filter can
-never quietly present a finished stop as editable.
+**Stop numbers are positions in the FULL route**, so with #2 finished the pins read
+1, 3, 4. The gap is deliberate — it says "that one's done" — and it keeps the map
+agreeing with the list beside it, which renumbering would not.
 
-**Tradeoff, worth knowing:** you lose the at-a-glance sense of what the crew has
-already knocked out today. Completed work is on the Dispatch board, My Schedule, and
-the calendar's completed overlay.
+**Hover pairing is keyed on scheduling id, not list position.** A route holding
+finished stops has fewer markers than rows, so the old positional
+`highlightRow(key, idx)` / `bounceMarker(key, idx)` would have bounced the wrong pin.
+Both now resolve through `overlays.rowBySid` / `overlays.markerBySid`.
+
+The greying is **presentation**. What actually holds is the server guard above, and
+the two must not be confused: the greying decides what invites an edit, the guard
+decides what may be **written**, and only the guard sees current truth. This page is
+long-lived and refetches only on load or after a write, so a crew can sign a job off
+while it sits on someone's screen — that stop is still drawn as editable until the
+next refetch, and the POST is refused and named in the dialog.
 
 Verification: `web/scripts/test_route_editor_reschedule.php` — reversible, 20/20
 against live-synced data, covering the write shape, the legacy daterange sync, the

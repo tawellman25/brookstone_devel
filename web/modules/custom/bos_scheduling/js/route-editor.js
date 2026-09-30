@@ -96,16 +96,13 @@
     return state.colorForDay[g.day] || '#888';
   }
 
-  function markerIcon(color, selected, locked) {
-    // Finished stops render hollow: still on the route (they occupy the driving
-    // order) but visibly not editable.
+  function markerIcon(color, selected) {
     return {
       path: google.maps.SymbolPath.CIRCLE,
       scale: selected ? 13 : 11,
-      fillColor: locked ? '#fff' : color,
-      fillOpacity: locked ? 0.9 : 0.95,
-      strokeColor: selected ? SELECT_RING : (locked ? color : '#fff'),
-      strokeWeight: selected ? 4 : (locked ? 3 : 1.5),
+      fillColor: color, fillOpacity: 0.95,
+      strokeColor: selected ? SELECT_RING : '#fff',
+      strokeWeight: selected ? 4 : 1.5,
     };
   }
 
@@ -144,33 +141,46 @@
       var path = [];
       overlays.markers[key] = [];
       g.stops.forEach(function (s, idx) {
+        // Finished work is NOT plotted: no pin, and the route line skips it, so
+        // the map shows only the driving still to be done. It stays in the day
+        // column (greyed) for context. Stop numbers are the position in the FULL
+        // route, so the pins read 1, 3, 4 when #2 is done — a gap that says
+        // "that one's finished", rather than renumbering and disagreeing with
+        // the list beside it.
+        if (s.locked) { return; }
         var pos = new google.maps.LatLng(s.lat, s.lng);
         path.push(pos);
         bounds.extend(pos);
         var sel = !!state.selected[s.scheduling_id];
+        var sid = s.scheduling_id;
         var marker = new google.maps.Marker({
           position: pos, map: map,
-          icon: markerIcon(color, sel, s.locked),
-          label: { text: String(idx + 1), color: s.locked ? color : '#fff', fontSize: '11px', fontWeight: '700' },
-          title: (idx + 1) + '. ' + s.nickname + ' (' + s.service_code + ') — ' + s.tech + ' · ' + s.date +
-            (s.locked ? ' · ' + s.status_label + ' (not editable)' : ''),
+          icon: markerIcon(color, sel),
+          label: { text: String(idx + 1), color: '#fff', fontSize: '11px', fontWeight: '700' },
+          title: (idx + 1) + '. ' + s.nickname + ' (' + s.service_code + ') — ' + s.tech + ' · ' + s.date,
         });
         marker.reBaseColor = color;
         marker.addListener('click', function () {
           infoWindow.setContent(infoContent(s, idx));
           infoWindow.open(map, marker);
         });
-        marker.addListener('mouseover', function () { highlightRow(key, idx, true); });
-        marker.addListener('mouseout', function () { highlightRow(key, idx, false); });
+        // Pair by scheduling id, never by array position: the markers array is
+        // shorter than the row list whenever a route holds finished stops, so an
+        // index would bounce the wrong pin.
+        marker.addListener('mouseover', function () { highlightRowBySid(sid, true); });
+        marker.addListener('mouseout', function () { highlightRowBySid(sid, false); });
         overlays.markers[key].push(marker);
-        overlays.markerBySid[s.scheduling_id] = marker;
+        overlays.markerBySid[sid] = marker;
       });
       overlays.lines[key] = new google.maps.Polyline({
         path: path, map: map, strokeColor: color, strokeOpacity: 0.8, strokeWeight: 3,
       });
     });
 
-    var stopCount = (data.stops || []).length;
+    // Count only what is left to drive; finished stops are listed, not plotted.
+    var plottable = (data.stops || []).filter(function (s) { return !s.locked; });
+    var doneCount = (data.stops || []).length + (data.no_location || []).length - plottable.length;
+    var stopCount = plottable.length;
     if (stopCount === 0) {
       // Empty range (e.g. a Sunday, or a week with nothing scheduled).
       showEmpty(true);
@@ -193,7 +203,9 @@
     buildNoLocation(data.no_location || []);
     buildStopList(days, groups);
     updateAssignBar();
-    setStatus(stopCount + ' stops · ' + (data.counts ? data.counts.no_location : 0) + ' without location' +
+    setStatus(stopCount + ' stop' + (stopCount === 1 ? '' : 's') + ' to run' +
+      (doneCount ? ' · ' + doneCount + ' finished' : '') +
+      ' · ' + (data.counts ? data.counts.no_location : 0) + ' without location' +
       (data.origin && !data.origin.ok ? ' · ⚠ origin: ' + data.origin.reason : ''));
   }
 
@@ -294,16 +306,16 @@
           var r = document.createElement('div');
           r.className = 'bos-re__stoprow' + (state.selected[sid] ? ' is-selected' : '') + (s.locked ? ' is-locked' : '');
           r.dataset.sid = sid;
-          // Finished stops are filtered out server-side, so this branch should not
-          // normally run. It stays because the row keys "editable" on the data:
-          // if a finished stop ever reaches the list it renders read-only rather
-          // than inviting an edit the server will refuse.
+          // Finished work stays in the day column, greyed, as context for what the
+          // crew has already knocked out — but it is not plotted, not selectable,
+          // not draggable, and skipped by select-all. The endpoints refuse it too;
+          // this is so the office never reaches for an edit that cannot happen.
           if (s.locked) {
             var why = 'Finished work (' + (s.status_label || 'closed') + ') — not rescheduled or reassigned.';
             r.title = why;
             r.innerHTML =
               '<span class="bos-re__lock" title="' + esc(why) + '">🔒</span>' +
-              '<span class="bos-re__seq" style="background:' + color + '">' + (idx + 1) + '</span> ' +
+              '<span class="bos-re__seq" style="background:#bbb">' + (idx + 1) + '</span> ' +
               esc(s.nickname) + ' <span class="bos-re__svc">' + esc(s.service_code) + '</span>' +
               ' <span class="bos-re__done">' + esc(s.status_label) + '</span>';
           }
@@ -317,8 +329,8 @@
             r.querySelector('.bos-re__pick').addEventListener('change', function (e) { toggleSelect(sid, s, e.target.checked); });
             attachDrag(r, col);
           }
-          r.addEventListener('mouseover', function () { bounceMarker(key, idx, true); });
-          r.addEventListener('mouseout', function () { bounceMarker(key, idx, false); });
+          r.addEventListener('mouseover', function () { bounceMarkerBySid(sid, true); });
+          r.addEventListener('mouseout', function () { bounceMarkerBySid(sid, false); });
           col.appendChild(r);
           overlays.listRows[key].push(r);
           overlays.rowBySid[sid] = r;
@@ -365,7 +377,7 @@
       if (cb && cb.checked !== on) { cb.checked = on; }
     }
     var m = overlays.markerBySid[sid];
-    if (m) { m.setIcon(markerIcon(m.reBaseColor || '#888', on, stop && stop.locked)); }
+    if (m) { m.setIcon(markerIcon(m.reBaseColor || '#888', on)); }
     updateAssignBar();
   }
 
@@ -525,24 +537,20 @@
       'Stop ' + (idx + 1) + ' · ' + esc(s.tech) + ' · ' + esc(fmtDay(s.date)) + '<br>' +
       esc(s.status_label) + ' · <a href="' + esc(s.wo_url) + '">WO ' + s.wo_id + '</a>';
 
+    // Only plotted stops have an info window, and finished ones are never
+    // plotted — so this always offers Select.
     var foot = document.createElement('div');
     foot.className = 'bos-re__iw-foot';
-    if (s.locked) {
-      foot.innerHTML = '<span class="bos-re__iw-locked">🔒 Finished work — not rescheduled or reassigned.</span>';
-    }
-    else {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'bos-re__iw-pick';
-      var on = !!state.selected[s.scheduling_id];
-      btn.textContent = on ? '✓ Selected — click to remove' : 'Select this stop';
-      btn.addEventListener('click', function () {
-        var nowOn = !state.selected[s.scheduling_id];
-        toggleSelect(s.scheduling_id, s, nowOn);
-        btn.textContent = nowOn ? '✓ Selected — click to remove' : 'Select this stop';
-      });
-      foot.appendChild(btn);
-    }
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'bos-re__iw-pick';
+    btn.textContent = state.selected[s.scheduling_id] ? '✓ Selected — click to remove' : 'Select this stop';
+    btn.addEventListener('click', function () {
+      var nowOn = !state.selected[s.scheduling_id];
+      toggleSelect(s.scheduling_id, s, nowOn);
+      btn.textContent = nowOn ? '✓ Selected — click to remove' : 'Select this stop';
+    });
+    foot.appendChild(btn);
     box.appendChild(foot);
     return box;
   }
@@ -688,13 +696,15 @@
     if (overlays.lines[key]) { overlays.lines[key].setMap(on ? map : null); }
   }
 
-  function highlightRow(key, idx, on) {
-    var rows = overlays.listRows[key];
-    if (rows && rows[idx]) { rows[idx].classList.toggle('is-hot', on); }
+  // Hover pairing is keyed on scheduling id, not list position: a route holding
+  // finished stops has fewer markers than rows, so any index would drift.
+  function highlightRowBySid(sid, on) {
+    var row = overlays.rowBySid[sid];
+    if (row) { row.classList.toggle('is-hot', on); }
   }
 
-  function bounceMarker(key, idx, on) {
-    var m = (overlays.markers[key] || [])[idx];
+  function bounceMarkerBySid(sid, on) {
+    var m = overlays.markerBySid[sid];
     if (!m) { return; }
     m.setAnimation(on ? google.maps.Animation.BOUNCE : null);
   }

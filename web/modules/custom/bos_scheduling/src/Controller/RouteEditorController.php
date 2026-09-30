@@ -57,11 +57,12 @@ final class RouteEditorController extends ControllerBase {
    * exactly what let that incident through (the older guard in wo_schedule
    * names 1097 and 1098 and says nothing about 1281, 1504 or 1283).
    *
-   * fetch() also keeps these stops out of the editor entirely (no pin, no row).
-   * The guard is NOT redundant with that filter: this page is long-lived and
-   * only refetches on load or after a write, so a crew can sign a job off while
-   * it sits on someone's screen. The filter decides what is shown; the guard
-   * decides what may be written, and only the guard sees current truth.
+   * These stops are still listed (greyed, as context) but never plotted. That is
+   * presentation; the guard is what actually holds. It is NOT redundant with the
+   * greying: this page is long-lived and refetches only on load or after a write,
+   * so a crew can sign a job off while it sits on someone's screen — the stop is
+   * still drawn as editable until the next refetch, and only the guard sees
+   * current truth.
    */
   private const LOCKED_STATUSES = [1097, 1283, 1281, 1504, 1098];
 
@@ -153,10 +154,8 @@ final class RouteEditorController extends ControllerBase {
         'service_code' => strtoupper(trim((string) ($r->service_code ?? ''))) ?: '?',
         'status_tid' => (int) ($r->status_tid ?? 0),
         'status_label' => DispatchController::STATUS_LABELS[(int) ($r->status_tid ?? 0)] ?? 'Unknown',
-        // Always FALSE while fetch() filters finished work out. Kept because the
-        // client keys "is this editable" on the data rather than on an
-        // assumption, so loosening that filter can never render a finished stop
-        // as editable.
+        // Drives the whole read-only treatment client-side: greyed in the list,
+        // no pin on the map, skipped by the route line and by select-all.
         'locked' => in_array((int) ($r->status_tid ?? 0), self::LOCKED_STATUSES, TRUE),
       ];
       $coord = $this->parsePoint((string) ($r->geofield ?? ''));
@@ -453,17 +452,6 @@ final class RouteEditorController extends ControllerBase {
   }
 
   /**
-   * Statuses a stop may be in to appear in this editor: everything the dispatch
-   * board shows, less the finished ones. Computed (not a third hardcoded list)
-   * so adding a status anywhere keeps this consistent.
-   *
-   * @return int[]
-   */
-  protected function editableStatuses(): array {
-    return array_values(array_diff(DispatchController::VISIBLE_STATUSES, self::LOCKED_STATUSES));
-  }
-
-  /**
    * Is this scheduling record's work order closed to schedule edits?
    *
    * Reads the work order's CURRENT status straight from the field table — never
@@ -539,12 +527,13 @@ final class RouteEditorController extends ControllerBase {
     $q->join('work_order_field_data', 'wo', 'wo.id = swo.field_work_order_target_id');
     $q->condition('wo.type', self::ROUTED_BUNDLES, 'IN');
 
-    // Only work that still needs doing. The Route Editor exists to arrange the
-    // driving, so a finished stop is not a stop — no pin, no row, not in the
-    // counts. Derived from VISIBLE_STATUSES minus LOCKED_STATUSES rather than
-    // hardcoded, so it cannot drift from either list.
+    // Finished stops ARE fetched: they render greyed out in the day columns, so
+    // the office can see what the crew has already knocked out, but they are not
+    // plotted — no pin, and the route line skips them (js/route-editor.js keys
+    // both on the 'locked' flag below). Keeping them out of the query instead
+    // would empty the list too.
     $q->leftJoin('work_order__field_status', 'wos', 'wos.entity_id = swo.field_work_order_target_id AND wos.deleted = 0');
-    $q->condition('wos.field_status_target_id', $this->editableStatuses(), 'IN');
+    $q->condition('wos.field_status_target_id', DispatchController::VISIBLE_STATUSES, 'IN');
     $q->addField('wos', 'field_status_target_id', 'status_tid');
 
     $q->leftJoin('scheduling__field_assigned_to', 'sat', 's.id = sat.entity_id AND sat.deleted = 0');

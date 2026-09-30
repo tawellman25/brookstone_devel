@@ -44,12 +44,65 @@ edit must never blast assignment emails). CSRF-guarded (`X-CSRF-Token`).
 | **Assign crew** | `route_editor_assign` (POST) | `field_assigned_to` (uid 0 = unassign) | Select stops (row checkboxes / per-route "select all") → pick a crew → Assign. Validates target against the active roster; `wo_schedule` logs "Re-assigned to …". |
 | **Drag-reorder** | `route_editor_reorder` (POST) | `field_scheduled_oder` (1..N) | Native HTML5 drag within one route (grip handle); map redraws in place (viewport preserved). |
 | **Optimize** | `route_editor_reorder` (POST) | `field_scheduled_oder` | Per-route button: greedy nearest-neighbor from the shop (client-side haversine, **no paid routing API**) — a starting order the office fine-tunes by dragging. |
+| **Move to a day** | `route_editor_reschedule` (POST) | `field_date` | Select stops → pick a date → **Move** (2026-09-29). Writes `field_date` in exactly **`ScheduleWriter`'s shape** — an all-day smart-date span at **local** midnight, `duration 1439` — so a moved stop is indistinguishable from one the bulk scheduler or the carry-forward created. Midnight is computed in the **site timezone in PHP, never in SQL** (MariaDB runs UTC on this VPS while the site is America/Denver). `wo_schedule`'s presave back-fills the legacy `field_scheduled_date_and_time` daterange and `custom_date_all_day` sets the flag — neither is written here. `wo_schedule` logs the **Rescheduled** note. |
 
 Reorder/optimize also **auto-stamp `field_route_order_set = TRUE`** on the route's
 stops (see below), shown as a green **✓ order set** badge.
 
 Assignment and ordering are kept **separate**: drag only reorders *within* a route
-(cross-column drops ignored); moving a stop to another crew is Assign.
+(cross-column drops ignored); moving a stop to another crew is Assign, and moving
+it to another **day** is Move. Date and crew are two controls and two saves, which
+also means two honest audit notes.
+
+**Selecting from the map.** Clicking a pin opens its info window, which carries a
+**Select this stop** control — so a route can be picked off the map itself rather
+than only from the list. The info window is built as a DOM node (not an HTML
+string) so that control can carry a real listener.
+
+**A Move does NOT touch route order.** A stop keeps its sequence number on the new
+day and may collide with one already there. That is deliberate: the receiving
+route's driving order is a decision about how the crew drives, so it belongs to the
+office — one drag or **Optimize** away — not to a guess made during the move. The
+confirm dialog says so. `field_scheduled_firm` (the "we told the customer this
+day" commitment) is untouched too, so moving a promised stop never quietly
+un-promises it.
+
+## THE RULE — a finished work order is never rescheduled or reassigned
+
+`RouteEditorController::LOCKED_STATUSES` = **Complete 1097, Warrantied 1283,
+Invoiced 1281, Paid 1504, Canceled 1098**. Every write endpoint here — Move,
+Assign and reorder — resolves the work order's status with `lockedReason()` and
+**refuses**, naming the stop and the blocking status in the response `blocked[]`,
+which the UI shows in a dialog rather than reporting a silent partial success.
+
+Three things about how this is written are load-bearing:
+
+- **It is stated as a rule, not a list of transitions.** The older guard in
+  `_wo_schedule_handle_status_update()` names 1097 and 1098 and says nothing about
+  1281, 1504 or 1283 — which is precisely why the **2026-09-29 incident** hit
+  *invoiced* work orders: Complete ones were protected, invoiced ones were not.
+  Enumerating the case you happen to have in mind is the bug.
+- **Status is read LIVE from the field table** on every call — never a value the
+  browser sent, and never the one baked into the page. During that incident six
+  work orders were invoiced inside the window between two runs of a repair script,
+  and a clock-time cutoff got them wrong; only a live read is safe.
+- **It was not hypothetical.** `DispatchController::VISIBLE_STATUSES` **includes
+  1097 and 1283**, so Complete and Warrantied stops are *on this map* (a typical
+  week shows a couple). The existing **Assign** button could therefore already do
+  to a finished work order what the incident script did: a scheduling save fires
+  `wo_schedule`, which writes a "Scheduled" (1091) status record back onto the WO.
+  The guard closes that, not just the new endpoint.
+
+In the UI a finished stop renders **hollow on the map** (white fill, colored ring —
+still visible, since it occupies the driving order) and **locked in the list**
+(🔒, no checkbox, not draggable, status named), and select-all skips it. That is
+convenience only: the refusal is enforced server-side.
+
+Verification: `web/scripts/test_route_editor_reschedule.php` — reversible, 20/20
+against live-synced data, covering the write shape, the legacy daterange sync, the
+audit note, date validation (including `2026-02-31`), and a refusal on **all five**
+closed statuses for **both** Move and Assign. Over real HTTP: anon 403,
+authenticated-without-CSRF-token 403, token accepted.
 
 ## `field_route_order_set` — carrying an arranged route to next year
 
@@ -100,3 +153,25 @@ rule is `web/scripts/winterize_redate_apply.php` (dry-run-gated; 443 of 459 chan
 - Assign crews to the ~15 unassigned new-customer winterize stops (no prior year).
 - Per-route **Optimize** on "merged Mondays" (last year's Fri+Sat roll together).
 - New customers have no prior history until completed this year (then they seed 2027).
+- **Cross-column drag (not built).** Dragging a stop from one route column into
+  another would set day *and* crew in a single gesture — the most map-native form
+  of this. `attachDrag()` currently ignores cross-column drops on purpose; opening
+  it up means one drop writing two tracked fields (two audit notes, or a combined
+  write), so it wants its own pass rather than riding on the Move control.
+- **⚠ Reported, not fixed — `wo_schedule` writes a spurious status record on every
+  scheduling update.** `_wo_schedule_handle_status_update()` decides "did the date
+  change?" from `$entity->original`, which **is not populated on update in this
+  Drupal version** (a documented BOS gotcha — the fix is `loadUnchanged()`). So
+  `$origDate` is NULL, `$changedDate` is always TRUE, and *any* scheduling save —
+  including an order-only reorder, whose docblock claims it writes no audit note —
+  emits a "Scheduled for …" `wo_status_updates` record and re-flips
+  `field_scheduled`. That is the mechanism behind the 2026-09-29 incident, and it
+  is why a reorder produces audit noise. The `wo_status_updates` terminal-status
+  guard (2026-09-29) stops it changing a closed WO's status, so the remaining
+  damage is a spurious audit row. Fixing it touches **every** scheduling save
+  (dispatch drag-drop, the sprinkler bulk tool, both winterize commands), so it
+  deserves its own verified pass, not a rider on a UI feature.
+- **Note:** the same function's local constants are misnamed — `$STATUS_CANCELLED
+  = 1097` and `$STATUS_COMPLETED = 1098` have the values **swapped** relative to
+  BOS (1097 = Complete, 1098 = Canceled). The guard's *behaviour* is correct (it
+  covers both ids), but the names mislead anyone reading it to extend it.

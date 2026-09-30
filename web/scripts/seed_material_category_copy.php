@@ -461,9 +461,103 @@ $resolve = function (string $name, string $parent) use ($ts) {
   return $under;
 };
 
+
+// --- Batch: Fruit, under Trees > Deciduous -----------------------------------
+// The office named these children Fruit / Shade / Ornamental, not "Fruit Trees"
+// / "Shade Trees" / "Ornamental Trees" as the source doc assumes, so the term is
+// matched and left under its own name. The public URL is therefore
+// /material/plants/trees/deciduous/fruit, and the cross-link on the
+// Fruit-Bearing characteristic page already points there correctly.
+$fruitCopy = [];
+
+$fruitCopy['Fruit'] = [
+  'order' => 30,
+  'short' => 'Trees grown for a harvest rather than for shade or for looks. In this valley the first question is not what you like to eat — it is when the tree blooms.',
+  'title' => 'Fruit Trees for Delta County | Brookstone Outdoors',
+  'meta' => 'Apricots bloom first and lose the crop most years; apples bloom last and are the reliable one. Pollination, rootstock and what a fruit tree asks of you here.',
+  'public' => <<<'HTML'
+<p>Delta County has grown fruit for more than a century, and the reason it works here is close to the reason it is difficult. This valley has the sun, the diurnal swing and the season for good fruit. It also has a late frost that turns up often enough to matter.</p>
+
+<p>So the first question about a fruit tree here is not what you like to eat. It is when the tree blooms — because a bloom that opens before the last hard freeze is a crop you do not get, and that is a property of the species rather than of anything you did.</p>
+
+<p>Roughly in order of bloom: apricot first, then peach, then sweet cherry, then plum, then pear, and apple last. <strong>Read that as a reliability ranking and it is nearly exact.</strong> Apricots are the heartbreak tree of this valley — they will give you a spectacular crop and then miss three years running. Apples bloom late enough to clear most frosts, which is not a coincidence and not unrelated to why this county is covered in apple orchards.</p>
+
+<p>Here is what we stock and plant.</p>
+HTML,
+  'cta' => <<<'HTML'
+<h2>Most of them need a partner</h2>
+
+<p>The thing that catches first-time fruit growers is pollination. Most apples will not set a decent crop from their own pollen — they need a second, different apple variety blooming at the same time, within bee range. Sweet cherries are generally the same. Pears usually want a partner, and so do most Japanese plums.</p>
+
+<p>Peaches, apricots, tart cherries and most European plums are self-fruitful and will crop on their own. Which means one peach tree is a reasonable plan and one apple tree usually is not — and that is the single most common reason somebody has a healthy, beautiful apple tree that has never produced anything.</p>
+
+<h2>Rootstock decides the size, and the wait</h2>
+
+<p>A fruit tree is two plants joined together: the variety on top, which decides what the fruit tastes like, and the rootstock underneath, which decides almost everything else. The same Honeycrisp is an eight-foot tree or a twenty-five-foot tree depending on what it is grafted onto.</p>
+
+<ul>
+<li><strong>Dwarf</strong> — eight to ten feet, bears in two or three years, prunes and picks from the ground. Needs permanent staking; the root system does not hold a loaded tree up on its own.</li>
+<li><strong>Semi-dwarf</strong> — twelve to eighteen feet, bears in three or four years. The usual right answer for a yard.</li>
+<li><strong>Standard</strong> — twenty feet and up, five to eight years before it bears, and it will outlive you. A ladder tree.</li>
+</ul>
+
+<p>Rootstock also affects how a tree handles the ground it is in, and on alkaline soil that is not a small detail — the wrong rootstock goes chlorotic here the same way an ornamental would. Worth asking about rather than buying on variety alone.</p>
+
+<h2>What a fruit tree actually asks of you</h2>
+
+<p>This is the part that gets skipped at the point of sale, and it is the difference between an orchard and a row of sad trees.</p>
+
+<p>A fruit tree is pruned every year, in dormancy, for light and structure rather than for shape — an open center on peaches and plums, a central leader on apples and pears. An unpruned fruit tree gets dense, stops ripening fruit in the middle, and eventually breaks under its own crop. It is also thinned in early summer, which feels wrong and is not: a tree carrying too much fruit gives you small fruit, broken limbs, and nothing at all the following year.</p>
+
+<p>And it is sprayed on a schedule. Codling moth is the reason for wormy apples and pears on the Western Slope, and controlling it means timed applications rather than spraying when you notice damage — by then the larva is inside the fruit. Peach leaf curl is prevented with a dormant application and cannot be fixed once leaves are out. Fire blight moves fast in apples and pears in a wet spring.</p>
+
+<p>None of that is difficult. All of it is a calendar, and the calendar is the part most people do not keep.</p>
+
+<h2>We prune and spray them too</h2>
+
+<p>We plant fruit trees, we prune them, and we run spray programs on them, for homeowners with three trees and for properties with thirty.</p>
+
+<p>Dormant pruning runs January through March, before bud break — a narrow window, and one of the few jobs in a yard that genuinely cannot be done late. The dormant spray goes on in the same stretch. After that the calendar is codling moth timing through the summer on apples and pears, and thinning in early June.</p>
+
+<p>If you would rather do it yourself, ask and we will write out the schedule for the varieties you have. Knowing when is most of it.</p>
+
+<h2>One thing to look at before you plant: what is already nearby</h2>
+
+<p>Cedar-apple rust needs two hosts to survive — a juniper, and an apple, crabapple or hawthorn — within roughly a mile of each other. Neither host alone keeps it going, and it moves back and forth between them year after year. On a juniper it is mostly cosmetic. On an apple it spots the leaves, weakens the tree and can mark the fruit.</p>
+
+<p>So before apples go in, it is worth a look at the fencerows, the windbreaks and the neighbouring properties. Junipers are everywhere in this county and they are excellent plants — this is not a reason to remove one. It is a reason to know what you are working with, and in some cases to choose a rust-resistant apple variety rather than fight it every spring. <a href="/material/plants/trees/evergreens/juniper">More on junipers</a>.</p>
+
+<h2>Fruit as a landscape decision, rather than a harvest</h2>
+
+<p>If what you want is the look of fruit — color on the branch in October, berries against snow, birds in the yard — without the ladder and the spray calendar, that is a different decision and there are better plants for it. <a href="/material/plants/characteristics/aesthetic-features/fruit-bearing">Fruit-bearing as a landscape characteristic</a> covers what fruit does to a planting, including the part about never putting one over a patio.</p>
+
+<p><a class="button" href="/request-estimate?c=plantchar">Request an Estimate</a> or call <a href="tel:9708359661">970-835-9661</a></p>
+HTML,
+  'crew' => <<<'HTML'
+<p><strong>Ask two questions before anything else: do they want fruit they will actually pick, and is there room for two trees.</strong> Those answers settle most of the selection.</p>
+
+<ul>
+<li><strong>Never sell a single apple or sweet cherry</strong> without explaining pollination. One apple tree is the most common fruit tree mistake we see, and it does not show up as a complaint for three or four years.</li>
+<li><strong>Talk them out of apricot unless they know what they are getting.</strong> It will crop beautifully and then miss several years running. Some people want it anyway and that is fine — as long as they heard it from us first.</li>
+<li><strong>Semi-dwarf is the default recommendation.</strong> Bears in three or four years, picks without a ladder, no permanent staking. Dwarf only where space is genuinely tight, and say that it must stay staked for life.</li>
+<li><strong>Check rootstock against the soil.</strong> Alkaline ground chloroses the wrong rootstock the same as any other plant. Ask the supplier.</li>
+<li><strong>Wrap the trunk the first three winters.</strong> Smooth young fruit tree bark is the textbook sunscald casualty here, and rabbits girdle it at snow line. Both are preventable and neither is repairable.</li>
+<li><strong>Put the pruning and spray schedule on the maintenance plan at install</strong>, not the year the fruit comes in wormy.</li>
+</ul>
+
+<p><strong>What to tell a customer:</strong> a fruit tree is the most work of anything we plant. Pruned every winter, thinned every June, sprayed on a calendar. It is entirely doable and it is not optional — an unmaintained fruit tree produces small wormy fruit and eventually breaks itself. Say it at the sale.</p>
+
+<p><strong>Years to bearing, plainly:</strong> nobody is picking fruit next summer. Two to three years on dwarf, three to four on semi-dwarf, five or more on standard. Said up front it is a reasonable wait. Discovered later it is a complaint.</p>
+HTML,
+];
+
+// Its two siblings keep their place in the order; their copy is a separate batch.
+$fruitOrderOnly = ['Shade' => 10, 'Ornamental' => 20];
+
 $batches = [
   'shrubs' => ['parent' => 'Shrubs', 'copy' => $shrubCopy, 'order_only' => $shrubOrderOnly],
   'evergreen_genus' => ['parent' => 'Evergreens', 'copy' => $evergreenCopy, 'order_only' => []],
+  'fruit' => ['parent' => 'Deciduous', 'copy' => $fruitCopy, 'order_only' => $fruitOrderOnly],
 ];
 if ($only !== '') {
   if (!isset($batches[$only])) {

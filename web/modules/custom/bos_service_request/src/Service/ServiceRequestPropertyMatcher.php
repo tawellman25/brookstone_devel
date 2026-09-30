@@ -37,7 +37,6 @@ final class ServiceRequestPropertyMatcher {
    */
   public function match(string $lastName, string $street, string $zip, string $phone = '', string $email = ''): array {
     $flags = [];
-    $normStreet = $this->normalizer->normalizeStreet($street);
     $normLast = $this->normalizer->normalizeText($lastName);
 
     // ZIP → zipcodes ids. Unknown ZIP: still accept, flag, skip the ZIP filter.
@@ -51,11 +50,16 @@ final class ServiceRequestPropertyMatcher {
     // trailing street-suffix token and wildcard between the remaining tokens
     // (robust to spacing/punctuation). Over-matching here is fine; UNDER-matching
     // (excluding the real property) is the bug this avoids.
-    $streetCore = trim(explode(',', $street)[0]);
+    // streetCore() cuts city/state/unit noise off the end, so a submitted
+    // "1774 Trappers Ct. Delta, Co" prefilters as "1774 trappers ct" and can
+    // still reach a stored "1774 Trappers Ct". Splitting on the first comma was
+    // not enough — that address puts the comma AFTER the city.
     $coreTokens = array_values(array_filter(
-      explode(' ', $this->normalizer->normalizeText($streetCore)),
+      explode(' ', $this->normalizer->streetCore($street)),
       static fn($t) => $t !== ''
     ));
+    // Drop the suffix token itself from the LIKE so a submitted "Court" still
+    // reaches a stored "Ct"; the precise suffix-normalized compare is below.
     if (count($coreTokens) > 1 && in_array(end($coreTokens), $this->normalizer->suffixSet(), TRUE)) {
       array_pop($coreTokens);
     }
@@ -72,8 +76,12 @@ final class ServiceRequestPropertyMatcher {
       if (!$this->zipMatches($property, $zipIds)) {
         continue;
       }
-      $candStreet = $this->normalizer->normalizeStreet((string) ($property->get('field_street_address')->value ?? ''));
-      if ($normStreet === '' || !str_contains($candStreet, $normStreet)) {
+      // Two-way comparison on the street cores. The old test required the STORED
+      // street to contain the submitted one, which silently excluded the right
+      // property whenever somebody typed more than the street — and then the
+      // office created a second property for a house that already had one.
+      $candStreet = (string) ($property->get('field_street_address')->value ?? '');
+      if ($street === '' || !$this->normalizer->streetsMatch($street, $candStreet)) {
         continue;
       }
       $matches[(int) $property->id()] = $property;

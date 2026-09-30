@@ -9,6 +9,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Url;
 use Drupal\eck\Entity\EckEntity;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -26,12 +27,14 @@ final class CreateCustomerForm extends FormBase {
   protected $etm;
   protected $cfg;
   protected $geocoder;
+  protected $matcher;
 
-  public function __construct(CustomerProvisioningService $prov, EntityTypeManagerInterface $etm, ConfigFactoryInterface $cfg, $geocoder) {
+  public function __construct(CustomerProvisioningService $prov, EntityTypeManagerInterface $etm, ConfigFactoryInterface $cfg, $geocoder, $matcher = NULL) {
     $this->prov = $prov;
     $this->etm = $etm;
     $this->cfg = $cfg;
     $this->geocoder = $geocoder;
+    $this->matcher = $matcher;
   }
 
   public static function create(ContainerInterface $container): static {
@@ -40,6 +43,7 @@ final class CreateCustomerForm extends FormBase {
       $container->get('entity_type.manager'),
       $container->get('config.factory'),
       $container->has('geocoder') ? $container->get('geocoder') : NULL,
+      $container->get('bos_service_request.property_matcher'),
     );
   }
 
@@ -102,6 +106,17 @@ final class CreateCustomerForm extends FormBase {
       '#type' => 'select', '#title' => $this->t('Client type'), '#options' => $ctOptions, '#default_value' => 1,
     ];
 
+    // Shown only once the address has been found on an existing property. The
+    // confirmation IS the override — same shape as the duplicate work-order
+    // warning, so the office already knows the pattern.
+    $form['duplicate_confirm'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Yes — create a second property at this address anyway'),
+      '#description' => $this->t('Only tick this if this is genuinely a different property, such as a separate unit or a second building.'),
+      '#access' => (bool) $form_state->get('duplicate_warned'),
+      '#weight' => -50,
+    ];
+
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = ['#type' => 'submit', '#value' => $this->t('Create customer & property'), '#button_type' => 'primary'];
     $form['actions']['cancel'] = [
@@ -156,6 +171,62 @@ final class CreateCustomerForm extends FormBase {
       ];
     }
     return $form['property']['geo_result'];
+  }
+
+  /**
+   * Refuse once when this address already exists as a property.
+   *
+   * This is the button that created the 2026-09-22 duplicate: the matcher had
+   * failed, so the request showed as unmatched and a second property was made for
+   * a house that already carried two contracts and three work orders. The matcher
+   * bug is fixed, but the button needs its own guard — a match can fail for other
+   * reasons, and "there is already a property here" is worth saying out loud
+   * whatever the reason.
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state): void {
+    parent::validateForm($form, $form_state);
+
+    // Read RAW input for the confirmation: the processed value of an element
+    // carrying '#access' => FALSE is decided by Drupal's value juggling rather
+    // than by what the person did.
+    $input = $form_state->getUserInput();
+    if (!empty($input['duplicate_confirm'])) {
+      return;
+    }
+
+    $street = trim((string) $form_state->getValue('street_address'));
+    $zip = trim((string) $form_state->getValue('zip'));
+    if ($street === '' || !$this->matcher) {
+      return;
+    }
+
+    $result = $this->matcher->match(
+      (string) $form_state->getValue('last_name'),
+      $street,
+      $zip
+    );
+    if (empty($result['candidates'])) {
+      return;
+    }
+
+    $links = [];
+    foreach ($result['candidates'] as $c) {
+      $label = trim((string) ($c['nickname'] ?? '')) ?: ('Property ' . $c['id']);
+      try {
+        $url = Url::fromRoute('entity.properties.canonical', ['properties' => $c['id']])->toString();
+        $links[] = '<a href="' . $url . '">' . htmlspecialchars($label . ' — ' . $c['street'], ENT_QUOTES) . '</a>';
+      }
+      catch (\Throwable $e) {
+        $links[] = htmlspecialchars($label . ' — ' . $c['street'], ENT_QUOTES);
+      }
+    }
+
+    $form_state->set('duplicate_warned', TRUE);
+    $form_state->setRebuild(TRUE);
+    $form_state->setErrorByName('street_address', $this->t(
+      'There is already a property at this address: @list. Use that one instead of creating a second — go back to the request and set its property. If this really is a different property, tick "Yes — create a second property at this address anyway" below and save again.',
+      ['@list' => Markup::create(implode(', ', $links))]
+    ));
   }
 
   public function submitForm(array &$form, FormStateInterface $form_state): void {

@@ -87,16 +87,36 @@ Three things about how this is written are load-bearing:
   work orders were invoiced inside the window between two runs of a repair script,
   and a clock-time cutoff got them wrong; only a live read is safe.
 - **It was not hypothetical.** `DispatchController::VISIBLE_STATUSES` **includes
-  1097 and 1283**, so Complete and Warrantied stops are *on this map* (a typical
-  week shows a couple). The existing **Assign** button could therefore already do
-  to a finished work order what the incident script did: a scheduling save fires
-  `wo_schedule`, which writes a "Scheduled" (1091) status record back onto the WO.
-  The guard closes that, not just the new endpoint.
+  1097 and 1283**, so Complete and Warrantied stops *used to be on this map* (a
+  typical week showed a couple). The existing **Assign** button could therefore
+  already do to a finished work order what the incident script did: a scheduling
+  save fires `wo_schedule`, which writes a "Scheduled" (1091) status record back
+  onto the WO. The guard closes that, not just the new endpoint.
 
-In the UI a finished stop renders **hollow on the map** (white fill, colored ring —
-still visible, since it occupies the driving order) and **locked in the list**
-(🔒, no checkbox, not draggable, status named), and select-all skips it. That is
-convenience only: the refusal is enforced server-side.
+### Finished work is not shown at all
+
+`fetch()` filters on **`editableStatuses()`** = `VISIBLE_STATUSES` **minus**
+`LOCKED_STATUSES` (computed, not a third hardcoded list). A finished stop gets **no
+pin, no row, and no place in the counts** — the editor is for arranging the driving
+that is still to be done, so a stop that is done is not a stop. Its route line skips
+it, and **Optimize** on a part-finished route now sequences only what is left, which
+is what you want mid-day.
+
+The guard is **not** made redundant by that filter, and the two must not be confused:
+the filter decides what is **shown**, the guard decides what may be **written**, and
+only the guard sees current truth. This page is long-lived and refetches only on load
+or after a write, so a crew can sign a job off while it sits on someone's screen; the
+POST is then refused and named in the dialog.
+
+The client still renders a finished stop read-only if it ever sees one — hollow pin,
+🔒 row, no checkbox, undraggable, skipped by select-all — which should not normally
+be reachable. It stays because the row keys "editable" on the **data** (`locked`)
+rather than on the assumption that the filter held, so loosening that filter can
+never quietly present a finished stop as editable.
+
+**Tradeoff, worth knowing:** you lose the at-a-glance sense of what the crew has
+already knocked out today. Completed work is on the Dispatch board, My Schedule, and
+the calendar's completed overlay.
 
 Verification: `web/scripts/test_route_editor_reschedule.php` — reversible, 20/20
 against live-synced data, covering the write shape, the legacy daterange sync, the

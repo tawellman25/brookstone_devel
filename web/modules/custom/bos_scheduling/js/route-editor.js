@@ -294,9 +294,10 @@
           var r = document.createElement('div');
           r.className = 'bos-re__stoprow' + (state.selected[sid] ? ' is-selected' : '') + (s.locked ? ' is-locked' : '');
           r.dataset.sid = sid;
-          // A finished stop (Complete/Warrantied/Invoiced/Paid/Canceled) shows on
-          // the route for context but cannot be selected, moved or dragged. The
-          // endpoints refuse it too — this only spares the office a refusal.
+          // Finished stops are filtered out server-side, so this branch should not
+          // normally run. It stays because the row keys "editable" on the data:
+          // if a finished stop ever reaches the list it renders read-only rather
+          // than inviting an edit the server will refuse.
           if (s.locked) {
             var why = 'Finished work (' + (s.status_label || 'closed') + ') — not rescheduled or reassigned.';
             r.title = why;

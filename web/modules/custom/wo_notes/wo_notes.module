@@ -127,3 +127,61 @@ function wo_notes_preprocess_views_view_fields(array &$variables) {
   }
   $variables['edit_url'] = $edit_url;
 }
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Get the Save button back on screen when a crew member adds a note from a phone.
+ *
+ * The add-note form showed four things: the note itself, a Work Order
+ * autocomplete that is already filled in by the button they came from, an
+ * "Entered on" date AND time pair with a description line, and a Language select.
+ * On an iPhone that pushed Save below the fold and under Safari's toolbar — a
+ * tech in a yard could type a note and then not be able to save it.
+ *
+ * So the work order is carried as a value rather than a widget whenever it is
+ * already known, and the page says which work order the note is for instead of
+ * making them read it out of an autocomplete box. Someone creating a note from
+ * scratch, with no work order in hand, still gets the picker.
+ */
+function wo_notes_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id): void {
+  if (!in_array($form_id, ['wo_notes_note_form', 'wo_notes_note_edit_form'], TRUE)) {
+    return;
+  }
+
+  // Keep the field in the form (so its value still saves) but stop it taking up
+  // half the screen. Hiding it from the form DISPLAY would drop the value that
+  // the "Add Note" button prefills through the query string.
+  $wo_id = NULL;
+  if (isset($form['field_work_order']['widget'][0]['target_id'])) {
+    $element = &$form['field_work_order']['widget'][0]['target_id'];
+    $default = $element['#default_value'] ?? NULL;
+    if ($default instanceof \Drupal\Core\Entity\EntityInterface) {
+      $wo_id = (int) $default->id();
+    }
+    elseif (is_numeric($default)) {
+      $wo_id = (int) $default;
+    }
+    if ($wo_id) {
+      $form['field_work_order']['#access'] = FALSE;
+      // Tell them what it is attached to, in one line they cannot mis-read.
+      $wo = \Drupal::entityTypeManager()->getStorage('work_order')->load($wo_id);
+      if ($wo) {
+        $form['wo_notes_for'] = [
+          '#markup' => '<p class="wo-notes-for">' . t('Note for @wo', ['@wo' => $wo->label()]) . '</p>',
+          '#weight' => -10,
+        ];
+      }
+    }
+  }
+
+  // "Entered on" and Language are set for them. Neither belongs on a phone.
+  foreach (['created', 'langcode'] as $name) {
+    if (isset($form[$name])) {
+      $form[$name]['#access'] = FALSE;
+    }
+  }
+
+  $form['#attributes']['class'][] = 'wo-notes-form';
+  $form['#attached']['library'][] = 'wo_notes/note_form';
+}

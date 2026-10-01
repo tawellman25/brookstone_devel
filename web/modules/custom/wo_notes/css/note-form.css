@@ -1,0 +1,31 @@
+/* Add-note form on a phone: the Save button has to be reachable. */
+.wo-notes-form { max-width: 42rem; }
+.wo-notes-form .wo-notes-for {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+.wo-notes-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 8rem;
+  font-size: 1rem;
+}
+.wo-notes-form .form-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+  /* Clear iOS Safari's bottom toolbar, which otherwise sits over the button. */
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+.wo-notes-form .form-actions .button {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+}
+@media (max-width: 30rem) {
+  .wo-notes-form .form-actions .button {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}

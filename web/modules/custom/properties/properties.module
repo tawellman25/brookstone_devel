@@ -785,3 +785,137 @@ function properties_views_data_alter(array &$data): void {
     $data[$table][$column]['filter']['id'] = 'properties_sprinkler_system_type';
   }
 }
+
+/**
+ * Sprinkler image fields that get alt text written for them, and what to call
+ * the photo. Crews are standing in a yard with wet hands; typing alt text is not
+ * a good use of that time, and the generated text is more consistent than what
+ * gets typed anyway.
+ */
+const PROPERTIES_SPRINKLER_PHOTO_LABELS = [
+  'field_zone_map' => 'zone map',
+  'field_ss_shut_off_location_pic' => 'shut off',
+  'field_ss_backflow_photos' => 'backflow',
+  'field_ss_zone_photos' => 'zone',
+  'field_controller_photos' => 'controller',
+  'field_pump_configuration_photos' => 'pump configuration',
+  'field_pump_serial_number_pic' => 'pump serial',
+  'field_sprinkler_design' => 'sprinkler design',
+];
+
+/**
+ * Entity types whose photos get the treatment.
+ */
+const PROPERTIES_SPRINKLER_PHOTO_TYPES = [
+  'property_sprinkler_system',
+  'property_ss_sources',
+  'property_ss_zones',
+  'property_system_controller',
+  'property_sprinkler_pumps',
+  'property_sprinkler_design',
+];
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * Fill in alt text on sprinkler photos so the field crew does not have to.
+ *
+ * Alt text is worth having — it is what a screen reader reads and what the office
+ * sees in a file list — but it is not worth a tech typing it on a phone in a yard.
+ * Generated as "{property} - {what it is} {NN}", e.g.
+ * "Delta Credit Union - shut off 01".
+ *
+ * Only EMPTY alt is filled. Anything a person typed is left exactly as it is.
+ */
+function properties_entity_presave(EntityInterface $entity): void {
+  if (!in_array($entity->getEntityTypeId(), PROPERTIES_SPRINKLER_PHOTO_TYPES, TRUE)) {
+    return;
+  }
+  $nickname = NULL;
+  foreach (PROPERTIES_SPRINKLER_PHOTO_LABELS as $field => $label) {
+    if (!$entity->hasField($field) || $entity->get($field)->isEmpty()) {
+      continue;
+    }
+    // Resolve the property once, and only if there is actually a photo to name.
+    if ($nickname === NULL) {
+      $nickname = _properties_sprinkler_photo_subject($entity);
+    }
+    $changed = FALSE;
+    foreach ($entity->get($field) as $delta => $item) {
+      if (trim((string) ($item->alt ?? '')) !== '') {
+        continue;
+      }
+      $item->alt = sprintf('%s - %s %02d', $nickname, $label, $delta + 1);
+      $changed = TRUE;
+    }
+    if ($changed) {
+      // Touching ->alt on the item object is enough; no re-set needed.
+      $entity->get($field)->filterEmptyItems();
+    }
+  }
+}
+
+/**
+ * What to call the property in generated alt text.
+ *
+ * Walks whichever link path this entity has, measured rather than assumed:
+ *   sprinkler_system  -> field_property, or field_property_system_info -> info
+ *   ss_sources        -> field_property_ss_system -> system
+ *   ss_zones          -> field_property, or its system
+ *   system_controller -> field_property_ss_system -> system
+ *   sprinkler_pumps   -> field_property_ss_source -> source -> system
+ *   sprinkler_design  -> field_property
+ *
+ * Falls back to the entity's own label, then to "Property", so a photo always
+ * gets alt text even on a record that is not linked up yet.
+ */
+function _properties_sprinkler_photo_subject(EntityInterface $entity): string {
+  $property = _properties_sprinkler_walk_to_property($entity, 0);
+  if ($property) {
+    $nick = trim((string) ($property->get('field_nickname')->value ?? ''));
+    if ($nick !== '') {
+      return $nick;
+    }
+    $label = trim((string) $property->label());
+    if ($label !== '') {
+      return $label;
+    }
+  }
+  $own = trim((string) $entity->label());
+  return $own !== '' ? $own : 'Property';
+}
+
+/**
+ * Follow references until a properties entity turns up. Depth-capped so a
+ * circular reference cannot spin.
+ */
+function _properties_sprinkler_walk_to_property(EntityInterface $entity, int $depth): ?EntityInterface {
+  if ($depth > 4) {
+    return NULL;
+  }
+  if ($entity->getEntityTypeId() === 'properties') {
+    return $entity;
+  }
+  // Direct first — it is the cheapest and the most common.
+  foreach (['field_property', 'field_property_reference'] as $direct) {
+    if ($entity->hasField($direct) && !$entity->get($direct)->isEmpty()) {
+      $target = $entity->get($direct)->entity;
+      if ($target && $target->getEntityTypeId() === 'properties') {
+        return $target;
+      }
+    }
+  }
+  foreach (['field_property_ss_system', 'field_property_system_info', 'field_property_ss_source'] as $hop) {
+    if (!$entity->hasField($hop) || $entity->get($hop)->isEmpty()) {
+      continue;
+    }
+    $next = $entity->get($hop)->entity;
+    if ($next instanceof EntityInterface) {
+      $found = _properties_sprinkler_walk_to_property($next, $depth + 1);
+      if ($found) {
+        return $found;
+      }
+    }
+  }
+  return NULL;
+}

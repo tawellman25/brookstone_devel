@@ -1,0 +1,14 @@
+properties.sprinkler_quick_capture:
+  path: '/work-order/{work_order}/sprinkler-quick'
+  defaults:
+    _form: '\Drupal\properties\Form\SprinklerQuickCaptureForm'
+    _title: 'Sprinkler quick entry'
+  options:
+    _admin_route: TRUE
+    parameters:
+      work_order:
+        type: entity:work_order
+  requirements:
+    # Anyone who may update the work order may record what they found on site --
+    # this is crew-facing by design.
+    _entity_access: 'work_order.update'

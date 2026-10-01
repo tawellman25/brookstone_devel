@@ -919,3 +919,33 @@ function _properties_sprinkler_walk_to_property(EntityInterface $entity, int $de
   }
   return NULL;
 }
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for work_order.
+ *
+ * One tap from the open work order to the quick entry screen. Sprinkler bundles
+ * only — a mowing work order has no use for it.
+ */
+function properties_work_order_view(array &$build, EntityInterface $entity, $display, $view_mode): void {
+  if ($view_mode !== 'full') {
+    return;
+  }
+  $bundles = [
+    'sprinkler_winterizing', 'sprinkler_start_up', 'sprinkler_check_up',
+    'sprinkler_repair', 'sprinkler_installation', 'backflow_testing',
+  ];
+  if (!in_array($entity->bundle(), $bundles, TRUE)) {
+    return;
+  }
+  if (!$entity->access('update')) {
+    return;
+  }
+  $build['properties_sprinkler_quick'] = [
+    '#type' => 'link',
+    '#title' => t('Sprinkler quick entry'),
+    '#url' => \Drupal\Core\Url::fromRoute('properties.sprinkler_quick_capture', ['work_order' => $entity->id()]),
+    '#attributes' => ['class' => ['button', 'button--primary', 'sprinkler-quick-link']],
+    '#weight' => -95,
+    '#attached' => ['library' => ['properties/sprinkler_quick']],
+  ];
+}

@@ -216,6 +216,99 @@
       }
 
       // ── FullCalendar init ─────────────────────────────────────────
+      // ── Remembering the filters ───────────────────────────────────
+      // Per user AND per browser: a shared office machine must not hand one
+      // person's filters to the next. The property search is deliberately NOT
+      // remembered — it is a "find this one job" action, not a setting.
+      var FILTER_STORE = 'bosCalendarFilters:' + ((drupalSettings.user && drupalSettings.user.uid) || 0);
+      var FILTER_IDS = {
+        'bos-filter-department': 'value',
+        'bos-filter-teammate': 'value',
+        'bos-filter-status': 'value',
+        'bos-filter-firm-only': 'checked',
+        'bos-filter-show-completed': 'checked',
+      };
+
+      function readFilters() {
+        var out = {};
+        Object.keys(FILTER_IDS).forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) { out[id] = el[FILTER_IDS[id]]; }
+        });
+        return out;
+      }
+
+      function saveFilters() {
+        // Storage can throw (private window, blocked site data). Remembering a
+        // filter is a convenience; never let it break the calendar.
+        try { window.localStorage.setItem(FILTER_STORE, JSON.stringify(readFilters())); }
+        catch (e) {}
+      }
+
+      function clearFilters() {
+        try { window.localStorage.removeItem(FILTER_STORE); } catch (e) {}
+      }
+
+      /**
+       * Put saved filters back on the controls. Returns how many are actually
+       * narrowing the view, so the user can be told.
+       */
+      function restoreFilters() {
+        var saved = null;
+        try { saved = JSON.parse(window.localStorage.getItem(FILTER_STORE) || 'null'); }
+        catch (e) { saved = null; }
+        if (!saved) { return 0; }
+        Object.keys(FILTER_IDS).forEach(function (id) {
+          if (!(id in saved)) { return; }
+          var el = document.getElementById(id);
+          if (!el) { return; }
+          var prop = FILTER_IDS[id];
+          if (prop === 'checked') { el.checked = !!saved[id]; }
+          else {
+            // Only restore a value the select still offers — a teammate can
+            // leave, a department can be renamed, and a stale value would
+            // silently return nothing.
+            var ok = Array.prototype.some.call(el.options || [], function (o) { return o.value === saved[id]; });
+            if (ok) { el.value = saved[id]; }
+          }
+        });
+        return activeFilterCount();
+      }
+
+      /**
+       * How many filters are narrowing what is shown. "Show completed" ADDS
+       * events rather than hiding any, so it is not counted as narrowing.
+       */
+      function activeFilterCount() {
+        var n = 0;
+        ['bos-filter-department', 'bos-filter-teammate', 'bos-filter-status'].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el && el.value) { n++; }
+        });
+        if (document.getElementById('bos-filter-firm-only')?.checked) { n++; }
+        return n;
+      }
+
+      /**
+       * Say on the Filters button how many are on. Without this a remembered
+       * filter plus a collapsed panel reads as "my work orders have vanished".
+       */
+      function updateFilterBadge() {
+        var toggle = document.getElementById('bos-filters-toggle');
+        if (!toggle) { return; }
+        var badge = toggle.querySelector('.bos-filter-count');
+        var n = activeFilterCount();
+        if (!n) { if (badge) { badge.remove(); } toggle.classList.remove('has-filters'); return; }
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'bos-filter-count';
+          toggle.insertBefore(badge, toggle.lastElementChild);
+        }
+        badge.textContent = n;
+        badge.title = Drupal.t('@n filter(s) are limiting what you see', {'@n': n});
+        toggle.classList.add('has-filters');
+      }
+
       const calendar = new FullCalendar.Calendar(el, {
         initialView: 'dayGridMonth',
         headerToolbar: {
@@ -302,7 +395,26 @@
         },
       });
 
+      // Put the saved filters back BEFORE the first fetch, so the calendar loads
+      // already filtered rather than loading everything and then quietly showing
+      // filter controls that were never applied.
+      var restoredCount = restoreFilters();
+      updateFilterBadge();
+      if (restoredCount) {
+        // Open the panel, so the reason the calendar looks narrow is on screen
+        // rather than hidden behind a collapsed "Filters" button.
+        var filtersInner = document.getElementById('bos-filters-inner');
+        var filtersIcon = document.getElementById('bos-filters-toggle-icon');
+        if (filtersInner && !filtersInner.classList.contains('open')) {
+          filtersInner.classList.add('open');
+          if (filtersIcon) { filtersIcon.textContent = '▲'; }
+        }
+      }
+
       calendar.render();
+      if (document.getElementById('bos-filter-show-completed')?.checked) {
+        calendar.addEventSource(completedSource);
+      }
       buildBusinessLegend();
 
       // ── Property-nickname search ───────────────────────────────────
@@ -408,6 +520,7 @@
         }
       });
 
+
       // ── Filter controls ───────────────────────────────────────────
       // Mobile filter toggle.
       document.getElementById('bos-filters-toggle')?.addEventListener('click', function () {
@@ -419,6 +532,7 @@
 
       // Toggle completed overlay.
       document.getElementById('bos-filter-show-completed')?.addEventListener('change', function () {
+        saveFilters();
         if (this.checked) {
           calendar.addEventSource(completedSource);
         } else {
@@ -427,6 +541,8 @@
       });
 
       document.getElementById('bos-calendar-apply')?.addEventListener('click', function () {
+        saveFilters();
+        updateFilterBadge();
         clearLegend();
         calendar.refetchEvents();
         // Refetch completed source if active.
@@ -447,9 +563,13 @@
         if (searchResults) { searchResults.hidden = true; searchResults.innerHTML = ''; }
         focusWoId = null; focusNick = ''; focusDate = null; focusActive = false; searchHighlight = '';
         renderFocusNote();
+        // Forget them too — otherwise Reset lasts until the next page load.
+        clearFilters();
+        updateFilterBadge();
         clearLegend();
         calendar.refetchEvents();
       });
+
     }
   };
 

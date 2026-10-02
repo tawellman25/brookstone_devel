@@ -949,3 +949,70 @@ function properties_work_order_view(array &$build, EntityInterface $entity, $dis
     '#attached' => ['library' => ['properties/sprinkler_quick']],
   ];
 }
+
+/**
+ * Who does this property's backflow test report go to?
+ *
+ * Two sources, in this order:
+ *
+ * 1. The property's OWN field_water_purveyor. Always wins. Service areas do not
+ *    follow town lines — part of Cedaredge is on Orchard City domestic water —
+ *    so the per-property answer is the only one that is reliably right.
+ * 2. Otherwise, whichever purveyor lists this property's town as one it serves,
+ *    reached through zipcode -> city. A suggestion, not a fact.
+ *
+ * The caller is told which it got, because "we looked it up from the town" and
+ * "somebody confirmed this address" are different degrees of confidence and a
+ * report going to the wrong authority is not a small error.
+ *
+ * @return array{purveyor: \Drupal\Core\Entity\EntityInterface|null, source: string}
+ *   source: 'property' (confirmed), 'city' (inferred), 'none'.
+ */
+function properties_water_purveyor_for($property): array {
+  $none = ['purveyor' => NULL, 'source' => 'none'];
+  if (is_numeric($property)) {
+    $property = \Drupal::entityTypeManager()->getStorage('properties')->load((int) $property);
+  }
+  if (!$property instanceof EntityInterface) {
+    return $none;
+  }
+
+  // 1. Set on the property itself.
+  if ($property->hasField('field_water_purveyor') && !$property->get('field_water_purveyor')->isEmpty()) {
+    $p = $property->get('field_water_purveyor')->entity;
+    if ($p) {
+      return ['purveyor' => $p, 'source' => 'property'];
+    }
+  }
+
+  // 2. Inferred from the town.
+  if (!$property->hasField('field_zipcode_reference') || $property->get('field_zipcode_reference')->isEmpty()) {
+    return $none;
+  }
+  $zip = $property->get('field_zipcode_reference')->entity;
+  if (!$zip || !$zip->hasField('field_city') || $zip->get('field_city')->isEmpty()) {
+    return $none;
+  }
+  $cityId = (int) $zip->get('field_city')->target_id;
+  if (!$cityId) {
+    return $none;
+  }
+  try {
+    $ids = \Drupal::entityTypeManager()->getStorage('water_purveyor')->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_purveyor_cities', $cityId)
+      ->sort('id')
+      ->execute();
+  }
+  catch (\Throwable $e) {
+    return $none;
+  }
+  // More than one purveyor serving a town is exactly the Cedaredge case. Rather
+  // than pick one, say nothing — a guess here sends a report to the wrong
+  // authority, and the fix is for someone to set it on the property.
+  if (count($ids) !== 1) {
+    return $none;
+  }
+  $p = \Drupal::entityTypeManager()->getStorage('water_purveyor')->load(reset($ids));
+  return $p ? ['purveyor' => $p, 'source' => 'city'] : $none;
+}

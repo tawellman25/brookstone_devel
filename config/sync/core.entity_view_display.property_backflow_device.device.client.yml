@@ -1,0 +1,123 @@
+uuid: 448a1df3-3dc6-474e-87df-3fe96f248897
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.property_backflow_device.client
+    - eck.eck_type.property_backflow_device.device
+    - field.field.property_backflow_device.device.field_current_status
+    - field.field.property_backflow_device.device.field_device_photos
+    - field.field.property_backflow_device.device.field_device_type
+    - field.field.property_backflow_device.device.field_initial_test_date
+    - field.field.property_backflow_device.device.field_last_pass_date
+    - field.field.property_backflow_device.device.field_last_test_date
+    - field.field.property_backflow_device.device.field_material_backflow
+    - field.field.property_backflow_device.device.field_next_due_date
+    - field.field.property_backflow_device.device.field_physical_location
+    - field.field.property_backflow_device.device.field_property
+    - field.field.property_backflow_device.device.field_qr_code
+    - field.field.property_backflow_device.device.field_replaced_by
+    - field.field.property_backflow_device.device.field_serial_number
+    - field.field.property_backflow_device.device.field_test_frequency_months
+    - field.field.property_backflow_device.device.field_used_for
+  module:
+    - datetime
+    - options
+id: property_backflow_device.device.client
+targetEntityType: property_backflow_device
+bundle: device
+mode: client
+content:
+  backflow_test_history_client_eva_entity_view_1:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_current_status:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_device_type:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_last_test_date:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: date_only
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_material_backflow:
+    type: entity_reference_label
+    label: hidden
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_next_due_date:
+    type: datetime_default
+    label: inline
+    settings:
+      timezone_override: ''
+      format_type: date_only
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_physical_location:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_serial_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_used_for:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 4
+    region: content
+hidden:
+  backflow_test_history_eva_entity_view_1: true
+  backflow_test_history_public_eva_entity_view_1: true
+  changed: true
+  created: true
+  default_langcode: true
+  entity_print_view_epub: true
+  entity_print_view_pdf: true
+  entity_print_view_word_docx: true
+  field_device_photos: true
+  field_initial_test_date: true
+  field_last_pass_date: true
+  field_property: true
+  field_qr_code: true
+  field_replaced_by: true
+  field_test_frequency_months: true
+  id: true
+  metatag: true
+  path: true
+  title: true
+  type: true
+  uid: true
+  uuid: true
+

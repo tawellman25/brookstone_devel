@@ -821,3 +821,68 @@ function backflow_device_views_query_alter(\Drupal\views\ViewExecutable $view, \
   $sub->condition('dt.field_device_type_target_id', $nontestable, 'IN');
   $query->addWhere(0, "{$base}.id", $sub, 'NOT IN');
 }
+
+/**
+ * Audience roles for the backflow device page. Same sets the material entity
+ * uses, so one customer-facing page cannot disagree with another about who
+ * counts as office, crew or client.
+ */
+const BACKFLOW_DEVICE_OFFICE_ROLES = [
+  'supervisor',
+  'administration',
+  'site_assistant',
+  'site_admin',
+  'administrator',
+];
+const BACKFLOW_DEVICE_CREW_ROLES = ['teammates'];
+const BACKFLOW_DEVICE_CLIENT_ROLES = ['client'];
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ *
+ * One device URL, four bodies. The page a laminated QR tag points at is public,
+ * so an anonymous scan must land on the minimal verify view: what the device is,
+ * its serial, whether it passed and when, when it is next due, and who certified
+ * it. Not the property it belongs to, not where on the premises it sits.
+ *
+ * ⚠ The public view mode is named `public`, NOT `full`. Leaving it as `full`
+ * would ask for a mode this entity does not register, and Drupal would fall back
+ * to `default` — the everything display — serving the internal page to the
+ * public. That is exactly how the material catalog once leaked its internal
+ * panel, and the reason this sets the mode explicitly for every audience.
+ */
+function backflow_device_entity_view_mode_alter(string &$view_mode, EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'property_backflow_device') {
+    return;
+  }
+  // Only the canonical page render is re-pointed. A deliberate request for a
+  // specific mode (a teaser in a list, an EVA, a print render) is left alone.
+  if ($view_mode !== 'full' && $view_mode !== 'default') {
+    return;
+  }
+  $roles = \Drupal::currentUser()->getRoles();
+  if (array_intersect(BACKFLOW_DEVICE_OFFICE_ROLES, $roles)) {
+    $view_mode = 'admin';
+  }
+  elseif (array_intersect(BACKFLOW_DEVICE_CREW_ROLES, $roles)) {
+    $view_mode = 'teammate';
+  }
+  elseif (array_intersect(BACKFLOW_DEVICE_CLIENT_ROLES, $roles)) {
+    $view_mode = 'client';
+  }
+  else {
+    $view_mode = 'public';
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view_alter() for property_backflow_device.
+ *
+ * Mandatory, not optional: without a user.roles cache context the render cache
+ * will hand one audience's body to another — the first anonymous scan of a QR
+ * tag could be served the office view, or an office user could be served the
+ * public one.
+ */
+function backflow_device_property_backflow_device_view_alter(array &$build, EntityInterface $entity, $display): void {
+  $build['#cache']['contexts'][] = 'user.roles';
+}

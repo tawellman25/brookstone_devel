@@ -645,6 +645,36 @@ The cleared title is the cue AEL needs to re-evaluate its pattern with the now-k
 
 **Generalized 2026-06-19 (commit `8a72d4ae`):** `wo_shared_work_order_insert()` now auto-heals the sentinel on *any* work_order insert (clear title + re-save when the placeholder is present), so the manual double-save in programmatic creators is belt-and-suspenders rather than the only defense. The interactive add-form path — which the double-save never covered — is now protected too. Child entities (`wo_status_updates`, `wo_notes`, `wo_time_clock`, `scheduling`, `wo_material_list*`) inherit the parent's broken alias segment, so healing old rows means re-saving the WO **and** regenerating child aliases: iterate `path_alias` rows matching `%autoentitylabel%`, parse `/type/id`, load each entity, `\Drupal::service('pathauto.generator')->updateEntityAlias($e, 'update')`.
 
+## `auto_entitylabel` "generate after save" shows the placeholder to the user, and `$entity->label()` hides it
+
+The section above covers the `[entity:id]`-token cause. There is a **second, independent cause** of the same `%AutoEntityLabel: <uuid>%` string reaching a user's screen, and it is a per-bundle **setting**, not a pattern problem.
+
+Each AEL bundle config carries `new_content_behavior`:
+
+- `0` = build the label during the first `hook_entity_presave`. The row is written with its real title.
+- `1` = build it on a **second save**, which contrib runs from a **PHP shutdown function** (`_auto_entitylabel_post_insert`, registered in `hook_entity_insert` via `drupal_register_shutdown_function`).
+
+With `1`, presave writes the placeholder so the insert can proceed, and the real title only lands **after the response has been sent**. So the page the user is redirected to **renders the raw placeholder**, and anything that reads the row in that window — a view, an EVA, pathauto — sees it too. This is a correctness problem whenever the pattern contains **no** post-save token, because then the deferral buys nothing and costs an extra entity save.
+
+**The trap that makes this hard to diagnose:** `hook_entity_insert` *also* repairs the label on the **in-memory** entity ("Set entity label in memory so messages and such can use what will be saved during shutdown"). So immediately after `$entity->save()`:
+
+```php
+$entity->save();
+$entity->label();                  // '#1 - Primary Controller'  ← looks fine
+$storage->loadUnchanged($entity->id())->label();
+                                   // '%AutoEntityLabel: <uuid>%' ← what the page renders
+```
+
+A guard written against `$entity->label()` therefore **never fires**, and a test that asserts on the in-memory label **passes while the bug ships**. Any heal must re-read the stored row with `loadUnchanged()`.
+
+**Rules:**
+
+1. A bundle whose AEL pattern contains no post-save token (no `[…:id]`) must be `new_content_behavior: 0`. Check this when creating a bundle — the UI default is not reliably `0`.
+2. A bundle that genuinely needs `[…:id]` stays at `1` and needs a heal on the paths that render immediately after creating the record (`wo_shared_work_order_insert()` is the reference implementation for work orders).
+3. Never assert on, or branch on, the in-memory label to decide whether a placeholder was stored.
+
+**Surfaced 2026-10-02 on WO#53970:** the sprinkler quick-entry form created a `property_system_controller` record and the work-order page rendered `%AutoEntityLabel: 5b5d4e29-…%` as the **Controller(s)** heading. Of all the `property_*` sprinkler bundles, `property_system_controller.controller` was the only one at `new_content_behavior: 1` — and its pattern (`#[field_controller_number] - [field_controller_type] Controller`) uses only plain fields, so the deferral was pointless. The record self-healed at shutdown (which is why a later audit found **zero** stuck rows and nearly sent the hunt in the wrong direction — the forensic tell is the `changed` timestamp, not a surviving placeholder). Fixed at the source by flipping the bundle to `0`; the form also carries a scoped `saveRecord()` backstop that re-reads the stored row, so flipping the setting back in the UI cannot put the placeholder in front of a crew again. A site-wide heal was **rejected**: ~100 BOS bundles (work orders, estimates) are legitimately at `1` and are already re-saved by contrib, so a generic hook would add a third save across the system to fix a per-bundle misconfiguration.
+
 ## Entity query `range()` without `sort()` is non-deterministic
 
 Drupal entity queries with `->range(N, M)` but no `->sort(...)` may return different `N..N+M` slices across calls when the underlying result set exceeds the cap. MariaDB makes no ordering guarantee on `LIMIT/OFFSET` queries without an explicit `ORDER BY`, so the storage engine returns whichever rows are convenient at query time. The behavior is silent — no warning, no exception, just intermittent results.

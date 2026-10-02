@@ -237,7 +237,7 @@ final class SprinklerQuickCaptureForm extends FormBase {
         // Append, never replace: a second photo is extra information.
         $source->get('field_ss_shut_off_location_pic')->appendItem(['target_id' => (int) $fid]);
       }
-      $source->save();
+      $this->saveRecord($source);
       $written[] = (string) $this->t('shut off / hookup');
     }
 
@@ -262,7 +262,7 @@ final class SprinklerQuickCaptureForm extends FormBase {
       foreach ($clockFids as $fid) {
         $controller->get('field_controller_photos')->appendItem(['target_id' => (int) $fid]);
       }
-      $controller->save();
+      $this->saveRecord($controller);
       $written[] = (string) $this->t('clock');
     }
 
@@ -275,7 +275,7 @@ final class SprinklerQuickCaptureForm extends FormBase {
         $existing = trim((string) $source->get('field_ss_shut_off_notes')->value);
         if (!str_contains($existing, $note)) {
           $source->set('field_ss_shut_off_notes', trim($existing . ' ' . $note));
-          $source->save();
+          $this->saveRecord($source);
         }
       }
     }
@@ -291,6 +291,60 @@ final class SprinklerQuickCaptureForm extends FormBase {
     if ($woId && ($wo = $this->etm->getStorage('work_order')->load($woId))) {
       $form_state->setRedirectUrl($wo->toUrl());
     }
+  }
+
+  /**
+   * Save a record, and never leave a crew looking at a label placeholder.
+   *
+   * auto_entitylabel builds some labels on a SECOND save, which it runs in a PHP
+   * shutdown function — after the response has already been sent. A record
+   * created here therefore renders with its raw placeholder
+   * (`%AutoEntityLabel: <uuid>%`) on the very page the crew is redirected to.
+   * That is what WO#53970 showed on 2026-10-02: the Controller(s) heading was
+   * the placeholder, because this was the one sprinkler bundle set to defer its
+   * label. Its pattern needs nothing that only exists after the save, so it now
+   * builds on the first save and this method is a no-op — it is here so that
+   * flipping that setting back in the UI cannot put the placeholder in front of
+   * a crew a second time.
+   *
+   * Same shape as wo_shared_work_order_insert(), deliberately scoped to the
+   * records this form writes rather than to every insert in BOS: the ~100 other
+   * deferred-label bundles (work orders and estimates, whose patterns genuinely
+   * need the entity id) are already re-saved by contrib, and a site-wide heal
+   * would add a third save to all of them to fix a timing problem that is better
+   * fixed per bundle at the source.
+   */
+  private function saveRecord(EntityInterface $record): void {
+    $isNew = $record->isNew();
+    $record->save();
+    if (!$isNew || !$record->hasField('title')) {
+      return;
+    }
+
+    // Only bundles configured to label AFTER the first save can carry the
+    // placeholder, and that is a cached config read rather than a query.
+    $cfg = $this->config('auto_entitylabel.settings.' . $record->getEntityTypeId() . '.' . $record->bundle());
+    if ((int) $cfg->get('new_content_behavior') !== 1) {
+      return;
+    }
+
+    // Re-read the STORED title. auto_entitylabel repairs the label on the
+    // in-memory entity during hook_entity_insert but leaves the database row
+    // carrying the placeholder until its shutdown re-save, so $record->label()
+    // reads correctly here while the row the next page renders is still wrong.
+    $stored = $this->etm->getStorage($record->getEntityTypeId())->loadUnchanged($record->id());
+    if (!$stored || !str_contains((string) $stored->get('title')->value, '%AutoEntityLabel')) {
+      return;
+    }
+
+    // status:2 bundles only fill an empty title, so clear it before re-saving.
+    $stored->set('title', '');
+    $stored->save();
+    \Drupal::logger('properties')->notice('Healed a stuck label placeholder on @type @id -> %label', [
+      '@type' => $stored->getEntityTypeId(),
+      '@id' => $stored->id(),
+      '%label' => $stored->label(),
+    ]);
   }
 
   /**

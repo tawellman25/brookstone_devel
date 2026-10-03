@@ -67,6 +67,32 @@ foreach ($terms as $t) {
     return;
   }
   $short = $toPlain($t->get('field_short_description')->value ?? '');
+  // Fall back to the public body when no teaser is written. A meta description
+  // has to come from somewhere, and on plant_characteristics only 1 of 41 terms
+  // has a teaser — seeding from the teaser alone would have left 40 term pages
+  // with no meta description at all, which is the very trap this seeding exists
+  // to avoid. The teaser still wins when present: it was written to be read on
+  // its own, which is exactly what a search result shows.
+  if ($short === '' && $t->hasField('field_public_description')) {
+    $body = $toPlain($t->get('field_public_description')->value ?? '');
+    // A body is not a meta description. Take whole opening SENTENCES up to ~160
+    // characters — never a mid-thought cut, which is the reason the earlier pass
+    // refused to auto-trim. Verbatim would have stored 970 characters for
+    // Vining, and Google would clip it anyway.
+    if ($body !== '') {
+      $parts = preg_split('/(?<=[.!?])\s+/u', $body) ?: [$body];
+      $acc = '';
+      foreach ($parts as $sentence) {
+        $candidate = $acc === '' ? $sentence : $acc . ' ' . $sentence;
+        if ($acc !== '' && mb_strlen($candidate) > 160) {
+          break;
+        }
+        $acc = $candidate;
+      }
+      // If even the first sentence runs long, keep it whole rather than cut it.
+      $short = $acc !== '' ? $acc : $body;
+    }
+  }
   if ($short === '') {
     printf("  %-24s SKIP — no short description\n", $t->label());
     $empty++;

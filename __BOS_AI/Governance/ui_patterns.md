@@ -336,3 +336,53 @@ Reference impl: `bos_spray_types` + `web/scripts/build_spray_location_landing_ca
   `bos_services` service_children); note that Olivero's nav is two-level only.
 - 2026-09-27 — added the **landing-view variant** of child-listing cards (Unformatted style id is `default`; grid the wrapper because these views have no `.view-content`; attach CSS from `hook_preprocess_views_view`).
 - Living document — add reusable BOS UI patterns here as they're established.
+
+## The three-field content model for public taxonomy terms — and which field goes where
+
+Every public-facing vocabulary (the 31 in the `bos_breadcrumbs` allowlist) carries exactly
+three copy fields, configured identically — `text_long`, cardinality 1, optional,
+**`allowed_formats: ['full_html']`**, `text_textarea` widget at 5 rows:
+
+| Field | What it is | Where it renders |
+|---|---|---|
+| `field_short_description` | The one-line teaser | **VIEWS ONLY** — the card or list text on the **parent** term's page. **Never on any view mode.** |
+| `field_public_description` | The public body | The term's own page, public view modes |
+| `field_teammate_description` | Crew instructions | `teammate_view` / `admin_view` only — **never a public display** |
+
+### ⚠ `field_short_description` is never on a view mode. This is enforced in code.
+
+The teaser is what the level **above** says about a term. The term's own page shows its
+**public description**. Those are different jobs and the same text rarely does both well.
+
+`bos_content_coverage_entity_view_display_presave()` **removes** the field from any
+`taxonomy_term` view display on save and logs a warning naming the display. Views are
+untouched — a Views field is not an entity view display, and views are the consumer the field
+exists for.
+
+**Why it is enforced rather than documented:** the rule was broken twice in one day — once by
+the original build, and once on 2026-10-03 by Code, when a marketing brief said "unhide it" and
+Code followed the brief instead of the model. A written rule does not survive that, because the
+brief is what gets read last. **When a brief and this model disagree, the model wins** — raise
+the conflict, do not implement it.
+
+### Corollaries that have each been got wrong once
+
+- **A card never shows a truncation of the body.** Trimming a body to 160 characters cuts
+  mid-sentence and the first line was not written to open anything. If the teaser is empty the
+  card renders **no text** — an empty card is a tracked to-do; one quietly filled with stale
+  body copy hid a problem for weeks.
+- **Never promote the teaser to cover a missing body.** If a vocabulary's body is empty, write
+  one. (Where this had already happened — `wind_direction`, `brookstone_tags` — the teaser was
+  **copied** into the body, not moved, so the cards kept theirs.)
+- **Core `description` is not used on any public vocabulary.** It is a base field, so it cannot
+  be deleted per vocabulary; it is emptied and removed from the form and every display.
+- **A vocabulary may hold a role under a different field name** (`services` uses
+  `field_service_public_desc` / `field_service_crew_desc`). The coverage report maps those via
+  `ContentCoverage::FIELD_OVERRIDES`; do not add the generic fields alongside.
+
+### Checking the state, instead of inferring it
+
+`/admin/office/content-coverage` shows every public term's alias and the state of each field.
+**Live state comes from there or from fetching the page — never from a copy file (which says
+what was written) or a build log (which says what was built).**
+

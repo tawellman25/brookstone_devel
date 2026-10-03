@@ -31,3 +31,40 @@ function bos_content_coverage_views_data_alter(array &$data): void {
     ],
   ];
 }
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for entity_view_display.
+ *
+ * THE RULE, ENFORCED RATHER THAN DOCUMENTED.
+ *
+ * field_short_description is the text a PARENT term's list or card shows about
+ * this term. It is never part of the term's own rendered page. A term page shows
+ * its public description; the teaser is what the level above says about it.
+ *
+ * This hook exists because the rule was broken twice in one day — once by the
+ * original site build, and once by me, on 2026-10-03, when marketing's brief
+ * said "unhide it" and I followed the brief instead of the model. A rule written
+ * in a document does not survive that, because the brief is what gets read last.
+ * So the model refuses the change instead: adding the teaser to any taxonomy
+ * term view display is undone here, with a warning naming the display.
+ *
+ * Views are unaffected — a Views field is not an entity view display, and views
+ * are the consumer this field exists for.
+ *
+ * To render body copy on a term page, use field_public_description. If a
+ * vocabulary genuinely has no body, write one; do not promote the teaser.
+ */
+function bos_content_coverage_entity_view_display_presave(\Drupal\Core\Entity\EntityInterface $display): void {
+  /** @var \Drupal\Core\Entity\Entity\EntityViewDisplay $display */
+  if ($display->getTargetEntityTypeId() !== 'taxonomy_term') {
+    return;
+  }
+  if (!$display->getComponent('field_short_description')) {
+    return;
+  }
+  $display->removeComponent('field_short_description');
+  \Drupal::logger('bos_content_coverage')->warning(
+    'Removed field_short_description from the %display view display. That field is the text a PARENT term\'s list or card shows about this term, and it is never rendered on the term\'s own page — use field_public_description for body copy. See Governance/ui_patterns.md.',
+    ['%display' => $display->id()]
+  );
+}

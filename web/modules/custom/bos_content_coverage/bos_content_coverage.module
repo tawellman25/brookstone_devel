@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * @file
+ * Content coverage report — what public copy is actually live.
+ */
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_views_data_alter().
+ *
+ * Registers the computed column and the question filter against the taxonomy
+ * term base table. A handler plugin comes from views DATA, not from a plugin_id
+ * in a view's config, so this is the only place it can be declared.
+ */
+function bos_content_coverage_views_data_alter(array &$data): void {
+  $data['taxonomy_term_field_data']['bos_coverage_column'] = [
+    'title' => t('Content coverage column'),
+    'help' => t('Live URL alias, parent, boilerplate flag, or the state of one copy role.'),
+    'field' => [
+      'id' => 'bos_coverage_column',
+      'click sortable' => FALSE,
+    ],
+  ];
+  $data['taxonomy_term_field_data']['bos_coverage_question'] = [
+    'title' => t('Content coverage question'),
+    'help' => t('Carries boilerplate / missing public description / missing teaser.'),
+    'filter' => [
+      'id' => 'bos_coverage_question',
+    ],
+  ];
+}

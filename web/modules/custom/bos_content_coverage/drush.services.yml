@@ -1,0 +1,9 @@
+services:
+  bos_content_coverage.link_check:
+    class: Drupal\bos_content_coverage\Commands\LinkCheckCommands
+    arguments:
+      - '@bos_content_coverage.coverage'
+      - '@entity_type.manager'
+      - '@path_alias.manager'
+    tags:
+      - { name: drush.command }

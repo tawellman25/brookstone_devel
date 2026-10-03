@@ -500,7 +500,10 @@ function bos_service_request_preprocess_page(array &$variables) {
   $variables['bo_tagline'] = 'Creating and Maintaining Your Outdoor Spaces';
   $variables['bo_year'] = (int) ($cfg->get('bundles.sprinkler_winterizing.service_year') ?: date('Y'));
   $variables['bo_address'] = '20143 Austin Rd, Austin, CO 81410';
-  $variables['bo_trust'] = _bos_service_request_trust_line();
+  // bo_credentials, NOT bo_trust: the fall cleanup page already uses bo_trust
+  // for its hero bullet LIST, and one name serving both a string and an array
+  // is what 500'd that page from 2026-09-28 until 10-03.
+  $variables['bo_credentials'] = _bos_service_request_trust_line();
 
   $route = \Drupal::routeMatch()->getRouteName();
   $variables['bo_offer'] = NULL;
@@ -878,7 +881,7 @@ function _bos_service_request_preprocess_fall_cleanup(array &$variables): void {
   $variables['bo_phone'] = (string) $cfg->get('office_phone');
   $variables['bo_tagline'] = 'Creating and Maintaining Your Outdoor Spaces';
   $variables['bo_address'] = '20143 Austin Rd, Austin, CO 81410';
-  $variables['bo_trust'] = _bos_service_request_trust_line();
+  $variables['bo_credentials'] = _bos_service_request_trust_line();
 
   // The intake form.
   $variables['bo_form'] = \Drupal::formBuilder()->getForm(\Drupal\bos_service_request\Form\FallCleanupForm::class);
@@ -905,7 +908,12 @@ function _bos_service_request_preprocess_fall_cleanup(array &$variables): void {
   $variables['bo_h1'] = 'Fall Cleanup';
   $variables['bo_hook'] = 'Leaves do not blow away over the winter. They mat down under the snow, and what comes out in April is not lawn.';
   $variables['bo_cta_text'] = 'Request your fall cleanup';
-  $variables['bo_trust'] = [
+  // The hero bullet list. Distinct from bo_credentials (the footer's
+  // "Licensed, Bonded & Insured" string) because the template iterates this one
+  // and prints that one — the collision when both were called bo_trust threw
+  // "'0' is an invalid render array key" out of Element::children() and took the
+  // page down through fall cleanup season.
+  $variables['bo_hero_stats'] = [
     'On the Western Slope since 1997',
     'One trip — cleanup and sprinkler winterization the same week',
   ];

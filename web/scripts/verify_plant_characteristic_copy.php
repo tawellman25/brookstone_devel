@@ -15,30 +15,36 @@ $ok = function (bool $c, string $m) use (&$pass, &$fail) {
   print ($c ? "  ✓ " : "  ✗ FAIL ") . $m . "\n"; $c ? $pass++ : $fail++;
 };
 
-// 1. Every one of the 9 category pages: how many rows carry card text?
+// 1. Category pages. The EIGHT char_cat_* views are DISABLED and their paths
+// are shadowed by the category terms' aliases, so they render nowhere. The
+// live page is the plant_character_categories TERM page and the list comes
+// from the plant_characteristic_children EVA — so that is what gets tested.
 print "CATEGORY PAGES — rows listed vs rows with card text (as anon)\n";
 $acct->switchTo(new UserSession(['uid' => 0, 'roles' => ['anonymous']]));
-$views = \Drupal::entityQuery('view')->accessCheck(FALSE)->execute();
-$bare_total = 0;
-foreach ($views as $vid) {
-  if (strpos($vid, 'char_cat_') !== 0) { continue; }
-  $v = \Drupal\views\Views::getView($vid);
+$cats = $etm->getStorage('taxonomy_term')->loadMultiple(
+  \Drupal::entityQuery('taxonomy_term')->accessCheck(FALSE)
+    ->condition('vid', 'plant_character_categories')->execute());
+$bare_total = 0; $listed_total = 0;
+foreach ($cats as $cat) {
+  $v = \Drupal\views\Views::getView('plant_characteristic_children');
   if (!$v) { continue; }
-  $v->setDisplay('page_1'); $v->execute();
+  $v->setDisplay('entity_view_1');
+  $v->setArguments([$cat->id()]);
+  $v->execute();
   $with = 0; $bare = [];
   foreach ($v->result as $r) {
     $t = $r->_entity ?? NULL; if (!$t) { continue; }
     trim(strip_tags((string) ($t->get('field_short_description')->value ?? ''))) === ''
       ? $bare[] = $t->label() : $with++;
   }
-  $n = count($v->result);
-  printf("  %-38s %2d rows, %2d with text%s\n", str_replace('char_cat_', '', $vid), $n, $with,
+  printf("  %-26s %2d rows, %2d with text%s\n", $cat->label(), count($v->result), $with,
     $bare ? '  BARE: ' . implode(', ', $bare) : '');
   $bare_total += count($bare);
+  $listed_total += count($v->result);
 }
 $acct->switchBack();
-$ok($bare_total === 8, "exactly 8 rows still bare — the Environmental Tolerance batch that was never supplied (got $bare_total)");
-
+$ok($bare_total === 0, "every listed characteristic carries a card line (bare rows: $bare_total)");
+$ok($listed_total === 41, "all 41 characteristics are listed under a category (listed: $listed_total)");
 // 2. A term page as ANON: public body renders as HTML, crew copy absent.
 $tids = \Drupal::entityQuery('taxonomy_term')->accessCheck(FALSE)
   ->condition('vid', 'plant_characteristics')->condition('name', 'Rabbit-Resistant')->execute();
@@ -89,6 +95,14 @@ $noBody = [];
 foreach ($all as $t) {
   if (trim(strip_tags((string) ($t->get('field_public_description')->value ?? ''))) === '') { $noBody[] = $t->label(); }
 }
-$ok(!$noBody, 'every term still has a public body' . ($noBody ? ': ' . implode(', ', $noBody) : ''));
+$ok(!$noBody, 'every term has a public body' . ($noBody ? ': ' . implode(', ', $noBody) : ''));
+$noCrew = []; $noCard = [];
+foreach ($all as $t) {
+  if (trim(strip_tags((string) ($t->get('field_teammate_description')->value ?? ''))) === '') { $noCrew[] = $t->label(); }
+  if (trim(strip_tags((string) ($t->get('field_short_description')->value ?? ''))) === '') { $noCard[] = $t->label(); }
+}
+$ok(!$noCrew, 'every term has crew copy' . ($noCrew ? ': ' . implode(', ', $noCrew) : ''));
+$ok(!$noCard, 'every term has a card line' . ($noCard ? ': ' . implode(', ', $noCard) : ''));
+$ok(count($all) === 41, 'vocabulary holds 41 terms (found ' . count($all) . ')');
 
 printf("\n%d passed, %d failed\n", $pass, $fail);

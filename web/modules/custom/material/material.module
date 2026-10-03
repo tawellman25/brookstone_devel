@@ -258,12 +258,50 @@ function material_views_pre_render(ViewExecutable $view): void {
 }
 
 /**
+ * Plain-text card text from a rich-text field value.
+ *
+ * Drops any <style>/<script> block (content included) BEFORE stripping tags, so
+ * a stray pasted stylesheet can never dump raw CSS text into a card — 14 of
+ * these terms arrived that way on 2026-09-27.
+ */
+function _material_card_text(string $raw, int $cap): string {
+  $raw = preg_replace('#<(style|script)\b[^>]*>.*?</\1>#is', '', $raw);
+  // Decode AFTER stripping tags (so an encoded tag cannot become a real one),
+  // because the card output is a plain string the template escapes exactly
+  // once. Without this a stored &nbsp; — present in 4 of these descriptions —
+  // survives strip_tags as literal text and the card prints "&nbsp;" at the
+  // reader. \s does not match a decoded non-breaking space, so replace it
+  // explicitly before collapsing.
+  $text = html_entity_decode(strip_tags($raw), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+  $text = str_replace("\xC2\xA0", ' ', $text);
+  $text = trim(preg_replace('/\s+/u', ' ', $text));
+  if (mb_strlen($text) > $cap) {
+    $text = rtrim(mb_substr($text, 0, $cap)) . '…';
+  }
+  return $text;
+}
+
+/**
  * Implements hook_preprocess_HOOK() for views_view_field.
  *
- * Compute the material_children card blurb from the term's public description
- * ourselves: drop any <style>/<script> block (content included) BEFORE stripping
- * tags, so a stray pasted stylesheet can never dump raw CSS text into a card,
- * then a plain-text teaser. Plain string — the template escapes it once.
+ * The material_children card blurb. field_short_description is the line written
+ * FOR this card — the same field that is already the list teaser on five other
+ * BOS vocabularies (backflow device types and uses, spraying locations, plant
+ * characteristic categories, hardiness zones). Material categories were the odd
+ * one out: the blurb was derived from the BODY copy cut at 160 characters, so a
+ * card opened with the first sentence of the essay, truncated mid-sentence, and
+ * frequently never said what the category was — "A shade tree is the
+ * highest-value plant decision anybody makes on a property, and it is the one
+ * with the longest tail. Everything else in a yard can be changed …" where the
+ * written teaser reads "The big ones — forty to seventy feet at maturity…".
+ *
+ * The teaser is rendered WHOLE. Several legitimate ones run past 160 characters
+ * (155–191 across this branch), and clipping a purpose-written one-liner is the
+ * bug this replaces; the 300 cap is a guard against a pasted essay, not a
+ * trim of intended copy. A category with no teaser yet keeps the old behaviour,
+ * so nothing regresses while the catalogue is filled in.
+ *
+ * Plain string — the template escapes it once.
  */
 function material_preprocess_views_view_field(array &$variables): void {
   if (($variables['view']->id() ?? '') !== 'material_children'
@@ -272,12 +310,13 @@ function material_preprocess_views_view_field(array &$variables): void {
   }
   $term = $variables['row']->_entity ?? NULL;
   $blurb = '';
-  if ($term instanceof EntityInterface && $term->hasField('field_public_description')
-    && ($item = $term->get('field_public_description')->first())) {
-    $raw = preg_replace('#<(style|script)\b[^>]*>.*?</\1>#is', '', (string) $item->value);
-    $blurb = trim(preg_replace('/\s+/', ' ', strip_tags($raw)));
-    if (mb_strlen($blurb) > 160) {
-      $blurb = mb_substr($blurb, 0, 160) . '…';
+  if ($term instanceof EntityInterface) {
+    if ($term->hasField('field_short_description') && ($teaser = $term->get('field_short_description')->first())) {
+      $blurb = _material_card_text((string) $teaser->value, 300);
+    }
+    if ($blurb === '' && $term->hasField('field_public_description')
+      && ($item = $term->get('field_public_description')->first())) {
+      $blurb = _material_card_text((string) $item->value, 160);
     }
   }
   $variables['output'] = $blurb;

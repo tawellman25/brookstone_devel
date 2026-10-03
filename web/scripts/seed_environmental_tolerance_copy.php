@@ -40,6 +40,8 @@ $TERMS['Alkaline-Tolerant'] = [
 <p>Treatment exists and it is a treadmill. Chelated iron applied to the soil or the leaves greens a plant up for a season, sometimes two. It does not change the pH, so it has to be repeated for the life of the plant. A soil acidifier moves the number temporarily and then the native ground and the irrigation water pull it back.</p>
 
 <p>Which is why the plant list is the answer and the amendment is not. Choose something that is adapted to alkaline ground and the problem never begins.</p>
+
+<p>The other end of the same problem is worth understanding before anybody falls in love with a plant that cannot have it. Azalea, rhododendron and blueberry are <a href="/material/plants/characteristics/environmental-tolerance/acid-loving">acid-loving</a> — they need the pH below 6.5, and on this ground that is a container with its own soil and its own water, not a bed.</p>
 HTML,
   'crew' => <<<'HTML'
 <p><strong>This is the first filter on every plant list, before anything else.</strong> A plant that cannot handle our pH is off the plan regardless of how well it suits the design.</p>
@@ -62,7 +64,7 @@ HTML,
 $TERMS['Acid-Loving'] = [
   'short' => 'Needs soil below about pH 6.5 — which this valley does not have. Read this as a warning label rather than a feature, and plan on a container or a dedicated bed if you want one anyway.',
   'public' => <<<'HTML'
-<p>Acid-loving plants want ground somewhere below pH 6.5, and often well below it. Soil across most of this valley sits between 7.5 and 8.2. That is not a small gap — pH is a logarithmic scale, so soil at 8.0 is around thirty times less acidic than soil at 6.5.</p>
+<p>Acid-loving plants want ground somewhere below pH 6.5, and often well below it. Soil across most of this valley sits <a href="/material/plants/characteristics/environmental-tolerance/alkaline-tolerant">between 7.5 and 8.2</a>. That is not a small gap — pH is a logarithmic scale, so soil at 8.0 is around thirty times less acidic than soil at 6.5.</p>
 
 <p>Azalea, rhododendron, blueberry, pieris and most hollies belong to this group, and they are among the most frequently regretted purchases in this region. They come home from a garden center looking healthy, hold on for a season or two on whatever was in the nursery pot, and then go slowly chlorotic and thin and die over three or four years.</p>
 
@@ -102,6 +104,8 @@ $TERMS['Well-Drained Soil'] = [
 <p>Test it before you plant anything. Dig a hole about a foot deep, fill it with water, let it drain, fill it again. If the second filling has not drained within four hours you have a drainage problem, and no plant choice will fix it.</p>
 
 <p>The fix is to plant up rather than down — a raised bed or a graded berm, so the root zone sits above the ground that does not drain. That is a real solution. Amending a hole is not, however good the amendment.</p>
+
+<p>One thing worth knowing before choosing a plant list for a dry site. Most of what is sold as <a href="/material/plants/characteristics/environmental-tolerance/drought-tolerant">drought-tolerant</a> also insists on sharp drainage, because the plants evolved on gravel and decomposed rock rather than on heavy valley clay. Put one in slow ground on a lawn irrigation schedule and it rots — which is a xeric planting failing from too much water, the opposite of what anybody expects.</p>
 HTML,
   'crew' => <<<'HTML'
 <p><strong>Perc test before planting on any site with heavy ground.</strong> Foot-deep hole, fill, drain, fill again. Not drained in four hours means drainage work, and it means saying so in the estimate before the plants are ordered.</p>
@@ -127,7 +131,7 @@ $TERMS['Drought-Tolerant'] = [
 
 <p><strong>It takes about two full growing seasons of regular watering for a plant to earn the label on its own tag.</strong> That is the single most misunderstood thing about xeric planting, and it is why so many water-wise landscapes fail in their first summer. Somebody plants a bed of drought-tolerant material in June, waters it like the label says, and loses most of it by August — not because the plants were wrong, but because they were asked to do something their roots could not do yet.</p>
 
-<p>The other half is less obvious: <strong>established drought-tolerant plants are frequently killed by too much water rather than too little.</strong> A plant adapted to dry ground and put on a lawn irrigation schedule in heavy soil sits wet, rots, and dies looking overwatered — yellowing, soft, collapsing. In a mixed planting this is common, because the xeric shrubs end up on the same zone as everything else.</p>
+<p>The other half is less obvious: <strong>established drought-tolerant plants are frequently killed by too much water rather than too little.</strong> A plant adapted to dry ground and put on a lawn irrigation schedule in <a href="/material/plants/characteristics/environmental-tolerance/well-drained-soil">heavy soil</a> sits wet, rots, and dies looking overwatered — yellowing, soft, collapsing. In a mixed planting this is common, because the xeric shrubs end up on the same zone as everything else.</p>
 
 <p>It is also worth knowing that some drought-tolerant plants go summer-dormant. They stop, look tired or half-dead in the worst heat, and come back when it breaks. That is the strategy working, not the plant failing, and it is worth knowing which of yours do it before you pull one out in August.</p>
 HTML,

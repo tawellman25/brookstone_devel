@@ -105,4 +105,36 @@ $ok(!$noCrew, 'every term has crew copy' . ($noCrew ? ': ' . implode(', ', $noCr
 $ok(!$noCard, 'every term has a card line' . ($noCard ? ': ' . implode(', ', $noCard) : ''));
 $ok(count($all) === 41, 'vocabulary holds 41 terms (found ' . count($all) . ')');
 
+
+// 6. The four cross-links: each must render as a real anchor on the public
+// page, and its target must resolve. A link in a stored field is not a link
+// until it renders, and a resolving path is not the same as a reachable page.
+print "\nCROSS-LINKS (rendered as anon)\n";
+$B = '/material/plants/characteristics/environmental-tolerance';
+$pairs = [
+  ['Alkaline-Tolerant', $B . '/acid-loving', 'acid-loving'],
+  ['Acid-Loving', $B . '/alkaline-tolerant', 'between 7.5 and 8.2'],
+  ['Well-Drained Soil', $B . '/drought-tolerant', 'drought-tolerant'],
+  ['Drought-Tolerant', $B . '/well-drained-soil', 'heavy soil'],
+];
+foreach ($pairs as [$from, $href, $text]) {
+  $tid = \Drupal::entityQuery('taxonomy_term')->accessCheck(FALSE)
+    ->condition('vid', 'plant_characteristics')->condition('name', $from)->execute();
+  $t = $etm->getStorage('taxonomy_term')->load(reset($tid));
+  $acct->switchTo(new UserSession(['uid' => 0, 'roles' => ['anonymous']]));
+  $bld = $etm->getViewBuilder('taxonomy_term')->view($t, 'full');
+  $h = (string) $renderer->executeInRenderContext(new RenderContext(), fn() => $renderer->render($bld));
+  $acct->switchBack();
+  $rendered = str_contains($h, 'href="' . $href . '"') && str_contains($h, '>' . $text . '</a>');
+  $target = \Drupal::service('path_alias.manager')->getPathByAlias($href) !== $href;
+  $ok($rendered && $target, sprintf('%-18s links "%s" → %s', $from, $text, basename($href)));
+}
+// Never link the middle of a word - the "acid" inside "acidifier".
+$tid = \Drupal::entityQuery('taxonomy_term')->accessCheck(FALSE)
+  ->condition('vid', 'plant_characteristics')->condition('name', 'Alkaline-Tolerant')->execute();
+$at = $etm->getStorage('taxonomy_term')->load(reset($tid));
+$body = (string) ($at->get('field_public_description')->value ?? '');
+$ok(!str_contains($body, '>acid</a>') && str_contains($body, 'soil acidifier'),
+  'the word "acidifier" is intact and was not linked through');
+
 printf("\n%d passed, %d failed\n", $pass, $fail);

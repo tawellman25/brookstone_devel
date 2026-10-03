@@ -1,0 +1,105 @@
+/**
+ * "Plants with this characteristic" item cards (material_characteristic_items).
+ *
+ * Replaces a three-column table whose 100px thumbnail left the title wrapping
+ * four words deep in a narrow middle column. Each row is now a single-column
+ * card: a tall sliver of the photo down the LEFT edge at the card's full
+ * height, with the title ABOVE its paragraph on the right.
+ *
+ * Same shape and the same tokens as the service_children cards in bos_services
+ * — deliberately the existing component rather than a lookalike. The strip
+ * image style (service_card_strip, 240x640 scale-and-crop) is reused for the
+ * same reason; a duplicate style would mean a second set of S3 derivatives and
+ * two things to keep in step.
+ *
+ * Single column on purpose: these paragraphs run long, so a multi-column grid
+ * would give each card a column too narrow to read.
+ */
+
+.material-item-cards .views-row {
+  display: grid;
+  grid-template-columns: clamp(72px, 18vw, 96px) 1fr;
+  grid-template-rows: auto 1fr;
+  column-gap: 1rem;
+  row-gap: 0.3rem;
+  margin-bottom: 0.9rem;
+  border: 1px solid var(--bo-sand, #e7dcc9);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.material-item-cards .views-row:hover {
+  border-color: var(--bo-orange, #cb6015);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+/* The photo occupies column 1 for the card's whole height. The row must stretch
+   and every wrapper in the chain (field-content > a > img) has to be told to
+   fill it, or the image sits at its natural height and the strip stops short. */
+.material-item-cards .views-field-field-main-image {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: stretch;
+  height: 100%;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.material-item-cards .views-field-field-main-image > .field-content,
+.material-item-cards .views-field-field-main-image a,
+.material-item-cards .views-field-field-main-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.material-item-cards .views-field-field-main-image img {
+  object-fit: cover;
+}
+
+/* A row with no photo: the text takes the full width rather than leaving a
+   dead 96px gutter. */
+.material-item-cards .views-row:not(:has(.views-field-field-main-image img)) {
+  grid-template-columns: 1fr;
+}
+
+.material-item-cards .views-row:not(:has(.views-field-field-main-image img)) .views-field-field-main-image {
+  display: none;
+}
+
+/* Title above its paragraph, both in column 2. */
+.material-item-cards .views-field-field-name {
+  grid-column: 2;
+  grid-row: 1;
+  padding: 0.85rem 0.9rem 0 0;
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.material-item-cards .views-field-field-name a {
+  color: var(--bo-orange, #cb6015);
+  text-decoration: none;
+}
+
+.material-item-cards .views-field-field-name a:hover {
+  text-decoration: underline;
+}
+
+.material-item-cards .views-field-field-description {
+  grid-column: 2;
+  grid-row: 2;
+  padding: 0 0.9rem 0.85rem 0;
+  color: var(--bo-prose, #3a332c);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.material-item-cards .views-field-field-description p:first-child { margin-top: 0; }
+.material-item-cards .views-field-field-description p:last-child { margin-bottom: 0; }
+
+/* The table style drew a rule between rows; the card border replaces it. */
+.material-item-cards .views-row + .views-row { border-top: 1px solid var(--bo-sand, #e7dcc9); }

@@ -245,6 +245,12 @@ function material_views_pre_render(ViewExecutable $view): void {
     return;
   }
 
+  // The item-card layout for "Plants with this characteristic".
+  if ($view->id() === 'material_characteristic_items') {
+    $view->element['#attached']['library'][] = 'material/item_cards';
+    return;
+  }
+
   if ($view->id() !== 'material_children') {
     return;
   }

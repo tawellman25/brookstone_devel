@@ -386,3 +386,25 @@ the conflict, do not implement it.
 **Live state comes from there or from fetching the page — never from a copy file (which says
 what was written) or a build log (which says what was built).**
 
+
+## Photo-strip card listings need photos
+
+A listing converts from a table to cards-with-a-left-photo-strip **only when its rows
+reliably carry an image**. Measure the bundle's image coverage first; do not infer it
+from a sibling listing that looks identical in config.
+
+Measured 2026-10-03 on the material catalogue:
+
+| Rows | Items | With a photo |
+|---|---|---|
+| Plant bundles — trees, shrubs, plants, annuals | 129 | **95%** (trees 100%, shrubs 98%) |
+| Everything else — irrigation, PVC, brass, galv, copper … | 2,839 | **15%** (galv 1%, copper 0%) |
+
+So `material_characteristic_items` is cards (plant-scoped, strip always fed) and
+`material_type_items` / `material_subcategory_items` stay tables (they serve hardware
+categories where most rows have no image). The three views are **identical in config**,
+which is exactly why the decision has to come from the data and not from the config.
+
+A card with no image is either a dead gutter or a second row shape beside the first; a
+table with no image is just a narrow empty cell. That asymmetry is the whole rule.
+

@@ -301,23 +301,44 @@ function _material_card_text(string $raw, int $cap): string {
  * trim of intended copy. A category with no teaser yet keeps the old behaviour,
  * so nothing regresses while the catalogue is filled in.
  *
+ * TWO VIEWS, and the fallback differs between them on purpose. material_children
+ * renders the child cards on a category page; material_types_landing renders the
+ * root categories on /material, which is why a teaser written for Plants did
+ * nothing until this hook covered it too. Their Views-level trims are NOT the
+ * same — the landing trims the body at 300, material_children at 160 — so for a
+ * category with no teaser the landing is left strictly alone rather than handed
+ * our 160-char fallback, which would have quietly shortened the card text of all
+ * 16 root categories that have no teaser written yet.
+ *
  * Plain string — the template escapes it once.
  */
 function material_preprocess_views_view_field(array &$variables): void {
-  if (($variables['view']->id() ?? '') !== 'material_children'
+  $viewId = $variables['view']->id() ?? '';
+  if (!in_array($viewId, ['material_children', 'material_types_landing'], TRUE)
     || ($variables['field']->field ?? '') !== 'field_public_description') {
     return;
   }
   $term = $variables['row']->_entity ?? NULL;
+  if (!$term instanceof EntityInterface) {
+    return;
+  }
+
+  // The line written for the card wins wherever it exists.
+  if ($term->hasField('field_short_description') && ($teaser = $term->get('field_short_description')->first())) {
+    $text = _material_card_text((string) $teaser->value, 300);
+    if ($text !== '') {
+      $variables['output'] = $text;
+      return;
+    }
+  }
+
+  // No teaser. Only material_children gets our body-copy fallback; see above.
+  if ($viewId !== 'material_children') {
+    return;
+  }
   $blurb = '';
-  if ($term instanceof EntityInterface) {
-    if ($term->hasField('field_short_description') && ($teaser = $term->get('field_short_description')->first())) {
-      $blurb = _material_card_text((string) $teaser->value, 300);
-    }
-    if ($blurb === '' && $term->hasField('field_public_description')
-      && ($item = $term->get('field_public_description')->first())) {
-      $blurb = _material_card_text((string) $item->value, 160);
-    }
+  if ($term->hasField('field_public_description') && ($item = $term->get('field_public_description')->first())) {
+    $blurb = _material_card_text((string) $item->value, 160);
   }
   $variables['output'] = $blurb;
 }

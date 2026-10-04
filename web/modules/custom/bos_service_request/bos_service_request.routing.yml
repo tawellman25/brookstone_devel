@@ -147,3 +147,19 @@ bos_service_request.holiday_lights:
     _access: 'TRUE'
   options:
     no_cache: 'TRUE'
+
+# /teammates/holiday-estimate — the on-site estimate builder.
+#
+# Under /teammates because a crew member uses it in a driveway, and gated by a
+# PERMISSION rather than a role list so office can hand it to one crew lead
+# without handing it to everybody.
+#
+# No no_cache flag: there is no captcha here (the user is authenticated) and the
+# page carries the business_setting cache tag, so a price change invalidates it.
+bos_service_request.holiday_estimate:
+  path: '/teammates/holiday-estimate'
+  defaults:
+    _form: 'Drupal\bos_service_request\Form\HolidayEstimateForm'
+    _title: 'Holiday Lighting Estimate'
+  requirements:
+    _permission: 'use holiday lighting estimator'

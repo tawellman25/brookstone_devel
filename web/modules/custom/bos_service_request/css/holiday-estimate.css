@@ -1,0 +1,55 @@
+/**
+ * On-site holiday lighting estimator.
+ *
+ * Built for a phone held in one hand in a driveway: large touch targets, a
+ * total that stays in view, and the brand tokens (--bo-*) that
+ * bos_service_request already publishes sitewide, so this is not a lookalike
+ * palette.
+ */
+.hol-est { max-width: 42rem; }
+.hol-est__intro,
+.hol-est__closing { color: var(--bo-text-2, #4a4a4a); font-size: .95rem; }
+.hol-est__closing { margin-top: 1.25rem; font-style: italic; }
+
+.hol-est .form-item { margin-block: .6rem; }
+/* A number input a gloved thumb can actually hit. */
+.hol-est input[type="number"],
+.hol-est input[type="tel"],
+.hol-est input[type="text"],
+.hol-est select { min-height: 2.75rem; font-size: 1.05rem; }
+.hol-est input[type="checkbox"] { width: 1.25rem; height: 1.25rem; }
+
+/* The running total. Sticky so it never scrolls away while counting trees. */
+.hol-est__live {
+  position: sticky;
+  bottom: 0;
+  margin-top: 1.25rem;
+  padding: .85rem 1rem;
+  background: var(--bo-card, #fff);
+  border: 1px solid var(--bo-sand, #e4dcd0);
+  border-top: 3px solid var(--bo-orange, #cb6015);
+  border-radius: 6px;
+}
+.hol-est__empty { margin: 0; color: var(--bo-muted, #6b6b6b); }
+.hol-ln {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .2rem 0;
+  font-size: .95rem;
+}
+.hol-ln .amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hol-ln--total {
+  margin-top: .5rem;
+  padding-top: .5rem;
+  border-top: 1px solid var(--bo-sand, #e4dcd0);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+.hol-ln--total .amt { color: var(--bo-orange, #cb6015); font-size: 1.35rem; }
+.hol-ln--sub { color: var(--bo-text-2, #4a4a4a); font-size: .9rem; }
+.hol-est__note { margin: .5rem 0 0; font-size: .85rem; color: var(--bo-text-2, #4a4a4a); }
+
+@media (max-width: 30rem) {
+  .hol-est__live { margin-inline: -16px; border-radius: 0; }
+}

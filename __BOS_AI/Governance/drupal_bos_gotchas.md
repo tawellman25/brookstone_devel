@@ -1867,6 +1867,40 @@ workers were running the old opcode. `pkill -u <user> lsphp` → `cr` → prime.
 
 ---
 
+## A programmed form turns an unchecked checkbox ON if you pass 0
+
+`Checkbox::valueCallback()` under a programmed form returns **`1` for an input of
+`0`**. It treats any *present* input as "this box was posted", and a posted
+checkbox means checked. Only `FALSE` or `NULL` come back as `0`:
+
+```php
+$fs = new FormState(); $fs->setProgrammed(TRUE);
+$el = ['#type' => 'checkbox', '#return_value' => 1];
+Checkbox::valueCallback($el, 0,     $fs);  // => 1   <-- not what you wrote
+Checkbox::valueCallback($el, FALSE, $fs);  // => 0
+Checkbox::valueCallback($el, NULL,  $fs);  // => 0
+```
+
+Measured 2026-10-04 while testing the holiday lighting estimator. The test passed
+`'steep' => 0, 'tall' => 0`, both premiums applied anyway, and the total came out
+**$3,097.50 against a documented $2,796.25** — which reads exactly like a pricing
+defect. It was not: the real form renders both boxes unchecked with `#value = 0`,
+confirmed by inspecting the element and grepping the rendered markup for
+`checked`.
+
+**Rules:**
+1. In a programmatic submit, an unchecked checkbox is **`FALSE`**, never `0`.
+2. Before believing a money figure is wrong, assert what the **rendered** form
+   does — element `#value` plus the absence of `checked` in the markup. A
+   harness quirk and a real overquote look identical in a total.
+3. Omitting the key entirely does not help either; it is also treated as posted.
+
+Same family as the two earlier form-testing traps here: `getValues()` is empty at
+form-build time on a rebuild, and `$entity->original` is not populated on update.
+A test that constructs form state by hand is not exercising the browser's path.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

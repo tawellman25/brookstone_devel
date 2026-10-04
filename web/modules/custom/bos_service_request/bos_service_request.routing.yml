@@ -127,8 +127,17 @@ bos_service_request.contact_thankyou:
     _access: 'TRUE'
 
 # /holiday-lights — the holiday lighting campaign landing page. Same shape as
-# /winterize: the route's _form IS the page, and no_cache keeps the Business
-# Settings price fresh without a custom cache tag.
+# /winterize: the route's _form IS the page.
+#
+# no_cache is for the CAPTCHA and flood guards: the site-default challenge issues
+# a per-build captcha_sid, so a cached build hands the second visitor a dead
+# challenge and the form refuses their submission.
+#
+# It is NOT about price freshness. An earlier version of this comment said it
+# kept the Business Settings price fresh; that was wrong. The per-foot price
+# renders with the business_setting config page's own cache tag, so it updates on
+# invalidation with no help from this flag. Corrected 2026-10-04 after Gate 1
+# Part C measured all six no_cache routes.
 bos_service_request.holiday_lights:
   path: '/holiday-lights'
   defaults:

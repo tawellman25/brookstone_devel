@@ -203,6 +203,36 @@ the process down with it, and **confirm the result by reading the stored value, 
 script's output.** A script that has printed a backup path has not yet written anything,
 and `tail -n` on its output can hide whether the final line ever arrived.
 
+### Changing `cache.page.max_age` needs the page bins cleared, not a full `cr`
+
+The config change alone does nothing visible: the internal page cache replays
+stored entries with the **old** `Cache-Control` baked in, so the first
+verification after a `cset` still shows the previous `max-age` and looks like the
+change failed. Clear the page bins instead of rebuilding everything:
+
+```php
+\Drupal::cache('page')->deleteAll();
+\Drupal::cache('dynamic_page_cache')->deleteAll();
+```
+
+**Peak memory: 60.5 MB, against 497 MB for a full `drupal_flush_all_caches()`** —
+which matters a great deal on an account whose PMEM cap is 1 GB. Prefer the
+targeted bin clear for any change that only affects rendered output.
+
+### Live's `config/sync` is only as current as the last FULL deploy
+
+A partial cim run **on live** reads `/home/brookstoneadmin/brookstone/config/sync/`,
+not the repo. Targeted rsyncs — the documented default for shipping a feature —
+do not touch that directory, so it goes stale the moment active config is changed
+with `cset` and the YAML is committed only to git.
+
+Seen 2026-10-04: the repo and live *active* config both carried
+`cache.page.max_age: 900` while **live's on-disk sync copy still said 0**, so a
+partial cim of that one file would have silently reverted the change.
+
+**Before any partial cim on live, rsync the specific YAMLs you are importing and
+diff them against the repo.** Never assume live's sync directory matches git.
+
 ### Prime the homepage after a live `cr`
 
 Immediately after a cache rebuild, `/` returned **503 after 47 seconds** while every other

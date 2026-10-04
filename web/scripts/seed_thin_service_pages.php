@@ -30,11 +30,16 @@ $etm = \Drupal::entityTypeManager();
 
 // Held until Todd answers. Named so the script reports them every run.
 $HELD = [
-  'Cooley Spruce Gall Treatment' => 'spring or fall application?',
-  'Pine Needle Scale' => 'what is applied and when — crawler spray, dormant oil, or both?',
-  'Dethatching' => 'does the crew haul the debris away, or leave it?',
-  'Holiday Decorations' => 'who owns the lights; do you return mid-season for a failed strand; what month do installs start?',
+  // All four markers were answered 2026-10-03 and the copy is loaded below.
+  // One sentence is deliberately NOT loaded — see $OMITTED.
 ];
+
+// Todd confirmed the $8-per-foot program price on 2026-10-03 and asked for it to
+// be published. It is NOT derived from BOS — the only holiday rate in the system
+// is field_labor_cost_decorations = 27.00, a labour cost per hour — so this copy
+// is now the only place the rate lives. It has to be updated here whenever the
+// rate changes, the same standing obligation as the winterize page price.
+$OMITTED = [];
 
 $P = [];
 
@@ -197,6 +202,96 @@ $P['Pre-emergent'] = [
 HTML,
 ];
 
+$P['Holiday Decorations'] = [
+  'sub' => 'Designed, installed, taken down, and stored for you',
+  'card' => 'Holiday lighting for homes and businesses, installed by our crew, repaired during the season, taken down afterward, and stored until the next one.',
+  'meta' => 'Holiday lighting for homes and businesses in Delta and Montrose counties: designed, installed by our crew, taken down after the season, and stored for you.',
+  'body' => <<<'HTML'
+<p>We design and install holiday lighting and decorations for homes and businesses across Delta and Montrose counties. After the season, we take the display down and store it until the following year, so there is nothing to box up and nowhere to keep it.</p>
+
+<h2>Our lighting program</h2>
+<p>Under our lighting program, the lights belong to Brookstone Outdoors. We design the display, install it, repair it during the season, take it down afterward, and store it until the next year. The program is billed at $8 per foot. Because the lights are ours, repairs during the season are included at no additional charge.</p>
+
+<p>We also install displays using lights a customer already owns. In that arrangement, repair visits during the season are billed.</p>
+
+<h2>Design</h2>
+<p>We plan each display around the building and the landscape: rooflines, entries, trees, and walkways. Lighting is available in several bulb styles, including C6, C7, C9, M5, and 5mm wide-angle, along with icicle and net lights, and in a range of colors including warm white, cool white, pure white, and multi-color.</p>
+
+<h2>Installation and repairs</h2>
+<p>Installation is done by our own crew, with runs secured and connections protected for wind and snow. A display on the Western Slope has to hold up through storms and freeze-thaw cycles, and it is installed with that in mind. If a strand or section fails during the season, we come back out and repair it.</p>
+
+<h2>Takedown and storage</h2>
+<p>After the season, the crew removes the display and stores it. The following year it is reinstalled from storage, which keeps the design consistent from one season to the next.</p>
+
+<h2>Scheduling</h2>
+<p>Displays on our lighting program can be installed beginning in November. Other installations begin the week before Thanksgiving. Installations are scheduled in the order requests are received.</p>
+HTML,
+];
+
+$P['Pine Needle Scale'] = [
+  'sub' => 'A sap-feeding insect that weakens pine over several seasons',
+  'card' => 'Pine needle scale feeds on pine needles and weakens the tree over time. We treat it with dormant oil in late winter, before the buds open.',
+  'meta' => 'Pine needle scale weakens pinyon and other pines over several seasons. How to recognize it, and why we treat it with dormant oil in late winter.',
+  'body' => <<<'HTML'
+<p>Pine needle scale is a small insect that attaches itself to pine needles and feeds on the sap. Each scale is protected by a hard, white covering about the size of a grain of rice. In heavy infestations the needles look flecked or coated with white, then turn yellow, and the tree begins to thin.</p>
+
+<h2>What it does to a tree</h2>
+<p>Pine needle scale does not usually kill a tree on its own. It weakens it, causing a gradual decline over several seasons, and a weakened pine is more vulnerable to drought and to bark beetles. We have treated pinyon pine on customer properties that showed significant feeding damage by mid to late summer.</p>
+
+<h2>How we treat</h2>
+<p>We treat pine needle scale with <a href="/services/landscape-lawn-care/spraying/dormant-oil">dormant oil</a>, applied in late winter before the buds open. The hard covering protects the insect from most sprays applied during the growing season. Dormant oil does not need to get through that covering; it coats the scale and smothers it while the insect is overwintering on the needles.</p>
+
+<p>The application depends on the weather as well as the calendar. The tree has to be fully dormant, the day has to be warm enough for the oil to spread evenly, and no hard freeze can follow immediately afterward.</p>
+
+<h2>What to look for</h2>
+<ul>
+<li>White, oval flecks attached to the needles</li>
+<li>Yellowing needles, especially on the lower branches</li>
+<li>A thinning canopy over more than one season</li>
+</ul>
+
+<p>All applications are made under Brookstone Outdoors' Colorado Department of Agriculture commercial pesticide applicator license.</p>
+HTML,
+];
+
+$P['Dethatching'] = [
+  'sub' => 'Power raking to remove the layer that keeps water from reaching the roots',
+  'card' => 'Dethatching, also called power raking, removes the layer of dead stems and roots that builds up between the grass and the soil and blocks water.',
+  'meta' => 'Dethatching, or power raking, removes the dead layer that keeps water from reaching grass roots, and how to tell whether your lawn actually needs it.',
+  'body' => <<<'HTML'
+<p>Dethatching, also called power raking, removes thatch: the layer of dead stems, roots, and runners that builds up between the green blades of grass and the soil. A thin layer is normal and harmless. When it grows thicker than about half an inch, it begins to shed water, hold moisture against the crowns of the grass, and harbor insects.</p>
+
+<h2>How it is done</h2>
+<p>A dethatcher uses rotating tines to cut down through the thatch layer and lift it to the surface. The crew then picks up the debris and takes it away, so there is nothing left for you to rake, bag, or haul.</p>
+
+<h2>Does your lawn need it</h2>
+<p>Not every lawn does. A quick check is to cut a small plug from the lawn and measure the spongy brown layer above the soil. If it is less than about half an inch, the lawn does not need to be dethatched, and <a href="/services/landscape-lawn-care/aeration">core aeration</a> is usually the better service.</p>
+
+<h2>When</h2>
+<p>Dethatching is done while the grass is actively growing and can recover, in spring or early fall. It is hard on a lawn in summer heat and is not scheduled then.</p>
+HTML,
+];
+
+$P['Cooley Spruce Gall'] = [
+  'sub' => 'Spring and fall treatment for the cone-shaped galls on Colorado blue spruce',
+  'card' => 'Cooley spruce gall forms cone-shaped galls on the new shoots of Colorado blue spruce. We spray affected trees twice a year, in spring and in fall.',
+  'meta' => 'Cooley spruce gall forms cone-shaped galls on Colorado blue spruce shoot tips. We spray affected trees in spring and fall. Delta and Montrose counties.',
+  'body' => <<<'HTML'
+<p>Cooley spruce gall is caused by a small insect related to aphids. It feeds at the base of new spruce shoots, and the shoot forms a gall around it: a swelling that looks like a small green pinecone at the tip of the branch. In late summer the gall dries, opens, and turns brown, and the dead shoot tips remain on the tree.</p>
+
+<h2>What it does to a tree</h2>
+<p>The galls rarely threaten the life of a spruce. They do kill the shoot tips they form on, and on a heavily infested tree the browned tips are visible across the canopy. Colorado blue spruce is a common host throughout the area.</p>
+
+<h2>How we treat</h2>
+<p>We spray affected trees twice a year, once in spring and once in fall. The insect spends most of its life protected, either sealed inside the gall during the summer or tucked under bark scales over the winter, and a spray reaches it only when it is out from under that cover. The spring and fall applications are each timed to one of those windows.</p>
+
+<h2>A note on Douglas-fir</h2>
+<p>The same insect spends part of its life on Douglas-fir, where it does not form galls but can cause yellow spotting on the needles. Properties with both trees can see the problem return from one to the other.</p>
+
+<p>All applications are made under Brookstone Outdoors' Colorado Department of Agriculture commercial pesticide applicator license.</p>
+HTML,
+];
+
 print $apply ? "MODE: APPLY\n\n" : "MODE: DRY-RUN (BOS_THIN_APPLY=1 to write)\n\n";
 
 // Guard: a marker must never reach a field.
@@ -231,6 +326,10 @@ $URLS = [
   'Dormant Oil' => '/services/landscape-lawn-care/spraying/dormant-oil',
   'Aspen Twig Gall' => '/services/landscape-lawn-care/spraying/aspen-twig-gall',
   'Pre-emergent' => '/services/landscape-lawn-care/spraying/pre-emergent',
+  'Holiday Decorations' => '/services/christmas-decorations',
+  'Pine Needle Scale' => '/services/landscape-lawn-care/spraying/pine-needle-scale',
+  'Dethatching' => '/services/landscape-lawn-care/dethatching',
+  'Cooley Spruce Gall' => '/services/landscape-lawn-care/spraying/cooley-spruce-gall-treatment',
 ];
 $am = \Drupal::service('path_alias.manager');
 $byName = [];
@@ -274,13 +373,18 @@ foreach ($P as $name => $d) {
   if ($apply) { $t->save(); Cache::invalidateTags(['taxonomy_term:' . $t->id()]); }
 }
 
-print "\nHELD — not pasted, because they carry a [CONFIRM marker and are LIVE pages.\n";
-print "Unpublishing a working page to stage held copy would be worse than leaving it thin.\n";
-foreach ($HELD as $n => $q) { printf("  %-32s %s\n", $n, $q); }
+if ($HELD) { print "\nHELD:\n"; foreach ($HELD as $n => $q) { printf("  %-32s %s\n", $n, $q); } }
+// A PUBLISHED PRICE. Confirmed by Todd 2026-10-03. Not stored anywhere in BOS,
+// so this page is its only home and it must be changed here when the rate moves.
+$prices = 0;
+foreach ($P as $n => $d) { $prices += substr_count($d['body'], '$8 per foot'); }
+printf("\n⚠ PUBLISHED PRICE: %d occurrence(s) of \"\$8 per foot\".\n", $prices);
+print "  Confirmed by Todd. Not held in BOS — this copy is the only place the rate\n";
+print "  lives, so it must be updated here whenever the rate changes.\n";
 
 if ($apply) {
   $f = '/tmp/thin_pages_backup_' . date('Ymd_His') . '.json';
   file_put_contents($f, json_encode($backup, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
   print "\nPrevious values backed up to $f\n";
 }
-printf("\n%d of 11 pages updated%s. 4 held.\n", $changed, $apply ? '' : ' (dry-run — nothing written)');
+printf("\n%d of %d pages updated%s.\n", $changed, count($P), $apply ? '' : ' (dry-run — nothing written)');

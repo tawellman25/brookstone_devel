@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\bos_content_coverage;
 
 use Drupal\Core\Entity\EntityFieldManagerInterface;
+use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\path_alias\AliasManagerInterface;
 use Drupal\taxonomy\TermInterface;
@@ -208,6 +209,16 @@ final class ContentCoverage {
     $storage = $this->etm->getStorage('taxonomy_term');
     $tids = [];
     foreach ($storage->loadByProperties(['vid' => $this->coveredVids()]) as $term) {
+      // An UNPUBLISHED term is not a public page, so missing copy on it is not
+      // a public gap. Without this the report flags work that does not exist:
+      // on 2026-10-03 it listed "In House Task" as a public page with an empty
+      // body, marketing wrote a recommendation to unpublish it, and the term
+      // had been unpublished the whole time — /in-house-task was already a 404
+      // to anonymous visitors and absent from both the services listing and the
+      // sitemap. Publication status is part of whether something is public.
+      if ($term instanceof EntityPublishedInterface && !$term->isPublished()) {
+        continue;
+      }
       $match = match ($question) {
         'boilerplate' => $this->termIsFlagged($term),
         // "Missing" means the vocabulary HAS the field and it is empty. A

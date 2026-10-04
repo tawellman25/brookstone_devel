@@ -6,6 +6,36 @@ This document captures hard-learned lessons. Most entries cite a specific commit
 
 ---
 
+## After `drush cr` on live, prime the homepage before trusting a check
+
+**Seen 2026-10-04.** Immediately after a cache rebuild the homepage returned
+**503 after 47 seconds** while every other page on the site answered 200 in
+0.3s. Three sequential retries then returned 200 in 0.29s with no drush running
+and server load at 1.48. It is the heaviest page on the site — many blocks,
+views and JSON-LD — and its first uncached render exceeded the server's request
+timeout.
+
+Nothing was broken, but **a real visitor could have caught that 503**. After a
+`cr` on live, request `/` once yourself to absorb the cold render before
+declaring the deploy verified, and do not read a single post-`cr` 503 as damage
+until a sequential re-check says so.
+
+## A long content save over SSH can die after its backup and before its write
+
+**Seen 2026-10-04.** `seed_montrose_city_copy.php` ran on live inside a chained
+`rsync && ssh && ssh && curl` command. It printed "backup written" and the shell
+then reported a curl timeout — but the entity was **never saved**: the stored
+body was still the previous revision, while the script's own output had implied
+success. The live script was byte-identical to local (verified by md5) and its
+dry run said it would write, so this was an interrupted process, not bad code.
+
+**Two rules.** Run a production write **on its own**, not chained behind or
+in front of anything whose failure can take the process down with it. And
+**verify the stored value, not the script's output** — a script that prints a
+backup path has not yet written anything, and `tail -n` on its output can hide
+whether the final line ever arrived.
+
+
 ## `rsync -a` ships a 600-mode asset straight to a 403 on live
 
 **Seen 2026-10-04.** `holiday-lights-hero.jpg` arrived in the working tree as

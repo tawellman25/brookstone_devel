@@ -472,6 +472,33 @@ function _bos_service_request_holiday_vars(array &$variables): void {
 
   // The job minimum is only mentioned if the office has set one. Nothing is
   // invented — the field ships empty on purpose.
+  // The public plan cards. Hang & Remove is deliberately NOT among them — see
+  // $variables['bo_hang'] below and HolidayEstimator::pricedPlans().
+  $estimator = \Drupal::service('bos_service_request.holiday_estimator');
+  $cards = [];
+  foreach ($estimator->pricedPlans(TRUE) as $key => $plan) {
+    $cards[] = [
+      'key' => $key,
+      'name' => $plan['label'],
+      'rate' => $money($plan['rate']),
+      'minimum' => $plan['minimum'] > 0 ? $money($plan['minimum']) : NULL,
+      'lead' => $key === 'two_year',
+      'blurb' => $key === 'two_year'
+        ? t('We supply the lights, install them, service them all season, take them down in January and store them. Same price both years.')
+        : t('Everything in the two-year plan, for a single season. It costs more because the lights only get one year of use.'),
+    ];
+  }
+  $variables['bo_plans'] = $cards;
+
+  // Hang & Remove: described, never calculated. The price turns on the
+  // condition of lights we have not seen, so it needs eyes on them first.
+  $hangRate = $estimator->rate('field_holiday_rate_hang');
+  $hangMin = $estimator->rate('field_holiday_min_hang');
+  $variables['bo_hang'] = $hangRate > 0 ? [
+    'rate' => $money($hangRate),
+    'minimum' => $hangMin > 0 ? $money($hangMin) : NULL,
+  ] : NULL;
+
   $min = ($bs && $bs->hasField('field_holiday_min_job') && !$bs->get('field_holiday_min_job')->isEmpty())
     ? (float) $bs->get('field_holiday_min_job')->value : 0.0;
   $typical = 'A typical single-story home runs 120 to 180 feet of roofline; a two-story runs 160 to 240.';

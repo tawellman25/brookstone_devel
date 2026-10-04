@@ -114,4 +114,52 @@ foreach (\Drupal::messenger()->deleteAll() as $set) { foreach ($set as $m) { $t3
 // 1006.25 * 1.20 + 100 = 1307.50
 $ok('steep 20% + $100 height applied', strpos($t3, '1,307.50') !== FALSE, trim(mb_substr($t3, 0, 60)));
 
+// --- the PUBLIC form must differ in three specific ways --------------------
+print "\nPublic /holiday-lights estimator:\n";
+$pub = \Drupal::formBuilder()->getForm('Drupal\bos_service_request\Form\HolidayLightsForm');
+$pubHtml = (string) \Drupal::service('renderer')->renderInIsolation($pub);
+$ok('offers only the two full-season plans', array_keys($pub['plan']['#options'] ?? []) === ['two_year', 'one_year'],
+  implode(',', array_keys($pub['plan']['#options'] ?? [])));
+$ok('Hang & Remove is NOT selectable', !isset($pub['plan']['#options']['hang']));
+// The leak that must never travel from the crew form to the public one.
+$ok('no property autocomplete on the public form', !isset($pub['property']),
+  isset($pub['property']) ? 'PRESENT — would expose the customer property list' : '');
+$ok('captcha present', isset($pub['captcha']));
+$ok('13 counters render', substr_count($pubHtml, 'data-hol-addon') === 13);
+$ok('says it is an estimate, not a quote', stripos($pubHtml, 'not a quote') !== FALSE);
+
+print "\nPublic submit is CAPTCHA-protected, so it cannot be driven from here:\n";
+// Not a limitation to work around — it is the protection working. A headless
+// submit of this form is supposed to fail, so the honest test is that it DOES,
+// and that nothing is written when it does. The itemisation the handler would
+// store is verified directly underneath via the shared estimator, and an
+// end-to-end submit needs a browser.
+$pscope = [
+  'first_name' => 'ZZ', 'last_name' => 'PublicTest', 'phone' => '970-555-0199',
+  'email' => '', 'address' => '2 Test Ln', 'message' => 'Big spruce by the drive.',
+  'plan' => 'two_year', 'feet' => 175, 'dec_md' => 2, 'wreath_36' => 1, 'window' => 4,
+  'steep' => FALSE, 'tall' => FALSE,
+];
+$beforePub = (int) $storage->getQuery()->accessCheck(FALSE)->count()->execute();
+$pfs = new \Drupal\Core\Form\FormState();
+$pfs->setValues($pscope);
+$pfs->setUserInput($pscope);
+\Drupal::formBuilder()->submitForm('Drupal\bos_service_request\Form\HolidayLightsForm', $pfs);
+$pErrs = $pfs->getErrors();
+\Drupal::messenger()->deleteAll();
+$ok('a submission without a valid CAPTCHA is rejected', isset($pErrs['captcha_response']));
+$ok('and writes nothing', (int) $storage->getQuery()->accessCheck(FALSE)->count()->execute() === $beforePub);
+
+print "\nThe itemisation that submit would store:\n";
+$est = \Drupal::service('bos_service_request.holiday_estimator');
+$pubResult = $est->price('two_year', 175.0, ['dec_md' => 2, 'wreath_36' => 1, 'window' => 4]);
+$pubText = $est->asText($pubResult);
+$ok('matches the sheet figure', strpos($pubText, '2,796') !== FALSE);
+$ok('itemises every line the customer picked',
+  strpos($pubText, 'Roofline') !== FALSE
+  && strpos($pubText, 'Deciduous tree — medium × 2') !== FALSE
+  && strpos($pubText, 'Wreath — 36 in') !== FALSE
+  && strpos($pubText, 'Lit window × 4') !== FALSE);
+$ok('carries the deposit', strpos($pubText, 'Deposit at signing') !== FALSE);
+
 printf("\n%d passed, %d failed\n", $pass, $fail);

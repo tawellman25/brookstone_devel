@@ -76,6 +76,47 @@ final class HolidayEstimator {
   }
 
   /**
+   * Plans the office has priced, optionally only the ones we can price unseen.
+   *
+   * @param bool|null $fullServiceOnly
+   *   TRUE returns only plans where we supply the lights. That is the PUBLIC
+   *   set: Hang & Remove uses the customer's own lights, and its price depends
+   *   on what condition those lights are in — tangled, missing clips, half the
+   *   strands dead — which cannot be judged from a web form. Offering it as a
+   *   selectable option would also let a price-shopper self-select into the
+   *   lowest-margin plan with no salesperson present; the field sheet calls it
+   *   a door opener, to be used when they will not commit. It is described in
+   *   copy on the public page instead, with an inspection required.
+   *   NULL returns everything, which is what the on-site form wants — the
+   *   teammate is standing there looking at the lights.
+   *
+   * @return array
+   *   plan key => ['label' => string, 'rate' => float, 'minimum' => float,
+   *   'full_service' => bool]
+   */
+  public function pricedPlans(?bool $fullServiceOnly = NULL): array {
+    $out = [];
+    foreach (self::PLANS as $key => $spec) {
+      if ($fullServiceOnly === TRUE && !$spec['full_service']) {
+        continue;
+      }
+      $rate = $this->rate($spec['field']);
+      if ($rate === NULL || $rate <= 0) {
+        // An unpriced plan is not offered. Quoting a season at $0 is worse than
+        // not listing it.
+        continue;
+      }
+      $out[$key] = [
+        'label' => $spec['label'],
+        'rate' => $rate,
+        'full_service' => $spec['full_service'],
+        'minimum' => (float) ($this->rate($spec['full_service'] ? 'field_holiday_min_job' : 'field_holiday_min_hang') ?? 0),
+      ];
+    }
+    return $out;
+  }
+
+  /**
    * Every add-on the office has priced, in render order.
    *
    * @return array

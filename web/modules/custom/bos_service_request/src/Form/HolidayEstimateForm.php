@@ -59,20 +59,18 @@ final class HolidayEstimateForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state): array {
     $addons = $this->estimator->pricedAddons();
 
-    // Plans the office has actually priced. A plan with no rate must not be
-    // selectable — quoting $0 for a season is worse than not offering it.
+    // Plans the office has priced. NULL = all three: the teammate is standing
+    // in front of the lights and can judge Hang & Remove on the spot, which is
+    // exactly why the public form does not offer it.
     $planOptions = [];
     $planRates = [];
-    foreach (HolidayEstimator::PLANS as $key => $spec) {
-      $rate = $this->estimator->rate($spec['field']);
-      if ($rate !== NULL && $rate > 0) {
-        $planOptions[$key] = sprintf('%s · $%s/ft', $spec['label'], number_format($rate, 2));
-        $planRates[$key] = [
-          'rate' => $rate,
-          'full_service' => $spec['full_service'],
-          'minimum' => (float) ($this->estimator->rate($spec['full_service'] ? 'field_holiday_min_job' : 'field_holiday_min_hang') ?? 0),
-        ];
-      }
+    foreach ($this->estimator->pricedPlans(NULL) as $key => $plan) {
+      $planOptions[$key] = sprintf('%s · $%s/ft', $plan['label'], number_format($plan['rate'], 2));
+      $planRates[$key] = [
+        'rate' => $plan['rate'],
+        'full_service' => $plan['full_service'],
+        'minimum' => $plan['minimum'],
+      ];
     }
 
     if (!$planOptions) {

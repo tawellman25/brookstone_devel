@@ -252,3 +252,46 @@
 @media (max-width: 360px) {
   .bo-winterize .g-recaptcha { transform: scale(0.78); transform-origin: 0 0; height: 62px; }
 }
+
+/* --- holiday plan cards + the hang-and-remove note ----------------------- */
+/* Two full-season plans side by side, stacking on a phone. The lead card is
+   visually heavier because the sheet says to quote the two-year first. */
+.bo-plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin-block: 1.25rem;
+}
+.bo-plan {
+  background: var(--bo-card);
+  border: 1px solid var(--bo-sand);
+  border-radius: 8px;
+  padding: 1.1rem 1.25rem;
+  min-width: 0;
+}
+.bo-plan--lead { border-left: 4px solid var(--bo-orange); }
+.bo-plan__tag {
+  display: inline-block;
+  font: 700 .7rem/1 var(--bo-display, inherit);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--bo-orange);
+  margin-bottom: .4rem;
+}
+.bo-plan__name { margin: 0 0 .3rem; font-size: 1.15rem; }
+.bo-plan__fig { margin: 0 0 .5rem; }
+.bo-plan__fig strong { font-size: 2rem; color: var(--bo-orange); }
+.bo-plan__fig span { color: var(--bo-text-2); }
+.bo-plan__blurb { margin: 0; font-size: .95rem; }
+.bo-plan__min { margin: .5rem 0 0; font-size: .85rem; color: var(--bo-text-2); }
+
+.bo-hang {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--bo-sand);
+  border-radius: 8px;
+}
+.bo-hang__h3 { margin: 0 0 .4rem; font-size: 1.05rem; }
+.bo-hang p { margin: 0 0 .5rem; font-size: .95rem; }
+.bo-hang p:last-child { margin-bottom: 0; }
+.bo-hang__call a { font-weight: 700; }

@@ -41,12 +41,14 @@ final class HolidayLightsForm extends FormBase {
   protected $etm;
   protected $flood;
   protected $srLogger;
+  protected $estimator;
 
   public static function create(ContainerInterface $container): static {
     $i = new static();
     $i->etm = $container->get('entity_type.manager');
     $i->flood = $container->get('flood');
     $i->srLogger = $container->get('logger.channel.bos_service_request');
+    $i->estimator = $container->get('bos_service_request.holiday_estimator');
     return $i;
   }
 
@@ -89,12 +91,83 @@ final class HolidayLightsForm extends FormBase {
       '#description' => $this->t('Street address and town.'),
     ];
 
-    $form['roofline_feet'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Approximate roofline feet'),
-      '#required' => FALSE,
-      '#description' => $this->t('If you know it. We will measure it anyway.'),
-    ];
+    // --- estimate builder -------------------------------------------------
+    // The same calculator the crew uses on site, so a visitor who builds a
+    // number here and then gets a walkthrough is not shown a different one.
+    // PUBLIC PLAN SET ONLY: Hang & Remove is described in the page copy with an
+    // inspection required, never offered as a selectable option — its price
+    // depends on the condition of the customer's own lights.
+    $plans = $this->estimator->pricedPlans(TRUE);
+    $addons = $this->estimator->pricedAddons();
+
+    if ($plans) {
+      $form['#attributes']['class'][] = 'hol-est';
+      $form['#attached']['library'][] = 'bos_service_request/holiday_estimate';
+      $form['#attached']['drupalSettings']['bosHolidayEstimate'] = [
+        'plans' => $plans,
+        'addons' => array_map(fn($a) => $a['price'], $addons),
+        'shrubMin' => (int) ($this->estimator->rate('field_holiday_shrub_min_qty') ?? 0),
+        'steepPct' => (float) ($this->estimator->rate('field_holiday_steep_pct') ?? 0),
+        'tallAdder' => (float) ($this->estimator->rate('field_holiday_tall_adder') ?? 0),
+      ];
+
+      $options = [];
+      foreach ($plans as $key => $plan) {
+        $options[$key] = sprintf('%s · $%s/ft', $plan['label'], number_format($plan['rate'], 2));
+      }
+      $form['plan'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Plan'),
+        '#options' => $options,
+        '#default_value' => isset($options['two_year']) ? 'two_year' : array_key_first($options),
+      ];
+
+      $form['feet'] = [
+        '#type' => 'number',
+        '#title' => $this->t('Roofline feet'),
+        '#min' => 0,
+        '#step' => 1,
+        '#required' => FALSE,
+        '#description' => $this->t('A rough number is fine — single-story homes run about 120–180 ft and two-story 160–240 ft. We measure it on site either way.'),
+      ];
+
+      $form['est_trees'] = ['#type' => 'details', '#title' => $this->t('Trees you want lit'), '#open' => FALSE];
+      $form['est_items'] = ['#type' => 'details', '#title' => $this->t('Wreaths, columns, windows, borders'), '#open' => FALSE];
+      foreach ($addons as $key => $info) {
+        $group = str_starts_with($key, 'dec_') || str_starts_with($key, 'eg_') ? 'est_trees' : 'est_items';
+        $form[$group][$key] = [
+          '#type' => 'number',
+          '#title' => $info['label'] . ' — $' . number_format($info['price'], 0),
+          '#description' => $info['help'],
+          '#min' => 0,
+          '#step' => 1,
+          '#default_value' => 0,
+          '#attributes' => ['data-hol-addon' => $key],
+        ];
+      }
+
+      $form['est_cond'] = ['#type' => 'details', '#title' => $this->t('About the roof'), '#open' => FALSE];
+      $form['est_cond']['steep'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Steep roof'),
+      ];
+      $form['est_cond']['tall'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Anything higher than about 25 feet'),
+      ];
+
+      $form['live'] = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['hol-est__live'], 'id' => 'hol-est-live', 'aria-live' => 'polite'],
+        '#markup' => '<p class="hol-est__empty">' . $this->t('Add your roofline feet for an estimate.') . '</p>',
+      ];
+
+      $form['est_caveat'] = [
+        '#markup' => '<p class="hol-est__closing">'
+        . $this->t('This is an estimate, not a quote. Your real price comes off a measurement — we confirm it on site, usually within a dollar or two per foot.')
+        . '</p>',
+      ];
+    }
 
     $form['message'] = [
       '#type' => 'textarea',
@@ -131,10 +204,26 @@ final class HolidayLightsForm extends FormBase {
     // optional free-text hint the crew re-measures anyway, and adding an ECK
     // field for it would put a column on every general_inquiry record.
     $parts = [];
-    if (trim((string) $v['roofline_feet']) !== '') {
-      $parts[] = 'Approximate roofline feet: ' . trim((string) $v['roofline_feet']);
+
+    // Recompute from the price book rather than trusting the browser, then
+    // store the itemisation with the lead so whoever does the walkthrough
+    // arrives knowing what the customer built. Spec section 11.
+    $plans = $this->estimator->pricedPlans(TRUE);
+    $feet = (float) ($v['feet'] ?? 0);
+    if ($plans && $feet > 0) {
+      $quantities = [];
+      foreach (array_keys($this->estimator->pricedAddons()) as $key) {
+        $quantities[$key] = (int) ($v[$key] ?? 0);
+      }
+      $planKey = isset($plans[$v['plan'] ?? '']) ? (string) $v['plan'] : (string) array_key_first($plans);
+      $result = $this->estimator->price($planKey, $feet, $quantities, !empty($v['steep']), !empty($v['tall']));
+      $parts[] = "Estimate the customer built on the website:\n" . $this->estimator->asText($result);
     }
-    if (trim((string) $v['message']) !== '') {
+    elseif ($feet > 0) {
+      $parts[] = 'Approximate roofline feet: ' . $feet;
+    }
+
+    if (trim((string) ($v['message'] ?? '')) !== '') {
       $parts[] = trim((string) $v['message']);
     }
 

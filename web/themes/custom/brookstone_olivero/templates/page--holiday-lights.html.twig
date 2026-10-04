@@ -61,8 +61,25 @@
     <div class="bo-price__inner">
       <h2 class="bo-price__h2">One price, set before we start</h2>
       <p class="bo-price__body">We measure your roofline and quote a flat price for the season. No hourly rate, no meter running, no surprise invoice.</p>
-      <p class="bo-price__anchor"><strong>{{ bo_price }}</strong> per linear foot of roofline</p>
-      <p class="bo-price__note">{{ bo_price_note }}</p>
+      {% if bo_plans %}
+        {# Two full-season plans. The two-year leads because it is cheaper for
+           the customer AND better for us — the lights are paid off across two
+           seasons instead of one. #}
+        <div class="bo-plans">
+          {% for p in bo_plans %}
+            <div class="bo-plan{{ p.lead ? ' bo-plan--lead' : '' }}">
+              {% if p.lead %}<span class="bo-plan__tag">Best value</span>{% endif %}
+              <h3 class="bo-plan__name">{{ p.name }}</h3>
+              <p class="bo-plan__fig"><strong>{{ p.rate }}</strong> <span>per foot</span></p>
+              <p class="bo-plan__blurb">{{ p.blurb }}</p>
+              {% if p.minimum %}<p class="bo-plan__min">Minimum {{ p.minimum }}</p>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="bo-price__anchor"><strong>{{ bo_price }}</strong> per linear foot of roofline</p>
+        <p class="bo-price__note">{{ bo_price_note }}</p>
+      {% endif %}
       <ul class="bo-price__included">
         <li>Commercial-grade C9 LED lights, supplied by us</li>
         <li>Design and install</li>
@@ -70,7 +87,24 @@
         <li>Takedown in January</li>
         <li>Off-season storage</li>
       </ul>
-      <p class="bo-price__addons">Tree wrapping, wreaths, shrubs, wrapped columns and walkway borders quoted separately at the walkthrough.</p>
+      {# Deposit is the only payment term on this page by decision: renewal
+         and escalation belong in the signed agreement, not in marketing copy
+         a visitor reads before anyone has spoken to them. #}
+      <p class="bo-price__deposit">50% at signing holds your spot on the install schedule. The balance is due on completion.</p>
+
+      <p class="bo-price__addons">Trees, wreaths, shrubs, wrapped columns, lit windows and walkway borders are each a flat price — add them up yourself in the estimate builder below.</p>
+
+      {% if bo_hang %}
+        {# Third option, described rather than calculated. We cannot price
+           somebody else's lights from a web form, and saying so plainly is
+           better than a number we would have to walk back on site. #}
+        <div class="bo-hang">
+          <h3 class="bo-hang__h3">Already own your lights?</h3>
+          <p>We will hang and remove them for <strong>{{ bo_hang.rate }}</strong> per foot{% if bo_hang.minimum %}, {{ bo_hang.minimum }} minimum{% endif %} — install and takedown only, with no service guarantee and no off-season storage.</p>
+          <p><strong>We need to see the lights first.</strong> Price depends on the condition they are in, and an additional fee may be charged for clips and for detangling the strands. Call us and we will come look.</p>
+          {% if bo_phone %}<p class="bo-hang__call"><a href="tel:{{ tel }}">{{ bo_phone }}</a></p>{% endif %}
+        </div>
+      {% endif %}
     </div>
   </section>
 

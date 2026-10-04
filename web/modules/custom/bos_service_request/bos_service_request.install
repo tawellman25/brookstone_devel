@@ -129,3 +129,26 @@ function _bos_service_request_grant_admin_permission() {
     }
   }
 }
+
+/**
+ * Seed the holiday lighting per-linear-foot price on Business Settings.
+ *
+ * The field itself is created by web/scripts/setup_holiday_lighting_price.php —
+ * the BOS pattern, because field configs silently skip on a partial cim. This
+ * hook exists so an environment that has the field but no value gets populated
+ * on deploy without anyone opening the form, per the build spec.
+ *
+ * Never overwrites a value the office has already set.
+ */
+function bos_service_request_update_10005() {
+  $bs = \Drupal::service('config_pages.loader')->load('business_setting');
+  if (!$bs || !$bs->hasField('field_holiday_light_per_foot')) {
+    return 'business_setting or field_holiday_light_per_foot not present — run setup_holiday_lighting_price.php first; nothing seeded.';
+  }
+  $cur = $bs->get('field_holiday_light_per_foot')->value;
+  if ($cur !== NULL && $cur !== '') {
+    return 'Holiday lighting price already set to ' . $cur . ' — left alone.';
+  }
+  $bs->set('field_holiday_light_per_foot', '8.00')->save();
+  return 'Seeded holiday lighting price at $8.00 per linear foot.';
+}

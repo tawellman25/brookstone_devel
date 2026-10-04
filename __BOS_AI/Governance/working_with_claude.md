@@ -256,6 +256,21 @@ the process down with it, and **confirm the result by reading the stored value, 
 script's output.** A script that has printed a backup path has not yet written anything,
 and `tail -n` on its output can hide whether the final line ever arrived.
 
+### Public pages are edge-cached for 15 minutes
+
+Anonymous pages are served by LiteSpeed without entering PHP (`bos_edge_cache`,
+`cache.page.max_age: 900`). **A content edit reaches anonymous visitors within 15
+minutes on its own.** To force it sooner, use the purge page at
+**`/admin/config/development/bos-edge-cache/purge`**.
+
+**Do not reach for a full `cr` to flush the edge.** A rebuild costs **~500 MB of
+the 1 GB PMEM cap** and is the single heaviest thing that runs on this account;
+the purge page costs nothing. A `cr` does queue a purge automatically, but that is
+a side effect of rebuilding everything, not a reason to do it.
+
+Authenticated pages are never edge-cached, so office and crew always see current
+content immediately.
+
 ### Changing `cache.page.max_age` needs the page bins cleared, not a full `cr`
 
 The config change alone does nothing visible: the internal page cache replays

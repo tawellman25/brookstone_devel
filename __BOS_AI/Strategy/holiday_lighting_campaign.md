@@ -1,6 +1,7 @@
 # Holiday Lighting Campaign — `/holiday-lights`
 
-**Built:** 2026-10-03 · **Status:** on `main`, local only, NOT deployed.
+**Built:** 2026-10-03 · **Reviewed and accepted:** 2026-10-04
+**Status:** on `main`, pushed to origin, **NOT deployed to live.**
 
 The holiday equivalent of `/winterize`: a campaign landing page that converts,
 sitting alongside the evergreen Holiday Decorations service page that ranks.
@@ -67,14 +68,55 @@ differently, change the label, not the number.
 `field_holiday_min_job` is empty because the $750 figure in marketing's draft
 was never confirmed. The page omits any minimum unless that field is filled.
 
-## Hero image — still to land
+## Imagery
 
-`web/modules/custom/bos_service_request/assets/holiday-lights-hero.jpg`,
-**1840 × 1026** to match `winterize-hero.jpg`.
+| | |
+|---|---|
+| Hero | `assets/holiday-lights-hero.jpg` — **1842 × 1028**, 182 KB, a lit house at dusk |
+| Commercial | `assets/holiday-commercial.jpg` — daylight C9 run on a commercial facade |
 
-The template checks `file_exists` and omits the `<img>` entirely when absent, so
-the page renders legibly on the dark spruce ground with no broken-image icon.
-Dropping the file in is the only remaining step.
+The hero is laid out **photo left, copy right** on the dark ground — Todd's call
+after seeing a copy-over-photo version. The template still wraps the `<img>` in a
+`file_exists` check, so swapping or removing the file cannot produce a broken
+image. **The current hero is explicitly a placeholder Todd is content to ship**
+("I will keep looking for a better picture"); a replacement at the same path and
+roughly the same dimensions needs no code change.
+
+⚠ **Bank of Colorado signage is legible in the commercial photo.** It is their
+building, not a stock shot. Either get their written OK to use it as a reference,
+crop tighter than the sign, or swap the photo — a customer's branding on our
+marketing page is their decision, not ours.
+
+## "How we do it" accordions — reused, not rewritten
+
+The section is built from the **Holiday Decorations service term's own body**
+(term 396) by `_bos_service_request_accordions()`, the same helper `/winterize`
+and the fall-cleanup page use. One body, three surfaces.
+
+Two things had to change to make the reuse honest:
+
+- The splitter matched `<h3>` only; this body uses `<h2>`. Widened to `<h[23]>`
+  after **measuring** that winterize (h2=0, h3=7) and fall cleanup (h2=0, h3=12)
+  contain no `<h2>` — so the change cannot alter them. Re-verified afterwards: 7
+  and 12 accordions, unchanged.
+- The service page's own closing CTA is **stripped** before reuse, so the
+  accordion intro does not link the visitor to the page they are already on.
+
+### Lesson: reusing a component means reading its markup contract
+
+Three separate rounds of rework on this page, all the same mistake — borrowing a
+class *name* from `/winterize` without checking which element actually carries
+the rule:
+
+| Borrowed | What actually carries it |
+|---|---|
+| `.bo-step` | `.bo-next__grid` holds the grid; steps stacked with 38px gaps without it |
+| `.bo-step__n` | nothing — the numeral had no rule at all and rendered at body size |
+| `.bo-row` (invented) | `.bo-grid-2` is the existing two-up row; every input fell to browser default and Last name ran off the page |
+
+A fourth, `.bo-detail__body`, was caught before shipping by reading
+`page--winterize.html.twig` instead of recalling it. **Diff the markup against
+the page you are copying from before claiming a component is reused.**
 
 ## Conversion tracking
 

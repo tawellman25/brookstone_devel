@@ -51,3 +51,7 @@ services:
     class: Drupal\bos_service_request\Routing\RouteSubscriber
     tags:
       - { name: event_subscriber }
+
+  bos_service_request.holiday_estimator:
+    class: Drupal\bos_service_request\Holiday\HolidayEstimator
+    arguments: ['@config_pages.loader']

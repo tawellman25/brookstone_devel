@@ -5,30 +5,79 @@
  * No new palette: everything uses the existing --bo-* tokens.
  */
 
-/* Hero. Dark spruce ground so the page is legible BEFORE the photo exists, and
-   still legible over it afterwards. --bo-ink is the theme's dark token; the
-   literal is the documented fallback if it is ever absent. */
-.bo-hero--holiday { background: var(--bo-ink, #10231c); }
-.bo-hero--holiday .bo-hero__copy { position: relative; z-index: 2; }
+/* Hero — PHOTO LEFT, COPY RIGHT.
+ *
+ * The mirror of /winterize, and deliberately so: this photo is left-weighted
+ * (the lit trees are the subject) and already fades to black down its right
+ * third. Putting copy on the left — the winterize arrangement — would lay white
+ * type over the brightest, busiest part of the frame. On the right it sits on
+ * near-black with no scrim fighting the image.
+ *
+ * ⚠ The fade is BAKED INTO THE PHOTO. Mirroring this layout later is a new
+ * export, not a CSS change.
+ */
+.bo-hero--holiday {
+  position: relative;
+  background: var(--bo-ink, #10231c);
+  overflow: hidden;
+}
+
+/* Desktop: the photo fills the band, copy sits in the dark right third. */
+@media (min-width: 48rem) {
+  .bo-hero--holiday { display: grid; align-items: center; min-height: 32rem; }
+  .bo-hero--holiday .bo-hero__photo {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    /* Keep the lights anchored left as the viewport widens, so the baked-in
+       fade stays where the copy is. */
+    object-position: left center;
+  }
+  .bo-hero--holiday .bo-hero__copy {
+    position: relative; z-index: 2;
+    margin-left: auto;
+    width: min(38%, 30rem);
+    padding: 2.5rem clamp(1rem, 4vw, 3rem) 2.5rem 0;
+  }
+  /* Only a short right-edge wash, as insurance at very wide aspect ratios where
+     cover crops the baked fade off-screen. Not a second full gradient — that
+     would grey out the trees the photo is there for. */
+  .bo-hero--holiday .bo-hero__fade {
+    position: absolute; top: 0; bottom: 0; right: 0; left: auto;
+    width: 46%;
+    background: linear-gradient(to right, rgba(10,14,12,0) 0%, rgba(10,14,12,.75) 55%, rgba(10,14,12,.92) 100%);
+  }
+}
+
+/* Phone: no room side by side. The lights go on top — the photo is the reason
+   anyone keeps reading — and the copy stacks beneath on the dark ground.
+   object-position keeps the trees in frame when cover crops the width. */
+@media (max-width: 47.99rem) {
+  .bo-hero--holiday .bo-hero__photo {
+    display: block; width: 100%; height: 14rem;
+    object-fit: cover; object-position: left center;
+  }
+  .bo-hero--holiday .bo-hero__fade { display: none; }
+  .bo-hero--holiday .bo-hero__copy { padding: 1.5rem 1rem 2rem; }
+}
+
 .bo-hero--holiday .bo-hero__eyebrow,
 .bo-hero--holiday .bo-hero__h1,
 .bo-hero--holiday .bo-hero__sub,
 .bo-hero--holiday .bo-hero__trust { color: #fff; }
 .bo-hero--holiday .bo-hero__h1 {
-  /* Must not clip or overflow at 360px. */
-  font-size: clamp(1.75rem, 6vw, 3.25rem);
-  line-height: 1.1;
+  /* Must not clip or overflow at 360px, and it is a long headline sitting in a
+     narrow column on desktop — it will stack to four or five lines by design. */
+  font-size: clamp(1.6rem, 4.6vw, 2.6rem);
+  line-height: 1.12;
   overflow-wrap: break-word;
   hyphens: none;
+  text-wrap: balance;
+  margin: .4rem 0 .6rem;
 }
-.bo-hero--holiday .bo-hero__sub { max-width: 46ch; }
+.bo-hero--holiday .bo-hero__sub { max-width: 34ch; line-height: 1.5; }
 .bo-hero--holiday .bo-hero__trust { font-size: .9rem; opacity: .85; margin-top: 1rem; }
-/* Readability over the photo once it lands, at every width. */
-.bo-hero--holiday .bo-hero__photo { opacity: .55; }
-.bo-hero--holiday .bo-hero__fade {
-  width: 100%;
-  background: linear-gradient(to right, rgba(16,35,28,.92) 0%, rgba(16,35,28,.55) 60%, rgba(16,35,28,.35) 100%);
-}
+.bo-hero--holiday .bo-btn { margin-top: .5rem; display: inline-block; }
 
 .bo-why__inner, .bo-price__inner, .bo-next__inner, .bo-commercial__inner {
   max-width: 1040px; margin: 0 auto; padding: 2.5rem 1rem;

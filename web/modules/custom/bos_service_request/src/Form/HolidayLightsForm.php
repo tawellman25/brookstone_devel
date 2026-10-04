@@ -66,11 +66,19 @@ final class HolidayLightsForm extends FormBase {
       return $form;
     }
 
-    $form['row_name'] = ['#type' => 'container', '#attributes' => ['class' => ['bo-row']]];
+    // bo-form-card is the class that carries ALL the form styling — input
+    // widths, labels, focus, actions. Without it every field falls back to
+    // browser defaults and the two-column rows overflow their container, which
+    // is exactly what happened. bo-grid-2 is the existing two-up row; it
+    // already collapses to one column on mobile.
+    $form['#attributes']['class'][] = 'holiday-form';
+    $form['#attributes']['class'][] = 'bo-form-card';
+
+    $form['row_name'] = ['#type' => 'container', '#attributes' => ['class' => ['bo-grid-2']]];
     $form['row_name']['first_name'] = ['#type' => 'textfield', '#title' => $this->t('First name'), '#required' => TRUE];
     $form['row_name']['last_name'] = ['#type' => 'textfield', '#title' => $this->t('Last name'), '#required' => TRUE];
 
-    $form['row_contact'] = ['#type' => 'container', '#attributes' => ['class' => ['bo-row']]];
+    $form['row_contact'] = ['#type' => 'container', '#attributes' => ['class' => ['bo-grid-2']]];
     $form['row_contact']['phone'] = ['#type' => 'tel', '#title' => $this->t('Phone'), '#required' => TRUE];
     $form['row_contact']['email'] = ['#type' => 'email', '#title' => $this->t('Email')];
 
@@ -101,7 +109,9 @@ final class HolidayLightsForm extends FormBase {
     $form['actions']['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Get My Quote'),
-      '#attributes' => ['class' => ['bo-btn']],
+      // winterize-submit is the styled submit inside .bo-form-card; bo-btn is
+      // the hero CTA and sits differently in .form-actions.
+      '#attributes' => ['class' => ['winterize-submit']],
     ];
     return $form;
   }

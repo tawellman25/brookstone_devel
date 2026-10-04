@@ -17,10 +17,17 @@
 # Search engines (Googlebot, Bingbot, etc.) are NOT affected — they match the
 # "User-agent: *" group below and crawl normally. These bots ignore Crawl-delay,
 # so a full Disallow is the only effective throttle. Added 2026-08-29.
+#
+# OAI-SearchBot was removed from this list on 2026-10-03, deliberately.
+# It is NOT a training crawler — it is how a site appears in ChatGPT's search
+# results, and OpenAI's own documentation describes allowing it while blocking
+# GPTBot as the supported combination: "a webmaster can allow OAI-SearchBot in
+# order to appear in search results while disallowing GPTBot to indicate that
+# crawled content should not be used for training."
+# So Brookstone can be found by someone asking ChatGPT for a landscaper in
+# Delta or Montrose, while our content still stays out of model training.
+# Do not re-add it without that trade in mind. GPTBot stays blocked.
 User-agent: GPTBot
-Disallow: /
-
-User-agent: OAI-SearchBot
 Disallow: /
 
 User-agent: CCBot

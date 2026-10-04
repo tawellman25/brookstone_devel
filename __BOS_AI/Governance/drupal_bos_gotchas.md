@@ -6,6 +6,31 @@ This document captures hard-learned lessons. Most entries cite a specific commit
 
 ---
 
+## LiteSpeed's cache engine IS enabled on this host — and it varies on User-Agent
+
+**Probed 2026-10-04**, before building anything, with a throwaway `/_lsprobe/`
+directory holding only an `index.php` (echoing `microtime(TRUE)`, sending
+`X-LiteSpeed-Cache-Control: public,max-age=60`) and its own `.htaccess` with
+`CacheLookup on`. The root `.htaccess` was not touched; the directory was deleted
+afterwards and confirmed 404.
+
+Three sequential requests returned **`x-litespeed-cache: hit`** with a
+**byte-identical body timestamp** — the edge served it without re-entering PHP.
+So the engine is available and a page-level edge cache is viable here, which was
+genuinely unknown: no `lscache` module is installed and the root `.htaccess`
+contains zero LiteSpeed directives.
+
+**⚠ The probe response also carried `vary: User-Agent`**, which the server adds on
+its own. An edge cache keyed partly on the UA string fragments per browser build,
+so the hit rate will be far below what a single cached copy implies. Decide
+deliberately whether to keep or override that when wiring real caching; measure
+the hit rate rather than assuming one entry per URL.
+
+**Worth repeating as a method:** probing the engine in isolation took minutes and
+would have prevented building an entire module against a host feature that might
+have been switched off. Probe the dependency before building on it.
+
+
 ## After `drush cr` on live, prime the homepage before trusting a check
 
 **Seen 2026-10-04.** Immediately after a cache rebuild the homepage returned

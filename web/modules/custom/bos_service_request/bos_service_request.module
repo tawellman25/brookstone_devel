@@ -207,6 +207,7 @@ function _bos_service_request_generate_ref(string $bundle): string {
 const BOS_SERVICE_REQUEST_WINTERIZE_ROUTE = 'bos_service_request.winterize';
 const BOS_SERVICE_REQUEST_CHECK_ROUTE = 'bos_service_request.check_week';
 const BOS_SERVICE_REQUEST_BEAR_CREEK_ROUTE = 'bos_service_request.bear_creek';
+const BOS_SERVICE_REQUEST_HOLIDAY_ROUTE = 'bos_service_request.holiday_lights';
 
 /**
  * TRUE on any public winterize page (all use the marketing template).
@@ -447,6 +448,43 @@ function bos_service_request_theme_suggestions_page_alter(array &$suggestions, a
   elseif (_bos_service_request_is_fall_cleanup_page()) {
     $suggestions[] = 'page__fall_cleanup';
   }
+  elseif (\Drupal::routeMatch()->getRouteName() === BOS_SERVICE_REQUEST_HOLIDAY_ROUTE) {
+    $suggestions[] = 'page__holiday_lights';
+  }
+}
+
+/**
+ * Variables for the /holiday-lights marketing template.
+ *
+ * The price comes from Business Settings — the same source billing will read —
+ * so the published rate and the charged rate cannot drift. The route carries
+ * no_cache, so no custom cache tag is needed to keep it fresh.
+ */
+function _bos_service_request_holiday_vars(array &$variables): void {
+  $bs = \Drupal::service('config_pages.loader')->load('business_setting');
+  $rate = ($bs && $bs->hasField('field_holiday_light_per_foot')
+    && !$bs->get('field_holiday_light_per_foot')->isEmpty())
+    ? (float) $bs->get('field_holiday_light_per_foot')->value : 0.0;
+
+  // Never print "$0.00" on a public page if the rate is unset.
+  $money = static fn(float $n): string => '$' . (fmod($n, 1.0) === 0.0 ? number_format($n, 0) : number_format($n, 2));
+  $variables['bo_price'] = $rate > 0 ? $money($rate) : 'Call for pricing';
+
+  // The job minimum is only mentioned if the office has set one. Nothing is
+  // invented — the field ships empty on purpose.
+  $min = ($bs && $bs->hasField('field_holiday_min_job') && !$bs->get('field_holiday_min_job')->isEmpty())
+    ? (float) $bs->get('field_holiday_min_job')->value : 0.0;
+  $typical = 'A typical single-story home runs 120 to 180 feet of roofline; a two-story runs 160 to 240.';
+  $variables['bo_price_note'] = $min > 0
+    ? $money($min) . ' job minimum. ' . $typical
+    : $typical;
+
+  // The hero image lands separately. Report whether it is actually on disk, so
+  // the template can omit the <img> rather than render a broken one.
+  $rel = 'assets/holiday-lights-hero.jpg';
+  $path = \Drupal::service('extension.list.module')->getPath('bos_service_request') . '/' . $rel;
+  $variables['bo_hero_exists'] = file_exists(DRUPAL_ROOT . '/' . $path);
+  $variables['bo_hero'] = '/' . $path;
 }
 
 /**
@@ -485,6 +523,23 @@ function bos_service_request_preprocess_page(array &$variables) {
     _bos_service_request_preprocess_fall_cleanup($variables);
     return;
   }
+  // /holiday-lights shares the marketing chrome and the winterize stylesheet,
+  // then takes its own price and hero variables.
+  if (\Drupal::routeMatch()->getRouteName() === BOS_SERVICE_REQUEST_HOLIDAY_ROUTE) {
+    $base = '/' . \Drupal::service('extension.list.module')->getPath('bos_service_request');
+    $cfg = \Drupal::config('bos_service_request.settings');
+    $variables['#attached']['library'][] = 'bos_service_request/winterize';
+    $variables['#attached']['library'][] = 'bos_service_request/holiday';
+    $variables['bo_logo'] = $base . '/assets/bo-logo-round.png';
+    $variables['bo_phone'] = (string) $cfg->get('office_phone');
+    $variables['bo_tagline'] = 'Creating and Maintaining Your Outdoor Spaces';
+    $variables['bo_year'] = (int) date('Y');
+    $variables['bo_address'] = '20143 Austin Rd, Austin, CO 81410';
+    $variables['bo_credentials'] = _bos_service_request_trust_line();
+    _bos_service_request_holiday_vars($variables);
+    return;
+  }
+
   if (!_bos_service_request_is_winterize()) {
     return;
   }

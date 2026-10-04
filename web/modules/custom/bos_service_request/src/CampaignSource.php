@@ -33,6 +33,8 @@ class CampaignSource {
     }
     // Prefix rules — order matters (fbo before fb).
     $prefixes = [
+      // Someone on /holiday-lights with no tracked ?c= arrived via the site.
+      'holiday' => 'website',
       'pc' => 'postcard_qr',
       'goog' => 'google_ads',
       'fbo' => 'meta_organic',

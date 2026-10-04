@@ -1,0 +1,125 @@
+{#
+/**
+ * @file
+ * /holiday-lights — the holiday lighting campaign landing page.
+ *
+ * Mirrors page--winterize.html.twig: marketing chrome only (logo, tagline,
+ * phone, hero, footer), none of the site regions or navigation. Reuses the same
+ * bo-* component classes so there is one set of landing-page styles, not two.
+ *
+ * The hero is an <img> like winterize's. Until holiday-lights-hero.jpg exists
+ * the <img> is simply omitted and .bo-hero keeps its dark spruce background,
+ * so the page renders legibly with the file missing rather than showing a
+ * broken-image icon.
+ */
+#}
+{% set tel = bo_phone|replace({'-': '', ' ': '', '(': '', ')': ''}) %}
+{% set tagp = bo_tagline|split(' Your ') %}
+<div class="bo-winterize bo-holiday">
+
+  <header class="bo-topbar">
+    <div class="bo-topbar__brand">
+      <img class="bo-topbar__logo" src="{{ bo_logo }}" alt="Brookstone Outdoors" />
+      <div>
+        <span class="bo-topbar__name"><img class="bo-wordmark" src="/themes/custom/brookstone_olivero/images/brookstone-wordmark.png" alt="Brookstone" /><span>Outdoors</span></span>
+        <span class="bo-topbar__tag">{{ tagp[0] }}{% if tagp|length > 1 %}<br class="bo-tag-br">Your {{ tagp[1] }}{% endif %}</span>
+      </div>
+    </div>
+    <div class="bo-topbar__right">
+      <span class="bo-topbar__area">Delta &amp; Montrose Counties</span>
+      {% if bo_phone %}<a class="bo-topbar__phone" href="tel:{{ tel }}">{{ bo_phone }}</a>{% endif %}
+    </div>
+  </header>
+
+  <section class="bo-hero bo-hero--holiday">
+    {% if bo_hero_exists %}
+      <img class="bo-hero__photo" src="{{ bo_hero }}" alt="A home on the Western Slope lit for Christmas at dusk." />
+      <div class="bo-hero__fade" aria-hidden="true"></div>
+    {% endif %}
+    <div class="bo-hero__copy">
+      <span class="bo-hero__eyebrow osw">Holiday Lighting · {{ bo_year }}</span>
+      <h1 class="bo-hero__h1">Your House Looks Right at Christmas. You Never Touch a Ladder.</h1>
+      <p class="bo-hero__sub">We supply commercial-grade lights, install them, fix anything that goes out, take them down in January, and store them until next year. One price for the whole season.</p>
+      <a class="bo-btn" href="#request">Get a Quote</a>
+      <p class="bo-hero__trust">Serving Delta, Cedaredge, Montrose and the surrounding Western Slope.</p>
+    </div>
+  </section>
+
+  <section class="bo-why">
+    <div class="bo-why__inner">
+      <h2 class="bo-why__h2">Why homeowners hand this off</h2>
+      <div class="bo-why__grid">
+        <div class="bo-why__item"><h3>Nobody on a ladder.</h3><p>About 18,400 people a year end up in the emergency room from holiday decorating, and adults 40 to 60 are the largest group. A November roof at 6,000 feet is cold, frosted and pitched for snow. Let us do it.</p></div>
+        <div class="bo-why__item"><h3>Handled start to finish.</h3><p>Install, in-season service, takedown in January, and storage in our building. Nothing lives in your garage and nothing gets untangled next November.</p></div>
+        <div class="bo-why__item"><h3>Lights that fit your house.</h3><p>Measured and cut to your roofline, so no gaps at the corners and nothing left dangling. Commercial-grade C9 LED with replaceable bulbs and heavy-gauge wire rated for cold, not the big-box strands that go dark when one bulb fails.</p></div>
+        <div class="bo-why__item"><h3>You already know us.</h3><p>We maintain landscapes across this valley, we are licensed and insured, and we will still be here next November. Our crews are already people you let on your property.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bo-price">
+    <div class="bo-price__inner">
+      <h2 class="bo-price__h2">One price, set before we start</h2>
+      <p class="bo-price__body">We measure your roofline and quote a flat price for the season. No hourly rate, no meter running, no surprise invoice.</p>
+      <p class="bo-price__anchor"><strong>{{ bo_price }}</strong> per linear foot of roofline</p>
+      <p class="bo-price__note">{{ bo_price_note }}</p>
+      <ul class="bo-price__included">
+        <li>Commercial-grade C9 LED lights, supplied by us</li>
+        <li>Design and install</li>
+        <li>Service calls all season</li>
+        <li>Takedown in January</li>
+        <li>Off-season storage</li>
+      </ul>
+      <p class="bo-price__addons">Tree wrapping, wreaths, shrubs, wrapped columns and walkway borders quoted separately at the walkthrough.</p>
+    </div>
+  </section>
+
+  <section class="bo-next">
+    <div class="bo-next__inner">
+      <h2 class="bo-next__h2">How it works</h2>
+      <div class="bo-step"><span class="bo-step__n">1</span><div><h3>We measure.</h3><p>We walk the roofline with a laser measure and give you a flat seasonal price on the spot.</p></div></div>
+      <div class="bo-step"><span class="bo-step__n">2</span><div><h3>We install.</h3><p>Your lights go up between November 1 and December 15, cut to fit your house.</p></div></div>
+      <div class="bo-step"><span class="bo-step__n">3</span><div><h3>We handle the rest.</h3><p>Anything goes out, we come fix it. In January we take everything down and store it. Next year you do not have to call.</p></div></div>
+    </div>
+  </section>
+
+  <section class="bo-commercial">
+    <div class="bo-commercial__inner">
+      <h2>Commercial and HOA properties</h2>
+      <p>Storefronts, offices, HOAs and common areas. No employee of yours on a ladder, one line item on the budget, and it is up on schedule every year. Multi-year agreements available at a locked rate.</p>
+      <a class="bo-btn" href="#request">Get a Quote</a>
+    </div>
+  </section>
+
+  <div class="bo-urgency">Install season runs November 1 through December 15 and books out. Get on the schedule now.</div>
+
+  <section class="bo-formband" id="request">
+    <div class="bo-formband__inner">
+      <div>
+        <h2 class="bo-formband__h2">Get your quote</h2>
+        <p class="bo-formband__intro">Tell us where you are and we will set up a walkthrough. We measure the roofline and give you a flat seasonal price.</p>
+        {% if bo_phone %}<p class="bo-formband__intro">Prefer to talk? <a href="tel:{{ tel }}">{{ bo_phone }}</a>.</p>{% endif %}
+      </div>
+      {{ page.content }}
+    </div>
+  </section>
+
+  <footer class="bo-footer">
+    <div class="bo-footer__inner">
+      <div class="bo-footer__brand">
+        <img class="bo-footer__logo" src="{{ bo_logo }}" alt="Brookstone Outdoors" />
+        <div>
+          <span class="bo-footer__name"><img class="bo-wordmark" src="/themes/custom/brookstone_olivero/images/brookstone-wordmark-white.png" alt="Brookstone" /><span>Outdoors LLC</span></span>
+          <span class="bo-footer__addr">{{ bo_address }}</span>
+        </div>
+      </div>
+      <div class="bo-footer__right">
+        {% if bo_phone %}<a class="bo-footer__phone" href="tel:{{ tel }}">{{ bo_phone }}</a>{% endif %}
+        <span class="bo-footer__tag">{{ tagp[0] }}{% if tagp|length > 1 %}<br class="bo-tag-br">Your {{ tagp[1] }}{% endif %}</span>
+      </div>
+    </div>
+    {% if bo_credentials %}<div class="bo-footer__trust"><a href="/about-us/credentials">{{ bo_credentials }}</a></div>{% endif %}
+    <div class="bo-footer__copy">© {{ "now"|date("Y") }} Brookstone Outdoors LLC</div>
+  </footer>
+
+</div>

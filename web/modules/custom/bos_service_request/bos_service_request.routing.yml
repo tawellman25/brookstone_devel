@@ -125,3 +125,16 @@ bos_service_request.contact_thankyou:
     _title: 'Thank you — we have your message'
   requirements:
     _access: 'TRUE'
+
+# /holiday-lights — the holiday lighting campaign landing page. Same shape as
+# /winterize: the route's _form IS the page, and no_cache keeps the Business
+# Settings price fresh without a custom cache tag.
+bos_service_request.holiday_lights:
+  path: '/holiday-lights'
+  defaults:
+    _form: 'Drupal\bos_service_request\Form\HolidayLightsForm'
+    _title: 'Holiday Lighting Installation'
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: 'TRUE'

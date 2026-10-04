@@ -1,0 +1,81 @@
+/**
+ * /holiday-lights — only the sections winterize does not already have.
+ * Topbar, hero shell, formband, steps and footer all come from bo-winterize.css;
+ * this adds the value-prop grid, price block, commercial block and urgency band.
+ * No new palette: everything uses the existing --bo-* tokens.
+ */
+
+/* Hero. Dark spruce ground so the page is legible BEFORE the photo exists, and
+   still legible over it afterwards. --bo-ink is the theme's dark token; the
+   literal is the documented fallback if it is ever absent. */
+.bo-hero--holiday { background: var(--bo-ink, #10231c); }
+.bo-hero--holiday .bo-hero__copy { position: relative; z-index: 2; }
+.bo-hero--holiday .bo-hero__eyebrow,
+.bo-hero--holiday .bo-hero__h1,
+.bo-hero--holiday .bo-hero__sub,
+.bo-hero--holiday .bo-hero__trust { color: #fff; }
+.bo-hero--holiday .bo-hero__h1 {
+  /* Must not clip or overflow at 360px. */
+  font-size: clamp(1.75rem, 6vw, 3.25rem);
+  line-height: 1.1;
+  overflow-wrap: break-word;
+  hyphens: none;
+}
+.bo-hero--holiday .bo-hero__sub { max-width: 46ch; }
+.bo-hero--holiday .bo-hero__trust { font-size: .9rem; opacity: .85; margin-top: 1rem; }
+/* Readability over the photo once it lands, at every width. */
+.bo-hero--holiday .bo-hero__photo { opacity: .55; }
+.bo-hero--holiday .bo-hero__fade {
+  width: 100%;
+  background: linear-gradient(to right, rgba(16,35,28,.92) 0%, rgba(16,35,28,.55) 60%, rgba(16,35,28,.35) 100%);
+}
+
+.bo-why__inner, .bo-price__inner, .bo-next__inner, .bo-commercial__inner {
+  max-width: 1040px; margin: 0 auto; padding: 2.5rem 1rem;
+}
+.bo-why__h2, .bo-price__h2, .bo-next__h2, .bo-commercial__inner h2 {
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-size: clamp(1.4rem, 3.4vw, 2rem);
+  color: var(--bo-ink, #1a1613);
+  margin: 0 0 1.25rem;
+}
+
+/* One column on a phone, two from 40rem. Never a fixed min-width. */
+.bo-why__grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+@media (min-width: 40rem) { .bo-why__grid { grid-template-columns: 1fr 1fr; gap: 1.5rem; } }
+.bo-why__item h3 { font-family: Oswald, "Arial Narrow", sans-serif; font-size: 1.05rem; margin: 0 0 .35rem; color: var(--bo-ink, #1a1613); }
+.bo-why__item p { margin: 0; color: var(--bo-prose, #3a332c); line-height: 1.55; }
+
+.bo-price { background: var(--bo-sand, #f2e9dc); }
+.bo-price__anchor {
+  font-family: Oswald, "Arial Narrow", sans-serif;
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  color: var(--bo-orange, #cb6015);
+  margin: 1rem 0 .25rem;
+}
+.bo-price__note { color: var(--bo-muted, #6b6054); font-size: .95rem; margin: 0 0 1.25rem; }
+.bo-price__included { list-style: none; padding: 0; margin: 0 0 1.25rem; display: grid; gap: .4rem; }
+.bo-price__included li { padding-left: 1.6rem; position: relative; color: var(--bo-prose, #3a332c); }
+.bo-price__included li::before {
+  content: "✓"; position: absolute; left: 0; top: 0;
+  color: var(--bo-green, #007a33); font-weight: 700;
+}
+.bo-price__addons { font-size: .95rem; color: var(--bo-muted, #6b6054); margin: 0; }
+
+.bo-commercial { background: #fff; border-top: 1px solid var(--bo-sand, #e7dcc9); }
+.bo-commercial__inner p { color: var(--bo-prose, #3a332c); line-height: 1.55; max-width: 60ch; }
+.bo-commercial__inner .bo-btn { margin-top: 1rem; display: inline-block; }
+
+.bo-urgency {
+  background: var(--bo-ink, #1a1613); color: #fff; text-align: center;
+  padding: 1rem; font-family: Oswald, "Arial Narrow", sans-serif;
+  font-size: clamp(.95rem, 2.4vw, 1.1rem); line-height: 1.4;
+}
+
+/* Confirmation after submit, same treatment as the winterize page. */
+.bo-confirmation { background: #fff; border-left: 4px solid var(--bo-green, #007a33); padding: 1.25rem; border-radius: 4px; }
+.bo-confirmation h2 { margin-top: 0; font-family: Oswald, "Arial Narrow", sans-serif; }
+
+/* The two-up name/contact rows collapse on a phone. */
+.bo-holiday .bo-row { display: grid; grid-template-columns: 1fr; gap: 0 1rem; }
+@media (min-width: 34rem) { .bo-holiday .bo-row { grid-template-columns: 1fr 1fr; } }

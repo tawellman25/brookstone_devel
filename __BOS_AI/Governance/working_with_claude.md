@@ -175,6 +175,35 @@ Each push happened after the work block completed verification and committed loc
 
 Deploying BOS to live is a separate, deliberate operation distinct from pushing to origin. The deploy script is `dev_scripts/brookstone-sync-to-remote-DANGEROUS.sh`. It defaults to dry-run; live deploy requires explicit `--live`.
 
+### Dry-run `composer install` on live, and match the `--no-dev` flag to how it was installed
+
+A composer run on live removes whatever the lock no longer lists. **Always dry-run
+first and read the operation list**, which must contain exactly what you intend
+and nothing else:
+
+```bash
+/opt/alt/php83/usr/bin/php -d memory_limit=-1 /usr/local/bin/composer \
+  install --no-dev --no-interaction --dry-run
+```
+
+Invoke composer through the **Alt-PHP binary**, not the bare wrapper. If the dry
+run lists any removal you did not intend — drush especially, or anything from
+`require-dev` — stop; do not run it for real.
+
+**Check the flag matches reality** before trusting it: `vendor/composer/installed.json`
+carries a top-level `dev` boolean. Live reads `dev: false` with 0 dev packages, so
+`--no-dev` is correct there. Passing `--no-dev` to an installation made *with* dev
+packages would remove them all in one go, and the dry run is where you would see
+that.
+
+Take a rollback point first — copy live's `composer.json` and `composer.lock`
+somewhere timestamped. Rollback is restoring both and running `install` again.
+
+And **record md5s of the scaffold-managed files before and after** (core lists
+them in `web/core/composer.json` → `extra.drupal-scaffold.file-mapping`; 23 on
+this project, 21 present on live). A composer run can rewrite them — see the
+`.htaccess` gotcha.
+
 ### Prefer a targeted rsync; the full-tree script is not a safe default
 
 **Ship a feature with an `rsync` of its own paths and NO `--delete`.** That is what almost

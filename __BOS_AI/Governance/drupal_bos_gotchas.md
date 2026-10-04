@@ -6,6 +6,52 @@ This document captures hard-learned lessons. Most entries cite a specific commit
 
 ---
 
+## `audit.block-insecure` blocks the SOLVER, not just the report
+
+**Seen 2026-10-04.** Adding one line to `composer.json` changed its content-hash,
+so the lock needed refreshing — and **`composer update --lock` failed outright**,
+because composer refused to load `drupal/webform 6.3.0` at all while it carried
+security advisories. **`--no-audit` does not help**: the `block-insecure` setting
+gates dependency *resolution*, not the audit output.
+
+**So a vulnerable package nobody uses blocks every future lock refresh**, which
+means it blocks every composer.json change, however unrelated. It is not a
+nagging warning you can work around — it is a hard stop on an unrelated piece of
+work, which is how a Critical RCE sitting in `web/modules/contrib` for an
+uninstalled module finally got noticed.
+
+The three apparent escapes are all wrong: adding the advisories to the ignore
+list, setting `block-insecure: false`, or updating a package inside whatever gate
+happened to trip it. **Fix the package.** Where nothing uses it — 0 modules
+enabled, 0 config objects, 0 config dependencies — **removing it beats updating
+it**.
+
+## drupal-scaffold DOES overwrite `.htaccess`, and the proof is in the log line
+
+**Proven on dev 2026-10-04**, not inferred. A `composer remove` ran the scaffold,
+which logged:
+
+```
+  - Copy [web-root]/.htaccess from assets/scaffold/files/htaccess
+  - Skip [web-root]/robots.txt: overridden in drupal/recommended-project
+```
+
+The copy **silently wiped a hand-added `<IfModule LiteSpeed>` block**, while
+robots.txt was skipped because it *has* a `file-mapping` exclusion. Core's own
+scaffold definition maps `.htaccess` as a bare string with **no
+`"overwrite": false`**, so any composer operation that triggers scaffolding
+rewrites it.
+
+It also flipped the file **mode from 755 to 644** — worth knowing, since that is
+a second silent change rsync would not carry (`--no-perms`) but git will show.
+
+**Anything hand-written in `web/.htaccess` needs
+`"[web-root]/.htaccess": false` in `extra.drupal-scaffold.file-mapping`**, exactly
+as robots.txt has had since 2026-08-30. Read the scaffold's own log lines after a
+composer run; "Copy" means it overwrote, "Skip … overridden" means the exclusion
+held.
+
+
 ## LiteSpeed's cache engine IS enabled on this host — and it varies on User-Agent
 
 **Probed 2026-10-04**, before building anything, with a throwaway `/_lsprobe/`

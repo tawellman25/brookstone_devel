@@ -1,0 +1,165 @@
+<?php
+
+/**
+ * @file
+ * Prune unreachable Layout Builder field_block definitions.
+ *
+ * Layout Builder derives one `field_block` per field per bundle per entity
+ * type, and one `extra_field_block` per pseudo-field, REGARDLESS of whether
+ * Layout Builder is enabled on any of that bundle's displays. On BOS that is
+ * 11,133 + 2,347 = 13,480 definitions, of which only ~1,290 belong to a bundle
+ * that actually has a Layout Builder display. The rest are unreachable: no UI
+ * can offer them and no layout can reference them.
+ *
+ * They are not free. The block plugin manager's `block_plugins` cache item is
+ * one of the largest in BOS (~21 MB serialized, which expands to roughly
+ * 171 MB resident), and it is rebuilt on every cache rebuild and read into
+ * memory by any request that touches block discovery.
+ *
+ * This module removes the unreachable ones and leaves Layout Builder fully
+ * functional everywhere it is used. It is the same approach as
+ * `bos_toolbar_perf`: prune a deriver's output down to what is reachable,
+ * guarded so that a failure prunes nothing rather than breaking the site.
+ *
+ * @see bos_toolbar_perf
+ * @see web/scripts/audit_layout_builder_usage.php
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Config\Entity\ConfigEntityInterface;
+
+/**
+ * The derivers whose definitions are scoped to one entity_type + bundle.
+ *
+ * Both use the id shape `<deriver>:<entity_type>:<bundle>:<field>`.
+ */
+const BOS_BLOCK_PLUGIN_PERF_DERIVERS = ['field_block', 'extra_field_block'];
+
+/**
+ * Implements hook_block_alter().
+ */
+function bos_block_plugin_perf_block_alter(array &$definitions): void {
+  try {
+    $keep = _bos_block_plugin_perf_layout_bundles();
+  }
+  catch (\Throwable $e) {
+    // Never let this module be the reason block discovery fails.
+    \Drupal::logger('bos_block_plugin_perf')->error('Could not determine Layout Builder displays, pruning nothing: @m', ['@m' => $e->getMessage()]);
+    return;
+  }
+
+  // Safety valve. An empty set with field_blocks present means the config read
+  // came back wrong, not that Layout Builder is unused — pruning on that would
+  // strip every definition Layout Builder needs. Do nothing instead.
+  if (!$keep) {
+    foreach (array_keys($definitions) as $pid) {
+      if (strpos($pid, 'field_block:') === 0) {
+        \Drupal::logger('bos_block_plugin_perf')->warning('Found no Layout Builder displays but field_block definitions exist; pruning nothing.');
+        return;
+      }
+    }
+    return;
+  }
+
+  foreach (array_keys($definitions) as $pid) {
+    $colon = strpos($pid, ':');
+    if ($colon === FALSE) {
+      continue;
+    }
+    if (!in_array(substr($pid, 0, $colon), BOS_BLOCK_PLUGIN_PERF_DERIVERS, TRUE)) {
+      continue;
+    }
+    // <deriver>:<entity_type>:<bundle>:<field…> — the field part may itself
+    // contain colons, so cap the split at 4.
+    $parts = explode(':', $pid, 4);
+    if (count($parts) < 3) {
+      continue;
+    }
+    if (!isset($keep[$parts[1] . '.' . $parts[2]])) {
+      unset($definitions[$pid]);
+    }
+  }
+}
+
+/**
+ * Every entity_type.bundle that has at least one Layout Builder display.
+ *
+ * Read straight from config rather than through the entity_view_display
+ * storage: this runs inside block discovery, and the less of the entity system
+ * it re-enters while plugin definitions are mid-build, the better.
+ *
+ * @return array
+ *   Keys are "entity_type.bundle". Values are TRUE.
+ */
+function _bos_block_plugin_perf_layout_bundles(): array {
+  $bundles = &drupal_static(__FUNCTION__);
+  if ($bundles !== NULL) {
+    return $bundles;
+  }
+
+  $bundles = [];
+  $factory = \Drupal::configFactory();
+  $names = $factory->listAll('core.entity_view_display.');
+  foreach ($factory->loadMultiple($names) as $config) {
+    if (!$config->get('third_party_settings.layout_builder.enabled')) {
+      continue;
+    }
+    // core.entity_view_display.ENTITY_TYPE.BUNDLE.VIEW_MODE
+    $id = substr($config->getName(), strlen('core.entity_view_display.'));
+    $parts = explode('.', $id);
+    if (count($parts) >= 2) {
+      $bundles[$parts[0] . '.' . $parts[1]] = TRUE;
+    }
+  }
+  return $bundles;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for entity_view_display.
+ */
+function bos_block_plugin_perf_entity_view_display_insert(ConfigEntityInterface $display): void {
+  _bos_block_plugin_perf_resync($display);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for entity_view_display.
+ */
+function bos_block_plugin_perf_entity_view_display_update(ConfigEntityInterface $display): void {
+  _bos_block_plugin_perf_resync($display);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_delete() for entity_view_display.
+ */
+function bos_block_plugin_perf_entity_view_display_delete(ConfigEntityInterface $display): void {
+  _bos_block_plugin_perf_resync($display);
+}
+
+/**
+ * Rebuild block definitions when a display's Layout Builder state may have moved.
+ *
+ * The block plugin manager is declared with an EMPTY cache-tag list, so its
+ * `block_plugins` cache item is not invalidated by config changes — it only
+ * clears on a full cache rebuild. Without this, enabling Layout Builder on a
+ * new display would leave its field_blocks pruned (and therefore missing from
+ * the "Add block" list) until somebody happened to run `drush cr`.
+ *
+ * Fires on any display save because a display carries no record of its previous
+ * Layout Builder state here; clearing the definitions is cheap next to being
+ * wrong, and display saves are rare.
+ *
+ * KNOWN, HARMLESS: the save that enables Layout Builder on a display for the
+ * FIRST time logs one "block plugin was not found" warning per field. Layout
+ * Builder populates the default layout from LayoutBuilderEntityViewDisplay
+ * ::preSave(), which runs before any hook, so the registry is still pruned at
+ * that instant. The result is correct regardless — verified on dev: enabling it
+ * on chemical.fertilizer.default persisted 1 section and 23 components with
+ * ZERO unresolvable plugin ids, and this hook then refreshes the registry. The
+ * warnings are transition noise, not damage, and they stop once the display is
+ * enabled. Not worth a form-level workaround for how rarely it happens.
+ */
+function _bos_block_plugin_perf_resync(ConfigEntityInterface $display): void {
+  drupal_static_reset('_bos_block_plugin_perf_layout_bundles');
+  \Drupal::service('plugin.manager.block')->clearCachedDefinitions();
+}

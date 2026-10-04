@@ -66,11 +66,23 @@ So the engine is available and a page-level edge cache is viable here, which was
 genuinely unknown: no `lscache` module is installed and the root `.htaccess`
 contains zero LiteSpeed directives.
 
-**⚠ The probe response also carried `vary: User-Agent`**, which the server adds on
-its own. An edge cache keyed partly on the UA string fragments per browser build,
-so the hit rate will be far below what a single cached copy implies. Decide
-deliberately whether to keep or override that when wiring real caching; measure
-the hit rate rather than assuming one entry per URL.
+**The probe response carried `vary: Cookie,User-Agent`, which the server adds on
+its own — but LiteSpeed does NOT key its cache on User-Agent.** Measured on live
+2026-10-04 against one URL: Chrome/141 went miss then hit; **Chrome/142's FIRST
+request was a hit, and Googlebot/2.1's first request was a hit too**, both reusing
+Chrome/141's entry. So the `Vary` header is advertised downstream while the edge
+itself stores one entry per URL. The hit rate is what a single cached copy
+implies, not a fraction of it.
+
+Worth having measured rather than assumed: the opposite result would have made the
+whole edge-cache design far less valuable, and the header alone suggested the
+opposite.
+
+**LiteSpeed CONSUMES its own instruction headers and strips them before the
+client sees them.** `X-LiteSpeed-Cache-Control` is absent on a cache hit, and
+`X-LiteSpeed-Purge` never appears in a client-visible response at all. Do not
+verify either by looking for the header — verify **behaviourally**: a purge is
+proven by the next anonymous request being a `miss` followed by a `hit`.
 
 **Worth repeating as a method:** probing the engine in isolation took minutes and
 would have prevented building an entire module against a host feature that might

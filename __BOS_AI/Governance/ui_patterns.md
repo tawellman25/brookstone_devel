@@ -367,10 +367,28 @@ the conflict, do not implement it.
 
 ### Corollaries that have each been got wrong once
 
-- **A card never shows a truncation of the body.** Trimming a body to 160 characters cuts
-  mid-sentence and the first line was not written to open anything. If the teaser is empty the
-  card renders **no text** — an empty card is a tracked to-do; one quietly filled with stale
-  body copy hid a problem for weeks.
+- **A card never shows a truncation of the body** *as its permanent design*. Trimming a body to
+  160 characters cuts mid-sentence and the first line was not written to open anything.
+
+  **On the empty case, the rule is about VISIBILITY, not about rendering nothing.** The
+  original objection was that a fallback *"hid this for weeks"* — and what hid it was that the
+  fallback lived in a **preprocess hook**, where no one looking at the view could see it. Three
+  live card listings now sit at different points, deliberately:
+
+  | Listing | Behaviour | Why |
+  |---|---|---|
+  | `plant_characteristic_children` | teaser, **no fallback** | the set was being completed in the same pass; a blank card is the to-do |
+  | `material_children` | fallback **in a PHP hook** | transitional, but invisible in the Views UI — the shape the rule was written against |
+  | `county_cities` | teaser + **Views-native fallback** | 1 of 12 written; a hard switch blanks 11 live cards |
+
+  **So: a transitional fallback is allowed while a set is being filled, on two conditions** —
+  it is **visible where the view is edited** (a field's "No results behavior", not a hook), and
+  the gap is tracked somewhere a human reads (`/admin/office/content-coverage`). Remove it once
+  the set is written. A fallback that is neither visible nor tracked is the thing being banned.
+
+  Views-native fallback: put the body field **above** the teaser in the field list, exclude it
+  from render, and set the teaser's "No results behavior" to its token — field ORDER is
+  load-bearing, because a token only exists for fields that precede it.
 - **Never promote the teaser to cover a missing body.** If a vocabulary's body is empty, write
   one. (Where this had already happened — `wind_direction`, `brookstone_tags` — the teaser was
   **copied** into the body, not moved, so the cards kept theirs.)
@@ -386,6 +404,46 @@ the conflict, do not implement it.
 **Live state comes from there or from fetching the page — never from a copy file (which says
 what was written) or a build log (which says what was built).**
 
+
+## Full-bleed bands with contained content (marketing pages)
+
+The `/winterize`, `/winterize/week`, `/winterize/bear-creek`, fall-cleanup and
+`/holiday-lights` pages share the `.bo-winterize` wrapper. Until 2026-10-04 that wrapper
+carried `max-width: 1440px; margin: 0 auto`, which capped the **whole page** — so past
+1440px every band stopped short with paper gutters down both sides. It went unnoticed for
+months because winterize's hero is light and blends into the paper ground; a **dark photo
+hero made it obvious at a glance.**
+
+**Do not simply remove the cap.** Without it the hero copy column stretches to ~1100px of
+20px serif on a 2560 screen, which is an unreadable measure. The page bleeds and the
+*content* holds the measure:
+
+```css
+.bo-winterize {
+  --bo-measure: 1440px;
+  --bo-gutter: clamp(16px, 5vw, 72px);
+  --bo-bleed: max(0px, calc((100% - var(--bo-measure)) / 2));
+}
+.bo-topbar    { padding-inline: max(var(--bo-gutter), var(--bo-bleed)); }
+.bo-hero__copy{ margin-right: var(--bo-bleed); }
+```
+
+Three things that are easy to get wrong:
+
+- **Only containers WITHOUT an inner wrapper need this.** Every other band already centres
+  its content at 940–1160px and needs nothing. Check before adding rules.
+- **`margin`, not `padding`, on a width-constrained column.** `box-sizing: border-box` is
+  set page-wide, so padding comes out of the column's own width — and a column declared
+  `width: min(38%, 30rem)` reaches a *negative* content width on an ultra-wide screen. The
+  topbar is the exception and uses padding deliberately, so its bottom hairline still spans
+  the full width.
+- **Below the measure, nothing changes** — `max()`/`calc()` collapse to the values that
+  were already there, so there is no mobile regression to re-test.
+
+This is a different technique from the **Public banner hero** above, which breaks a single
+element out of a constrained page with `width:100vw; margin-left:calc(50% - 50vw)`. Use the
+break-out for one element inside an otherwise contained page; use this when the whole page
+should bleed and only a few content columns need holding.
 
 ## Photo-strip card listings need photos
 

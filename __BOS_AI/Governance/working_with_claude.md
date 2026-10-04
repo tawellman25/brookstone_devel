@@ -175,6 +175,58 @@ Each push happened after the work block completed verification and committed loc
 
 Deploying BOS to live is a separate, deliberate operation distinct from pushing to origin. The deploy script is `dev_scripts/brookstone-sync-to-remote-DANGEROUS.sh`. It defaults to dry-run; live deploy requires explicit `--live`.
 
+### Prefer a targeted rsync; the full-tree script is not a safe default
+
+**Ship a feature with an `rsync` of its own paths and NO `--delete`.** That is what almost
+every changelog entry actually did, and it is now the documented default.
+
+A dry run of the full-tree script on 2026-10-04 wanted **190 content/new files and 38
+deletions** for a change that was one landing page, because the repo drifts from live
+between full deploys. In that list: **`web/.well-known/` and its `acme-challenge/`** (the
+Let's Encrypt HTTP-01 validation path) would have been deleted, five stray module-root
+assets with it, and **`docs/email-audit-detail-*.csv` — flagged PII — would have been
+copied onto production.** The `config/sync/*.yml` churn in it is inert, since nothing
+imports it without `cim`, but it is still not part of your change.
+
+Reserve the full-tree script for a deliberate reconciliation where every deletion has been
+read. Then it is the right tool; as a routine feature deploy it is not.
+
+### Run a production write on its own, and verify the STORED value
+
+A content script chained as `rsync && ssh(write) && ssh(cr) && curl` **died after printing
+its backup path and before saving the entity** (2026-10-04). The output implied success;
+the database still held the previous revision. The live script was byte-identical to local
+(md5-verified) and its dry run said it would write — an interrupted process, not bad code.
+
+So: do not chain a production write behind or in front of anything whose failure can take
+the process down with it, and **confirm the result by reading the stored value, not the
+script's output.** A script that has printed a backup path has not yet written anything,
+and `tail -n` on its output can hide whether the final line ever arrived.
+
+### Prime the homepage after a live `cr`
+
+Immediately after a cache rebuild, `/` returned **503 after 47 seconds** while every other
+page answered 200 in 0.3s; three sequential retries then returned 200 at 0.29s with no
+drush running and load at 1.48. It is the heaviest page on the site and its first uncached
+render exceeded the request timeout. Nothing was broken — **but a real visitor could have
+caught it.** Request `/` yourself after a live `cr`, and never read a single post-`cr` 503
+as damage until a sequential re-check says so.
+
+### Three faults the deploy script carried until 2026-10-04
+
+All three were found by running the dry run, and all are fixed:
+
+1. **The dry run was not read-only.** Its EXIT trap ran `sset system.maintenance_mode 0`
+   and `cr` against production immediately after logging *"no remote changes made"*. The
+   rebuild was harmless; taking a deliberately-maintenanced site **out** of maintenance
+   would not have been.
+2. **`REMOTE_DRUSH` capped PHP at 768M, and `cr` is reliably OOM-killed there.** Because
+   cleanup chained with `&&`, the kill skipped `rm -f` and **leaked the deploy lock**,
+   blocking the next deploy until it was cleared by hand. This one is load-bearing: **a
+   killed `cr` leaves the router unrebuilt, so a newly added route 404s on a deploy that
+   reports success.** Now 5120M, with the lock removal sequenced so it always runs.
+3. **The dry run wrote the lock** it then relied on that trap to remove; it now only checks.
+
 ### Always dry-run first
 
 Run the script with no flags to see exactly what will change. The output is verbose — most lines are timestamp-only updates (`<f..T......` rsync flag) that don't affect functionality. Filter to substantive changes:

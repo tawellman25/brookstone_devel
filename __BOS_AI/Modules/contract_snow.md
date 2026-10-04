@@ -113,7 +113,9 @@ the AEL sentinel heal in `wo_shared`). Backfilled on live by
 Entity-API setup scripts run on each environment (dev then live via
 `brookstone-new`), module rsynced, `drush cr`. No `drush cim` (config/sync
 intentionally drifted). Live drush:
-`/opt/alt/php83/usr/bin/php -d memory_limit=768M vendor/drush/drush/drush.php`.
+`/opt/alt/php83/usr/bin/php -d memory_limit=5120M vendor/drush/drush/drush.php`.
+(Was documented as 768M — `drush cr` is reliably OOM-killed at that limit on this box;
+corrected 2026-10-04.)
 
 ## Tiered billing (P4 — shipped)
 

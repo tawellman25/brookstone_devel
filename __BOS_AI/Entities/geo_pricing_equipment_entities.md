@@ -16,7 +16,20 @@ Storage: ECK
 ## Key Fields
 - `field_city_name` — city name
 - `field_type` — type classification (list)
-- `field_city_description` — long text description
+- `field_city_description` — long text description. The page BODY, and nothing else:
+  it is not the card text (see below).
+- `field_short_description` — **the card text on the parent county page's "Towns We
+  Serve" list. VIEWS-ONLY: it is on the form, on no view display, and never renders
+  on the city's own page.** Added 2026-10-04 because the card had been rendering
+  `field_city_description` trimmed to 180 characters, which is the truncated-body
+  anti-pattern (`Governance/ui_patterns.md`). The `county_cities` view prefers this
+  field and falls back to the trimmed body where a city has not been written yet —
+  12 cities, 1 written, so a hard switch would have blanked 11 live cards. The
+  fallback is Views-native, so the office can see it; it comes out once the set is
+  written.
+- `field_meta_tags` — per-entity SEO override (title + description). **Set it.** Left
+  empty it auto-generates from the first 255 characters of the body, which is how a
+  Salt Lake City ZIP code reached the Montrose search result (2026-10-04).
 - `field_banner_image` — banner image
 
 ## Invariants

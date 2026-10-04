@@ -69,6 +69,21 @@ differently, change the label, not the number.
 `field_holiday_min_job` is empty because the $750 figure in marketing's draft
 was never confirmed. The page omits any minimum unless that field is filled.
 
+## Page order
+
+Hero → why → price → how it works → commercial → urgency → **form** → how we do it → footer.
+
+The form sits **above** the accordions, on Todd's call: make the ask while the photo and
+the price are still in view, and leave the detail for anyone who still wants it. `/winterize`
+puts its form second for the same reason. The hero CTA anchors to `#request`.
+
+## Full-width bands
+
+This page bleeds edge to edge. The shared `.bo-winterize` wrapper used to carry
+`max-width: 1440px`, which capped every band — see **Full-bleed bands with contained
+content** in `Governance/ui_patterns.md` for the technique and the three traps. The fix is
+shared, so it applies to `/winterize` and fall cleanup too.
+
 ## Imagery
 
 | | |

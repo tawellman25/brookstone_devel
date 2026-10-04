@@ -56,6 +56,36 @@ AddEncoding gzip svgz
   FallbackResource /index.php
 </IfModule>
 
+# BOS edge cache (bos_edge_cache module). Placed BEFORE Drupal's rewrites so the
+# cache lookup happens before the request is handed to the front controller.
+#
+# Drupal decides what may be cached and emits X-LiteSpeed-Cache-Control per
+# response; this block only turns the lookup on and forces a bypass for requests
+# that are definitely not anonymous. There is deliberately no URL allowlist here
+# — a second list at the edge would be a second source of truth that drifts.
+#
+# The two bypasses are belt-and-braces: the module already refuses to mark these
+# cacheable, but a request must never be SERVED from the edge before PHP runs,
+# and only the server can decide that.
+#
+# NOTE: this file is excluded from drupal-scaffold in composer.json. Without that
+# exclusion a core update silently overwrites it and this block disappears.
+# PROVEN on dev 2026-10-04: `composer remove` ran the scaffold, which logged
+# "Copy [web-root]/.htaccess" and wiped this block, while robots.txt was logged
+# as "Skip ... overridden" because it HAS the exclusion.
+<IfModule LiteSpeed>
+  CacheLookup on
+  RewriteEngine On
+
+  # Any Drupal session cookie: the visitor may be logged in.
+  RewriteCond %{HTTP_COOKIE} S?SESS[0-9a-f]+= [NC]
+  RewriteRule .* - [E=Cache-Control:no-cache]
+
+  # The work-order intake endpoint authenticates by header, not cookie.
+  RewriteCond %{HTTP:X-API-KEY} .+
+  RewriteRule .* - [E=Cache-Control:no-cache]
+</IfModule>
+
 # Various rewrite rules.
 <IfModule mod_rewrite.c>
   RewriteEngine on

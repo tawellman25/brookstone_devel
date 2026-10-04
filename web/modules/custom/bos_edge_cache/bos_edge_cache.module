@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Lets LiteSpeed cache anonymous responses at the edge.
+ */
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_cache_flush().
+ *
+ * Raises a flag rather than emitting a purge here. A purge reaches LiteSpeed
+ * only as a response HEADER, and this hook runs during a cache rebuild that
+ * usually has no response at all (drush). The subscriber emits the header on
+ * the next response that the edge will NOT store — see EdgeCacheSubscriber for
+ * why it must never ride on a cacheable one.
+ */
+function bos_edge_cache_cache_flush(): void {
+  \Drupal::state()->set('bos_edge_cache.purge_pending', TRUE);
+}

@@ -175,6 +175,30 @@ Each push happened after the work block completed verification and committed loc
 
 Deploying BOS to live is a separate, deliberate operation distinct from pushing to origin. The deploy script is `dev_scripts/brookstone-sync-to-remote-DANGEROUS.sh`. It defaults to dry-run; live deploy requires explicit `--live`.
 
+### `web/.htaccess` is scaffold-excluded — merge core's changes BY HAND on every core update
+
+`composer.json` carries `"[web-root]/.htaccess": false`, because the file holds the
+`<IfModule LiteSpeed>` edge-cache block and the scaffold would otherwise overwrite
+it (proven — see the gotcha).
+
+**The cost of that exclusion is that core's own `.htaccess` security fixes no
+longer arrive automatically.** On every `drupal/core` update:
+
+```bash
+# diff core's shipped file between the OLD and NEW core version
+git diff <old-tag>..<new-tag> -- core/assets/scaffold/files/htaccess   # in a core checkout
+# or compare the installed copy before/after the update:
+diff web/core/assets/scaffold/files/htaccess web/.htaccess
+```
+
+Merge any upstream change into `web/.htaccess` by hand, keeping the LiteSpeed
+block. The second `diff` always shows our block as an addition — that is expected;
+what you are looking for is anything else core changed.
+
+**Treat this as part of the core-update checklist, not an optional tidy.** An
+unmerged upstream hardening rule is a silent security regression, and the whole
+reason the exclusion exists is that nothing will tell you.
+
 ### Dry-run `composer install` on live, and match the `--no-dev` flag to how it was installed
 
 A composer run on live removes whatever the lock no longer lists. **Always dry-run

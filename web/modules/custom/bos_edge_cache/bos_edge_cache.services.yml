@@ -1,0 +1,6 @@
+services:
+  bos_edge_cache.response_subscriber:
+    class: Drupal\bos_edge_cache\EventSubscriber\EdgeCacheSubscriber
+    arguments: ['@current_user', '@state', '@config.factory', '@logger.channel.default']
+    tags:
+      - { name: event_subscriber }

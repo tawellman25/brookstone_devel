@@ -1,0 +1,10 @@
+bos_edge_cache.purge:
+  path: '/admin/config/development/bos-edge-cache/purge'
+  defaults:
+    _form: 'Drupal\bos_edge_cache\Form\EdgePurgeForm'
+    _title: 'Purge the edge cache'
+  requirements:
+    _permission: 'administer site configuration'
+  options:
+    # The response that carries the purge header must never be edge-cacheable.
+    no_cache: 'TRUE'

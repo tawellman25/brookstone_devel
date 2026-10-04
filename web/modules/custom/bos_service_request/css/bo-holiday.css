@@ -130,6 +130,16 @@
 /* The daylight commercial shot. Full-bleed band under the copy — the frame is
    2.14:1, so a narrow column would crop the one thing it is there to show. */
 .bo-commercial__shot { margin: 0; line-height: 0; }
+/* The figure sets line-height:0 to kill the inline-image descender gap, which
+   would collapse this caption to nothing — so it resets its own. #736555 is the
+   corrected --bo-muted-2 (5.6:1 on this white band); the step down from body
+   text is carried by SIZE, not a fainter colour, per the 09-28 contrast audit. */
+.bo-commercial__shot figcaption {
+  line-height: 1.5;
+  margin-top: .55rem;
+  font-size: .8125rem;
+  color: var(--bo-muted-2, #736555);
+}
 .bo-commercial__shot img {
   display: block; width: 100%; height: auto;
   /* Cap the height on tall viewports so a very wide photo cannot push the

@@ -82,10 +82,19 @@ image. **The current hero is explicitly a placeholder Todd is content to ship**
 ("I will keep looking for a better picture"); a replacement at the same path and
 roughly the same dimensions needs no code change.
 
-⚠ **Bank of Colorado signage is legible in the commercial photo.** It is their
-building, not a stock shot. Either get their written OK to use it as a reference,
-crop tighter than the sign, or swap the photo — a customer's branding on our
-marketing page is their decision, not ours.
+The commercial shot is **Todd's own photograph of a Brookstone install** in
+**Hotchkiss** (Delta County), taken from a public place — so copyright is ours and
+no release is needed. I had flagged the customer's signage being legible as
+needing permission; **that was overstated**, and showing commercial work is
+ordinary practice for a contractor.
+
+Because we installed it, the figure carries a **caption** saying so — which is the
+point of it being there at all: the Commercial section argues entirely in prose,
+and this is the only evidence on the page. The caption names **Hotchkiss** rather
+than the county (the stronger locality signal, and the only mention of that town
+on the page) and deliberately **does not name the client**: their sign being in
+frame is incidental, but writing a customer into marketing copy is a different
+claim and theirs to agree to.
 
 ## "How we do it" accordions — reused, not rewritten
 

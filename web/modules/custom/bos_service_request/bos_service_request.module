@@ -492,6 +492,24 @@ function _bos_service_request_holiday_vars(array &$variables): void {
   $shot = $base . '/assets/holiday-commercial.jpg';
   $variables['bo_commercial_img_exists'] = file_exists(DRUPAL_ROOT . '/' . $shot);
   $variables['bo_commercial_img'] = '/' . $shot;
+
+  // "How we do it" — the same mechanism /winterize uses: the accordions are
+  // built from the SERVICE TERM's own public description, so the office edits
+  // one page and both update. Resolved by alias rather than a hardcoded tid.
+  $variables['bo_accordions'] = NULL;
+  $inner = \Drupal::service('path_alias.manager')->getPathByAlias('/services/christmas-decorations');
+  if ($inner !== '/services/christmas-decorations') {
+    $term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')
+      ->load((int) str_replace('/taxonomy/term/', '', $inner));
+    if ($term && $term->hasField('field_service_public_desc') && !$term->get('field_service_public_desc')->isEmpty()) {
+      $body = (string) $term->get('field_service_public_desc')->value;
+      // Strip the service page's CTA before reusing its body here — it links to
+      // /holiday-lights, and an accordion intro pointing at the page you are
+      // already on is a dead end.
+      $body = preg_replace('#<p class="bo-service-cta">.*?</p>\s*#is', '', $body);
+      $variables['bo_accordions'] = _bos_service_request_accordions($body);
+    }
+  }
 }
 
 /**
@@ -644,7 +662,12 @@ function bos_service_request_preprocess_page(array &$variables) {
  * Returns a processed_text render array (full_html preserves details/summary).
  */
 function _bos_service_request_accordions(string $html): array {
-  $parts = preg_split('#<h3>(.*?)</h3>#is', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
+  // h3 OR h2. The winterize and fall-cleanup bodies use h3 exclusively and
+  // contain no h2 at all (measured 2026-10-04: h2=0/h3=7 and h2=0/h3=12), so
+  // accepting h2 cannot change either of them. The Holiday Decorations body is
+  // the mirror image — h2 only — because it is written as a standalone service
+  // page where those sections are genuinely top level.
+  $parts = preg_split('#<h[23]>(.*?)</h[23]>#is', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
   $blocks = '';
   $intro = trim($parts[0] ?? '');
   if ($intro !== '') {

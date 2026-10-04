@@ -205,6 +205,30 @@ These are shipped, live systems whose only blocker is human adoption, not engine
 |---|---|
 | Property devices EVA card restyle | Match My Schedule card component. |
 
+### Teammate mobile app — and the field-access work it depends on (T2, when the app starts)
+
+A mobile app for crews is wanted (Todd, 2026-10-04). JSON:API is the foundation for it and is
+deliberately **kept** rather than removed. One prerequisite has to land before app code is written
+against it, and it is cheap now and awkward later.
+
+| Item | Notes |
+|---|---|
+| **Field-access guards on the entity types JSON:API exposes** | **The anonymous hole is CLOSED** — `bos_jsonapi_guard` requires authentication on all 16,322 `jsonapi.*` routes (live 2026-10-04, `ed9a5675`); anonymous gets 401 with no data in the body. What is **not** done is *which authenticated user may read which field*. **`hook_entity_field_access` is the only layer JSON:API honours** — it ignores view modes entirely, and Drupal field access **defaults to ALLOW**, so curating a display protects the HTML page and nothing else (gotcha: "JSON:API serialises by field access, never by view mode"). Today any authenticated account — `teammates` **or** `client` — can read `zipcodes.field_trip_fee` + `field_check_up_route_day`, HOA street addresses / GPS / `field_cod_customer`, and the `city`/`county`/`state`/`property_backflow_device` fields. **Pattern to copy: `material_entity_field_access()`** in `material.module` — the one guarded type, and provably clean through JSON:API. Scope: `zipcodes`, `properties` (hoa bundle), then audit the geo trio + backflow devices. |
+| Per-consumer key + attribution | The app is the **second** API consumer, which activates the row in the section below — it should authenticate as its own identity, not reuse `cowork-connect`. |
+
+**Risk calibration, so this is neither re-inflated nor dismissed.** It is **not** urgent today and
+should not be treated as an open security item: client accounts are **office-provisioned** (no public
+registration), so the authenticated audience is vetted landscaping customers, none of whom is
+realistically going to hand-construct `/jsonapi/zipcodes/zipcode`. The genuine risk was **anonymous**
+exposure, because it needed no actor at all — security scanners had already pulled it (19 non-curl
+hits, DrupalAuditTool and Leakix, all HTTP 200) — and that is what the guard closed.
+
+**It becomes load-bearing the moment the app exists**, for three reasons that all arrive together:
+the app makes API calls *routine* rather than exotic; it puts a credentialed client on a phone in the
+field, where devices are lost; and app code written against an allow-everything API quietly assumes
+fields it should never have been shown, which is far more expensive to unpick after release than
+before. **Do the guards as the app's first commit, not its last.**
+
 ### Multi-consumer keys + per-consumer attribution (T3, when a 2nd consumer appears)
 | Item | Notes |
 |---|---|

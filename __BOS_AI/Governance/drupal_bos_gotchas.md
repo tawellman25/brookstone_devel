@@ -6,6 +6,58 @@ This document captures hard-learned lessons. Most entries cite a specific commit
 
 ---
 
+## `rsync -a` ships a 600-mode asset straight to a 403 on live
+
+**Seen 2026-10-04.** `holiday-lights-hero.jpg` arrived in the working tree as
+`-rw-------` (an image dropped in from outside the repo keeps whatever mode it
+had). `rsync -a` preserves permissions faithfully, so the hero landed on live
+unreadable by the web server and the page's main image returned **403** while a
+sibling photo at 644 returned 200. Nothing in the deploy reports this — the file
+is present, the right size, and the right path.
+
+**Rule:** after rsyncing any new asset, request it over HTTP and check the status
+code. "The file is on the server" is not the same claim as "the server will serve
+it." `find web/modules/custom -type f -perm /077 -o -type f ! -perm -004` finds
+the class before it ships.
+
+## The deploy script's dry run was not read-only (fixed)
+
+**Seen 2026-10-04**, all three in one dry run of
+`brookstone-sync-to-remote-DANGEROUS.sh`:
+
+1. **The EXIT trap was not dry-run aware.** On the dry run's own `exit 0` it ran
+   `sset system.maintenance_mode 0` and `cr` against **production**, immediately
+   after logging "DRY-RUN complete — no remote changes made." The cache rebuild
+   was harmless; taking a deliberately-maintenanced site back OUT of maintenance
+   would not have been.
+2. **The dry run wrote the deploy lock** and relied on that trap to remove it.
+3. **`REMOTE_DRUSH` capped PHP at 768M**, and `drush cr` on this box is reliably
+   **OOM-killed** at that limit. Because the cleanup chained with `&&`, the kill
+   skipped `rm -f lock` and **leaked the deploy lock**, blocking every subsequent
+   deploy until it was cleared by hand.
+
+All three are fixed: the trap and the lock write both skip dry runs, the limit is
+5120M (the documented live value), and the cleanup sequences with `;` inside
+braces so the lock always comes off. **The compounding lesson:** a killed `cr`
+makes a deploy *look* successful while leaving the router unrebuilt — so a newly
+added route 404s on a "successful" deploy.
+
+## Full-tree deploy is no longer a safe default — prefer targeted rsync
+
+**Seen 2026-10-04.** A dry run of the full deploy showed **190 content/new files
+and 38 deletions** for a change that was supposed to be one landing page, because
+the repo has drifted from live. Among the deletions: **`web/.well-known/` and its
+`acme-challenge/`** (the Let's Encrypt HTTP-01 validation path) and five stray
+module-root assets; among the additions, **`docs/email-audit-detail-*.csv`**,
+which the changelog flags as PII, would have been copied onto production.
+
+**Rule:** ship a feature with a targeted `rsync` of its own paths and **no
+`--delete`**, which is what every comparable changelog entry actually does.
+Reserve the full-tree script for a deliberate reconciliation where each deletion
+has been read. `config/sync/*.yml` churn in that list is inert — nothing imports
+it without `cim` — but it is still not part of your change.
+
+
 ## A hook ADDED to an already-enabled module is not registered by `drush cr`
 
 **Discovered 2026-09-26** (`bos_backflow_types` landing CSS). A new

@@ -1,7 +1,8 @@
 # Holiday Lighting Campaign — `/holiday-lights`
 
 **Built:** 2026-10-03 · **Reviewed and accepted:** 2026-10-04
-**Status:** on `main`, pushed to origin, **NOT deployed to live.**
+**Deployed to live:** 2026-10-04, verified anonymously.
+**Status:** LIVE at https://brookstoneoutdoors.com/holiday-lights
 
 The holiday equivalent of `/winterize`: a campaign landing page that converts,
 sitting alongside the evergreen Holiday Decorations service page that ranks.

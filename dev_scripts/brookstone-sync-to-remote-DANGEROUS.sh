@@ -32,7 +32,11 @@ REMOTE_ROOT="/home/brookstoneadmin/brookstone"
 # LIVE in maintenance). Invoke the Alt-PHP CLI + an explicit memory cap directly
 # (same fix as the WEX cron): a controlled process that won't balloon into an
 # OOM kill. All remote drush calls below use this.
-REMOTE_DRUSH="/opt/alt/php83/usr/bin/php -d memory_limit=768M vendor/drush/drush/drush.php"
+# 5120M, not 768M: `drush cr` on this box is reliably OOM-KILLED at 768M (seen
+# 2026-10-04 — the process returns "Killed" and the deploy carries on none the
+# wiser). A deploy whose cache rebuild was killed looks like a success and then
+# serves 404s for any newly added route, because routes rebuild during cr.
+REMOTE_DRUSH="/opt/alt/php83/usr/bin/php -d memory_limit=5120M vendor/drush/drush/drush.php"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -96,6 +100,15 @@ remote_script() {
 
 cleanup() {
   local code=$?
+  # A dry run takes no lock and never sets maintenance mode, so it has nothing
+  # to clean up — and must not touch LIVE at all. Without this guard the trap
+  # fired on the dry run's own `exit 0` and ran `sset system.maintenance_mode 0`
+  # plus a `cr` against production, directly after logging "no remote changes
+  # made". The cache rebuild was harmless; taking a deliberately-maintenanced
+  # site back OUT of maintenance would not have been.
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    exit $code
+  fi
   # Compose maintenance-off + lock-remove into ONE ssh session. On
   # failure we leave maintenance on (intentional fail-safe) but still
   # remove the lock so the next deploy can re-acquire it.
@@ -104,7 +117,13 @@ cleanup() {
     log "DEPLOY FAILED — leaving LIVE in maintenance mode."
     cleanup_script="cd '${REMOTE_ROOT}' && rm -f '${LOCK_NAME}'"
   elif [[ "$USE_MAINTENANCE" -eq 1 ]]; then
-    cleanup_script="cd '${REMOTE_ROOT}' && ${REMOTE_DRUSH} sset system.maintenance_mode 0 -y && ${REMOTE_DRUSH} cr -y && rm -f '${LOCK_NAME}'"
+    # Sequenced with ';' inside the braces, NOT '&&': chained with &&, a failure
+    # in the middle (a `cr` killed by the OOM reaper, say) skipped `rm -f` and
+    # LEAKED THE DEPLOY LOCK, which then blocks every future deploy until
+    # somebody removes it by hand. Happened 2026-10-04. The lock must come off
+    # whatever else went wrong; the `cd` keeps its && so we never rm in the
+    # wrong directory.
+    cleanup_script="cd '${REMOTE_ROOT}' && { ${REMOTE_DRUSH} sset system.maintenance_mode 0 -y; ${REMOTE_DRUSH} cr -y; rm -f '${LOCK_NAME}'; }"
   else
     cleanup_script="cd '${REMOTE_ROOT}' && rm -f '${LOCK_NAME}'"
   fi
@@ -153,6 +172,18 @@ test ! -e "${LOCK_NAME}" || { echo "FAIL: deploy lock '${LOCK_NAME}' already exi
 echo 'locked' > "${LOCK_NAME}"
 ${REMOTE_DRUSH} sset system.maintenance_mode 1 -y
 ${REMOTE_DRUSH} cr -y
+EOF
+elif [[ "$DRY_RUN" -eq 1 ]]; then
+  # A dry run CHECKS for a lock — so it still warns you if a real deploy is in
+  # flight — but does not WRITE one. It changes nothing on LIVE, so it owns
+  # nothing to release, and the cleanup trap deliberately skips dry runs. The
+  # previous version wrote the lock here and relied on the trap to remove it,
+  # which meant a dry run whose trap failed left production locked against all
+  # future deploys.
+  remote_script <<EOF
+set -e
+cd "${REMOTE_ROOT}"
+test ! -e "${LOCK_NAME}" || { echo "FAIL: deploy lock '${LOCK_NAME}' already exists — a deploy may be in progress." >&2; exit 1; }
 EOF
 else
   remote_script <<EOF

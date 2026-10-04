@@ -71,7 +71,7 @@ All scripts are in `dev_scripts/`. They require SSH host aliases configured in `
 # Other flags: --skip-composer  --cim  --skip-cr  --no-maintenance  --yes
 ```
 
-The deploy script rsyncs code to live, then runs `composer install --no-dev` and `drush cr` on the remote. Config import does **not** run by default. ⚠️ **Do NOT pass `--cim`** — it runs a *full* `drush cim`, which would revert ~340 intentionally-drifted configs (see "Configuration Management" below). Import config changes with a **surgical partial-cim** of only the specific files instead. **The DB is never touched by the deploy.** Directories `.vscode/`, `dev_scripts/`, and `__BOS_AI/` are protected from deletion on live even with `--delete`.
+The deploy script rsyncs code to live, then runs `composer install --no-dev` and `drush cr` on the remote. Config import does **not** run by default. ⚠️ **Do NOT pass `--cim`** — it runs a *full* `drush cim`, which would revert **1,975** intentionally-drifted config entries (696 different, 1,236 only-in-DB, **43 only-in-sync that it would DELETE** — measured 2026-10-04) (see "Configuration Management" below). Import config changes with a **surgical partial-cim** of only the specific files instead. **The DB is never touched by the deploy.** Directories `.vscode/`, `dev_scripts/`, and `__BOS_AI/` are protected from deletion on live even with `--delete`.
 
 ## __BOS_AI Documentation Bundle
 
@@ -546,9 +546,11 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 ## Configuration Management
 
 > ## ⛔ NEVER run a full `drush cim` (or the deploy's `--cim`) against live
-> `config/sync` is **intentionally drifted** from live's active config — ~340 configs differ
+> `config/sync` is **intentionally drifted** from live's active config — **1,975 entries differ**
+> (696 Different · 1,236 only-in-DB · **43 only-in-sync-dir, which a full import DELETES**;
+> measured on live 2026-10-04 — the long-standing "~340" figure was badly stale)
 > (active is the source of truth; BOS evolves config via the UI and deploys do **not** import
-> config). A full `drush cim` would revert all ~340 to the stale sync versions, breaking views,
+> config). A full `drush cim` would revert all of them to the stale sync versions, breaking views,
 > displays, fields, permissions, ECK types, and more. **Always use a surgical partial import**
 > of only the specific new/changed configs:
 > ```bash

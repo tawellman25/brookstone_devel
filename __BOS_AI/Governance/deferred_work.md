@@ -353,6 +353,46 @@ manual fix; see the ECK gotcha). Done = `drush cim --diff` comes back clean.
 
 ---
 
+### 28. Live `config/sync` is stale vs the repo — produce a per-file diff report before any whole-dir sync
+
+**Surfaced 2026-10-04 (Gate 1 Part A).** A partial cim run **on live** imports from
+`/home/brookstoneadmin/brookstone/config/sync/`, **not** from the repo. Targeted
+rsync — the documented default for shipping a feature — never touches that
+directory, so it drifts from git the moment active config is changed with `cset`
+and the YAML is committed only to the repo.
+
+Caught live: the repo and live *active* config both carried
+`cache.page.max_age: 900` while **live's on-disk sync copy still said `0`**. A
+partial cim of that one file would have silently reverted the change.
+Fixed for that file by rsyncing it alone; **the general condition stands.**
+
+**What is needed before anyone syncs the whole directory:** a **read-only
+three-way diff report** — repo vs live sync dir vs live active — per file, so the
+blast radius is visible rather than guessed. Syncing the whole directory blind is
+the dangerous move, because it silently rewrites what every future partial cim
+will import.
+
+**Measured on live the same day — the drift is far larger than this repo
+documents:**
+
+| `drush config:status` state | count | meaning |
+|---|---|---|
+| Only in DB | 1,236 | in active, absent from live sync |
+| **Different** | **696** | both exist, values differ |
+| **Only in sync dir** | **43** | **a full cim would DELETE these from active** |
+| **total** | **1,975** | |
+
+CLAUDE.md said "~340 configs differ" in both the deploy warning and the
+never-full-cim rule. The real figure is **1,975**, or **696** counting only
+"Different" — corrected in CLAUDE.md on 2026-10-04. **The 43 "Only in sync dir"
+entries are the category nothing had mentioned**, and they are the most
+destructive: a full cim removes them. The standing never-full-cim rule is
+therefore better justified than it was documented, not worse.
+
+Related: **#22** (reconcile the drift so `cim` is safe again) — this item is the
+read-only prerequisite for it. Runbook: `working_with_claude.md` → "Live's
+`config/sync` is only as current as the last FULL deploy".
+
 ## Resolved — archive next cycle
 
 ### 17. Finalize weed-spray WO #49698 — ✅ RESOLVED (SHIPPED/verified 2026-07-03)

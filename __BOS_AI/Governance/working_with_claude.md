@@ -233,6 +233,13 @@ partial cim of that one file would have silently reverted the change.
 **Before any partial cim on live, rsync the specific YAMLs you are importing and
 diff them against the repo.** Never assume live's sync directory matches git.
 
+**Do not sync the whole directory to "fix" this.** Measured 2026-10-04, live
+carries **1,975** differing entries — 696 Different, 1,236 only-in-DB, and **43
+only-in-sync-dir, which a full cim would DELETE**. A blind whole-dir sync silently
+rewrites what every future partial cim imports. The read-only three-way diff report
+(repo vs live sync vs live active) is `deferred_work.md` **#28**, and is the
+prerequisite for #22.
+
 ### Prime the homepage after a live `cr`
 
 Immediately after a cache rebuild, `/` returned **503 after 47 seconds** while every other

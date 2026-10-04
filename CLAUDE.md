@@ -71,7 +71,7 @@ All scripts are in `dev_scripts/`. They require SSH host aliases configured in `
 # Other flags: --skip-composer  --cim  --skip-cr  --no-maintenance  --yes
 ```
 
-The deploy script rsyncs code to live, then runs `composer install --no-dev` and `drush cr` on the remote. Config import does **not** run by default. ⚠️ **Do NOT pass `--cim`** — it runs a *full* `drush cim`, which would revert **1,975** intentionally-drifted config entries (696 different, 1,236 only-in-DB, **43 only-in-sync that it would DELETE** — measured 2026-10-04) (see "Configuration Management" below). Import config changes with a **surgical partial-cim** of only the specific files instead. **The DB is never touched by the deploy.** Directories `.vscode/`, `dev_scripts/`, and `__BOS_AI/` are protected from deletion on live even with `--delete`.
+The deploy script rsyncs code to live, then runs `composer install --no-dev` and `drush cr` on the remote. Config import does **not** run by default. ⚠️ **Do NOT pass `--cim`** — it runs a *full* `drush cim` against **1,975** differing config entries — **1,236 that exist only in the database, which a full import DELETES**, 696 it would overwrite, and 43 it would create (measured on live 2026-10-04) (see "Configuration Management" below). Import config changes with a **surgical partial-cim** of only the specific files instead. **The DB is never touched by the deploy.** Directories `.vscode/`, `dev_scripts/`, and `__BOS_AI/` are protected from deletion on live even with `--delete`.
 
 ## __BOS_AI Documentation Bundle
 
@@ -547,8 +547,16 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 
 > ## ⛔ NEVER run a full `drush cim` (or the deploy's `--cim`) against live
 > `config/sync` is **intentionally drifted** from live's active config — **1,975 entries differ**
-> (696 Different · 1,236 only-in-DB · **43 only-in-sync-dir, which a full import DELETES**;
-> measured on live 2026-10-04 — the long-standing "~340" figure was badly stale)
+> (measured on live 2026-10-04; the long-standing "~340" figure was badly stale):
+> - **1,236 "Only in DB"** — in active, absent from sync. **A full `cim` DELETES these.** This is
+>   the destructive category.
+> - **696 "Different"** — in both; a full `cim` overwrites active with the stale sync version.
+> - **43 "Only in sync dir"** — in sync, absent from active; a full `cim` CREATES them, which risks
+>   resurrecting config that was deliberately removed. It deletes nothing.
+>
+> ⚠ Those counts are **live active vs LIVE's sync directory**, which is itself stale against the
+> repo — so they mix genuine intentional drift with that staleness and are **not** repo-vs-live
+> drift. Separating the two is `deferred_work.md` **#28**.
 > (active is the source of truth; BOS evolves config via the UI and deploys do **not** import
 > config). A full `drush cim` would revert all of them to the stale sync versions, breaking views,
 > displays, fields, permissions, ECK types, and more. **Always use a surgical partial import**

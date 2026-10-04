@@ -367,27 +367,44 @@ partial cim of that one file would have silently reverted the change.
 Fixed for that file by rsyncing it alone; **the general condition stands.**
 
 **What is needed before anyone syncs the whole directory:** a **read-only
-three-way diff report** — repo vs live sync dir vs live active — per file, so the
-blast radius is visible rather than guessed. Syncing the whole directory blind is
+three-way diff report**, per file, reported as **two separate comparisons** so the
+causes are not conflated:
+
+1. **repo vs live's sync dir** — pure staleness; the repo is authoritative, and
+   this is what a targeted rsync fixes one file at a time.
+2. **repo vs live ACTIVE** — the genuine intentional drift, the thing #22 exists
+   to reconcile.
+
+Only the second is real drift. Reporting them together is what produced the
+misleading 1,975 figure above. Syncing the whole directory blind is
 the dangerous move, because it silently rewrites what every future partial cim
 will import.
 
 **Measured on live the same day — the drift is far larger than this repo
 documents:**
 
-| `drush config:status` state | count | meaning |
+| `drush config:status` state | count | what a full `cim` does |
 |---|---|---|
-| Only in DB | 1,236 | in active, absent from live sync |
-| **Different** | **696** | both exist, values differ |
-| **Only in sync dir** | **43** | **a full cim would DELETE these from active** |
+| **Only in DB** | **1,236** | in active, absent from sync → **DELETED from active.** The destructive category. |
+| Different | 696 | in both → active overwritten with the stale sync version |
+| Only in sync dir | 43 | in sync, absent from active → **created**; risks resurrecting deliberately-removed config. Deletes nothing. |
 | **total** | **1,975** | |
 
 CLAUDE.md said "~340 configs differ" in both the deploy warning and the
-never-full-cim rule. The real figure is **1,975**, or **696** counting only
-"Different" — corrected in CLAUDE.md on 2026-10-04. **The 43 "Only in sync dir"
-entries are the category nothing had mentioned**, and they are the most
-destructive: a full cim removes them. The standing never-full-cim rule is
-therefore better justified than it was documented, not worse.
+never-full-cim rule. The real figure is **1,975** — corrected on 2026-10-04.
+
+**⚠ What was compared, and why these are not the whole story.** These counts come
+from `drush config:status` **on live**, which compares **live ACTIVE against
+LIVE's sync directory** — and live's sync directory is itself stale against the
+repo (that is the subject of this item). So the figures **conflate genuine
+intentional drift with live-sync staleness**, and they are **not** repo-vs-live
+drift. The per-file report below must separate the two comparisons.
+
+*(Corrected 2026-10-04: an earlier version of this item had the direction
+inverted, calling the 43 "Only in sync dir" the destructive category. It is the
+1,236 "Only in DB" that a full import deletes — drush's own usage text documents
+`--state='Only in sync dir'` as the items that would be* created *in active
+storage on import.)*
 
 Related: **#22** (reconcile the drift so `cim` is safe again) — this item is the
 read-only prerequisite for it. Runbook: `working_with_claude.md` → "Live's

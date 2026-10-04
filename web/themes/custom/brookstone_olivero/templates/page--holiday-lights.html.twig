@@ -77,9 +77,14 @@
   <section class="bo-next">
     <div class="bo-next__inner">
       <h2 class="bo-next__h2">How it works</h2>
-      <div class="bo-step"><span class="bo-step__n">1</span><div><h3>We measure.</h3><p>We walk the roofline with a laser measure and give you a flat seasonal price on the spot.</p></div></div>
-      <div class="bo-step"><span class="bo-step__n">2</span><div><h3>We install.</h3><p>Your lights go up between November 1 and December 15, cut to fit your house.</p></div></div>
-      <div class="bo-step"><span class="bo-step__n">3</span><div><h3>We handle the rest.</h3><p>Anything goes out, we come fix it. In January we take everything down and store it. Next year you do not have to call.</p></div></div>
+      {# .bo-next__grid is the existing 3-up wrapper from bo-winterize.css —
+         without it the steps fall into .bo-next__inner's single column with a
+         38px gap, which is what made them read as three unrelated blocks. #}
+      <div class="bo-next__grid bo-steps">
+        <div class="bo-step"><span class="bo-step__n" aria-hidden="true">1</span><h3>We measure.</h3><p>We walk the roofline with a laser measure and give you a flat seasonal price on the spot.</p></div>
+        <div class="bo-step"><span class="bo-step__n" aria-hidden="true">2</span><h3>We install.</h3><p>Your lights go up between November 1 and December 15, cut to fit your house.</p></div>
+        <div class="bo-step"><span class="bo-step__n" aria-hidden="true">3</span><h3>We handle the rest.</h3><p>Anything goes out, we come fix it. In January we take everything down and store it. Next year you do not have to call.</p></div>
+      </div>
     </div>
   </section>
 

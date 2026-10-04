@@ -485,6 +485,13 @@ function _bos_service_request_holiday_vars(array &$variables): void {
   $path = \Drupal::service('extension.list.module')->getPath('bos_service_request') . '/' . $rel;
   $variables['bo_hero_exists'] = file_exists(DRUPAL_ROOT . '/' . $path);
   $variables['bo_hero'] = '/' . $path;
+
+  // Daylight shot of a real commercial install. Same file_exists guard as the
+  // hero: the section renders fine without it.
+  $base = \Drupal::service('extension.list.module')->getPath('bos_service_request');
+  $shot = $base . '/assets/holiday-commercial.jpg';
+  $variables['bo_commercial_img_exists'] = file_exists(DRUPAL_ROOT . '/' . $shot);
+  $variables['bo_commercial_img'] = '/' . $shot;
 }
 
 /**

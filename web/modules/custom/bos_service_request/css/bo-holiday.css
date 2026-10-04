@@ -129,8 +129,9 @@
 
 /* The daylight commercial shot. Full-bleed band under the copy — the frame is
    2.14:1, so a narrow column would crop the one thing it is there to show. */
-/* background:none overrides Olivero's `figure { background: gray-100 }`. */
-.bo-commercial__shot { margin: 0; line-height: 0; background: none; }
+/* background:none overrides Olivero's `figure { background: gray-100 }`.
+   position:relative anchors the caption, which sits ON the photo — see below. */
+.bo-commercial__shot { margin: 0; line-height: 0; background: none; position: relative; }
 /* Olivero's embedded-media.css styles EVERY figcaption on the site — 1.5rem
    padding-block (the gap that stranded this one well below the photo), 1.5rem
    inline padding, a gray-100 ground and the italic. Overridden here, scoped to
@@ -146,14 +147,22 @@
    down from body text is carried by SIZE, not a fainter colour, per the 09-28
    contrast audit. */
 .bo-commercial__shot figcaption {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: .4rem 1rem 0;
-  background: none;
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  /* Scrim, not a flat bar: the photo is busy bottom-right (truck, bushes) and a
+     hard band would be the same afterthought in a different colour. Fades from
+     the ink token so it reads as part of the picture. */
+  background: linear-gradient(to top, rgba(26, 22, 19, .78), rgba(26, 22, 19, 0));
+  color: #fff;
+  /* Indent to the same 1040px column as .bo-commercial__inner so the caption's
+     right edge lines up with the prose above, and fall back to a 1rem gutter
+     once the viewport is narrower than the column. */
+  padding: 2.75rem 1rem .55rem;
+  padding-inline: max(1rem, calc((100% - 1040px) / 2 + 1rem));
   text-align: right;
   line-height: 1.5;
   font-size: .8125rem;
-  color: var(--bo-muted-2, #736555);
 }
 .bo-commercial__shot img {
   display: block; width: 100%; height: auto;

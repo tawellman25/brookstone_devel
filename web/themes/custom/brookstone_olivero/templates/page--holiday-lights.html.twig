@@ -113,6 +113,22 @@
     {% endif %}
   </section>
 
+  {# Urgency line then the form, ABOVE "How we do it": make the ask while the
+     photo and the price are still in view, and leave the detail for anyone
+     who still wants it. /winterize puts its form second for the same reason. #}
+  <div class="bo-urgency">Install season runs November 1 through December 15 and books out. Get on the schedule now.</div>
+
+  <section class="bo-formband" id="request">
+    <div class="bo-formband__inner">
+      <div>
+        <h2 class="bo-formband__h2">Get your quote</h2>
+        <p class="bo-formband__intro">Tell us where you are and we will set up a walkthrough. We measure the roofline and give you a flat seasonal price.</p>
+        {% if bo_phone %}<p class="bo-formband__intro">Prefer to talk? <a href="tel:{{ tel }}">{{ bo_phone }}</a>.</p>{% endif %}
+      </div>
+      {{ page.content }}
+    </div>
+  </section>
+
   {% if bo_accordions %}
   {# Built from the Holiday Decorations service term's own body — the office
      edits that page and this updates with it. Same mechanism as /winterize. #}
@@ -126,19 +142,6 @@
     </div>
   </section>
   {% endif %}
-
-  <div class="bo-urgency">Install season runs November 1 through December 15 and books out. Get on the schedule now.</div>
-
-  <section class="bo-formband" id="request">
-    <div class="bo-formband__inner">
-      <div>
-        <h2 class="bo-formband__h2">Get your quote</h2>
-        <p class="bo-formband__intro">Tell us where you are and we will set up a walkthrough. We measure the roofline and give you a flat seasonal price.</p>
-        {% if bo_phone %}<p class="bo-formband__intro">Prefer to talk? <a href="tel:{{ tel }}">{{ bo_phone }}</a>.</p>{% endif %}
-      </div>
-      {{ page.content }}
-    </div>
-  </section>
 
   <footer class="bo-footer">
     <div class="bo-footer__inner">

@@ -10,8 +10,25 @@
   background: var(--bo-paper);
   color: var(--bo-ink);
   font-family: var(--serif);
-  max-width: 1440px;
-  margin: 0 auto;
+  /* Full-bleed bands, contained content.
+   *
+   * This used to be `max-width: 1440px; margin: 0 auto`, which capped the whole
+   * marketing page — so on a monitor wider than 1440px every band stopped short
+   * with paper gutters either side. Invisible on /winterize, whose hero is light
+   * and blends into the paper; glaring on /holiday-lights, whose hero is a dark
+   * photo that visibly stopped before the screen edge.
+   *
+   * The cap is NOT simply removed: without it the hero copy stretches to ~1100px
+   * of 20px serif on a 2560 screen, which is an unreadable measure. Instead the
+   * page bleeds and the three containers that have no inner wrapper of their own
+   * (.bo-topbar and the two hero copy columns) hold the measure themselves. Every
+   * other band already centres its content at 940–1160px, so they needed nothing.
+   *
+   * Below 1440px NOTHING changes — max()/calc collapse to the existing values. */
+  --bo-measure: 1440px;
+  --bo-gutter: clamp(16px, 5vw, 72px);
+  /* Space from the viewport edge to the measure column, 0 on narrow screens. */
+  --bo-bleed: max(0px, calc((100% - var(--bo-measure)) / 2));
 }
 .bo-winterize *, .bo-winterize *::before, .bo-winterize *::after { box-sizing: border-box; }
 .bo-winterize .osw { font-family: var(--osw); }
@@ -21,7 +38,8 @@
 /* ── Top bar ────────────────────────────────────────────────────────────── */
 .bo-topbar {
   display: flex; align-items: center; justify-content: space-between; gap: 24px;
-  padding: 7px clamp(16px, 5vw, 72px); background: var(--bo-paper);
+  /* padding, not margin, so the bottom hairline still spans the full width. */
+  padding: 7px max(var(--bo-gutter), var(--bo-bleed)); background: var(--bo-paper);
   border-bottom: 1px solid var(--bo-hairline);
 }
 .bo-topbar__brand { display: flex; align-items: center; gap: 13px; }
@@ -40,7 +58,7 @@
 .bo-hero { position: relative; background: var(--bo-hero); overflow: hidden; }
 .bo-hero__photo { position: absolute; left: 0; top: 0; width: 64%; height: 100%; object-fit: cover; object-position: left center; display: block; }
 .bo-hero__fade { position: absolute; left: 0; top: 0; bottom: 0; width: 64%; background: linear-gradient(to right, rgba(255,255,255,0) 50%, #FFFFFF 82%); }
-.bo-hero__copy { position: relative; margin-left: 53%; padding: 58px clamp(16px,5vw,72px) 58px 0; display: flex; flex-direction: column; gap: 20px; }
+.bo-hero__copy { position: relative; margin-left: 53%; margin-right: var(--bo-bleed); padding: 58px clamp(16px,5vw,72px) 58px 0; display: flex; flex-direction: column; gap: 20px; }
 .bo-hero__eyebrow { font-family: var(--osw); font-size: 13px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--bo-orange); }
 .bo-hero__h1 { font-family: var(--osw); margin: 0; font-size: clamp(38px, 5vw, 60px); line-height: 1.02; font-weight: 600; letter-spacing: -.01em; color: var(--bo-ink); }
 .bo-hero__sub { margin: 0; font-size: 20px; line-height: 1.45; color: var(--bo-prose); }

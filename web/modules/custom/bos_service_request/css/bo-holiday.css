@@ -36,6 +36,10 @@
   .bo-hero--holiday .bo-hero__copy {
     position: relative; z-index: 2;
     margin-left: auto;
+    /* Keeps the copy inside the 1440 measure once the band bleeds past it.
+       margin, not padding: box-sizing is border-box on this page, so padding
+       would come out of the column's own width instead of off the edge. */
+    margin-right: var(--bo-bleed, 0px);
     width: min(38%, 30rem);
     padding: 2.5rem clamp(1rem, 4vw, 3rem) 2.5rem 0;
   }

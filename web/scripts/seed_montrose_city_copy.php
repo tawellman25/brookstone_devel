@@ -58,9 +58,9 @@ $BODY = <<<'HTML'
 
 <p>Municipal water is treated, pressurized, and available on whatever schedule the owner sets. A system on city water is designed around sprinkler performance and little else.</p>
 
-<p>A property on ditch shares runs on untreated water delivered through the valley's irrigation system. That requires a pump and filtration, because the water carries sediment that will close a drip emitter and wear a nozzle. It also means the season is set by the ditch company rather than by the weather. Water arrives when the ditch is turned in and stops when it is shut off, and a late shut-off followed by an early freeze is the combination that splits pipe.</p>
+<p>A property on ditch shares runs on untreated water delivered by the <a href="https://uvwua.com/">Uncompahgre Valley Water Users Association</a>. That requires a pump and filtration, because the water carries sediment that will close a drip emitter and wear a nozzle. It also means the season is set by the association rather than by the weather. Water arrives when the ditch is turned in and stops when it is shut off, and a late shut-off followed by an early freeze is the combination that splits pipe.</p>
 
-<p>Both arrangements exist inside the city limits. The first question on any irrigation visit here is which one the property is on, because the answer changes the startup, the maintenance, and the date the system has to be blown out.</p>
+<p>Both arrangements exist inside the city limits, some properties on the city's treated supply and others on association shares. The first question on any irrigation visit here is which one the property is on, because the answer changes the startup, the maintenance, and the date the system has to be blown out.</p>
 
 <h2>The ground</h2>
 

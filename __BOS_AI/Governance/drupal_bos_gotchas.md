@@ -1901,6 +1901,33 @@ A test that constructs form state by hand is not exercising the browser's path.
 
 ---
 
+## Two admin-menu links can share a title in different branches
+
+Matching a menu parent by title picks whichever comes first, and BOS has real
+duplicates. The admin menu contains **two links titled "Estimates"**:
+
+| Link | Branch | What it is |
+|---|---|---|
+| `estimate_board.board` | **Office → Estimates** | module-defined; carries "+ Estimate Request" and "Missing WOs" — the one the office uses |
+| `menu_link_content:219fe29d…` | **System Content → Estimates** | points at the office estimates landing page |
+
+On 2026-10-04 a script matched `menu_link_content` by title, found the second,
+and filed a new link under System Content. Enabled, correct, invisible —
+reported as "I don't see it in the admin menu".
+
+**Resolve a menu parent by POSITION.** Walk `plugin.manager.menu.link`
+`getDefinitions()` for the menu, filter by title, resolve each candidate's own
+parent title, and take the one in the branch you mean — printing the candidates
+so a future duplicate is visible rather than silently chosen.
+
+Related, and why both traps exist: Drupal nests the admin menu by **parent**,
+not by path, so a correct URL never implies a correct position (2026-09-28).
+Verify by **rendering the tree** and printing the full trail —
+`Administration → Office → Estimates → Holiday Lighting Estimate` — not by
+reading the parent field back.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

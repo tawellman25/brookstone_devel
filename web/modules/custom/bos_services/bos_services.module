@@ -380,32 +380,33 @@ function bos_services_preprocess_field(array &$variables): void {
   if (($variables['field_name'] ?? '') !== 'field_service_public_desc') {
     return;
   }
+  // ONE token map, owned by HolidayEstimator, because this body has two
+  // consumers: this field render, and bos_service_request reusing the same body
+  // to build the accordions on /holiday-lights. When they each kept their own
+  // map they drifted immediately — [holiday-hang-rate] was added for the
+  // accordions and rendered literally here (2026-10-04). Called through the
+  // container with a guard rather than a module dependency, so bos_services
+  // still works if bos_service_request is absent.
+  if (!\Drupal::hasService('bos_service_request.holiday_estimator')) {
+    return;
+  }
+  $estimator = \Drupal::service('bos_service_request.holiday_estimator');
   $bs = \Drupal::service('config_pages.loader')->load('business_setting');
-
-  // A missing or zero rate must never print "$0.00" on a public page.
-  $rate = ($bs && $bs->hasField('field_holiday_light_per_foot')
-    && !$bs->get('field_holiday_light_per_foot')->isEmpty())
-    ? (float) $bs->get('field_holiday_light_per_foot')->value : 0.0;
-  // Drop a trailing ".00" so 8.00 reads "$8", but KEEP real cents: the
-  // winterize money helper rtrims any trailing zero, which turns 9.50 into
-  // "$9.5". That is invisible while every rate is a whole dollar and wrong the
-  // first time one is not, and this is a per-foot rate where cents are likely.
-  $money = static fn(float $n): string => '$' . (fmod($n, 1.0) === 0.0
-    ? number_format($n, 0)
-    : number_format($n, 2));
-  $text = $rate > 0
-    ? $money($rate) . ' per foot'
-    : 'priced per linear foot — call for the current rate';
 
   $touched = FALSE;
   foreach ($variables['items'] as $delta => $item) {
     $markup = (string) ($item['content']['#text'] ?? '');
-    if ($markup === '' || !str_contains($markup, '[holiday-price]')) {
+    if ($markup === '' || !str_contains($markup, '[holiday-')) {
       continue;
     }
-    $variables['items'][$delta]['content']['#text'] = str_replace('[holiday-price]', $text, $markup);
-    $touched = TRUE;
+    $replaced = $estimator->replaceTokens($markup);
+    if ($replaced !== $markup) {
+      $variables['items'][$delta]['content']['#text'] = $replaced;
+      $touched = TRUE;
+    }
   }
+  // The config_pages entity's own tag, so editing a rate in Business Settings
+  // invalidates every page that prints one.
   if ($touched && $bs) {
     $variables['#cache']['tags'] = Cache::mergeTags($variables['#cache']['tags'] ?? [], $bs->getCacheTags());
   }

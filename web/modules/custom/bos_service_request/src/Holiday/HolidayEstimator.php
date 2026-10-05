@@ -269,17 +269,39 @@ final class HolidayEstimator {
    * (found live 2026-10-04). Any new token must be added here.
    */
   public function replaceTokens(string $html): string {
-    $money = fn(?float $v) => $v === NULL ? '' : '$' . rtrim(rtrim(number_format($v, 2), '0'), '.');
-    $map = [
-      '[holiday-price]' => $money($this->rate('field_holiday_light_per_foot')),
-      '[holiday-min]' => $money($this->rate('field_holiday_min_job')),
-      '[holiday-hang-rate]' => $money($this->rate('field_holiday_rate_hang')),
-      '[holiday-hang-min]' => $money($this->rate('field_holiday_min_hang')),
-    ];
-    // A token whose rate is unset resolves to nothing, which would leave a
-    // sentence with a hole in it. Leave those alone so the gap is visible to
-    // whoever maintains the copy rather than silently published.
-    $map = array_filter($map, fn($v) => $v !== '');
+    // Keep real cents. rtrim-ing a trailing zero turns 9.50 into "$9.5" — it is
+    // invisible while every rate is whole dollars and wrong the first time one
+    // is not, and these are per-foot rates where cents are likely. Taken from
+    // bos_services, which had already got this right.
+    $money = static fn(float $n): string => '$' . (fmod($n, 1.0) === 0.0
+      ? number_format($n, 0)
+      : number_format($n, 2));
+
+    $perFoot = $this->rate('field_holiday_light_per_foot');
+    $hang = $this->rate('field_holiday_rate_hang');
+    $hangMin = $this->rate('field_holiday_min_hang');
+    $min = $this->rate('field_holiday_min_job');
+
+    $map = [];
+    // [holiday-price] carries its own phrasing INCLUDING the fallback, because
+    // existing copy was written around it and a missing rate must never print
+    // "$0.00" on a public page.
+    $map['[holiday-price]'] = ($perFoot !== NULL && $perFoot > 0)
+      ? $money($perFoot) . ' per foot'
+      : 'priced per linear foot — call for the current rate';
+    // The rest are plain money; the copy supplies the words around them.
+    if ($min !== NULL && $min > 0) {
+      $map['[holiday-min]'] = $money($min);
+    }
+    if ($hang !== NULL && $hang > 0) {
+      $map['[holiday-hang-rate]'] = $money($hang);
+    }
+    if ($hangMin !== NULL && $hangMin > 0) {
+      $map['[holiday-hang-min]'] = $money($hangMin);
+    }
+    // A token with no rate behind it is left ALONE rather than resolved to an
+    // empty string, so a hole in a sentence is visible to whoever maintains the
+    // copy instead of being quietly published.
     return strtr($html, $map);
   }
 

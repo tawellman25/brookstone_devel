@@ -122,34 +122,65 @@ else {
 }
 
 // ------------------------------------- 4. admin Holiday, under Estimates
-// Resolve the admin Estimates parent at RUNTIME by what it points at, never by
-// a hardcoded id or uuid: menu_link_content is content, so those differ between
-// dev and live. (The credential-seeder lesson, and the 2026-09-28 admin-menu
-// nesting bug: Drupal nests the admin menu by PARENT, not by path, so a correct
-// URL does not imply a correct position.)
-$adminEst = NULL;
-foreach ($etm->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'admin', 'title' => 'Estimates']) as $l) {
-  $adminEst = $l;
-  break;
+// Resolve the parent by WHERE IT SITS, not by its title. There are TWO links
+// titled "Estimates" in the admin menu and they are in different branches:
+//
+//   Office        -> Estimates   = estimate_board.board, a MODULE-DEFINED link,
+//                                  the one the office actually uses (it carries
+//                                  "+ Estimate Request" and "Missing WOs")
+//   System Content-> Estimates   = a menu_link_content pointing at the office
+//                                  estimates landing page
+//
+// A first version matched menu_link_content by title, found the second, and
+// filed the holiday link under System Content where nobody was looking
+// (reported 2026-10-04). Titles are not addresses — this walks every admin-menu
+// link called Estimates and takes the one whose parent is Office.
+$mlm = \Drupal::service('plugin.manager.menu.link');
+$titleOf = function (string $pluginId) use ($mlm): string {
+  try {
+    return (string) $mlm->createInstance($pluginId)->getTitle();
+  }
+  catch (\Throwable $e) {
+    return '';
+  }
+};
+
+$adminEstId = NULL;
+$candidates = [];
+foreach ($mlm->getDefinitions() as $id => $def) {
+  if (($def['menu_name'] ?? '') !== 'admin' || strcasecmp((string) $def['title'], 'Estimates') !== 0) {
+    continue;
+  }
+  $parentTitle = !empty($def['parent']) ? $titleOf($def['parent']) : '(root)';
+  $candidates[] = "$id under \"$parentTitle\"";
+  if (strcasecmp($parentTitle, 'Office') === 0) {
+    $adminEstId = $id;
+  }
 }
-if (!$adminEst) {
-  print "! admin link      no 'Estimates' item found in the admin menu — skipped.\n";
-  print "                  Create it or place the holiday link by hand.\n";
+printf("  admin 'Estimates' candidates: %s\n", $candidates ? implode(' | ', $candidates) : 'none');
+
+if (!$adminEstId) {
+  print "! admin link      no 'Estimates' under Office — skipped rather than guessing.\n";
 }
 else {
+  printf("  chose parent    %s (the one under Office)\n", $adminEstId);
   $aHol = $find('admin', $ESTIMATOR_URI, 'Holiday Lighting Estimate');
-  if ($aHol) {
-    print "  admin link      'Holiday Lighting Estimate' already exists (id {$aHol->id()})\n";
+  if ($aHol && $aHol->getParentId() !== $adminEstId) {
+    printf("~ admin link      moving from %s to %s\n", $aHol->getParentId(), $adminEstId);
+    $aHol->set('parent', $adminEstId)->save();
+  }
+  elseif ($aHol) {
+    print "  admin link      already in the right place\n";
   }
   else {
-    MenuLinkContent::create([
+    \Drupal\menu_link_content\Entity\MenuLinkContent::create([
       'title' => 'Holiday Lighting Estimate',
       'link' => ['uri' => $ESTIMATOR_URI],
       'menu_name' => 'admin',
-      'parent' => 'menu_link_content:' . $adminEst->uuid(),
+      'parent' => $adminEstId,
       'weight' => 10,
     ])->save();
-    printf("+ admin link      'Holiday Lighting Estimate' created under '%s' (id %s)\n", $adminEst->getTitle(), $adminEst->id());
+    print "+ admin link      created under Office -> Estimates\n";
   }
 }
 

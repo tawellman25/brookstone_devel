@@ -286,7 +286,11 @@
 .bo-plan__min { margin: .5rem 0 0; font-size: .85rem; color: var(--bo-text-2); }
 
 .bo-hang {
-  margin-top: 1.5rem;
+  /* Standalone band below the form, so it needs its own measure and gutters
+     rather than inheriting .bo-price__inner's. */
+  max-width: 48rem;
+  margin: 2.5rem auto;
+  padding-inline: max(var(--bo-gutter), var(--bo-bleed));
   padding: 1rem 1.25rem;
   background: var(--bo-sand);
   border-radius: 8px;

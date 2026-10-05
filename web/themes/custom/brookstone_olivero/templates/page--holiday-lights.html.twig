@@ -94,17 +94,6 @@
 
       <p class="bo-price__addons">Trees, wreaths, shrubs, wrapped columns, lit windows and walkway borders are each a flat price — add them up yourself in the estimate builder below.</p>
 
-      {% if bo_hang %}
-        {# Third option, described rather than calculated. We cannot price
-           somebody else's lights from a web form, and saying so plainly is
-           better than a number we would have to walk back on site. #}
-        <div class="bo-hang">
-          <h3 class="bo-hang__h3">Already own your lights?</h3>
-          <p>We will hang and remove them for <strong>{{ bo_hang.rate }}</strong> per foot{% if bo_hang.minimum %}, {{ bo_hang.minimum }} minimum{% endif %} — install and takedown only, with no service guarantee and no off-season storage.</p>
-          <p><strong>We need to see the lights first.</strong> Price depends on the condition they are in, and an additional fee may be charged for clips and for detangling the strands. Call us and we will come look.</p>
-          {% if bo_phone %}<p class="bo-hang__call"><a href="tel:{{ tel }}">{{ bo_phone }}</a></p>{% endif %}
-        </div>
-      {% endif %}
     </div>
   </section>
 
@@ -162,6 +151,22 @@
       {{ page.content }}
     </div>
   </section>
+
+  {# Hang & Remove sits AFTER the form, not beside the plan cards: it is the
+     alternative for somebody who has read the price and is hesitating, so it
+     should not compete with the main offer before they have seen it. #}
+  {% if bo_hang %}
+      {# Third option, described rather than calculated. We cannot price
+         somebody else's lights from a web form, and saying so plainly is
+         better than a number we would have to walk back on site. #}
+      <div class="bo-hang">
+        <h3 class="bo-hang__h3">Already own your lights?</h3>
+        <p>We will hang and remove them for <strong>{{ bo_hang.rate }}</strong> per foot{% if bo_hang.minimum %}, {{ bo_hang.minimum }} minimum{% endif %} — install and takedown only, with no service guarantee and no off-season storage.</p>
+        <p><strong>We need to see the lights first.</strong> Price depends on the condition they are in, and an additional fee may be charged for clips and for detangling the strands. Call us and we will come look.</p>
+        {% if bo_phone %}<p class="bo-hang__call"><a href="tel:{{ tel }}">{{ bo_phone }}</a></p>{% endif %}
+      </div>
+    {% endif %}
+
 
   {% if bo_accordions %}
   {# Built from the Holiday Decorations service term's own body — the office

@@ -16,7 +16,16 @@
  * ⚠ The fade is BAKED INTO THE PHOTO. Mirroring this layout later is a new
  * export, not a CSS change.
  */
-.bo-hero--holiday {
+/* Two classes, not one, and that is the whole point: bo-winterize.css carries
+   `@media (max-width: 720px) { .bo-hero { background: var(--bo-paper) } }` for
+   the WINTERIZE hero, whose photo is light and whose text is dark. That rule is
+   equal specificity to a single .bo-hero--holiday and loads AFTER this file, so
+   it won — turning this hero's ground white below 720px while the white text,
+   set by the more specific .bo-hero--holiday .bo-hero__h1, kept winning. White
+   on white: the headline, subhead and trust line were invisible on a tablet
+   (reported 2026-10-04 with a photo of the live page). Doubling the class makes
+   this 0,2,0 so it holds at every width regardless of load order. */
+.bo-hero.bo-hero--holiday {
   position: relative;
   background: var(--bo-ink, #10231c);
   overflow: hidden;
@@ -58,6 +67,11 @@
    object-position keeps the trees in frame when cover crops the width. */
 @media (max-width: 47.99rem) {
   .bo-hero--holiday .bo-hero__photo {
+    /* position is declared here rather than inherited from bo-winterize.css's
+       720px block: this breakpoint is 47.99rem (767.84px), so between 720px and
+       767.84px that file's mobile rules do NOT apply and the photo would fall
+       back to the base position:absolute and sit on top of the copy. */
+    position: static;
     display: block; width: 100%; height: 14rem;
     object-fit: cover; object-position: left center;
   }

@@ -377,7 +377,14 @@ function bos_services_taxonomy_term_view_alter(array &$build, EntityInterface $e
  * no tags of its own.
  */
 function bos_services_preprocess_field(array &$variables): void {
-  if (($variables['field_name'] ?? '') !== 'field_service_public_desc') {
+  // All three audience copy fields, not just the public one. Crew and office
+  // copy quote rates too, and a token that only one field substitutes is how
+  // the literal string "[holiday-price]" reached visitors on 2026-10-04.
+  if (!in_array($variables['field_name'] ?? '', [
+    'field_service_public_desc',
+    'field_service_crew_desc',
+    'field_service_office_desc',
+  ], TRUE)) {
     return;
   }
   // ONE token map, owned by HolidayEstimator, because this body has two
@@ -410,4 +417,35 @@ function bos_services_preprocess_field(array &$variables): void {
   if ($touched && $bs) {
     $variables['#cache']['tags'] = Cache::mergeTags($variables['#cache']['tags'] ?? [], $bs->getCacheTags());
   }
+}
+
+/**
+ * Implements hook_entity_field_access().
+ *
+ * field_service_office_desc is office-only, and this is what makes that TRUE
+ * rather than merely arranged. Putting the field on one view display keeps it
+ * off the public and crew renders of the term page — that is presentation.
+ * Views, JSON:API and REST each render fields by their own rules, so a display
+ * that happens not to list a field is not access control. BOS learned that on
+ * 2026-10-04, when JSON:API was found serving fields no page rendered.
+ *
+ * VIEW only: the edit form is already behind taxonomy administration, and
+ * gating edit here would stop office saving the term.
+ *
+ * Fails closed with no itemless exception. Unlike the credential licence number,
+ * which is public record on one record and therefore needs Views to be able to
+ * ask about the field in the abstract, there is no circumstance in which this
+ * field should render to anyone outside the office.
+ */
+function bos_services_entity_field_access(string $operation, \Drupal\Core\Field\FieldDefinitionInterface $field_definition, \Drupal\Core\Session\AccountInterface $account, ?\Drupal\Core\Field\FieldItemListInterface $items = NULL) {
+  if ($operation !== 'view' || $field_definition->getName() !== 'field_service_office_desc') {
+    return \Drupal\Core\Access\AccessResult::neutral();
+  }
+  $allowed = array_intersect(
+    ['supervisor', 'administration', 'site_assistant', 'site_admin', 'administrator'],
+    $account->getRoles()
+  );
+  return \Drupal\Core\Access\AccessResult::forbiddenIf(!$allowed)
+    // Without this the render cache can hand one audience's body to another.
+    ->addCacheContexts(['user.roles']);
 }

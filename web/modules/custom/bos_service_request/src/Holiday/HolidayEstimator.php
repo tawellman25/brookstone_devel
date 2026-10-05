@@ -255,6 +255,35 @@ final class HolidayEstimator {
   }
 
   /**
+   * Substitute the holiday price tokens in a body of copy.
+   *
+   * Office copy carries [holiday-price] and friends rather than typed figures,
+   * so a rate change in Business Settings reaches every surface at once. That
+   * is the lesson from 2026-10-03, where a published $8 per-foot figure existed
+   * only in page copy and had to be hand-edited when it moved.
+   *
+   * ⚠ bos_services does its own substitution of [holiday-price] when it renders
+   * the service page's field. This covers the OTHER consumer: the same body is
+   * reused to build the accordions on /holiday-lights, which did not substitute
+   * anything — so a visitor there was shown the literal string "[holiday-price]"
+   * (found live 2026-10-04). Any new token must be added here.
+   */
+  public function replaceTokens(string $html): string {
+    $money = fn(?float $v) => $v === NULL ? '' : '$' . rtrim(rtrim(number_format($v, 2), '0'), '.');
+    $map = [
+      '[holiday-price]' => $money($this->rate('field_holiday_light_per_foot')),
+      '[holiday-min]' => $money($this->rate('field_holiday_min_job')),
+      '[holiday-hang-rate]' => $money($this->rate('field_holiday_rate_hang')),
+      '[holiday-hang-min]' => $money($this->rate('field_holiday_min_hang')),
+    ];
+    // A token whose rate is unset resolves to nothing, which would leave a
+    // sentence with a hole in it. Leave those alone so the gap is visible to
+    // whoever maintains the copy rather than silently published.
+    $map = array_filter($map, fn($v) => $v !== '');
+    return strtr($html, $map);
+  }
+
+  /**
    * A plain-text itemisation, for storing with a lead or emailing a customer.
    */
   public function asText(array $result): string {

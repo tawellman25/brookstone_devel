@@ -534,6 +534,10 @@ function _bos_service_request_holiday_vars(array &$variables): void {
       // /holiday-lights, and an accordion intro pointing at the page you are
       // already on is a dead end.
       $body = preg_replace('#<p class="bo-service-cta">.*?</p>\s*#is', '', $body);
+      // Substitute the price tokens. Without this the accordions render the
+      // literal string "[holiday-price]" to visitors — the service page does
+      // its own substitution, this reuse of the same body did not.
+      $body = \Drupal::service('bos_service_request.holiday_estimator')->replaceTokens($body);
       $variables['bo_accordions'] = _bos_service_request_accordions($body);
     }
   }

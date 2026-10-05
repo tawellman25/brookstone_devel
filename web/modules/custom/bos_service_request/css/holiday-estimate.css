@@ -53,3 +53,21 @@
 @media (max-width: 30rem) {
   .hol-est__live { margin-inline: -16px; border-radius: 0; }
 }
+
+/* The estimator's add-on groups, on the public page. They render OPEN so the
+   profitable half of the job is not behind a chevron — these rules just make an
+   open group read as a labelled section rather than a collapsed control. */
+.hol-est__prompt {
+  margin: 1rem 0 .25rem;
+  font-weight: 600;
+  color: var(--bo-prose, #3a3a3a);
+}
+.hol-est details > summary {
+  font-weight: 700;
+  padding: .35rem 0;
+  cursor: pointer;
+}
+.hol-est details[open] > summary {
+  border-bottom: 2px solid var(--bo-sand, #e4dcd0);
+  margin-bottom: .5rem;
+}

@@ -131,8 +131,18 @@ final class HolidayLightsForm extends FormBase {
         '#description' => $this->t('A rough number is fine — single-story homes run about 120–180 ft and two-story 160–240 ft. We measure it on site either way.'),
       ];
 
-      $form['est_trees'] = ['#type' => 'details', '#title' => $this->t('Trees you want lit'), '#open' => FALSE];
-      $form['est_items'] = ['#type' => 'details', '#title' => $this->t('Wreaths, columns, windows, borders'), '#open' => FALSE];
+      // OPEN by default. Closed, a visitor prices the roofline alone and anchors
+      // on it — and the field sheet's own rule box is blunt about that: "never
+      // quote the roofline alone", because the add-ons were 64% of its worked
+      // example on the same truck roll. Hiding the profitable half of the job
+      // behind a chevron is the one thing this form must not do.
+      $form['est_prompt'] = [
+        '#markup' => '<p class="hol-est__prompt">'
+        . $this->t('Most houses are more than the roofline. Add anything else you want lit — each one is a flat price.')
+        . '</p>',
+      ];
+      $form['est_trees'] = ['#type' => 'details', '#title' => $this->t('Trees you want lit'), '#open' => TRUE];
+      $form['est_items'] = ['#type' => 'details', '#title' => $this->t('Wreaths, columns, windows, borders'), '#open' => TRUE];
       foreach ($addons as $key => $info) {
         $group = str_starts_with($key, 'dec_') || str_starts_with($key, 'eg_') ? 'est_trees' : 'est_items';
         $form[$group][$key] = [
@@ -146,7 +156,9 @@ final class HolidayLightsForm extends FormBase {
         ];
       }
 
-      $form['est_cond'] = ['#type' => 'details', '#title' => $this->t('About the roof'), '#open' => FALSE];
+      // Two checkboxes, and the sheet calls these premiums "free money" that
+      // crews most often forget. Open.
+      $form['est_cond'] = ['#type' => 'details', '#title' => $this->t('About the roof'), '#open' => TRUE];
       $form['est_cond']['steep'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Steep roof'),

@@ -76,30 +76,49 @@ $text = '';
 foreach ($msgs as $set) { foreach ($set as $m) { $text .= (string) $m; } }
 $ok('the total is still reported back', strpos($text, '2,796') !== FALSE, trim(mb_substr($text, 0, 90)));
 
-// --- submit, identified: must create one with the breakdown -----------------
-print "\nSubmit with a name:\n";
+// --- submit, identified: creates an ESTIMATE REQUEST, and intake the estimate
+print "\nSubmit with a name — the estimating pipeline, not a lead:\n";
 $named = $scope + [
   'name' => 'ZZ Estimator Test', 'phone' => '970-555-0100',
   'address' => '1 Test Ln', 'notes' => 'Two medium maples out front.',
 ];
+$reqStorage = \Drupal::entityTypeManager()->getStorage('estimate_request');
+$estStorage = \Drupal::entityTypeManager()->getStorage('estimate');
+$srBefore = (int) $storage->getQuery()->accessCheck(FALSE)->count()->execute();
+
 $fs2 = new \Drupal\Core\Form\FormState();
 $fs2->setValues($named);
 $fs2->setUserInput($named);
 \Drupal::formBuilder()->submitForm('Drupal\bos_service_request\Form\HolidayEstimateForm', $fs2);
 \Drupal::messenger()->deleteAll();
-$ids = $storage->getQuery()->accessCheck(FALSE)->condition('field_submitted_name', 'ZZ Estimator Test')->execute();
-$ok('one record created', count($ids) === 1, count($ids) . ' found');
-if ($ids) {
-  $rec = $storage->load(reset($ids));
-  $notes = (string) $rec->get('field_customer_notes')->value;
-  $ok('breakdown stored with the lead', strpos($notes, 'ESTIMATE TOTAL') !== FALSE && strpos($notes, '2,796') !== FALSE);
-  $ok('walkthrough note kept', strpos($notes, 'medium maples') !== FALSE);
-  $ok('attributed to the builder', strpos($notes, 'Built on site by') !== FALSE);
-  $ok('campaign holiday26', (string) $rec->get('field_campaign')->value === 'holiday26');
-  $ok('flagged as an on-site estimate', strpos((string) $rec->get('field_review_flags')->value, 'onsite_estimate') !== FALSE);
-  // clean up
-  $rec->delete();
-  print "  (test record deleted)\n";
+
+$rids = $reqStorage->getQuery()->accessCheck(FALSE)->condition('field_requestor_name', 'ZZ Estimator Test')->execute();
+$ok('an estimate_request was created', count($rids) === 1, count($rids) . ' found');
+$ok('NO service_request lead was created', (int) $storage->getQuery()->accessCheck(FALSE)->count()->execute() === $srBefore);
+
+if ($rids) {
+  $req = $reqStorage->load(reset($rids));
+  $ok('names Holiday Decorations as the service', (int) ($req->get('field_service')->target_id ?? 0) === 396);
+  $ok('scope carries the itemisation', strpos((string) $req->get('field_client_requested')->value, '2,796') !== FALSE);
+  $ok('scope carries the walkthrough note', strpos((string) $req->get('field_client_requested')->value, 'medium maples') !== FALSE);
+  $ok('attributed to the builder', strpos((string) $req->get('field_client_requested')->value, 'Built on site by') !== FALSE);
+
+  // The point of the whole exercise: estimate_intake made a real estimate.
+  $estimates = $req->get('field_estimates')->referencedEntities();
+  $ok('estimate_intake auto-created an estimate', count($estimates) === 1, count($estimates) . ' linked');
+  if ($estimates) {
+    $est = reset($estimates);
+    $ok('it is the christmas_decorations bundle', $est->bundle() === 'christmas_decorations', $est->bundle());
+    $ok('the total is stored and queryable', abs((float) $est->get('field_estimate_total')->value - 2796.25) < 0.01,
+      '$' . number_format((float) $est->get('field_estimate_total')->value, 2));
+    $ok('it is revision 1 and current', (int) $est->get('field_revision_number')->value === 1 && (bool) $est->get('field_is_current_revision')->value);
+    $ok('stage is set', !$est->get('field_stage')->isEmpty());
+    $ok('scope summary reached the estimate', $est->hasField('field_scope_summary')
+      && strpos((string) $est->get('field_scope_summary')->value, '2,796') !== FALSE);
+    $est->delete();
+  }
+  $req->delete();
+  print "  (test request and estimate deleted)\n";
 }
 
 // --- premiums, when they ARE ticked ----------------------------------------

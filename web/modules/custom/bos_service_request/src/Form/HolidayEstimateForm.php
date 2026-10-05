@@ -31,6 +31,27 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 final class HolidayEstimateForm extends FormBase {
 
+  /**
+   * Holiday Decorations in the services vocabulary.
+   *
+   * It carries field_estimate_service = TRUE and field_service_bundle =
+   * christmas_decorations, which is what makes estimate_intake create the
+   * estimate automatically when a request naming this service is saved.
+   */
+  private const HOLIDAY_SERVICE_TID = 396;
+
+  /**
+   * estimate_request_status: "Send Estimate".
+   *
+   * The crew has produced a PRICED estimate on site, so the request is past
+   * gathering info and past estimating — the office's next action is to send it.
+   * One line to change if that is the wrong queue.
+   */
+  private const REQUEST_STATUS_SEND_ESTIMATE = 1810;
+
+  /** estimate_stage: "In Preparation" — priced, not yet sent. */
+  private const STAGE_IN_PREPARATION = 1415;
+
   // Declared, not constructor-promoted: FormBase uses
   // DependencySerializationTrait, which cannot re-inject promoted properties on
   // __wakeup if this form is ever serialized across a rebuild.
@@ -217,35 +238,85 @@ final class HolidayEstimateForm extends FormBase {
       return;
     }
 
-    $notes = array_filter([
+    // ---------------------------------------------------------------------
+    // This creates an ESTIMATE REQUEST, not a lead, and that is the whole point
+    // of routing it here: what a teammate builds at the curb IS an estimate —
+    // scope, quantities, a total, for one property — and BOS already has a
+    // domain for that. Writing it into a service_request as text gave no
+    // revisions, no acceptance stage, no conversion to a work order, and a total
+    // nothing could query.
+    //
+    // The estimate itself is NOT created here. estimate_intake creates one
+    // automatically on request insert for every field_service term whose
+    // field_estimate_service is on, reading field_service_bundle for the bundle
+    // — Holiday Decorations is already configured that way. Creating it by hand
+    // would duplicate that pipeline and drift from it.
+    $scope = implode("\n\n", array_filter([
       trim((string) ($v['notes'] ?? '')),
       $breakdown,
-      $this->t('Built on site by @who.', ['@who' => $this->who->getDisplayName()]),
-    ]);
+      (string) $this->t('Built on site by @who.', ['@who' => $this->who->getDisplayName()]),
+    ]));
 
     $values = [
-      'type' => 'general_inquiry',
-      'field_topic' => 'quote',
-      'field_submitted_name' => trim((string) ($v['name'] ?? '')),
-      'field_submitted_phone' => trim((string) ($v['phone'] ?? '')),
-      'field_submitted_address' => trim((string) ($v['address'] ?? '')),
-      'field_customer_notes' => implode("\n\n", $notes),
+      'type' => 'standard',
+      'field_service' => [['target_id' => self::HOLIDAY_SERVICE_TID]],
+      // Required on the bundle.
+      'field_priority' => 'normal',
+      'field_status' => ['target_id' => self::REQUEST_STATUS_SEND_ESTIMATE],
+      'field_requestor_name' => trim((string) ($v['name'] ?? '')),
+      'field_requestor_phone' => trim((string) ($v['phone'] ?? '')),
+      'field_requestor_address' => trim((string) ($v['address'] ?? '')),
+      // estimate_intake copies this into the estimate's field_scope_summary, so
+      // the itemisation the teammate built travels to the estimate itself.
+      'field_client_requested' => ['value' => $scope, 'format' => 'basic_html'],
       'field_campaign' => 'holiday26',
-      'field_source' => CampaignSource::forCode('holiday26'),
-      'field_review_flags' => 'onsite_estimate',
       'uid' => $this->who->id(),
     ];
     if (!empty($v['property'])) {
       $values['field_property'] = ['target_id' => $v['property']];
     }
 
-    $record = $this->etm->getStorage('service_request')->create($values);
-    $record->save();
+    $request = $this->etm->getStorage('estimate_request')->create($values);
+    $request->save();
 
-    $this->messenger()->addStatus($this->t('Estimate @t saved for the office (@ref).', [
-      '@t' => '$' . number_format($result['total'], 2),
-      '@ref' => $record->get('field_public_ref')->value ?: $record->id(),
-    ]));
+    // The estimate intake creates on INSERT, so it exists by now. Reload the
+    // request rather than trusting the in-memory copy: intake re-saves it to
+    // append field_estimates, and the stale object would not carry that.
+    $request = $this->etm->getStorage('estimate_request')->load($request->id());
+
+    $estimate = NULL;
+    foreach ($request->get('field_estimates')->referencedEntities() as $candidate) {
+      if ($candidate->bundle() === 'christmas_decorations') {
+        $estimate = $candidate;
+        break;
+      }
+    }
+
+    if ($estimate) {
+      // There is no est_christmas_decorations module to compute a total from
+      // task data the way the 19 est_* modules do for their bundles, and there
+      // does not need to be: HolidayEstimator already computed it from the
+      // price book, and that is the same figure the customer was shown.
+      $estimate->set('field_estimate_total', round($result['total'], 2));
+      if ($estimate->hasField('field_stage')) {
+        $estimate->set('field_stage', ['target_id' => self::STAGE_IN_PREPARATION]);
+      }
+      $estimate->save();
+      $this->messenger()->addStatus($this->t('Estimate @t saved as @title on request #@r — it is on the estimate board.', [
+        '@t' => '$' . number_format($result['total'], 2),
+        '@title' => $estimate->label(),
+        '@r' => $request->id(),
+      ]));
+    }
+    else {
+      // The request is still a real record and nothing is lost, but somebody
+      // should know the automatic step did not fire.
+      $this->messenger()->addWarning($this->t('Request #@r saved with the estimate totalling @t, but no estimate was auto-created — check that Holiday Decorations is still flagged as an estimate service.', [
+        '@r' => $request->id(),
+        '@t' => '$' . number_format($result['total'], 2),
+      ]));
+    }
+
     $form_state->setRebuild();
   }
 

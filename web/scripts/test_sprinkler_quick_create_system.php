@@ -155,8 +155,51 @@ $ok('still exactly one system', count($findSystems()) === 1, 'count=' . count($f
 $reloaded = $etm->getStorage('property_sprinkler_system')->loadUnchanged($system->id());
 $ok('zones updated on the same record', (int) $reloaded->get('field_total_zones')->value === 8);
 
+print "\n8. the clock takes more than one photo\n";
+// The crew takes three: where the clock is, the face with the door open, and
+// the wiring (which is how the real zone count gets settled). The field has
+// always been unlimited and the submit handler always appended every fid --
+// the element was simply accepting one at a time until 2026-10-09.
+$built = \Drupal::formBuilder()->getForm(\Drupal\properties\Form\SprinklerQuickCaptureForm::class, $wo);
+$ok('the clock photo element accepts multiple', !empty($built['clock']['clock_photo']['#multiple']));
+
+$dir = 'public://sprinkler-quick';
+\Drupal::service('file_system')->prepareDirectory($dir, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY);
+// 1x1 PNG.
+$png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+$testFiles = [];
+foreach (['location', 'door-open', 'wiring', 'extra'] as $n) {
+  $file = \Drupal::service('file.repository')->writeData($png, $dir . '/TEST-delete-me-' . $n . '-' . uniqid() . '.png');
+  // ManagedFile::valueCallback refuses a temporary file owned by someone else,
+  // and drush is nobody, so these have to be permanent to get through.
+  $file->setPermanent();
+  $file->save();
+  $testFiles[] = $file;
+}
+// The first three are this visit; the fourth stands in for a later one.
+$extra = array_pop($testFiles);
+$fids = array_map(fn($f) => (int) $f->id(), $testFiles);
+$testFiles[] = $extra;
+$fs = $submit(['zones' => '', 'shut_off_location' => '', 'shut_off_notes' => '', 'key_needed' => '',
+  'hookup_type' => '', 'hookup_location' => '', 'which' => '', 'bfp_location' => '',
+  // valueCallback reads $input['fids'] as the space-separated string the
+  // hidden form field carries, not a plain array of ids.
+  'clock_location' => '', 'system_type' => '', 'clock_photo' => ['fids' => implode(' ', $fids)]]);
+$ctrlAfter = $etm->getStorage('property_system_controller')->loadUnchanged($ctrl->id());
+$count = $ctrlAfter ? count($ctrlAfter->get('field_controller_photos')->getValue()) : 0;
+$ok('all three photos landed on the clock', $count === 3, 'photos=' . $count);
+
+// A later visit adds to them rather than replacing them.
+$submit(['zones' => '', 'shut_off_location' => '', 'shut_off_notes' => '', 'key_needed' => '',
+  'hookup_type' => '', 'hookup_location' => '', 'which' => '', 'bfp_location' => '',
+  'clock_location' => '', 'system_type' => '', 'clock_photo' => ['fids' => (string) $extra->id()]]);
+$ctrlAfter = $etm->getStorage('property_system_controller')->loadUnchanged($ctrl->id());
+$count2 = $ctrlAfter ? count($ctrlAfter->get('field_controller_photos')->getValue()) : 0;
+$ok('a second visit appends, never replaces', $count2 === 4, 'photos=' . $count2);
+
 // ---- cleanup -------------------------------------------------------------
 print "\ncleanup\n";
+foreach ($testFiles ?? [] as $f) { $f->delete(); }
 if ($ctrl) { $ctrl->delete(); }
 if ($source) { $source->delete(); }
 $system->delete();

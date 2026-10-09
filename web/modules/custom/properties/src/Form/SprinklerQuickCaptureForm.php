@@ -194,11 +194,19 @@ final class SprinklerQuickCaptureForm extends FormBase {
       '#placeholder' => $this->t('e.g. garage, north wall by the door'),
       '#default_value' => $this->val($controller, 'field_controller_location'),
     ];
+    // Three shots, because that is what the crew actually takes: where the
+    // clock is, the face with the door open, and the wiring — the last one is
+    // how the zone count gets settled later, since what is wired and what the
+    // clock is programmed for are not always the same number.
+    // field_controller_photos is unlimited and the submit handler already
+    // appends every fid, so this only had to stop accepting one at a time.
     $form['clock']['clock_photo'] = [
       '#type' => 'managed_file',
-      '#title' => $this->t('Photo'),
+      '#title' => $this->t('Photos'),
+      '#multiple' => TRUE,
       '#upload_location' => 'public://sprinkler-quick',
       '#upload_validators' => ['FileExtension' => ['extensions' => 'jpg jpeg png heic webp']],
+      '#description' => $this->t('You can pick more than one — the location, the face with the door open, and the wiring. Added to any photos already on the clock.'),
     ];
 
     $form['actions'] = ['#type' => 'actions'];

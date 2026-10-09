@@ -19,3 +19,38 @@
 @media (max-width: 30rem) {
   .sprinkler-quick .form-actions .button { flex: 1 1 100%; justify-content: center; }
 }
+
+/* --- Photos ---------------------------------------------------------------
+   The managed_file element renders a bare filename and, on a narrow screen,
+   lets "Choose file" and "Remove selected" sit on top of each other (reported
+   with a screenshot 2026-10-09). This gives the controls room and puts the
+   actual picture in front of the crew. */
+.sprinkler-quick .form-managed-file {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.5rem;
+}
+.sprinkler-quick .form-managed-file > * { max-width: 100%; }
+.sprinkler-quick .form-managed-file input[type="file"] {
+  flex: 1 1 12rem; min-width: 0; min-height: 2.75rem; font-size: 1rem;
+}
+.sprinkler-quick .form-managed-file .button { min-height: 2.75rem; flex: 0 0 auto; }
+/* The file-list rows core prints, one per uploaded file. */
+.sprinkler-quick .form-managed-file .js-form-item,
+.sprinkler-quick .form-managed-file .form-item { flex: 1 1 100%; margin: 0; }
+
+.sq-photo-strip {
+  flex: 1 1 100%;
+  display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.2rem;
+}
+.sq-photo-thumb {
+  width: 5.5rem; height: 5.5rem; object-fit: cover;
+  border: 1px solid #ddd; border-radius: 4px; background: #f4f4f4;
+  vertical-align: middle; margin-inline-end: 0.4rem;
+}
+/* Once there is a picture, the filename is secondary. */
+.sprinkler-quick .sq-photo-name { font-size: 0.85rem; color: #555; }
+
+.sq-photo-busy {
+  flex: 1 1 100%;
+  font-size: 0.9rem; color: #555; padding: 0.35rem 0.5rem;
+  background: #f6f1ea; border-left: 3px solid #CB6015; border-radius: 3px;
+}

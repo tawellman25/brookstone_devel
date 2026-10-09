@@ -147,6 +147,7 @@ final class SprinklerQuickCaptureForm extends FormBase {
       '#type' => 'managed_file',
       '#title' => $this->t('Photo'),
       '#upload_location' => 'public://sprinkler-quick',
+      '#attributes' => ['accept' => 'image/*'],
       '#upload_validators' => ['FileExtension' => ['extensions' => 'jpg jpeg png heic webp']],
       '#description' => $this->t('Added to the existing shut-off photos. Alt text writes itself.'),
     ];
@@ -205,6 +206,7 @@ final class SprinklerQuickCaptureForm extends FormBase {
       '#title' => $this->t('Photos'),
       '#multiple' => TRUE,
       '#upload_location' => 'public://sprinkler-quick',
+      '#attributes' => ['accept' => 'image/*'],
       '#upload_validators' => ['FileExtension' => ['extensions' => 'jpg jpeg png heic webp']],
       '#description' => $this->t('You can pick more than one — the location, the face with the door open, and the wiring. Added to any photos already on the clock.'),
     ];

@@ -410,6 +410,44 @@ Related: **#22** (reconcile the drift so `cim` is safe again) — this item is t
 read-only prerequisite for it. Runbook: `working_with_claude.md` → "Live's
 `config/sync` is only as current as the last FULL deploy".
 
+### 29. Seven sprinkler systems billing cannot reach — one of them is a live money question
+
+Surfaced 2026-10-09 while making the sprinkler quick-entry form create a
+property's first system. Winterizing billing reaches a system **only** through
+`property_sprinkler_info.field_systems`, and it **sums `field_total_zones`
+across every system it can see** (`fetch_property_sprinkler_winterize_zones_data()`).
+Seven systems are in no such list. They are not one problem:
+
+**a) Three are test leftovers with no property link of any kind** — systems
+**1168** ("Test System"), **1170** ("4th test System"), **1171** ("test 5
+System"). Nothing points at them. Delete when convenient.
+
+**b) Three are exact duplicates and billing already uses the right one** —
+1750 Lynx St., Delta (**917** hidden / 916 used, both 6 zones) · 755 S Grand
+Mesa Dr., Cedaredge (**949** / 948, both 2) · 726 E 5th St., Delta (**1117** /
+1118, both 2). **⚠ Do NOT "fix" these by linking them.** Zone charges sum, so
+linking 917 would take 1750 Lynx from 6 to 12 zones and **overcharge that
+customer $30**. Leaving them unlinked is the correct state; the tidy-up is to
+delete the duplicate, not to connect it.
+
+**c) One is a real question — 300 Stafford Lane, Delta.** System **1169**
+(hidden) says **40 zones**; system **752** (the one billing reads) says **18**.
+Same name, same type, so one is wrong. At $95 base + $5/zone over 5 that is
+**$160 vs $270 — a $110 difference**. **WO#52767 is still Scheduled and not
+billed**, so it is catchable. 752 is the record that has actually been used (it
+carries a water source and a controller; 1169 has no child records at all),
+which hints 752 is the original and 40 was entered later — but that could as
+easily be someone correcting it after counting. **Needs a human to say which is
+right**, then set it on 752 and delete 1169.
+
+Nothing here was caused by the 2026-10-09 change, and nothing is currently
+billing $0 — the two already-invoiced properties in (b) are both under the
+5-zone allowance, so their charge is the same either way.
+
+Re-run the finding: the orphan scan is in the 2026-10-09 session; it is a set
+difference between `property_sprinkler_system` ids and the ids listed in
+`property_sprinkler_info__field_systems`.
+
 ## Resolved — archive next cycle
 
 ### 17. Finalize weed-spray WO #49698 — ✅ RESOLVED (SHIPPED/verified 2026-07-03)

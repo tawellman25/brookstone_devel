@@ -48,7 +48,7 @@ If the count is small and the audit is operationally meaningful, a backfill scri
 
 ### 3. `wo_total_time` logger notice change-log discrepancy
 
-[`CLAUDE.md` Change Log](../../CLAUDE.md#change-log) entry dated 2026-03-12 says:
+[Change Log](change_log.md) entry dated 2026-03-12 says:
 
 > "Removed debug logging from `wo_total_time` (Presave Debug, Not updating UID notices)..."
 

@@ -34,6 +34,21 @@ final class SprinklerQuickCaptureForm extends FormBase {
   // DependencySerializationTrait has to re-inject these on __wakeup().
   protected $etm;
 
+  /**
+   * What a new system record is born with.
+   *
+   * Name: 1,245 of the 1,253 existing systems are called "Primary", which the
+   * auto_entitylabel pattern turns into the title "Primary System".
+   * Operation: 1,119 of 1,252 are Automatic. It drives no billing and the
+   * office can change it, so the crew is not asked at the curb.
+   * Complexity Level is deliberately left unset: the field is marked required
+   * but has no data table at all — not one of the 1,253 systems carries it —
+   * and `required` is a FORM constraint that a programmatic save does not
+   * enforce, so setting it here would invent a convention rather than match one.
+   */
+  private const SYSTEM_NAME = 'Primary';
+  private const OPERATION_AUTOMATIC = 1279;
+
   public function __construct(EntityTypeManagerInterface $etm) {
     $this->etm = $etm;
   }
@@ -75,6 +90,27 @@ final class SprinklerQuickCaptureForm extends FormBase {
       '#markup' => '<h2>' . $this->t('@property', ['@property' => $property->label()]) . '</h2>'
         . '<p>' . $this->t('Only what you need on site. Everything here is optional — fill what you know and save.') . '</p>',
     ];
+
+    // --- No system yet: ask for the one fact we cannot infer ----------------
+    // A system record requires a type, and the type decides the winterizing
+    // charge (base, or base + pump fee for Dirty/Duel/Well). The work order
+    // carries one often enough to be worth pre-filling from, but measured on
+    // the properties that actually land here it almost never does: of the 43
+    // winterizing WOs this season whose property has no system, exactly 1 has
+    // a type on the work order and 42 have neither. So expect the crew to
+    // answer this, and keep it to one tap.
+    if (!$system) {
+      $woType = $wo->hasField('field_system_type') && !$wo->get('field_system_type')->isEmpty()
+        ? (int) $wo->get('field_system_type')->target_id : NULL;
+      $form['system_type'] = [
+        '#type' => 'select',
+        '#title' => $this->t('System Type'),
+        '#options' => $this->systemTypeOptions(),
+        '#empty_option' => $this->t('- select -'),
+        '#default_value' => $woType,
+        '#description' => $this->t('This property has no sprinkler system record yet — one will be created from this. It also sets the winterizing charge, so a pump system is not billed as a domestic one.'),
+      ];
+    }
 
     // --- Zones -------------------------------------------------------------
     $form['zones'] = [
@@ -182,6 +218,126 @@ final class SprinklerQuickCaptureForm extends FormBase {
   }
 
   /**
+   * Only one thing can be demanded here, and only when it is actually needed.
+   *
+   * The screen's promise is that everything is optional — so an empty save is
+   * still allowed. But a value cannot be stored without a system record, and a
+   * system record cannot be created without a type, so if the crew has entered
+   * something on a property that has no system, that is the moment to ask.
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state): void {
+    if (!isset($form['system_type'])) {
+      return;
+    }
+    if ($this->enteredAnything($form_state) && !$form_state->getValue('system_type')) {
+      $form_state->setError(
+        $form['system_type'],
+        $this->t('Choose the system type so a sprinkler system record can be created for this property.')
+      );
+    }
+  }
+
+  /**
+   * Did the crew type anything at all?
+   */
+  private function enteredAnything(FormStateInterface $form_state): bool {
+    foreach (['zones', 'shut_off_location', 'shut_off_notes', 'key_needed', 'hookup_type',
+      'hookup_location', 'which', 'bfp_location', 'clock_location'] as $key) {
+      $value = $form_state->getValue($key);
+      if ($value !== '' && $value !== NULL) {
+        return TRUE;
+      }
+    }
+    foreach (['shut_off_photo', 'clock_photo'] as $key) {
+      if (array_filter((array) $form_state->getValue($key))) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Create the property's first sprinkler system — visibly to BILLING.
+   *
+   * There are three link paths between a property and a system, and they are
+   * not interchangeable:
+   *
+   *   1. property_sprinkler_system.field_property  -> the property (1,147)
+   *   2. property_sprinkler_system.field_property_system_info -> the info (1,246)
+   *   3. property_sprinkler_info.field_systems     -> the systems (1,246)
+   *
+   * Billing walks the THIRD one: _wo_sw_property_systems() loads the property's
+   * property_sprinkler_info record and reads field_systems off it. A system
+   * created with only field_property set is therefore invisible to billing, and
+   * _wo_sw_resolve_system_type_total() returns 0 when it resolves no type — so
+   * the crew would have recorded the system and the winterizing would still
+   * have billed nothing.
+   *
+   * Paths 2 and 3 do NOT have to be written separately, and writing both is a
+   * bug: the contrib `cer` module's ss_info_to_system pairing keeps them in
+   * step, so setting field_property_system_info here makes cer prepend the
+   * system to info.field_systems on save. Appending by hand as well put the
+   * system in that list TWICE, which billing counts as a two-system property —
+   * it takes the multi-system branch and charged double (caught by
+   * test_sprinkler_quick_create_system.php, which is why it asserts the price
+   * and not merely that a record exists). That pairing is also why the two
+   * counts above are identical at 1,246 with no record carrying one alone.
+   */
+  private function createSystem(int $propertyId, FormStateInterface $form_state): ?EntityInterface {
+    $typeId = (int) ($form_state->getValue('system_type') ?: 0);
+    if (!$typeId) {
+      // No select rendered (a system existed at build time but not now), or a
+      // path that skipped validation — fall back to the work order's own type.
+      $woId = (int) $form_state->get('wo_id');
+      $wo = $woId ? $this->etm->getStorage('work_order')->load($woId) : NULL;
+      if ($wo && $wo->hasField('field_system_type') && !$wo->get('field_system_type')->isEmpty()) {
+        $typeId = (int) $wo->get('field_system_type')->target_id;
+      }
+    }
+    if (!$typeId) {
+      $this->messenger()->addWarning($this->t('Nothing was saved: a sprinkler system record could not be created without a system type.'));
+      return NULL;
+    }
+
+    // The info record is the hinge billing walks through. Most properties
+    // already have one (2,623 records against 1,253 systems).
+    $infoStorage = $this->etm->getStorage('property_sprinkler_info');
+    $infoIds = $infoStorage->getQuery()->accessCheck(FALSE)
+      ->condition('field_property', $propertyId)->sort('id')->range(0, 1)->execute();
+    $info = $infoIds ? $infoStorage->load(reset($infoIds)) : NULL;
+    if (!$info) {
+      $info = $infoStorage->create([
+        'type' => 'general_information',
+        'field_property' => $propertyId,
+      ]);
+      $this->saveRecord($info);
+    }
+
+    $values = [
+      'type' => 'system',
+      'field_system_name' => self::SYSTEM_NAME,
+      'field_system_type' => $typeId,
+      'field_property' => $propertyId,
+      'field_property_system_info' => $info->id(),
+    ];
+    // Only set the operation if that term is really there; it drives nothing in
+    // billing, so a missing term should not cost the crew their entry.
+    if ($this->etm->getStorage('taxonomy_term')->load(self::OPERATION_AUTOMATIC)) {
+      $values['field_operation'] = self::OPERATION_AUTOMATIC;
+    }
+    // cer adds this to $info->field_systems; do not append it again.
+    $system = $this->etm->getStorage('property_sprinkler_system')->create($values);
+    $this->saveRecord($system);
+
+    $this->logger('properties')->notice('Created sprinkler system @sys for property @prop from the quick-capture form (type @type).', [
+      '@sys' => $system->id(),
+      '@prop' => $propertyId,
+      '@type' => $typeId,
+    ]);
+    return $system;
+  }
+
+  /**
    * Write everything in one pass, creating records only where a value was given.
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
@@ -189,24 +345,28 @@ final class SprinklerQuickCaptureForm extends FormBase {
     $v = fn(string $k) => $form_state->getValue($k);
     $written = [];
 
-    // --- System: zones -----------------------------------------------------
-    $zones = $v('zones');
-    if ($zones !== '' && $zones !== NULL) {
-      $system = $this->findSystem($propertyId) ?: NULL;
-      if (!$system) {
-        // A system needs a type, which this screen does not ask for. Rather than
-        // invent one, say so — the system record is created by the existing
-        // "Add sprinkler system" button on the work order.
-        $this->messenger()->addWarning($this->t('Zone count not saved: this property has no sprinkler system record yet. Use "Add Sprinkler System" on the work order first.'));
-      }
-      else {
-        $system->set('field_total_zones', (int) $zones);
-        $system->save();
-        $written[] = (string) $this->t('zones');
+    // Everything this form writes hangs off a system record, so settle that
+    // first. Until 2026-10-09 the form refused to create one and sent the crew
+    // away to "Add Sprinkler System" — and because every branch below was gated
+    // on a system existing, the shut-off, hookup and clock values they had
+    // already typed were dropped on the way out, beneath a message saying
+    // nothing had been entered. 43 of this season's 579 winterizing work
+    // orders are on a property with no system by either lookup path.
+    $system = $this->findSystem($propertyId);
+    if (!$system && $this->enteredAnything($form_state)) {
+      $system = $this->createSystem($propertyId, $form_state);
+      if ($system) {
+        $written[] = (string) $this->t('sprinkler system');
       }
     }
 
-    $system = $this->findSystem($propertyId);
+    // --- System: zones -----------------------------------------------------
+    $zones = $v('zones');
+    if ($zones !== '' && $zones !== NULL && $system) {
+      $system->set('field_total_zones', (int) $zones);
+      $system->save();
+      $written[] = (string) $this->t('zones');
+    }
 
     // --- Source: shut off, key, hookup, backflow ---------------------------
     $sourceValues = [
@@ -395,6 +555,18 @@ final class SprinklerQuickCaptureForm extends FormBase {
       return 'dirty_water_source';
     }
     return 'domestic_source';
+  }
+
+  /**
+   * The four water supplies, as the office records them.
+   */
+  protected function systemTypeOptions(): array {
+    $options = [];
+    foreach ($this->etm->getStorage('sprinkler_system_types')->loadMultiple() as $id => $type) {
+      $options[(int) $id] = $type->label();
+    }
+    asort($options);
+    return $options;
   }
 
   protected function options(string $entityType, string $bundle, string $field): array {

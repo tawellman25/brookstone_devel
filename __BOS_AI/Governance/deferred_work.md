@@ -410,45 +410,42 @@ Related: **#22** (reconcile the drift so `cim` is safe again) — this item is t
 read-only prerequisite for it. Runbook: `working_with_claude.md` → "Live's
 `config/sync` is only as current as the last FULL deploy".
 
-### 29. Seven sprinkler systems billing cannot reach — one of them is a live money question
-
-Surfaced 2026-10-09 while making the sprinkler quick-entry form create a
-property's first system. Winterizing billing reaches a system **only** through
-`property_sprinkler_info.field_systems`, and it **sums `field_total_zones`
-across every system it can see** (`fetch_property_sprinkler_winterize_zones_data()`).
-Seven systems are in no such list. They are not one problem:
-
-**a) Three are test leftovers with no property link of any kind** — systems
-**1168** ("Test System"), **1170** ("4th test System"), **1171** ("test 5
-System"). Nothing points at them. Delete when convenient.
-
-**b) Three are exact duplicates and billing already uses the right one** —
-1750 Lynx St., Delta (**917** hidden / 916 used, both 6 zones) · 755 S Grand
-Mesa Dr., Cedaredge (**949** / 948, both 2) · 726 E 5th St., Delta (**1117** /
-1118, both 2). **⚠ Do NOT "fix" these by linking them.** Zone charges sum, so
-linking 917 would take 1750 Lynx from 6 to 12 zones and **overcharge that
-customer $30**. Leaving them unlinked is the correct state; the tidy-up is to
-delete the duplicate, not to connect it.
-
-**c) One is a real question — 300 Stafford Lane, Delta.** System **1169**
-(hidden) says **40 zones**; system **752** (the one billing reads) says **18**.
-Same name, same type, so one is wrong. At $95 base + $5/zone over 5 that is
-**$160 vs $270 — a $110 difference**. **WO#52767 is still Scheduled and not
-billed**, so it is catchable. 752 is the record that has actually been used (it
-carries a water source and a controller; 1169 has no child records at all),
-which hints 752 is the original and 40 was entered later — but that could as
-easily be someone correcting it after counting. **Needs a human to say which is
-right**, then set it on 752 and delete 1169.
-
-Nothing here was caused by the 2026-10-09 change, and nothing is currently
-billing $0 — the two already-invoiced properties in (b) are both under the
-5-zone allowance, so their charge is the same either way.
-
-Re-run the finding: the orphan scan is in the 2026-10-09 session; it is a set
-difference between `property_sprinkler_system` ids and the ids listed in
-`property_sprinkler_info__field_systems`.
 
 ## Resolved — archive next cycle
+
+### 29. Seven sprinkler systems billing could not reach — ✅ RESOLVED 2026-10-10
+
+All seven removed; **0 systems are now unreachable by billing** (1,256 total).
+
+**The $110 question resolved in the company's favour.** 300 Stafford Lane had two
+records disagreeing — 18 zones vs 40. **Todd confirmed 18.** The provenance made
+it obvious once looked at: record 1169 (the 40) was created **2025-10-11
+14:05:05, to the same second** as records literally named "Test System" and
+"test 5 System", with "4th test System" four minutes later. It was a practice
+entry that happened to get pointed at a real property; the other three in that
+batch were left unattached, which is why only this one caused trouble. **So
+WO#52767's $150 was correct all along** (base $95 + 13 extra zones × $5 − $10
+contract discount), and no money was lost.
+
+The other three were exact duplicates of the records billing already used
+(916 / 948 / 1118) and were deleted rather than linked — **linking them would
+have overcharged**, since zone charges sum across every system billing can see.
+
+Script: `web/scripts/cleanup_orphan_sprinkler_systems.php` (dry run by default;
+discovers every reference field rather than guessing, and refuses to delete
+anything referenced). Verified after: all four real properties still show one
+system with the right zone count, and WO#52767 still reads $150 on 18 zones.
+
+**⚠ A bug in that script is worth remembering.** Its backup used
+`realpath('public://…')`, which returns **empty on live** because `public://` is
+S3 via s3fs — so it wrote to the filesystem root, failed with permission denied,
+and **printed "backup written" anyway**. Seven records were deleted with no
+backup beside them. Nothing was lost (the nightly dump from 02:33 that morning
+holds them, and the content was either trivial or duplicated), but the script now
+writes through the stream wrapper and **aborts rather than deleting if the backup
+cannot be written**. Write through the stream URI, and never let a backup step
+report success it did not achieve.
+
 
 ### 17. Finalize weed-spray WO #49698 — ✅ RESOLVED (SHIPPED/verified 2026-07-03)
 

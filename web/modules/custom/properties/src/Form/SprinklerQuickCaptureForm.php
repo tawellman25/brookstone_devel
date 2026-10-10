@@ -224,6 +224,12 @@ final class SprinklerQuickCaptureForm extends FormBase {
       '#attributes' => ['class' => ['button']],
     ];
     $form['#attached']['library'][] = 'properties/sprinkler_quick';
+    // Shrink before upload. 2048 here, against 3200 for work order photos:
+    // these are reference shots -- where the shut-off is, what the wiring looks
+    // like -- not pictures that might end up in an advertisement, and speed at
+    // the curb matters more. TRUE asks for thumbnails because managed_file
+    // renders only a filename.
+    bos_photo_shrink_attach($form, 2048, 85, TRUE);
     return $form;
   }
 

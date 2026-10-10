@@ -1,0 +1,83 @@
+<?php
+
+/**
+ * @file
+ * Shrink camera photos in the browser before they are uploaded.
+ *
+ * Crews upload from phones on one bar of signal and a modern camera writes
+ * 4-13 MB a frame, so the upload is the slow part of taking a photo. This
+ * attaches a small library that downscales and re-encodes in the browser first.
+ *
+ * The limit is deliberately PER FORM rather than one global number, because the
+ * photos are not all for the same thing. A clock-wiring reference shot only has
+ * to stay countable, so the sprinkler quick-entry form uses 2048. A work order
+ * photo may end up in an advertisement, so it uses 3200 -- which still prints
+ * 10.6 inches wide at 300 dpi and leaves room to crop by a third.
+ *
+ * Measured on a real 4000x3000, 13 MB work order photo: full size re-encoded at
+ * q88 is 4.3 MB with no pixels lost at all, and 3200/q88 is 2.9 MB. Most of the
+ * saving is the phone's wasteful encoder, not the resize.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\media\MediaForm;
+
+/**
+ * Media bundles whose upload form gets the shrink, and the limit each wants.
+ *
+ * Keyed by bundle: [max long edge in px, JPEG quality]. Add a bundle here to
+ * cover it; nothing else is touched.
+ */
+const BOS_PHOTO_SHRINK_MEDIA_BUNDLES = [
+  // Crew job photos. These feed the public property gallery, so they are
+  // treated as potential marketing material rather than reference shots.
+  'wo_images' => [3200, 88],
+];
+
+/**
+ * Opt a form in.
+ *
+ * @param array $form
+ *   The form to mark, by reference.
+ * @param int $max
+ *   Longest edge in pixels. A photo already smaller is not enlarged, but is
+ *   still re-encoded, which is where most of the saving comes from.
+ * @param int $quality
+ *   JPEG quality, 1-100.
+ * @param bool $preview
+ *   TRUE for widgets that show only a filename (managed_file) and therefore
+ *   need thumbnails adding. The image widget previews on its own, so leave it
+ *   FALSE there or the thumbnail is rendered twice.
+ */
+function bos_photo_shrink_attach(array &$form, int $max, int $quality, bool $preview = FALSE): void {
+  $form['#attached']['library'][] = 'bos_photo_shrink/photo_shrink';
+  $form['#attributes']['class'][] = 'bos-photo-shrink';
+  $form['#attributes']['data-bos-shrink-max'] = $max;
+  $form['#attributes']['data-bos-shrink-quality'] = $quality;
+  if ($preview) {
+    $form['#attributes']['data-bos-shrink-preview'] = '1';
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Matched on the form OBJECT rather than the form id, so the add form, the edit
+ * form and anything else built from MediaForm are all covered without having to
+ * enumerate ids that differ between them.
+ */
+function bos_photo_shrink_form_alter(array &$form, FormStateInterface $form_state, $form_id): void {
+  $object = $form_state->getFormObject();
+  if (!$object instanceof MediaForm) {
+    return;
+  }
+  $bundle = $object->getEntity()->bundle();
+  if (!isset(BOS_PHOTO_SHRINK_MEDIA_BUNDLES[$bundle])) {
+    return;
+  }
+  [$max, $quality] = BOS_PHOTO_SHRINK_MEDIA_BUNDLES[$bundle];
+  // No preview flag: the image widget already renders a thumbnail.
+  bos_photo_shrink_attach($form, $max, $quality, FALSE);
+}

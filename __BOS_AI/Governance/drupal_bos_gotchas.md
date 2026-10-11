@@ -193,6 +193,80 @@ opcached body — the stale-worker gotcha below.)
 
 ---
 
+## Stubbing the route in a drush test: set attributes on a NEW Request, not the current one
+
+**Discovered 2026-10-11** (`bos_seasons` hero test). A test for code that reads
+`\Drupal::routeMatch()->getParameter('taxonomy_term')` tried to fake the route with:
+
+```php
+$req = \Drupal::request();
+$req->attributes->set('taxonomy_term', $term);          // does nothing useful
+\Drupal::service('router.request_context')->fromRequest($req);
+```
+
+`getParameter()` kept returning NULL and the test reported **6 failures against
+code that was working** — proven by rendering the same page over real anonymous
+HTTP. Worse, three *other* assertions ("office gets NO hero", "no banner → no
+hero") **passed vacuously**, because with a NULL term the code correctly returns
+nothing for everyone.
+
+**Cause:** `CurrentRouteMatch` caches its `RouteMatch` in an `SplObjectStorage`
+**keyed by the Request object**. Drush's request already has an entry (built at
+bootstrap, with no route), so mutating that request's attributes can never be
+seen. `router.request_context` is unrelated — it holds host/scheme/base-path for
+URL generation, not route parameters.
+
+**Fix — push a fresh Request onto the request stack.** A new object has no cache
+entry, so `RouteMatch::createFromRequest()` reads the attributes:
+
+```php
+$route = new \Symfony\Component\Routing\Route('/taxonomy/term/{taxonomy_term}');
+$req = \Symfony\Component\HttpFoundation\Request::create('/taxonomy/term/' . $term->id());
+$req->attributes->set(\Drupal\Core\Routing\RouteObjectInterface::ROUTE_NAME, 'entity.taxonomy_term.canonical');
+$req->attributes->set(\Drupal\Core\Routing\RouteObjectInterface::ROUTE_OBJECT, $route);
+$req->attributes->set('taxonomy_term', $term);
+\Drupal::service('request_stack')->push($req);
+try   { /* assert here */ }
+finally { \Drupal::service('request_stack')->pop(); }
+```
+
+**Lessons:** (a) a route-dependent assertion that passes when the route is
+missing is not evidence — make the harness prove the positive case first, or a
+negative case is indistinguishable from a broken stub; (b) when a test
+contradicts the code, render the real page over HTTP before changing the code.
+
+---
+
+## Verifying a public-facing change on live without publishing it: roll back the transaction
+
+**Pattern, 2026-10-11** (`bos_seasons` hero). Some behaviour can only be observed
+with real data attached — a hero needs a banner image — but attaching a
+placeholder to a **live public page**, even briefly, can be picked up by the
+LiteSpeed edge cache (`max-age=300`) and served after it is removed.
+
+Set the value inside a transaction and roll it back. The render runs in-process
+against the uncommitted value; nothing reaches the database, **no cache tag is
+invalidated**, and no visitor can see it:
+
+```php
+$tx = \Drupal::database()->startTransaction();
+try {
+  $term->set('field_banner_images', [['target_id' => $fid]]);
+  $term->save();
+  /* render + assert as anonymous */
+}
+finally {
+  $tx->rollBack();
+  \Drupal::entityTypeManager()->getStorage('taxonomy_term')->resetCache([$term->id()]);
+}
+```
+
+**Always `resetCache()` after the rollback** — the entity static cache still holds
+the uncommitted object — and then **assert the rollback happened** (re-read with
+`loadUnchanged()`, and count the field table's rows) rather than trusting it.
+
+---
+
 ## Adding a Views page display via raw configFactory leaves the route unregistered (404)
 
 **Discovered 2026-09-26** (backflow device list page). A script added a new `page`

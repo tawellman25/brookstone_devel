@@ -40,20 +40,38 @@ else {
   if ($apply) {
     foreach (['header' => $header, 'footer' => $footer] as $area => $content) {
       if ($content === '') { continue; }
+      // ⚠ content is an ARRAY of value+format, not a string.
+      //
+      // The area handler plugin comes from views DATA, not from the plugin_id
+      // written into config -- the same rule that makes a `plugin_id` on a
+      // list_string filter unable to swap its handler. So this is always the
+      // `text` plugin, whatever plugin_id says, and `text` reads
+      // $this->options['content']['value']. Writing a bare string here threw
+      // "Cannot access offset of type string on string" out of
+      // area\Text::preQuery() and took the page to a 500.
       $display[$target]['display_options'][$area]['area'] = [
-        'id' => 'area', 'table' => 'views', 'field' => 'area', 'plugin_id' => 'text_custom',
-        'empty' => TRUE, 'content' => $content, 'tokenize' => FALSE,
+        'id' => 'area', 'table' => 'views', 'field' => 'area', 'plugin_id' => 'text',
+        'empty' => TRUE, 'tokenize' => FALSE,
+        'content' => ['value' => $content, 'format' => 'full_html'],
       ];
       $display[$target]['display_options']['defaults'][$area] = FALSE;
     }
-    // Page metatags live on the display's metatag extender.
+    // Page metatags: write to EVERY display that already overrides them, or the
+    // page keeps its own stale set. page_1 here carried its own.
     if (!empty($copy['landing']['title'])) {
-      $display[$target]['display_options']['display_extenders']['metatag_display_extender']['metatags'] = [
+      $tags = [
         'title' => $copy['landing']['title'],
         'description' => $copy['landing']['description'],
         'og_description' => $copy['landing']['description'],
       ];
-      $display[$target]['display_options']['defaults']['display_extenders'] = FALSE;
+      foreach (array_keys($display) as $did) {
+        $has = isset($display[$did]['display_options']['display_extenders']['metatag_display_extender']);
+        if ($did !== $target && !$has) { continue; }
+        $display[$did]['display_options']['display_extenders']['metatag_display_extender']['metatags'] = $tags;
+        $display[$did]['display_options']['display_extenders']['metatag_display_extender']['tokenize'] = FALSE;
+        if ($did !== 'default') { $display[$did]['display_options']['defaults']['display_extenders'] = FALSE; }
+        printf("   metatags written to %s\n", $did);
+      }
     }
     $view->set('display', $display);
     $view->save();

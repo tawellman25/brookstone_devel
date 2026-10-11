@@ -1,0 +1,72 @@
+<?php
+
+/**
+ * @file
+ * One URL per season, body by the viewer's role.
+ *
+ * The season pages carry crew notes as well as public copy, and the vocabulary
+ * had exactly ONE view display when this was written — so there was nowhere for
+ * crew copy to go that was not also public. Putting it on that single display
+ * is the leak found across all six spray vocabularies on 2026-09-27, where
+ * field_teammate_description was rendering to anonymous visitors.
+ *
+ * So: office gets admin_view, crew get teammate_view, everyone else gets full.
+ * Same shape as bos_services, bos_spray_types and bos_backflow_types.
+ *
+ * ⚠ This is the fifth module implementing the identical routing. Worth
+ * consolidating into one vocabulary-keyed router rather than a sixth copy; not
+ * done here because it would touch four working modules for no behaviour change.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+
+/**
+ * Vocabularies this module routes.
+ */
+const BOS_SEASONS_VIDS = ['season'];
+
+const BOS_SEASONS_OFFICE_ROLES = ['supervisor', 'administration', 'site_assistant', 'site_admin', 'administrator'];
+const BOS_SEASONS_CREW_ROLES = ['teammates'];
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ */
+function bos_seasons_entity_view_mode_alter(string &$view_mode, EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'taxonomy_term'
+    || !in_array($entity->bundle(), BOS_SEASONS_VIDS, TRUE)) {
+    return;
+  }
+  // Only the canonical page. A term rendered inside a view keeps its own mode.
+  if ($view_mode !== 'full' && $view_mode !== 'default') {
+    return;
+  }
+  $roles = \Drupal::currentUser()->getRoles();
+  // Office is checked FIRST: an administrator who also holds the teammates
+  // role should see the admin view, not the crew one.
+  if (array_intersect(BOS_SEASONS_OFFICE_ROLES, $roles)) {
+    $view_mode = 'admin_view';
+  }
+  elseif (array_intersect(BOS_SEASONS_CREW_ROLES, $roles)) {
+    $view_mode = 'teammate_view';
+  }
+  else {
+    $view_mode = 'full';
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view_alter() for taxonomy_term.
+ *
+ * The cache context is NOT optional. Without it the render cache serves
+ * whichever audience's body was built first to everybody who follows — which
+ * is how crew copy reaches the public even when the routing above is correct.
+ */
+function bos_seasons_taxonomy_term_view_alter(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display): void {
+  if (!in_array($entity->bundle(), BOS_SEASONS_VIDS, TRUE)) {
+    return;
+  }
+  $build['#cache']['contexts'][] = 'user.roles';
+}

@@ -411,6 +411,43 @@ read-only prerequisite for it. Runbook: `working_with_claude.md` → "Live's
 `config/sync` is only as current as the last FULL deploy".
 
 
+### 30. `http://www.` takes two hops, and one SOP step still hard-codes www
+
+Left open by the 2026-10-10 canonical-host fix, which otherwise met every
+requirement. Neither is urgent.
+
+**a) Two hops on the http-www entry only.** `http://www.brookstoneoutdoors.com/x`
+goes `https://www.` first and then to `https://brookstoneoutdoors.com/x`. The
+cause is ordering: **cPanel/LiteSpeed enforces HTTPS at the vhost level, before
+`.htaccess` is consulted**, so nothing placed in `.htaccess` can beat it — the
+request is already redirected to the www https URL before our rule is read. The
+vhost config is not readable without root. Every other entry point is one hop
+and the end state is correct in all cases.
+
+Fixing it means turning OFF cPanel's **Force HTTPS Redirect** for the domain and
+owning both redirects in `.htaccess`:
+
+    # www, any scheme -> https non-www, one hop
+    RewriteCond %{HTTP_HOST} ^www\.brookstoneoutdoors\.com$ [NC]
+    RewriteRule ^ https://brookstoneoutdoors.com%{REQUEST_URI} [L,R=301]
+    # everything else http -> https, same host
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+**Recommended: don't, unless something else calls for it.** It trades a working
+server-level HTTPS guarantee for one we maintain, to save one hop on a legacy
+entry point. Google follows redirect chains of this length without penalty, the
+duplicate-canonical problem is already solved, and the sitemap it crawls is
+entirely https non-www. **Note there is no HSTS header**, so browsers do make
+the http request — adding HSTS would remove the hop for returning visitors and
+is the lower-risk way to improve this if it is ever worth improving.
+
+**b) One SOP step hard-codes a www URL.** A single row in
+`sop__field_sop_steps`. It still resolves (via the new 301), so it is a tidy-up,
+not a break. A full scan found **0 config objects** and **0 sitemap rows** with
+www; everything else that matched was transient cache or log rows.
+
+
 ## Resolved — archive next cycle
 
 ### 29. Seven sprinkler systems billing could not reach — ✅ RESOLVED 2026-10-10

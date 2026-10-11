@@ -364,16 +364,71 @@ function bos_service_request_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Bre
 }
 
 /**
+ * The one canonical host. Everything public points at the no-www name.
+ */
+const BOS_CANONICAL_ORIGIN = 'https://brookstoneoutdoors.com';
+
+/**
+ * Force this site's own hostname to the canonical one in URL-bearing tags.
+ *
+ * Belt-and-braces behind the www redirect in .htaccess. The canonical tag is
+ * built from [current-page:url] / [node:url] / [term:url], and because neither
+ * $base_url nor trusted_host_patterns is set, Drupal builds every absolute URL
+ * from the host that was ASKED FOR -- which is why the site used to tell Google
+ * that www and non-www were each the original of the other, leaving the
+ * homepage indexed twice and 18 pages filed under "Duplicate, Google chose
+ * different canonical than user".
+ *
+ * The redirect means no www request should reach PHP at all. This is for the
+ * case where one somehow does -- a request by IP carrying a Host header, or an
+ * .htaccess that went missing -- so a page that slips through still names the
+ * right original instead of nominating itself. It also normalises http to https.
+ *
+ * Only this site's own hostname is matched, so a DDEV or any other host is left
+ * exactly as it is.
+ */
+function _bos_service_request_canonicalise_hosts(array &$metatag_attachments): void {
+  if (empty($metatag_attachments['#attached']['html_head'])) {
+    return;
+  }
+  // Metatag suffixes multi-value tags (og:image renders as "og_image_0"), so
+  // normalise a trailing _N before matching -- the same rule the winterize
+  // card below relies on.
+  $urlTags = ['canonical_url', 'og_url', 'shortlink', 'og_image'];
+  foreach ($metatag_attachments['#attached']['html_head'] as &$item) {
+    if (!in_array(preg_replace('/_\d+$/', '', $item[1] ?? ''), $urlTags, TRUE)) {
+      continue;
+    }
+    foreach (['href', 'content'] as $attribute) {
+      if (empty($item[0]['#attributes'][$attribute])) {
+        continue;
+      }
+      $item[0]['#attributes'][$attribute] = preg_replace(
+        '#^https?://(?:www\.)?brookstoneoutdoors\.com#i',
+        BOS_CANONICAL_ORIGIN,
+        (string) $item[0]['#attributes'][$attribute]
+      );
+    }
+  }
+}
+
+/**
  * Implements hook_metatags_attachments_alter().
  *
- * Winterize sales pages get a winterize-specific Open Graph share card (image /
- * title / description) instead of the generic global default, so a shared link
- * shows the right photo + copy. Editing Metatag's own attachment build (rather
- * than adding tags in hook_page_attachments_alter) avoids duplicate og: tags.
- * OG still matters here even though the pages are noindex — noindex blocks
- * search indexing, not social sharing.
+ * Two jobs. First, on EVERY page, the canonical and other URL tags are pinned
+ * to the canonical host (see above) -- that runs before the winterize gate
+ * below, which would otherwise return early on all but three routes.
+ *
+ * Second, winterize sales pages get a winterize-specific Open Graph share card
+ * (image / title / description) instead of the generic global default, so a
+ * shared link shows the right photo + copy. Editing Metatag's own attachment
+ * build (rather than adding tags in hook_page_attachments_alter) avoids
+ * duplicate og: tags. OG still matters here even though the pages are noindex —
+ * noindex blocks search indexing, not social sharing.
  */
 function bos_service_request_metatags_attachments_alter(array &$metatag_attachments) {
+  _bos_service_request_canonicalise_hosts($metatag_attachments);
+
   $winterizeRoutes = [
     'bos_service_request.winterize',
     'bos_service_request.bear_creek',
@@ -413,6 +468,10 @@ function bos_service_request_metatags_attachments_alter(array &$metatag_attachme
       ];
     }
   }
+
+  // The card's image URL is built from the REQUEST host just above, so run the
+  // canonical pass again over what this function just added.
+  _bos_service_request_canonicalise_hosts($metatag_attachments);
 }
 
 /**

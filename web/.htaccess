@@ -73,6 +73,35 @@ AddEncoding gzip svgz
 # PROVEN on dev 2026-10-04: `composer remove` ran the scaffold, which logged
 # "Copy [web-root]/.htaccess" and wiped this block, while robots.txt was logged
 # as "Skip ... overridden" because it HAS the exclusion.
+# --- Canonical host: brookstoneoutdoors.com, never www --------------------
+#
+# The site answered on both names and each claimed to be the original, so every
+# page's ranking signals were split in two: Search Console had the homepage
+# indexed twice (17 clicks each over 28 days) and 18 pages filed under
+# "Duplicate, Google chose different canonical than user". The no-www host is
+# the one the Google Business Profile, the sitemap and every tracked link use.
+#
+# This sits ABOVE the LiteSpeed block deliberately. CacheLookup runs in the
+# rewrite phase, and the edge cache is live (anonymous www pages were being
+# served from it), so a rule placed after it can be beaten by a cached copy of
+# the page it is supposed to redirect.
+#
+# https:// is hardcoded rather than using Drupal's %{ENV:protossl} below: that
+# would send an http://www request to http://non-www and need a SECOND hop to
+# reach https, and one hop is the requirement.
+#
+# The query string survives untouched because %{REQUEST_URI} is the path only
+# and the original query is appended when the substitution contains no "?" --
+# which is what keeps ?c=gbp26&utm_source=... intact for attribution.
+#
+# Matched on the exact host rather than a general ^www\. so no other domain on
+# this server can be affected.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTP_HOST} ^www\.brookstoneoutdoors\.com$ [NC]
+  RewriteRule ^ https://brookstoneoutdoors.com%{REQUEST_URI} [L,R=301]
+</IfModule>
+
 <IfModule LiteSpeed>
   CacheLookup on
   RewriteEngine On

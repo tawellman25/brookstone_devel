@@ -778,6 +778,22 @@ public display. **When a marketing brief and this model disagree, the model wins
 do not implement it** (that is exactly how it was broken on 2026-10-03). Check live state at
 `/admin/office/content-coverage`, never by inferring from a copy file or a build log.
 
+**Hero captions live in the image's `title` sub-field (standard, 2026-10-11):**
+a hero caption is **per photo** and rotates with the slides — `alt` describes the
+picture (required, for screen readers and image search), the image item's `title`
+is the visible line (optional; **empty = no line, never fall back to alt**, which
+would print technical alt text at the customer and make a screen reader read it
+twice). Enable `title_field` per **instance** so other bundles sharing the field
+are unaffected, and **relabel the widget's alt/title boxes** via
+`hook_field_widget_single_element_form_alter` + `#after_build` (`ImageWidget::process()`
+builds them after the hook) or the office fills the wrong one. Migrating an
+existing hero: copy `alt` → `title` **before** deploying the builder change.
+Reference impl: `bos_seasons`. **Use this for new heroes and convert an existing
+one while you are already in it — no retro sweep.** `bos_geo` still reads `alt`;
+`bos_services` uses a static `field_subtitle`; `bos_backflow_types` renders
+`field_short_description`, which is a **rule violation** (teaser is views-only),
+not a style choice.
+
 Full details: `__BOS_AI/Governance/ui_patterns.md`.
 
 ## SOP Governance

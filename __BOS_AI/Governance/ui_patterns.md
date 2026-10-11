@@ -232,6 +232,75 @@ to `content` with a low weight, set the raw image field `#access = FALSE`, and a
 duplicate title. Reference impl: `bos_services` (`field_banner_image`), 2026-09-19;
 also `bos_geo` for the `state`/`county`/`city` geo pages (2026-09-20).
 
+### Hero subtitles — the caption goes in the image's TITLE sub-field
+
+**The standard, set 2026-10-11:** a hero caption is **per photo**, stored in that
+image item's **`title`** sub-field, and rotates with the slides. Pass
+`'#alt_subtitle' => TRUE` and populate `caption` on each image:
+
+```php
+$alt   = trim((string) $item->alt);
+$title = trim((string) $item->title);
+$images[] = [
+  'src'     => $style->buildUrl($uri),
+  'alt'     => $alt !== '' ? $alt : $entity->label(),  // describes the photo
+  'caption' => $title,                                  // the visible line
+];
+```
+
+Enable the sub-field per **instance** (`title_field: TRUE`, `title_field_required:
+FALSE`); it is absent from the image field's *storage* settings, so turning it on
+for one bundle leaves every other bundle sharing that field alone.
+
+**Two fields because they are two jobs, and neither can cover for the other:**
+
+| | `alt` | `title` → caption |
+|---|---|---|
+| Answers | what is in the picture | why the reader should care |
+| Audience | screen readers, image search | everyone, on screen |
+| Required | **yes** — an undescribed image is an accessibility hole | **no** — a photo needing no line shows none |
+| Example | "a bench on a gravel path beside a maple in full colour" | "A bench placed on a path we maintain" |
+
+**⚠ Never fall back from caption to alt.** It is the obvious kindness and it
+recreates the bug: a photo with a proper description and no caption then prints
+its technical alt text as the customer-facing line — and because alt is rendered
+on the `<img>` as well, a screen reader meets the same sentence twice. Empty
+caption means **no line for that slide**. (Shipped with the fallback once; caught
+by a test that exercised a second photo.)
+
+**⚠ Relabel the widget boxes — this is part of the work, not polish.** Drupal
+renders generic "Alternative text" and "Title", and nothing tells the office that
+*Title* is the line customers read, so the caption goes in the wrong box or
+nowhere, leaving the page worse than before. Use
+`hook_field_widget_single_element_form_alter` + an **`#after_build`** callback —
+the alt/title inputs are built by `ImageWidget::process()`, which runs *after* the
+hook, so relabelling inside the hook does nothing. Scope it to the field **and**
+bundle. Reference wording (`bos_seasons`):
+
+- alt → *"Describe the photo (for screen readers and search)"* / "What is in the
+  picture, for someone who cannot see it. Not shown on the page."
+- title → *"Caption shown under the heading"* / "The line a customer reads while
+  this photo is on screen. Leave empty for no caption."
+
+**Migrating an existing hero:** copy the current `alt` values into `title` **before**
+deploying the builder change, never after — reversed, every live caption blanks
+out in between. A photo's alt and caption then read the same, which is correct and
+temporary: the copy is deliberate so nothing regresses, and rewriting the alt as a
+real description later does not move the caption. Reference script:
+`web/scripts/setup_season_hero_title.php` (idempotent, dry-run default, never
+overwrites a caption someone wrote).
+
+**Apply this to new heroes, and convert an existing one when you are already
+working on it — do not run a retro sweep** (Todd, 2026-10-11). The surfaces as
+they stand:
+
+| Module | Subtitle source | Status |
+|---|---|---|
+| `bos_seasons` | per-photo `title` sub-field | **the standard** |
+| `bos_geo` (state/county/city) | per-photo **`alt`** | pre-standard; convert when next touched |
+| `bos_services` | one static `field_subtitle` for all photos | a dedicated field is fine, but one line cannot describe five photos — convert when next touched |
+| `bos_backflow_types` | one static **`field_short_description`** | **⚠ this is a rule violation**, not a style difference — the teaser is VIEWS-ONLY and must never render on a view mode (see "The three-field content model" below). Fix when next touched. |
+
 > **Field-name variance:** `services` uses `field_banner_image`; `equipment_types`
 > uses `field_banner_images` (plural). Read the bundle's actual field when reusing.
 

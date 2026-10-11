@@ -89,6 +89,13 @@ class BosTermAliasBreadcrumbBuilder implements BreadcrumbBuilderInterface {
     // operational ones". Around 1,300 operational term pages are publicly
     // indexed and must not grow breadcrumbs by accident; naming what is in is
     // safe, naming what is out is one new vocabulary away from a mistake.
+    // Seasons live at /about-us/seasons/{name} and are a FLAT vocabulary, so
+    // core's hierarchy builder could only ever produce "Home" — the breadcrumb
+    // on a season page showed nothing else until 2026-10-11. The vocabulary
+    // became public on 2026-10-11, after this list was written (2026-09-28),
+    // which is why it was missed rather than excluded.
+    'season',
+
     'bloom_time',
     'bulk_material_types',
     'carrier',

@@ -99,6 +99,49 @@ $fs = $submit(['zones' => '6', 'shut_off_location' => '', 'shut_off_notes' => 'T
 $ok('validation error on system_type', (bool) $fs->getErrors(), implode(' | ', array_keys($fs->getErrors())));
 $ok('still no system created', !$findSystems());
 
+print "\n2b. a BACKFLOW is recorded without forcing a sprinkler system\n";
+// A backflow device belongs to the PROPERTY, the same record the testing side
+// uses, so a crew reading a serial off a tag must not be made to answer what
+// the water supply is first. Everything else on this screen does need a system.
+$findDevices = function () use ($etm, $propertyId) {
+  $ids = $etm->getStorage('property_backflow_device')->getQuery()->accessCheck(FALSE)
+    ->condition('field_property', $propertyId)->sort('id')->execute();
+  return $ids ? $etm->getStorage('property_backflow_device')->loadMultiple($ids) : [];
+};
+$ok('no backflow device to start', !$findDevices());
+$bfTypes = $etm->getStorage('taxonomy_term')->loadByProperties(['vid' => 'backflow_device_types', 'field_type_code' => 'PVB']);
+$PVB = $bfTypes ? (int) reset($bfTypes)->id() : 0;
+$ok('found the PVB type term', (bool) $PVB, 'tid=' . $PVB);
+
+$fs = $submit(['zones' => '', 'shut_off_location' => '', 'shut_off_notes' => '', 'key_needed' => '',
+  'hookup_type' => '', 'hookup_location' => '', 'which' => 'backflow', 'bfp_location' => 'TEST - north wall',
+  'clock_location' => '', 'system_type' => '', 'bf_type' => $PVB, 'bf_serial' => 'TEST-SN-001']);
+$ok('no validation error (no system type demanded)', !$fs->getErrors(), implode(' | ', array_keys($fs->getErrors())));
+$ok('still NO sprinkler system created', !$findSystems());
+$devices = $findDevices();
+$ok('exactly one backflow device created', count($devices) === 1, 'count=' . count($devices));
+$device = $devices ? reset($devices) : NULL;
+if ($device) {
+  $ok('serial number stored', (string) $device->get('field_serial_number')->value === 'TEST-SN-001');
+  $ok('device type stored', (int) $device->get('field_device_type')->target_id === $PVB);
+  $ok('location stored on the DEVICE', str_contains((string) $device->get('field_physical_location')->value, 'north wall'));
+  $ok('titled with its BF code', str_starts_with((string) $device->label(), 'BF-'), (string) $device->label());
+  $ok('QR generated', !$device->get('field_qr_code')->isEmpty());
+  $ok('used for irrigation', (string) ($device->get('field_used_for')->entity?->get('field_use_code')->value ?? '') === 'IRRIGATION');
+  $ok('status active', (string) $device->get('field_current_status')->value === 'active');
+}
+
+print "\n2c. a second visit updates that device, never makes a second\n";
+$submit(['zones' => '', 'shut_off_location' => '', 'shut_off_notes' => '', 'key_needed' => '',
+  'hookup_type' => '', 'hookup_location' => '', 'which' => 'backflow', 'bfp_location' => '',
+  'clock_location' => '', 'system_type' => '', 'bf_type' => '', 'bf_serial' => 'TEST-SN-002']);
+$devices = $findDevices();
+$ok('still exactly one device', count($devices) === 1, 'count=' . count($devices));
+$d2 = $devices ? $etm->getStorage('property_backflow_device')->loadUnchanged(reset($devices)->id()) : NULL;
+$ok('serial updated', $d2 && (string) $d2->get('field_serial_number')->value === 'TEST-SN-002');
+$ok('type NOT blanked by an empty box', $d2 && (int) $d2->get('field_device_type')->target_id === $PVB);
+$ok('location NOT blanked by an empty box', $d2 && str_contains((string) $d2->get('field_physical_location')->value, 'north wall'));
+
 print "\n3. values + a pump type (Well) creates the system\n";
 $WELL = 30742;
 $fs = $submit(['zones' => '6', 'shut_off_location' => '', 'shut_off_notes' => 'TEST shutoff - delete me',
@@ -155,6 +198,34 @@ $ok('still exactly one system', count($findSystems()) === 1, 'count=' . count($f
 $reloaded = $etm->getStorage('property_sprinkler_system')->loadUnchanged($system->id());
 $ok('zones updated on the same record', (int) $reloaded->get('field_total_zones')->value === 8);
 
+print "\n7b. a PUMP is recorded as a real pump record\n";
+$findPumpsFor = function () use ($etm, $system) {
+  $src = $etm->getStorage('property_ss_sources')->getQuery()->accessCheck(FALSE)
+    ->condition('field_property_ss_system', $system->id())->sort('id')->range(0,1)->execute();
+  if (!$src) { return []; }
+  $ids = $etm->getStorage('property_sprinkler_pumps')->getQuery()->accessCheck(FALSE)
+    ->condition('field_property_ss_source', reset($src))->execute();
+  return $ids ? $etm->getStorage('property_sprinkler_pumps')->loadMultiple($ids) : [];
+};
+$ok('no pump to start', !$findPumpsFor());
+$submit(['zones' => '', 'shut_off_location' => '', 'shut_off_notes' => '', 'key_needed' => '',
+  'hookup_type' => '', 'hookup_location' => '', 'which' => 'pump', 'bfp_location' => 'TEST - pump house',
+  'clock_location' => '', 'system_type' => '', 'pump_hp' => '01.50']);
+$pumps = $findPumpsFor();
+$ok('one pump created', count($pumps) === 1, 'count=' . count($pumps));
+$pump = $pumps ? reset($pumps) : NULL;
+if ($pump) {
+  $ok('horse power stored', (string) $pump->get('field_pump_size')->value === '01.50', (string) $pump->get('field_pump_size')->value);
+  $ok('location stored on the PUMP, not a backflow field',
+    str_contains((string) $pump->get('field_pump_location')->value, 'pump house'));
+}
+$submit(['zones' => '', 'shut_off_location' => '', 'shut_off_notes' => '', 'key_needed' => '',
+  'hookup_type' => '', 'hookup_location' => '', 'which' => 'pump', 'bfp_location' => '',
+  'clock_location' => '', 'system_type' => '', 'pump_hp' => '03.00']);
+$ok('second visit updates, no duplicate pump', count($findPumpsFor()) === 1);
+$p2 = $findPumpsFor();
+$ok('horse power updated', $p2 && (string) reset($p2)->get('field_pump_size')->value === '03.00');
+
 print "\n8. the clock takes more than one photo\n";
 // The crew takes three: where the clock is, the face with the door open, and
 // the wiring (which is how the real zone count gets settled). The field has
@@ -199,6 +270,8 @@ $ok('a second visit appends, never replaces', $count2 === 4, 'photos=' . $count2
 
 // ---- cleanup -------------------------------------------------------------
 print "\ncleanup\n";
+foreach ($findDevices() as $d) { $d->delete(); }
+foreach ($findPumpsFor() as $pm) { $pm->delete(); }
 foreach ($testFiles ?? [] as $f) { $f->delete(); }
 if ($ctrl) { $ctrl->delete(); }
 if ($source) { $source->delete(); }
@@ -214,6 +287,7 @@ else {
   print "  info $infoId deleted (it did not exist before)\n";
 }
 $ok('property is back to no system', !$findSystems());
+$ok('no backflow device left behind', !$findDevices());
 $ok('billing is back to no system', !_wo_sw_property_systems($propertyId));
 
 printf("\n%d passed, %d failed\n", $pass, $fail);

@@ -85,6 +85,14 @@ final class SprinklerQuickCaptureForm extends FormBase {
     $form_state->set('source_id', $source ? (int) $source->id() : NULL);
     $form_state->set('controller_id', $controller ? (int) $controller->id() : NULL);
 
+    // The real records behind the Backflow/Pump question. A backflow belongs to
+    // the PROPERTY (same record the testing and inspection side uses), a pump
+    // hangs off the water source.
+    $devices = $this->findDevices((int) $property->id());
+    $pumps = $source ? $this->findPumps((int) $source->id()) : [];
+    $device = count($devices) === 1 ? reset($devices) : NULL;
+    $pump = count($pumps) === 1 ? reset($pumps) : NULL;
+
     $form['#attributes']['class'][] = 'sprinkler-quick';
     $form['head'] = [
       '#markup' => '<h2>' . $this->t('@property', ['@property' => $property->label()]) . '</h2>'
@@ -184,8 +192,58 @@ final class SprinklerQuickCaptureForm extends FormBase {
     $form['bfp']['bfp_location'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Where is it'),
-      '#default_value' => $this->val($source, 'field_ss_backflow_location'),
+      '#default_value' => $device ? $this->val($device, 'field_physical_location')
+        : ($pump ? $this->val($pump, 'field_pump_location') : $this->val($source, 'field_ss_backflow_location')),
+      '#states' => ['invisible' => [':input[name="which"]' => ['value' => 'neither']]],
     ];
+
+    // --- Backflow: a real device record, the same one testing uses ---------
+    // All 23 devices on the system carry a serial number, so this asks for one
+    // too rather than creating the first record without.
+    $form['bfp']['bf_type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Backflow type'),
+      '#options' => $this->deviceTypeOptions(),
+      '#empty_option' => $this->t('- not sure -'),
+      '#default_value' => $device && !$device->get('field_device_type')->isEmpty()
+        ? (int) $device->get('field_device_type')->target_id : NULL,
+      '#states' => ['visible' => [':input[name="which"]' => ['value' => 'backflow']]],
+    ];
+    $form['bfp']['bf_serial'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Serial number'),
+      '#default_value' => $this->val($device, 'field_serial_number'),
+      '#description' => $this->t('Off the tag on the device.'),
+      '#states' => ['visible' => [':input[name="which"]' => ['value' => 'backflow']]],
+    ];
+
+    // --- Pump: horse power, which is the fact that gets asked for later ----
+    $form['bfp']['pump_hp'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Pump size'),
+      '#options' => $this->options('property_sprinkler_pumps', 'pump', 'field_pump_size'),
+      '#empty_option' => $this->t('- not sure -'),
+      '#default_value' => $this->val($pump, 'field_pump_size'),
+      '#states' => ['visible' => [':input[name="which"]' => ['value' => 'pump']]],
+    ];
+
+    // More than one of either is a real situation (a commercial property can
+    // carry several). This screen will not guess which one is meant, so it
+    // reports and writes nothing rather than editing the wrong record.
+    $many = [];
+    if (count($devices) > 1) { $many[] = $this->t('@n backflow devices', ['@n' => count($devices)]); }
+    if (count($pumps) > 1) { $many[] = $this->t('@n pumps', ['@n' => count($pumps)]); }
+    if ($many) {
+      $form['bfp']['many'] = [
+        '#markup' => '<p class="sprinkler-quick__note">'
+          . $this->t('This property already has @what on file, so nothing here will change them — edit them on the property page.',
+            ['@what' => implode(' ' . $this->t('and') . ' ', $many)])
+          . '</p>',
+      ];
+      $form['bfp']['bf_type']['#disabled'] = count($devices) > 1;
+      $form['bfp']['bf_serial']['#disabled'] = count($devices) > 1;
+      $form['bfp']['pump_hp']['#disabled'] = count($pumps) > 1;
+    }
 
     // --- Clock -------------------------------------------------------------
     $form['clock'] = ['#type' => 'fieldset', '#title' => $this->t('Clock')];
@@ -245,7 +303,7 @@ final class SprinklerQuickCaptureForm extends FormBase {
     if (!isset($form['system_type'])) {
       return;
     }
-    if ($this->enteredAnything($form_state) && !$form_state->getValue('system_type')) {
+    if ($this->needsSystem($form_state) && !$form_state->getValue('system_type')) {
       $form_state->setError(
         $form['system_type'],
         $this->t('Choose the system type so a sprinkler system record can be created for this property.')
@@ -258,7 +316,8 @@ final class SprinklerQuickCaptureForm extends FormBase {
    */
   private function enteredAnything(FormStateInterface $form_state): bool {
     foreach (['zones', 'shut_off_location', 'shut_off_notes', 'key_needed', 'hookup_type',
-      'hookup_location', 'which', 'bfp_location', 'clock_location'] as $key) {
+      'hookup_location', 'which', 'bfp_location', 'clock_location', 'bf_type', 'bf_serial',
+      'pump_hp'] as $key) {
       $value = $form_state->getValue($key);
       if ($value !== '' && $value !== NULL) {
         return TRUE;
@@ -270,6 +329,32 @@ final class SprinklerQuickCaptureForm extends FormBase {
       }
     }
     return FALSE;
+  }
+
+  /**
+   * Does what they entered actually need a sprinkler system record?
+   *
+   * A BACKFLOW does not: the device belongs to the property, the same way the
+   * testing side holds it, so a crew recording a serial number off a tag should
+   * not be made to answer what the water supply is first. Everything else here
+   * hangs off the system -- a pump through its water source, zones on the
+   * system itself, the clock through the controller.
+   */
+  private function needsSystem(FormStateInterface $form_state): bool {
+    foreach (['zones', 'shut_off_location', 'shut_off_notes', 'key_needed', 'hookup_type',
+      'hookup_location', 'clock_location', 'pump_hp'] as $key) {
+      $value = $form_state->getValue($key);
+      if ($value !== '' && $value !== NULL) {
+        return TRUE;
+      }
+    }
+    foreach (['shut_off_photo', 'clock_photo'] as $key) {
+      if (array_filter((array) $form_state->getValue($key))) {
+        return TRUE;
+      }
+    }
+    // A location typed against anything other than the backflow needs one.
+    return $form_state->getValue('which') === 'pump';
   }
 
   /**
@@ -369,7 +454,7 @@ final class SprinklerQuickCaptureForm extends FormBase {
     // nothing had been entered. 43 of this season's 579 winterizing work
     // orders are on a property with no system by either lookup path.
     $system = $this->findSystem($propertyId);
-    if (!$system && $this->enteredAnything($form_state)) {
+    if (!$system && $this->needsSystem($form_state)) {
       $system = $this->createSystem($propertyId, $form_state);
       if ($system) {
         $written[] = (string) $this->t('sprinkler system');
@@ -391,19 +476,11 @@ final class SprinklerQuickCaptureForm extends FormBase {
       'field_ss_key_needed' => $v('key_needed'),
       'field_ss_hookup_type' => $v('hookup_type'),
       'field_ss_hookup_location' => $v('hookup_location'),
-      'field_ss_backflow_location' => $v('bfp_location'),
     ];
     $hasSourceValue = (bool) array_filter($sourceValues, static fn($x) => $x !== '' && $x !== NULL);
     $photoFids = array_filter((array) $v('shut_off_photo'));
     if (($hasSourceValue || $photoFids) && $system) {
-      $source = $this->findSource((int) $system->id());
-      if (!$source) {
-        $source = $this->etm->getStorage('property_ss_sources')->create([
-          'type' => $this->sourceBundleForSystem($system),
-          'field_property_ss_system' => $system->id(),
-          'field_ss_source_name' => 'Primary',
-        ]);
-      }
+      $source = $this->ensureSource($system);
       foreach ($sourceValues as $field => $value) {
         if ($value !== '' && $value !== NULL && $source->hasField($field)) {
           $source->set($field, $value);
@@ -442,17 +519,72 @@ final class SprinklerQuickCaptureForm extends FormBase {
       $written[] = (string) $this->t('clock');
     }
 
-    // --- Backflow / pump choice, recorded where it is visible --------------
+    // --- Backflow or pump: a real record, not a sentence in a notes field --
+    // Until 2026-10-10 this appended "Has a backflow." to the shut-off NOTES
+    // and wrote nothing else, so the answer was unqueryable, it sat in a field
+    // about something else, and it did not even survive to the next visit --
+    // nothing set field_ss_backflow, which is what the radio read for its own
+    // default. A backflow is now the same property_backflow_device record the
+    // testing and inspection side uses, and a pump is a real pump record.
     $which = $v('which');
-    if ($which !== '' && $which !== NULL && $system) {
-      $note = $which === 'backflow' ? 'Has a backflow.' : ($which === 'pump' ? 'Has a pump.' : 'No backflow or pump.');
-      $source = $this->findSource((int) $system->id());
-      if ($source && $source->hasField('field_ss_shut_off_notes')) {
-        $existing = trim((string) $source->get('field_ss_shut_off_notes')->value);
-        if (!str_contains($existing, $note)) {
-          $source->set('field_ss_shut_off_notes', trim($existing . ' ' . $note));
-          $this->saveRecord($source);
+    $location = trim((string) $v('bfp_location'));
+
+    if ($which === 'backflow') {
+      $devices = $this->findDevices($propertyId);
+      if (count($devices) > 1) {
+        $this->messenger()->addWarning($this->t('This property has more than one backflow device, so none of them was changed. Edit them on the property page.'));
+      }
+      else {
+        $device = $devices ? reset($devices) : NULL;
+        $isNew = !$device;
+        if ($isNew) {
+          $device = $this->etm->getStorage('property_backflow_device')->create([
+            'type' => 'device',
+            'field_property' => $propertyId,
+            // A sprinkler work order means irrigation. Resolved by the stable
+            // use code rather than a term id, which differs between sites.
+            'field_used_for' => $this->useTermId('IRRIGATION'),
+            'field_current_status' => 'active',
+          ]);
         }
+        // Never blank something already on file with an empty box.
+        if ($v('bf_type')) { $device->set('field_device_type', (int) $v('bf_type')); }
+        if ($v('bf_serial') !== '') { $device->set('field_serial_number', $v('bf_serial')); }
+        if ($location !== '') { $device->set('field_physical_location', $location); }
+        $device->save();
+        $written[] = $isNew
+          ? (string) $this->t('backflow device @code', ['@code' => $device->label()])
+          : (string) $this->t('backflow device');
+
+        // Keep the legacy source field in step where it exists -- it is only on
+        // domestic_source, which is why a pump location filed here used to
+        // vanish on a well or dirty system.
+        if ($location !== '' && $system && ($src = $this->findSource((int) $system->id()))
+          && $src->hasField('field_ss_backflow_location')) {
+          $src->set('field_ss_backflow_location', $location);
+          $this->saveRecord($src);
+        }
+      }
+    }
+    elseif ($which === 'pump' && $system) {
+      $source = $this->ensureSource($system);
+      $pumps = $this->findPumps((int) $source->id());
+      if (count($pumps) > 1) {
+        $this->messenger()->addWarning($this->t('This water source has more than one pump, so none of them was changed. Edit them on the property page.'));
+      }
+      else {
+        $pump = $pumps ? reset($pumps) : NULL;
+        $isNew = !$pump;
+        if ($isNew) {
+          $pump = $this->etm->getStorage('property_sprinkler_pumps')->create([
+            'type' => 'pump',
+            'field_property_ss_source' => $source->id(),
+          ]);
+        }
+        if ($v('pump_hp') !== '' && $v('pump_hp') !== NULL) { $pump->set('field_pump_size', $v('pump_hp')); }
+        if ($location !== '') { $pump->set('field_pump_location', $location); }
+        $this->saveRecord($pump);
+        $written[] = (string) ($isNew ? $this->t('pump') : $this->t('pump details'));
       }
     }
 
@@ -551,6 +683,65 @@ final class SprinklerQuickCaptureForm extends FormBase {
     return $ids ? $storage->load(reset($ids)) : NULL;
   }
 
+  /**
+   * The source record, created if the system has none yet.
+   */
+  protected function ensureSource(EntityInterface $system): EntityInterface {
+    $source = $this->findSource((int) $system->id());
+    if ($source) {
+      return $source;
+    }
+    return $this->etm->getStorage('property_ss_sources')->create([
+      'type' => $this->sourceBundleForSystem($system),
+      'field_property_ss_system' => $system->id(),
+      'field_ss_source_name' => 'Primary',
+    ]);
+  }
+
+  /**
+   * Every backflow device on the property. A backflow belongs to the PROPERTY,
+   * not to the sprinkler system -- the same record the testing side works from.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface[]
+   */
+  protected function findDevices(int $propertyId): array {
+    $storage = $this->etm->getStorage('property_backflow_device');
+    $ids = $storage->getQuery()->accessCheck(FALSE)
+      ->condition('field_property', $propertyId)->sort('id')->execute();
+    return $ids ? $storage->loadMultiple($ids) : [];
+  }
+
+  /**
+   * @return \Drupal\Core\Entity\EntityInterface[]
+   */
+  protected function findPumps(int $sourceId): array {
+    $storage = $this->etm->getStorage('property_sprinkler_pumps');
+    $ids = $storage->getQuery()->accessCheck(FALSE)
+      ->condition('field_property_ss_source', $sourceId)->sort('id')->execute();
+    return $ids ? $storage->loadMultiple($ids) : [];
+  }
+
+  /**
+   * The seven device types, as the office maintains them.
+   */
+  protected function deviceTypeOptions(): array {
+    $options = [];
+    foreach ($this->etm->getStorage('taxonomy_term')->loadByProperties(['vid' => 'backflow_device_types']) as $term) {
+      $options[(int) $term->id()] = $term->label();
+    }
+    asort($options);
+    return $options;
+  }
+
+  /**
+   * A use term by its stable code, since term ids differ between environments.
+   */
+  protected function useTermId(string $code): ?int {
+    $ids = $this->etm->getStorage('taxonomy_term')->getQuery()->accessCheck(FALSE)
+      ->condition('vid', 'backflow_uses')->condition('field_use_code', $code)->range(0, 1)->execute();
+    return $ids ? (int) reset($ids) : NULL;
+  }
+
   protected function findController(int $systemId): ?EntityInterface {
     $storage = $this->etm->getStorage('property_system_controller');
     $ids = $storage->getQuery()->accessCheck(FALSE)
@@ -599,6 +790,17 @@ final class SprinklerQuickCaptureForm extends FormBase {
   }
 
   protected function backflowOrPumpDefault(?EntityInterface $source, ?EntityInterface $system) {
+    // A real record is the best answer there is: if the property has a backflow
+    // device on file, it has a backflow. Before these records existed the
+    // answer was stored as a sentence in a notes field and the radio came back
+    // blank on the next visit.
+    if ($system && !$system->get('field_property')->isEmpty()
+      && $this->findDevices((int) $system->get('field_property')->target_id)) {
+      return 'backflow';
+    }
+    if ($source && $this->findPumps((int) $source->id())) {
+      return 'pump';
+    }
     if ($source && $source->hasField('field_ss_backflow') && !$source->get('field_ss_backflow')->isEmpty()) {
       return 'backflow';
     }

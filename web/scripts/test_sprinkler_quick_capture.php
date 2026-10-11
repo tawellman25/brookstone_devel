@@ -76,6 +76,26 @@ if ($ctlIdsBefore) {
   $ctlSnapshot = $c0->get('field_controller_location')->isEmpty() ? NULL : $c0->get('field_controller_location')->value;
 }
 
+// Backflow devices already on this property, so the run only ever deletes its
+// own and never an office record.
+$devIdsBefore = [];
+$devSnapshot = [];
+if (!$system->get('field_property')->isEmpty()) {
+  $devIdsBefore = $etm->getStorage('property_backflow_device')->getQuery()->accessCheck(FALSE)
+    ->condition('field_property', (int) $system->get('field_property')->target_id)->execute();
+  // The form UPDATES an existing device rather than making a second one, which
+  // is right -- and means this test would otherwise leave a real device
+  // carrying "TEST in the basement" as its location. Snapshot the fields it
+  // writes so they can be put back exactly.
+  foreach ($etm->getStorage('property_backflow_device')->loadMultiple($devIdsBefore) as $d0) {
+    $devSnapshot[$d0->id()] = [
+      'field_physical_location' => $d0->get('field_physical_location')->getValue(),
+      'field_serial_number' => $d0->get('field_serial_number')->getValue(),
+      'field_device_type' => $d0->get('field_device_type')->getValue(),
+    ];
+  }
+}
+
 // --- Submit the five things -----------------------------------------------
 $fs2 = new \Drupal\Core\Form\FormState();
 $fs2->addBuildInfo('args', [$wo]);
@@ -120,9 +140,19 @@ if ($source) {
     $check(sprintf('  %-34s saved', $f), (string) $source->get($f)->value === $want,
       (string) $source->get($f)->value);
   }
-  $check('  backflow/pump choice noted', str_contains((string) $source->get('field_ss_shut_off_notes')->value, 'Has a backflow'),
-    (string) $source->get('field_ss_shut_off_notes')->value);
-  $check('  source bundle matches the system type', in_array($source->bundle(), ['domestic_source','dirty_water_source','well_water_source'], TRUE),
+  // Until 2026-10-10 this appended "Has a backflow." to the shut-off NOTES and
+  // wrote nothing else -- unqueryable, in a field about something else, and it
+  // did not survive to the next visit. It is now a real property_backflow_device
+  // on the property, the same record the testing side works from.
+  $pid = (int) $system->get('field_property')->target_id;
+  $devIds = $pid ? $etm->getStorage('property_backflow_device')->getQuery()->accessCheck(FALSE)
+    ->condition('field_property', $pid)->sort('id')->execute() : [];
+  $device = $devIds ? $etm->getStorage('property_backflow_device')->load(end($devIds)) : NULL;
+  $check('  backflow recorded as a real device', (bool) $device, $device ? $device->label() : 'none');
+  $check('  device location taken from the form', $device
+    && str_contains((string) $device->get('field_physical_location')->value, 'TEST in the basement'),
+    $device ? (string) $device->get('field_physical_location')->value : '-');
+    $check('  source bundle matches the system type', in_array($source->bundle(), ['domestic_source','dirty_water_source','well_water_source'], TRUE),
     $source->bundle() . ' for system type "' . ($system->get('field_system_type')->entity?->label() ?? '?') . '"');
 }
 
@@ -141,6 +171,14 @@ $system->set('field_total_zones', $beforeZones);
 $system->save();
 foreach (array_diff($srcIds, $srcIdsBefore) as $id) { $etm->getStorage('property_ss_sources')->load($id)?->delete(); }
 foreach (array_diff($ctlIds, $ctlIdsBefore) as $id) { $etm->getStorage('property_system_controller')->load($id)?->delete(); }
+foreach (array_diff($devIds ?? [], $devIdsBefore ?? []) as $id) { $etm->getStorage('property_backflow_device')->load($id)?->delete(); }
+// Put every pre-existing device back exactly as it was found.
+foreach ($devSnapshot as $did => $fields) {
+  $d = $etm->getStorage('property_backflow_device')->load($did);
+  if (!$d) { continue; }
+  foreach ($fields as $f => $val) { $d->set($f, $val); }
+  $d->save();
+}
 // If we reused existing records, clear only the TEST values we wrote.
 if ($source && in_array($source->id(), $srcIdsBefore)) {
   foreach ($snapshot as $f => $was) { $source->set($f, $was); }
@@ -166,5 +204,14 @@ if ($source && in_array($source->id(), $srcIdsBefore)) {
   $check('the existing source record is byte-for-byte as it was', $restored);
 }
 $check('no test records left behind', $leftSrc === 0 && $leftCtl === 0, "sources=$leftSrc controllers=$leftCtl");
+$restored = TRUE; $detail = '';
+foreach ($devSnapshot as $did => $fields) {
+  $d = $etm->getStorage('property_backflow_device')->loadUnchanged($did);
+  foreach ($fields as $f => $val) {
+    if ($d->get($f)->getValue() !== $val) { $restored = FALSE; $detail = "device $did .$f"; }
+  }
+}
+$check('pre-existing backflow devices restored byte-for-byte', $restored,
+  $devSnapshot ? (count($devSnapshot) . ' device(s)' . ($detail ? " — DRIFTED: $detail" : '')) : 'none on this property');
 
 printf("\n%d passed, %d failed\n", $pass, $fail);

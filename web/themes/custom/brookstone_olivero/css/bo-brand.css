@@ -312,21 +312,22 @@ body.is-always-mobile-nav #header-nav .region--secondary-menu > *:last-child {
 
 /* --- /services: close the gap under the breadcrumb ------------------------
  *
- * Olivero pads the top of .main-content__container by --sp5 (5 × 1.125rem =
- * 90px) on desktop and --sp3 (54px) below it. On /services the page title sits
- * ABOVE the breadcrumb, so that padding lands between the breadcrumb and the
- * intro heading and reads as a hole.
+ * The gap is NOT Olivero's .main-content__container padding — that sits ABOVE
+ * the page title, outside <main>, and changing it only moved "Our Services" up.
+ * The breadcrumb is the last thing in that container and <main> opens straight
+ * after it, so the space below the rule is:
  *
- * Scoped to body.path-services deliberately. The padding is Olivero's sitewide
- * default and every other page relies on it; this is one page's spacing, not a
- * decision about the whole site.
+ *   .breadcrumb__list  padding-block-end  --sp1   18px
+ *   .breadcrumb        padding-block-end          8px   (ours, under the border)
+ *   h1–h6              margin-block       --sp2   36px  ← the lede inherits this
+ *
+ * Only the last one is worth removing. The breadcrumb's own padding and the
+ * border already separate the two, so the heading's 36px on top of that is what
+ * reads as a hole.
+ *
+ * Scoped to the view header's lede, which exists only on this page, rather than
+ * to a body class — the rule then cannot reach any other heading.
  */
-body.path-services .main-content__container {
-  padding-block-start: var(--sp);
-}
-
-@media (min-width: 43.75rem) {
-  body.path-services .main-content__container {
-    padding-block-start: var(--sp2);
-  }
+.bo-service-cards > header .services-intro__lede:first-child {
+  margin-block-start: 0;
 }

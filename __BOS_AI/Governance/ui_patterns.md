@@ -261,6 +261,14 @@ for one bundle leaves every other bundle sharing that field alone.
 | Required | **yes** — an undescribed image is an accessibility hole | **no** — a photo needing no line shows none |
 | Example | "a bench on a gravel path beside a maple in full colour" | "A bench placed on a path we maintain" |
 
+**⚠ The views-only guard does not see a preprocess hook.**
+`bos_content_coverage` enforces "the teaser never renders on a view mode" by
+stripping `field_short_description` from entity view **displays** — so a hero that
+reads the field directly in `hook_preprocess_page` is invisible to it. That is
+exactly how `bos_backflow_types` rendered the teaser on a public page for two
+weeks. When you read a field in a preprocess hook, you are outside the guard:
+check the content model yourself.
+
 **⚠ Never fall back from caption to alt.** It is the obvious kindness and it
 recreates the bug: a photo with a proper description and no caption then prints
 its technical alt text as the customer-facing line — and because alt is rendered
@@ -297,9 +305,9 @@ they stand:
 | Module | Subtitle source | Status |
 |---|---|---|
 | `bos_seasons` | per-photo `title` sub-field | **the standard** |
+| `bos_backflow_types` | per-photo `title` sub-field | converted 2026-10-11 |
 | `bos_geo` (state/county/city) | per-photo **`alt`** | pre-standard; convert when next touched |
 | `bos_services` | one static `field_subtitle` for all photos | a dedicated field is fine, but one line cannot describe five photos — convert when next touched |
-| `bos_backflow_types` | one static **`field_short_description`** | **⚠ this is a rule violation**, not a style difference — the teaser is VIEWS-ONLY and must never render on a view mode (see "The three-field content model" below). Fix when next touched. |
 
 > **Field-name variance:** `services` uses `field_banner_image`; `equipment_types`
 > uses `field_banner_images` (plural). Read the bundle's actual field when reusing.

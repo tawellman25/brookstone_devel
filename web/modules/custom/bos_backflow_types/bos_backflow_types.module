@@ -19,6 +19,7 @@
 
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\image\Entity\ImageStyle;
 
@@ -166,15 +167,24 @@ function bos_backflow_types_preprocess_page(array &$variables) {
   if (!$term) {
     return;
   }
-  $subtitle = '';
-  if ($term->hasField('field_short_description') && !$term->get('field_short_description')->isEmpty()) {
-    $subtitle = trim(strip_tags((string) $term->get('field_short_description')->value));
-  }
+  // ⚠ The subtitle used to be field_short_description, which was wrong twice
+  // over and is why this was fixed on 2026-10-11:
+  //
+  // 1. RULE VIOLATION. field_short_description is the VIEWS-ONLY teaser -- the
+  //    card text on a PARENT listing -- and must never render on a view mode.
+  //    bos_content_coverage enforces that by stripping it from entity view
+  //    DISPLAYS, which is exactly why this survived: a preprocess hook reading
+  //    the field directly is invisible to that guard.
+  // 2. It did not fit. These teasers run 302-350 characters; as an overlay line
+  //    on a photo that is a wall of text, not a caption.
+  //
+  // Now the house standard: a per-photo caption from the image's own title
+  // sub-field, rotating with the slides (ui_patterns.md -> "Hero subtitles").
   $variables['page']['hero']['bo_hero_banner'] = [
     '#theme' => 'bo_hero_banner',
     '#images' => _bos_backflow_types_banner_images($term),
     '#title' => $term->label(),
-    '#subtitle' => $subtitle,
+    '#alt_subtitle' => TRUE,
   ];
   $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
   $variables['#cache']['contexts'][] = 'user.roles';
@@ -250,10 +260,56 @@ function _bos_backflow_types_banner_images(EntityInterface $term): array {
       continue;
     }
     $uri = $file->getFileUri();
+    $alt = trim((string) $item->alt);
+    $title = trim((string) $item->title);
     $images[] = [
       'src' => $style ? $style->buildUrl($uri) : \Drupal::service('file_url_generator')->generateAbsoluteString($uri),
-      'alt' => (string) ($item->alt ?: $term->label()),
+      // `alt` describes the photo (screen readers, image search); `caption` is
+      // the visible rotating line and comes from the image's TITLE sub-field.
+      // NO fallback from caption to alt -- that prints a technical description
+      // at the reader and makes a screen reader meet it twice. Empty caption
+      // means no line for that slide. See ui_patterns.md -> "Hero subtitles".
+      'alt' => $alt !== '' ? $alt : $term->label(),
+      'caption' => $title,
     ];
   }
   return $images;
+}
+
+/**
+ * Implements hook_field_widget_single_element_form_alter().
+ *
+ * Relabels the hero photo's alt/caption boxes.
+ *
+ * Drupal's generic "Alternative text" and "Title" give the office no way to know
+ * that Title is the line a customer reads, so the caption ends up in the wrong
+ * box or nowhere. Scoped to field_banner_images on this vocabulary.
+ */
+function bos_backflow_types_field_widget_single_element_form_alter(array &$element, FormStateInterface $form_state, array $context): void {
+  $items = $context['items'] ?? NULL;
+  if (!$items || $items->getFieldDefinition()->getName() !== 'field_banner_images') {
+    return;
+  }
+  $entity = $items->getEntity();
+  if (!$entity instanceof EntityInterface || $entity->bundle() !== BOS_BACKFLOW_TYPES_VID) {
+    return;
+  }
+  // ImageWidget::process() builds the alt/title inputs AFTER this hook, so the
+  // relabel has to happen in #after_build.
+  $element['#after_build'][] = '_bos_backflow_types_label_hero_photo_boxes';
+}
+
+/**
+ * Relabels the alt and caption inputs on a hero photo widget.
+ */
+function _bos_backflow_types_label_hero_photo_boxes(array $element, FormStateInterface $form_state): array {
+  if (isset($element['alt'])) {
+    $element['alt']['#title'] = t('Describe the photo (for screen readers and search)');
+    $element['alt']['#description'] = t('What is in the picture, for someone who cannot see it. Not shown on the page.');
+  }
+  if (isset($element['title'])) {
+    $element['title']['#title'] = t('Caption shown under the heading');
+    $element['title']['#description'] = t('The line a customer reads while this photo is on screen. Leave empty for no caption.');
+  }
+  return $element;
 }

@@ -788,11 +788,13 @@ are unaffected, and **relabel the widget's alt/title boxes** via
 `hook_field_widget_single_element_form_alter` + `#after_build` (`ImageWidget::process()`
 builds them after the hook) or the office fills the wrong one. Migrating an
 existing hero: copy `alt` → `title` **before** deploying the builder change.
-Reference impl: `bos_seasons`. **Use this for new heroes and convert an existing
-one while you are already in it — no retro sweep.** `bos_geo` still reads `alt`;
-`bos_services` uses a static `field_subtitle`; `bos_backflow_types` renders
-`field_short_description`, which is a **rule violation** (teaser is views-only),
-not a style choice.
+Reference impls: `bos_seasons`, `bos_backflow_types`. **Use this for new heroes and
+convert an existing one while you are already in it — no retro sweep.** Still
+pre-standard: `bos_geo` reads `alt`; `bos_services` uses a static `field_subtitle`.
+**Note the views-only teaser guard (`bos_content_coverage`) only strips view
+displays — a field read directly in a preprocess hook is outside it**, which is how
+`bos_backflow_types` rendered `field_short_description` on a public page until
+2026-10-11.
 
 Full details: `__BOS_AI/Governance/ui_patterns.md`.
 

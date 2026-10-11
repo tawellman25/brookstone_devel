@@ -1,6 +1,15 @@
 /**
- * "Our {Category} Services" child-service cards on a services term page
- * (service_children EVA). Compact responsive grid — 2-up on phones, 3-4-up on
+ * The service CARD component, shared by every surface that lists services.
+ *
+ * ⚠ Scoped to `.bo-service-cards`, a class both views set via the Views
+ * `css_class` option — NOT to `.view-service-children`, which Views derives from
+ * a view ID. It was written that way, and the moment a second view
+ * (`season_services`) reused the component the rows carried `service-card` and
+ * nothing styled them: plain stacked text and full-size images. A component
+ * shared by two views cannot be selected by one view's id.
+ *
+ * Users: `service_children` (a services term's children) and `season_services`
+ * (the services a season does). Compact responsive grid — 2-up on phones, 3-4-up on
  * wider screens. Each card: a clipped iconic-image strip down the LEFT edge +
  * name/blurb on the right. Cards with no iconic image go full-width text.
  */
@@ -15,26 +24,26 @@
 
 /* The EVA renders rows directly under .view (no .view-content wrapper), with the
    heading in a <header>. Grid the view itself; the header spans all columns. */
-.view.view-service-children {
+.view.bo-service-cards {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.9rem;
 }
 
 @media (min-width: 34rem) {
-  .view.view-service-children {
+  .view.bo-service-cards {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 1.1rem;
   }
 }
 
-.view.view-service-children > header {
+.view.bo-service-cards > header {
   grid-column: 1 / -1;
   margin-bottom: 0.25rem;
 }
 
 /* Card shell. Default = single column (text only). */
-.view-service-children .service-card {
+.bo-service-cards .service-card {
   display: grid;
   grid-template-columns: 1fr;
   border: 1px solid var(--bo-sand, #e7dcc9);
@@ -44,7 +53,7 @@
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.view-service-children .service-card:hover {
+.bo-service-cards .service-card:hover {
   border-color: var(--bo-orange, #cb6015);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
 }
@@ -52,12 +61,12 @@
 /* With an iconic image: a clip down the LEFT edge that fills the full card
    height, text on the right. The column width sets the strip width; the image
    cell stretches to the card's height and the photo covers it. */
-.view-service-children .service-card:has(.views-field-field-iconic-image img) {
+.bo-service-cards .service-card:has(.views-field-field-iconic-image img) {
   grid-template-columns: 68px 1fr;
   grid-template-rows: auto 1fr;
 }
 
-.view-service-children .service-card:has(.views-field-field-iconic-image img) .views-field-field-iconic-image {
+.bo-service-cards .service-card:has(.views-field-field-iconic-image img) .views-field-field-iconic-image {
   grid-column: 1;
   grid-row: 1 / -1;
   align-self: stretch;
@@ -65,36 +74,36 @@
   overflow: hidden;
 }
 
-.view-service-children .service-card:has(.views-field-field-iconic-image img) .views-field-name,
-.view-service-children .service-card:has(.views-field-field-iconic-image img) .views-field-field-service-public-desc {
+.bo-service-cards .service-card:has(.views-field-field-iconic-image img) .views-field-name,
+.bo-service-cards .service-card:has(.views-field-field-iconic-image img) .views-field-field-service-public-desc {
   grid-column: 2;
 }
 
-.view-service-children .views-field-field-iconic-image {
+.bo-service-cards .views-field-field-iconic-image {
   line-height: 0;
 }
 
 /* Force the whole wrapper chain (field-content > a > img) to full height so the
    photo fills the stretched grid cell top-to-bottom, not just its own height. */
-.view-service-children .service-card:has(.views-field-field-iconic-image img) .views-field-field-iconic-image > .field-content,
-.view-service-children .service-card:has(.views-field-field-iconic-image img) .views-field-field-iconic-image .field-content > a {
+.bo-service-cards .service-card:has(.views-field-field-iconic-image img) .views-field-field-iconic-image > .field-content,
+.bo-service-cards .service-card:has(.views-field-field-iconic-image img) .views-field-field-iconic-image .field-content > a {
   display: block;
   height: 100%;
 }
 
-.view-service-children .views-field-field-iconic-image img {
+.bo-service-cards .views-field-field-iconic-image img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.view-service-children .views-field-name {
+.bo-service-cards .views-field-name {
   align-self: start;
   padding: 0.8rem 1rem 0.4rem;
 }
 
-.view-service-children .views-field-name a {
+.bo-service-cards .views-field-name a {
   font-family: Oswald, "Arial Narrow", sans-serif;
   font-weight: 600;
   font-size: clamp(1.02rem, 2.4vw, 1.2rem);
@@ -103,12 +112,12 @@
   text-decoration: none;
 }
 
-.view-service-children .service-card:hover .views-field-name a,
-.view-service-children .views-field-name a:hover {
+.bo-service-cards .service-card:hover .views-field-name a,
+.bo-service-cards .views-field-name a:hover {
   color: var(--bo-orange, #cb6015);
 }
 
-.view-service-children .views-field-field-service-public-desc {
+.bo-service-cards .views-field-field-service-public-desc {
   padding: 0 1rem 0.9rem;
   color: var(--bo-muted, #6b5d4f);
   font-size: 0.9rem;

@@ -19,6 +19,9 @@ if (View::load('service_children')) {
 
 $default = [
   'title' => '',
+  // The shared card component's class. The CSS is scoped to this, NOT to a
+  // view-id class, because two views use the component.
+  'css_class' => 'bo-service-cards',
   'access' => ['type' => 'perm', 'options' => ['perm' => 'access content']],
   'cache' => ['type' => 'tag'],
   'query' => ['type' => 'views_query'],

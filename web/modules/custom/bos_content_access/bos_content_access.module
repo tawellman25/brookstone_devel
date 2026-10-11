@@ -1,0 +1,65 @@
+<?php
+
+/**
+ * @file
+ * Keep internal pages off the public site.
+ *
+ * The 2026-10-10 route sweep found crew and IT material publicly readable:
+ * "How to Set Up Your Email - Android" (node 85) served full IMAP/SMTP server
+ * settings and password fields to anyone, and the Teammate Manual and the crew
+ * Snow Removal page were both 200 to an anonymous visitor.
+ *
+ * Unpublishing was not the answer. These pages are wanted -- crews read them --
+ * they are simply not public, and an unpublished node is invisible to the
+ * people who need it. So the node carries a flag and this denies the view.
+ *
+ * It is a FIELD rather than a list of node ids in code, because the office has
+ * to be able to mark the next one without a deploy, and because an id in a
+ * constant tells nobody why it is there.
+ *
+ * Denied at hook_node_access, which every path goes through -- the HTML page,
+ * Views, JSON:API and REST -- rather than by unpublishing or by curating a
+ * display. The 2026-10-10 HOA incident is the standing lesson: a display that
+ * happens not to show a field is presentation, not access.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountInterface;
+
+/**
+ * Who may read internal pages.
+ *
+ * Staff only, not merely "logged in". Clients have accounts too, and the
+ * Teammate Manual is not for them.
+ */
+const BOS_CONTENT_ACCESS_STAFF_ROLES = [
+  'teammates', 'supervisor', 'administration',
+  'site_assistant', 'site_admin', 'administrator',
+];
+
+/**
+ * Implements hook_node_access().
+ */
+function bos_content_access_node_access(EntityInterface $node, $operation, AccountInterface $account) {
+  if ($operation !== 'view') {
+    return AccessResult::neutral();
+  }
+  if (!$node->hasField('field_internal_only') || $node->get('field_internal_only')->isEmpty()) {
+    return AccessResult::neutral();
+  }
+  if (!(bool) $node->get('field_internal_only')->value) {
+    return AccessResult::neutral();
+  }
+
+  $allowed = (bool) array_intersect(BOS_CONTENT_ACCESS_STAFF_ROLES, $account->getRoles());
+
+  // The cache contexts are not optional: without user.roles the render cache
+  // would hand one audience's page to another, and without the field in the
+  // dependencies the page would stay denied after the flag is cleared.
+  return AccessResult::forbiddenIf(!$allowed)
+    ->addCacheContexts(['user.roles'])
+    ->addCacheableDependency($node);
+}

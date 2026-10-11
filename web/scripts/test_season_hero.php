@@ -74,7 +74,14 @@ $anon = new \Drupal\Core\Session\AnonymousUserSession();
 [$heroAnon, $classAnon, $blockedAnon] = $check($anon);
 $ok('public gets a hero', (bool) $heroAnon, $heroAnon ? count($heroAnon['#images']) . ' image(s)' : 'none');
 $ok('  hero title is the season name', ($heroAnon['#title'] ?? '') === 'Winter');
-$ok('  hero carries NO teaser as subtitle (views-only rule)', ($heroAnon['#subtitle'] ?? '') === '');
+$ok('  subtitle comes from the image alt text, rotating', ($heroAnon['#alt_subtitle'] ?? FALSE) === TRUE);
+$ok('  and the views-only teaser is NOT used', ($heroAnon['#subtitle'] ?? '') === '');
+// Caught a real bug: the builder set alt but not caption (copied from the
+// backflow one, which passes a static subtitle), so the template rendered an
+// empty hidden subtitle. Assert the key the TEMPLATE reads, not just the flag.
+$ok('  every image carries a caption for the template to show',
+  !array_filter($heroAnon['#images'], fn($i) => ($i['caption'] ?? '') === ''),
+  ($heroAnon['#images'][0]['caption'] ?? '(empty)'));
 $ok('  image built through max_2600x2600', !empty($heroAnon['#images'][0]['src']) && str_contains($heroAnon['#images'][0]['src'], 'max_2600x2600'),
   substr($heroAnon['#images'][0]['src'] ?? '-', -60));
 $ok('  alt text carried', ($heroAnon['#images'][0]['alt'] ?? '') === 'Winter on the Western Slope');

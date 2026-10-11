@@ -107,9 +107,18 @@ function _bos_seasons_banner_images(EntityInterface $term): array {
       continue;
     }
     $uri = $file->getFileUri();
+    $alt = (string) $item->alt;
     $images[] = [
       'src' => $style ? $style->buildUrl($uri) : \Drupal::service('file_url_generator')->generateAbsoluteString($uri),
-      'alt' => (string) ($item->alt ?: $term->label()),
+      // `alt` is the <img> attribute and falls back to the season name so the
+      // image is never undescribed; `caption` is the RAW alt, used as the
+      // rotating subtitle, so an empty one shows no line for that slide rather
+      // than printing the season name twice. The template reads `caption` --
+      // omitting it (as the backflow builder does, since it passes a static
+      // subtitle) renders an empty, hidden subtitle and empty data-bo-caption
+      // attributes, which is exactly how this was caught.
+      'alt' => $alt !== '' ? $alt : $term->label(),
+      'caption' => $alt,
     ];
   }
   return $images;
@@ -122,12 +131,25 @@ function _bos_seasons_banner_images(EntityInterface $term): array {
  * region, reusing the bo_hero_banner theme hook and the brookstone_olivero
  * bo_hero library that backflow_device_types and equipment_types already use.
  *
- * ⚠ No subtitle. The obvious candidate is field_short_description, and the
- * backflow hero does pass it — but the house rule is that the teaser is
- * VIEWS-ONLY, the card text on the PARENT page, and never rendered on the
- * term's own page. Putting it under the title here would show it directly above
- * the body it summarises, which is the thing that rule exists to prevent. If a
- * subtitle is wanted, it should be its own field rather than a reuse.
+ * The subtitle is each image's ALT TEXT, rotating with the slides
+ * (`alt_subtitle`), which is what bos_geo already does on the state, county and
+ * city pages — so this is the established pattern here, not a new one. Each
+ * photo carries its own line, and `alt_field_required` is TRUE on this field, so
+ * a hero photo cannot be uploaded without one.
+ *
+ * ⚠ The alt text therefore does double duty: it is still the image's
+ * description for a screen reader AND the visible line a customer reads. Write
+ * it as the line you want read. The consequence is that a screen reader
+ * encounters it twice — once as the image alt, once as the rendered text —
+ * which is the accepted trade on the geo pages. Fixing it properly means
+ * alt="" on the image when the caption is displayed (the standard pattern for a
+ * captioned image), but that lives in the shared template and would change the
+ * geo pages too, so it is raised rather than done here.
+ *
+ * ⚠ Not field_short_description, which the backflow hero does pass: the house
+ * rule is that the teaser is VIEWS-ONLY, the card text on the PARENT page,
+ * never rendered on the term's own page. Putting it under the title would show
+ * it directly above the body it summarises — the thing that rule prevents.
  */
 function bos_seasons_preprocess_page(array &$variables): void {
   $term = _bos_seasons_hero_term();
@@ -138,7 +160,7 @@ function bos_seasons_preprocess_page(array &$variables): void {
     '#theme' => 'bo_hero_banner',
     '#images' => _bos_seasons_banner_images($term),
     '#title' => $term->label(),
-    '#subtitle' => '',
+    '#alt_subtitle' => TRUE,
   ];
   $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
   $variables['#cache']['contexts'][] = 'user.roles';

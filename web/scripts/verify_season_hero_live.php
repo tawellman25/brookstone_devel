@@ -31,11 +31,25 @@ $ok('brookstone_olivero has a hero region',
 
 $terms = $etm->getStorage('taxonomy_term')->loadByProperties(['vid' => 'season']);
 $ok('season terms found', count($terms) > 0, count($terms) . ' terms');
-$t = reset($terms);
+// Use a term that has NO banner, so attaching one inside the rolled-back
+// transaction cannot be confused with a photo the office genuinely uploaded.
+$t = NULL;
+foreach ($terms as $x) { if ($x->get('field_banner_images')->isEmpty()) { $t = $x; break; } }
+$t = $t ?: reset($terms);
 $ok('field_banner_images on season', $t->hasField('field_banner_images'));
 $ok('field_icon still separate and present', $t->hasField('field_icon'));
-$ok('no season carries a banner yet (nothing published by this deploy)',
-  !array_filter($terms, fn($x) => !$x->get('field_banner_images')->isEmpty()));
+// Informational, NOT an assertion. The first version asserted that no season
+// carried a banner -- true at deploy time and wrong an hour later, once Todd
+// started uploading. A verifier that fails because the feature is being used is
+// worse than no verifier.
+foreach ($terms as $x) {
+  printf("  ....  %-12s %d photo(s)%s\n", $x->label(), $x->get('field_banner_images')->count(),
+    $x->isPublished() ? '' : ' (unpublished)');
+}
+$ok('every attached hero photo has alt text (it is the visible caption)',
+  !array_filter(iterator_to_array((function () use ($terms) {
+    foreach ($terms as $x) { foreach ($x->get('field_banner_images') as $i) { yield (string) $i->alt; } }
+  })()), fn($a) => trim($a) === ''));
 
 $fids = $etm->getStorage('file')->getQuery()->accessCheck(FALSE)
   ->condition('filemime', 'image/%', 'LIKE')->condition('status', 1)->range(0, 1)->execute();
@@ -64,6 +78,9 @@ $check = function ($account) use ($sw, $t, $etm) {
   return [$hero, $blocked, $ctx];
 };
 
+$rowsBefore = (int) \Drupal::database()->select('taxonomy_term__field_banner_images', 'b')
+  ->condition('bundle', 'season')->countQuery()->execute()->fetchField();
+
 $tx = \Drupal::database()->startTransaction();
 try {
   $t->set('field_banner_images', [['target_id' => reset($fids), 'alt' => 'live verification only']]);
@@ -74,7 +91,9 @@ try {
   $ok('  derivative built through max_2600x2600',
     !empty($hero['#images'][0]['src']) && str_contains($hero['#images'][0]['src'], 'max_2600x2600'));
   $ok('  hero title is the season name', ($hero['#title'] ?? '') === $t->label(), $t->label());
-  $ok('  no teaser leaked in as a subtitle', ($hero['#subtitle'] ?? '') === '');
+  $ok('  subtitle comes from the image alt text, rotating', ($hero['#alt_subtitle'] ?? FALSE) === TRUE);
+  $ok('  and the views-only teaser is NOT used', ($hero['#subtitle'] ?? '') === '');
+  $ok('  every image carries a caption to show', !array_filter($hero['#images'], fn($i) => ($i['caption'] ?? '') === ''));
   $ok('  user.roles cache context set (or the cache leaks one audience to another)',
     in_array('user.roles', $ctx, TRUE));
   $ok('  page title block suppressed, hero carries the H1', $blocked === TRUE);
@@ -103,7 +122,7 @@ finally {
 
 $after = $etm->getStorage('taxonomy_term')->loadUnchanged($t->id());
 $ok('ROLLED BACK: term has no banner in the database', $after->get('field_banner_images')->isEmpty());
-$n = \Drupal::database()->select('taxonomy_term__field_banner_images', 'b')
+$n = (int) \Drupal::database()->select('taxonomy_term__field_banner_images', 'b')
   ->condition('bundle', 'season')->countQuery()->execute()->fetchField();
-$ok('ROLLED BACK: zero banner rows for any season', (int) $n === 0, "rows=$n");
+$ok('ROLLED BACK: banner row count unchanged', $n === $rowsBefore, "before=$rowsBefore after=$n");
 printf("\n%d passed, %d failed\n", $pass, $fail);

@@ -22,12 +22,27 @@ use Drupal\views\ViewExecutable;
 /**
  * Views that render the service CARD component.
  *
- * `service_children` lists a service term's children; `season_services` lists
- * the services a season does. Same card, same CSS, same "blurb is the SUMMARY
- * only" rule — so both ids are handled here rather than the component being
- * reimplemented per surface.
+ * `service_children` lists a service term's children, `season_services` the
+ * services a season does, and `services` the top-level services on /services.
+ * All three get the card stylesheet.
  */
-const BOS_SERVICES_CARD_VIEWS = ['service_children', 'season_services'];
+const BOS_SERVICES_CARD_VIEWS = ['service_children', 'season_services', 'services'];
+
+/**
+ * Card views whose blurb is the SUMMARY only, blank when there is none.
+ *
+ * ⚠ Deliberately NOT every card view. The rule exists so a card never dumps
+ * trimmed body HTML, and it is right where the office has written card lines.
+ * On `/services` two of the top-level terms (Landscaping, Lighting) have **no
+ * summary written**, so applying it there would blank their card text on a live
+ * page — a regression dressed up as consistency. That view uses
+ * `text_summary_or_trimmed` instead: the summary where one exists, a short trim
+ * of the body where one does not, which is the same "nothing regresses while
+ * the copy is filled in" fallback used by material_children.
+ *
+ * Move `services` into this list once those summaries are written.
+ */
+const BOS_SERVICES_CARD_SUMMARY_ONLY = ['service_children', 'season_services'];
 
 /**
  * Implements hook_views_pre_render().
@@ -63,7 +78,7 @@ function bos_services_views_pre_render(ViewExecutable $view) {
  * there is none — so a card never dumps trimmed body HTML (headings, etc.).
  */
 function bos_services_preprocess_views_view_field(array &$variables) {
-  if (!in_array($variables['view']->id(), BOS_SERVICES_CARD_VIEWS, TRUE)
+  if (!in_array($variables['view']->id(), BOS_SERVICES_CARD_SUMMARY_ONLY, TRUE)
     || ($variables['field']->field ?? '') !== 'field_service_public_desc') {
     return;
   }

@@ -21,8 +21,9 @@
 declare(strict_types=1);
 
 use Drupal\Core\Access\AccessResult;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\image\Entity\ImageStyle;
 
@@ -107,18 +108,33 @@ function _bos_seasons_banner_images(EntityInterface $term): array {
       continue;
     }
     $uri = $file->getFileUri();
-    $alt = (string) $item->alt;
+    $alt = trim((string) $item->alt);
+    $title = trim((string) $item->title);
     $images[] = [
       'src' => $style ? $style->buildUrl($uri) : \Drupal::service('file_url_generator')->generateAbsoluteString($uri),
-      // `alt` is the <img> attribute and falls back to the season name so the
-      // image is never undescribed; `caption` is the RAW alt, used as the
-      // rotating subtitle, so an empty one shows no line for that slide rather
-      // than printing the season name twice. The template reads `caption` --
-      // omitting it (as the backflow builder does, since it passes a static
-      // subtitle) renders an empty, hidden subtitle and empty data-bo-caption
-      // attributes, which is exactly how this was caught.
+      // Two sub-fields doing two different jobs, which is the point:
+      //
+      // `alt`     -> the <img> attribute. What a screen reader announces for
+      //              the photo. Falls back to the season name so an image is
+      //              never undescribed.
+      // `caption` -> the visible rotating line under the title. The image's
+      //              TITLE sub-field and nothing else.
+      //
+      // ⚠ There is deliberately NO fallback to alt. An earlier version had one,
+      // to stop photos uploaded before this field existed losing their line —
+      // and it recreated the exact bug being fixed: a photo with a proper
+      // description and no caption printed "Sprinkler backflow valve wrapped
+      // for winter" as the customer-facing line. Empty caption now means NO
+      // line for that slide, which is what "optional" has to mean to be useful.
+      // The migration (setup_season_hero_title.php) copies the old alt copy
+      // into title, so nothing regresses — RUN IT BEFORE DEPLOYING THIS.
+      //
+      // The template reads `caption` -- omitting that key (as the backflow
+      // builder does, since it passes a static subtitle) renders an empty,
+      // hidden subtitle and blank data-bo-caption attributes. That is a real
+      // bug this builder shipped once.
       'alt' => $alt !== '' ? $alt : $term->label(),
-      'caption' => $alt,
+      'caption' => $title,
     ];
   }
   return $images;
@@ -131,20 +147,23 @@ function _bos_seasons_banner_images(EntityInterface $term): array {
  * region, reusing the bo_hero_banner theme hook and the brookstone_olivero
  * bo_hero library that backflow_device_types and equipment_types already use.
  *
- * The subtitle is each image's ALT TEXT, rotating with the slides
- * (`alt_subtitle`), which is what bos_geo already does on the state, county and
- * city pages — so this is the established pattern here, not a new one. Each
- * photo carries its own line, and `alt_field_required` is TRUE on this field, so
- * a hero photo cannot be uploaded without one.
+ * The subtitle is per-photo and rotates with the slides (`alt_subtitle`), the
+ * mode bos_geo already uses on the state, county and city pages.
  *
- * ⚠ The alt text therefore does double duty: it is still the image's
- * description for a screen reader AND the visible line a customer reads. Write
- * it as the line you want read. The consequence is that a screen reader
- * encounters it twice — once as the image alt, once as the rendered text —
- * which is the accepted trade on the geo pages. Fixing it properly means
- * alt="" on the image when the caption is displayed (the standard pattern for a
- * captioned image), but that lives in the shared template and would change the
- * geo pages too, so it is raised rather than done here.
+ * It reads the image's **title** sub-field, not its alt. Alt text was the first
+ * implementation and Todd's follow-up question — should this be a title instead
+ * — is the better design: one field cannot do both jobs. Good alt text ("a bench
+ * on a gravel path beside a maple in full colour") reads badly as a caption,
+ * good caption copy ("A bench placed on a path we maintain") is weak alt text,
+ * and rendering alt as visible text made a screen reader meet the same sentence
+ * twice. Split, each field does its own job and the double-read is gone.
+ *
+ * Caption is OPTIONAL, alt stays REQUIRED: a photo that needs no line should
+ * show none, but an undescribed image is an accessibility hole.
+ *
+ * ⚠ This diverges from bos_geo, which still reads alt. Deliberate — geo is a
+ * live surface with its own copy and changing it is a separate decision, not a
+ * side effect of this one.
  *
  * ⚠ Not field_short_description, which the backflow hero does pass: the house
  * rule is that the teaser is VIEWS-ONLY, the card text on the PARENT page,
@@ -211,4 +230,46 @@ function bos_seasons_preprocess_taxonomy_term(array &$variables): void {
   if (_bos_seasons_hero_term() && isset($variables['content']['field_banner_images'])) {
     $variables['content']['field_banner_images']['#access'] = FALSE;
   }
+}
+
+/**
+ * Implements hook_field_widget_single_element_form_alter().
+ *
+ * Relabels the hero photo's alt/title boxes.
+ *
+ * Without this the office sees Drupal's generic "Alternative text" and "Title"
+ * and has no way to know that Title is the line customers read under the
+ * heading — so the caption would go in the wrong box, or nowhere. The labels
+ * are the only place that distinction is visible at the moment of typing.
+ *
+ * Scoped to field_banner_images on season; the other vocabularies using this
+ * shared field do not render a caption and are left alone.
+ */
+function bos_seasons_field_widget_single_element_form_alter(array &$element, FormStateInterface $form_state, array $context): void {
+  $items = $context['items'] ?? NULL;
+  if (!$items || $items->getFieldDefinition()->getName() !== 'field_banner_images') {
+    return;
+  }
+  $entity = $items->getEntity();
+  if (!$entity instanceof EntityInterface || !in_array($entity->bundle(), BOS_SEASONS_VIDS, TRUE)) {
+    return;
+  }
+  // The alt/title inputs are built by ImageWidget::process(), which runs after
+  // this hook, so relabel in #after_build rather than here.
+  $element['#after_build'][] = '_bos_seasons_label_hero_photo_boxes';
+}
+
+/**
+ * Relabels the alt and title inputs on a hero photo widget.
+ */
+function _bos_seasons_label_hero_photo_boxes(array $element, FormStateInterface $form_state): array {
+  if (isset($element['alt'])) {
+    $element['alt']['#title'] = t('Describe the photo (for screen readers and search)');
+    $element['alt']['#description'] = t('What is in the picture, for someone who cannot see it. Not shown on the page.');
+  }
+  if (isset($element['title'])) {
+    $element['title']['#title'] = t('Caption shown under the heading');
+    $element['title']['#description'] = t('The line a customer reads while this photo is on screen. Leave empty for no caption.');
+  }
+  return $element;
 }

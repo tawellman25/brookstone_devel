@@ -28,7 +28,23 @@ $ok('borrowed an existing image', (bool) $file, $file ? $file->getFilename() : '
 if (!$file) { printf("\n%d passed, %d failed\n", $pass, $fail); return; }
 
 $restore = $t->get('field_banner_images')->getValue();
-$t->set('field_banner_images', [['target_id' => $file->id(), 'alt' => 'Winter on the Western Slope']]);
+// Two photos, deliberately exercising the split: the first has a caption that
+// differs from its alt, the second has NO caption at all.
+$second = $etm->getStorage('file')->getQuery()->accessCheck(FALSE)
+  ->condition('filemime', 'image/%', 'LIKE')->condition('status', 1)->range(0, 2)->execute();
+$second = array_values($second)[1] ?? reset($second);
+$t->set('field_banner_images', [
+  [
+    'target_id' => $file->id(),
+    'alt' => 'Snow-covered lawn with a plow truck in the driveway',
+    'title' => 'Plowed before you leave for work.',
+  ],
+  [
+    'target_id' => $second,
+    'alt' => 'Sprinkler backflow valve wrapped for winter',
+    'title' => '',
+  ],
+]);
 $t->save();
 
 /**
@@ -73,18 +89,26 @@ $check = function ($account) use ($sw, $t) {
 $anon = new \Drupal\Core\Session\AnonymousUserSession();
 [$heroAnon, $classAnon, $blockedAnon] = $check($anon);
 $ok('public gets a hero', (bool) $heroAnon, $heroAnon ? count($heroAnon['#images']) . ' image(s)' : 'none');
+$ok('  caption field is enabled on the instance',
+  (bool) $t->getFieldDefinition('field_banner_images')->getSetting('title_field'));
 $ok('  hero title is the season name', ($heroAnon['#title'] ?? '') === 'Winter');
-$ok('  subtitle comes from the image alt text, rotating', ($heroAnon['#alt_subtitle'] ?? FALSE) === TRUE);
+$ok('  subtitle rotates per slide (alt_subtitle mode)', ($heroAnon['#alt_subtitle'] ?? FALSE) === TRUE);
 $ok('  and the views-only teaser is NOT used', ($heroAnon['#subtitle'] ?? '') === '');
 // Caught a real bug: the builder set alt but not caption (copied from the
 // backflow one, which passes a static subtitle), so the template rendered an
 // empty hidden subtitle. Assert the key the TEMPLATE reads, not just the flag.
-$ok('  every image carries a caption for the template to show',
-  !array_filter($heroAnon['#images'], fn($i) => ($i['caption'] ?? '') === ''),
-  ($heroAnon['#images'][0]['caption'] ?? '(empty)'));
+$ok('  caption comes from the TITLE sub-field, not alt',
+  ($heroAnon['#images'][0]['caption'] ?? '') === 'Plowed before you leave for work.',
+  $heroAnon['#images'][0]['caption'] ?? '(empty)');
+$ok('  alt still describes the photo, and differs from the caption',
+  ($heroAnon['#images'][0]['alt'] ?? '') === 'Snow-covered lawn with a plow truck in the driveway');
+// The fallback-to-alt was removed: it printed a technical description as the
+// customer-facing line, which is the double-read this split exists to end.
+$ok('  NO caption falls back to alt -- an empty caption shows no line',
+  ($heroAnon['#images'][1]['caption'] ?? 'x') === ''
+  && ($heroAnon['#images'][1]['alt'] ?? '') === 'Sprinkler backflow valve wrapped for winter');
 $ok('  image built through max_2600x2600', !empty($heroAnon['#images'][0]['src']) && str_contains($heroAnon['#images'][0]['src'], 'max_2600x2600'),
   substr($heroAnon['#images'][0]['src'] ?? '-', -60));
-$ok('  alt text carried', ($heroAnon['#images'][0]['alt'] ?? '') === 'Winter on the Western Slope');
 $ok('  body gets the has-bo-hero class', $classAnon);
 $ok('  page title block hidden (the hero carries the H1)', $blockedAnon === TRUE);
 

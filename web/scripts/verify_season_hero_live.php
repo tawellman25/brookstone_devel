@@ -29,6 +29,7 @@ $ok('library brookstone_olivero/bo_hero is defined',
 $ok('brookstone_olivero has a hero region',
   array_key_exists('hero', \Drupal::service('theme_handler')->getTheme('brookstone_olivero')->info['regions'] ?? []));
 
+$inst0 = $etm->getStorage('field_config')->load('taxonomy_term.season.field_banner_images');
 $terms = $etm->getStorage('taxonomy_term')->loadByProperties(['vid' => 'season']);
 $ok('season terms found', count($terms) > 0, count($terms) . ' terms');
 // Use a term that has NO banner, so attaching one inside the rolled-back
@@ -46,10 +47,21 @@ foreach ($terms as $x) {
   printf("  ....  %-12s %d photo(s)%s\n", $x->label(), $x->get('field_banner_images')->count(),
     $x->isPublished() ? '' : ' (unpublished)');
 }
-$ok('every attached hero photo has alt text (it is the visible caption)',
-  !array_filter(iterator_to_array((function () use ($terms) {
-    foreach ($terms as $x) { foreach ($x->get('field_banner_images') as $i) { yield (string) $i->alt; } }
-  })()), fn($a) => trim($a) === ''));
+$alts = []; $caps = [];
+foreach ($terms as $x) {
+  foreach ($x->get('field_banner_images') as $i) {
+    $alts[] = trim((string) $i->alt);
+    $caps[] = trim((string) $i->title);
+  }
+}
+$ok('caption sub-field is enabled on the season instance',
+  (bool) $inst0->getSetting('title_field'));
+$ok('every attached hero photo is described (alt, for screen readers)',
+  !array_filter($alts, fn($a) => $a === ''));
+// Not required -- a photo may legitimately have no caption -- so this reports
+// rather than fails, and only matters because the migration should have filled
+// every photo that predates the caption field.
+printf("  ....  %d of %d photos carry a caption\n", count(array_filter($caps)), count($caps));
 
 $fids = $etm->getStorage('file')->getQuery()->accessCheck(FALSE)
   ->condition('filemime', 'image/%', 'LIKE')->condition('status', 1)->range(0, 1)->execute();
@@ -91,9 +103,10 @@ try {
   $ok('  derivative built through max_2600x2600',
     !empty($hero['#images'][0]['src']) && str_contains($hero['#images'][0]['src'], 'max_2600x2600'));
   $ok('  hero title is the season name', ($hero['#title'] ?? '') === $t->label(), $t->label());
-  $ok('  subtitle comes from the image alt text, rotating', ($hero['#alt_subtitle'] ?? FALSE) === TRUE);
+  $ok('  subtitle rotates per slide (alt_subtitle mode)', ($hero['#alt_subtitle'] ?? FALSE) === TRUE);
   $ok('  and the views-only teaser is NOT used', ($hero['#subtitle'] ?? '') === '');
-  $ok('  every image carries a caption to show', !array_filter($hero['#images'], fn($i) => ($i['caption'] ?? '') === ''));
+  $ok('  caption reads the TITLE sub-field, with NO fallback to alt',
+    ($hero['#images'][0]['caption'] ?? 'x') === '' && ($hero['#images'][0]['alt'] ?? '') !== '');
   $ok('  user.roles cache context set (or the cache leaks one audience to another)',
     in_array('user.roles', $ctx, TRUE));
   $ok('  page title block suppressed, hero carries the H1', $blocked === TRUE);

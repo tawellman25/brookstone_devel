@@ -45,6 +45,14 @@
           <input type="date" class="bos-re__move-date" value="{{ start }}" aria-label="Move selected stops to this date">
           <button type="button" class="bos-re__move-go">Move</button>
         </div>
+        {#
+          Does both in one action, reading the SAME crew select and date input
+          above rather than duplicating them. Assign runs first, then the move;
+          if the assign half is refused nothing is moved. See doMoveAndAssign().
+        #}
+        <div class="bos-re__assign-controls">
+          <button type="button" class="bos-re__both-go">Move &amp; assign</button>
+        </div>
         <div class="bos-re__assign-controls bos-re__assign-controls--end">
           <button type="button" class="bos-re__assign-clear">Clear selection</button>
         </div>

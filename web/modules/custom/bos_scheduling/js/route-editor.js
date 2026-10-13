@@ -403,7 +403,9 @@
     var go = document.querySelector('.bos-re__assign-go');
     var clear = document.querySelector('.bos-re__assign-clear');
     var moveGo = document.querySelector('.bos-re__move-go');
-    if (moveGo) { moveGo.addEventListener('click', doMove); }
+    var bothGo = document.querySelector('.bos-re__both-go');
+    if (moveGo && !moveGo.dataset.bosWired) { moveGo.dataset.bosWired = '1'; moveGo.addEventListener('click', doMove); }
+    if (bothGo && !bothGo.dataset.bosWired) { bothGo.dataset.bosWired = '1'; bothGo.addEventListener('click', doMoveAndAssign); }
     if (go && !go.dataset.bosWired) { go.dataset.bosWired = '1'; go.addEventListener('click', doAssign); }
     if (clear && !clear.dataset.bosWired) {
       clear.dataset.bosWired = '1';
@@ -414,6 +416,129 @@
         });
       });
     }
+  }
+
+  /**
+   * One POST to a Route Editor write endpoint.
+   *
+   * Extracted so the combined Move-and-assign can reuse the two endpoints that
+   * already exist rather than a third one — both of them already refuse
+   * finished work server-side, and a new endpoint would be a second place for
+   * that guard to drift.
+   */
+  function postAction(url, payload) {
+    return getCsrf().then(function (token) {
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token, 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      });
+    }).then(function (r) {
+      return r.json().then(function (j) { return { status: r.status, body: j || {} }; });
+    });
+  }
+
+  /**
+   * Did an endpoint do what was asked, with nothing refused?
+   *
+   * `skipped` is NOT a failure — the server skips a stop that is already
+   * assigned to that person or already on that date, which is a no-op, not a
+   * refusal.
+   */
+  function actionClean(res) {
+    var b = res.body || {};
+    if (res.status >= 400) { return false; }
+    if ((b.blocked || []).length || (b.errors || []).length) { return false; }
+    return b.ok || b.updated || b.skipped;
+  }
+
+  /**
+   * Move the selected stops to another day AND reassign them, in one go.
+   *
+   * Reads the SAME crew select and date input the two single-purpose buttons
+   * use, so there is one set of inputs to get right rather than two.
+   *
+   * ORDER: assign first, then move. A move can take a stop out of the visible
+   * date range entirely, so if the second half fails after a move the office is
+   * left hunting for the stop to fix it. Assigning first means a failure leaves
+   * everything still on screen.
+   *
+   * ON PARTIAL FAILURE: stop and report, never roll back (Todd's call,
+   * 2026-10-13). A half-applied change somebody is told about plainly is safer
+   * than a silent undo — and if the assign half was refused we do not attempt
+   * the move at all, so the usual outcome is that nothing happened.
+   */
+  function doMoveAndAssign() {
+    var sel = document.querySelector('.bos-re__assign-select');
+    var dateInput = document.querySelector('.bos-re__move-date');
+    var btn = document.querySelector('.bos-re__both-go');
+    var val = sel ? sel.value : '';
+    var date = dateInput ? String(dateInput.value || '').trim() : '';
+
+    if (val === '') { window.alert('Choose a crew member (or Unassign) first.'); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { window.alert('Pick a date to move the selected stops to.'); return; }
+
+    var ids = Object.keys(state.selected).map(Number);
+    if (!ids.length) { return; }
+    var uid = (val === '__none__') ? 0 : parseInt(val, 10);
+    var who = (val === '__none__') ? 'Unassign' : (sel.options[sel.selectedIndex].text);
+
+    if (!window.confirm('Move ' + ids.length + ' stop(s) to ' + fmtDay(date) + ' AND set crew to ' + who + '?' +
+      '\n\nTheir stop numbers carry over — run Optimize on the receiving route afterwards if the order needs sorting.')) {
+      return;
+    }
+
+    if (btn) { btn.disabled = true; }
+    setStatus('Saving crew…');
+    postAction(state.cfg.assignUrl, { scheduling_ids: ids, uid: uid })
+      .then(function (res) {
+        if (!actionClean(res)) {
+          // Stop here. The selection is deliberately left alone so the office
+          // can see what is selected, fix the problem and try again.
+          if (btn) { btn.disabled = false; }
+          var b = res.body || {};
+          reportBlocked(b, 'reassigned');
+          if (res.status >= 400 || (b.errors || []).length) {
+            window.alert('Crew assignment failed, so nothing was moved: ' +
+              (b.error || (b.errors || []).join('; ') || ('HTTP ' + res.status)));
+          }
+          else {
+            window.alert('Nothing was moved — the crew assignment above was refused first.');
+          }
+          setStatus('Stopped: crew assignment refused, nothing moved.');
+          fetchData();
+          return null;
+        }
+        setStatus('Crew saved. Moving stops…');
+        return postAction(state.cfg.rescheduleUrl, { scheduling_ids: ids, date: date });
+      })
+      .then(function (res) {
+        if (!res) { return; }
+        if (btn) { btn.disabled = false; }
+        var b = res.body || {};
+        if (!actionClean(res)) {
+          // The assign half DID apply. Say so plainly rather than implying the
+          // whole action failed.
+          reportBlocked(b, 'moved');
+          window.alert('Crew was set to ' + who + ', but the move to ' + fmtDay(date) + ' did not go through' +
+            (b.error || (b.errors || []).length ? ': ' + (b.error || (b.errors || []).join('; ')) : '.') +
+            '\n\nThe crew change has been saved. The stops are still on their original day.');
+          setStatus('Crew saved; move refused.');
+          fetchData();
+          return;
+        }
+        reportBlocked(b, 'moved');
+        state.selected = {};
+        if (sel) { sel.value = ''; }
+        fetchData();
+        setStatus(ids.length + ' stop(s) → ' + who + ', moved to ' + fmtDay(date) + '.');
+      })
+      .catch(function (e) {
+        if (btn) { btn.disabled = false; }
+        window.alert('Move & assign error: ' + e);
+        setStatus('Move & assign failed.');
+      });
   }
 
   function doAssign() {
@@ -445,11 +570,15 @@
           setStatus('Assignment failed.');
           return;
         }
-        // Success (full or partial): clear selection + refetch so grouping,
-        // colors, and the audit-driven state reflect the new assignment.
+        // Success (full or partial): refetch so grouping, colors and the
+        // audit-driven state reflect the new assignment.
+        //
+        // The SELECTION IS KEPT. Scheduling ids do not change when a stop is
+        // reassigned, so the same stops are still the right ones — and clearing
+        // here meant anybody who wanted to change the day as well had to find
+        // and re-tick every stop. (Move still clears, because moved stops can
+        // leave the visible range.)
         reportBlocked(b, 'reassigned');
-        state.selected = {};
-        if (sel) { sel.value = ''; }
         fetchData();
         setStatus(summarise(b, 'reassigned'));
       })

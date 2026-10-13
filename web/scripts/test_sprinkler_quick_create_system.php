@@ -268,6 +268,59 @@ $ctrlAfter = $etm->getStorage('property_system_controller')->loadUnchanged($ctrl
 $count2 = $ctrlAfter ? count($ctrlAfter->get('field_controller_photos')->getValue()) : 0;
 $ok('a second visit appends, never replaces', $count2 === 4, 'photos=' . $count2);
 
+// ---------------------------------------------------------------------------
+print "\n8b. the hookup photos (Todd, 2026-10-13)\n";
+// Two pictures, two fields: where the fitting is, and it connected to the hose.
+// The important case is a visit whose ONLY content is these photos — the
+// "did they enter anything" guards had to learn about them, or the form would
+// have looked like it saved and written nothing.
+$built2 = \Drupal::formBuilder()->getForm(\Drupal\properties\Form\SprinklerQuickCaptureForm::class, $wo);
+$ok('the hookup fieldset offers a location photo', isset($built2['hookup']['hookup_location_photo']));
+$ok('  and a hooked-up photo', isset($built2['hookup']['hookup_connected_photo']));
+$ok('  both take more than one',
+  !empty($built2['hookup']['hookup_location_photo']['#multiple'])
+  && !empty($built2['hookup']['hookup_connected_photo']['#multiple']));
+
+$hookFiles = [];
+// Re-prepare: the directory has to be writable again at this point in the run,
+// and prepareDirectory() takes its argument BY REFERENCE, so it needs a
+// variable rather than a literal (documented gotcha).
+$hookDir = 'public://sprinkler-quick';
+\Drupal::service('file_system')->prepareDirectory($hookDir, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
+foreach (['hookup-where', 'hookup-connected'] as $n) {
+  $f = \Drupal::service('file.repository')->writeData($png, $hookDir . '/TEST-delete-me-' . $n . '-' . uniqid() . '.png');
+  $f->setPermanent();
+  $f->save();
+  $hookFiles[] = $f;
+  $testFiles[] = $f;
+}
+$fs = $submit(['zones' => '', 'shut_off_location' => '', 'shut_off_notes' => '', 'key_needed' => '',
+  'hookup_type' => '', 'hookup_location' => '', 'which' => '', 'bfp_location' => '',
+  'clock_location' => '', 'system_type' => '',
+  'hookup_location_photo' => ['fids' => (string) $hookFiles[0]->id()],
+  'hookup_connected_photo' => ['fids' => (string) $hookFiles[1]->id()]]);
+$ok('photos alone are enough to save', !$fs->getErrors(), implode('; ', array_map('strval', $fs->getErrors())));
+
+$srcAfter = NULL;
+foreach (\Drupal::entityTypeManager()->getStorage('property_ss_sources')
+  ->loadByProperties(['field_property_ss_system' => $system->id()]) as $cand) {
+  $srcAfter = $cand;
+}
+$ok('a water source record exists to hold them', (bool) $srcAfter);
+if ($srcAfter) {
+  $a = count($srcAfter->get('field_ss_hookup_location_pic')->getValue());
+  $b = count($srcAfter->get('field_ss_hookup_connected_pic')->getValue());
+  $ok('the location photo landed on field_ss_hookup_location_pic', $a === 1, "count=$a");
+  $ok('the hooked-up photo landed on field_ss_hookup_connected_pic', $b === 1, "count=$b");
+  // They must not cross-contaminate, or the two pictures are useless as a pair.
+  $locFid = (int) ($srcAfter->get('field_ss_hookup_location_pic')->first()->target_id ?? 0);
+  $conFid = (int) ($srcAfter->get('field_ss_hookup_connected_pic')->first()->target_id ?? 0);
+  $ok('each photo went to its OWN field', $locFid === (int) $hookFiles[0]->id() && $conFid === (int) $hookFiles[1]->id(),
+    "loc=$locFid con=$conFid");
+  $ok('the shut-off photo field was not touched by them',
+    count($srcAfter->get('field_ss_shut_off_location_pic')->getValue()) === 0);
+}
+
 // ---- cleanup -------------------------------------------------------------
 print "\ncleanup\n";
 foreach ($findDevices() as $d) { $d->delete(); }

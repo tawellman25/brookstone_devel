@@ -175,6 +175,30 @@ final class SprinklerQuickCaptureForm extends FormBase {
       '#placeholder' => $this->t('e.g. NE corner, behind the hose bibb'),
       '#default_value' => $this->val($source, 'field_ss_hookup_location'),
     ];
+    // Two pictures, two jobs: where the fitting is so it can be found again next
+    // October, and what a correct connection looks like on THIS property.
+    // Multiple on both — a second angle is extra information, and the form's
+    // photo-shrink listener is delegated on the form, so new file inputs are
+    // covered without touching it.
+    $form['hookup']['hookup_location_photo'] = [
+      '#type' => 'managed_file',
+      '#title' => $this->t('Photo of the hookup'),
+      '#multiple' => TRUE,
+      '#upload_location' => 'public://sprinkler-quick',
+      '#attributes' => ['accept' => 'image/*'],
+      '#upload_validators' => ['FileExtension' => ['extensions' => 'jpg jpeg png heic webp']],
+      '#description' => $this->t('Where it is. Stand back far enough to show what it is next to. Added to any photos already there.'),
+    ];
+    $form['hookup']['hookup_connected_photo'] = [
+      '#type' => 'managed_file',
+      '#title' => $this->t('Photo hooked up to the air hose'),
+      '#multiple' => TRUE,
+      '#upload_location' => 'public://sprinkler-quick',
+      '#attributes' => ['accept' => 'image/*'],
+      '#upload_validators' => ['FileExtension' => ['extensions' => 'jpg jpeg png heic webp']],
+      '#description' => $this->t('The hose actually connected, so the next person can see how it goes on.'),
+    ];
+
 
     // --- Backflow or pump --------------------------------------------------
     $form['bfp'] = ['#type' => 'fieldset', '#title' => $this->t('Backflow or pump')];
@@ -323,7 +347,7 @@ final class SprinklerQuickCaptureForm extends FormBase {
         return TRUE;
       }
     }
-    foreach (['shut_off_photo', 'clock_photo'] as $key) {
+    foreach (['shut_off_photo', 'clock_photo', 'hookup_location_photo', 'hookup_connected_photo'] as $key) {
       if (array_filter((array) $form_state->getValue($key))) {
         return TRUE;
       }
@@ -348,7 +372,7 @@ final class SprinklerQuickCaptureForm extends FormBase {
         return TRUE;
       }
     }
-    foreach (['shut_off_photo', 'clock_photo'] as $key) {
+    foreach (['shut_off_photo', 'clock_photo', 'hookup_location_photo', 'hookup_connected_photo'] as $key) {
       if (array_filter((array) $form_state->getValue($key))) {
         return TRUE;
       }
@@ -479,16 +503,33 @@ final class SprinklerQuickCaptureForm extends FormBase {
     ];
     $hasSourceValue = (bool) array_filter($sourceValues, static fn($x) => $x !== '' && $x !== NULL);
     $photoFids = array_filter((array) $v('shut_off_photo'));
-    if (($hasSourceValue || $photoFids) && $system) {
+    // Photo input => the field on the source record it appends to.
+    $sourcePhotos = [
+      'shut_off_photo' => 'field_ss_shut_off_location_pic',
+      'hookup_location_photo' => 'field_ss_hookup_location_pic',
+      'hookup_connected_photo' => 'field_ss_hookup_connected_pic',
+    ];
+    $anyPhoto = FALSE;
+    foreach (array_keys($sourcePhotos) as $key) {
+      if (array_filter((array) $v($key))) {
+        $anyPhoto = TRUE;
+      }
+    }
+    if (($hasSourceValue || $anyPhoto) && $system) {
       $source = $this->ensureSource($system);
       foreach ($sourceValues as $field => $value) {
         if ($value !== '' && $value !== NULL && $source->hasField($field)) {
           $source->set($field, $value);
         }
       }
-      foreach ($photoFids as $fid) {
-        // Append, never replace: a second photo is extra information.
-        $source->get('field_ss_shut_off_location_pic')->appendItem(['target_id' => (int) $fid]);
+      foreach ($sourcePhotos as $key => $field) {
+        if (!$source->hasField($field)) {
+          continue;
+        }
+        foreach (array_filter((array) $v($key)) as $fid) {
+          // Append, never replace: a second photo is extra information.
+          $source->get($field)->appendItem(['target_id' => (int) $fid]);
+        }
       }
       $this->saveRecord($source);
       $written[] = (string) $this->t('shut off / hookup');

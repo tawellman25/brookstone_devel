@@ -33,6 +33,10 @@
       once('bos-route-editor', '#bos-re-map', context).forEach(function () {
         var cfg = drupalSettings.bosRouteEditor || {};
         state.cfg = cfg;
+        // Wired before the map-key gate: picking a day is navigation, and it
+        // has to keep working on a site with no Maps key (the page still lists
+        // stops in the side panel).
+        wireDateJump();
         if (!cfg.gmapKey) {
           setStatus('No Google Maps key configured — cannot load the map.');
           return;
@@ -397,6 +401,35 @@
       '<option value="">— Assign selected to… —</option>' +
       '<option value="__none__">— Unassign —</option>' +
       (teammates || []).map(function (t) { return '<option value="' + t.uid + '">' + esc(t.name) + '</option>'; }).join('');
+  }
+
+  /**
+   * Toolbar date picker — jump straight to a day instead of walking Prev/Next.
+   *
+   * Navigating is a full page load on purpose. The window is resolved
+   * SERVER-side from ?date + ?range (RouteEditorController::resolveRange(),
+   * which Sunday-anchors a week), and the data endpoint resolves the same two
+   * params independently — so redrawing in place would mean reimplementing that
+   * anchoring in JS and keeping two copies of it in step. The range buttons and
+   * Prev/Next are plain links for the same reason.
+   *
+   * ?range is carried from the wrapper's data-range, not from drupalSettings:
+   * it comes from the same render as the input, so the picker can't jump into a
+   * different range than the one the page is showing.
+   */
+  function wireDateJump() {
+    var input = document.querySelector('.bos-re__jump-date');
+    if (!input || input.dataset.bosWired) { return; }
+    input.dataset.bosWired = '1';
+    var wrap = document.querySelector('.bos-re');
+    input.addEventListener('change', function () {
+      // An empty or half-typed date reads as '' — don't navigate to nowhere.
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.value)) { return; }
+      var url = new URL(window.location.href);
+      url.searchParams.set('date', input.value);
+      url.searchParams.set('range', (wrap && wrap.dataset.range) || '7');
+      window.location.href = url.toString();
+    });
   }
 
   function wireAssignBar() {

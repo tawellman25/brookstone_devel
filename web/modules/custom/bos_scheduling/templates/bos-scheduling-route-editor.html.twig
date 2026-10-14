@@ -10,16 +10,30 @@
 
   <div class="bos-re__toolbar">
     <strong class="bos-re__title">Route Editor</strong>
-    <span class="bos-re__dates">{{ start }} → {{ end }}</span>
+    <span class="bos-re__dates">{{ dates_label }}</span>
     <span class="bos-re__range">
       Range:
       <a href="?range=1&date={{ start }}" class="bos-re__range-btn{{ range == '1' ? ' is-active' : '' }}">Day</a>
       <a href="?range=3&date={{ start }}" class="bos-re__range-btn{{ range == '3' ? ' is-active' : '' }}">3 Days</a>
       <a href="?range=7&date={{ start }}" class="bos-re__range-btn{{ range == '7' ? ' is-active' : '' }}">Week</a>
     </span>
+    {#
+      All navigation in one group: pick the day (the common case), nudge it by
+      a window with Prev/Next, or come back to Today. The date input is native
+      so it gets the browser's own calendar — its value is ISO because that is
+      what the control and the ?date= param both speak; the human-readable
+      window is the dates label above. In Week view the picked day resolves to
+      the week containing it (resolveRange() is Sunday-anchored), which is why
+      the input reads back as that Sunday — hence the hint in the title.
+    #}
     <span class="bos-re__nav">
       <a href="?range={{ range }}&date={{ prev }}" class="bos-re__nav-btn">◀ Prev</a>
+      <input type="date" class="bos-re__jump-date" value="{{ start }}"
+             aria-label="Jump to a date"
+             title="{{ range == '7' ? 'Pick a day — Week view jumps to the week containing it' : 'Pick a day to jump to' }}">
       <a href="?range={{ range }}&date={{ next }}" class="bos-re__nav-btn">Next ▶</a>
+      <a href="?range={{ range }}&date={{ today }}"
+         class="bos-re__nav-btn bos-re__today-btn{{ is_today ? ' is-current' : '' }}">Today</a>
     </span>
     <span class="bos-re__colorby">
       Color by:

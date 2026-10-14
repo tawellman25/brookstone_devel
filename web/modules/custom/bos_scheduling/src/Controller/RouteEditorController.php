@@ -85,6 +85,17 @@ final class RouteEditorController extends ControllerBase {
     // Prev/Next shift the window by its own length, anchored on the start day.
     $prev = (clone $start)->modify("-{$n} days")->format('Y-m-d');
     $next = (clone $start)->modify("+{$n} days")->format('Y-m-d');
+    $today = (new \DateTime('today', $tz))->format('Y-m-d');
+
+    // Displayed window: US format, never the ISO the links and the date input
+    // carry (CLAUDE.md "Date Formatting"). The day-of-week prefix earns its
+    // place here — the whole job of this toolbar is choosing WHICH DAY to
+    // route, and "Wed" is the part of 10/14/2026 a router actually reasons
+    // about. A one-day window prints one date, not the same date twice.
+    $fmt = 'D m/d/Y';
+    $dates_label = $n === 1
+      ? $start->format($fmt)
+      : $start->format($fmt) . ' → ' . $end->format($fmt);
 
     $gmap_key = (string) $this->config('geofield_map.settings')->get('gmap_api_key');
 
@@ -95,6 +106,12 @@ final class RouteEditorController extends ControllerBase {
       '#range' => $range,
       '#prev'  => $prev,
       '#next'  => $next,
+      '#today' => $today,
+      '#dates_label' => $dates_label,
+      // Lets the toolbar show the viewer where "today" is: in Week view the
+      // window is Sunday-anchored, so "contains today" is the honest test, not
+      // start === today.
+      '#is_today' => $today >= $start->format('Y-m-d') && $today <= $end->format('Y-m-d'),
       '#has_map_key' => $gmap_key !== '',
       '#attached' => [
         'library' => ['bos_scheduling/route_editor'],

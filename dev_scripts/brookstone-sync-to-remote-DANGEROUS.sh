@@ -33,9 +33,22 @@ REMOTE_ROOT="/home/brookstoneadmin/brookstone"
 # (same fix as the WEX cron): a controlled process that won't balloon into an
 # OOM kill. All remote drush calls below use this.
 # 5120M, not 768M: `drush cr` on this box is reliably OOM-KILLED at 768M (seen
-# 2026-10-04 — the process returns "Killed" and the deploy carries on none the
-# wiser). A deploy whose cache rebuild was killed looks like a success and then
-# serves 404s for any newly added route, because routes rebuild during cr.
+# 2026-10-04). A deploy whose cache rebuild was killed would look like a success
+# and then serve 404s for any newly added route, because routes rebuild during
+# cr. DO NOT lower this to "fix" an OOM kill — lowering it is what caused one.
+#
+# Two separate `cr` calls run per deploy and they are NOT equally important:
+#   1. the DEPLOY rebuild (post-rsync, below) — this is the one that matters.
+#      It is guarded: `set -euo pipefail` + the EXIT trap mean a kill here fails
+#      the deploy loudly and leaves LIVE in maintenance mode on purpose.
+#   2. the POST-MAINTENANCE clear (in cleanup()) — belt-and-braces after
+#      maintenance_mode flips off, deliberately run with `;` so it can never
+#      leak the deploy lock. THIS is the one the box reaps (observed
+#      2026-10-14: #1 printed "[success] Cache rebuild complete.", #2 came back
+#      "Killed"), which is survivable — #1 already rebuilt everything, and a
+#      maintenance response is a 503 that neither Drupal nor bos_edge_cache
+#      caches. Both are labelled in the output so a bare "Killed" can be
+#      attributed to the right one.
 REMOTE_DRUSH="/opt/alt/php83/usr/bin/php -d memory_limit=5120M vendor/drush/drush/drush.php"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -123,7 +136,7 @@ cleanup() {
     # somebody removes it by hand. Happened 2026-10-04. The lock must come off
     # whatever else went wrong; the `cd` keeps its && so we never rm in the
     # wrong directory.
-    cleanup_script="cd '${REMOTE_ROOT}' && { ${REMOTE_DRUSH} sset system.maintenance_mode 0 -y; ${REMOTE_DRUSH} cr -y; rm -f '${LOCK_NAME}'; }"
+    cleanup_script="cd '${REMOTE_ROOT}' && { ${REMOTE_DRUSH} sset system.maintenance_mode 0 -y; echo '>>> post-maintenance cache clear — a \"Killed\" HERE is harmless: the deploy rebuild already completed above, and this step only re-clears after maintenance_mode flipped off'; ${REMOTE_DRUSH} cr -y; rm -f '${LOCK_NAME}'; }"
   else
     cleanup_script="cd '${REMOTE_ROOT}' && rm -f '${LOCK_NAME}'"
   fi
@@ -281,10 +294,17 @@ cd '${REMOTE_ROOT}'
 "
 [[ "$RUN_CIM" -eq 1 ]] && post_rsync_script+="${REMOTE_DRUSH} cim -y
 "
-[[ "$RUN_CR" -eq 1 ]] && post_rsync_script+="${REMOTE_DRUSH} cr -y
+[[ "$RUN_CR" -eq 1 ]] && post_rsync_script+="echo '>>> deploy cache rebuild (routes, theme registry, plugins) — a \"Killed\" HERE fails the deploy'
+${REMOTE_DRUSH} cr -y
 "
 remote_script <<EOF
 ${post_rsync_script}
 EOF
 
-log "Deploy complete (code + vendor${RUN_CIM:+, config import}; DB untouched; files on S3)."
+# NOT ${RUN_CIM:+…}: that expands whenever the variable is SET, and RUN_CIM is
+# always set — to 0 by default — so every deploy claimed it had imported config
+# when the guard above had correctly skipped it. On a codebase where a full cim
+# is the one genuinely destructive operation (1,236 "Only in DB" entries it
+# would DELETE), a log that always says it happened is the worst thing to be
+# wrong about. Same $( [[ ]] && echo ) idiom as the preflight above.
+log "Deploy complete (code + vendor$( [[ "$RUN_CIM" -eq 1 ]] && echo ', config import' ); DB untouched; files on S3)."

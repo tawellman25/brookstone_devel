@@ -364,7 +364,7 @@
       var li = document.createElement('li');
       li.innerHTML = esc(s.nickname) + ' <span class="bos-re__svc">' + esc(s.service_code) + '</span> — ' +
         esc(s.date) + ' · ' + esc(s.tech) + ' <span class="bos-re__noloc-reason">' + esc(s.reason) + '</span> ' +
-        '<a href="' + esc(s.wo_url) + '">WO ' + s.wo_id + '</a>';
+        woLink(s);
       listEl.appendChild(li);
     });
   }
@@ -691,13 +691,27 @@
    * way into the selection: pick stops off the map, then set crew or date in the
    * bar on the left. A finished stop offers no Select — it says why instead.
    */
+  /**
+   * The link to a stop's work order, always opening in a NEW TAB.
+   *
+   * Navigating away in place loses the map: the window you had scrolled to,
+   * the routes you had toggled off, and any selection you had built up — all
+   * of which this tool exists to let you assemble, and none of which survives
+   * a back button. rel="noopener" because a new tab would otherwise get
+   * window.opener access back to this page; browsers imply it for
+   * target="_blank" now, but it costs nothing to say.
+   */
+  function woLink(s) {
+    return '<a href="' + esc(s.wo_url) + '" target="_blank" rel="noopener">WO ' + s.wo_id + '</a>';
+  }
+
   function infoContent(s, idx) {
     var box = document.createElement('div');
     box.className = 'bos-re__iw';
     box.innerHTML =
       '<strong>' + esc(s.nickname) + '</strong> <span>' + esc(s.service_code) + '</span><br>' +
       'Stop ' + (idx + 1) + ' · ' + esc(s.tech) + ' · ' + esc(fmtDay(s.date)) + '<br>' +
-      esc(s.status_label) + ' · <a href="' + esc(s.wo_url) + '">WO ' + s.wo_id + '</a>';
+      esc(s.status_label) + ' · ' + woLink(s);
 
     // Only plotted stops have an info window, and finished ones are never
     // plotted — so this always offers Select.

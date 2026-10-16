@@ -16,3 +16,32 @@
 th.select-all input[type="checkbox"] {
   display: none;
 }
+
+/* Live "N selected" readout on VBO bulk forms (js/vbo-selection-count.js).
+   Pairs with the hidden select-all above: the header checkbox is gone, but core
+   still does SHIFT-CLICK range select silently, so the count is the only signal
+   that a gesture grabbed more rows than intended. */
+.bos-vbo-count {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 0 0 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #ccc;
+  border-left: 5px solid #777;
+  border-radius: 3px;
+  background: #f5f5f5;
+  font-weight: 700;
+}
+.bos-vbo-count.is-empty {
+  color: #666;
+  font-weight: 400;
+  border-left-color: #ccc;
+}
+/* Past the threshold it should be impossible to miss. */
+.bos-vbo-count.is-loud {
+  color: #7a2d00;
+  background: #fff3e6;
+  border-color: #CB6015;
+  border-left-color: #CB6015;
+}

@@ -157,6 +157,8 @@ final class RouteEditorController extends ControllerBase {
     $end_ts   = (clone $end)->setTime(23, 59, 59)->getTimestamp();
 
     $rows = $this->fetch($start_ts, $end_ts);
+    $systemTypes = $this->systemTypes(array_filter(array_map(
+      static fn($r) => (int) ($r->property_id ?? 0), $rows)));
 
     $stops = [];
     $no_location = [];
@@ -187,6 +189,11 @@ final class RouteEditorController extends ControllerBase {
         'service_code' => strtoupper(trim((string) ($r->service_code ?? ''))) ?: '?',
         'status_tid' => (int) ($r->status_tid ?? 0),
         'status_label' => DispatchController::STATUS_LABELS[(int) ($r->status_tid ?? 0)] ?? 'Unknown',
+        // What the crew is walking up to, and anything the office wrote about
+        // this particular visit. Both are '' when absent so the popup can just
+        // omit the line rather than print an empty label.
+        'system_type' => $systemTypes[(int) ($r->property_id ?? 0)] ?? '',
+        'scheduling_note' => mb_substr(trim((string) ($r->scheduling_note ?? '')), 0, 300),
         // Drives the whole read-only treatment client-side: greyed in the list,
         // no pin on the map, skipped by the route line and by select-all.
         'locked' => in_array((int) ($r->status_tid ?? 0), self::LOCKED_STATUSES, TRUE),
@@ -576,7 +583,18 @@ final class RouteEditorController extends ControllerBase {
     $q->leftJoin('scheduling__field_route_order_set', 'sros', 's.id = sros.entity_id AND sros.deleted = 0');
     $q->addField('sros', 'field_route_order_set_value', 'route_order_set');
 
+    // Scheduling note — 1:1 with the scheduling record, so an ordinary join is
+    // safe here. 12,908 of 20,177 scheduling records carry one, so this is
+    // information the office is actively writing and the crew could not see.
+    $q->leftJoin('scheduling__field_scheduling_note', 'snote', 's.id = snote.entity_id AND snote.deleted = 0');
+    $q->addField('snote', 'field_scheduling_note_value', 'scheduling_note');
+
     $q->leftJoin('work_order__field_property', 'wop', 'wop.entity_id = swo.field_work_order_target_id AND wop.deleted = 0');
+    // Needed to look the sprinkler system type up in a SECOND pass — see
+    // systemTypes(). It deliberately is NOT joined here: 10 properties carry
+    // two systems, and joining would silently emit two rows for one stop,
+    // double-plotting the pin and double-counting the route.
+    $q->addField('wop', 'field_property_target_id', 'property_id');
     $q->leftJoin('properties__field_nickname', 'nick', 'nick.entity_id = wop.field_property_target_id AND nick.deleted = 0');
     $q->addField('nick', 'field_nickname_value', 'property_nickname');
     $q->leftJoin('properties__field_geofield', 'geo', 'geo.entity_id = wop.field_property_target_id AND geo.deleted = 0');
@@ -597,6 +615,56 @@ final class RouteEditorController extends ControllerBase {
     $q->orderBy('sord.field_scheduled_oder_value', 'ASC');
 
     return $q->execute()->fetchAll();
+  }
+
+  /**
+   * Sprinkler system type label(s) per property, as [property_id => 'label'].
+   *
+   * A SECOND pass rather than a join on the main query, because 1,143
+   * properties have one system but 10 have TWO — and joining a one-to-many
+   * onto the stop query would emit that stop twice: two pins at one address,
+   * counted twice in the route and in every total derived from it. Those ten
+   * get both labels in one string instead ("Domestic Water System, Well Water
+   * System"), which is also the more useful answer for a crew.
+   *
+   * Two queries, not N: one for the property→type rows, one for the labels.
+   */
+  protected function systemTypes(array $propertyIds): array {
+    $propertyIds = array_values(array_unique(array_filter($propertyIds)));
+    if (!$propertyIds) {
+      return [];
+    }
+    $q = $this->database->select('property_sprinkler_system__field_property', 'psp');
+    $q->addField('psp', 'field_property_target_id', 'pid');
+    $q->condition('psp.deleted', 0);
+    $q->condition('psp.field_property_target_id', $propertyIds, 'IN');
+    $q->join('property_sprinkler_system__field_system_type', 'pst',
+      'pst.entity_id = psp.entity_id AND pst.deleted = 0');
+    $q->addField('pst', 'field_system_type_target_id', 'type_tid');
+    $rows = $q->execute()->fetchAll();
+    if (!$rows) {
+      return [];
+    }
+
+    $tids = array_values(array_unique(array_map(static fn($r) => (int) $r->type_tid, $rows)));
+    $labels = [];
+    foreach ($this->entityTypeManager()->getStorage('sprinkler_system_types')->loadMultiple($tids) as $id => $e) {
+      $labels[(int) $id] = (string) $e->label();
+    }
+
+    $byProperty = [];
+    foreach ($rows as $r) {
+      $label = $labels[(int) $r->type_tid] ?? '';
+      if ($label === '') {
+        continue;
+      }
+      $pid = (int) $r->pid;
+      // Two systems of the SAME type on one property say nothing twice.
+      if (!isset($byProperty[$pid]) || !in_array($label, $byProperty[$pid], TRUE)) {
+        $byProperty[$pid][] = $label;
+      }
+    }
+    return array_map(static fn(array $l) => implode(', ', $l), $byProperty);
   }
 
   /**

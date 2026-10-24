@@ -708,10 +708,23 @@
   function infoContent(s, idx) {
     var box = document.createElement('div');
     box.className = 'bos-re__iw';
+    // The system type and the office's note are OPTIONAL lines: when a stop has
+    // neither, the popup reads exactly as it did before rather than showing
+    // empty labels. The note is last and visually separated because it is the
+    // only free text here -- it is what somebody deliberately wrote about THIS
+    // visit, so it should not be mistaken for another data field.
+    var extra = '';
+    if (s.system_type) {
+      extra += '<div class="bos-re__iw-sys">' + esc(s.system_type) + '</div>';
+    }
+    if (s.scheduling_note) {
+      extra += '<div class="bos-re__iw-note">' + esc(s.scheduling_note) + '</div>';
+    }
     box.innerHTML =
       '<strong>' + esc(s.nickname) + '</strong> <span>' + esc(s.service_code) + '</span><br>' +
       'Stop ' + (idx + 1) + ' · ' + esc(s.tech) + ' · ' + esc(fmtDay(s.date)) + '<br>' +
-      esc(s.status_label) + ' · ' + woLink(s);
+      esc(s.status_label) + ' · ' + woLink(s) +
+      extra;
 
     // Only plotted stops have an info window, and finished ones are never
     // plotted — so this always offers Select.

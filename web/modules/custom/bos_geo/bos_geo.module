@@ -305,9 +305,25 @@ function bos_geo_metatags_alter(array &$metatags, array $context) {
   if (empty($override['og_image'])
     && $entity->hasField('field_banner_image') && !$entity->get('field_banner_image')->isEmpty()) {
     $file = $entity->get('field_banner_image')->entity;
-    $style = ImageStyle::load('max_1300x1300');
+    // 'og_image' (1200x630) is the Facebook link-card shape; it replaced
+    // max_1300x1300 on 2026-10-25, which being a SCALE effect left a portrait
+    // banner portrait for Facebook to crop unpredictably. bos_services uses the
+    // same style for the same reason — change both together. The style still
+    // exists primarily to stay under Facebook's 8 MB og:image limit.
+    $style = ImageStyle::load('og_image');
     if ($file && $style) {
       $metatags['og_image'] = $style->buildUrl($file->getFileUri());
+      // Let Facebook lay the card out without fetching the file first.
+      if (empty($override['og_image_width'])) {
+        $metatags['og_image_width'] = '1200';
+      }
+      if (empty($override['og_image_height'])) {
+        $metatags['og_image_height'] = '630';
+      }
+      if (empty($override['og_image_alt'])) {
+        $item = $entity->get('field_banner_image')->first();
+        $metatags['og_image_alt'] = trim((string) ($item?->alt ?? '')) ?: $entity->label();
+      }
     }
   }
 }

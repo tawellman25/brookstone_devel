@@ -441,7 +441,19 @@ function bos_service_request_metatags_attachments_alter(array &$metatag_attachme
   $img = $host . '/' . \Drupal::service('extension.list.module')->getPath('bos_service_request') . '/assets/winterize-hero.jpg';
   $ogTitle = 'Sprinkler Winterizing — Get on the List | Brookstone Outdoors';
   $ogDesc = 'Protect your sprinkler system from winter freeze damage. Get on the Brookstone Outdoors winterizing list — serving Delta & Montrose counties, CO, since 1997.';
-  $values = ['og_image' => $img, 'og_title' => $ogTitle, 'og_description' => $ogDesc, 'description' => $ogDesc];
+  // winterize-hero.jpg is 1840x1026 — already 16:9 landscape and 162 KB, so it
+  // needs no image style: it is a static asset, well inside Facebook's 8 MB
+  // limit, and reads correctly as a card. Its real dimensions are emitted so
+  // Facebook can lay the card out without fetching it first.
+  $values = [
+    'og_image' => $img,
+    'og_image_width' => '1840',
+    'og_image_height' => '1026',
+    'og_image_alt' => 'Brookstone Outdoors sprinkler winterizing',
+    'og_title' => $ogTitle,
+    'og_description' => $ogDesc,
+    'description' => $ogDesc,
+  ];
 
   // Edit existing tags in place; track which we still need to add. Metatag
   // suffixes multi-value tags (e.g. og:image renders as key "og_image_0"), so
@@ -458,7 +470,15 @@ function bos_service_request_metatags_attachments_alter(array &$metatag_attachme
     unset($item);
   }
   // Add any that weren't in the global defaults (e.g. og:description).
-  $meta = ['og_image' => 'og:image', 'og_title' => 'og:title', 'og_description' => 'og:description', 'description' => 'description'];
+  $meta = [
+    'og_image' => 'og:image',
+    'og_image_width' => 'og:image:width',
+    'og_image_height' => 'og:image:height',
+    'og_image_alt' => 'og:image:alt',
+    'og_title' => 'og:title',
+    'og_description' => 'og:description',
+    'description' => 'description',
+  ];
   foreach ($values as $key => $content) {
     if (empty($seen[$key])) {
       $attr = ($key === 'description') ? 'name' : 'property';

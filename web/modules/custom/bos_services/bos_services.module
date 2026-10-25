@@ -318,7 +318,18 @@ function _bos_services_banner_images(EntityInterface $term): array {
  * Serve a service's og:image (Facebook share image) through an image style
  * derivative of its Home Page Slide instead of the raw original — a phone-shot
  * slide can be 9+ MB, over Facebook's 8 MB og:image limit, so FB refuses it.
- * The max_1300x1300 derivative is a few hundred KB and well within limits.
+ *
+ * The style is `og_image` (1200x630), the shape Facebook's link card actually
+ * uses. It replaced `max_1300x1300` on 2026-10-25: that one is a SCALE effect,
+ * so a portrait source stayed portrait and Facebook cropped it to a band across
+ * the middle on their side, unpredictably. Cropping here is deliberate and
+ * repeatable. ⚠ The 8 MB ceiling above is still the reason a style is used at
+ * all — any future change must stay under it. `bos_geo` uses the same style for
+ * the same reason; change both together.
+ *
+ * og:image:width / :height are emitted alongside so Facebook can lay the card
+ * out without fetching the file first, which removes a class of first-share
+ * failures, and og:image:alt carries the photo's own alt text.
  */
 function bos_services_metatags_attachments_alter(array &$metatag_attachments) {
   $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
@@ -327,11 +338,18 @@ function bos_services_metatags_attachments_alter(array &$metatag_attachments) {
     return;
   }
   $file = $term->get('field_home_page_slide')->entity;
-  $style = ImageStyle::load('max_1300x1300');
+  // 'og_image' literal, not a shared constant: bos_geo uses the same style, and
+  // a constant defined in one module and read by the other would fatal if either
+  // were disabled. test_og_image_pipeline.php asserts both still agree.
+  $style = ImageStyle::load('og_image');
   if (!$file || !$style) {
     return;
   }
   $url = $style->buildUrl($file->getFileUri());
+  // Alt text as the office wrote it on the photo; the service name is a decent
+  // fallback, and an empty og:image:alt is worse than none.
+  $item = $term->get('field_home_page_slide')->first();
+  $alt = trim((string) ($item?->alt ?? '')) ?: $term->label();
 
   // Pass 1: read this page's meta description (to mirror into og:description).
   $desc = '';
@@ -371,6 +389,45 @@ function bos_services_metatags_attachments_alter(array &$metatag_attachments) {
       'og_description',
     ];
   }
+
+  // The card's dimensions and alt text. Width/height are literals because the
+  // style is fixed at 1200x630 — giving Facebook them up front lets it lay the
+  // card out without fetching the image, which is what stops a first share
+  // rendering imageless and then CACHING that failure.
+  _bos_services_set_meta($metatag_attachments, 'og_image_width', 'og:image:width', '1200');
+  _bos_services_set_meta($metatag_attachments, 'og_image_height', 'og:image:height', '630');
+  if ($alt !== '') {
+    _bos_services_set_meta($metatag_attachments, 'og_image_alt', 'og:image:alt', $alt);
+  }
+}
+
+/**
+ * Set one og: tag in the attachments, editing in place or appending.
+ *
+ * Mirrors what the og:image handling above already does by hand. Metatag
+ * suffixes multi-value tags with _N (og:image arrives as 'og_image_0'), so the
+ * key is normalised before matching or a second, duplicate tag gets appended.
+ */
+function _bos_services_set_meta(array &$attachments, string $key, string $property, string $content): void {
+  // ⚠ NOT `$attachments['#attached']['html_head'] ?? []` here. The ?? operator
+  // yields a VALUE, so `as &$item` would iterate a COPY and every write would be
+  // silently discarded — which is exactly what happened on the first attempt:
+  // og:image updated (that loop indexes directly) while width/height/alt kept
+  // the global defaults' 1920x1080. Guard, then index the real array.
+  if (!empty($attachments['#attached']['html_head'])) {
+    foreach ($attachments['#attached']['html_head'] as &$item) {
+      if (preg_replace('/_\d+$/', '', $item[1] ?? '') === $key) {
+        $item[0]['#attributes']['content'] = $content;
+        unset($item);
+        return;
+      }
+    }
+    unset($item);
+  }
+  $attachments['#attached']['html_head'][] = [
+    ['#tag' => 'meta', '#attributes' => ['property' => $property, 'content' => $content]],
+    $key,
+  ];
 }
 
 /**

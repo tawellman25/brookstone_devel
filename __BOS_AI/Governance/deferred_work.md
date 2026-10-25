@@ -219,6 +219,28 @@ The current state isn't broken — origin tracks the full history, recovery is p
 
 ## Process / hygiene
 
+### 31. Re-enable CSS/JS aggregation when the theme work settles
+
+`system.performance` has **`js.preprocess: false` and `css.preprocess: false`** on live.
+This is **deliberate** — Todd turned aggregation off while perfecting the CSS, and chose
+on 2026-10-25 to leave it off through the winter, when he has a batch of changes planned.
+That is the right call while iterating: aggregation combines and minifies, which is exactly
+what makes a CSS change hard to see.
+
+Logged only because "off for now" is the kind of setting that quietly becomes off forever.
+The cost is narrow — unminified, unbundled assets served as separate requests — and it
+falls almost entirely on **authenticated admin/crew pages**, since anonymous pages are
+served by the LiteSpeed edge cache without entering PHP (`bos_edge_cache`). So there is no
+urgency and no public-facing penalty.
+
+Re-enabling is two config values. **Verify afterwards** that the admin theme still renders
+(`brookstone_admin` ships hand-written CSS that has never been through the aggregator) and
+that nothing depends on a raw file path. Current state is recorded here so a future session
+does not "fix" an intentional setting mid-winter.
+
+**Surfaced 2026-10-25** while confirming that the Route Editor popup deploy needed no cache
+rebuild — aggregation being off is *why* `_drupal_flush_css_js()` sufficed.
+
 ### 11. Post-commit config sync checklist
 
 After any commit touching `config/sync/`:

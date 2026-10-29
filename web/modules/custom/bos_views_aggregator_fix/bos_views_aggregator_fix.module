@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * @file
+ * Stops views_aggregator fatalling on "undefined function
+ * template_preprocess_views_view_table()".
+ */
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_theme_registry_alter().
+ *
+ * THE BUG. `template_preprocess_views_aggregator_results_table()` ends by
+ * calling `template_preprocess_views_view_table()` directly
+ * (views_aggregator.module, ~line 189). That function is not global: core
+ * defines it in `core/modules/views/views.theme.inc`, which the theme system
+ * loads only for hooks that DECLARE it. Core's own `views_view_table` hook
+ * does; `views_aggregator_results_table` declares **no includes at all**.
+ *
+ * So the call works only when something else in the same request has already
+ * pulled that file in — which is why it is intermittent rather than constant,
+ * and why the same page can render fine one minute and fatal the next
+ * depending on what else is on it. Observed on live 2026-10-28, core 10.6.17:
+ *
+ *     views_view_table                includes = ["…/views.theme.inc"]
+ *     views_aggregator_results_table  includes = []
+ *
+ * THE FIX. Declare the include on that hook, so the theme system loads it
+ * before running the preprocess, exactly as it does for core's table hook.
+ *
+ * WHY A HOOK AND NOT A PATCH. Editing the contrib file by hand would vanish on
+ * the next `composer install` (the house rule), and a composer patch would have
+ * to be rebased against every views_aggregator release. `hook_theme_registry_alter`
+ * is the supported extension point for precisely this, survives module updates
+ * untouched, and does not fork contrib. If upstream ever declares the include
+ * itself, this becomes a harmless no-op rather than a conflict.
+ *
+ * Guarded rather than declaring a hard dependency on views_aggregator: if the
+ * module is absent the hook simply is not in the registry and this does
+ * nothing, so uninstalling views_aggregator later is not blocked by this.
+ */
+function bos_views_aggregator_fix_theme_registry_alter(array &$theme_registry): void {
+  $hook = 'views_aggregator_results_table';
+  if (!isset($theme_registry[$hook])) {
+    return;
+  }
+  $include = 'core/modules/views/views.theme.inc';
+  if (!isset($theme_registry[$hook]['includes']) || !is_array($theme_registry[$hook]['includes'])) {
+    $theme_registry[$hook]['includes'] = [];
+  }
+  // Core itself lists this path twice on views_view_table, so duplicates are
+  // evidently harmless — but there is no reason to add another.
+  if (!in_array($include, $theme_registry[$hook]['includes'], TRUE)) {
+    $theme_registry[$hook]['includes'][] = $include;
+  }
+}

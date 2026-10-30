@@ -924,6 +924,26 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
   /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
   $svc = \Drupal::service('wo_sign_off.crew_roster');
 
+  // ⚠ Attach the "Copy these times" JS HERE — on the wrapper subtree, and
+  // BEFORE the early returns below. Both halves matter, and getting either
+  // wrong is what broke it (reported 2026-10-30, fixed same day):
+  //
+  //  - ON THE SUBTREE, not $form['#attached']. The ajax callback returns only
+  //    `$form['signoff_reconciliation']`, and Drupal collects #attached from
+  //    the RETURNED render array — so a library hung on the root form never
+  //    reaches the browser on an ajax rebuild.
+  //  - BEFORE THE EARLY RETURNS. A sign-off form opens with an empty roster,
+  //    which returns early at the "nothing to reconcile" message, so an attach
+  //    further down never ran on the initial page load either.
+  //
+  // Between the two, the JS only ever arrived on a FULL page render — which is
+  // why the button appeared dead until you attempted a save and got an error,
+  // and worked fine from then on.
+  //
+  // Attaching unconditionally is cheap: with no rows there are no
+  // .bos-wtc-copy-btn elements, so the behavior finds nothing and no-ops.
+  $form['signoff_reconciliation']['#attached']['library'][] = 'wo_total_time/copy_from_first';
+
   // Roster source priority: form state values (AJAX-aware), then the
   // entity's current field values (covers initial render of both new
   // and existing entities, where form state hasn't been populated yet).
@@ -1120,10 +1140,6 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
       ],
     ];
   }
-  // Attach library once if any row was rendered. Cheap to attach
-  // unconditionally; the row helper returns an empty array when there's
-  // no source entry, so the button class won't appear and the JS no-ops.
-  $form['#attached']['library'][] = 'wo_total_time/copy_from_first';
 }
 
 /**

@@ -568,8 +568,15 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
   if ($svc->isComplexBundle($entity_type, $entity->bundle())) {
     $form['signoff_reconciliation']['refresh'] = [
       '#type' => 'button',
-      '#value' => t('Refresh reconciliation list'),
+      '#value' => t('Refresh man hours'),
       '#weight' => -100,
+      // ⚠ A UNIQUE #name. Without it Drupal names every button on the form
+      // "op" — this one AND the entity form's Save — and then has to tell them
+      // apart by their VALUE alone. Core's own guidance for forms carrying more
+      // than one button is to give each a distinct name; relying on the value
+      // means a label change or a translation can silently alter which button
+      // the form thinks was pressed.
+      '#name' => 'signoff_refresh_man_hours',
       '#limit_validation_errors' => [],
       '#ajax' => [
         'callback' => '_wo_sign_off_reconciliation_ajax_rebuild',
@@ -965,8 +972,8 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
   // reflect the absence of the Refresh button on the mowing path.
   if (empty($roster) || $wo_id <= 0) {
     $msg = $entity_type === 'wo_complete_info'
-      ? t('No crew members assigned yet — reconciliation will appear once you add crew above and click "Refresh reconciliation list".')
-      : t('No crew members assigned yet — reconciliation will appear once the crew roster above is populated.');
+      ? t('No crew members assigned yet — man hours will appear once you add crew above and click "Refresh man hours".')
+      : t('No crew members assigned yet — man hours will appear once the crew roster above is populated.');
     $form['signoff_reconciliation']['empty_state'] = [
       '#markup' => '<p><em>' . $msg . '</em></p>',
     ];

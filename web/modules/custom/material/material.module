@@ -7,6 +7,7 @@ use Drupal\Core\Entity\EntityFormInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\image\Entity\ImageStyle;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\taxonomy\Entity\Term;
 use Drupal\views\ViewExecutable;
@@ -941,4 +942,205 @@ function material_get_business_markup(): ?float {
   }
 
   return $markup;
+}
+
+
+/* -------------------------------------------------------------------------
+ * The public face of a material: the hero, and the share image.
+ *
+ * ⚠ The four hooks below (preprocess_page, preprocess_html, block_access,
+ * metatags_alter) were NEVER PREVIOUSLY IMPLEMENTED by this module, and a
+ * brand-new hook on an already-enabled module is NOT registered by `drush cr`
+ * (drupal_bos_gotchas.md). This module must be REINSTALLED (`pmu` + `en`) for
+ * them to fire — verified safe first: ZERO config entities depend on
+ * `material`, so the uninstall deletes nothing.
+ *
+ * ⚠ Do the reinstall UNDER MAINTENANCE MODE. While the module is off,
+ * material_entity_field_access() and material_entity_view_mode_alter() are not
+ * running either — so office-only fields would be renderable and anonymous
+ * visitors would get `full` instead of `public` on 2,964 public pages. Brief,
+ * but a real exposure window; maintenance mode closes it.
+ * ---------------------------------------------------------------------- */
+
+
+/**
+ * The material on this route, if it should show a hero to THIS viewer.
+ *
+ * Office and crew are deliberately excluded: for them this page is a working
+ * record — stock, supplier, pack data — and a full-bleed photo pushes it below
+ * the fold. Clients are NOT excluded; they are browsing the catalogue, which is
+ * the audience a hero is for. That mirrors material_entity_view_mode_alter(),
+ * whose role constants are reused here so the two cannot drift apart.
+ */
+function _material_hero_entity(): ?EntityInterface {
+  $entity = \Drupal::routeMatch()->getParameter('material');
+  if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'material') {
+    return NULL;
+  }
+  $roles = \Drupal::currentUser()->getRoles();
+  if (array_intersect(array_merge(MATERIAL_OFFICE_ROLES, MATERIAL_CREW_ROLES), $roles)) {
+    return NULL;
+  }
+  return _material_banner_images($entity) ? $entity : NULL;
+}
+
+/**
+ * The banner images, at hero size.
+ *
+ * Caption comes from the image's TITLE sub-field and nothing else. There is
+ * deliberately NO fallback to alt: alt describes the picture for a screen
+ * reader, the caption is the line a customer reads, and falling back prints
+ * technical description as marketing copy while making a screen reader meet the
+ * same sentence twice. Empty caption means no line on that slide. This is the
+ * standard set on 2026-10-11 and already satisfied here — `title_field` is
+ * enabled on material.field_banner_images.
+ *
+ * The template reads `caption`; omitting the key renders an empty hidden
+ * subtitle and blank data-bo-caption attributes, which is a bug the season
+ * builder shipped once.
+ */
+function _material_banner_images(EntityInterface $entity): array {
+  if (!$entity->hasField('field_banner_images') || $entity->get('field_banner_images')->isEmpty()) {
+    return [];
+  }
+  $style = ImageStyle::load('max_2600x2600');
+  $images = [];
+  foreach ($entity->get('field_banner_images') as $item) {
+    $file = $item->entity;
+    if (!$file) {
+      continue;
+    }
+    $uri = $file->getFileUri();
+    $alt = trim((string) $item->alt);
+    $images[] = [
+      'src' => $style
+        ? $style->buildUrl($uri)
+        : \Drupal::service('file_url_generator')->generateAbsoluteString($uri),
+      // Alt falls back to the material name so a photo is never undescribed —
+      // alt_field_required is FALSE on this field, unlike the season one.
+      'alt' => $alt !== '' ? $alt : (string) $entity->label(),
+      'caption' => trim((string) $item->title),
+    ];
+  }
+  return $images;
+}
+
+/**
+ * Implements hook_preprocess_page().
+ */
+function material_preprocess_page(array &$variables): void {
+  $entity = _material_hero_entity();
+  if (!$entity) {
+    return;
+  }
+  $variables['page']['hero']['bo_hero_banner'] = [
+    '#theme' => 'bo_hero_banner',
+    '#images' => _material_banner_images($entity),
+    '#title' => $entity->label(),
+    // Per-slide caption that rotates with the images.
+    '#alt_subtitle' => TRUE,
+  ];
+  $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
+  // MANDATORY: the hero is chosen by role, so without this the render cache can
+  // hand one audience's page to another.
+  $variables['#cache']['contexts'][] = 'user.roles';
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function material_preprocess_html(array &$variables): void {
+  if (_material_hero_entity()) {
+    $variables['attributes']['class'][] = 'has-bo-hero';
+  }
+}
+
+/**
+ * Implements hook_block_access().
+ *
+ * With a hero up it carries the H1, so the page-title block would print the
+ * name a second time. Only suppressed when a hero is actually rendering — a
+ * material with no banner keeps its ordinary title.
+ */
+function material_block_access($block, $operation, AccountInterface $account) {
+  if ($operation === 'view'
+    && $block->getPluginId() === 'page_title_block'
+    && _material_hero_entity()) {
+    return \Drupal\Core\Access\AccessResult::forbidden()
+      ->addCacheContexts(['user.roles', 'url.path']);
+  }
+  return \Drupal\Core\Access\AccessResult::neutral()
+    ->addCacheContexts(['user.roles', 'url.path']);
+}
+
+/**
+ * Implements hook_metatags_alter().
+ *
+ * Share a material's OWN photo on Facebook.
+ *
+ * Until now a shared material link showed the site-wide fallback
+ * (home-hero.jpg) — a generic landscape, on a page about a Dahlia. The
+ * 2026-10-25 og:image work covered service terms, the geo hubs and /winterize
+ * but not material pages, and 546 materials carry a main image.
+ *
+ * Banner first, main image second: where a banner exists it is the chosen
+ * marketing shot, and it is what the hero above is already showing. Served
+ * through the og_image style (1200x630) for the same reason as everywhere
+ * else — a raw phone photo can exceed Facebook's 8 MB limit, and a scale-only
+ * derivative leaves a portrait source to be cropped unpredictably by Facebook.
+ */
+function material_metatags_alter(array &$metatags, array $context): void {
+  $entity = $context['entity'] ?? NULL;
+  if (!$entity instanceof EntityInterface || $entity->getEntityTypeId() !== 'material') {
+    return;
+  }
+  $item = NULL;
+  foreach (['field_banner_images', 'field_main_image'] as $field) {
+    if ($entity->hasField($field) && !$entity->get($field)->isEmpty()) {
+      $item = $entity->get($field)->first();
+      break;
+    }
+  }
+  $file = $item?->entity;
+  $style = ImageStyle::load('og_image');
+  if (!$file || !$style) {
+    return;
+  }
+  $metatags['og_image'] = $style->buildUrl($file->getFileUri());
+  // Stated up front so Facebook can lay the card out without fetching the file.
+  $metatags['og_image_width'] = '1200';
+  $metatags['og_image_height'] = '630';
+  $alt = trim((string) ($item->alt ?? ''));
+  $metatags['og_image_alt'] = $alt !== '' ? $alt : (string) $entity->label();
+}
+
+/**
+ * Implements hook_field_widget_single_element_form_alter().
+ *
+ * Relabel the alt/title boxes on the banner widget. Drupal's generic
+ * "Alternative text" / "Title" tells the office nothing about which one the
+ * customer reads, so the caption ends up in the wrong box or nowhere.
+ */
+function material_field_widget_single_element_form_alter(array &$element, FormStateInterface $form_state, array $context): void {
+  $field = $context['items']->getFieldDefinition();
+  if ($field->getName() !== 'field_banner_images' || $field->getTargetEntityTypeId() !== 'material') {
+    return;
+  }
+  // ⚠ #after_build, not here: ImageWidget::process() builds the alt and title
+  // inputs AFTER this hook runs, so relabelling at this point does nothing.
+  $element['#after_build'][] = '_material_label_hero_boxes';
+}
+
+/**
+ * Rename the alt/title inputs once the image widget has built them.
+ */
+function _material_label_hero_boxes(array $element, FormStateInterface $form_state): array {
+  if (isset($element['alt'])) {
+    $element['alt']['#title'] = t('Describe the photo (for screen readers and search)');
+  }
+  if (isset($element['title'])) {
+    $element['title']['#title'] = t('Caption shown under the heading');
+    $element['title']['#description'] = t('Leave empty for no caption on this photo.');
+  }
+  return $element;
 }

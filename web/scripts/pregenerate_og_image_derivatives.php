@@ -48,6 +48,12 @@ if (!$style) {
 /** Each source: [entity type, bundle or NULL, image field]. */
 $sources = [
   ['taxonomy_term', 'services', 'field_home_page_slide'],
+  // Materials, added 2026-11-01 with the hero work: a shared material link was
+  // showing the site-wide fallback (home-hero.jpg) instead of its own photo.
+  // Banner first, then main image — the same order material_metatags_alter()
+  // picks, or the derivative built here would not be the one og:image names.
+  ['material', NULL, 'field_banner_images'],
+  ['material', NULL, 'field_main_image'],
   ['county', NULL, 'field_banner_image'],
   ['city', NULL, 'field_banner_image'],
   ['state', NULL, 'field_banner_image'],

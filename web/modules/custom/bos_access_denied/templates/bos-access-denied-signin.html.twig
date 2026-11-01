@@ -1,0 +1,26 @@
+{#
+  Anonymous, on an internal path. Do NOT say "you don't have permission" — they
+  almost certainly DID, until their session timed out. The sign-in link carries
+  the page they were heading for, so one login puts them back on it.
+#}
+<div class="bos-403 bos-403--signin">
+  <h2 class="bos-403__head">Your sign-in has expired</h2>
+  <p class="bos-403__lead">
+    You need to be signed in to open that page. Sign in and we'll take you
+    straight back to it.
+  </p>
+
+  <p class="bos-403__actions">
+    <a href="{{ login_url }}" class="bos-403__btn bos-403__btn--primary">Sign in and continue</a>
+    <a href="{{ reset_url }}" class="bos-403__btn">Forgot your password?</a>
+  </p>
+
+  {% if denied_path %}
+    <p class="bos-403__meta">You were trying to open <code>{{ denied_path }}</code></p>
+  {% endif %}
+
+  <p class="bos-403__meta">
+    Still stuck after signing in? That page may need access your account doesn't
+    have yet — ask the office to check.
+  </p>
+</div>

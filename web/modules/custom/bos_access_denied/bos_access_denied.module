@@ -1,0 +1,32 @@
+<?php
+
+/**
+ * @file
+ * The 403 page: sign a teammate back in, or show a visitor the business.
+ */
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_theme().
+ */
+function bos_access_denied_theme(): array {
+  $common = ['denied_path' => '', 'home_url' => ''];
+  return [
+    // Anonymous on a working page — almost always an expired session.
+    'bos_access_denied_signin' => [
+      'variables' => $common + ['login_url' => '', 'reset_url' => ''],
+      'template' => 'bos-access-denied-signin',
+    ],
+    // Signed in, but without the access this page needs.
+    'bos_access_denied_blocked' => [
+      'variables' => $common + ['name' => '', 'logout_url' => ''],
+      'template' => 'bos-access-denied-blocked',
+    ],
+    // A visitor who found an internal URL.
+    'bos_access_denied_public' => [
+      'variables' => $common + ['services' => [], 'services_url' => '', 'login_url' => ''],
+      'template' => 'bos-access-denied-public',
+    ],
+  ];
+}

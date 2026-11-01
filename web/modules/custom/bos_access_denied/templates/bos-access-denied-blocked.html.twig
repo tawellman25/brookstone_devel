@@ -1,0 +1,26 @@
+{#
+  Signed in, but lacking the access this page needs. Signing in again cannot
+  help, so this one does NOT offer a login link — it says who they are, which
+  is the first thing the office will ask.
+#}
+<div class="bos-403 bos-403--blocked">
+  <h2 class="bos-403__head">That page needs access your account doesn't have</h2>
+  <p class="bos-403__lead">
+    You're signed in as <strong>{{ name }}</strong>. Signing in again won't
+    change this — the account itself needs the access added.
+  </p>
+
+  {% if denied_path %}
+    <p class="bos-403__meta">Page: <code>{{ denied_path }}</code></p>
+  {% endif %}
+
+  <p class="bos-403__lead">
+    Ask the office to add it, and give them your name and that address — it's
+    exactly what they need to fix it.
+  </p>
+
+  <p class="bos-403__actions">
+    <a href="{{ home_url }}" class="bos-403__btn bos-403__btn--primary">Back to the start</a>
+    <a href="{{ logout_url }}" class="bos-403__btn">Sign in as someone else</a>
+  </p>
+</div>

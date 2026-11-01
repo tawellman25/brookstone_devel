@@ -1,0 +1,11 @@
+bos_access_denied.page:
+  path: '/access-denied'
+  defaults:
+    _controller: '\Drupal\bos_access_denied\Controller\AccessDeniedController::page'
+    _title: 'Access denied'
+  requirements:
+    # Must be reachable by anyone — it IS the 403 page. A permission here would
+    # make a denied request deny again, which core renders as a bare fallback.
+    _access: 'TRUE'
+  options:
+    no_cache: 'TRUE'

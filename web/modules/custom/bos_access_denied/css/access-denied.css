@@ -1,0 +1,47 @@
+/**
+ * The 403 page. Deliberately plain structure that inherits whichever theme is
+ * rendering — this page appears in the public theme AND to signed-in staff, so
+ * it leans on theme typography rather than imposing its own.
+ */
+.bos-403 { max-width: 46rem; margin: 0 auto; padding: 1rem 0 2.5rem; }
+.bos-403__head { margin: 0 0 0.6rem; line-height: 1.2; }
+.bos-403__lead { font-size: 1.05rem; line-height: 1.6; margin: 0 0 1rem; }
+.bos-403__meta { font-size: 0.88rem; color: #666; margin: 0.6rem 0 0; }
+.bos-403__meta code {
+  background: #f3f3f3; border: 1px solid #e2e2e2; border-radius: 3px;
+  padding: 1px 5px; font-size: 0.85em; word-break: break-all;
+}
+
+.bos-403__actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1.4rem 0 0; align-items: center; }
+.bos-403__btn {
+  display: inline-block; padding: 0.55rem 1.1rem; border-radius: 4px;
+  border: 1px solid #ccc; background: #fff; color: #333;
+  text-decoration: none; font-weight: 600;
+}
+.bos-403__btn:hover { background: #f5f5f5; }
+/* One obvious thing to do — the whole point of the page. */
+.bos-403__btn--primary { background: #CB6015; border-color: #CB6015; color: #fff; }
+.bos-403__btn--primary:hover { background: #a84e10; border-color: #a84e10; color: #fff; }
+
+/* Expired-session wording gets a calm accent; being locked out is not an error
+   the person made. */
+.bos-403--signin .bos-403__head { color: #2b6cb0; }
+.bos-403--blocked .bos-403__head { color: #7a2d00; }
+
+.bos-403__cards {
+  list-style: none; margin: 1.5rem 0 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem;
+}
+.bos-403__card a {
+  display: block; text-decoration: none; color: inherit;
+  border: 1px solid #ddd; border-radius: 6px; overflow: hidden; background: #fff;
+}
+.bos-403__card a:hover { border-color: #CB6015; }
+.bos-403__card-img { display: block; line-height: 0; }
+.bos-403__card-img img { width: 100%; height: 150px; object-fit: cover; display: block; }
+.bos-403__card-title { display: block; padding: 0.55rem 0.7rem; font-weight: 600; }
+
+@media (max-width: 480px) {
+  .bos-403__actions { flex-direction: column; align-items: stretch; }
+  .bos-403__btn { text-align: center; }
+}

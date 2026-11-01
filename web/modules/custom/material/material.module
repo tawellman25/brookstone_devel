@@ -1036,8 +1036,14 @@ function material_preprocess_page(array &$variables): void {
   $variables['page']['hero']['bo_hero_banner'] = [
     '#theme' => 'bo_hero_banner',
     '#images' => _material_banner_images($entity),
-    '#title' => $entity->label(),
-    // Per-slide caption that rotates with the images.
+    // ⚠ NO title on this hero, deliberately — unlike the season and geo heroes.
+    // A material page already has its own <h1>: for plants the
+    // `material_botanical_name` view renders the common name as a real h1 with
+    // the botanical name and cultivars beneath it (and core's title block is
+    // already hidden for those pages), and every other material gets core's
+    // page-title block. Giving the hero a title too produced TWO h1 elements on
+    // the live Dahlia page. Letting the existing heading stand keeps the richer
+    // botanical one rather than replacing it with a bare name.
     '#alt_subtitle' => TRUE,
   ];
   $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
@@ -1053,24 +1059,6 @@ function material_preprocess_html(array &$variables): void {
   if (_material_hero_entity()) {
     $variables['attributes']['class'][] = 'has-bo-hero';
   }
-}
-
-/**
- * Implements hook_block_access().
- *
- * With a hero up it carries the H1, so the page-title block would print the
- * name a second time. Only suppressed when a hero is actually rendering — a
- * material with no banner keeps its ordinary title.
- */
-function material_block_access($block, $operation, AccountInterface $account) {
-  if ($operation === 'view'
-    && $block->getPluginId() === 'page_title_block'
-    && _material_hero_entity()) {
-    return \Drupal\Core\Access\AccessResult::forbidden()
-      ->addCacheContexts(['user.roles', 'url.path']);
-  }
-  return \Drupal\Core\Access\AccessResult::neutral()
-    ->addCacheContexts(['user.roles', 'url.path']);
 }
 
 /**

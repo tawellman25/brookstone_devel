@@ -112,6 +112,31 @@ foreach ([
 ] as $needle => $what) {
   $ok('  shows ' . $what, str_contains($html, $needle));
 }
+// Work-order links must open in a new tab; the quick links must NOT — losing
+// the page (and its running clock) to a job you only wanted to glance at is the
+// thing this prevents.
+if (preg_match_all('/<a href="([^"]*)"([^>]*)>/', $html, $anchors, PREG_SET_ORDER)) {
+  $woLinks = $navLinks = 0;
+  $woBlank = $navBlank = 0;
+  foreach ($anchors as [$all, $href, $attrs]) {
+    $isNav = str_contains($href, '/teammates/');
+    $blank = str_contains($attrs, 'target="_blank"');
+    if ($isNav) {
+      $navLinks++;
+      $navBlank += $blank ? 1 : 0;
+    }
+    else {
+      $woLinks++;
+      $woBlank += $blank ? 1 : 0;
+    }
+  }
+  $ok('  every work-order link opens in a new tab', $woLinks > 0 && $woBlank === $woLinks,
+    "$woBlank of $woLinks");
+  $ok('  each carries rel=noopener', substr_count($html, 'rel="noopener"') === $woBlank);
+  $ok('  the quick links do NOT (ordinary navigation)', $navLinks > 0 && $navBlank === 0,
+    "$navBlank of $navLinks");
+}
+
 $ok('  the hours figure is NOT labelled billable',
   !str_contains(strtolower($html), 'billable'),
   'punches carry no billable flag; calling it that overstates it');

@@ -1,6 +1,13 @@
 {#
   The teammate's own work. Phone-first and ordered by urgency of attention:
   what you're on now, what the day looks like, then the queue.
+
+  WORK ORDER links open in a NEW TAB (the quick links below do not — those are
+  ordinary navigation). Opening a job in place would lose this page, and with it
+  the running clock and your position in the queue; a crew member checking a job
+  then coming back should not have to reload and re-find their place. Same
+  reasoning as the Route Editor pin popup. rel="noopener" because a new tab
+  would otherwise get window.opener access back to this page.
 #}
 <div class="bos-td">
 
@@ -8,7 +15,7 @@
     <div class="bos-td__panel bos-td__panel--clocked">
       <h3>Clocked in now</h3>
       <p class="bos-td__clock-wo">
-        {% if clocked.wo_url %}<a href="{{ clocked.wo_url }}">{{ clocked.wo_label }}</a>
+        {% if clocked.wo_url %}<a href="{{ clocked.wo_url }}" target="_blank" rel="noopener">{{ clocked.wo_label }}</a>
         {% else %}{{ clocked.wo_label }}{% endif %}
       </p>
       <p>Since {{ clocked.since }} · <span class="bos-td__elapsed">{{ clocked.elapsed }}</span>
@@ -44,7 +51,7 @@
           <li class="bos-td__row{{ loop.first ? ' bos-td__row--oldest' : '' }}">
             <span class="bos-td__age{{ item.old ? ' bos-td__age--old' : '' }}">{{ item.days }}d</span>
             <span class="bos-td__what">
-              <a href="{{ item.url }}">{{ item.label }}</a>
+              <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.label }}</a>
               {%- if loop.first %}<span class="bos-td__first-up">first up</span>{% endif %}
               {% if item.where %}<span class="bos-td__where">{{ item.where }}</span>{% endif %}
             </span>

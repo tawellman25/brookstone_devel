@@ -243,6 +243,15 @@ function material_views_pre_render(ViewExecutable $view): void {
   if ($view->id() === 'material_botanical_name') {
     $view->element['#cache']['contexts'][] = 'route';
     $view->element['#attached']['library'][] = 'material/botanical_title';
+    // When the hero is showing this same heading, the block below it would be
+    // a second copy — and a second <h1>. Emptying the result here (rather than
+    // via hook_block_access) uses a hook this module ALREADY implements, which
+    // is the documented way to avoid a reinstall for a brand-new hook.
+    $heroEntity = _material_hero_entity();
+    if ($heroEntity && _material_hero_heading($heroEntity)[0] !== NULL) {
+      $view->result = [];
+      $view->element['#cache']['contexts'][] = 'user.roles';
+    }
     return;
   }
 
@@ -1026,6 +1035,43 @@ function _material_banner_images(EntityInterface $entity): array {
 }
 
 /**
+ * The hero heading for a plant material: common name + botanical + cultivars.
+ *
+ * Returns [NULL, NULL] for a material with no botanical data — irrigation
+ * fittings and the like. That is load-bearing, not a tidy-up: the hero only
+ * takes the <h1> when it has this richer heading to carry. Everything else
+ * keeps its title from core's page-title block, because giving EVERY material
+ * hero a title would put two h1 elements on those pages, and suppressing the
+ * core block instead would mean re-adding hook_block_access — a hook this
+ * module does not implement, which would force another reinstall.
+ *
+ * Reuses the same formatters the `material_botanical_name` view uses, so the
+ * two renderings cannot drift apart.
+ */
+function _material_hero_heading(EntityInterface $entity): array {
+  $get = static function (string $field) use ($entity): string {
+    if (!$entity->hasField($field) || $entity->get($field)->isEmpty()) {
+      return '';
+    }
+    return trim(strip_tags((string) ($entity->get($field)->value ?? '')));
+  };
+  $botanical = _material_format_botanical($get('field_plant_species'), $get('field_plant_genus'));
+  $cultivars = _material_format_cultivars($get('field_cultivar'));
+  if ($botanical === '' && $cultivars === '') {
+    return [NULL, NULL];
+  }
+  $parts = [];
+  if ($botanical !== '') {
+    $parts[] = '<span class="bo-hero__botanical">' . $botanical . '</span>';
+  }
+  if ($cultivars !== '') {
+    $parts[] = '<span class="bo-hero__cultivars"><span class="bo-hero__cultivars-label">Cultivars:</span> '
+      . $cultivars . '</span>';
+  }
+  return [(string) $entity->label(), \Drupal\Core\Render\Markup::create(implode(' ', $parts))];
+}
+
+/**
  * Implements hook_preprocess_page().
  */
 function material_preprocess_page(array &$variables): void {
@@ -1033,9 +1079,14 @@ function material_preprocess_page(array &$variables): void {
   if (!$entity) {
     return;
   }
+  [$heroTitle, $heroSubtitle] = _material_hero_heading($entity);
   $variables['page']['hero']['bo_hero_banner'] = [
     '#theme' => 'bo_hero_banner',
     '#images' => _material_banner_images($entity),
+    // Only set for a plant — see _material_hero_heading(). A NULL title renders
+    // no <h1>, which is what every other material needs.
+    '#title' => $heroTitle,
+    '#subtitle' => $heroSubtitle,
     // ⚠ NO title on this hero, deliberately — unlike the season and geo heroes.
     // A material page already has its own <h1>: for plants the
     // `material_botanical_name` view renders the common name as a real h1 with
@@ -1044,7 +1095,11 @@ function material_preprocess_page(array &$variables): void {
     // page-title block. Giving the hero a title too produced TWO h1 elements on
     // the live Dahlia page. Letting the existing heading stand keeps the richer
     // botanical one rather than replacing it with a bare name.
-    '#alt_subtitle' => TRUE,
+    // ⚠ The template is EITHER/OR: with alt_subtitle on it ignores `subtitle`
+    // entirely. So rotating per-slide captions are turned off exactly when the
+    // botanical heading is being shown. Only 3 of 12 material banner images
+    // carry a caption, and the botanical name is the more useful line.
+    '#alt_subtitle' => $heroSubtitle === NULL,
   ];
   $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
   // MANDATORY: the hero is chosen by role, so without this the render cache can

@@ -1,0 +1,66 @@
+{#
+  The teammate's own work. Phone-first and ordered by urgency of attention:
+  what you're on now, what the day looks like, then the queue.
+#}
+<div class="bos-td">
+
+  {% if clocked %}
+    <div class="bos-td__panel bos-td__panel--clocked">
+      <h3>Clocked in now</h3>
+      <p class="bos-td__clock-wo">
+        {% if clocked.wo_url %}<a href="{{ clocked.wo_url }}">{{ clocked.wo_label }}</a>
+        {% else %}{{ clocked.wo_label }}{% endif %}
+      </p>
+      <p>Since {{ clocked.since }} · <span class="bos-td__elapsed">{{ clocked.elapsed }}</span>
+        {% if clocked.long %}<span class="bos-td__warn"> — still running after 12 hours, is that right?</span>{% endif %}
+      </p>
+    </div>
+  {% else %}
+    <div class="bos-td__panel bos-td__panel--idle">
+      <h3>Clocked in now</h3>
+      <p class="bos-td__empty">Not clocked in to a work order.</p>
+    </div>
+  {% endif %}
+
+  <div class="bos-td__panel">
+    <h3>Hours on work orders today</h3>
+    <p class="bos-td__hours">{{ hours_today.display }}</p>
+    <p class="bos-td__hours-note">
+      Time logged against work orders since midnight{% if hours_today.includes_open %}, including the job you're on now{% endif %}.
+      This isn't your paid hours.
+    </p>
+    {% if stale_clockins > 0 %}
+      <p class="bos-td__warn">
+        {{ stale_clockins }} clock-in{{ stale_clockins > 1 ? 's' : '' }} still open from a previous day — worth closing.
+      </p>
+    {% endif %}
+  </div>
+
+  <div class="bos-td__panel">
+    <h3>My work — oldest first</h3>
+    {% if work %}
+      <ul class="bos-td__list">
+        {% for item in work %}
+          <li class="bos-td__row{{ loop.first ? ' bos-td__row--oldest' : '' }}">
+            <span class="bos-td__age{{ item.old ? ' bos-td__age--old' : '' }}">{{ item.days }}d</span>
+            <span class="bos-td__what">
+              <a href="{{ item.url }}">{{ item.label }}</a>
+              {%- if loop.first %}<span class="bos-td__first-up">first up</span>{% endif %}
+              {% if item.where %}<span class="bos-td__where">{{ item.where }}</span>{% endif %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="bos-td__empty">Nothing open assigned to you.</p>
+    {% endif %}
+  </div>
+
+  <div class="bos-td__panel">
+    <h3>Quick links</h3>
+    <div class="bos-td__links">
+      {% for link in links %}<a href="{{ link.url }}">{{ link.title }}</a>{% endfor %}
+    </div>
+  </div>
+
+</div>

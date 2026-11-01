@@ -1,0 +1,55 @@
+/**
+ * The teammate's own dashboard on their profile page. Phone-first: crews read
+ * this on a handset in a truck, so panels stack and targets stay thumb-sized.
+ */
+.bos-td { margin: 0 0 1.5rem; }
+.bos-td__panel {
+  border: 2px solid #ddd; border-radius: 6px; background: #fff;
+  padding: 0.8rem 1rem; margin: 0 0 1rem;
+}
+.bos-td__panel h3 { margin: 0 0 0.6rem; font-size: 0.82rem; text-transform: uppercase;
+  letter-spacing: 0.03em; color: #555; }
+
+/* Clocked in: the one thing that must be impossible to miss. */
+.bos-td__panel--clocked { border-color: #007A33; border-left-width: 6px; background: #f3fbf5; }
+.bos-td__clock-wo { font-size: 1.15rem; font-weight: 700; }
+.bos-td__clock-wo a { color: #00662a; }
+.bos-td__elapsed { font-variant-numeric: tabular-nums; font-weight: 700; }
+.bos-td__panel--idle { border-color: #e2e2e2; color: #666; }
+
+.bos-td__hours { font-size: 2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.bos-td__hours-note { font-size: 0.82rem; color: #666; }
+
+/* FIFO list: oldest first, and the age is the point. */
+.bos-td__list { list-style: none; margin: 0; padding: 0; }
+.bos-td__row {
+  display: flex; gap: 0.6rem; align-items: baseline;
+  padding: 0.5rem 0; border-top: 1px solid #eee;
+}
+.bos-td__row:first-child { border-top: 0; }
+.bos-td__row--oldest { background: #fff8f1; margin: 0 -0.5rem; padding: 0.5rem; border-radius: 4px; }
+.bos-td__age {
+  flex: none; min-width: 3.4rem; text-align: right;
+  font-variant-numeric: tabular-nums; font-weight: 700; color: #a04a10; font-size: 0.9rem;
+}
+.bos-td__age--old { color: #b00020; }
+.bos-td__what { flex: 1; min-width: 0; }
+.bos-td__where { display: block; font-size: 0.85rem; color: #666; }
+.bos-td__first-up {
+  display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  background: #CB6015; color: #fff; border-radius: 3px; padding: 0 5px; margin-left: 4px;
+}
+
+.bos-td__links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.bos-td__links a {
+  display: inline-block; padding: 0.5rem 0.9rem; border: 1px solid #ccc;
+  border-radius: 4px; background: #fff; color: #333; text-decoration: none; font-weight: 600;
+}
+.bos-td__links a:hover { background: #f5f5f5; border-color: #CB6015; }
+.bos-td__empty { color: #666; font-style: italic; }
+.bos-td__warn { color: #b00020; font-weight: 600; }
+
+@media (max-width: 480px) {
+  .bos-td__links { flex-direction: column; }
+  .bos-td__links a { text-align: center; }
+}

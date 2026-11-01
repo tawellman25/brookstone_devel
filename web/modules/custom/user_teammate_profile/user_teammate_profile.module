@@ -191,3 +191,21 @@ function user_teammate_profile_sync_from_profile(EntityInterface $profile): void
     }
   }
 }
+
+/**
+ * Implements hook_theme().
+ */
+function user_teammate_profile_theme(): array {
+  return [
+    'teammate_dashboard' => [
+      'variables' => [
+        'clocked' => NULL,
+        'hours_today' => [],
+        'stale_clockins' => 0,
+        'work' => [],
+        'links' => [],
+      ],
+      'template' => 'teammate-dashboard',
+    ],
+  ];
+}

@@ -23,6 +23,14 @@ Every item carries three dimensions so priority resolves honestly instead of a f
 
 ## NOW — revenue-blocking or in-season
 
+### ⚠ Dated-but-unassigned work is invisible — 135 check-ups lost a season to it (T1, Effort S/M)
+**Measured 2026-11-02, and the cost is already paid once.** Of **291** `sprinkler_check_up` WOs created in 2026, **135** sat at *Scheduled* with a scheduling date that came and went and **no assignee** — April through October — and were cancelled as undoable. **Nothing in BOS surfaced them.** `My Schedule` and Dispatch are keyed on `scheduling.field_assigned_to`, so a WO that is dated but unassigned appears on **nobody's** list while still looking scheduled to the office. The check-up generator (`bos:checkups:generate`) dates but does not assign, by design — the gap is that no surface catches what dispatch then misses.
+
+**⚠ Do not assume these were all un-performed: 21 of the 291 reached *Invoiced* while still unassigned**, so a check-up can be done and billed without the scheduling record ever naming anyone. That makes "dated, past, unassigned" ambiguous between *not done* and *done, never signed off* — and it is why this is a reporting problem before it is a staffing one.
+
+**Two parts, and the first is cheap.** (1) A standing check — `bos_teammate_operations` already hosts the time-clock data-hygiene surface; add *"dated, in the past, unassigned, still open"* beside it so next season cannot repeat this silently. Natural companion: *"open, no scheduling record at all, older than 90 days"*, which currently stands at **72** with **$5,610** of totals on six of them (incl. **WO 49466, snow_removal, $4,950**, created 05/01/2026, never scheduled). (2) The capacity question Todd recorded in the cancellation note — **check-up volume needs more sprinkler techs than it had**; 135 unserved check-ups against contract sections is a service-delivery and billing exposure, not a hygiene item. Evidence: `cancel_unassigned_checkups.php`, changelog 2026-11-02.
+
+
 ### ⛔ Drupal 11 upgrade — core security coverage ENDS 2026-Dec-09 (T1, Effort L)
 **Dated, external, non-negotiable.** Surfaced 2026-11-01 while clearing the update warnings: live is now **10.6.20** (patched that night, `ffa5bda9`) and `update_core` reads *Up to date* — but `coverage_core` reads **"Covered until 2026-Dec-09"**, roughly five weeks out. **10.6 is the final 10.x minor, so there is no further 10.x to patch into.** After that date a core security release will simply not exist for this site, and the deadline does not move for us.
 

@@ -23,6 +23,20 @@ Every item carries three dimensions so priority resolves honestly instead of a f
 
 ## NOW — revenue-blocking or in-season
 
+### ⛔ Drupal 11 upgrade — core security coverage ENDS 2026-Dec-09 (T1, Effort L)
+**Dated, external, non-negotiable.** Surfaced 2026-11-01 while clearing the update warnings: live is now **10.6.20** (patched that night, `ffa5bda9`) and `update_core` reads *Up to date* — but `coverage_core` reads **"Covered until 2026-Dec-09"**, roughly five weeks out. **10.6 is the final 10.x minor, so there is no further 10.x to patch into.** After that date a core security release will simply not exist for this site, and the deadline does not move for us.
+
+The three **NOT_SUPPORTED** contrib modules are not a separate problem — they are the upgrade's critical path, and one of them is already telling us where this is going:
+
+| Module | On live | Recommended | Why it is load-bearing |
+|---|---|---|---|
+| `geofield` | 8.x-1.67 | **10.3.5** | `field_geofield` on every property; HOA `field_boundary` polygons |
+| `geofield_map` | 3.0.24 | **11.1.9** | Property maps, the `hoa_boundary_map` polygon-draw widget, Route Editor — **its recommended release is already 11.x** |
+| `flag` | 8.x-4.0-beta7 | **5.1.1** | Legacy WO timer path (still coexisting per `wo_clock` Phase A) |
+
+**Sequencing, highest-risk-first — do NOT start with core.** (1) Establish D11 readiness with `upgrade_status` (installed, 4.3.10) across all ~60 custom modules; (2) land `geofield` + `geofield_map` on dev and *exercise the maps for real* — property page, HOA boundary draw, Route Editor, winterize carry-forward — since a silent geofield regression would take out the scheduling tooling mid-season; (3) `flag`, coordinated with retiring the legacy timer path; (4) the 17 ordinary NOT_CURRENT updates; (5) core 10.6 → 11. **Evidence anchors:** `coverage_core` on `/admin/reports/status`; `update_calculate_project_data()` buckets (note the `UPDATE_NOT_SECURE` constants are gone in D10 — use `\Drupal\update\UpdateManagerInterface::`). **Also clear before the move:** 1 pending entity definition (`ai_agent_override`, provider `ai_agents`, pre-existing on dev *and* live), and **Trusted Host Settings is not enabled** on live. Changelog: 2026-11-01.
+
+
 ### ⭐ Estimating epic — the revenue-conversion pipeline (T1, Effort L)
 This is the single highest-leverage cluster in the system. Substantially built April 2026. Pipeline board, status transitions, and acceptance auto-update are live. Two genuine gaps remain: client acceptance flow (Phase 3, deferred) and Convert to Contract button (Phase 4a, backlog). The "engine built, cockpit missing" description no longer applies. Ordered by dependency:
 

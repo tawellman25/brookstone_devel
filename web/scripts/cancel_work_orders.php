@@ -18,13 +18,40 @@
  * would change the status with no trail, and these are records somebody will
  * ask about years later.
  *
+ * ⚠ 2026-11-01: THIS GUARD WAS NOT ENOUGH, and the gap is worth stating plainly
+ * because it cost a real repair. The original version tested `field_status`
+ * alone. WO 35107 and 35110 both read "Active" — a status outside the closed
+ * set — so they passed, and both were cancelled. Both had in fact been
+ * completed and billed in 2024: their status HISTORY contained Complete, their
+ * `field_invoiced` flag was set, and their totals were populated ($264.42 and
+ * $121.33). Three signals said "billed" and the one signal checked said
+ * "open". On these old records `field_status` had drifted to free-text-ish
+ * values (Active / Sold) that no longer reflected the billing reality.
+ *
+ * Undoing it was not cheap: Canceled -> Invoiced is blocked by the wo_shared
+ * transition guard, and the only legal route (via Complete) re-fires the `wo_*`
+ * recalculation, which restated one of the totals by +$25 at today's rates.
+ * See restore_wrongly_cancelled_invoiced_wos.php.
+ *
+ * So the rule now is: a work order is "closed" if ANY evidence says so, not
+ * only if the status field does.
+ *
  * GUARDS — every one must pass per work order, or it is refused, not cancelled:
  *   - the id was explicitly named (nothing is ever derived or inferred);
  *   - the work order exists;
- *   - it is NOT already closed (Complete / Canceled / Invoiced / Paid /
- *     Warrantied) — invoiced work especially must never be silently re-statused;
+ *   - its status is NOT closed (Complete / Canceled / Invoiced / Paid /
+ *     Warrantied);
+ *   - `field_invoiced` is NOT set — it has not been billed;
+ *   - `field_wo_total` is empty or zero — nothing has been costed against it;
+ *   - its status HISTORY contains no Complete / Invoiced / Paid record — the
+ *     crew never signed it off, whatever the status field now says;
  *   - it is older than BOS_MIN_AGE days (default 90), so a typo cannot cancel
  *     this week's work.
+ *
+ * Set BOS_ACTOR to the account the cancellations should be attributed to
+ * (default "Todd Wellman"). Without it drush runs as uid 0 and every record
+ * reads "Anonymous marked this Work Order as Canceled", which is what made the
+ * 2026-11-01 sweep hard to read afterwards.
  *
  * Time logged is printed for every target BEFORE anything is written, because
  * cancelling a work order with real hours on it is a different decision from
@@ -38,9 +65,16 @@
 
 const CLOSED = [1097, 1098, 1281, 1283, 1504];
 const CANCELED = 1098;
+// A record of any of these in the status HISTORY means the work was signed off
+// and/or billed, whatever field_status has since drifted to.
+const HISTORY_CLOSED = [1097, 1281, 1504];
 
 $apply = getenv('BOS_APPLY') === '1';
-$minAge = (int) (getenv('BOS_MIN_AGE') ?: 90);
+// Not `?: 90` — "0" is falsy in PHP, so an explicit BOS_MIN_AGE=0 would
+// silently become 90 and the caller would never know the floor they asked for
+// was ignored.
+$rawAge = getenv('BOS_MIN_AGE');
+$minAge = ($rawAge === FALSE || trim($rawAge) === '') ? 90 : (int) $rawAge;
 $raw = trim((string) getenv('BOS_WO_IDS'));
 if ($raw === '') {
   print "ABORT: set BOS_WO_IDS to a comma-separated list of work order ids.\n";
@@ -94,10 +128,33 @@ foreach ($ids as $id) {
   $mins = $minutesOn($id);
   $time = $mins > 0 ? round($mins / 60, 1) . 'h' : '—';
 
+  // Billing evidence, read independently of field_status — which is exactly
+  // what drifted on the 2026-11-01 records.
+  $invoiced = (int) ($wo->get('field_invoiced')->value ?? 0) === 1;
+  $total = $wo->hasField('field_wo_total') ? $wo->get('field_wo_total')->value : NULL;
+  $costed = $total !== NULL && $total !== '' && (float) $total != 0.0;
+  $historyClosed = (int) $db->query('SELECT COUNT(*) FROM {wo_status_updates__field_status_of_wo} sw
+    JOIN {wo_status_updates__field_status} s ON s.entity_id = sw.entity_id AND s.deleted = 0
+    WHERE sw.deleted = 0 AND sw.field_status_of_wo_target_id = :id
+      AND s.field_status_target_id IN (:closed[])',
+    [':id' => $id, ':closed[]' => HISTORY_CLOSED])->fetchField();
+
   $verdict = 'will cancel';
   if (in_array($tid, CLOSED, TRUE)) {
     $verdict = 'REFUSED — already closed';
     $refused[] = "$id: already $status";
+  }
+  elseif ($invoiced) {
+    $verdict = 'REFUSED — field_invoiced is set';
+    $refused[] = "$id: already invoiced (flag set, total " . ($total ?? 'empty') . ')';
+  }
+  elseif ($costed) {
+    $verdict = "REFUSED — has a total ($total)";
+    $refused[] = "$id: carries a WO total of $total — it has been costed";
+  }
+  elseif ($historyClosed) {
+    $verdict = 'REFUSED — history shows sign-off';
+    $refused[] = "$id: status history contains Complete/Invoiced/Paid, despite reading '$status'";
   }
   elseif ($age < $minAge) {
     $verdict = "REFUSED — only {$age}d old";
@@ -126,15 +183,36 @@ if (!$apply) {
   return;
 }
 
+// Attribute the cancellations to a real account. The action reads
+// \Drupal::currentUser() for its audit note, and under drush that is uid 0 —
+// which is why the 2026-11-01 records all read "Anonymous marked this Work
+// Order as Canceled" and nobody could tell what had done it.
+$actorName = getenv('BOS_ACTOR') ?: 'Todd Wellman';
+$actors = $etm->getStorage('user')->loadByProperties(['name' => $actorName]);
+$actor = reset($actors);
+if (!$actor) {
+  printf("ABORT: no account named '%s'. Set BOS_ACTOR to a real account —\n"
+    . "cancellations must not be logged as Anonymous.\n", $actorName);
+  return;
+}
+printf("\nattributing to %s (uid %s)\n", $actor->getDisplayName(), $actor->id());
+
+$switcher = \Drupal::service('account_switcher');
+$switcher->switchTo($actor);
 $plugin = \Drupal::service('plugin.manager.action')->createInstance('mark_work_order_canceled_action');
 $failed = [];
-foreach ($targets as $id) {
-  try {
-    $plugin->execute($etm->getStorage('work_order')->load($id));
+try {
+  foreach ($targets as $id) {
+    try {
+      $plugin->execute($etm->getStorage('work_order')->load($id));
+    }
+    catch (\Throwable $e) {
+      $failed[] = "$id: " . $e->getMessage();
+    }
   }
-  catch (\Throwable $e) {
-    $failed[] = "$id: " . $e->getMessage();
-  }
+}
+finally {
+  $switcher->switchBack();
 }
 
 print "\nafter (fresh reads):\n";

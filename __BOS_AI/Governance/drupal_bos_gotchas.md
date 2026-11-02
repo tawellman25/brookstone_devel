@@ -1975,6 +1975,53 @@ A test that constructs form state by hand is not exercising the browser's path.
 
 ---
 
+## A field written in the same request as a status transition can be silently overwritten — and an in-request read will not see it
+
+**Seen 2026-11-01.** Repairing two wrongly-cancelled work orders meant driving
+`field_status` Canceled → Complete → Invoiced (the `wo_shared` guard permits no
+shortcut) and then writing the historical `field_wo_total` back, because the
+Complete hop re-fires the `wo_*` recalculation at **today's** rates and had
+restated a 2024 invoice by +$25.
+
+The repair script did all of it in one `drush php:script` run, re-read each
+entity with `loadUnchanged()` and reported **"2 restored, 0 wrong"**. The
+database held the pre-restore figure. Reproduced twice:
+
+| read | value |
+|---|---|
+| `loadUnchanged()`, same request as the writes | `121.33` — the value just written |
+| raw field-table query, separate process | `146.33` — what was actually stored |
+
+Something later in that same request — a post-save hook chain carrying an
+entity snapshot taken during the Complete hop — re-saved the work order after
+the restore, and `loadUnchanged()` could not see it despite resetting the
+entity caches. **The identical write performed alone, in its own request,
+persisted and survived a separate-process read.**
+
+Two rules follow, and the second matters more than the first:
+
+1. **Do not write a field in the same request as a status transition on the
+   same entity.** Split the work into separate drush invocations — the
+   transition in one, the corrective field write in another.
+2. **An "after" read inside the request that did the writing is not evidence.**
+   Verify from a fresh process, and read the field tables directly rather than
+   through the entity API, which is what produced the false pass here. A script
+   that verifies itself in-request can report success over a wrong database.
+
+Reference impl: `web/scripts/restore_wrongly_cancelled_invoiced_wos.php`
+(`BOS_PHASE=status|totals|verify`, three separate invocations by design — the
+header says not to collapse them). Measurement harness:
+`web/scripts/test_cancel_to_invoiced_route.php` (dev-only, rolls back).
+
+**Related:** the same session's root cause was a guard that trusted
+`field_status` alone. On older BOS records that field has drifted to values like
+*Active* and *Sold* while the status **history**, `field_invoiced` and a
+populated `field_wo_total` all said the job was billed. **Treat a work order as
+closed if ANY of those says so, not only the status field** — see
+`cancel_work_orders.php`.
+
+---
+
 ## Two admin-menu links can share a title in different branches
 
 Matching a menu parent by title picks whichever comes first, and BOS has real

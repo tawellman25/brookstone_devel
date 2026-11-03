@@ -679,8 +679,8 @@ three-field content model was introduced to remove ("a card never shows a
 truncated body").
 
 `field_short_description` exists on the `services` vocabulary and is the correct
-card field. **Spruce Needle Drop (tid 1994) is currently the only services term
-that has it populated.**
+card field. **No services term currently has it populated**, which is why the
+view was never wired to it.
 
 **Why this is not a one-line Views edit:** switching the view's card field to
 `field_short_description` today would blank the card text on all **11 sibling
@@ -692,21 +692,3 @@ one.
 **Order of work:** (1) backfill `field_short_description` across services terms;
 (2) then swap the card field in the `service_children` view via Views UI. Doing
 (2) first visibly breaks the services section.
-
-## A plant-health page format worth repeating (from the Spruce Needle Drop brief)
-
-**Surfaced 2026-11-03, Todd's own framing.** The Spruce Needle Drop page is a
-deliberate alternative to the blog that is on the do-not-build list: written
-from crew training material, a reference page rather than a feed, and aimed at a
-real seasonal search query. Public article plus crew training on one term, no new
-section and no maintenance obligation.
-
-Candidates the brief lists, by when the call actually comes in: **March** brown
-evergreens / winter burn; **April** a plant that leafed out then died (girdling,
-rabbit damage at snow line); **June** yellow leaves with green veins (iron
-chlorosis on alkaline ground); **August** a pine going red from the top (ips
-beetle); **October** fall colour that did not happen.
-
-Each needs: copy, a `field_sop_code` decision, photos, and
-`field_work_order_service` = FALSE unless it is genuinely bookable. Content
-work, not a build.

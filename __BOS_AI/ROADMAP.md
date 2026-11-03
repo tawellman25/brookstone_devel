@@ -42,6 +42,25 @@ The three **NOT_SUPPORTED** contrib modules are not a separate problem — they 
 | `geofield_map` | 3.0.24 | **11.1.9** | Property maps, the `hoa_boundary_map` polygon-draw widget, Route Editor — **its recommended release is already 11.x** |
 | `flag` | 8.x-4.0-beta7 | **5.1.1** | Legacy WO timer path (still coexisting per `wo_clock` Phase A) |
 
+**SCOPED 2026-11-02 by actual scan and a full composer resolution — not estimated.**
+
+**Already satisfied, no work:** PHP **8.3.36** live (D11 needs 8.3+), **MariaDB 11.4**, Drush **13.8**. And the headline result — an `upgrade_status --all` scan (90,741 lines) found **ZERO Drupal-11 blockers in our own code**. All ~60 custom modules are clean of APIs D11 removes. Of 19,338 findings, 19,338 are "Check manually" (overwhelmingly missing return type hints), 106 are "Ignore" (deprecated for D12, not D11), and the single **"Fix now"** (`user_role_names()`) is in **contrib**, not ours.
+
+**The work is eight contrib packages.** A full `composer update -W` against `drupal/core-recommended:^11.4` **resolves cleanly** with these: **20 installs, 89 updates, 7 removals**, core **10.6.20 → 11.4.11**, Symfony **6.4 → 7.4** carried along.
+
+| Package | Installed | D11 target | Note |
+|---|---|---|---|
+| `address` | 1.12.0 | **2.0.4** stable | major |
+| `better_exposed_filters` | 6.0.6 | **7.2.0** stable | major — see the trap below |
+| `geofield_map` | 3.0.24 | **11.1.9** stable | major; property maps, HOA boundary widget, Route Editor — **the risky one** |
+| `inline_entity_form` | 1.0.0 | **3.0.0** stable | major; used across BOS forms |
+| `migrate_file` | 2.1.3 | **3.0.0-alpha1** | ⚠ alpha is the only D11 option |
+| `editablefields` | 1.0.2 | **dev-1.0.x** | ⚠ no tagged D11 release at all |
+| `jcarousel` | 6.0.0-alpha1 | — | **not enabled** → remove |
+| `poll` | 1.6.0 | — | **not enabled** → remove |
+
+**⚠ THE TRAP, found in the dry run and not obvious:** `better_exposed_filters` **6.x requires `jquery_ui_datepicker`, `jquery_ui_slider` and `jquery_ui_touch_punch`; 7.x does not.** So the resolution happily **removes all three** — and **all three are ENABLED on live**. Enabled modules whose code has vanished is a fatal, not a warning. They are transitive, not root requirements, so nothing protects them. Before upgrading BEF: either uninstall them (confirming nothing else uses the datepicker) or promote them to explicit root requirements. `jquery_ui_accordion` is already a root requirement and is safe.
+
 **Sequencing, highest-risk-first — do NOT start with core.** (1) Establish D11 readiness with `upgrade_status` (installed, 4.3.10) across all ~60 custom modules; (2) land `geofield` + `geofield_map` on dev and *exercise the maps for real* — property page, HOA boundary draw, Route Editor, winterize carry-forward — since a silent geofield regression would take out the scheduling tooling mid-season; (3) `flag`, coordinated with retiring the legacy timer path; (4) the 17 ordinary NOT_CURRENT updates; (5) core 10.6 → 11. **Evidence anchors:** `coverage_core` on `/admin/reports/status`; `update_calculate_project_data()` buckets (note the `UPDATE_NOT_SECURE` constants are gone in D10 — use `\Drupal\update\UpdateManagerInterface::`). **Also clear before the move:** 1 pending entity definition (`ai_agent_override`, provider `ai_agents`, pre-existing on dev *and* live), and **Trusted Host Settings is not enabled** on live. Changelog: 2026-11-01.
 
 

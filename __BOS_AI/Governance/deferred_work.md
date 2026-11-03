@@ -646,3 +646,25 @@ Re-run for current numbers: `drush php:script web/scripts/analyze_contract_servi
 - Living document — append new deferred items as they emerge from project work, with the surfacing commit cited.
 - Items 1-12 are technical work tracked here for context; mirror to Todoist if you want them in your active queue.
 - Items 13-15 are the apprentice-onboarding initiative; tracked separately.
+
+## wo_deletion_manager gates deletion on status alone, ignoring billing evidence
+
+**Surfaced 2026-11-02.** `wo_deletion_manager` decides whether a work order may
+be deleted from its **status**. WO 49466 was deletable because its status read
+*Open* — while it carried **$4,950.00** in `field_wo_total`. The delete
+cascaded cleanly: base row, every `work_order__*` field table and all child
+records gone, no orphans.
+
+In that instance it was harmless (the total had been typed in by hand, not
+computed or billed, and Todd chose to leave it deleted). The pattern is not
+harmless: **this is the same blind spot that, one day earlier, let a cleanup
+sweep cancel two paid 2024 invoices** — status trusted as the single signal
+while `field_invoiced`, a populated `field_wo_total` and the status history all
+said the work had been billed. `cancel_work_orders.php` was hardened to refuse
+on any of those; the deletion guard was not.
+
+**Fix when convenient:** refuse deletion when `field_invoiced` is set, when
+`field_wo_total` is non-zero, or when the status history contains
+Complete/Invoiced/Paid — mirroring the guard in `cancel_work_orders.php`. BOS
+rule 4 (no deletion of operational history) is policy; right now only status
+enforces it.

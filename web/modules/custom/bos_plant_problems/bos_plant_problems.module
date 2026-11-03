@@ -32,8 +32,11 @@
 
 declare(strict_types=1);
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\image\Entity\ImageStyle;
 
 /**
  * Vocabularies this module routes.
@@ -94,4 +97,144 @@ function bos_plant_problems_taxonomy_term_view_alter(array &$build, EntityInterf
     return;
   }
   $build['#cache']['contexts'][] = 'user.roles';
+}
+
+/**
+ * The term whose hero should render, or NULL.
+ *
+ * Public viewers only: staff get admin_view / teammate_view, which are working
+ * pages rather than marketing ones, and a full-bleed photo just pushes the
+ * content they came for below the fold.
+ */
+function _bos_plant_problems_hero_term(): ?EntityInterface {
+  $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
+  if (!$term instanceof EntityInterface || !in_array($term->bundle(), BOS_PLANT_PROBLEMS_VIDS, TRUE)) {
+    return NULL;
+  }
+  if (array_intersect(array_merge(BOS_PLANT_PROBLEMS_OFFICE_ROLES, BOS_PLANT_PROBLEMS_CREW_ROLES), \Drupal::currentUser()->getRoles())) {
+    return NULL;
+  }
+  return _bos_plant_problems_banner_images($term) ? $term : NULL;
+}
+
+/**
+ * The banner images, at the size the hero wants.
+ *
+ * Two sub-fields doing two different jobs, which is the whole point:
+ *
+ *   `alt`     -> the <img> attribute, what a screen reader announces. Falls
+ *                back to the term name so an image is never undescribed.
+ *   `caption` -> the visible rotating line under the title. The image item's
+ *                TITLE sub-field and nothing else.
+ *
+ * ⚠ There is deliberately NO fallback from caption to alt. bos_seasons shipped
+ * that fallback once and it recreated the exact bug it was meant to avoid — a
+ * photo with proper alt and no caption printed its technical description at the
+ * customer, and a screen reader then read the same sentence twice. Empty
+ * caption means NO line for that slide, which is what "optional" has to mean to
+ * be useful. On Spruce Needle Drop exactly one of the five photos carries a
+ * caption: the mid-canopy frame where the diagnosis is visible.
+ *
+ * ⚠ The template reads `caption`. Omitting the key renders an empty, hidden
+ * subtitle and blank data-bo-caption attributes — a real bug the seasons
+ * builder shipped once.
+ */
+function _bos_plant_problems_banner_images(EntityInterface $term): array {
+  if (!$term->hasField('field_banner_images') || $term->get('field_banner_images')->isEmpty()) {
+    return [];
+  }
+  $style = ImageStyle::load('max_2600x2600');
+  $images = [];
+  foreach ($term->get('field_banner_images') as $item) {
+    $file = $item->entity;
+    if (!$file) {
+      continue;
+    }
+    $uri = $file->getFileUri();
+    $alt = trim((string) $item->alt);
+    $title = trim((string) $item->title);
+    $images[] = [
+      'src' => $style ? $style->buildUrl($uri) : \Drupal::service('file_url_generator')->generateAbsoluteString($uri),
+      'alt' => $alt !== '' ? $alt : $term->label(),
+      'caption' => $title,
+    ];
+  }
+  return $images;
+}
+
+/**
+ * Implements hook_preprocess_page().
+ *
+ * Renders the banner as a full-bleed rotating hero in the theme's `hero`
+ * region, reusing the `bo_hero_banner` theme hook and the
+ * `brookstone_olivero/bo_hero` library that seasons, backflow device types and
+ * equipment types already use. `alt_subtitle` makes the caption per-photo and
+ * rotate with the slides.
+ *
+ * ⚠ Not field_short_description: the house rule is that the teaser is
+ * VIEWS-ONLY — the card text on a parent listing, never rendered on the term's
+ * own page. Putting it under the title would show it directly above the body it
+ * summarises, which is the thing that rule exists to prevent.
+ */
+function bos_plant_problems_preprocess_page(array &$variables): void {
+  $term = _bos_plant_problems_hero_term();
+  if (!$term) {
+    return;
+  }
+  $variables['page']['hero']['bo_hero_banner'] = [
+    '#theme' => 'bo_hero_banner',
+    '#images' => _bos_plant_problems_banner_images($term),
+    '#title' => $term->label(),
+    '#alt_subtitle' => TRUE,
+  ];
+  $variables['#attached']['library'][] = 'brookstone_olivero/bo_hero';
+  $variables['#cache']['contexts'][] = 'user.roles';
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function bos_plant_problems_preprocess_html(array &$variables): void {
+  if (_bos_plant_problems_hero_term()) {
+    $variables['attributes']['class'][] = 'has-bo-hero';
+  }
+}
+
+/**
+ * Implements hook_block_access().
+ *
+ * With a hero up, the hero carries the H1 — so the page-title block would be a
+ * second one. Hidden for public viewers only, and only when there is actually a
+ * banner, so a problem with no photo keeps its ordinary title.
+ */
+function bos_plant_problems_block_access($block, $operation, AccountInterface $account) {
+  if ($operation !== 'view' || $block->getPluginId() !== 'page_title_block') {
+    return AccessResult::neutral();
+  }
+  $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
+  $hide = $term instanceof EntityInterface
+    && in_array($term->bundle(), BOS_PLANT_PROBLEMS_VIDS, TRUE)
+    && !array_intersect(array_merge(BOS_PLANT_PROBLEMS_OFFICE_ROLES, BOS_PLANT_PROBLEMS_CREW_ROLES), $account->getRoles())
+    && _bos_plant_problems_banner_images($term);
+  return AccessResult::forbiddenIf((bool) $hide)
+    ->addCacheContexts(['user.roles', 'route'])
+    ->addCacheableDependency($term instanceof EntityInterface ? $term : $block);
+}
+
+/**
+ * Implements hook_preprocess_taxonomy_term().
+ *
+ * Belt-and-braces: the banner field IS on this bundle's view displays (it was
+ * added so the photos rendered at all before this hero existed). Without this,
+ * a public viewer would get the hero AND the same five photos stacked raw
+ * underneath it.
+ */
+function bos_plant_problems_preprocess_taxonomy_term(array &$variables): void {
+  $term = $variables['term'] ?? NULL;
+  if (!$term instanceof EntityInterface || !in_array($term->bundle(), BOS_PLANT_PROBLEMS_VIDS, TRUE)) {
+    return;
+  }
+  if (_bos_plant_problems_hero_term() && isset($variables['content']['field_banner_images'])) {
+    $variables['content']['field_banner_images']['#access'] = FALSE;
+  }
 }

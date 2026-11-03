@@ -60,6 +60,33 @@ const BOS_PLANT_PROBLEMS_OFFICE_ROLES = [
 const BOS_PLANT_PROBLEMS_CREW_ROLES = ['teammates'];
 
 /**
+ * Roles that do NOT get the hero. EMPTY — everybody gets it.
+ *
+ * ⚠ DELIBERATE DIVERGENCE from bos_seasons / bos_services / bos_backflow_types
+ * (2026-11-03, Todd's call: "Office and crew please"). Those three exclude
+ * office AND crew, making the hero public-only. Copying that here carried a
+ * cost nobody had named: **the office are the people who review whether the
+ * marketing page looks right, and they could only see it by logging out.** You
+ * cannot review a page you are never shown.
+ *
+ * An office-only version was written first and would have failed anyway, for a
+ * reason worth recording: **Todd's own account holds `teammates`** alongside
+ * administrator and supervisor, so any rule excluding crew would have hidden
+ * the hero from him. Role lists in BOS are not tidy tiers — accounts hold
+ * several at once, which is why the office-vs-crew checks elsewhere in this
+ * file test office FIRST.
+ *
+ * (bos_geo already shows its hero to everyone, so the rule this departs from
+ * was three modules out of four, never universal.) Whether the other three
+ * follow is a separate decision Todd is weighing — do NOT sync them to this
+ * one without it.
+ *
+ * Kept as an empty constant rather than deleting the check, so the mechanism
+ * and the reasoning stay visible and re-enabling is one edit.
+ */
+const BOS_PLANT_PROBLEMS_HERO_EXCLUDED_ROLES = [];
+
+/**
  * Implements hook_entity_view_mode_alter().
  */
 function bos_plant_problems_entity_view_mode_alter(string &$view_mode, EntityInterface $entity): void {
@@ -102,16 +129,16 @@ function bos_plant_problems_taxonomy_term_view_alter(array &$build, EntityInterf
 /**
  * The term whose hero should render, or NULL.
  *
- * Public viewers only: staff get admin_view / teammate_view, which are working
- * pages rather than marketing ones, and a full-bleed photo just pushes the
- * content they came for below the fold.
+ * Every viewer — public, office and crew. See
+ * BOS_PLANT_PROBLEMS_HERO_EXCLUDED_ROLES for why this is not the rule the
+ * other three hero modules use.
  */
 function _bos_plant_problems_hero_term(): ?EntityInterface {
   $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
   if (!$term instanceof EntityInterface || !in_array($term->bundle(), BOS_PLANT_PROBLEMS_VIDS, TRUE)) {
     return NULL;
   }
-  if (array_intersect(array_merge(BOS_PLANT_PROBLEMS_OFFICE_ROLES, BOS_PLANT_PROBLEMS_CREW_ROLES), \Drupal::currentUser()->getRoles())) {
+  if (array_intersect(BOS_PLANT_PROBLEMS_HERO_EXCLUDED_ROLES, \Drupal::currentUser()->getRoles())) {
     return NULL;
   }
   return _bos_plant_problems_banner_images($term) ? $term : NULL;
@@ -204,8 +231,13 @@ function bos_plant_problems_preprocess_html(array &$variables): void {
  * Implements hook_block_access().
  *
  * With a hero up, the hero carries the H1 — so the page-title block would be a
- * second one. Hidden for public viewers only, and only when there is actually a
- * banner, so a problem with no photo keeps its ordinary title.
+ * second one. Hidden only for viewers who actually get the hero, and only when
+ * there is a banner, so a problem with no photo keeps its ordinary title.
+ *
+ * ⚠ This MUST use the same exclusion list as _hero_term(). When office was
+ * added to the hero, a block_access still keyed on the old merged list would
+ * have left them with the hero's H1 *and* the page-title block — two H1s on
+ * the same page.
  */
 function bos_plant_problems_block_access($block, $operation, AccountInterface $account) {
   if ($operation !== 'view' || $block->getPluginId() !== 'page_title_block') {
@@ -214,7 +246,7 @@ function bos_plant_problems_block_access($block, $operation, AccountInterface $a
   $term = \Drupal::routeMatch()->getParameter('taxonomy_term');
   $hide = $term instanceof EntityInterface
     && in_array($term->bundle(), BOS_PLANT_PROBLEMS_VIDS, TRUE)
-    && !array_intersect(array_merge(BOS_PLANT_PROBLEMS_OFFICE_ROLES, BOS_PLANT_PROBLEMS_CREW_ROLES), $account->getRoles())
+    && !array_intersect(BOS_PLANT_PROBLEMS_HERO_EXCLUDED_ROLES, $account->getRoles())
     && _bos_plant_problems_banner_images($term);
   return AccessResult::forbiddenIf((bool) $hide)
     ->addCacheContexts(['user.roles', 'route'])

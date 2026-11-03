@@ -668,3 +668,45 @@ on any of those; the deletion guard was not.
 Complete/Invoiced/Paid — mirroring the guard in `cancel_work_orders.php`. BOS
 rule 4 (no deletion of operational history) is policy; right now only status
 enforces it.
+
+## Service cards render a truncated public article instead of the short description
+
+**Surfaced 2026-11-03.** The `service_children` view — the child-card list on a
+parent service page such as `/services/landscape-lawn-care/spraying` — builds
+each card from `field_iconic_image` + `name` + **`field_service_public_desc`**.
+That is a trimmed body used as teaser text, the precise anti-pattern the
+three-field content model was introduced to remove ("a card never shows a
+truncated body").
+
+`field_short_description` exists on the `services` vocabulary and is the correct
+card field. **Spruce Needle Drop (tid 1994) is currently the only services term
+that has it populated.**
+
+**Why this is not a one-line Views edit:** switching the view's card field to
+`field_short_description` today would blank the card text on all **11 sibling
+terms** under Spraying alone, because theirs are empty and an empty teaser
+correctly renders no text. The prerequisite is a content backfill — one card
+sentence per services term — and that is an office/marketing task, not a code
+one.
+
+**Order of work:** (1) backfill `field_short_description` across services terms;
+(2) then swap the card field in the `service_children` view via Views UI. Doing
+(2) first visibly breaks the services section.
+
+## A plant-health page format worth repeating (from the Spruce Needle Drop brief)
+
+**Surfaced 2026-11-03, Todd's own framing.** The Spruce Needle Drop page is a
+deliberate alternative to the blog that is on the do-not-build list: written
+from crew training material, a reference page rather than a feed, and aimed at a
+real seasonal search query. Public article plus crew training on one term, no new
+section and no maintenance obligation.
+
+Candidates the brief lists, by when the call actually comes in: **March** brown
+evergreens / winter burn; **April** a plant that leafed out then died (girdling,
+rabbit damage at snow line); **June** yellow leaves with green veins (iron
+chlorosis on alkaline ground); **August** a pine going red from the top (ips
+beetle); **October** fall colour that did not happen.
+
+Each needs: copy, a `field_sop_code` decision, photos, and
+`field_work_order_service` = FALSE unless it is genuinely bookable. Content
+work, not a build.

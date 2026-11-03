@@ -1,0 +1,97 @@
+<?php
+
+/**
+ * @file
+ * One URL per plant problem, body by the viewer's role.
+ *
+ * A plant problem term carries three audiences on one record: the public
+ * article (`field_public_description`), the crew training
+ * (`field_teammate_description`) and, for office, both. Taxonomy canonical
+ * pages render in the `full` view mode for everybody, so without this module
+ * the `teammate_view` display exists, holds the training, and is unreachable —
+ * which is exactly the state Spruce Needle Drop launched in on 2026-11-03:
+ * the crew copy was written, stored, and readable by nobody but an admin.
+ *
+ * So: office gets admin_view, crew get teammate_view, everyone else gets full.
+ * Same shape as bos_services, bos_seasons, bos_spray_types and
+ * bos_backflow_types.
+ *
+ * ⚠ THE CACHE CONTEXT IS NOT OPTIONAL. Routing the view mode is only half the
+ * job. Without `user.roles` on the build, the render cache serves whichever
+ * audience's body was built first to everyone who follows — so an anonymous
+ * visitor who happens to arrive after a logged-in crew member is served the
+ * crew training. The routing can be perfectly correct and the page still leak.
+ * This is the failure found across all six spray vocabularies on 2026-09-27.
+ *
+ * ⚠ This is the SIXTH module implementing this identical routing, which
+ * `bos_seasons` already flags as worth consolidating into one
+ * vocabulary-keyed router. Built as a separate module at Todd's direction
+ * (2026-11-03) so the vocabulary's behaviour lives with the vocabulary;
+ * consolidating all six remains a separate, behaviour-neutral job.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Vocabularies this module routes.
+ */
+const BOS_PLANT_PROBLEMS_VIDS = ['plant_problems'];
+
+/**
+ * Office roles see everything; checked first.
+ */
+const BOS_PLANT_PROBLEMS_OFFICE_ROLES = [
+  'supervisor',
+  'administration',
+  'site_assistant',
+  'site_admin',
+  'administrator',
+];
+
+/**
+ * Crew roles see the training rather than the public article.
+ */
+const BOS_PLANT_PROBLEMS_CREW_ROLES = ['teammates'];
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ */
+function bos_plant_problems_entity_view_mode_alter(string &$view_mode, EntityInterface $entity): void {
+  if ($entity->getEntityTypeId() !== 'taxonomy_term'
+    || !in_array($entity->bundle(), BOS_PLANT_PROBLEMS_VIDS, TRUE)) {
+    return;
+  }
+  // Only the canonical page. A term rendered inside a view or a teaser keeps
+  // whatever mode that context asked for.
+  if ($view_mode !== 'full' && $view_mode !== 'default') {
+    return;
+  }
+  $roles = \Drupal::currentUser()->getRoles();
+  // Office is checked FIRST: an administrator who also holds the teammates
+  // role should get the admin view, not the crew one.
+  if (array_intersect(BOS_PLANT_PROBLEMS_OFFICE_ROLES, $roles)) {
+    $view_mode = 'admin_view';
+  }
+  elseif (array_intersect(BOS_PLANT_PROBLEMS_CREW_ROLES, $roles)) {
+    $view_mode = 'teammate_view';
+  }
+  else {
+    $view_mode = 'full';
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view_alter() for taxonomy_term.
+ *
+ * See the file header: without this the render cache leaks one audience's body
+ * to another, and the leak is invisible until somebody checks as the wrong user.
+ */
+function bos_plant_problems_taxonomy_term_view_alter(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display): void {
+  if (!in_array($entity->bundle(), BOS_PLANT_PROBLEMS_VIDS, TRUE)) {
+    return;
+  }
+  $build['#cache']['contexts'][] = 'user.roles';
+}

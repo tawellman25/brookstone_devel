@@ -554,9 +554,10 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
     '#group' => 'content',
   ];
 
-  // Refresh button — only complex bundles (sprinkler, landscape) need
-  // it, since those are the only ones that render per-row inputs.
-  // Simple bundles silent-create on save, so refresh adds no value.
+  // Refresh button — only shown where per-row inputs are rendered, which
+  // is the complex bundles AND any WO with no clock-in to anchor to (see
+  // WoCrewRosterService::requiresManualTimes()). Where entries are
+  // silent-created on save, refresh adds no value.
   //
   // The button is nested INSIDE the wrapper container rather than as
   // a top-level form element. Top-level placement with `#group =>
@@ -565,7 +566,11 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
   // region — they end up at the bottom of the form regardless of
   // weight. As a child of the wrapper, the button inherits the
   // wrapper's already-correct position.
-  if ($svc->isComplexBundle($entity_type, $entity->bundle())) {
+  $alter_wo_id = 0;
+  if ($entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty()) {
+    $alter_wo_id = (int) $entity->get('field_work_order')->target_id;
+  }
+  if ($svc->requiresManualTimes($entity_type, $entity->bundle(), $alter_wo_id)) {
     $form['signoff_reconciliation']['refresh'] = [
       '#type' => 'button',
       '#value' => t('Refresh man hours'),
@@ -1089,12 +1094,14 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
     return;
   }
 
-  // Missing handling diverges by bundle. Simple bundles (single-block
-  // work — lawn, spray, fertilizing, cleanup) silent-create with WO-
-  // derived defaults. Complex bundles (sprinkler, landscape — varied
-  // per-person windows) require explicit per-row times because no
-  // single default fits the team.
-  $is_complex = $svc->isComplexBundle($entity_type, $entity->bundle());
+  // Missing handling diverges by bundle AND by whether this WO has a
+  // clock-in to anchor to. Simple bundles (single-block work — lawn,
+  // spray, fertilizing, cleanup) silent-create from WO-derived defaults,
+  // but only when somebody actually clocked in. Complex bundles
+  // (sprinkler, landscape — varied per-person windows) always require
+  // explicit per-row times because no single default fits the team.
+  // @see WoCrewRosterService::requiresManualTimes()
+  $is_complex = $svc->requiresManualTimes($entity_type, $entity->bundle(), $wo_id);
   if (!$is_complex) {
     $missing_names = array_map($name, array_keys($missing));
     $form['signoff_reconciliation']['missing_preview'] = [
@@ -1306,12 +1313,25 @@ function _wo_sign_off_compute_missing_start_default(int $wo_id, string $now_utc)
       return $val;
     }
   }
-  $wo = \Drupal::entityTypeManager()->getStorage('work_order')->load($wo_id);
-  if ($wo && $wo->hasField('created') && !$wo->get('created')->isEmpty()) {
-    return DrupalDateTime::createFromTimestamp((int) $wo->get('created')->value)
-      ->setTimezone(new \DateTimeZone('UTC'))
-      ->format('Y-m-d\TH:i:s');
-  }
+  // ⚠ Unreachable by design since 2026-11-02: this function is only called
+  // on the simple path, and the simple path is now only taken when
+  // WoCrewRosterService::hasAnchorClockIn() is TRUE — i.e. the query above
+  // found something.
+  //
+  // It used to fall back to the WO's `created` timestamp here. That was a
+  // reasonable proxy for "the start of the work day" when a WO was opened the
+  // morning it was worked, and badly wrong once seasonal WOs were created in
+  // batches weeks ahead: WO 54225 was created 10/07, signed off 11/02, and
+  // produced a 623-hour entry for each of four crew.
+  //
+  // So reaching this line means the anchor check and this lookup disagree,
+  // which is a bug worth seeing rather than papering over. Return `now` —
+  // wrong by hours rather than by weeks, and the entry-hours guard will catch
+  // it — and say so loudly.
+  \Drupal::logger('wo_sign_off')->error(
+    'Reconciliation: no clock-in to anchor the start time on WO @wo, but the simple path was taken anyway. Falling back to now. This should be impossible — check WoCrewRosterService::requiresManualTimes().',
+    ['@wo' => $wo_id]
+  );
   return $now_utc;
 }
 
@@ -1501,7 +1521,10 @@ function _wo_sign_off_reconciliation_validate(array &$form, FormStateInterface $
     }
   }
 
-  if (!$svc->isComplexBundle($entity_type, $entity->bundle())) {
+  // Must match the predicate the form build used, or the form shows time
+  // inputs that validation never checks (or validates rows that were never
+  // rendered). @see WoCrewRosterService::requiresManualTimes()
+  if (!$svc->requiresManualTimes($entity_type, $entity->bundle(), $wo_id)) {
     return;
   }
   if (empty($missing)) {
@@ -1701,11 +1724,12 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
     }
   }
 
-  // MISSING — split by bundle. Simple bundles silent-create with WO-
-  // derived defaults; complex bundles use per-row times entered by
-  // the user (validated above).
+  // MISSING — silent-create from WO-derived defaults only when this WO has
+  // a clock-in to anchor to AND the bundle is simple; otherwise the times
+  // were typed in by the signer and validated above.
+  // @see WoCrewRosterService::requiresManualTimes()
   if (!empty($missing)) {
-    $is_complex = $svc->isComplexBundle($entity_type, $entity->bundle());
+    $is_complex = $svc->requiresManualTimes($entity_type, $entity->bundle(), $wo_id);
     $start_default_utc = $is_complex
       ? NULL
       : _wo_sign_off_compute_missing_start_default($wo_id, $now_utc);

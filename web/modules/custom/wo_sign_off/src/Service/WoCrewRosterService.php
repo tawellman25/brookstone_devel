@@ -94,6 +94,53 @@ final class WoCrewRosterService {
       && in_array($signoff_bundle, self::COMPLEX_BUNDLES, TRUE);
   }
 
+  /**
+   * Whether this WO has a clock-in the simple path can anchor to.
+   *
+   * The simple path's whole premise is "one crew, one shift": a missing
+   * teammate inherits the start time of whoever DID clock in, so the crew's
+   * day lines up. That only works if somebody clocked in.
+   *
+   * @see self::requiresManualTimes()
+   */
+  public function hasAnchorClockIn(int $wo_id): bool {
+    if ($wo_id <= 0) {
+      return FALSE;
+    }
+    $ids = $this->entityTypeManager->getStorage('wo_time_clock')->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_work_order', $wo_id)
+      ->exists('field_start_time')
+      ->range(0, 1)
+      ->execute();
+    return !empty($ids);
+  }
+
+  /**
+   * Whether missing entries must be typed in rather than derived.
+   *
+   * TRUE for the complex bundles (teammates work different windows, so no
+   * single WO-wide default fits), and ALSO whenever the work order has no
+   * clock-in at all to anchor to.
+   *
+   * ⚠ That second condition is the 2026-11-02 fix. Before it, a WO with zero
+   * clock-ins fell through to "start = the WO's created timestamp, end = now".
+   * That was a fair approximation of the work day back when a WO was opened
+   * the morning it was worked. Seasonal work orders are created in batches
+   * weeks ahead: WO 54225 (fall_cleanup, 1501 East 3rd St.) was created 10/07
+   * and signed off 11/02, so the derived entry came to **623 hours** for each
+   * of four crew. The entry-hours guard rejected it, which is the system
+   * working — but the sign-off then failed outright and nobody's time was
+   * recorded. 315 open work orders had no clock-ins and were sitting on the
+   * same trap.
+   *
+   * So: when there is nothing to derive a start from, do not invent one. Ask.
+   */
+  public function requiresManualTimes(string $signoff_entity_type, string $signoff_bundle, int $wo_id): bool {
+    return $this->isComplexBundle($signoff_entity_type, $signoff_bundle)
+      || !$this->hasAnchorClockIn($wo_id);
+  }
+
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
   ) {}

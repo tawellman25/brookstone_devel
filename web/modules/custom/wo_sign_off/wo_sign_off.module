@@ -1116,8 +1116,14 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
   $form['signoff_reconciliation']['title'] = [
     '#markup' => '<h3>' . t('Time Entries to Create') . '</h3>',
   ];
+  // Two different reasons land here now, and the foreman should be told
+  // which one applies rather than reading about sprinklers on a cleanup.
+  $no_anchor = !$svc->hasAnchorClockIn($wo_id);
   $form['signoff_reconciliation']['help'] = [
-    '#markup' => '<p>' . t('The following crew members have no clock-in record on this work order. Enter their actual start and end times. (Multi-cycle work — sprinkler / landscape — has varied per-person windows; defaults would not be accurate.)') . '</p>',
+    '#markup' => '<p>' . ($no_anchor
+      ? t('The following crew members have no clock-in record on this work order, and nobody else clocked in either — so there is nothing to base their times on. Enter their actual start and end times.')
+      : t('The following crew members have no clock-in record on this work order. Enter their actual start and end times. (Multi-cycle work — sprinkler / landscape — has varied per-person windows; defaults would not be accurate.)')
+    ) . '</p>',
   ];
   $form['signoff_reconciliation']['rows'] = [
     '#type' => 'container',
@@ -1144,6 +1150,18 @@ function _wo_sign_off_build_reconciliation_fieldset(array &$form, FormStateInter
         '#type' => 'textfield',
         '#title' => t('Note (optional)'),
         '#size' => 60,
+      ],
+      // ⚠ The same escape hatch the standalone time-entry form has.
+      // Without it, a cap that is wrong for this bundle blocks sign-off
+      // outright and the only remedy is a code change — which is exactly
+      // what happened to fall_cleanup on 2026-11-02 (WO 54225). The
+      // validate handler only enforces the cap when this is unchecked, so
+      // a foreman can confirm a genuine long day himself; the presave
+      // guard then stamps an audit note recording the override.
+      'time_limit_override' => [
+        '#type' => 'checkbox',
+        '#title' => t('This long entry is correct'),
+        '#description' => t('Only needed if the hours below exceed the limit for this type of work. Checking it records a deliberate override on the entry.'),
       ],
     ];
   }
@@ -1586,6 +1604,37 @@ function _wo_sign_off_reconciliation_validate(array &$form, FormStateInterface $
           '@s' => $start_time->format('m/d/Y g:i A'),
         ])
       );
+      continue;
+    }
+
+    // Enforce the entry-hours cap HERE rather than letting the presave guard
+    // throw during save. Same rule, but the foreman gets a named limit, on
+    // the right row, with a checkbox he can act on — instead of a failed
+    // sign-off and an exception only visible in the log. That silent failure
+    // is what hid WO 54225 for weeks.
+    if (!function_exists('_wo_total_time_get_max_entry_hours')) {
+      continue;
+    }
+    $wo = \Drupal::entityTypeManager()->getStorage('work_order')->load($wo_id);
+    if (!$wo) {
+      continue;
+    }
+    $hours = ($end_time->getTimestamp() - $start_time->getTimestamp()) / 3600;
+    $cap = (float) _wo_total_time_get_max_entry_hours($wo->bundle());
+    $overridden = !empty($row['time_limit_override']);
+    if ($cap > 0 && $hours > $cap && !$overridden) {
+      // No $name closure in this scope — the build handler has one, this
+      // handler does not. Load the account directly.
+      $row_user = \Drupal::entityTypeManager()->getStorage('user')->load($uid);
+      $form_state->setErrorByName(
+        "signoff_reconciliation][rows][$uid][time_limit_override",
+        t('@name: @h hours is over the @c-hour limit for @b work. If that is genuinely one continuous session, check "This long entry is correct". Otherwise split it into separate entries, or correct the times.', [
+          '@name' => $row_user ? $row_user->getDisplayName() : 'User ID ' . $uid,
+          '@h' => number_format($hours, 2),
+          '@c' => number_format($cap, 2),
+          '@b' => $wo->bundle(),
+        ])
+      );
     }
   }
 }
@@ -1761,6 +1810,13 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
         $audit_note = "[Created by {$signer_name} at sign-off, {$now_label}]";
       }
 
+      // Carry the foreman's explicit "this long entry is correct" through to
+      // the entity, so the presave guard honours it and stamps its audit
+      // note. Only the per-row path can set it — a derived entry nobody
+      // typed must never claim a human confirmed it.
+      $row_override = $is_complex
+        && !empty($values['signoff_reconciliation']['rows'][$uid]['time_limit_override']);
+
       $new = $tc_storage->create([
         'type' => 'entry',
         'field_source' => 'signoff_reconciliation',
@@ -1770,6 +1826,7 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
         'field_start_time' => $start_utc,
         'field_end_time' => $end_utc,
         'field_notes' => $audit_note,
+        'field_time_limit_override' => $row_override ? 1 : 0,
       ]);
       if ($parent_id !== NULL) {
         $new->set($audit_created_field, $parent_id);
@@ -1786,6 +1843,15 @@ function _wo_sign_off_reconciliation_submit(array &$form, FormStateInterface $fo
           'Reconciliation: failed to create entry for uid @uid on WO @wo: @msg',
           ['@uid' => $uid, '@wo' => $wo_id, '@msg' => $e->getMessage()]
         );
+        // ⚠ Tell the human too. This used to log and carry on silently, so a
+        // sign-off could "succeed" with a crew member's time missing and the
+        // only trace in a log nobody reads — which is how WO 54225 sat
+        // broken from 10/07 to 11/02 across two attempts.
+        $failed_user = $user_storage->load($uid);
+        \Drupal::messenger()->addError(t('Could not create the time entry for @name: @msg', [
+          '@name' => $failed_user ? $failed_user->getDisplayName() : 'User ID ' . $uid,
+          '@msg' => $e->getMessage(),
+        ]));
       }
     }
   }

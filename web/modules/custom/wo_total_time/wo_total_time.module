@@ -49,6 +49,18 @@ const WO_TOTAL_TIME_LONG_JOB_BUNDLES = [
   // (field_max_entry_hours_long, 14h) cap so a normal green-button clock-out
   // isn't blocked by the 4-hour default.
   'summer_pruning',
+  // Added 2026-11-02, same reasoning as summer_pruning: a cleanup crew works
+  // one property for the day. Measured before the change — 56 of 596
+  // fall_cleanup and 16 of 651 spring_cleanup sessions already exceeded 4h.
+  //
+  // ⚠ This was not merely cosmetic. The 4h cap was actively blocking
+  // sign-off: a plain 6.01-hour fall_cleanup entry was rejected on
+  // 2026-11-02, and the sign-off reconciliation path creates entries
+  // WITHOUT field_time_limit_override, so the "This long entry is correct"
+  // escape hatch is unavailable there — a foreman entering true times had
+  // no way through. See WO 54225.
+  'fall_cleanup',
+  'spring_cleanup',
 ];
 
 /**

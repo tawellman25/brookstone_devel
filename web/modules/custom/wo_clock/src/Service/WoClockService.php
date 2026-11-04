@@ -196,6 +196,8 @@ final class WoClockService {
       $this->appendNote($entry, $noteContext);
     }
     $entry->save();
+    // Tell the office somebody has started. @see markInProgress().
+    $this->markInProgress($woId, 'Teammate Clocked In');
     return $entry;
   }
 
@@ -430,6 +432,75 @@ final class WoClockService {
   }
 
   /**
+   * Statuses a clock-in must NOT promote out of.
+   *
+   * Terminal set, matching wo_timer_flag_update: Complete, Warrantied,
+   * Invoiced, Paid, Canceled. Everything else (Open / Scheduled / Assigned /
+   * blocker states) promotes to In Progress.
+   */
+  private const TERMINAL_STATUSES = [1097, 1283, 1281, 1504, 1098];
+
+  /**
+   * In Progress.
+   */
+  private const STATUS_IN_PROGRESS = 1092;
+
+  /**
+   * Move a work order to In Progress when somebody starts work on it.
+   *
+   * ⚠ THIS WAS A SILENT REGRESSION. The legacy flag toggle
+   * (`wo_timer_flag_update`) created a "Teammate Clocked In" status update, and
+   * `wo_clock` replaced that toggle on the work order page — hiding the flag —
+   * without carrying the status change across. Measured 2026-11-03: of **2,752
+   * work orders clocked into since the button shipped on 07/03, only 995 ever
+   * got a status update**, and 24 were sitting at Open or Scheduled with hours
+   * already logged against them. Todd: *"a Status change needs to be created to
+   * show the office that someone has started working on it."*
+   *
+   * Writes a `wo_status_updates` record rather than setting `field_status`
+   * directly, so the change lands in the append-only timeline with an author
+   * and a reason — the same mechanism the office's own actions use. The
+   * record's presave propagates the status onto the work order.
+   *
+   * Skipping is side-effect-free: no record is created, so no propagation runs
+   * and the WO is never saved.
+   *
+   * @return bool
+   *   TRUE if a status update was written.
+   */
+  private function markInProgress(int $woId, string $note): bool {
+    $wo = $this->entityTypeManager->getStorage('work_order')->load($woId);
+    if (!$wo || !$wo->hasField('field_status') || $wo->get('field_status')->isEmpty()) {
+      return FALSE;
+    }
+    $current = (int) $wo->get('field_status')->target_id;
+    // Already started, or finished/billed — nothing to say.
+    if ($current === self::STATUS_IN_PROGRESS || in_array($current, self::TERMINAL_STATUSES, TRUE)) {
+      return FALSE;
+    }
+    try {
+      $this->entityTypeManager->getStorage('wo_status_updates')->create([
+        'type' => 'update',
+        'field_status_of_wo' => $woId,
+        'field_status' => self::STATUS_IN_PROGRESS,
+        'field_status_change_note' => ['value' => $note],
+        'uid' => $this->currentUser->id(),
+      ])->save();
+      return TRUE;
+    }
+    catch (\Throwable $e) {
+      // ⚠ A failed status update must NOT cost somebody their clock-in. The
+      // hours are the thing that matters; the status is reporting. Log and
+      // carry on rather than throwing out of a clock-in.
+      $this->loggerFactory->get('wo_clock')->error(
+        'Could not set WO @wo to In Progress on clock-in: @msg',
+        ['@wo' => $woId, '@msg' => $e->getMessage()]
+      );
+      return FALSE;
+    }
+  }
+
+  /**
    * Everyone currently open on a work order, oldest start first.
    */
   public function getOpenEntriesOnWo(int $woId): array {
@@ -506,6 +577,12 @@ final class WoClockService {
       // Explicit. unset() would COMMIT the partial crew.
       $tx->rollBack();
       throw $e;
+    }
+    // Tell the office somebody has started — but only if we actually opened
+    // something. A press that skipped everyone (all already clocked in) has
+    // started nothing new and should not re-announce the job.
+    if ($created) {
+      $this->markInProgress($woId, sprintf('Crew Clocked In (%d) by %s', count($created), $actor));
     }
     return ['created' => $created, 'skipped' => $skipped];
   }

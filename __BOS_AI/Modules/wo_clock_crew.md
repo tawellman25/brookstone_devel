@@ -150,6 +150,23 @@ is correct" confirmation — rather than failing silently or writing nothing. A
 partial success (three closed, four rejected) is the worst outcome and must not
 be possible: close all or none, and say which.
 
+**Resolved 2026-11-03 — the default cap is now 8 h** (`field_max_entry_hours`,
+was 4). Todd: *"Can we move that cap to 8 hours?"* — and, on being shown it:
+*"I actually don't remember setting it at 4 hours."* He did not: commit
+`39bd75f3` (2026-05-16) created the field **already defaulted to 4**. That
+commit's intent was narrow — catching forgotten clock-outs, citing 17–18 hour
+runaways — so **4 was never aimed at a six-hour Christmas-decoration day; it
+caught it as collateral**, and nobody noticed for six months because the
+override checkbox quietly absorbed it on the ordinary form. It only became
+visible when the sign-off path, which has no checkbox, hit it and failed.
+
+Measured before changing: of **27,218** entries on default-cap bundles, **159**
+sit between 4 and 8 h (Christmas decorations 59, sprinkler start-up 23, weed
+spraying 17 — real full days), **24** between 8 and 14 h, and **56** over 14 h.
+At 8 h the original purpose is intact — the 80 genuinely suspect entries are
+still caught — and the cap stops arguing with real work. Long-job bundles
+remain at 14 h.
+
 ---
 
 ## Open decisions
@@ -158,12 +175,16 @@ be possible: close all or none, and say which.
    foreman? Crews in the field do not all contain a `supervisor` role today —
    worth checking before choosing, because the answer decides whether this is a
    permission or a per-user flag.
-2. **GPS on crew entries.** The existing clock capture is silent GPS. A foreman
-   clocking in five people records **the foreman's** location. Stamping it on
-   all five implies each person was individually verified there, which is not
-   what happened. Options: store it only on the foreman's own entry; store it
-   on all but tagged as foreman-reported; or omit it for crew-created entries.
-   This matters if GPS is ever used to settle a dispute.
+2. ~~**GPS on crew entries.**~~ **Resolved 2026-11-03.** Todd: *"if the foreman
+   is including them they better also be their"*. Correct, and it settles the
+   design: a foreman adding someone to a crew clock-in is **attesting they are
+   on site**, and that is a supervisor making a statement he is accountable
+   for. So **stamp the captured location on every crew entry**, and rely on
+   `field_source = wo_clock_crew` to record that it came from one foreman
+   action rather than five independent captures. That keeps the record honest
+   — anyone reading it later can see exactly what it is — without discarding
+   location data that is genuinely useful. Do **not** silently copy it with no
+   marker, which would misrepresent one reading as five.
 
 **Resolved 2026-11-03 — who may edit someone else's entry.** `edit any` was
 removed from **`teammates` only**. Supervisors, office staff (`administration`)

@@ -48,6 +48,8 @@ final class WoClockService {
   public const NOTE_BUTTON_START = '[Start: Button %s]';
   public const NOTE_BUTTON_END = '[End: Button %s]';
   public const NOTE_INTERVENTION_END = '[End: Intervention %s by %s]';
+  public const NOTE_CREW_START = '[Start: Crew clock-in %s by %s]';
+  public const NOTE_CREW_END = '[End: Crew clock-out %s by %s]';
 
   public function __construct(
     private readonly EntityTypeManagerInterface $entityTypeManager,
@@ -281,6 +283,204 @@ final class WoClockService {
 
     $entry->save();
     return $entry;
+  }
+
+  /**
+   * Who the crew clock should offer for a work order.
+   *
+   * Seeded from the WO's scheduling records (`field_assigned_to`) because that
+   * is who was dispatched — but the list is only a DEFAULT. Crews change on
+   * the morning, so the caller must be able to untick and to add somebody who
+   * was never scheduled. Anyone already clocked in is returned flagged rather
+   * than hidden, so the foreman can see why they are not selectable.
+   *
+   * @return array
+   *   [['uid','name','open' => bool], …] sorted by name.
+   */
+  public function getCrewRosterForWo(int $woId): array {
+    $db = \Drupal::database();
+    $uids = $db->query('SELECT DISTINCT a.field_assigned_to_target_id uid
+      FROM {scheduling__field_assigned_to} a
+      JOIN {scheduling__field_work_order} w ON w.entity_id = a.entity_id AND w.deleted = 0
+      WHERE a.deleted = 0 AND w.field_work_order_target_id = :wo',
+      [':wo' => $woId])->fetchCol();
+
+    // Anyone already clocked in belongs on the list even if they were never
+    // dispatched — they are demonstrably on the job.
+    foreach ($this->getOpenEntriesOnWo($woId) as $entry) {
+      $uid = (int) $entry->get('field_teammate')->target_id;
+      if ($uid && !in_array($uid, $uids)) {
+        $uids[] = $uid;
+      }
+    }
+
+    $out = [];
+    $store = $this->entityTypeManager->getStorage('user');
+    foreach (array_unique(array_map('intval', $uids)) as $uid) {
+      $u = $store->load($uid);
+      if (!$u || !$u->isActive()) {
+        continue;
+      }
+      $out[] = [
+        'uid' => $uid,
+        'name' => $u->getDisplayName(),
+        'open' => (bool) $this->getCurrentEntryOnWo($uid, $woId),
+      ];
+    }
+    usort($out, fn($a, $b) => strcasecmp($a['name'], $b['name']));
+    return $out;
+  }
+
+  /**
+   * Everyone currently open on a work order, oldest start first.
+   */
+  public function getOpenEntriesOnWo(int $woId): array {
+    if ($woId <= 0) {
+      return [];
+    }
+    $ids = $this->tcStorage()->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_work_order', $woId)
+      ->notExists('field_end_time')
+      ->sort('field_start_time', 'ASC')
+      ->execute();
+    return $ids ? $this->tcStorage()->loadMultiple($ids) : [];
+  }
+
+  /**
+   * Clock a whole crew IN on one work order.
+   *
+   * The crew model: the person pressing the button is attesting that everyone
+   * named is on site, so each gets a real entry of their own rather than a
+   * share of somebody else's. Entries are independent from the moment they
+   * exist — one person leaving early closes only their own row.
+   *
+   * ⚠ Anyone who ALREADY has an open entry is skipped, not duplicated and not
+   * overwritten. Somebody who clocked themselves in at 7:00 keeps their 7:00
+   * when the crew button is pressed at 7:15; a second open row for the same
+   * person on the same WO would double-count their hours into billing.
+   *
+   * @return array
+   *   ['created' => [uid => entry], 'skipped' => [uid => reason]]
+   */
+  public function crewClockIn(int $woId, array $uids, ?float $lat = NULL, ?float $lon = NULL): array {
+    if ($this->woIsLocked($woId)) {
+      throw new \RuntimeException('This work order has already been invoiced and is closed to time entry. If a time correction is needed, please contact the office.');
+    }
+    $uids = array_values(array_unique(array_filter(array_map('intval', $uids))));
+    if (!$uids) {
+      throw new \RuntimeException('Nobody was selected.');
+    }
+
+    $created = [];
+    $skipped = [];
+    $actor = $this->currentUser->getDisplayName();
+    $stamp = $this->usDisplay($this->time->getRequestTime());
+
+    // All-or-nothing: a half-clocked crew is worse than none, because the
+    // missing half looks deliberate afterwards.
+    $tx = \Drupal::database()->startTransaction();
+    try {
+      foreach ($uids as $uid) {
+        if ($this->getCurrentEntryOnWo($uid, $woId)) {
+          $skipped[$uid] = 'already clocked in';
+          continue;
+        }
+        $entry = $this->createOpenEntry($uid, $woId);
+        // Crew origin, so a reader can tell this was one attestation rather
+        // than N independent clock-ins. Overrides the button default set by
+        // createOpenEntry().
+        $entry->set('field_source', 'wo_clock_crew');
+        if ($lat !== NULL && $lon !== NULL) {
+          // ⚠ This is the FOREMAN's location, stamped on everyone. Todd,
+          // 2026-11-03: "if the foreman is including them they better also be
+          // their" — so it is an attestation of presence, and field_source
+          // above is what stops it being mistaken for N separate captures.
+          $entry->set('field_clock_in_location', $this->wkt($lat, $lon));
+        }
+        $entry->set('field_notes', NULL);
+        $this->appendNote($entry, sprintf(self::NOTE_CREW_START, $stamp, $actor));
+        $entry->save();
+        $created[$uid] = $entry;
+      }
+    }
+    catch (\Throwable $e) {
+      // Explicit. unset() would COMMIT the partial crew.
+      $tx->rollBack();
+      throw $e;
+    }
+    return ['created' => $created, 'skipped' => $skipped];
+  }
+
+  /**
+   * Clock a whole crew OUT on one work order.
+   *
+   * Closes every entry still open. Entries already closed are left alone —
+   * that is the person who finished early, and their earlier end time must
+   * survive the crew action.
+   *
+   * ⚠ CAP HANDLING IS ALL-OR-NOTHING AND CHECKED BEFORE ANY WRITE. The
+   * single-entry cap is enforced on save, so closing five people one by one
+   * could close three and reject two, leaving a crew half clocked out with no
+   * obvious signal. Every entry is tested first; if any exceed, nothing is
+   * written and the caller is handed the names to confirm.
+   *
+   * @return array
+   *   ['closed' => [...]] on success, or
+   *   ['needs_confirm' => [['name','hours','cap'], …]] when the cap would bite.
+   */
+  public function crewClockOut(int $woId, ?float $lat = NULL, ?float $lon = NULL, bool $override = FALSE): array {
+    $open = $this->getOpenEntriesOnWo($woId);
+    if (!$open) {
+      throw new \RuntimeException('Nobody is clocked in on this work order.');
+    }
+
+    if (!$override) {
+      $exceed = [];
+      foreach ($open as $entry) {
+        $cap = $this->capExceedanceHours($entry);
+        if ($cap) {
+          $u = $entry->get('field_teammate')->entity;
+          $exceed[] = [
+            'name' => $u ? $u->getDisplayName() : 'Unknown',
+            'hours' => $cap['hours'],
+            'cap' => $cap['cap'],
+          ];
+        }
+      }
+      if ($exceed) {
+        // Nothing written. The caller asks, then calls back with override.
+        return ['needs_confirm' => $exceed];
+      }
+    }
+
+    $closed = [];
+    $actor = $this->currentUser->getDisplayName();
+    $stamp = $this->usDisplay($this->time->getRequestTime());
+    $tx = \Drupal::database()->startTransaction();
+    try {
+      foreach ($open as $entry) {
+        $entry->set('field_end_time', $this->nowUtc());
+        if ($lat !== NULL && $lon !== NULL) {
+          $entry->set('field_clock_out_location', $this->wkt($lat, $lon));
+        }
+        if ($override && $entry->hasField('field_time_limit_override')) {
+          $entry->set('field_time_limit_override', TRUE);
+        }
+        $this->appendNote($entry, sprintf(self::NOTE_CREW_END, $stamp, $actor));
+        $entry->_wo_clock_write = TRUE;
+        $entry->save();
+        $u = $entry->get('field_teammate')->entity;
+        $closed[] = $u ? $u->getDisplayName() : ('uid ' . $entry->get('field_teammate')->target_id);
+      }
+    }
+    catch (\Throwable $e) {
+      // Explicit rollBack — unset() COMMITS, which would leave exactly the
+      // partial close this method exists to prevent.
+      $tx->rollBack();
+      throw $e;
+    }
+    return ['closed' => $closed];
   }
 
   /**

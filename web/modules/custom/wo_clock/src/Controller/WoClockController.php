@@ -256,6 +256,91 @@ final class WoClockController extends ControllerBase {
     return NULL;
   }
 
+  /**
+   * GET|POST /clock/crew/roster/{wo_id}
+   *
+   * Who to offer for a crew clock-in. Seeded from the dispatched crew, with
+   * anyone already clocked in flagged rather than hidden — the foreman should
+   * see why somebody is not selectable instead of wondering where they went.
+   */
+  public function crewRosterAction(int $wo_id, Request $request): JsonResponse {
+    return new JsonResponse([
+      'status' => 'ok',
+      'wo_id' => $wo_id,
+      'crew' => $this->clock->getCrewRosterForWo($wo_id),
+    ]);
+  }
+
+  /**
+   * POST /clock/crew/in/{wo_id}
+   *
+   * Body: {uids: [..], lat, lon}
+   *
+   * ⚠ Deliberately NOT role-gated beyond `access content`. The crew leader
+   * changes from job to job (Todd, 2026-11-03: "The crew leader may change on
+   * different WOs"), so gating on a `supervisor` role would simply block the
+   * person holding the phone. Every entry records who pressed the button, so
+   * the accountability is in the data rather than in the permission.
+   */
+  public function crewClockInAction(int $wo_id, Request $request): JsonResponse {
+    $body = $this->body($request);
+    [$lat, $lon] = $this->latLon($body);
+    $uids = is_array($body['uids'] ?? NULL) ? $body['uids'] : [];
+    if (!$uids) {
+      return $this->error('Select at least one crew member.');
+    }
+    try {
+      $result = $this->clock->crewClockIn($wo_id, $uids, $lat, $lon);
+    }
+    catch (\Throwable $e) {
+      return $this->error($e->getMessage());
+    }
+    $names = [];
+    foreach ($result['created'] as $uid => $entry) {
+      $u = $this->entityTypeManager()->getStorage('user')->load($uid);
+      $names[] = $u ? $u->getDisplayName() : ('uid ' . $uid);
+    }
+    return new JsonResponse([
+      'status' => 'clocked_in',
+      'created' => $names,
+      'created_count' => count($result['created']),
+      'skipped' => $result['skipped'],
+    ]);
+  }
+
+  /**
+   * POST /clock/crew/out/{wo_id}
+   *
+   * Body: {lat, lon, override}
+   *
+   * Returns {status: confirm_required, over_cap: [...]} when closing now would
+   * breach the single-entry cap for anyone. NOTHING is written in that case —
+   * the caller confirms and posts again with override, so a crew is never left
+   * half clocked out.
+   */
+  public function crewClockOutAction(int $wo_id, Request $request): JsonResponse {
+    $body = $this->body($request);
+    [$lat, $lon] = $this->latLon($body);
+    $override = !empty($body['override']);
+    try {
+      $result = $this->clock->crewClockOut($wo_id, $lat, $lon, $override);
+    }
+    catch (\Throwable $e) {
+      return $this->error($e->getMessage());
+    }
+    if (isset($result['needs_confirm'])) {
+      return new JsonResponse([
+        'status' => 'confirm_required',
+        'over_cap' => $result['needs_confirm'],
+      ]);
+    }
+    return new JsonResponse([
+      'status' => 'clocked_out',
+      'closed' => $result['closed'],
+      'closed_count' => count($result['closed']),
+    ]);
+  }
+
   private function entryData(EntityInterface $entry): array {
     return [
       'id' => (int) $entry->id(),

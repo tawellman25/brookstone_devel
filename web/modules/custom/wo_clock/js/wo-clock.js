@@ -280,6 +280,89 @@
     }
   }
 
+  // ---- Crew clock ----------------------------------------------------------
+  //
+  // Creates one REAL entry per person rather than one shared crew record, so
+  // everything stays independent afterwards: an early finisher closes only
+  // their own row, and a late arrival uses the ordinary button and gets their
+  // own start. That is why this is a thin wrapper over the same endpoints and
+  // not a parallel time-keeping system.
+
+  function endpoints() {
+    return (drupalSettings.woClock && drupalSettings.woClock.endpoints) || {};
+  }
+
+  function openCrewPanel(root, woId) {
+    var panel = root.querySelector('[data-wo-clock-crew-panel]');
+    var list = root.querySelector('[data-wo-clock-crew-list]');
+    if (!panel || !list) { return; }
+    setBusy(root, true);
+    post(endpoints().crewRoster, {}).then(function (res) {
+      setBusy(root, false);
+      if (res.status !== 'ok') { showError(root, res.message || 'Could not load the crew.'); return; }
+      if (!res.crew || !res.crew.length) {
+        showError(root, 'Nobody is assigned to this work order yet. Clock in individually, or assign the crew first.');
+        return;
+      }
+      list.innerHTML = res.crew.map(function (p) {
+        // Someone already clocked in is shown but NOT selectable — the
+        // foreman should see why they are not in the list rather than
+        // wonder, and re-adding them would double-count their hours.
+        var dis = p.open ? ' disabled' : '';
+        var note = p.open ? ' <em>(already clocked in)</em>' : '';
+        return '<label class="wo-clock__crew-member">' +
+          '<input type="checkbox" value="' + p.uid + '"' + (p.open ? '' : ' checked') + dis + '> ' +
+          Drupal.checkPlain(p.name) + note + '</label>';
+      }).join('');
+      panel.hidden = false;
+    });
+  }
+
+  function selectedUids(root) {
+    var boxes = root.querySelectorAll('[data-wo-clock-crew-list] input[type=checkbox]:checked:not(:disabled)');
+    return Array.prototype.map.call(boxes, function (b) { return parseInt(b.value, 10); });
+  }
+
+  function doCrewClockIn(root, woId) {
+    var uids = selectedUids(root);
+    if (!uids.length) { showError(root, 'Select at least one crew member.'); return; }
+    setBusy(root, true);
+    getGps().then(function (gps) {
+      var body = { uids: uids };
+      if (gps) { body.lat = gps.lat; body.lon = gps.lon; }
+      return post(endpoints().crewIn, body);
+    }).then(function (res) {
+      setBusy(root, false);
+      if (res.status !== 'clocked_in') { showError(root, res.message || 'Could not clock the crew in.'); return; }
+      reloadWo();
+    });
+  }
+
+  function doCrewClockOut(root, woId, override) {
+    setBusy(root, true);
+    getGps().then(function (gps) {
+      var body = { override: !!override };
+      if (gps) { body.lat = gps.lat; body.lon = gps.lon; }
+      return post(endpoints().crewOut, body);
+    }).then(function (res) {
+      setBusy(root, false);
+      // The cap would bite. NOTHING has been written — the server checked all
+      // entries before touching any, so a crew is never left half clocked out.
+      if (res.status === 'confirm_required') {
+        var who = (res.over_cap || []).map(function (p) {
+          return p.name + ' (' + p.hours + ' h, limit ' + p.cap + ')';
+        }).join('\n');
+        if (window.confirm('These entries are longer than the limit for this type of work:\n\n' + who +
+          '\n\nIf that is correct, press OK to record them as confirmed long entries.')) {
+          doCrewClockOut(root, woId, true);
+        }
+        return;
+      }
+      if (res.status !== 'clocked_out') { showError(root, res.message || 'Could not clock the crew out.'); return; }
+      reloadWo();
+    });
+  }
+
   Drupal.behaviors.woClock = {
     attach: function (context) {
       once('wo-clock', '.wo-clock', context).forEach(function (root) {
@@ -287,10 +370,20 @@
           var btn = ev.target.closest('[data-wo-clock-action]');
           if (!btn || btn.disabled) { return; }
           var action = btn.getAttribute('data-wo-clock-action');
+          var woId = btn.getAttribute('data-wo-id') || root.getAttribute('data-wo-id');
           if (action === 'in') {
-            doClockIn(root, btn.getAttribute('data-wo-id') || root.getAttribute('data-wo-id'));
+            doClockIn(root, woId);
           } else if (action === 'out') {
             doClockOut(root, btn.getAttribute('data-entry-id'));
+          } else if (action === 'crew-in') {
+            openCrewPanel(root, woId);
+          } else if (action === 'crew-in-confirm') {
+            doCrewClockIn(root, woId);
+          } else if (action === 'crew-cancel') {
+            var p = root.querySelector('[data-wo-clock-crew-panel]');
+            if (p) { p.hidden = true; }
+          } else if (action === 'crew-out') {
+            doCrewClockOut(root, woId, false);
           } else {
             handleEntryButton(root, btn, null);
           }

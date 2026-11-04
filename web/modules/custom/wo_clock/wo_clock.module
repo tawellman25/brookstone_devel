@@ -46,6 +46,8 @@ function wo_clock_theme($existing, $type, $theme, $path) {
         'current_entry' => NULL,
         'open_entries' => [],
         'urls' => [],
+        // Who is open on THIS work order — drives the crew clock-out button.
+        'crew_open' => [],
       ],
     ],
     'wo_clock_alert_entry' => [
@@ -373,12 +375,27 @@ function _wo_clock_build_render(int $wo_id, \Drupal\Core\Session\AccountInterfac
     ];
   }
 
+  // Crew state. Who is open on THIS work order — the count the crew clock-out
+  // button acts on, and the reassurance a foreman needs before pressing it.
+  // Names are included because "Clock out crew (4)" is a worse prompt than
+  // seeing who the four are.
+  $openHere = $svc->getOpenEntriesOnWo($wo_id);
+  $crewOpen = [];
+  foreach ($openHere as $e) {
+    $u = $e->get('field_teammate')->entity;
+    $crewOpen[] = [
+      'name' => $u ? $u->getDisplayName() : 'Unknown',
+      'start_us' => _wo_clock_fmt_us((string) $e->get('field_start_time')->value),
+    ];
+  }
+
   return [
     '#theme' => 'wo_clock_block',
     '#state' => $state,
     '#wo_id' => $wo_id,
     '#current_entry' => $currentData,
     '#open_entries' => $openData,
+    '#crew_open' => $crewOpen,
     '#attached' => [
       'library' => ['wo_clock/clock'],
       'drupalSettings' => [
@@ -386,6 +403,9 @@ function _wo_clock_build_render(int $wo_id, \Drupal\Core\Session\AccountInterfac
           'woId' => $wo_id,
           'endpoints' => [
             'clockIn' => \Drupal\Core\Url::fromRoute('wo_clock.clock_in', ['wo_id' => $wo_id])->toString(),
+            'crewRoster' => \Drupal\Core\Url::fromRoute('wo_clock.crew_roster', ['wo_id' => $wo_id])->toString(),
+            'crewIn' => \Drupal\Core\Url::fromRoute('wo_clock.crew_in', ['wo_id' => $wo_id])->toString(),
+            'crewOut' => \Drupal\Core\Url::fromRoute('wo_clock.crew_out', ['wo_id' => $wo_id])->toString(),
           ],
         ],
       ],

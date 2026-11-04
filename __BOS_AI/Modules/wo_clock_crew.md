@@ -1,6 +1,6 @@
 # Foreman crew clock — specification
 
-**Status:** proposed, not built
+**Status:** BUILT and deployed 2026-11-03 — 21/21 acceptance tests pass on dev and live
 **Written:** 2026-11-03
 **For:** Todd, and whoever builds it
 **Module:** extends `wo_clock` (see [`wo_clock.md`](wo_clock.md)); interacts with `wo_sign_off`, `wo_total_time`
@@ -171,10 +171,12 @@ remain at 14 h.
 
 ## Open decisions
 
-1. **Who may clock a crew?** Supervisor only, or any teammate flagged as
-   foreman? Crews in the field do not all contain a `supervisor` role today —
-   worth checking before choosing, because the answer decides whether this is a
-   permission or a per-user flag.
+**Resolved 2026-11-03 — any teammate may operate it.** Todd: *"it looks like we
+better let any member use it. The crew leader may change on different WOs."* The
+routes therefore require only `access content`, exactly like the individual
+clock. Gating on a `supervisor` role would block whoever is actually holding the
+phone. Accountability lives in the data instead: every crew entry records who
+pressed the button, in `field_notes` and via `field_source = wo_clock_crew`.
 2. ~~**GPS on crew entries.**~~ **Resolved 2026-11-03.** Todd: *"if the foreman
    is including them they better also be their"*. Correct, and it settles the
    design: a foreman adding someone to a crew clock-in is **attesting they are

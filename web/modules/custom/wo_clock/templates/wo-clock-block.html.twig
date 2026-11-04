@@ -33,6 +33,40 @@
             data-wo-clock-action="in" data-wo-id="{{ wo_id }}">Clock In</button>
   {% endif %}
 
+  {#
+    Crew clock — the whole point is that it creates one REAL entry per person,
+    so everything below stays independent afterwards: someone leaving early
+    closes only their own row, and a late arrival uses the ordinary button
+    above and gets their own start time.
+  #}
+  <div class="wo-clock__crew" data-wo-clock-crew>
+
+    {% if crew_open %}
+      <p class="wo-clock__crew-status">
+        On the clock here ({{ crew_open|length }}):
+        {% for p in crew_open %}{{ p.name }} ({{ p.start_us }}){% if not loop.last %}, {% endif %}{% endfor %}
+      </p>
+      <button type="button" class="wo-clock__btn wo-clock__btn--crew-out"
+              data-wo-clock-action="crew-out" data-wo-id="{{ wo_id }}">Clock Out Crew ({{ crew_open|length }})</button>
+    {% endif %}
+
+    <button type="button" class="wo-clock__btn wo-clock__btn--crew-in"
+            data-wo-clock-action="crew-in" data-wo-id="{{ wo_id }}">Clock In Crew</button>
+
+    {# Roster panel — filled by JS from the roster endpoint, because the crew
+       on the morning is not always the crew that was dispatched. #}
+    <div class="wo-clock__crew-panel" data-wo-clock-crew-panel hidden>
+      <p class="wo-clock__crew-help">Who is on site? You are confirming these people are here.</p>
+      <div class="wo-clock__crew-list" data-wo-clock-crew-list></div>
+      <div class="wo-clock__crew-actions">
+        <button type="button" class="wo-clock__btn wo-clock__btn--crew-confirm"
+                data-wo-clock-action="crew-in-confirm" data-wo-id="{{ wo_id }}">Clock In Selected</button>
+        <button type="button" class="wo-clock__btn wo-clock__btn--crew-cancel"
+                data-wo-clock-action="crew-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <span class="wo-clock__working" hidden>Working…</span>
   <div class="wo-clock__error" role="alert" hidden></div>
 </div>

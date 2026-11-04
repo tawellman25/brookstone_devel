@@ -159,12 +159,33 @@ function wo_clock_work_order_view(array &$build, EntityInterface $entity, $displ
 
   $render = _wo_clock_build_render((int) $entity->id(), $account);
   if ($render) {
-    // Render exactly where the flag toggle did — same weight/region, per bundle
-    // (weight 9 on landscaping) — so the button lands in the clock cluster
-    // mid-page beside the "last clocked out" text, not at the top of the page.
-    $flag_component = $display->getComponent('flag_work_order_timer');
-    $render['#weight'] = (is_array($flag_component) && isset($flag_component['weight']))
-      ? $flag_component['weight'] : 9;
+    // Put it directly under the "Work To Be Done" description, at the top of
+    // the page. Todd, 2026-11-03: "That way the guys can get to it first and
+    // not have to look for it so much. Maybe that will help with clock-ins?"
+    //
+    // It used to inherit the OLD FLAG TOGGLE's weight, which buried it
+    // mid-page in the clock cluster beside the "last clocked out" text —
+    // weight 6 to 11 depending on bundle. If a button has to be hunted for,
+    // the honest reading of 2,902 reconciliations vs 2,313 self clock-ins is
+    // that some of them are the page's fault, not the crew's.
+    //
+    // ⚠ Weights differ per bundle, so this is ANCHORED rather than hardcoded:
+    // checked across all 36 bundles, field_work_todo_description sits at
+    // weight 1 almost everywhere while wo_notes_entity_view_1 ranges from 3 to
+    // 11. A half-step after the description therefore lands under it AND above
+    // Notes on every bundle, which is what was asked for. Render arrays sort
+    // on float weights, so the half-step cannot tie with a real component.
+    $desc = $display->getComponent('field_work_todo_description');
+    if (is_array($desc) && isset($desc['weight'])) {
+      $render['#weight'] = $desc['weight'] + 0.5;
+    }
+    else {
+      // No description on this bundle (the legacy `estimate` bundle) — fall
+      // back to where the flag toggle was rather than guessing a position.
+      $flag_component = $display->getComponent('flag_work_order_timer');
+      $render['#weight'] = (is_array($flag_component) && isset($flag_component['weight']))
+        ? $flag_component['weight'] : 9;
+    }
     $build['wo_clock_ui'] = $render;
   }
 

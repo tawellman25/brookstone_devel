@@ -1,5 +1,17 @@
 clock:
-  version: 1.x
+  # ⚠ NO `version:` KEY, DELIBERATELY. A pinned version makes Drupal serve the
+  # JS as `wo-clock.js?v=1.x` forever, so every rebuild of this file sits at
+  # the SAME URL and browsers never re-fetch it. CSS was unaffected because it
+  # gets the site's asset query string (`?tnyofk`), which changes on every
+  # cache rebuild — which is why, on 2026-11-03, the crew buttons picked up
+  # their new styling while the crew JAVASCRIPT stayed months old in the
+  # browser. The buttons rendered, were clickable, and did nothing, because the
+  # cached script had no `crew-in` action.
+  #
+  # Omitting the version makes Drupal fall back to that same query string
+  # (JsCollectionRenderer: version == -1 → default query string), so a `drush
+  # cr` busts the JS cache exactly as it busts the CSS. Do not "tidy" a version
+  # back in.
   js:
     js/wo-clock.js: {}
   css:

@@ -296,8 +296,18 @@
     var panel = root.querySelector('[data-wo-clock-crew-panel]');
     var list = root.querySelector('[data-wo-clock-crew-list]');
     if (!panel || !list) { return; }
+    if (!endpoints().crewRoster) {
+      showError(root, 'Crew clock is not available on this page.');
+      return;
+    }
     setBusy(root, true);
-    post(endpoints().crewRoster, {}).then(function (res) {
+    post(endpoints().crewRoster, {}).catch(function (e) {
+      // ⚠ Without this, a failed request left setBusy(true) in place: every
+      // button greyed, no message, and nothing happening on further taps —
+      // which is indistinguishable from "I have no permission". Any failure
+      // must hand the buttons back and say something.
+      return { status: 'error', message: 'Could not reach the server. ' + (e && e.message ? e.message : '') };
+    }).then(function (res) {
       setBusy(root, false);
       if (res.status !== 'ok') { showError(root, res.message || 'Could not load the crew.'); return; }
       if (!res.crew || !res.crew.length) {
@@ -342,6 +352,8 @@
       var body = { uids: uids };
       if (gps) { body.lat = gps.lat; body.lon = gps.lon; }
       return post(endpoints().crewIn, body);
+    }).catch(function (e) {
+      return { status: 'error', message: 'Could not reach the server. ' + (e && e.message ? e.message : '') };
     }).then(function (res) {
       setBusy(root, false);
       if (res.status !== 'clocked_in') { showError(root, res.message || 'Could not clock the crew in.'); return; }
@@ -355,6 +367,8 @@
       var body = { override: !!override };
       if (gps) { body.lat = gps.lat; body.lon = gps.lon; }
       return post(endpoints().crewOut, body);
+    }).catch(function (e) {
+      return { status: 'error', message: 'Could not reach the server. ' + (e && e.message ? e.message : '') };
     }).then(function (res) {
       setBusy(root, false);
       // The cap would bite. NOTHING has been written — the server checked all

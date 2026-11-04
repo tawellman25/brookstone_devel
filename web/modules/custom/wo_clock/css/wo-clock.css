@@ -183,11 +183,32 @@ a.wo-clock-entry__property--link:focus {
   font-size: .9rem;
   color: #444;
 }
-.wo-clock__btn--crew-in,
-.wo-clock__btn--crew-out {
-  display: inline-block;
-  margin: .25rem .25rem .25rem 0;
+/* ⚠ .wo-clock__btn sets color:#fff but NO background — only the --in and
+   --out modifiers supply one. A new modifier without its own background is
+   therefore white text on nothing, which reads as a disabled button. That is
+   exactly how these shipped on 2026-11-03 and what Todd saw. Any future
+   .wo-clock__btn--* MUST set a background. */
+.wo-clock__btn--crew-in {
+  background: #1565a8;            /* blue: a crew action, distinct from the
+                                     personal green Clock In above it */
+  margin-top: .5rem;
 }
+.wo-clock__btn--crew-in:hover { background: #11528a; }
+
+.wo-clock__btn--crew-out {
+  background: #96281b;            /* deeper than the personal red --out */
+  margin-top: .5rem;
+}
+.wo-clock__btn--crew-out:hover { background: #7a2016; }
+
+.wo-clock__btn--crew-confirm { background: #007a33; }
+.wo-clock__btn--crew-confirm:hover { background: #006128; }
+
+.wo-clock__btn--crew-cancel {
+  background: #e9e9e9;
+  color: #333;                    /* overrides the inherited white */
+}
+.wo-clock__btn--crew-cancel:hover { background: #dcdcdc; }
 /* Crew picker modal. Phone-first: the box fills most of a phone screen, the
    list scrolls inside it rather than moving the page, and the actions stay
    pinned so "Clock In Selected" never scrolls out of reach mid-selection. */

@@ -13,11 +13,40 @@
   var GPS_TIMEOUT_MS = 5000;
   var tokenPromise = null;
 
-  function sessionToken() {
+  /**
+   * The session CSRF token, memoised — but ONLY when it is good.
+   *
+   * ⚠ The original memoised whatever came back, including the '' from the
+   * catch. One dropped request on a weak signal therefore cached an empty
+   * token for the life of the page, and every clock-in afterwards posted
+   * `X-CSRF-Token: ''` and was refused. Nothing retried, because the bad value
+   * was already "the answer" — which is exactly what happened to Chris Palecki
+   * on 2026-11-03: two attempts eight seconds apart, both rejected, three
+   * hours of a sprinkler repair unrecorded, and "Bad response" on the phone.
+   *
+   * A failure now clears the cache so the next call re-fetches, and `force`
+   * lets a 403 discard a token that the server has just told us is wrong.
+   */
+  function sessionToken(force) {
+    if (force) {
+      tokenPromise = null;
+    }
     if (!tokenPromise) {
       tokenPromise = fetch(Drupal.url('session/token'), { credentials: 'same-origin' })
-        .then(function (r) { return r.text(); })
-        .catch(function () { return ''; });
+        .then(function (r) {
+          if (!r.ok) { throw new Error('token fetch ' + r.status); }
+          return r.text();
+        })
+        .then(function (t) {
+          t = (t || '').trim();
+          if (!t) { throw new Error('empty token'); }
+          return t;
+        })
+        .catch(function () {
+          // Do NOT leave a failure memoised.
+          tokenPromise = null;
+          return '';
+        });
     }
     return tokenPromise;
   }
@@ -43,18 +72,36 @@
     });
   }
 
+  /**
+   * POST with the CSRF header, retrying ONCE on a rejected token.
+   *
+   * A 401/403 here means the server did not accept the token — stale session,
+   * or the empty string the old caching bug could produce. Re-fetching and
+   * trying again turns a dead end (which only a page reload could clear) into
+   * something that heals itself. Capped at one retry: if a genuinely fresh
+   * token is also refused, the problem is not the token and looping would just
+   * hide it.
+   */
   function post(url, body) {
-    return sessionToken().then(function (token) {
-      return fetch(url, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': token
-        },
-        body: JSON.stringify(body || {})
-      }).then(function (r) { return r.json().catch(function () { return { status: 'error', message: 'Bad response' }; }); });
-    });
+    function attempt(force) {
+      return sessionToken(force).then(function (token) {
+        return fetch(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': token
+          },
+          body: JSON.stringify(body || {})
+        }).then(function (r) {
+          if (!force && (r.status === 403 || r.status === 401)) {
+            return attempt(true);
+          }
+          return r.json().catch(function () { return { status: 'error', message: 'Bad response' }; });
+        });
+      });
+    }
+    return attempt(false);
   }
 
   function reloadWo() {

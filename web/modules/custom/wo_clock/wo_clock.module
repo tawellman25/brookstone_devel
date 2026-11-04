@@ -18,6 +18,29 @@
 use Drupal\Core\Entity\EntityInterface;
 
 /**
+ * Per-bundle fields that must render ABOVE the clock-in buttons.
+ *
+ * The clock UI is injected by code, not a Manage Display component, so the
+ * office cannot drag it — it is anchored half a step below
+ * `field_work_todo_description` (see wo_clock_work_order_view()). Where a
+ * bundle has a fact the crew must read before starting the clock, name the
+ * field here and the buttons step below it instead.
+ *
+ * Keyed by work_order bundle; unlisted bundles are unaffected. Only fields in
+ * the display's `content` region count — a hidden field has no weight to
+ * clear.
+ *
+ * Longer term the clock should be a real extra field so this map is not
+ * needed and the office can position it per bundle in Manage Display
+ * (deferred_work.md).
+ */
+const WO_CLOCK_ABOVE_BUTTONS = [
+  // Todd, 2026-11-03: the crew needs to see which round this is (Spring vs
+  // Fall) before they start, so it cannot sit under the buttons.
+  'pre_emergent' => ['field_pre_emergent_season'],
+];
+
+/**
  * Implements hook_form_alter().
  *
  * On the wo_time_clock entry add/edit forms (the WO-page "Edit Time Entry"
@@ -177,7 +200,22 @@ function wo_clock_work_order_view(array &$build, EntityInterface $entity, $displ
     // on float weights, so the half-step cannot tie with a real component.
     $desc = $display->getComponent('field_work_todo_description');
     if (is_array($desc) && isset($desc['weight'])) {
-      $render['#weight'] = $desc['weight'] + 0.5;
+      $anchor = (float) $desc['weight'];
+      // Some bundles have a field the crew must read BEFORE starting the
+      // clock, so it has to clear the buttons too. Keep the anchor at the
+      // description and step past those, rather than re-anchoring above the
+      // Notes group: measured across all 36 bundles on live (2026-11-03,
+      // `audit_wo_clock_anchor.php`), the Notes group sits anywhere from
+      // weight 1 to 11, so anchoring to it moves the buttons on 24 bundles
+      // and buries snow_removal at 10.5 and special_mowing at 12.5 — undoing
+      // the whole point of putting them at the top.
+      foreach (WO_CLOCK_ABOVE_BUTTONS[$entity->bundle()] ?? [] as $field) {
+        $above = $display->getComponent($field);
+        if (is_array($above) && isset($above['weight'])) {
+          $anchor = max($anchor, (float) $above['weight']);
+        }
+      }
+      $render['#weight'] = $anchor + 0.5;
     }
     else {
       // No description on this bundle (the legacy `estimate` bundle) — fall

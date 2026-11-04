@@ -2049,6 +2049,44 @@ reading the parent field back.
 
 ---
 
+## Live and CLI do not see the same code for up to a minute — and `class_implements()` returns FALSE
+
+**Surfaced 2026-11-03.** Live's web SAPI runs `opcache.validate_timestamps=On`
+with **`opcache.revalidate_freq=60`**, while **`opcache.enable_cli=Off`**. Two
+consequences that will cost an hour each if you do not know them:
+
+1. **After any file change, the web process can serve stale bytecode for up to
+   60 seconds.** A deploy's `drush cr` does not reset opcache. So the minute
+   after a deploy is a window where the running site is a *mixture* of old and
+   new code.
+2. **A bug that only happens in the web request will not reproduce under
+   `drush`,** because CLI has no opcache at all. Reproducing in CLI and getting
+   a clean run is therefore **not** evidence the bug is gone — it may be
+   evidence you used the wrong SAPI.
+
+How this showed up: five fatals at `ViewsBulkOperationsActionManager.php:105`
+on Todd's own pages inside a 42-second window, then silence. That line is
+`in_array(X, class_implements($definition['class']), TRUE)` — and
+**`class_implements()` returns `FALSE`, not an empty array, for a class it
+cannot resolve**, which is a `TypeError` as an `in_array()` haystack. Worth
+remembering generally: so do `get_class_methods()` on a bad class,
+`class_parents()`, and several other reflection helpers. Guard with `?: []`
+whenever the class name is not something you just wrote.
+
+**The operational rule this extends:** the standing *"no `drush cr` on live
+during crew hours"* applies to **any live drush run that invalidates caches**,
+not just `cr`. The crash needed a discovery cache miss, and a drush run is what
+forces one — the office was browsing while scripts were being `scp`'d into the
+Drupal root and run. Clearing a cache on a live site is not a read-only act.
+
+**Also:** the deploy's `--delete` removes **`web/error_log`**, which is where
+PHP fatals land and which is not in git. Copy it off *before* deploying if you
+are investigating anything — `watchdog` keeps the backtrace, URL, referer and
+user, so query that too (`SELECT location, referer, variables FROM watchdog`);
+the `error_log` line alone does not say which page or who.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

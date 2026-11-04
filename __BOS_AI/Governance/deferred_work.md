@@ -692,3 +692,59 @@ one.
 **Order of work:** (1) backfill `field_short_description` across services terms;
 (2) then swap the card field in the `service_children` view via Views UI. Doing
 (2) first visibly breaks the services section.
+
+## The clock buttons should be a real Manage Display component
+
+**Surfaced 2026-11-03.** `wo_clock` injects the clock UI from
+`hook_ENTITY_TYPE_view()`, so it is not a Manage Display component and the
+office cannot position it. Its place is derived in code: half a step below
+`field_work_todo_description`, plus the per-bundle `WO_CLOCK_ABOVE_BUTTONS`
+map naming fields the buttons must step below (today: `pre_emergent` →
+`field_pre_emergent_season`).
+
+The map works and is cheap, but it means **every future "move field X above
+the buttons" is a code change and a deploy** for what should be a drag in the
+UI. Measuring is what kept it small: anchoring to the Notes group instead
+would have moved the buttons on 24 of 36 bundles
+(`audit_wo_clock_anchor.php`).
+
+**Fix when convenient:** declare the clock via
+`hook_entity_extra_field_info()` so it appears in Manage Display per bundle,
+render it from the configured component, and delete the map. **The migration
+is the real cost, not the hook** — the clock currently renders on all 36
+bundles with a good position, and an extra field would arrive unplaced, so
+the change needs a script that writes the present computed weight into each
+of the 36 displays before the code switches over, or the buttons vanish or
+jump on bundles nobody checked. Verify with `test_wo_clock_anchor.php`, which
+already asserts the position per bundle.
+
+## VBO `findDefinitions()` fatals when a class cannot be resolved
+
+**Surfaced 2026-11-03.** `views_bulk_operations` line 105 of
+`ViewsBulkOperationsActionManager::findDefinitions()` passes
+`class_implements($definition['class'])` straight into `in_array()`.
+`class_implements()` returns **`false`**, not an array, for a class it cannot
+resolve, so the page fatals with *"in_array(): Argument #2 ($haystack) must be
+of type array, false given"*.
+
+It fired five times on live at 22:20–22:21 on Todd's own work-order pages and
+the calendar, then self-healed. The trigger is any entity view display load →
+`eva_entity_extra_field_info()` → EVA initialising its views' handlers → the
+VBO bulk form on a **discovery cache miss**, with the web SAPI inside its
+`opcache.revalidate_freq=60` window after a file change. So it needs a cache
+miss and a concurrent deploy or live drush run — which is why it is rare and
+why it does not reproduce in CLI (`opcache.enable_cli=Off`).
+
+`?: []` on the `class_implements()` call is the whole fix and it is correct
+upstream behaviour (a missing class should be skipped, not fatal).
+
+**⚠ It must be a declared `cweagans/composer-patches` entry in
+`composer.json` `extra.patches` — never a manual `sed`.** `contrib/` is
+composer-managed and installed per environment, so a hand-edit silently
+vanishes on the next `composer install`; both former manual patches are
+documented in CLAUDE.md as obsoleted precisely because they were tracked.
+Check whether a newer VBO release fixes it before writing a patch.
+
+**Mitigation that costs nothing meanwhile:** avoid live drush runs that
+invalidate caches while crew or office are on the site — the standing rule for
+`drush cr` applies to any cache-invalidating run.

@@ -73,6 +73,14 @@
       <h3 class="wo-clock__modal-title">Who is on site?</h3>
       <p class="wo-clock__crew-help">Tick everyone here now. You are confirming these people are on the job.</p>
       <div class="wo-clock__crew-list" data-wo-clock-crew-list></div>
+      {#
+        Sits BELOW the list and ABOVE the buttons on purpose. The list scrolls
+        inside the box while this and the actions stay pinned, so it is on
+        screen at the moment the foreman commits — and it answers the question
+        he actually has then: the roster only holds his own crew, so a helper
+        borrowed from another crew will not be on it.
+      #}
+      <p class="wo-clock__crew-note">Anyone on site who is not on this list needs to clock in on their own.</p>
       <div class="wo-clock__crew-actions">
         <button type="button" class="wo-clock__btn wo-clock__btn--crew-confirm"
                 data-wo-clock-action="crew-in-confirm" data-wo-id="{{ wo_id }}">Clock In Selected</button>

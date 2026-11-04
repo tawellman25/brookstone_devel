@@ -286,37 +286,126 @@ final class WoClockService {
   }
 
   /**
+   * Which sign-off (`wo_complete_info`) bundle a work order bundle belongs to.
+   *
+   * ⚠ DERIVED FROM THE DATA, not invented: counted across ~46,000 real
+   * sign-offs, every WO bundle resolves to one dominant sign-off bundle.
+   * `backflow_testing` is the only genuinely mixed one (19 `complete` vs 12
+   * `irrigation_crew`) and is mapped to irrigation, which is who does the work.
+   *
+   * `complete` is the generic sign-off and maps to NO crew — those WO bundles
+   * fall through to the scheduling list rather than guessing a crew.
+   */
+  private const WO_BUNDLE_SIGNOFF = [
+    'aerating' => 'clean_up_crew',
+    'dethatching' => 'clean_up_crew',
+    'fall_cleanup' => 'clean_up_crew',
+    'spring_cleanup' => 'clean_up_crew',
+    'special_mowing' => 'clean_up_crew',
+    'summer_pruning' => 'clean_up_crew',
+    'aspen_twig_gall' => 'spray_crew',
+    'cooley_spruce_gall' => 'spray_crew',
+    'deciduous_bore' => 'spray_crew',
+    'dormant_oil' => 'spray_crew',
+    'grub_prevention' => 'spray_crew',
+    'pinion_pine_ips_beetle' => 'spray_crew',
+    'pre_emergent' => 'spray_crew',
+    'trunk_bore' => 'spray_crew',
+    'weed_spraying' => 'spray_crew',
+    'fertilizing' => 'fertilizing_crew',
+    'fertilizing_trees_and_shrubs' => 'fertilizing_crew',
+    'backflow_testing' => 'irrigation_crew',
+    'sprinkler_check_up' => 'irrigation_crew',
+    'sprinkler_design' => 'irrigation_crew',
+    'sprinkler_installation' => 'irrigation_crew',
+    'sprinkler_repair' => 'irrigation_crew',
+    'sprinkler_start_up' => 'irrigation_crew',
+    'sprinkler_winterizing' => 'irrigation_crew',
+    'lawn_mowing' => 'lawn_mowing',
+    'snow_removal' => 'snow_removal',
+    'landscaping' => 'landscape_crew',
+  ];
+
+  /**
+   * Sign-off bundle → `crew_types` entity id.
+   *
+   * The ids are stable; labels are given so a reader can check them without a
+   * database. `complete` is deliberately absent — it is the catch-all sign-off
+   * used by christmas_decorations, misc_services, in_house_tasks and the like,
+   * and it names no crew.
+   */
+  private const SIGNOFF_CREW_TYPE = [
+    'lawn_mowing' => 1,       // Lawn Maintenance Crew
+    'clean_up_crew' => 2,     // Clean-up Crew
+    'spray_crew' => 3,        // Spray Crew
+    'irrigation_crew' => 4,   // Irrigation Crew
+    'snow_removal' => 5,      // Snow Removal Crew
+    'landscape_crew' => 6,    // Landscape Crew
+    'fertilizing_crew' => 7,  // Fertilizing Crew
+    'lighting_crew' => 9,     // Lighting Crew
+  ];
+
+  /**
    * Who the crew clock should offer for a work order.
    *
-   * Seeded from the WO's scheduling records (`field_assigned_to`) because that
-   * is who was dispatched — but the list is only a DEFAULT. Crews change on
-   * the morning, so the caller must be able to untick and to add somebody who
-   * was never scheduled. Anyone already clocked in is returned flagged rather
-   * than hidden, so the foreman can see why they are not selectable.
+   * Three sources, and the distinction between them is the point:
+   *
+   *   - **The crew for this kind of work.** The WO bundle picks its sign-off
+   *     type, which picks a `crew_types` entity, whose members come from
+   *     `teammate_profile.field_assigned_crew`. Todd, 2026-11-03: *"The roster
+   *     should come from the crew type. Irrigation crew for irrigation type of
+   *     work orders."* All 25 active teammates carry a crew, so this is a far
+   *     better source than scheduling, which is sparse.
+   *   - **Scheduled.** Whoever was actually dispatched on this WO. These are
+   *     PRE-TICKED, because that is the stated intent for today.
+   *   - **Already clocked in.** Listed but not selectable — re-adding them
+   *     would create a second open row and double-count their hours.
+   *
+   * ⚠ Crew members are listed but NOT pre-ticked. The Clean-up Crew has 19
+   * people; ticking all of them by default would turn one careless press into
+   * 19 false entries. The dispatcher's intent gets the tick; the rest of the
+   * crew are there to be added in one tap when the morning differs.
    *
    * @return array
-   *   [['uid','name','open' => bool], …] sorted by name.
+   *   [['uid','name','open','scheduled','in_crew'], …] sorted by name.
    */
   public function getCrewRosterForWo(int $woId): array {
     $db = \Drupal::database();
-    $uids = $db->query('SELECT DISTINCT a.field_assigned_to_target_id uid
+
+    $scheduled = array_map('intval', $db->query('SELECT DISTINCT a.field_assigned_to_target_id uid
       FROM {scheduling__field_assigned_to} a
       JOIN {scheduling__field_work_order} w ON w.entity_id = a.entity_id AND w.deleted = 0
       WHERE a.deleted = 0 AND w.field_work_order_target_id = :wo',
-      [':wo' => $woId])->fetchCol();
+      [':wo' => $woId])->fetchCol());
 
-    // Anyone already clocked in belongs on the list even if they were never
-    // dispatched — they are demonstrably on the job.
-    foreach ($this->getOpenEntriesOnWo($woId) as $entry) {
-      $uid = (int) $entry->get('field_teammate')->target_id;
-      if ($uid && !in_array($uid, $uids)) {
-        $uids[] = $uid;
+    // The crew that does this kind of work.
+    $crewMembers = [];
+    $wo = $this->entityTypeManager->getStorage('work_order')->load($woId);
+    if ($wo) {
+      $signoff = self::WO_BUNDLE_SIGNOFF[$wo->bundle()] ?? NULL;
+      $crewId = $signoff ? (self::SIGNOFF_CREW_TYPE[$signoff] ?? NULL) : NULL;
+      if ($crewId) {
+        $crewMembers = array_map('intval', $db->query('SELECT DISTINCT p.uid
+          FROM {profile__field_assigned_crew} a
+          JOIN {profile} p ON p.profile_id = a.entity_id
+          WHERE a.deleted = 0 AND a.field_assigned_crew_target_id = :c',
+          [':c' => $crewId])->fetchCol());
       }
     }
 
+    // Anyone already clocked in belongs on the list however they got there.
+    $openUids = [];
+    foreach ($this->getOpenEntriesOnWo($woId) as $entry) {
+      $uid = (int) $entry->get('field_teammate')->target_id;
+      if ($uid) {
+        $openUids[] = $uid;
+      }
+    }
+
+    $all = array_values(array_unique(array_merge($scheduled, $crewMembers, $openUids)));
     $out = [];
     $store = $this->entityTypeManager->getStorage('user');
-    foreach (array_unique(array_map('intval', $uids)) as $uid) {
+    foreach ($all as $uid) {
       $u = $store->load($uid);
       if (!$u || !$u->isActive()) {
         continue;
@@ -324,10 +413,19 @@ final class WoClockService {
       $out[] = [
         'uid' => $uid,
         'name' => $u->getDisplayName(),
-        'open' => (bool) $this->getCurrentEntryOnWo($uid, $woId),
+        'open' => in_array($uid, $openUids, TRUE),
+        'scheduled' => in_array($uid, $scheduled, TRUE),
+        'in_crew' => in_array($uid, $crewMembers, TRUE),
       ];
     }
-    usort($out, fn($a, $b) => strcasecmp($a['name'], $b['name']));
+    // Scheduled first — they are the ones already ticked — then the rest of
+    // the crew alphabetically, so the common case is at the top of a phone.
+    usort($out, function ($a, $b) {
+      if ($a['scheduled'] !== $b['scheduled']) {
+        return $a['scheduled'] ? -1 : 1;
+      }
+      return strcasecmp($a['name'], $b['name']);
+    });
     return $out;
   }
 

@@ -308,10 +308,21 @@
         // Someone already clocked in is shown but NOT selectable — the
         // foreman should see why they are not in the list rather than
         // wonder, and re-adding them would double-count their hours.
+        //
+        // ⚠ Only the SCHEDULED are pre-ticked. The rest of the crew are listed
+        // so the morning's actual line-up is one tap away, but ticking a
+        // 19-person crew by default would turn one careless press into 19
+        // false entries.
         var dis = p.open ? ' disabled' : '';
-        var note = p.open ? ' <em>(already clocked in)</em>' : '';
+        var checked = (!p.open && p.scheduled) ? ' checked' : '';
+        var note = '';
+        if (p.open) {
+          note = ' <em>(already clocked in)</em>';
+        } else if (!p.scheduled && p.in_crew) {
+          note = ' <em>(crew)</em>';
+        }
         return '<label class="wo-clock__crew-member">' +
-          '<input type="checkbox" value="' + p.uid + '"' + (p.open ? '' : ' checked') + dis + '> ' +
+          '<input type="checkbox" value="' + p.uid + '"' + checked + dis + '> ' +
           Drupal.checkPlain(p.name) + note + '</label>';
       }).join('');
       panel.hidden = false;

@@ -51,6 +51,50 @@ $latecomer = $uids[5];
 printf("WO %d (fall_cleanup), crew of %d + 1 late arrival\n", $woId, count($crew));
 printf("pre-existing open entries on it: %d\n\n", count($svc->getOpenEntriesOnWo($woId)));
 
+// --- 0. the roster comes from the CREW TYPE, not just scheduling ------------
+// Todd, 2026-11-03: "The roster should come from the crew type. Irrigation
+// crew for irrigation type of work orders." The WO bundle picks its sign-off
+// type, which picks a crew_types entity, whose members come from
+// teammate_profile.field_assigned_crew.
+$expectCrew = [
+  'sprinkler_repair' => 'Irrigation Crew',
+  'fall_cleanup' => 'Clean-up Crew',
+  'weed_spraying' => 'Spray Crew',
+  'lawn_mowing' => 'Lawn Maintenance Crew',
+];
+foreach ($expectCrew as $bundle => $crewLabel) {
+  $sampleWo = (int) $db->query('SELECT id FROM {work_order_field_data} WHERE type = :t ORDER BY id DESC LIMIT 1',
+    [':t' => $bundle])->fetchField();
+  if (!$sampleWo) {
+    continue;
+  }
+  $roster = $svc->getCrewRosterForWo($sampleWo);
+  $inCrew = array_filter($roster, fn($p) => $p['in_crew']);
+  // Compare against the crew's real membership rather than a magic number.
+  $crewEntity = NULL;
+  foreach ($etm->getStorage('crew_types')->loadMultiple() as $c) {
+    if ($c->label() === $crewLabel) {
+      $crewEntity = $c;
+    }
+  }
+  $expected = $crewEntity ? (int) $db->query('SELECT COUNT(DISTINCT p.uid)
+    FROM {profile__field_assigned_crew} a
+    JOIN {profile} p ON p.profile_id = a.entity_id
+    JOIN {users_field_data} u ON u.uid = p.uid AND u.status = 1
+    WHERE a.deleted = 0 AND a.field_assigned_crew_target_id = :c', [':c' => $crewEntity->id()])->fetchField() : -1;
+  $ok(sprintf('%s offers the %s', $bundle, $crewLabel), count($inCrew) === $expected,
+    count($inCrew) . ' of ' . $expected . ' crew members');
+}
+// Nobody outside the scheduled set may be pre-ticked — a 19-person crew
+// ticked by default turns one careless press into 19 false entries.
+$cleanupWo = (int) $db->query("SELECT id FROM {work_order_field_data} WHERE type = 'fall_cleanup' ORDER BY id DESC LIMIT 1")->fetchField();
+$cleanupRoster = $svc->getCrewRosterForWo($cleanupWo);
+$preticked = array_filter($cleanupRoster, fn($p) => $p['scheduled'] && !$p['open']);
+$ok('only the SCHEDULED are pre-ticked, not the whole crew',
+  count($preticked) < count($cleanupRoster),
+  count($preticked) . ' pre-ticked of ' . count($cleanupRoster) . ' offered');
+
+print "\n";
 $tx = $db->startTransaction();
 try {
   // --- 1. foreman clocks the crew in ---------------------------------------

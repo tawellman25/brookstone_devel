@@ -53,10 +53,25 @@
     <button type="button" class="wo-clock__btn wo-clock__btn--crew-in"
             data-wo-clock-action="crew-in" data-wo-id="{{ wo_id }}">Clock In Crew</button>
 
-    {# Roster panel — filled by JS from the roster endpoint, because the crew
-       on the morning is not always the crew that was dispatched. #}
-    <div class="wo-clock__crew-panel" data-wo-clock-crew-panel hidden>
-      <p class="wo-clock__crew-help">Who is on site? You are confirming these people are here.</p>
+  </div>
+
+  {#
+    Crew picker — a real modal, not an inline panel. It is used on a phone,
+    outdoors, often in gloves: a full-width overlay with large tick targets
+    beats a panel that pushes the page around and can scroll out of view
+    mid-selection.
+
+    Nobody is pre-ticked. Scheduling assigns ONE person per work order (the
+    route driver, not the crew), so pre-ticking it implied a crew that was
+    never recorded — and pre-ticking a whole 19-person crew would turn one
+    careless press into 19 false entries. The foreman taps who is actually
+    there, which is the only thing anyone actually knows.
+  #}
+  <div class="wo-clock__modal" data-wo-clock-crew-panel hidden>
+    <div class="wo-clock__modal-backdrop" data-wo-clock-action="crew-cancel"></div>
+    <div class="wo-clock__modal-box" role="dialog" aria-modal="true" aria-label="Who is on site?">
+      <h3 class="wo-clock__modal-title">Who is on site?</h3>
+      <p class="wo-clock__crew-help">Tick everyone here now. You are confirming these people are on the job.</p>
       <div class="wo-clock__crew-list" data-wo-clock-crew-list></div>
       <div class="wo-clock__crew-actions">
         <button type="button" class="wo-clock__btn wo-clock__btn--crew-confirm"

@@ -309,20 +309,20 @@
         // foreman should see why they are not in the list rather than
         // wonder, and re-adding them would double-count their hours.
         //
-        // ⚠ Only the SCHEDULED are pre-ticked. The rest of the crew are listed
-        // so the morning's actual line-up is one tap away, but ticking a
-        // 19-person crew by default would turn one careless press into 19
-        // false entries.
+        // ⚠ NOBODY is pre-ticked, deliberately. Scheduling assigns ONE person
+        // per work order — the route driver, not the crew — so pre-ticking it
+        // implied a crew that was never recorded. Pre-ticking the whole crew
+        // is worse: 19 people on a cleanup, so one careless press would create
+        // 19 false entries. The foreman ticks who is actually there.
         var dis = p.open ? ' disabled' : '';
-        var checked = (!p.open && p.scheduled) ? ' checked' : '';
         var note = '';
         if (p.open) {
           note = ' <em>(already clocked in)</em>';
-        } else if (!p.scheduled && p.in_crew) {
-          note = ' <em>(crew)</em>';
+        } else if (p.scheduled) {
+          note = ' <em>(assigned)</em>';
         }
         return '<label class="wo-clock__crew-member">' +
-          '<input type="checkbox" value="' + p.uid + '"' + checked + dis + '> ' +
+          '<input type="checkbox" value="' + p.uid + '"' + dis + '> ' +
           Drupal.checkPlain(p.name) + note + '</label>';
       }).join('');
       panel.hidden = false;

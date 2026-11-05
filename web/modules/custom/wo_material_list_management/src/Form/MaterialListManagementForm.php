@@ -81,11 +81,25 @@ class MaterialListManagementForm extends FormBase {
     $items = $this->entityTypeManager->getStorage('wo_material_list_item')
       ->loadByProperties(['field_list_id' => ['target_id' => $wo_material_list->id()]]);
 
+    // Running totals for the footer. Each line stores BOTH figures:
+    // field_subtotal is the cost basis (qty × unit cost) and
+    // field_subtotal_w_markup is what the customer is billed. The Subtotal
+    // column above shows the billed one, so the office had no way to read
+    // what a list actually cost without opening the WO's Cost & Profit panel.
+    $cost_total = 0.0;
+    $billed_total = 0.0;
+
     foreach ($items as $item) {
       $label = $item->get('field_alternate_name_description')->value ?? 'Unnamed Item';
       // When freight rides on this line, note it so the office sees why the line
       // runs higher — still ONE line to the customer.
       $parts_label = $this->getPartsUsedLabel($item) ?: $label;
+      if ($item->hasField('field_subtotal')) {
+        $cost_total += (float) $item->get('field_subtotal')->value;
+      }
+      if ($item->hasField('field_subtotal_w_markup')) {
+        $billed_total += (float) $item->get('field_subtotal_w_markup')->value;
+      }
       if ($item->hasField('field_add_freight') && (bool) $item->get('field_add_freight')->value
         && $item->hasField('field_freight') && $item->get('field_freight')->value !== NULL
         && $item->get('field_freight')->value !== '') {
@@ -116,6 +130,49 @@ class MaterialListManagementForm extends FormBase {
           '#attributes' => ['class' => ['button', 'button--small']],
         ],
       ];
+    }
+
+    // Totals row(s) under the table.
+    //
+    // The billed total is shown to anyone who can open the list — it is the
+    // sum of the column immediately above it, so hiding it would be odd.
+    //
+    // ⚠ The COST row is gated on `view wo cost profit`, the same permission
+    // as the WO Cost & Profit panel that already reports this figure. Crew
+    // can open a material list, and margin is not theirs to see; price is.
+    // Keeping both behind one permission means there is a single place to
+    // change who sees cost, rather than two that can drift apart.
+    if ($items) {
+      $footer = [];
+      $footer[] = [
+        'class' => ['wo-ml-total'],
+        'data' => [
+          ['data' => '', 'colspan' => 2],
+          ['data' => $this->t('Total'), 'class' => ['wo-ml-total__label']],
+          ['data' => number_format($billed_total, 2), 'class' => ['wo-ml-total__value']],
+          ['data' => ''],
+        ],
+      ];
+
+      if ($this->currentUser()->hasPermission('view wo cost profit')) {
+        $markup = $billed_total - $cost_total;
+        $footer[] = [
+          'class' => ['wo-ml-total', 'wo-ml-total--cost'],
+          'data' => [
+            ['data' => '', 'colspan' => 2],
+            [
+              'data' => $markup > 0
+                ? $this->t('Cost before markup (markup @m)', ['@m' => number_format($markup, 2)])
+                : $this->t('Cost before markup'),
+              'class' => ['wo-ml-total__label'],
+            ],
+            ['data' => number_format($cost_total, 2), 'class' => ['wo-ml-total__value']],
+            ['data' => ''],
+          ],
+        ];
+      }
+
+      $form['items']['#footer'] = $footer;
     }
 
     // Actions container.

@@ -94,7 +94,12 @@ again.** A pass here is necessary but not sufficient.
 
 ## 3. Measured blockers
 
-### 3.1 ⛔ The `drupal/core` patch will not apply to D11
+### 3.1 ✅ The `drupal/core` patch — flagged as a blocker, measured, and cleared
+
+> **Written up here first as a hard blocker, on reasoning rather than measurement. It is not one.**
+> Kept visible rather than quietly deleted, because the reasoning was plausible — "a patch rolled
+> against 10.x cannot apply to 11.4" — and plausible-but-wrong is exactly what a runbook should
+> record. **Fetch the source and run the tool; do not reason about whether a patch applies.**
 
 `composer.json` → `extra.patches` → `drupal/core` declares a **local** patch file:
 
@@ -102,17 +107,53 @@ again.** A pass here is necessary but not sufficient.
 patches/3315678-25.patch   (strnatcasecmp — passing null to parameter 2 of type string is deprecated)
 ```
 
-It applies cleanly to 10.6.20 (verified). A core patch rolled against 10.x will **not** apply to
-core 11.4, and `composer update -W` applies patches as part of the run — so this stops the
-upgrade. Neither `composer-exit-on-patch-failure` nor `patchLevel` is set in `extra`, so confirm
-the failure mode rather than assuming it aborts loudly.
+It touches `getSortedDefinitions()` in two places: `core/lib/Drupal/Core/Layout/LayoutPluginManager.php`
+and `core/lib/Drupal/Core/Plugin/CategorizingPluginManagerTrait.php`.
 
-**This is not in the roadmap's dry-run scoping.** Resolve it *first*, before the dependency work:
-1. Check whether the upstream issue (3315678) was committed to core — if D11 already contains
-   the fix, **delete the patch entry**, which is the best outcome.
-2. If not, re-roll the patch against 11.4 and keep it declared in composer-patches.
+**Measured 2026-11-06 against real D11 source (tag 11.4.12, the current 11.4 release — the
+2026-11-02 dry run resolved 11.4.11).**
 
-Either way it must be a **declared composer-patches entry, never a manual `sed`** — `contrib/`
+| Question | Answer |
+|---|---|
+| Does D11 contain the fix? | **No.** Both files at 11.4.12 still call `strnatcasecmp($a->getCategory(), $b->getCategory())` with no `?? ''`. **Keep the patch — do not drop it.** |
+| Does the patch still apply? | **Yes.** `patch -p1`: file 1 at offset 17, file 2 at offset 23 **with fuzz 1** |
+| Is that worse than today? | **No.** Against pristine **10.6.20** the same run gives file 2 at offset 23 **with fuzz 1 already**. D11 adds only the offset on file 1. |
+| Will upstream fix it? | **No.** Issue 3315678 (created 2022-10-17, last touched 2026-10-26, 37 comments, `11.x-dev`, plugin system) is **closed as a duplicate**, not fixed. BOS carries this patch indefinitely. |
+
+Both signatures *did* change for PHP 8.4 — `array $definitions = NULL` → `?array $definitions = NULL`
+(and `string $label_key`). That does not break the patch, because the signature appears only in
+the hunk **header**, which `patch` uses as a positioning hint and not for matching; every real
+context line is unchanged.
+
+#### ⚠ Two traps found in the course of checking
+
+**`git apply` calls this patch "corrupt at line 29" — and it never runs.** composer-patches 1.7.3
+`applyPatchWithGit()` returns early unless the install path is **itself a git repo**
+(`if (!is_dir($install_path . '/.git')) return FALSE;`), and composer-installed `web/core` is not
+one. So **plain `patch` is the only path**, and it succeeds. The corruption is real but harmless:
+the patch file is **28 lines with no trailing newline**, which is also what produces `patch`'s
+"unexpectedly ends in middle of line" warning and the fuzz.
+
+**The real risk is not a stopped upgrade — it is a silently unpatched core.** In
+`Patches.php:290`:
+
+```php
+$exitOnFailure = getenv('COMPOSER_EXIT_ON_PATCH_FAILURE') || !empty($extra['composer-exit-on-patch-failure']);
+```
+
+**Neither is set**, so `$exitOnFailure` is FALSE and a patch failure **warns and continues**. A
+core carrying a null-deref deprecation that nobody noticed is a worse outcome than an aborted
+install.
+
+#### Recommended hardening before the upgrade (both cheap)
+
+1. **Add the missing trailing newline** to `patches/3315678-25.patch` — removes the fuzz
+   dependency and the `git apply` "corrupt" verdict, so a future 11.4.x point release that shifts
+   context cannot tip fuzz 1 into a genuine failure.
+2. **Set `extra.composer-exit-on-patch-failure: true`** so any patch failure during the upgrade is
+   loud. Note this changes behaviour for *every* future `composer install`, which is the point.
+
+Either way the patch stays a **declared composer-patches entry, never a manual `sed`** — `contrib/`
 and `core/` are composer-managed and re-extracted on every `composer install`, so a hand edit
 silently vanishes (see `deferred_work.md`).
 
@@ -164,12 +205,12 @@ quantify with `composer audit` and re-check after, rather than assuming.
 
 ## 4. Sequencing — highest-risk first, core LAST
 
-Do **not** start with core. The roadmap's order, with the patch work inserted ahead of it
-because §3.1 blocks everything:
+Do **not** start with core. This is the roadmap's order — **unchanged**, because §3.1 turned out
+not to block it. Step 0 is now hygiene rather than a gate:
 
 | # | Step | Why here |
 |---|---|---|
-| 0 | Resolve the core patch (§3.1) and the two cleanups (§3.3) | §3.1 blocks any `update -W`; cleanups must predate core so they can't be confused with fallout |
+| 0 | The two cleanups (§3.3), plus optionally the patch hardening (§3.1) | Cleanups must predate core so they cannot be confused with upgrade fallout. The patch hardening is cheap insurance, not a prerequisite — the patch applies to 11.4.12 as it stands |
 | 1 | `upgrade_status` across all ~60 custom modules | Already measured: **zero D11 blockers in our own code**. Re-confirm in this env; `upgrade_status` 4.3.10 is installed and enabled |
 | 2 | `geofield` 1.67 → 10.3.5 and `geofield_map` 3.0.24 → 11.1.9, then **exercise the maps for real** | **The risky one.** `field_geofield` is on every property; HOA `field_boundary` polygons; the polygon-draw widget; Route Editor; winterize carry-forward. A silent geofield regression would take out scheduling tooling mid-season. Note `geofield_map`'s recommended release is *already* 11.x |
 | 3 | Settle the BEF jQuery UI trap (§3.2), then `better_exposed_filters` 6.0.6 → 7.2.0 | Must be deliberate, not a side effect |

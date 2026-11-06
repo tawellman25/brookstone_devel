@@ -2049,6 +2049,49 @@ reading the parent field back.
 
 ---
 
+## A full `drush cr` on live is OOM-killed — rebuild only what changed
+
+**Surfaced 2026-11-06.** The deploy script's cache rebuild runs
+`php -d memory_limit=5120M … drush cr`, and the box's binding limit is **1 GB
+PMEM**. The kernel kills it:
+
+```
+bash: line 4: 53101 Killed   /opt/alt/php83/usr/bin/php -d memory_limit=5120M … drush cr -y
+DEPLOY FAILED — leaving LIVE in maintenance mode.
+```
+
+`memory_limit=5120M` does not grant 5 GB — it only stops PHP from aborting
+cleanly first, so instead of a catchable PHP fatal you get a **kernel kill with
+no backtrace**. That is why the script carries the inline warning *"a 'Killed'
+HERE fails the deploy"*.
+
+**The site is not down when this happens.** The code is already rsynced; only
+the rebuild failed, and caches regenerate lazily. Check, in this order: the
+site responds (`curl /`), `drush sget system.maintenance_mode` is `0`, and no
+`.deploy-lock-brookstone` is left behind. **The "leaving LIVE in maintenance
+mode" line is printed unconditionally** — with `--no-maintenance` the site
+never entered it, so do not panic-toggle maintenance off before looking.
+
+**The fix is to rebuild what actually changed, not everything.** A routing +
+menu-link change needs exactly two calls, both of which complete at **768M**
+where the full `cr` dies:
+
+```bash
+drush php-eval '\Drupal::service("router.builder")->rebuild();'
+drush php-eval '\Drupal::service("plugin.manager.menu.link")->rebuild();'
+```
+
+**Order matters** — router first. Menu links resolve against routes, so
+rebuilding links while the new route is still absent can drop the link.
+
+Related: prefer a lower explicit `memory_limit` than the container ceiling
+when running anything heavy on live, so PHP fails with a readable error
+instead of being killed silently. And see the opcache/revalidate gotcha below
+— a cache-invalidating live run can throw transient fatals at whoever is
+browsing.
+
+---
+
 ## Live and CLI do not see the same code for up to a minute — and `class_implements()` returns FALSE
 
 **Surfaced 2026-11-03.** Live's web SAPI runs `opcache.validate_timestamps=On`

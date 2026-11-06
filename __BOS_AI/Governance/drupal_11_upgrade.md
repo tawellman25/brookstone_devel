@@ -116,8 +116,8 @@ and `core/lib/Drupal/Core/Plugin/CategorizingPluginManagerTrait.php`.
 | Question | Answer |
 |---|---|
 | Does D11 contain the fix? | **No.** Both files at 11.4.12 still call `strnatcasecmp($a->getCategory(), $b->getCategory())` with no `?? ''`. **Keep the patch — do not drop it.** |
-| Does the patch still apply? | **Yes.** `patch -p1`: file 1 at offset 17, file 2 at offset 23 **with fuzz 1** |
-| Is that worse than today? | **No.** Against pristine **10.6.20** the same run gives file 2 at offset 23 **with fuzz 1 already**. D11 adds only the offset on file 1. |
+| Does the patch still apply? | **Yes.** `patch -p1`: file 1 at offset 17, file 2 at offset 23. (Was fuzz 1 before the hardening below; now clean.) |
+| Is that worse than today? | **No.** Against pristine **10.6.20** the same run behaved identically, fuzz included. D11 adds only the offset on file 1. |
 | Will upstream fix it? | **No.** Issue 3315678 (created 2022-10-17, last touched 2026-10-26, 37 comments, `11.x-dev`, plugin system) is **closed as a duplicate**, not fixed. BOS carries this patch indefinitely. |
 
 Both signatures *did* change for PHP 8.4 — `array $definitions = NULL` → `?array $definitions = NULL`
@@ -145,13 +145,64 @@ $exitOnFailure = getenv('COMPOSER_EXIT_ON_PATCH_FAILURE') || !empty($extra['comp
 core carrying a null-deref deprecation that nobody noticed is a worse outcome than an aborted
 install.
 
-#### Recommended hardening before the upgrade (both cheap)
+#### ✅ Hardening APPLIED 2026-11-06
 
-1. **Add the missing trailing newline** to `patches/3315678-25.patch` — removes the fuzz
-   dependency and the `git apply` "corrupt" verdict, so a future 11.4.x point release that shifts
-   context cannot tip fuzz 1 into a genuine failure.
-2. **Set `extra.composer-exit-on-patch-failure: true`** so any patch failure during the upgrade is
-   loud. Note this changes behaviour for *every* future `composer install`, which is the point.
+**1. Trailing newline added to `patches/3315678-25.patch`** (1724 → 1725 bytes; the diff is
+nothing but the removal of `\ No newline at end of file`). **One byte did more than expected —
+the fuzz is gone entirely:**
+
+| | before | after |
+|---|---|---|
+| core 10.6.20 | fuzz 1 + "ends in middle of line"; `git apply` → corrupt | **clean, no fuzz**; `git apply` → accepted |
+| core 11.4.12 | fuzz 1 + same warning; `git apply` → corrupt | **clean, no fuzz**; `git apply` → accepted |
+
+So a future 11.4.x point release that shifts context can no longer tip fuzz 1 into a real
+failure, and the patch now also works via `git apply` should composer-patches ever run somewhere
+`web/core` *is* a git repo.
+
+**2. `extra.composer-exit-on-patch-failure: true` set in `composer.json`.** Verified end-to-end
+with `composer reinstall drupal/core` — core re-extracted, patch re-applied, exit 0, tripwire
+armed.
+
+> ⚠ **This arms a tripwire on the production deploy path.** `brookstone-sync-to-remote-DANGEROUS.sh`
+> runs `composer install --no-dev` on live, so a patch failure there now **aborts the deploy**
+> instead of warning and shipping an unpatched module. That is the intended trade. But note
+> **3 of the 4 patches are fetched from remote URLs at install time** (`views_aggregator`,
+> `page_manager`, `smart_date` — all verified HTTP 200 on 2026-11-06), so a drupal.org outage or
+> a removed file is now a deploy-stopping event. **Recommended follow-up: localise those three
+> into `patches/`** so patching never depends on the network. Only `drupal/core` is local today.
+
+**3. `composer.lock` content-hash refreshed.** `extra` is part of composer's content-hash, so
+changing it made `composer validate` fail and every `composer install` warn that the lock was
+stale — including on live deploys. The refreshed lock changes **metadata only**: content-hash, six
+`published-time` fields, and `plugin-api-version`. **No packages added, removed or changed —
+316 → 316, verified by diffing the lock's package versions.**
+
+### 3.1a ⚠ Two composer-environment findings this exposed
+
+Both are pre-existing, neither is a D11 blocker, and both will waste someone's afternoon if not
+written down.
+
+**The two DDEV containers run different composer versions.** `brookstone` has **2.9.2**;
+`brookstone-d11`, whose image was built 2026-11-06, has **2.11.1**. Whichever runs last rewrites
+`composer.lock`'s `plugin-api-version`, which is why a bare `composer install` can show the lock
+as modified with no dependency change at all. Harmless, but it looks alarming. The content-hash
+itself is **identical across both versions** — verified by having 2.9.2 validate a lock written by
+2.11.1, which it accepted.
+
+**Composer's `block-insecure` default blocks any *constrained* resolve.** `config.audit` is **not
+set** in `composer.json`, so this is composer's own default. On 2.9.2, `composer update --lock`
+attempts a full re-resolve and dies on **29 problems**, every one of them "not loaded, because
+they are affected by security advisories" — the fallout of the 18 advisories in §3.4. `--no-audit`
+does **not** bypass it (that flag only skips the post-install report). 2.11.1 short-circuits the
+lock-only path and succeeds.
+
+**Why this is not a D11 blocker:** a lock-only refresh is forbidden from changing versions, so
+every advisory-affected locked package is unresolvable by construction. A real `composer update -W`
+**is** allowed to upgrade past the advisories, which is exactly what the D11 run does. Expect it to
+move those packages rather than refuse. If a constrained resolve is ever genuinely needed, the
+options are `config.audit.ignore` entries or `block-insecure: false` — **both are policy changes,
+not fixes, and neither should be made casually.**
 
 Either way the patch stays a **declared composer-patches entry, never a manual `sed`** — `contrib/`
 and `core/` are composer-managed and re-extracted on every `composer install`, so a hand edit

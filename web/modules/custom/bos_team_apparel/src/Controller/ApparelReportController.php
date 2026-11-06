@@ -13,6 +13,26 @@ use Drupal\field\Entity\FieldStorageConfig;
 class ApparelReportController extends ControllerBase {
 
   /**
+   * Send the retired /admin/people/apparel path to the report's new home.
+   *
+   * The report moved out from under People and under Teammates on 2026-11-06.
+   * Anyone who bookmarked it at the old path would otherwise get a 404 with
+   * no hint where it went.
+   *
+   * ⚠ 302, not 301, deliberately. A 301 is cached by the browser more or less
+   * permanently, so if this ever moves again the stale bookmark keeps
+   * resolving to a route that no longer exists and the only cure is clearing
+   * the user's browser cache. Nothing is gained by 301 here — the route is
+   * admin-only and never indexed.
+   *
+   * Carries the same permission as the report, so the retired path cannot be
+   * used to probe admin paths anonymously.
+   */
+  public function legacyRedirect() {
+    return $this->redirect('bos_team_apparel.report', [], [], 302);
+  }
+
+  /**
    * Build the report.
    */
   public function report() {

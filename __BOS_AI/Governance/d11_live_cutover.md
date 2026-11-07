@@ -23,6 +23,18 @@ read-only** (`max_execution_time=600` in `~/.cl.selector/alt_php83.cfg`). Sunday
 Drupal's `system` `TimeZoneResolver` sets the timezone per request from `system.date`
 (live: `America/Denver`); the ini value never reaches a page.
 
+**Re-opened later Saturday night — Path A is back on the table, decided by a MEASUREMENT Sunday
+morning, not by a login.** Hosting.com's managed VPS (A2's KB) ships cPanel + *reseller* WHM by
+default — which is exactly the `toddwell` login — and **root is a per-plan option whose WHM/SSH root
+credentials live in the Customer Portal under the VPS product**, not in WHM. Two ways to get Path A
+without a single WHM click by Todd: (1) root credentials found in the portal → root WHM at
+`https://65.181.121.20:2087` → CloudLinux Manager → `brookstoneadmin` → PMEM 3072; (2) no root →
+support ticket Saturday night asking for `brookstoneadmin` PMEM → **3072 MB** (they do it in
+CloudLinux Manager; smallest ask, nothing for us to touch). **Sunday, right after the SSH check, run
+the step-0a proof** (`-d memory_limit=3G` 1.5 GB `str_repeat`): **OK → Path A**, **Killed → Path B**,
+which stays fully prepared (0b is done). `/proc/lve/list` is not readable as the account user, so
+the proof is the only read we have; cPanel → *Resource Usage* shows the current limits to Todd.
+
 ## Fixed facts used below
 
 | | |

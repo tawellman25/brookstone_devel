@@ -989,7 +989,62 @@ been run, and now is in §5: Drupal's verdict via `ExtensionList` `core_incompat
 - `search_update_11400` installed the new **`search_node`** submodule (11.4 split it out of
   `search`).
 
+#### Saturday rehearsal on a fresh live dump (2026-11-07) — what it changed
+
+Re-seeded `brookstone-d11` from live (`brookstone-sync-db-from-live.sh`, 6 min, dump kept), put the
+sandbox back on **D10 code** (`main` at the pre-session clone point `819e326a`, a closer stand-in for
+what live runs than today's `main`; clean reinstall of everything composer manages), and replayed
+the whole sequence **in live's order using only the committed scripts**. Live data: 50,093 WOs ·
+2,605 properties · 4,545 contracts · 35,819 time entries · **556 views** · 382 enabled modules.
+
+**Everything the scripts predicted happened on live data**: step 0 — 10 items; the three jQuery UI
+uninstalls; retire — 5 items including the guarded `editablefields` rewrite; config fixes — 4
+items. Then branch + `composer install --no-dev` (both patches applied, both runtime files),
+`--verify-only` → **none throw**, scanner → the four known dead/disabled fatals, `updb` → **74/74,
+0 errors, 22 min**, first `cr` after `updb` clean, then the full battery green (harnesses, 13
+office surfaces and 4 public pages with clean bodies, `/jsonapi` 401, counts identical except the
+forum term step 0 deletes on purpose, 0 watchdog errors).
+
+**Five things the rehearsal found that the sandbox run could not have:**
+
+1. **`drush cr` fails deterministically on D11 code against the D10 schema** — `SQLSTATE[42S22]
+   Unknown column 'alias'`: the router rebuild writes a column `system_update_11201` has not yet
+   added. Other drush commands bootstrap fine; only the router rebuild dies. **The deploy script's
+   post-composer `cr` would abort the deploy with the code already moved → deploy with
+   `--skip-cr`; the first `cr` is after `updb`.**
+2. **The config-fix script's two halves belong on opposite sides of the deploy.** Its *fixes* save
+   config — on D11 code/D10 schema a save can trigger that same router failure — so they run
+   *before* the deploy on D10 code (`--apply --skip-verify`). Its *verification* only means
+   something after the deploy, once `page_manager` is patched; before that it truthfully reports
+   the three PageVariants throwing (`--verify-only`, no saves). Commit `d0359189`.
+3. **`php vendor/bin/drush` prints a bash script and exits 0.** The composer bin proxy is a shell
+   wrapper. `updb` "completed" in one second with nothing done. The entry point is
+   `vendor/drush/drush/drush.php` — the one the deploy script already uses.
+4. **Live has 74 pending updates, not 45** — the 29 contrib updates from steps 2–5 (BEF ×17, flag,
+   address ×2, ai ×5, metatag ×2, captcha…) that dev had already absorbed.
+5. **The scanner's children ran bare `php`** — on cPanel/Alt-PHP a different interpreter. Now
+   `PHP_BINARY` (`c1ff91b6`).
+
+> ### ⚠ The number that reshapes Sunday: `drush updb` peaked at **1.25 GB RSS**
+>
+> GNU `time -v` around the 74-update run: wall **22:00**, maximum resident set size
+> **1,313,976 KB** — the largest single child process, i.e. one update's batch. Live's binding limit
+> is **1 GB PMEM**. That process would be killed, and `updb`, which is resumable, would re-run the
+> same update into the same kill. Loading and initialising all 556 views / 1,398 displays in one
+> process costs only **270 MB**, so this is one update accumulating state across its batch steps
+> inside drush's single `updatedb:batch-process` — not the views themselves.
+>
+> Two paths, both written into `d11_live_cutover.md`:
+> **A.** Raise the account's PMEM for the window (WHM answers on live's port 2087; CloudLinux LVE
+> Manager → `brookstoneadmin` → PMEM ≥ 2 GB) and run `updb` exactly as rehearsed.
+> **B.** Run the updates through **`update.php`**, where every batch step is its own web request and
+> therefore its own bounded process. Rehearsed on Saturday afternoon from the kept dump — see the
+> checklist for the measured per-request peak and duration.
+
 #### The order live needs — every one of these is DB or environment state that git does not carry
+
+> **Superseded for the cutover itself by [`d11_live_cutover.md`](d11_live_cutover.md)**, the
+> command-by-command checklist rehearsed on Saturday. The list below is the summary.
 
 1. **Re-seed the sandbox from a fresh live DB and re-run this entire sequence** (§5) before anyone
    touches production. Live differs from dev: `s3fs` enabled, `migrate_file` + `editablefields` +

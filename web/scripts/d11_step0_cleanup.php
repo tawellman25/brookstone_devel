@@ -175,6 +175,33 @@ if ($to_uninstall && $apply) {
 }
 
 // ---------------------------------------------------------------------------
+// 4. Block placements left behind by the forum uninstall.
+//    Found 2026-11-07: five block.block.* placements of the forum comment
+//    field block (`entity_field:node:comment_forum`) across five themes, two
+//    of them themes that no longer exist. Core logs "The block plugin was not
+//    found" on every admin page for each one. Guarded to that exact plugin id.
+// ---------------------------------------------------------------------------
+print "\n4. Block placements whose plugin died with the forum module\n";
+$dead_plugin = 'entity_field:node:comment_forum';
+$dead = [];
+foreach (\Drupal::entityTypeManager()->getStorage('block')->loadMultiple() as $block) {
+  if ($block->getPluginId() === $dead_plugin) {
+    $dead[] = $block;
+  }
+}
+if (!$dead) {
+  print "   clean — no placements of $dead_plugin\n";
+}
+foreach ($dead as $block) {
+  $todo++;
+  printf("   %s (theme %s, region %s)\n", $block->id(), $block->getTheme(), $block->getRegion());
+  if ($apply) {
+    $block->delete();
+    print "     -> deleted\n";
+  }
+}
+
+// ---------------------------------------------------------------------------
 print "\n=== RESULT ===\n";
 printf("  items %s: %d\n", $apply ? 'actioned' : 'outstanding', $todo);
 if ($refused) {

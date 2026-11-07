@@ -263,11 +263,75 @@ not to block it. Step 0 is now hygiene rather than a gate:
 |---|---|---|
 | 0 | The two cleanups (§3.3), plus optionally the patch hardening (§3.1) | Cleanups must predate core so they cannot be confused with upgrade fallout. The patch hardening is cheap insurance, not a prerequisite — the patch applies to 11.4.12 as it stands |
 | 1 | `upgrade_status` across all ~60 custom modules | Already measured: **zero D11 blockers in our own code**. Re-confirm in this env; `upgrade_status` 4.3.10 is installed and enabled |
-| 2 | `geofield` 1.67 → 10.3.5 and `geofield_map` 3.0.24 → 11.1.9, then **exercise the maps for real** | **The risky one.** `field_geofield` is on every property; HOA `field_boundary` polygons; the polygon-draw widget; Route Editor; winterize carry-forward. A silent geofield regression would take out scheduling tooling mid-season. Note `geofield_map`'s recommended release is *already* 11.x |
+| 2 | ✅ **LANDED in the sandbox 2026-11-06** (`d85e0441`) — `geofield` 1.67 → **10.3.5**, `geofield_map` 3.0.24 → **11.1.9**. Still owes a human looking at a map in a browser. See §4a | **The risky one.** `field_geofield` is on every property; the crew's route and WO maps; Route Editor; winterize carry-forward. A silent regression would take out scheduling tooling mid-season |
 | 3 | Settle the BEF jQuery UI trap (§3.2), then `better_exposed_filters` 6.0.6 → 7.2.0 | Must be deliberate, not a side effect |
 | 4 | `flag` 4.0-beta7 → 5.1.1, coordinated with retiring the legacy WO timer path | Legacy timer still coexists per `wo_clock` Phase A |
 | 5 | The remaining ordinary updates — `address` → 2.0.4, `inline_entity_form` → 3.0.0, plus the 17 NOT_CURRENT | Majors, but unexceptional |
 | 6 | **Core 10.6.20 → 11.4.x** | Last |
+
+### 4a. Step 2 as-built — geofield / geofield_map (landed 2026-11-06, `d85e0441`)
+
+**Done on D10.6 on purpose.** Both targets still support core `^10.3`
+(`geofield_map` 11.1.9 wants `drupal/core ^10.3 || ^11`), so this lands and gets
+exercised *before* core moves instead of alongside it. **`geofield_map`'s
+"11.1.9" is the module's own numbering, not a core constraint** — it reads like a
+blocker and is not.
+
+**composer:** 0 installs, 0 removals, **14 updates**, 316 → 316 packages — the two
+targets, 11 Symfony point releases, and `core-composer-scaffold` 10.6.20 →
+10.6.21. **No database updates required.**
+
+#### The blast radius is not where the roadmap pointed
+
+| Surface | Size | Source |
+|---|---|---|
+| **`geofield_google_map` views STYLE plugin** | **28 view displays** — crew route maps, WO maps, property header map | geofield_map |
+| `geofield_map` form widget on `properties.property.field_geofield` | 1 — the office's location entry, incl. the geocode box `estimate.module` relies on | geofield_map |
+| **`geofield_map.settings:gmap_api_key` read directly** | **4 custom paths** — `bos_hoa` `HoaBoundaryMapWidget`, `bos_scheduling` `RouteEditorController`, `bos_service_request` `CreateCustomerForm`, `estimate.module` | config key |
+| Core geofield widgets/formatters (`geofield_default`, `geofield_latlon`) | 6 widgets / 6 formatters | geofield |
+
+**The 28 views styles were the real risk.** Conversely, `properties__field_boundary`
+holds exactly **ONE row site-wide** (Bear Creek HOA), so the HOA polygon-draw
+widget the roadmap flags as a major surface is currently one HOA.
+
+#### Why two harnesses, and why status codes are not enough
+
+**A broken geofield_map map is an empty `<div>` on a page that still returns HTTP
+200.** No status-code smoke test can see it. So:
+
+- **`web/scripts/audit_geofield_usage.php`** — asserts every plugin id referenced by
+  config still *resolves*; **exits non-zero** if not, so it can gate the upgrade.
+  Also catches BOS's own `hoa_boundary_map`, because it sits on a geofield field.
+- **`web/scripts/test_geofield_maps_render.sh`** — logs in and asserts the map
+  markup is actually in the HTML. **Dev only** — it mints a `drush uli` link for
+  uid 1.
+
+> ⚠ The Route Editor needed a different assertion from the rest: it emits **no**
+> `maps.googleapis.com` script server-side, passing the key via
+> `drupalSettings.bosRouteEditor.gmapKey` for its JS to load the API. So the check
+> is that **`gmapKey` arrived non-empty** — which is exactly what fails if
+> geofield_map ever relocates `gmap_api_key`. Getting this wrong produced a
+> *baseline* failure first, which is the useful way to find out.
+
+#### Verified, before → after
+
+| Check | Result |
+|---|---|
+| Plugin audit | 6 widgets / 6 formatters / **28 views styles**, **0 missing** — both before and after |
+| Render test | **7/7** pages keep their maps — both before and after |
+| Views option schema | 21 stored keys vs 20 plugin keys. The one extra, **`entity_source_submit`, is a SUBMIT BUTTON** present identically in 3.0.24 and 11.1.9 and declared in geofield_map's own config schema. **Zero real drift, and zero plugin keys newly falling back to defaults** |
+| Geometry integrity | **Byte-identical** against the main dev env still on geofield 1.67 — same seed data, so a true control. 2,552 property geofield rows, fingerprint `1c523ef0c86af4fd` on both |
+| The one polygon | **Bear Creek HOA** (entity 144252): identical WKT md5 and bbox, still parses via geoPHP as a 5-point Polygon with non-zero area |
+| Logs | No new entries. The single watchdog error was my own eval calling a protected method |
+| Broader smoke | Clean across 12 pages, covering collateral from the Symfony point releases |
+
+#### ⚠ Still owed
+
+**A human has to look at a map in a browser.** These harnesses prove the markup
+and the data; they do not prove Google renders tiles, that markers land in the
+right places, or that the polygon-draw widget still draws. Check at minimum: the
+property page header map, `/admin/office/work-orders/map`, the Route Editor, and
+the HOA boundary widget on Bear Creek HOA.
 
 ### Two packages with no good D11 option — decide before step 5
 

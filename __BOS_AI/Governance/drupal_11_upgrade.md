@@ -255,9 +255,10 @@ working.** Both versions render a native `#type => 'date'` input and submit iden
 what disappears is the jQuery UI **calendar overlay** BEF 6 attaches on top of it. `bef_sliders`
 has **zero** usages anywhere.
 
-> ⚠ **Tell the office.** Those are billing screens. The date filter will behave the same and
-> submit the same values, but the calendar pop-up becomes the browser's native one. A visible
-> change on a billing screen should be announced, not discovered.
+> ~~⚠ **Tell the office.** Those are billing screens. The date filter will behave the same and
+> submit the same values, but the calendar pop-up becomes the browser's native one.~~
+> **WITHDRAWN 2026-11-06 — there is nothing to announce. See §3.2b.** The jQuery UI calendar
+> was never actually active on those views.
 
 **Nothing else in BOS needs jQuery UI.** No custom module or theme references a `jquery_ui`
 library at all (grepped across `web/modules/custom` and `web/themes/custom`). The only real
@@ -270,9 +271,53 @@ deprecated formatter the status report flags) and `module_filter` → `jquery_ui
 **do not** promote them to root requirements) → leave `jquery_ui`, `jquery_ui_accordion`,
 `jquery_ui_autocomplete`, `jquery_ui_menu` alone → tell the office about the date picker.
 
-*Status: verified from BEF's tagged source (composer.json, libraries.yml, the JS, the rendered
-element type). BEF 7.2.0 has **not** yet been installed in the sandbox, so this is a plan built
-on measurement, not a verified outcome.*
+#### 3.2b Step 3 as-built — landed 2026-11-06 (`4694536e`)
+
+**Order mattered:** Drupal uninstall **first**, composer **second**, so there was never a moment
+with enabled modules whose code had been deleted. Reverse that and the site fatals.
+
+```
+drush pmu -y jquery_ui_datepicker jquery_ui_slider jquery_ui_touch_punch
+composer require "drupal/better_exposed_filters:^7.2" -W
+drush updb -y && drush cr
+```
+
+**composer:** 1 install (`nouislider_js` 15.8.1), 1 update (BEF 6.0.6 → **7.2.0**), **4 removals**
+— the three modules plus `politsin/jquery-ui-touch-punch`. Root constraint now `^7.2`. **11 BEF
+post-update hooks ran.** `jquery_ui` and `jquery_ui_accordion` survive (root requirement on
+accordion); `jquery_ui_autocomplete` and `jquery_ui_menu` survive (`module_filter`) — exactly the
+predicted graph.
+
+**Security advisories fell from 18 affecting 12 packages at the project baseline to 7 affecting 5.**
+
+**Verified:** all **24** BEF displays, **0 unresolvable** widget plugins (`bef` ×7,
+`bef_datepicker` ×3, `default` ×114) · the three `bef_datepicker` views each still render **3
+native `type="date"` inputs**, with **zero** references to any deleted module and every asset
+200 · 12-page smoke all 200 · geofield harness still **7/7** · no new watchdog errors. Harness:
+`web/scripts/test_bef_datepicker_views.sh`.
+
+> ### ⚠ Correction — the office warning was wrong, and why
+>
+> §3.2a told you to warn the office that the calendar on three billing screens would change to
+> the browser's native picker. **It does not change. There is nothing to announce.**
+>
+> - BEF 6's `DatePickers.php` attaches **only** `better_exposed_filters/datepickers`.
+> - That library declares **no jQuery UI dependency** — core/drupal, drupalSettings, jquery.
+> - **Core 10.6 ships no datepicker widget at all** (`core/assets/vendor/jquery.ui/ui/widgets/`
+>   holds autocomplete, button, checkboxradio, controlgroup, dialog, draggable, menu, mouse,
+>   resizable — and nothing else).
+> - The jQuery UI asset count on those pages was **29 before and 29 after**, and all 29 resolve
+>   to **core's own** `/core/assets/vendor/jquery.ui/`.
+>
+> So the contrib datepicker's assets were never on those pages. The fields were **already** plain
+> native date inputs, and BEF 6's `$('.bef-datepicker').datepicker(opt)` was calling a function
+> that was never loaded. **The upgrade removes a latent JS error rather than changing anything a
+> user sees.**
+>
+> **The lesson is about the before/after count.** 29 → 29 looked at first like the harness
+> failing to detect a change. Checking *what* those 29 were — rather than trusting the number —
+> is what turned an apparent non-result into the actual answer. A count that does not move is
+> evidence; it just is not self-explanatory.
 
 ### 3.3 Pre-existing cleanups to clear before core moves
 
@@ -349,7 +394,7 @@ not to block it. Step 0 is now hygiene rather than a gate:
 | 0 | ✅ **LANDED in the sandbox 2026-11-06** — the cleanups (§3.3), now **three** items not two: pending entity def, schema orphan, and the three D11-removed core modules (§3.3a). See §4c | Cleanups must predate core so they cannot be confused with upgrade fallout. The patch hardening (§3.1) is already applied |
 | 1 | ✅ **RE-CONFIRMED in the sandbox 2026-11-06** — zero D11 blockers in our own code still holds. See §4d | Already measured once; re-run after step 0 to re-baseline. `upgrade_status` 4.3.10 |
 | 2 | ✅ **LANDED in the sandbox 2026-11-06** (`d85e0441`) — `geofield` 1.67 → **10.3.5**, `geofield_map` 3.0.24 → **11.1.9**. **Verified except the final visual** — see §4a and §4b | **The risky one.** `field_geofield` is on every property; the crew's route and WO maps; Route Editor; winterize carry-forward. A silent regression would take out scheduling tooling mid-season |
-| 3 | Settle the BEF jQuery UI trap (§3.2), then `better_exposed_filters` 6.0.6 → 7.2.0 | Must be deliberate, not a side effect |
+| 3 | ✅ **LANDED in the sandbox 2026-11-06** (`4694536e`) — `better_exposed_filters` 6.0.6 → **7.2.0**, three jQuery UI modules uninstalled. See §3.2a + §3.2b | Must be deliberate, not a side effect. BEF 7 turned out to *free* the jQuery UI modules rather than strand them |
 | 4 | `flag` 4.0-beta7 → 5.1.1, coordinated with retiring the legacy WO timer path | Legacy timer still coexists per `wo_clock` Phase A |
 | 5 | The remaining ordinary updates — `address` → 2.0.4, `inline_entity_form` → 3.0.0, plus the 17 NOT_CURRENT | Majors, but unexceptional |
 | 6 | **Core 10.6.20 → 11.4.x** | Last |

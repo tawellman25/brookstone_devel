@@ -396,7 +396,7 @@ not to block it. Step 0 is now hygiene rather than a gate:
 | 2 | ✅ **LANDED in the sandbox 2026-11-06** (`d85e0441`) — `geofield` 1.67 → **10.3.5**, `geofield_map` 3.0.24 → **11.1.9**. **Verified except the final visual** — see §4a and §4b | **The risky one.** `field_geofield` is on every property; the crew's route and WO maps; Route Editor; winterize carry-forward. A silent regression would take out scheduling tooling mid-season |
 | 3 | ✅ **LANDED in the sandbox 2026-11-06** (`4694536e`) — `better_exposed_filters` 6.0.6 → **7.2.0**, three jQuery UI modules uninstalled. See §3.2a + §3.2b | Must be deliberate, not a side effect. BEF 7 turned out to *free* the jQuery UI modules rather than strand them |
 | 4 | ✅ **LANDED in the sandbox 2026-11-06** (`b35855d3`) — `flag` 4.0-beta7 → **5.2.0**, **decoupled** from retiring the legacy timer. See §4e | The coupling was never real — flag was not a D11 blocker and 5.x keeps every API BOS calls. Timer retirement is its own roadmap row, for spring |
-| 5 | The remaining ordinary updates — `address` → 2.0.4, `inline_entity_form` → 3.0.0, plus the 17 NOT_CURRENT | Majors, but unexceptional |
+| 5 | ✅ **LANDED in the sandbox 2026-11-07** (`490e2357` · `0caf5a53` · `1abf26a5` · `4c9bdb8a`) — `address` → **2.0.6**, `inline_entity_form` → **3.0.0**, 33 minors, `jcarousel`/`poll` removed. **The gate is now two decisions:** `editablefields`, `migrate_file`. See §4f | Measured gate, not the roadmap's guess: composer itself named six blockers, four are done |
 | 6 | **Core 10.6.20 → 11.4.x** | Last |
 
 ### 4a. Step 2 as-built — geofield / geofield_map (landed 2026-11-06, `d85e0441`)
@@ -472,21 +472,20 @@ card. See **§4b** for the cause and fix. **What remains owed is narrower now** 
 tiles, marker placement and the polygon-draw widget, re-checked once the
 hostname is on the key's referrer allowlist.
 
-### Two packages with no good D11 option — decide before step 5
+### Two packages with no good D11 option — decide before step 6
 
 | Package | Installed | D11 option | Problem |
 |---|---|---|---|
-| `migrate_file` | 2.1.3 | **3.0.0-alpha1** | alpha is the *only* D11 release |
-| `editablefields` | 1.0.2 | **dev-1.0.x** | **no tagged D11 release at all** |
+| `migrate_file` | 2.1.3 | **3.0.0-beta1** (a beta appeared since this was written) | — but **nothing in BOS uses it**: 0 migrations, no custom code. Uninstall + remove is cleaner than any upgrade |
+| `editablefields` | 1.0.2 | **dev-1.0.x** | **no tagged D11 release at all**; used by exactly **one** editable column (`quickbooks_client_merge`) |
 
-Both are decisions, not tasks: accept an alpha / a dev branch, replace the module, or drop it.
-Check actual usage before accepting either — a module used in one view is cheaper to replace than
-to carry on a dev branch.
+Both are decisions, not tasks. Usage was checked 2026-11-06/07 — see §4f for the measured picture
+and the options.
 
-### Removals — confirm, don't assume
+### Removals — ✅ confirmed and done
 
-`jcarousel` (6.0.0-alpha1) and `poll` (8.x-1.6) are **Disabled** on dev and the resolution
-removes them. Confirm they are disabled on **live** too before relying on that.
+`jcarousel` (6.0.0-alpha1) and `poll` (8.x-1.6) were **Disabled on live too** (read-only `pm:list`,
+2026-11-06) and were removed from composer in `1abf26a5`.
 
 ---
 
@@ -691,6 +690,161 @@ own pre-upgrade run hitting the Canceled guard).
 > Also learned on the way: the test must not pick an **Open** WO (clock-in moves it to In
 > Progress via a `wo_status_updates` record — it did, to WO 49466, reverted) or a **Canceled** one
 > (a guard rightly refuses time entries there).
+
+---
+
+### 4f. Step 5 as-built — the remaining updates (2026-11-07)
+
+#### The gate, measured
+
+`composer why-not drupal/core 11.4.12` — composer's own verdict, not a regex over
+`core_version_requirement` — named **exactly six** contrib blockers:
+
+| Package | Installed | Verdict |
+|---|---|---|
+| `address` | 1.12.0 (`^9.2 \|\| ^10`) | ✅ **2.0.6** (`490e2357`) |
+| `inline_entity_form` | 1.0.0 (`^8.8 \|\| ^9 \|\| ^10`) | ✅ **3.0.0** (`490e2357`) |
+| `jcarousel` | 6.0.0-alpha1, **Disabled** dev + live | ✅ **removed** (`1abf26a5`) |
+| `poll` | 8.x-1.6, **Disabled** dev + live | ✅ **removed** (`1abf26a5`) |
+| `editablefields` | 1.0.2 (`^8 \|\| ^9 \|\| ^10`) | ⏳ **decision** — see below |
+| `migrate_file` | 2.1.3 (`^9 \| ^10`) | ⏳ **decision** — see below |
+
+A regex over `core_version_requirement` had flagged **ten**. The four extra were false
+positives worth naming: `date_all_day`, `file_mdm`, `image_effects` declare `^10.3 | ^11` with a
+**single** pipe, which composer reads as OR; and `s3fs` 3.12 declares `>=11.4.3 < 11.5`, which
+admits the 11.4.12 target (s3fs is **Enabled on live**, so that one mattered).
+
+#### 5a — `address` 1.12 → 2.0.6 and `inline_entity_form` 1.0 → 3.0.0 (`490e2357`)
+
+No custom code touches either API — the grep hits for "ief" were `field_rel**ief**_valve_psid`.
+So the blast radius is Field UI config only: **4** address widget/formatter instances on **3**
+address field storages, and **83** IEF widget instances, **69 of them the residential CONTRACT
+form's section slots**.
+
+`address` brought `commerceguys/addressing` v1.4.2 → v2.3.2 and ran `address_update_9201`, which
+**ALTERs every address table** to add `address_line3`. `web/scripts/test_address_fields_fingerprint.php`
+proves that is all it did — per table, row count and an md5 over every stored value **identical**
+before and after (`da710b24d9f315a1` / `76c610f0598ddfee` / `a3ca6feef93ee996`), exactly one column
+added, 0 non-empty `address_line3`. Plugin ids unchanged.
+
+`inline_entity_form` 3.0.0 ships **0** update hooks, the widget ids are unchanged, and every stored
+widget setting key is still declared by the 3.x plugin. It pulled in **`drupal/rat` 1.0.1 — a
+composer *library* in `vendor/`, not a module** — whose `Drupal\rat\v1\RenderArray` the three IEF
+form classes import. Verified loadable from the vendor autoloader; **nothing to enable**. (A first
+check said "NOT LOADABLE" because the grep truncated the class name at the digit in `v1` and tested
+`Drupal\rat\v`.)
+
+`web/scripts/test_address_ief_forms.sh` renders the real forms as uid 1 and asserts the widgets'
+own inputs, with counts: **9/9 before, 9/9 after address, 9/9 after IEF, counts identical**
+(manufacturer 2 · dump_location 2 · mailing address 1 · business_setting rate tables 12 ·
+teammate_profile 2 · emergency_contacts 2 · **residential contract 23 section sub-forms** ·
+contact 19 · supplier 70). Its first version failed **5 of 7 on the baseline** — all harness bugs,
+kept in its header: `[0]` is a bracket expression to basic grep; `\"` in a PHP single-quoted string
+is a literal backslash; an IEF complex field with no referenced entities renders only its Add
+button; and a `|` inside a regex alternation splits the row.
+
+#### 5b — the minor batch (`0caf5a53`)
+
+**33 updates, 11 installs, 0 removals, 314 → 325 packages; `composer.json` untouched.** Nine DB
+updates ran (ai ×3 + post ×2, metatag ×2, ai_ckeditor, captcha). Notable:
+
+- `ai` 1.4.11 → **1.5.2** — its submodules are now separate packages (`ai_content_suggestions`,
+  `ai_logging`, `ai_translate`, `ai_validations` arrived, all still disabled). `ai_provider_anthropic`
+  1.2.2 requires `^1.2.0` and is satisfied; the invoice-vision service still instantiates and the
+  `anthropic` provider plugin resolves. **New status-report warning: `ai_ckeditor` is deprecated
+  in ai 1.5** (drupal.org/node/3612175) — not a D11 blocker; decide whether BOS uses AI in CKEditor
+  at all.
+- `symfony/expression-language` 7.4.18 → **7.4.21** (CVE-2026-109449). It is held by
+  `module_builder`'s dependency, **not core**, so it was free to move.
+- `stage_file_proxy` 3.1.7 · `leaflet` 10.4.13 · `fullcalendar_view` 5.3.0 — the three contrib
+  advisories. **`composer audit`: 7 → 3**, all three remaining are `phpoffice/phpspreadsheet`.
+- `views_bulk_operations` 4.4.9 — the `class_implements()` guard from `deferred_work.md` is **not**
+  fixed upstream (line 105 unchanged).
+- `profile` 1.16.0, `token` 1.18.0, `metatag` 2.2.6, `geocoder` 4.38.0, `block_visibility_groups`
+  2.0.5 (the §4d guardrail stands).
+
+**`smart_date` was deliberately excluded — the patch tripwire from §3.1 earned its keep.** Its
+declared composer patch (`3177760-13`, views granularity arguments for the `calendar` module)
+applies to the installed 4.2.5 but **fails hunk 1 against 4.3.1**, and
+`composer-exit-on-patch-failure: true` would have aborted the whole run. Measured, the patch **is
+load-bearing**: `calendar` + `calendar_datetime` are enabled and two views
+(`work_order_teammate_calendar`, `scheduling_field_scheduled_date_and_time_on_calendar`) carry
+**eight** `datetime_year` / `year_month` / `year_week` / `full_date` arguments on a smart_date field
+that exist only because of it. **But nobody visits them.** Live access logs, Oct + Nov 2026
+(read-only):
+
+```
+GET /teammates/calendar            1,537 hits   (the custom admin_calendar — positive control)
+GET /teammates/calendar/           3,986 hits
+GET /admin/office/calendar             0 hits
+GET /teammates/calendars/work_orders   0 hits
+GET /teammates/calendar/work_order     0 hits
+```
+
+No menu link, no custom code, no visits in two months. 4.2.5 declares `^9 || ^10 || ^11`, so
+holding it costs the D11 move nothing — but the clean resolution is to **retire `calendar`,
+`calendar_datetime`, those two views and the patch together**, then take smart_date to 4.3.1.
+That is a removal decision, so it is on the ROADMAP, not done.
+
+**Verified after the batch:** geofield 7/7 + plugin audit exit 0 · BEF 0 failed · legacy flag
+timer 20/20 · address/IEF forms 9/9, counts identical · address md5s identical · step-0 dry-run
+clean · 14-page smoke all 200 (incl. `/admin/config/ai` and a real WO page) · zero watchdog errors
+beyond known noise · 0 pending entity definition changes · **6,489 widget and 7,369 formatter
+config refs all resolve** · status report Errors 4 → **3** (the "Not secure!" entry is gone).
+
+#### 5c — `jcarousel` and `poll` removed (`1abf26a5`)
+
+Both Disabled on dev and — checked on live with a read-only `pm:list` — Disabled on live, so there
+is nothing to uninstall anywhere. No active config depends on either, no `system.schema` rows, no
+library directory.
+
+#### The two decisions that remain (the whole gate now)
+
+| | What BOS actually uses | Options |
+|---|---|---|
+| **`editablefields`** 1.0.2 | **One editable column**: `field_cell_number` on the `quickbooks_client_merge` view (`/admin/client/qb_export_list`, the QB export list). The other reference, `sop_log.standard.default` display, is dead — 0 `sop_log` entities. | (a) `dev-1.0.x`, which declares `^11`, pinned to a commit — carries an untagged branch; (b) make that one column a plain field and drop the module — loses inline editing of cell numbers on that list; (c) replace the inline edit. **Ask the office whether anyone edits cell numbers from that list.** |
+| **`migrate_file`** 2.1.3 | **Nothing.** 0 migrations use its plugins, no custom code references it. Enabled on dev *and* live anyway. | (a) **uninstall + remove** — cleanest; needs a `pmu` on dev and live (DB state, does not travel through git); (b) `3.0.0-beta1`, which declares `^10.3 \| ^11`. **Recommend (a).** |
+
+#### Not needed for D11 — deliberately left alone
+
+Majors with a newer line whose *installed* version already admits `^11`: `config_pages` 2.22 → 4
+(**holds every rate table** — not a casual bump), `symfony_mailer` 1.6 → 2 (mail), `module_filter`
+5 → 6, `optional_end_date` 1.4 → 2, `stage_file_proxy` 3 → 4 (dev-only), `image_effects` 4 → 5,
+`block_class` 2 → 4 and `chosen` 3 → 5 (both disabled), `cweagans/composer-patches` 1.7 → 2
+(**changes the patch config format — do not**), `guzzlehttp/guzzle` 7 → 8, `phpspreadsheet` 2 → 5.
+
+**`phpspreadsheet` is its own item.** 2.4.7 carries 3 advisories (SSRF, ODS DoS, XXE); **no fixed
+2.x exists** (affected `<=2.4.7`), the fix lines are `3.10.8+` / `5.10.0`. Two *disabled* modules pin
+it to 2.x — `migrate_spreadsheet` (0 migrations use it) and `xls_views_data_export` — while the
+*enabled* `xls_serialization` (one XLS export display, `admin_contracts_dethatching`) allows
+`^3.10`. Four custom importers call the library directly (`supplier_price_ingest`,
+`wo_material_list_management` invoice import, `bos_it_import`, `bos_wex_import`), so a 2 → 3 move
+needs their API surface checked first. Logged in `deferred_work.md`.
+
+#### A correction to the audit, and 29 pre-existing broken view handlers
+
+A global "does every plugin id in config resolve" audit reported 16 unresolvable Views field
+handlers whose pages render perfectly. **The audit was wrong, not the views.** Views does not read
+the stored `plugin_id` for field/filter/sort/argument/relationship handlers:
+`ViewsHandlerManager::getHandler()` looks up views **data** for `[table][field][type]` and uses the
+id found there, falling back to the Broken handler only when that entry is missing. Only style,
+row, pager, exposed_form, access, cache, query and display plugins resolve by stored type.
+`web/scripts/audit_views_handlers.php` (`4c9bdb8a`) now does it the right way.
+
+Done right, it finds **29 handlers that render as Broken — byte-identical on the untouched main dev
+env and on the sandbox after all of step 5**, so pre-existing. Mostly `status` filters on ECK types
+that have no `status` base field (no-op), and **date sorts configured as `field: field_x` instead of
+`field_x_value`** — Views has no sort for the bare name. Effect varies: `equipment_fuel_transactions_admin`
+has a working twin sort so its SQL still orders; **`backflow_compliance` has NO ORDER BY at all**.
+`estimate_current_customer_info` points at a misspelled table `estmate_field_data`. Logged in
+`deferred_work.md`; not an upgrade concern, but step 6 should diff this script's output.
+
+#### Still outstanding on live (nothing here travels through git)
+
+Live still has `action`/`forum`/`tour` enabled (step 0), the three jQuery UI modules enabled
+(step 3), and `migrate_file` + `editablefields` enabled. Every step-0/3/5 module change must be
+repeated there with the committed scripts, after a fresh live DB re-seed and a full re-run in the
+sandbox (§5).
 
 ---
 

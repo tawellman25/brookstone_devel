@@ -396,7 +396,7 @@ not to block it. Step 0 is now hygiene rather than a gate:
 | 2 | ✅ **LANDED in the sandbox 2026-11-06** (`d85e0441`) — `geofield` 1.67 → **10.3.5**, `geofield_map` 3.0.24 → **11.1.9**. **Verified except the final visual** — see §4a and §4b | **The risky one.** `field_geofield` is on every property; the crew's route and WO maps; Route Editor; winterize carry-forward. A silent regression would take out scheduling tooling mid-season |
 | 3 | ✅ **LANDED in the sandbox 2026-11-06** (`4694536e`) — `better_exposed_filters` 6.0.6 → **7.2.0**, three jQuery UI modules uninstalled. See §3.2a + §3.2b | Must be deliberate, not a side effect. BEF 7 turned out to *free* the jQuery UI modules rather than strand them |
 | 4 | ✅ **LANDED in the sandbox 2026-11-06** (`b35855d3`) — `flag` 4.0-beta7 → **5.2.0**, **decoupled** from retiring the legacy timer. See §4e | The coupling was never real — flag was not a D11 blocker and 5.x keeps every API BOS calls. Timer retirement is its own roadmap row, for spring |
-| 5 | ✅ **LANDED in the sandbox 2026-11-07** (`490e2357` · `0caf5a53` · `1abf26a5` · `4c9bdb8a`) — `address` → **2.0.6**, `inline_entity_form` → **3.0.0**, 33 minors, `jcarousel`/`poll` removed. **The gate is now two decisions:** `editablefields`, `migrate_file`. See §4f | Measured gate, not the roadmap's guess: composer itself named six blockers, four are done |
+| 5 | ✅ **DONE in the sandbox 2026-11-07** (`490e2357` · `0caf5a53` · `1abf26a5` · `4c9bdb8a` · 5d) — `address` → **2.0.6**, `inline_entity_form` → **3.0.0**, 33 minors, `jcarousel`/`poll` removed, `editablefields`/`migrate_file` retired. **`composer why-not drupal/core 11.4.12` names nothing — the gate is clear.** See §4f | Measured gate, not the roadmap's guess: composer itself named six blockers; all six resolved |
 | 6 | **Core 10.6.20 → 11.4.x** | Last |
 
 ### 4a. Step 2 as-built — geofield / geofield_map (landed 2026-11-06, `d85e0441`)
@@ -472,15 +472,11 @@ card. See **§4b** for the cause and fix. **What remains owed is narrower now** 
 tiles, marker placement and the polygon-draw widget, re-checked once the
 hostname is on the key's referrer allowlist.
 
-### Two packages with no good D11 option — decide before step 6
+### Two packages with no good D11 option — ✅ decided and retired 2026-11-07
 
-| Package | Installed | D11 option | Problem |
-|---|---|---|---|
-| `migrate_file` | 2.1.3 | **3.0.0-beta1** (a beta appeared since this was written) | — but **nothing in BOS uses it**: 0 migrations, no custom code. Uninstall + remove is cleaner than any upgrade |
-| `editablefields` | 1.0.2 | **dev-1.0.x** | **no tagged D11 release at all**; used by exactly **one** editable column (`quickbooks_client_merge`) |
-
-Both are decisions, not tasks. Usage was checked 2026-11-06/07 — see §4f for the measured picture
-and the options.
+`migrate_file` (nothing used it) and `editablefields` (one editable column, now a plain one) are
+uninstalled and removed in the sandbox — §4f/5d. **Both are still enabled on live** and need
+`d11_step5_retire_modules.php` there.
 
 ### Removals — ✅ confirmed and done
 
@@ -798,12 +794,49 @@ Both Disabled on dev and — checked on live with a read-only `pm:list` — Disa
 is nothing to uninstall anywhere. No active config depends on either, no `system.schema` rows, no
 library directory.
 
-#### The two decisions that remain (the whole gate now)
+#### 5d — the two decisions, decided: `editablefields` and `migrate_file` retired — **GATE CLEAR**
 
-| | What BOS actually uses | Options |
+Todd, 2026-11-07: neither is needed. After `d11_step5_retire_modules.php` and `composer remove`,
+**`composer why-not drupal/core 11.4.12` names nothing in contrib.** Nothing stands between the
+sandbox and step 6 except the sequencing itself.
+
+| | What BOS actually used | Done |
 |---|---|---|
-| **`editablefields`** 1.0.2 | **One editable column**: `field_cell_number` on the `quickbooks_client_merge` view (`/admin/client/qb_export_list`, the QB export list). The other reference, `sop_log.standard.default` display, is dead — 0 `sop_log` entities. | (a) `dev-1.0.x`, which declares `^11`, pinned to a commit — carries an untagged branch; (b) make that one column a plain field and drop the module — loses inline editing of cell numbers on that list; (c) replace the inline edit. **Ask the office whether anyone edits cell numbers from that list.** |
-| **`migrate_file`** 2.1.3 | **Nothing.** 0 migrations use its plugins, no custom code references it. Enabled on dev *and* live anyway. | (a) **uninstall + remove** — cleanest; needs a `pmu` on dev and live (DB state, does not travel through git); (b) `3.0.0-beta1`, which declares `^10.3 \| ^11`. **Recommend (a).** |
+| **`editablefields`** 1.0.2 | **One editable column**: `field_cell_number` on the `quickbooks_client_merge` view (`/admin/client/qb_export_list`), plus a dead reference on the `sop_log.standard.default` display (0 entities). | Column rewritten to the telephone type's default formatter `basic_string` (plain text — also what the view's CSV export display wants); display field to core `timestamp`; module uninstalled; package removed. The list still renders all **3,578** rows with its cell-number column; CSV display 200. |
+| **`migrate_file`** 2.1.3 | **Nothing.** 0 migrations use its plugins, no custom code. | Uninstalled; package removed. ⚠ **Live still has it ENABLED** (read-only `pm:list`, 2026-11-07 — the belief that it had already been removed from live was wrong; the directory and the lock entry are there too). |
+
+**The trap the script exists for.** Drupal **deletes dependent config entities on uninstall**, and the
+whole `quickbooks_client_merge` view depended on `editablefields` — a bare `drush pmu` would have
+silently removed the QuickBooks export list. So the script rewrites the formatters first,
+re-counts the *direct* dependents, uninstalls **only at zero**, and **refuses** if any config it
+cannot rewrite depends on the module (BOS rule 4: no surprise cascades). Dry-run by default:
+
+```bash
+ddev drush scr web/scripts/d11_step5_retire_modules.php              # report
+ddev drush scr web/scripts/d11_step5_retire_modules.php -- --apply   # act, then:
+composer remove drupal/editablefields drupal/migrate_file
+```
+
+> ### ⚠ Two mistakes on the first run — both kept, because the next run is on live
+>
+> **1. The rewrite wrote nothing.** `foreach (($x ?? []) as &$f)` takes a reference into the
+> `??` expression's **temporary copy**, so the dry-run read the fields correctly, the apply
+> "saved" the view unchanged, and the dependency survived. **The refusal caught it** — the guard
+> did its job. Fixed to iterate the stored array directly.
+>
+> **2. The shell chain did not stop on that refusal**, so `composer remove` deleted the module's
+> code while Drupal still had it enabled — the exact state §3.2b's ordering rule exists to
+> prevent. Pages still served (Drupal tolerates a missing enabled module, with warnings), but the
+> state was wrong. Recovered the honest way: `composer require drupal/editablefields:1.0.2` to put
+> the code back, run the (fixed) script so Drupal uninstalled it properly, *then* remove — no
+> hand-edits to `core.extension` or `system.schema`. **On live, gate every step on the previous
+> one's exit code.** A refusal is a stop, not a warning.
+
+Also surfaced by the warnings this stirred up: **five `block.block.*` placements of
+`entity_field:node:comment_forum`** (the forum's comment-field block, across five themes — two of
+which, `s_e_wards` and `olivero_sewards`, no longer exist) left behind by the step-0 `forum`
+uninstall, each logging "block plugin was not found" on every admin page. Now item **4** of
+`d11_step0_cleanup.php`, guarded to that exact plugin id; 0 warnings after.
 
 #### Not needed for D11 — deliberately left alone
 

@@ -236,15 +236,60 @@ requirements in `composer.json`.
 
 ### 3.3 Pre-existing cleanups to clear before core moves
 
-Both are pre-existing on dev *and* live, and both are small. Clear them while the baseline is
+All pre-existing on dev *and* live, and all small. Clear them while the baseline is
 known-good, so they cannot be mistaken for upgrade fallout.
 
 | Item | Detail | Note |
 |---|---|---|
 | `ai_agent_override` | "The AI Agent Override entity type needs to be installed" — 1 pending entity definition, provider `ai_agents` | Named in the roadmap |
 | `migrate_devel` | Orphaned `system.schema` entry at **v8000**; module absent from disk. Exactly **1** orphan out of 383 schema entries | **Not** in the roadmap — found 2026-11-06 |
+| **`action`, `forum`, `tour`** | **Core modules BOS has ENABLED that are DELETED from core in Drupal 11** | **Not** in the roadmap — found 2026-11-06. Genuine step-6 blockers |
 
 An orphaned schema entry is the kind of thing that turns a major-version `updb` into a puzzle.
+
+#### 3.3a Core modules removed in Drupal 11 — measured, not recalled
+
+The status report's "Deprecated modules installed" warning was the thread. Pulling it meant
+diffing core's own module inventory between the two tagged releases rather than trusting a
+warning label or memory:
+
+```
+core 10.6.20 → 79 modules      core 11.4.12 → 75 modules
+removed: action book forum help_topics statistics tracker tour
+added:   mysqli package_manager workspaces_ui
+themes:  + default_admin (none removed)
+```
+
+Intersected with BOS's 387 enabled extensions, **three are enabled here: `action`, `forum`,
+`tour`.** (`book`, `help_topics`, `statistics`, `tracker` are not — no action needed.) Left
+enabled, each is a hard stop at step 6.
+
+**Measuring the blast radius needed a correction.** `ConfigManager::findConfigEntityDependencies()`
+returns a **transitive closure** and massively overstates this — it reported **356** config
+entities depending on `forum`, including `views.view.wo_time_clock_buttons`, which is obviously
+wrong. Reading the stored `dependencies.module` array directly off each of the 10,932 active
+config objects gives the real figure:
+
+| Module | Direct config dependencies | What they are |
+|---|---|---|
+| `action` | **0** | — |
+| `forum` | **2** | `user.role.administration`, `user.role.site_admin` (permissions only) |
+| `tour` | **5** | 4 user roles + `core.entity_view_mode.tour.token` |
+
+> **Lesson, same shape as §3.1:** a dependency API that answers a slightly different question
+> than the one you asked will answer it confidently. 356 was not a surprising number to be
+> investigated — it was an implausible one to be disbelieved.
+
+**`action` is the Actions UI module only.** The action *plugin system* and all 64
+`system.action.*` config entities belong to `system`/`user` and survive untouched. Verified
+after uninstall: **57 VBO displays, 119 configured actions, 0 unresolvable**, 426 action plugins
+still registered. The sole visible loss is `/admin/config/system/actions`, which now 404s —
+correct, that route *was* the module.
+
+**Forum held no content:** 0 nodes of type `forum`, 0 `forum_index` rows, and a single stock
+"General discussion" term created at install on 2023-01-12. Core refuses to uninstall `forum`
+while terms exist, so that term is deleted first. **Tour** had 2 tours, both core UI tours
+(`block-layout`, `views-ui`). Nothing operational in either.
 
 ### 3.4 Security advisories on the baseline
 
@@ -261,9 +306,9 @@ not to block it. Step 0 is now hygiene rather than a gate:
 
 | # | Step | Why here |
 |---|---|---|
-| 0 | The two cleanups (§3.3), plus optionally the patch hardening (§3.1) | Cleanups must predate core so they cannot be confused with upgrade fallout. The patch hardening is cheap insurance, not a prerequisite — the patch applies to 11.4.12 as it stands |
+| 0 | ✅ **LANDED in the sandbox 2026-11-06** — the cleanups (§3.3), now **three** items not two: pending entity def, schema orphan, and the three D11-removed core modules (§3.3a). See §4c | Cleanups must predate core so they cannot be confused with upgrade fallout. The patch hardening (§3.1) is already applied |
 | 1 | `upgrade_status` across all ~60 custom modules | Already measured: **zero D11 blockers in our own code**. Re-confirm in this env; `upgrade_status` 4.3.10 is installed and enabled |
-| 2 | ✅ **LANDED in the sandbox 2026-11-06** (`d85e0441`) — `geofield` 1.67 → **10.3.5**, `geofield_map` 3.0.24 → **11.1.9**. Still owes a human looking at a map in a browser. See §4a | **The risky one.** `field_geofield` is on every property; the crew's route and WO maps; Route Editor; winterize carry-forward. A silent regression would take out scheduling tooling mid-season |
+| 2 | ✅ **LANDED in the sandbox 2026-11-06** (`d85e0441`) — `geofield` 1.67 → **10.3.5**, `geofield_map` 3.0.24 → **11.1.9**. **Verified except the final visual** — see §4a and §4b | **The risky one.** `field_geofield` is on every property; the crew's route and WO maps; Route Editor; winterize carry-forward. A silent regression would take out scheduling tooling mid-season |
 | 3 | Settle the BEF jQuery UI trap (§3.2), then `better_exposed_filters` 6.0.6 → 7.2.0 | Must be deliberate, not a side effect |
 | 4 | `flag` 4.0-beta7 → 5.1.1, coordinated with retiring the legacy WO timer path | Legacy timer still coexists per `wo_clock` Phase A |
 | 5 | The remaining ordinary updates — `address` → 2.0.4, `inline_entity_form` → 3.0.0, plus the 17 NOT_CURRENT | Majors, but unexceptional |
@@ -325,13 +370,22 @@ widget the roadmap flags as a major surface is currently one HOA.
 | Logs | No new entries. The single watchdog error was my own eval calling a protected method |
 | Broader smoke | Clean across 12 pages, covering collateral from the Symfony point releases |
 
-#### ⚠ Still owed
+#### ⚠ Still owed — partially discharged 2026-11-06
 
 **A human has to look at a map in a browser.** These harnesses prove the markup
 and the data; they do not prove Google renders tiles, that markers land in the
 right places, or that the polygon-draw widget still draws. Check at minimum: the
 property page header map, `/admin/office/work-orders/map`, the Route Editor, and
 the HOA boundary widget on Bear Creek HOA.
+
+**Progress 2026-11-06:** a map was opened in a browser and **drew**, then showed
+Google's *"This page didn't load Google Maps correctly"* card — which is an
+**allowlist problem, not an upgrade problem**, and is itself positive evidence:
+Google only renders that card once a real `google.maps.Map` has been constructed
+and has called the API. A regression from the upgrade gives an empty div and no
+card. See **§4b** for the cause and fix. **What remains owed is narrower now** —
+tiles, marker placement and the polygon-draw widget, re-checked once the
+hostname is on the key's referrer allowlist.
 
 ### Two packages with no good D11 option — decide before step 5
 
@@ -348,6 +402,101 @@ to carry on a dev branch.
 
 `jcarousel` (6.0.0-alpha1) and `poll` (8.x-1.6) are **Disabled** on dev and the resolution
 removes them. Confirm they are disabled on **live** too before relying on that.
+
+---
+
+### 4b. A new sandbox hostname needs a Google Maps allowlist entry
+
+**Symptom, 2026-11-06:** maps on `brookstone-d11.ddev.site` draw and then show Google's own
+card — *"Oops! Something went wrong. This page didn't load Google Maps correctly."*
+
+**This is not an upgrade regression, and the overlay itself is the proof.** For Google to
+render that card, `geofield_map` 11.1.9 must have built a real `google.maps.Map`, loaded the
+API and received a reply. A plugin regression from the upgrade produces an **empty div and no
+overlay at all**. The key was also confirmed present in `drupalSettings` on all four map
+surfaces.
+
+**Cause.** `geofield_map.settings:gmap_api_key` is an **HTTP-referrer-restricted** key.
+Confirmed directly — a web-service probe with it returns Google's own verdict:
+
+```
+status: REQUEST_DENIED
+error_message: API keys with referer restrictions cannot be used with this API.
+```
+
+A sandbox hostname created today cannot be in an allowlist written before today. The fix is to
+add `https://brookstone-d11.ddev.site/*` to that key's **Websites** list in Google Cloud
+Console. Google warns settings take **up to 5 minutes**.
+
+**Three traps worth knowing:**
+
+1. **An IP restriction cannot fix this.** Google's error-messages page: *"API keys with an **IP
+   addresses** restriction can only be used with web services … To use the Maps JavaScript API
+   client side services, you will need to create a separate API key which can be secured with
+   an **HTTP referrers** restriction."* Application restriction is a **radio button** — one type
+   per key — so referrer and IP cannot be combined. The second layer that *can* be stacked is
+   **API restrictions**, which is a separate section.
+2. **Do not edit the IP-restricted key.** BOS has two Google keys (see `gotchas.md`): the
+   referrer key for `geofield_map`, and an **IP-restricted** key for the server-side `geocoder`
+   module, whose allowlist holds `65.181.121.20` (live VPS) and `68.66.226.93` (the retired
+   shared box — **stale, should come off**). Flipping that key's restriction type to Websites
+   would break live server-side geocoding in `bos_service_request`.
+3. **Never use `https://*.ddev.site/*`.** `ddev.site` is a public domain shared by every DDEV
+   user worldwide; that wildcard would authorise any stranger's local project to spend the
+   project's Maps quota. Add the exact hostname.
+
+**Also noted:** the referrer key is committed in `config/sync/geofield_map.settings.yml` and
+tracked in git. That is **not** a leak — a referrer key is public by construction, shipping in
+the HTML of every public BOS page — but it does mean the referrer allowlist is the only thing
+between that key and someone else's billing. Keep it tight, and **remove the sandbox entry when
+the sandbox is deleted.**
+
+> ⚠ **Before tightening the referrer key's API restrictions:** `geofield_map`'s widget geocodes
+> **client-side** — that is the address-search box the office uses on the property form, which
+> `estimate.module` depends on. Restricting that key to "Maps JavaScript API" alone may kill the
+> box while maps keep working, which is a miserable thing to debug later. Determine the APIs it
+> actually calls first.
+
+---
+
+### 4c. Step 0 as-built — the cleanups (landed 2026-11-06)
+
+Three items applied in the sandbox, all **database state** — none of this travels through git,
+because BOS does not deploy config. **Dev and live each need the same treatment separately.**
+
+| # | Item | Result |
+|---|---|---|
+| 1 | `ai_agent_override` pending entity definition | Installed. It is a **config** entity (`group=configuration`), so no table was created — the definition was simply registered |
+| 2 | `migrate_devel` orphaned `system.schema` row (v8000) | Removed. Schema entries 383 → 379 (the orphan plus the three uninstalled modules) |
+| 3 | `action`, `forum`, `tour` uninstalled (§3.3a) | Clean. Core refused `forum` until the stock term was deleted |
+
+**Verified after:** 0 pending entity definitions · 0 schema orphans · no DB updates required ·
+status report "Deprecated modules" no longer lists Actions UI · **VBO intact** (57 displays,
+119 configured actions, 0 unresolvable, 426 action plugins) · **geofield harness still 7/7** ·
+13-page smoke all 200 except `/admin/config/system/actions` → **404, which is the correct
+outcome**. Only watchdog error is the pre-existing private-files `.htaccess` warning, already
+present before any of this.
+
+Two `[error]` lines appear during the uninstall — stale role permissions referencing action
+plugins that no longer exist (`node_assign_owner_action`, `node_unpublish_by_keyword_action`,
+`comment_unpublish_by_keyword_action`) being dropped from Site Admin and Office Admin. **That is
+cleanup, not failure.**
+
+#### Repeating it on dev and live
+
+`web/scripts/d11_step0_cleanup.php` — **idempotent, dry-run by default**:
+
+```bash
+ddev drush scr web/scripts/d11_step0_cleanup.php              # report
+ddev drush scr web/scripts/d11_step0_cleanup.php -- --apply   # act
+```
+
+It **hard-refuses** (exit 1) to uninstall `forum` if any forum node or `forum_index` row exists
+— BOS rule 4, no deletion of operational history — and only deletes `forums` terms once the
+forum is otherwise provably empty. Run the report form on live first and read it; do not assume
+live matches dev. It deliberately carries **no `exit(0)`**: `drush scr` treats an explicit
+`exit(0)` as abnormal termination and returns non-zero, which would make a clean run look like
+a failure to anything checking the status.
 
 ---
 

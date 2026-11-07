@@ -34,6 +34,8 @@
  *
  *   ddev drush scr web/scripts/d11_step6_config_fixes.php              # report
  *   ddev drush scr web/scripts/d11_step6_config_fixes.php -- --apply   # act
+ *   ... -- --apply --skip-verify    # PRE-deploy on D10 code (page_manager still unpatched there)
+ *   ... -- --verify-only            # POST-deploy, before updb: section 4 only, no saves
  *
  * Exit 1 if anything is refused or still throws. No exit(0) on success.
  */
@@ -42,8 +44,22 @@ use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Drupal\views\Entity\View;
 
-$argv_all = $_SERVER['argv'] ?? [];
-$apply = in_array('--apply', $extra ?? [], TRUE) || in_array('--apply', $argv_all, TRUE);
+$argv_all = array_merge($extra ?? [], $_SERVER['argv'] ?? []);
+$apply = in_array('--apply', $argv_all, TRUE);
+// --skip-verify : run the fixes (1-3b) but not section 4. For the PRE-deploy
+//   phase on Drupal 10 code: there page_manager 4.0.0 is still unpatched, so
+//   section 4 would report its PageVariants throwing — a true statement about
+//   the wrong moment. The fixes themselves are D10-safe, and saving config
+//   there is the right time: on D11 code against the D10 schema a config save
+//   can trigger a router rebuild that fails on the missing `alias` column.
+// --verify-only : section 4 only, no saves. For AFTER the deploy (patched
+//   page_manager, D11 code) and BEFORE updb: a preSave in memory touches no
+//   table, so it is safe on the old schema.
+$skip_verify = in_array('--skip-verify', $argv_all, TRUE);
+$verify_only = in_array('--verify-only', $argv_all, TRUE);
+if ($verify_only) {
+  $apply = FALSE;
+}
 $cf = \Drupal::configFactory();
 $etm = \Drupal::entityTypeManager();
 $efm = \Drupal::service('entity_field.manager');
@@ -73,6 +89,7 @@ $field_type = function (string $table, string $field) use ($etm, $efm): ?string 
   return NULL;
 };
 
+if (!$verify_only) {
 // ---------------------------------------------------------------------------
 print "1. Views field handlers whose formatter type is not a plugin id\n";
 $n1 = 0;
@@ -260,10 +277,13 @@ if (!$n3b) {
   print "   clean\n";
 }
 
+}
+
 // ---------------------------------------------------------------------------
+$throws = 0;
+if (!$skip_verify) {
 print "\n4. Replicating core's post-update loop (dry-run: preSave in memory; apply: save as core would)\n";
 $cm = \Drupal::service('config.manager');
-$throws = 0;
 foreach ($cm->findConfigEntityDependenciesAsEntities('module', ['help']) as $e) {
   try {
     // Core's loop is: calculateDependencies(), compare, SAVE if changed — and
@@ -286,6 +306,10 @@ foreach ($cm->findConfigEntityDependenciesAsEntities('module', ['help']) as $e) 
   }
 }
 printf("   %s\n", $throws ? "$throws still throw" : 'none throw');
+}
+else {
+  print "\n4. (verification skipped — run again with --verify-only after the deploy)\n";
+}
 
 print "\n=== RESULT ===\n";
 printf("  items %s: %d\n", $apply ? 'actioned' : 'outstanding', $todo);

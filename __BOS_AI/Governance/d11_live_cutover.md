@@ -84,6 +84,15 @@ Composer on live moves core to 11.4.12, applies the four declared patches (a fai
 > commands bootstrap fine (the container rebuilds on the way in); only the router rebuild dies.
 > The first `cr` happens in step 7, after `updb`. Reproduced on Saturday's rehearsal.
 
+Then, still on live, **one `cr` that is expected to fail** — and must be run anyway:
+```bash
+drush cr -y ; echo "exit $? — expected 1: 'Unknown column alias' at the router rebuild"
+```
+It clears every cache bin and rebuilds the container *before* it reaches the router step and dies
+there. Without it, the first drush command on the new code hits the D10 cached container and
+fails with *"The …EntityFormDisplay class does not correspond to an entity type"* (rehearsed twice).
+Any other error from this `cr` is a stop.
+
 Then verify on live:
 ```bash
 grep -oE "const VERSION = '[^']+'" web/core/lib/Drupal.php                    # 11.4.12
@@ -131,12 +140,11 @@ to uid 1. From the LOCAL shell, with a uid-1 cookie:
 BASE=https://brookstoneoutdoors.com; JAR=$(mktemp)
 U="$(ssh brookstone 'cd /home/brookstoneadmin/brookstone && /opt/alt/php83/usr/bin/php -d memory_limit=5120M vendor/drush/drush/drush.php uli --no-browser' | tr -d '\r' | grep -o 'http[^ ]*' | head -1)"
 curl -s -c $JAR -b $JAR -L -o /dev/null "$U"
-curl -s -b $JAR -c $JAR -o /tmp/sel.html "$BASE/update.php/selection"            # read: "74 pending updates"
-FB=$(grep -oE 'name="form_build_id" value="[^"]+"' /tmp/sel.html | head -1 | sed -E 's/.*value="([^"]+)".*/\1/')
-FT=$(grep -oE 'name="form_token" value="[^"]+"' /tmp/sel.html | head -1 | sed -E 's/.*value="([^"]+)".*/\1/')
-LOC=$(curl -s -b $JAR -c $JAR -o /dev/null -w '%{redirect_url}' -X POST --data-urlencode "form_build_id=$FB" --data-urlencode "form_token=$FT" --data-urlencode "form_id=update_script_selection_form" --data-urlencode "op=Apply pending updates" "$BASE/update.php/selection")
-ID=$(echo "$LOC" | grep -oE 'id=[0-9]+' | cut -d= -f2); echo "batch $ID"
-N=0; while :; do EFF=$(curl -s -b $JAR -c $JAR -L -o /tmp/b.html -w '%{url_effective}' --max-time 600 "$BASE/batch?id=$ID&op=do_nojs&op=do"); N=$((N+1)); case "$EFF" in *"/batch?"*) sleep 1;; *) break;; esac; done
+curl -s -b $JAR -c $JAR -o /tmp/sel.html "$BASE/update.php/selection"; grep -oE '[0-9]+ pending updates?' /tmp/sel.html   # read: 74
+# In this core the "Apply pending updates" control is a plain link, not a form: GET /update.php/run creates the batch.
+LOC=$(curl -s -b $JAR -c $JAR -o /dev/null -w '%{redirect_url}' "$BASE/update.php/run")   # → …/update.php/start?id=N&op=start
+STEP="$(printf '%s' "$LOC" | sed 's/op=start/op=do_nojs\&op=do/')"; echo "step URL: $STEP"   # built with sed on purpose: in bash 5.2 `${LOC/x/y}` expands `&` in y to the match (rehearsed: it produced do_nojsop=startop=do)                                 # update.php has ITS OWN batch endpoint — not /batch (rehearsed: /batch answers "error, try again later" forever)
+N=0; E=0; while :; do EFF=$(curl -s -b $JAR -c $JAR -L -o /tmp/b.html -w '%{url_effective}' --max-time 600 "$STEP"); N=$((N+1)); if grep -qiE 'error\. Try again later|unrecoverable error|unexpected error' /tmp/b.html; then E=$((E+1)); [ $E -ge 3 ] && { echo "error page x3 at step $N — STOP"; break; }; else E=0; fi; case "$EFF" in *"/update.php/start"*) sleep 1;; *) break;; esac; done
 echo "$N requests → $EFF"; grep -oiE 'updates? (was|were) performed[^<]{0,80}|failed[^<]{0,80}' /tmp/b.html
 ```
 Then on live: `drush updatedb:status` → "No database updates required". (`sleep 1` between steps:

@@ -395,7 +395,7 @@ not to block it. Step 0 is now hygiene rather than a gate:
 | 1 | ✅ **RE-CONFIRMED in the sandbox 2026-11-06** — zero D11 blockers in our own code still holds. See §4d | Already measured once; re-run after step 0 to re-baseline. `upgrade_status` 4.3.10 |
 | 2 | ✅ **LANDED in the sandbox 2026-11-06** (`d85e0441`) — `geofield` 1.67 → **10.3.5**, `geofield_map` 3.0.24 → **11.1.9**. **Verified except the final visual** — see §4a and §4b | **The risky one.** `field_geofield` is on every property; the crew's route and WO maps; Route Editor; winterize carry-forward. A silent regression would take out scheduling tooling mid-season |
 | 3 | ✅ **LANDED in the sandbox 2026-11-06** (`4694536e`) — `better_exposed_filters` 6.0.6 → **7.2.0**, three jQuery UI modules uninstalled. See §3.2a + §3.2b | Must be deliberate, not a side effect. BEF 7 turned out to *free* the jQuery UI modules rather than strand them |
-| 4 | `flag` 4.0-beta7 → 5.1.1, coordinated with retiring the legacy WO timer path | Legacy timer still coexists per `wo_clock` Phase A |
+| 4 | ✅ **LANDED in the sandbox 2026-11-06** (`b35855d3`) — `flag` 4.0-beta7 → **5.2.0**, **decoupled** from retiring the legacy timer. See §4e | The coupling was never real — flag was not a D11 blocker and 5.x keeps every API BOS calls. Timer retirement is its own roadmap row, for spring |
 | 5 | The remaining ordinary updates — `address` → 2.0.4, `inline_entity_form` → 3.0.0, plus the 17 NOT_CURRENT | Majors, but unexceptional |
 | 6 | **Core 10.6.20 → 11.4.x** | Last |
 
@@ -623,6 +623,74 @@ claim, not a verification.
 > 🚧 **Guardrail: do not enable `block_visibility_groups_admin` on Drupal 11** until 2.1.x has a
 > tagged release. Enabling it post-upgrade turns a dormant deprecation into a fatal. Bumping the
 > parent to 2.0.5 during step 5 is fine and changes nothing about this.
+
+---
+
+### 4e. Step 4 as-built — `flag` 4.0-beta7 → 5.2.0, decoupled (2026-11-06, `b35855d3`)
+
+**Todd chose option A: upgrade flag on its own; retire the legacy flag timer separately,
+off-season.** The runbook had coupled them ("coordinated with retiring the legacy WO timer
+path"). Measured, the coupling was never real:
+
+| Question | Answer | Evidence |
+|---|---|---|
+| Does flag block D11? | **No** | 4.0-beta7 already declares `^10.3 \|\| ^11`; `upgrade_status` found nothing in it (§4d) |
+| Does 5.x break the legacy path? | **No** | `getFlagById`, `flag`, `unflag`, `getFlagging`, `getFlagId`, `getFlaggable` byte-identical across 4.0-beta7 / 5.1.1 / 5.2.0; entity id still `flagging`; same submodules |
+| Does anything pin flag to 4.x? | **Only the root constraint** | `rules_flag` 1.0.5 requires `drupal/flag: *` |
+
+Target moved to **5.2.0** — the runbook's 5.1.1 had already gone stale.
+
+**composer:** 0 installs, 1 update, 0 removals. **One DB update,** `flag_update_10301`, which adds
+flood-control settings **disabled by default for every flag** — no behaviour change.
+
+#### How alive the legacy path is
+
+Of **3,952** `wo_time_clock` entries since `wo_clock` shipped (2026-07-03), **9** have
+`field_source = 'flag'` (0.2%) — **all lawn mowing, 7 of them one crew member (uid 6740)**.
+Nobody presses the old button: `WOLawnMowingTaskController` and `WOSnowRemovalTaskController`
+**flag `work_order_timer` automatically** when crew start the task-list flow. Snow has the same
+door and has been silent only because the data covers summer — **it is in season now**, which
+is why retirement is a spring job and why the upgrade had to leave the path working.
+
+Two misreadings worth not repeating: the newest `work_order_timer` flagging (2026-05-27)
+predates `wo_clock` itself, and the **232** present flaggings are not history — Flag *deletes*
+a flagging on unflag, so they are timers that were **never unflagged**. Flagging counts cannot
+measure usage; `field_source` can.
+
+#### Verification
+
+`web/scripts/test_flag_timer_path.php` drives the path exactly as the task controllers do
+(`flag()` / `unflag()` as a crew user, for `lawn_mowing` and `snow_removal`) and asserts the
+flagging is created, `field_wo_timer_entered` — **a field on the flagging entity itself**, so part
+of what an upgrade could break — links a `wo_time_clock` entry with `field_source = 'flag'`,
+open, then closed on unflag. **20/20 on 4.0-beta7, 20/20 on 5.2.0.**
+
+Also after: all **234** flaggings intact · `field_wo_timer_entered` preserved · 6 flags load ·
+**9 flag Views handlers, 0 unresolvable** · the `flag_work_order_timer` extra field still defined ·
+12-page smoke 200 including `/admin/structure/flags` and a real WO page with flag markup ·
+geofield 7/7 · BEF clean · **zero watchdog errors from the upgrade** (the single flag-type error
+is timestamped 20:52:25, five minutes before `composer.lock` was written at 20:57:20 — the test's
+own pre-upgrade run hitting the Canceled guard).
+
+> ### ⚠ The test changed billing on a Complete WO — and why it now runs in a rolled-back transaction
+>
+> The first version cleaned up its flagging and time entry by hand. It still left Complete snow
+> WO **40049 re-billed from $16.25 to $100.00** (task rate 0 → 100), hours unchanged. A plain
+> `$wo->save()` with **no flag at all** reproduces it — three old Complete snow WOs with empty
+> billing gained $16.25 each. So **re-saving a Complete WO re-bills it under today's contracts and
+> rates**: a BOS property, not a flag one. Adding a time entry triggers it because
+> `wo_total_time` re-saves the parent WO.
+>
+> Two consequences. **The test** now runs each bundle in a DB transaction that is always rolled
+> back, then asserts every `field_*` on the WO is identical — hand-cleanup cannot be trusted to
+> leave data as found. **The behaviour itself** is logged as its own item (`deferred_work.md`,
+> ROADMAP *Governance / winter cleanup*). The four sandbox WOs touched before the rollback
+> version (40049, 32887–32889) were restored by direct field-table writes, since an entity save
+> would re-bill them again; 40049 verified identical to the untouched main dev env.
+>
+> Also learned on the way: the test must not pick an **Open** WO (clock-in moves it to In
+> Progress via a `wo_status_updates` record — it did, to WO 49466, reverted) or a **Canceled** one
+> (a guard rightly refuses time entries there).
 
 ---
 

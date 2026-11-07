@@ -748,3 +748,46 @@ Check whether a newer VBO release fixes it before writing a patch.
 **Mitigation that costs nothing meanwhile:** avoid live drush runs that
 invalidate caches while crew or office are on the site — the standing rule for
 `drush cr` applies to any cache-invalidating run.
+
+## Re-saving a Complete WO re-bills it under TODAY's contracts and rates
+
+**Surfaced 2026-11-06** (D11 step 4, in the sandbox — nothing touched on live).
+A plain `$work_order->save()` on a **Complete** (1097) snow-removal WO, with no
+flag and no time entry involved, recomputes its billing in the `wo_*` presave
+using **current** contract state and rates rather than those in force when it
+was completed:
+
+| WO | stored (and on the untouched main dev env) | after one re-save |
+|---|---|---|
+| 40049 | labor 16.25 · task rate 0.00 · **total 16.25** | labor 0.00 · task rate 100.00 · **total 100.00** |
+| 32887, 32888, 32889 | billing fields **empty** | **total 16.25** each, plus `wo_profit` cost/profit |
+
+40049's hours were **unchanged** (0.02) — the difference is pure logic/contract
+drift. The re-save also logged *"No contracts found for Property ID …"*, which
+fits a contract-dependent rate falling back to a default when the property's
+contract for that year is gone or different.
+
+**Why it matters:** "re-save recomputes" is known by design
+(`wo_billing_recalc` re-saves Complete WOs on purpose; the backflow doc says
+completed WOs "keep their frozen totals **unless re-saved**"). The undocumented
+part is the *consequence*: **anything that re-saves a historical WO silently
+changes what it bills** — a forgotten time entry added later (wo_clock or the
+legacy flag path, via `wo_total_time` re-saving the parent), a billing-child
+edit (`wo_billing_recalc`), a VBO re-save (`wo_actions`). Rule 7 makes BOS
+authoritative over accounting, so a changed historic total is a real
+reconciliation hazard if that WO is ever re-exported or reported on.
+
+**Not yet known:** whether other bundles drift the same way (only snow removal
+was measured), and how often live actually re-saves a WO completed in a prior
+season. Measure before designing anything — e.g. count live WOs whose
+`changed` is a season or more after their completion date.
+
+**Candidate shape of a fix (not decided):** freeze billing at completion and
+recompute only on an explicit, logged admin action, or recompute only when the
+inputs that feed billing actually changed. Either touches every `wo_*` presave
+and `wo_billing_recalc` — design it, do not patch one bundle.
+
+**Test hygiene that came out of it:** `web/scripts/test_flag_timer_path.php`
+(on `feature/drupal-11-upgrade`) runs inside a DB transaction that is rolled
+back, because hand-cleanup of the flagging and time entry still left 40049
+re-billed. Any test that touches a time entry on a Complete WO needs the same.

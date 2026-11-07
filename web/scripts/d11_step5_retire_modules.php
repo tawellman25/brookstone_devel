@@ -198,6 +198,43 @@ else {
 }
 
 // ---------------------------------------------------------------------------
+// 3. Modules that FATAL on class load against core 11.4 and are unused.
+//    Found by web/scripts/scan_class_compat.php during step 6 (2026-11-07):
+//      imagefield_tokens 3.2.0 — ImageFieldTokensFormatter::$currentUser type
+//        no longer matches core's ImageFormatter; 3.2.0 is the newest release.
+//        Loaded by formatter plugin discovery, so it took the HOME PAGE down.
+//        0 displays, 0 config deps, 0 custom code.
+//      metatag_views 2.2.6 — MetatagViewsTranslationController::$entityTypeManager
+//        typed where core's ControllerBase leaves it untyped; 2.2.x unchanged.
+//        0 views carry per-view metatags. Submodule of metatag (which stays).
+//    Both ENABLED on live (read-only check 2026-11-07). Uninstall only when
+//    nothing depends on them; refuse otherwise. imagefield_tokens is then
+//    removed from composer; metatag_views lives inside the metatag package.
+// ---------------------------------------------------------------------------
+print "\n3. Modules that fatal on class load against core 11.4 (unused)\n";
+foreach (['imagefield_tokens', 'metatag_views'] as $m) {
+  if (!$mh->moduleExists($m)) {
+    print "   $m: not enabled — nothing to do\n";
+    continue;
+  }
+  $deps = $dependents($m);
+  printf("   %s: config depending on it: %d%s\n", $m, count($deps), $deps ? ' — ' . implode(', ', $deps) : '');
+  if ($deps) {
+    print "   *** REFUSING — in use\n";
+    $refused++;
+    continue;
+  }
+  $todo++;
+  if ($apply) {
+    $mi->uninstall([$m]);
+    print "   -> uninstalled $m\n";
+  }
+  else {
+    print "   then: uninstall $m\n";
+  }
+}
+
+// ---------------------------------------------------------------------------
 print "\n=== RESULT ===\n";
 printf("  items %s: %d\n", $apply ? 'actioned' : 'outstanding', $todo);
 if ($refused) {
@@ -205,7 +242,8 @@ if ($refused) {
   exit(1);
 }
 if ($apply) {
-  print "  now, in this environment: composer remove drupal/editablefields drupal/migrate_file\n";
+  print "  now, in this environment: composer remove drupal/editablefields drupal/migrate_file drupal/imagefield_tokens\n";
+  print "  (dry-run a composer remove first and read its removal list: it takes unrequired dependents with it)\n";
   print "  then: drush cr, and re-check that /admin/client/qb_export_list still shows the cell-number column\n";
 }
 elseif ($todo) {

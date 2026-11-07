@@ -16,6 +16,13 @@ show it**, which means the login is the reseller `toddwell`, not `root`. **So:**
 - **Otherwise → Path B** (`update.php`; measured 673 MB peak per request, under the 1 GB ceiling;
   ≈20–30 min) **with step 0b below**. No root needed. Both paths are fully written.
 
+**DECIDED Saturday 2026-11-07 evening: Path B.** Todd confirmed the WHM login is `toddwell`
+(reseller — no LVE Manager, no root). Step 0a is **skipped**; step 0b is **done and verified
+read-only** (`max_execution_time=600` in `~/.cl.selector/alt_php83.cfg`). Sunday starts at the
+⚠ SSH check, then step 0. `date.timezone=UTC` in the PHP ini was questioned and **left alone**:
+Drupal's `system` `TimeZoneResolver` sets the timezone per request from `system.date`
+(live: `America/Denver`); the ini value never reaches a page.
+
 ## Fixed facts used below
 
 | | |
@@ -34,7 +41,7 @@ show it**, which means the login is the reseller `toddwell`, not `root`. **So:**
 - [ ] Rehearsal green end-to-end **using only the committed scripts** — any hand fix became a script change, committed, pushed.
 - [ ] Branch pushed; `brookstone-d11` checkout clean on `feature/drupal-11-upgrade`.
 - [ ] Numbers above filled in and under the ceiling.
-- [ ] Todd has clicked through the sandbox on live data: maps, a contract edit **saved**, a WO sign-off, dispatch, Route Editor, QB export list.
+- [ ] Todd has clicked through the sandbox on live data: maps, a contract edit **saved**, a WO sign-off, dispatch, Route Editor, QB export list. **Still open Saturday night — do it Sunday morning before step 0 if not done; it is the only check nobody has run.**
 
 ## T-0 — Sunday
 
@@ -155,7 +162,7 @@ Expected FATAL lines and nothing else: `ai_search` (disabled), `bos_contract_mig
 
 ### 6. The one-way door — pick the path first
 
-**Path A — the chosen path: ceiling raised in step 0a, run `updb` as rehearsed (22 min, 74/74).**
+**Path A — only if root WHM turned up and step 0a was done: run `updb` as rehearsed (22 min, 74/74). NOT the chosen path as of Saturday night.**
 ```bash
 drush updatedb:status                                                         # expect 74 on LIVE: 45 core + 29 contrib (BEF, flag, address, ai, metatag, captcha…) that dev had already absorbed in steps 2–5
 # GNU time is NOT installed on live: sample peak RSS of the php processes in the background instead.
@@ -169,8 +176,8 @@ drush updatedb:status                                                         # 
 ```
 Record the two `date` stamps and the peak RSS in the runbook.
 
-**Path B — `update.php`, one web request per batch step, each a bounded process — the FALLBACK,
-measured Saturday on the kept dump:** all 74 updates applied; **peak PHP-worker RSS 673 MB, p95
+**Path B — THE CHOSEN PATH (decided Saturday night, see top). `update.php`, one web request per
+batch step, each a bounded process — measured Saturday on the kept dump:** all 74 updates applied; **peak PHP-worker RSS 673 MB, p95
 529 MB, median 186 MB** (3,207 one-second samples) — under the 1 GB ceiling with margin; the heavy
 steps are the views/BEF post-updates at **23–179 s per request**, so budget **≈20–30 min** of work
 (my loop then spun for 50 min on the finished batch — hence the pending-count stop rule below).

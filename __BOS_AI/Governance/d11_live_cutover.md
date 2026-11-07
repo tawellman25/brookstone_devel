@@ -8,9 +8,13 @@ file is the how). Status-of-record stays `ROADMAP.md`.
 **Rehearsal numbers (Saturday):** `drush updb` on a fresh live dump — **74/74 updates, 0 errors, wall
 22:00, peak RSS 1,313,976 KB ≈ 1.25 GB** (GNU `time -v`; the largest single child process). Live's
 binding limit is **1 GB PMEM** (CloudLinux LVE — `/proc/lve` is present; the box has 15.4 GB RAM,
-~10 GB free), so that process would be killed. **Decided Saturday with Todd: Path A — raise the
-account's PMEM for the window and run `updb` as rehearsed.** Path B (`update.php`) stays written
-below as the fallback.
+~10 GB free), so that process would be killed. **Saturday evening, measured on live:** a 1.5 GB allocation in one
+PHP process is **killed (exit 137)** — the ceiling is real — and `/proc/lve` shows full LVE
+(`resellers`, `per-lve`, `list`), i.e. LVE Manager exists on this box. **Todd's WHM login does not
+show it**, which means the login is the reseller `toddwell`, not `root`. **So:**
+- **Root WHM available by morning → Path A** (step 0a, then `updb` as rehearsed, 22 min).
+- **Otherwise → Path B** (`update.php`; measured 673 MB peak per request, under the 1 GB ceiling;
+  ≈20–30 min) **with step 0b below**. No root needed. Both paths are fully written.
 
 ## Fixed facts used below
 
@@ -48,6 +52,26 @@ old ceiling and see the process survive:
 /opt/alt/php83/usr/bin/php -d memory_limit=3G -r '$a = str_repeat("x", 1500 * 1024 * 1024); echo "1.5 GB allocated: OK\n";'
 ```
 "OK" = the new limit is in effect. "Killed" = it is not; do not go past step 5 until it is.
+
+### 0b. cPanel — Path B's one prerequisite (no root needed)
+Live's web PHP (Alt-PHP 8.3 via CloudLinux PHP Selector) runs with a per-user **`memory_limit=2G`**
+already (`~/.cl.selector/alt_php83.cfg`) but the global **`max_execution_time=60`** — and the
+heaviest `update.php` steps ran up to **179 s** in the rehearsal. In cPanel (the account, not
+WHM): **Select PHP Version → Options → `max_execution_time` = 600** for the window; back to 60
+after step 9. Verify from the shell, read-only: `grep max_execution_time ~/.cl.selector/alt_php83.cfg`
+should show 600. (Note `max_execution_time` counts CPU time on Linux, not wall time; 600 is
+margin, not a prediction.)
+
+### ⚠ Before anything: confirm SSH works, and touch nothing else in WHM
+On Saturday evening, something opened or saved in WHM (most likely "Modify an Account" with the
+`toddwell_BOS` package defaults) **switched the account's shell access off** — `ssh brookstone`
+answered *"Shell access is not enabled on your account"* until **Manage Shell Access → Normal
+Shell** restored it. The deploy, the backups and `updb` all need SSH. First command of the day:
+```bash
+ssh brookstone 'echo shell OK'
+```
+and make no WHM change on Sunday beyond step 0a (if root) — each one risks a side effect at the
+worst moment.
 
 ### 0. Backups — nothing else starts until both exist and their sizes make sense
 ```bash
@@ -208,6 +232,6 @@ Then the step-8 loop. The failed tree stays on disk for the post-mortem in the s
 - [ ] LOCAL: `cd /home/todd/code/brookstone && git merge --ff-only feature/drupal-11-upgrade && git push` — `main` is the live reference.
 - [ ] Re-seed Todd's main dev env from a **post-cutover** live dump (`composer install` there first — main is D11 now).
 - [ ] ROADMAP: move the D11 item to Shipped with the hashes and the measured numbers; change_log entry.
-- [ ] WHM: PMEM for `brookstoneadmin` back to **1024 MB**.
+- [ ] WHM: PMEM for `brookstoneadmin` back to **1024 MB** (Path A) · cPanel: `max_execution_time` back to **60** (Path B).
 - [ ] Remove `https://brookstone-d11.ddev.site/*` from the Google Maps key's referrer list; delete the sandbox project when the dev env is re-seeded.
 - [ ] Parked decisions resume: `calendar` retirement, `ai_ckeditor`, `phpspreadsheet`, `ban`/`contact` (Drupal 12).

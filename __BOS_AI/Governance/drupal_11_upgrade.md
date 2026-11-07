@@ -397,7 +397,7 @@ not to block it. Step 0 is now hygiene rather than a gate:
 | 3 | ✅ **LANDED in the sandbox 2026-11-06** (`4694536e`) — `better_exposed_filters` 6.0.6 → **7.2.0**, three jQuery UI modules uninstalled. See §3.2a + §3.2b | Must be deliberate, not a side effect. BEF 7 turned out to *free* the jQuery UI modules rather than strand them |
 | 4 | ✅ **LANDED in the sandbox 2026-11-06** (`b35855d3`) — `flag` 4.0-beta7 → **5.2.0**, **decoupled** from retiring the legacy timer. See §4e | The coupling was never real — flag was not a D11 blocker and 5.x keeps every API BOS calls. Timer retirement is its own roadmap row, for spring |
 | 5 | ✅ **DONE in the sandbox 2026-11-07** (`490e2357` · `0caf5a53` · `1abf26a5` · `4c9bdb8a` · 5d) — `address` → **2.0.6**, `inline_entity_form` → **3.0.0**, 33 minors, `jcarousel`/`poll` removed, `editablefields`/`migrate_file` retired. **`composer why-not drupal/core 11.4.12` names nothing — the gate is clear.** See §4f | Measured gate, not the roadmap's guess: composer itself named six blockers; all six resolved |
-| 6 | **Core 10.6.20 → 11.4.x** | Last |
+| 6 | ✅ **DONE in the sandbox 2026-11-07** (`8d6e1f2b` core · `2cf33a33` tooling · `6dcc03d0` declarations) — **core 10.6.20 → 11.4.12**, all 45 DB updates, every harness green, data identical. See §4g | Last — and the door had five things in it that no earlier step could see |
 
 ### 4a. Step 2 as-built — geofield / geofield_map (landed 2026-11-06, `d85e0441`)
 
@@ -878,6 +878,137 @@ Live still has `action`/`forum`/`tour` enabled (step 0), the three jQuery UI mod
 (step 3), and `migrate_file` + `editablefields` enabled. Every step-0/3/5 module change must be
 repeated there with the committed scripts, after a fresh live DB re-seed and a full re-run in the
 sandbox (§5).
+
+---
+
+### 4g. Step 6 as-built — core 10.6.20 → 11.4.12 (2026-11-07)
+
+**Commits on `feature/drupal-11-upgrade`:** `8d6e1f2b` (the core move: composer, scaffold, patch),
+`2cf33a33` (tooling: class-load scanner, config-fix pre-flight, retire-script extension),
+`6dcc03d0` (44 `info.yml` declarations). **Snapshot taken first:** `db-pre-step6.sql.gz` (149 MB,
+gitignored, in the sandbox root) — the one-way door needs an undo, and this had it.
+
+**Result:** Drupal **11.4.12** on PHP 8.3.27 / MariaDB 11.4.8, Symfony **7.4.23**, Twig 3.30. All
+**45** database updates complete, 0 errors. Every committed harness green (geofield 7/7, BEF 0 failed,
+legacy flag timer 20/20, address/IEF forms 9/9, address md5s identical, step scripts all "0
+outstanding"). **Every entity count identical to the pre-step baseline** (49,471 WOs · 2,561
+properties · 4,539 contracts · 34,136 time entries · 3,767 users · 3,712 profiles · 998 terms · 234
+flaggings). 6,489 widget + 7,389 formatter refs resolve, VBO 57/0, views-handler audit **27** (was 29:
+the deleted view carried two). 21 logged-in surfaces 200 incl. contract edit, WO page, Route Editor,
+business_setting, mailer config; public pages 200; **`/jsonapi` anon → 401** (`bos_jsonapi_guard`
+survives the Symfony major); `bos_edge_cache` still emits its header. **0 watchdog errors**, cron
+clean. Status report: the **core security-coverage warning is gone**; Warnings 11 → 9.
+
+#### How the code moved
+
+`composer update drupal/core-recommended drupal/core-composer-scaffold drupal/core-project-message
+chi-teck/drupal-code-generator -W` — **targeted, not a full `-W`**. The full dry-run would also have
+moved `smart_date` to 4.3.1 and tripped `composer-exit-on-patch-failure` mid-install, leaving a
+half-moved vendor tree. `chi-teck/drupal-code-generator` (Drush's generator) was the sole non-core
+Symfony-6 pinner, found with `composer why-not symfony/console 7.4.23`. 6 installs, 28 updates,
+0 removals. The local core patch applies to 11.4.12 — both hunks verified on disk.
+
+> **`config.allow-plugins.symfony/runtime` must be `true`.** Drupal 11.4's scaffolded `index.php`
+> and `update.php` boot through `vendor/autoload_runtime.php`, which only that plugin generates.
+> I set it `false` first, on the recollection that Drupal's front controller does not use
+> `symfony/runtime` — true through 11.3, **wrong for 11.4**, and recalled instead of measured. The
+> symptom is the one worth remembering: **the home page returned HTTP 200 with PHP fatal text as
+> its body** (a fatal before Drupal's error handler is a 200). Status codes proved nothing; reading
+> the body did.
+
+Scaffold rewrote 8 tracked docroot files (`index.php`, `update.php`, `.ht.router.php`,
+`example.gitignore`, `default.settings.php`, `default.services.yml`, `development.services.yml`,
+`.gitattributes`) and added `recipes/README.txt` and `web/.gitignore` (which ignores the generated
+`web/autoload_runtime.php`). `web/.htaccess` and `robots.txt` are scaffold-excluded — the
+`bos_edge_cache` `CacheLookup` block is intact. **These rsync to live with the deploy; live's
+`composer install` regenerates both `autoload_runtime.php` files.**
+
+#### What stood in the door — in the order it was met
+
+`drush updb` on 11.4.12 lists **45** updates (14 schema, 31 post-update). It crashed **four times**.
+None of the causes were visible from Drupal 10, and the first two were PHP **compile-time fatals in
+contrib that declares `^11`**.
+
+| # | Crash | Cause | Fix |
+|---|---|---|---|
+| 1 | fatal at `search_update_11401` | **`smart_date` 4.2.5** `SmartDateItemNormalizer::normalize()` return type no longer compatible with core 11.4's `TimestampItemNormalizer::normalize(): array` | → **4.3.1** (matches). Its declared patch fails on 4.3.x → **dropped**. The two `calendar` views it fed (0 visits Oct+Nov) now have Broken date arguments |
+| 2 | fatal at `search_update_11401` (resumed) | **`imagefield_tokens` 3.2.0** `$currentUser` property type vs core's `ImageFormatter`. Loaded by **formatter plugin discovery**, so it also took the home page down | **Retired** (0 displays, 0 deps, 0 code; newest release). Same for **`metatag_views`** (typed `$entityTypeManager` vs `ControllerBase`; 0 views carry metatags). Both still **enabled on live** → retire-script section 3 |
+| 3 | `Error` in **core's** `search_post_update_search_help_dependencies()` | **`page_manager` 4.0.0** `PageVariant::calculateDependencies()` returns the **array**, not `$this` (pre-8.0 contract); core chains `->getDependencies()` on it. `8.x-4.x` dev has the same bug | **One-line declared patch** `patches/page_manager-calculateDependencies-return-this.patch` (second entry beside the existing MR34 patch) |
+| 4 | the same post-update, three more times | It recalculates **and saves** all **347** config entities depending on `help`. Three **pre-existing config faults** throw on that path: a views field formatter `integer` on an `id` base field (plugin is `number_integer`), a `taxonomy_index_tid` filter with an **empty `vid`**, and a view on a **misspelled base table** `estmate_field_data` relating through a field its entity does not have | **`web/scripts/d11_step6_config_fixes.php`** — generic, dry-run first, guarded; the unloadable view is **deleted** (referenced by nothing, cannot open in Views UI; YAML printed before deletion). Plus a dead Layout Builder component spamming warnings |
+
+**The scanner that turned crash-at-a-time into a list.** After crash 2 I stopped: a
+class-declaration fatal fires the moment the class is *loaded*, so it can be provoked on purpose.
+`web/scripts/scan_class_compat.php` loads every class of every contrib + custom module, each module in
+its own child process, against the core on disk, and collects what dies. `upgrade_status` **cannot**
+see these — it analyses against the core you are leaving. Run of record: **7 fatal**, of which only
+**3 enabled** (`smart_date`, `imagefield_tokens`, `metatag_views`) plus one more enabled that a
+library pin fixes:
+
+- **`geocoder_geofield`** — its `Geometry::dump()` declares the `willdurand/geocoder` **4.x**
+  interface; **5.0.0** was installed (pre-existing on dev **and live**) with `dump(): mixed`. Pinned
+  `willdurand/geocoder: ^4.0` (module allows `^4|^5`; clean one-package downgrade). This is the
+  server-side geocode→geofield path `bos_service_request` uses on live.
+- **`s3fs`** — flagged, and **cleared without a patch**. Core **10.6.20 already has** the
+  four-parameter `ImageStyleDownloadController::deliver()`; s3fs 3.12's `S3fsImageStyleDownloadController`
+  overrides it with three. But s3fs's own route uses **`NewS3fsImageStyleDownloadController`**, a
+  `final` class that does **not** extend core's; the fataling class is referenced by tests and a
+  docblock only. **Live is not exposed.** The scanner cannot tell dead classes from live ones —
+  every FATAL it prints still needs reading.
+- `ai_search`, `bos_contract_migrate`, `xls_views_data_export` — all **disabled**; the last was
+  removed (dev-pinned, a `phpspreadsheet` 2.x pinner, disabled on live too).
+
+#### The hole in the sequencing — 45 `info.yml` files
+
+Drupal's own status report refused to call the site compatible: **40 custom modules and all 4 custom
+themes — both live themes — declared `core_version_requirement: ^10` or `^9 || ^10`.** All 44 now
+declare `^11` (`multipro` untouched: not installed, never referenced). **`upgrade_status` reported every
+one** — as *"Check manually: Value of core_version_requirement … is not compatible with the next major
+version"*, one line each among **19,415** "Check manually" items. The roadmap's "zero Fix now in our
+own code" was accurate and blind to the most mechanical blocker of all. The check that should have
+been run, and now is in §5: Drupal's verdict via `ExtensionList` `core_incompatible`.
+
+#### Mistakes of mine on this step, kept because the next run is on live
+
+1. **`allow-plugins: false`** from recollection (above). Measure the thing the plugin generates.
+2. **`git checkout composer.json`** to undo a dry-run's constraint edit — it reverted **every**
+   `composer.json` change of the step, silently; the next `composer require` did nothing. Rebuilt
+   with ensure-style edits; `git checkout` on a file with uncommitted work is never a small undo.
+3. **`composer remove xls_views_data_export` took `xls_serialization` with it** — not a root
+   requirement, but **enabled on dev and live** — the step-5d mistake repeated, without a dry-run.
+   Restored as the root requirement it should have been. **Dry-run every `composer remove` and read
+   the removal list against the enabled module list.**
+4. **The s3fs alarm** (above): read the route before reading the class.
+
+#### Also surfaced
+
+- Status report now flags **`ban` and `contact`** (core) as deprecated — removal in Drupal 12, not
+  11; and **"HTML5 validation: Enabled"** (new 11.4 advisory). Neither blocks anything.
+- `bos_contract_migrate` carries a stray duplicate `BosContractSectionsGenerator.php` under
+  `src/Plugin/migrate/source/process/` with the wrong namespace for its path — disabled module,
+  cleanup only.
+- `search_update_11400` installed the new **`search_node`** submodule (11.4 split it out of
+  `search`).
+
+#### The order live needs — every one of these is DB or environment state that git does not carry
+
+1. **Re-seed the sandbox from a fresh live DB and re-run this entire sequence** (§5) before anyone
+   touches production. Live differs from dev: `s3fs` enabled, `migrate_file` + `editablefields` +
+   `imagefield_tokens` + `metatag_views` enabled, `action`/`forum`/`tour` enabled, the three jQuery
+   UI modules enabled, `willdurand/geocoder` 5.0.0.
+2. On live, **before** the deploy: `d11_step0_cleanup.php --apply`, `drush pmu jquery_ui_datepicker
+   jquery_ui_slider jquery_ui_touch_punch`, `d11_step5_retire_modules.php --apply`, then
+   `d11_step6_config_fixes.php --apply`. Each **dry-run first, gate on the exit code**.
+3. Deploy the branch (rsync) — brings the 44 declarations, the scaffold files, the patches,
+   `composer.json` with `symfony/runtime: true`. Live's `composer install` moves core, applies all
+   four patches, regenerates both `autoload_runtime.php` files.
+4. `scan_class_compat.php` on live **before** `updb` — the enabled-module set must come back with
+   only the known dead/disabled fatals.
+5. `drush updb -y` — **45 updates; the views post-updates walk ~500 views.** Live's binding limit is
+   **1 GB PMEM** and a full `cr` there is OOM-killed at 5120M; run `updb` with the alt PHP at a
+   bounded `memory_limit` and expect to resume (`updb` is resumable — it was resumed four times here).
+   `updb` leaves **maintenance mode on** if it dies: `drush state:set system.maintenance_mode 0`.
+6. `cr`, then warm `/`, `/winterize`, `/colorado`, `/services/sprinkler-system` sequentially, then
+   the smoke above. Read **bodies**, not status codes.
 
 ---
 

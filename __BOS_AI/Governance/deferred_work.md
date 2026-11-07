@@ -841,3 +841,17 @@ also has a correctly-configured twin sort, so its SQL still orders. Singletons:
 status filters, correct the table name. Re-run the audit after; the count is the verdict. The
 healthy pattern to copy is already in the repo: `admin_billing` sorts on
 `wo_complete_info__field_date_completed.field_date_completed_value`.
+
+## `bos_contract_migrate` has a duplicate class file in the wrong directory
+
+**Surfaced 2026-11-07** by `web/scripts/scan_class_compat.php`. `src/Plugin/migrate/source/process/BosContractSectionsGenerator.php`
+declares `namespace Drupal\bos_contract_migrate\Plugin\migrate\process` — the namespace of the
+`src/Plugin/migrate/process/` directory, where no such file exists. PSR-4 can never load it by its
+declared name, and plugin discovery, deriving the class from the path, includes a file that declares
+a different class. The module is **Disabled** on dev and live (a Feeds-era migration helper, last
+touched in the 2026-03-01 "WIP snapshot" commit), so nothing runs it. Move the file to the directory
+its namespace names, or delete it if the generator was superseded.
+
+*Note on the "29 Views handlers render as Broken" item above:* the count is now **27** — step 6
+deleted `estimate_current_customer_info` (unloadable: misspelled base table) and the
+`d11_step6_config_fixes.php` script repaired the two entries that were aborting core's post-update.

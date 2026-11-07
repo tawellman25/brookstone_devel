@@ -1034,12 +1034,21 @@ forum term step 0 deletes on purpose, 0 watchdog errors).
 > process costs only **270 MB**, so this is one update accumulating state across its batch steps
 > inside drush's single `updatedb:batch-process` — not the views themselves.
 >
-> Two paths, both written into `d11_live_cutover.md`:
-> **A.** Raise the account's PMEM for the window (WHM answers on live's port 2087; CloudLinux LVE
-> Manager → `brookstoneadmin` → PMEM ≥ 2 GB) and run `updb` exactly as rehearsed.
-> **B.** Run the updates through **`update.php`**, where every batch step is its own web request and
-> therefore its own bounded process. Rehearsed on Saturday afternoon from the kept dump — see the
-> checklist for the measured per-request peak and duration.
+> Two paths, both in `d11_live_cutover.md`. **Decided Saturday with Todd: A.**
+> **A.** Live is CloudLinux (`/proc/lve`) on a 15.4 GB box with ~10 GB free; Todd has WHM. LVE
+> Manager → `brookstoneadmin` → **PMEM 3072 MB** for the window, proven from the account shell by
+> allocating 1.5 GB in a PHP process before the door; back to 1024 MB after. `updb` then runs
+> exactly as rehearsed: 22 min, 74/74.
+> **B (fallback, measured):** the same 74 updates through **`update.php`**, one web request per
+> batch step — all applied; **peak PHP-worker RSS 673 MB, p95 529, median 186**; the views/BEF
+> post-updates show up as individual 23–179 s requests; ≈20–30 min of work. Three things the
+> measurement cost: the no-JS endpoint is `op=do_nojs` **alone** (PHP keeps the last `op`, so the
+> Drupal-7-era `&op=do` drives the JSON endpoint — it still updates, but reports JSON and never
+> shows the finish); the healthy batch page carries *"An unrecoverable error has occurred"* in hidden
+> markup, so no text-based error detection — the pending count is the verdict; and a process
+> backgrounded inside a `ddev exec` session dies with it (`setsid`). Also: a web request ~50 s after
+> the code switch hit a stale-opcache error on the login page — live revalidates every 60 s, so
+> **no web request of any kind for a minute after the deploy.**
 
 #### The order live needs — every one of these is DB or environment state that git does not carry
 

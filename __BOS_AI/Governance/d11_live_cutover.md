@@ -108,7 +108,7 @@ there. Without it, the first drush command on the new code hits the D10 cached c
 fails with *"The …EntityFormDisplay class does not correspond to an entity type"* (rehearsed twice).
 Any other error from this `cr` is a stop.
 
-Then verify on live:
+Then verify on live (shell checks only — **no web request for 60 s after the deploy**, see Path B):
 ```bash
 grep -oE "const VERSION = '[^']+'" web/core/lib/Drupal.php                    # 11.4.12
 ls -la vendor/autoload_runtime.php web/autoload_runtime.php                   # both exist
@@ -145,10 +145,15 @@ drush updatedb:status                                                         # 
 ```
 Record the two `date` stamps and the peak RSS in the runbook.
 
-**Path B — `update.php`, one web request per batch step, each a bounded process.** Rehearsed
-Saturday afternoon from the kept dump: `[UPDATEPHP_STEPS]` requests, wall `[UPDATEPHP_TIME]`,
-peak PHP-worker RSS `[UPDATEPHP_RSS]`. The site is in maintenance mode; `update.php` is reachable
-to uid 1. From the LOCAL shell, with a uid-1 cookie:
+**Path B — `update.php`, one web request per batch step, each a bounded process — the FALLBACK,
+measured Saturday on the kept dump:** all 74 updates applied; **peak PHP-worker RSS 673 MB, p95
+529 MB, median 186 MB** (3,207 one-second samples) — under the 1 GB ceiling with margin; the heavy
+steps are the views/BEF post-updates at **23–179 s per request**, so budget **≈20–30 min** of work
+(my loop then spun for 50 min on the finished batch — hence the pending-count stop rule below).
+The site is in maintenance mode; `update.php` is reachable to uid 1. **Wait 60 s after the deploy
+before the first web request of any kind** — live's opcache revalidates every 60 s, and a request
+inside that window hit a stale-container error on the login page in the rehearsal. From the LOCAL
+shell, with a uid-1 cookie:
 ```bash
 BASE=https://brookstoneoutdoors.com; JAR=$(mktemp)
 U="$(ssh brookstone 'cd /home/brookstoneadmin/brookstone && /opt/alt/php83/usr/bin/php -d memory_limit=5120M vendor/drush/drush/drush.php uli --no-browser' | tr -d '\r' | grep -o 'http[^ ]*' | head -1)"
@@ -157,12 +162,14 @@ curl -s -b $JAR -c $JAR -o /tmp/sel.html "$BASE/update.php/selection"; grep -oE 
 # In this core the "Apply pending updates" control is a plain link, not a form: GET /update.php/run creates the batch.
 LOC=$(curl -s -b $JAR -c $JAR -o /dev/null -w '%{redirect_url}' "$BASE/update.php/run")   # → …/update.php/start?id=N&op=start
 STEP="$(printf '%s' "$LOC" | sed 's/op=start/op=do_nojs/')"; echo "step URL: $STEP"   # op=do_nojs ALONE. PHP keeps the last `op`, so the Drupal-7-era `op=do_nojs&op=do` drives the JSON (JavaScript) endpoint instead — it still processes updates, but reports JSON and never shows the finish (rehearsed). Built with sed: bash 5.2 expands & in ${x/y/z}.
-N=0; E=0; while :; do EFF=$(curl -s -b $JAR -c $JAR -L -o /tmp/b.html -w '%{url_effective}' --max-time 900 "$STEP"); N=$((N+1)); if grep -qiE 'unrecoverable error|unexpected error|Try again later' /tmp/b.html; then E=$((E+1)); [ $E -ge 3 ] && { echo "error page x3 at request $N — STOP"; break; }; else E=0; fi; case "$EFF" in *"/update.php/results"*) echo "results page at request $N"; break;; esac; grep -qi 'http-equiv="Refresh"' /tmp/b.html || { echo "finished at request $N"; break; }; sleep 1; done
+# No text-based error detection: the healthy batch page carries "An unrecoverable error has occurred" in hidden markup (it stopped two rehearsal runs). The verdict is the pending count, checked every 25 requests.
+PEND() { ssh brookstone 'cd /home/brookstoneadmin/brookstone && /opt/alt/php83/usr/bin/php -d memory_limit=5120M vendor/drush/drush/drush.php updatedb:status --format=json 2>/dev/null' | python3 -c 'import sys,json; d=sys.stdin.read(); print(len(json.loads(d)) if d.strip() else 0)'; }
+N=0; while :; do EFF=$(curl -s -b $JAR -c $JAR -L -o /tmp/b.html -w '%{url_effective}' --max-time 900 "$STEP"); N=$((N+1)); case "$EFF" in *"/update.php/results"*) echo "results page at request $N"; break;; esac; grep -qi 'http-equiv="Refresh"' /tmp/b.html || { echo "no meta-refresh at request $N"; break; }; if [ $((N % 25)) -eq 0 ]; then P=$(PEND); echo "request $N: $P pending"; [ "$P" = 0 ] && break; fi; sleep 1; done
 echo "$N requests → $EFF"; grep -oiE 'updates? (was|were) performed[^<]{0,80}|failed[^<]{0,80}' /tmp/b.html
 ```
-Then on live: `drush updatedb:status` → "No database updates required". (`sleep 1` between steps:
-live is shared.) If a step errors, the results page says which update; `drush updb` can resume
-the rest under Path A rules only.
+Then on live: `drush updatedb:status` → "No database updates required", then `drush cr`. (`sleep 1`
+between steps: live is shared.) If the loop ends with updates still pending, the last `/tmp/b.html`
+is the error page — read it; `drush updb` can resume the rest under Path A rules only.
 
 ### 7. Rebuild and warm — sequentially, sleep 3 between (live is shared)
 ```bash

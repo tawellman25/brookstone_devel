@@ -791,3 +791,53 @@ and `wo_billing_recalc` — design it, do not patch one bundle.
 (on `feature/drupal-11-upgrade`) runs inside a DB transaction that is rolled
 back, because hand-cleanup of the flagging and time entry still left 40049
 re-billed. Any test that touches a time entry on a Complete WO needs the same.
+
+## `phpoffice/phpspreadsheet` 2.4.7 carries three advisories and no fixed 2.x exists
+
+**Surfaced 2026-11-07** (D11 step 5). `composer audit` after the step-5 batch leaves exactly
+three advisories, all on `phpoffice/phpspreadsheet` 2.4.7: SSRF via `Drawing::setPath`
+(GHSA-2phh-27fw-q4gc), ODS reader CPU/memory exhaustion (GHSA-j2w7-387v-m2rq), XmlScanner
+bypass → XXE (GHSA-3x94-m842-937c). Affected `<=2.4.7`; fixed on `3.10.8+` and `5.10.0`.
+**There is no fixed release on the 2.x line**, so this cannot be closed by a minor update.
+
+**What pins it to 2.x** (`composer why`): root `^2.2`; `migrate_spreadsheet` 2.2.0 (`^1.29.1 ||
+^2.2.1`) — **Disabled**, 0 migrations use the spreadsheet source; `xls_views_data_export`
+3.0.x-dev (`^2.3`) — **Disabled**. The *enabled* consumer, `xls_serialization` 2.1.0 (one XLS
+export display, `admin_contracts_dethatching`), allows `^2.4.0 || ^3.10.0`. So the path is:
+remove the two disabled pinners, raise the root constraint, take **3.10.8+**.
+
+**Before that:** four custom services call the library directly — `supplier_price_ingest`
+`IngestParser`, `wo_material_list_management` `MaterialListImportService`, `bos_it_import`
+`ItEquipmentImportService`, `bos_wex_import` `WexFuelImportService`. Check their API surface
+against the 2 → 3 release notes (3.x removed deprecated reader/writer entry points) and run each
+importer's parser against a real file in the sandbox. Exposure today is bounded — BOS only parses
+XLSX/CSV uploaded by authenticated office roles — which is why this is logged rather than done.
+Not a D11 blocker (the library is not core-constrained).
+
+## 29 Views handlers render as the Broken handler — pre-existing, found by the D11 audit
+
+**Surfaced 2026-11-07.** `web/scripts/audit_views_handlers.php` resolves every handler the way
+Views does — through views **data** for `[table][field][type]`, not the `plugin_id` stored in
+config, which Views ignores for handlers — and reports 29 that fall back to the Broken handler.
+**Byte-identical on the untouched main dev env and on the D11 sandbox after every step-5 update**,
+so none of them came from the upgrade.
+
+Two recurring shapes. (1) A **`status` filter on an ECK entity type that has no `status` base
+field** — `zipcodes`, `contracts`, `city`, `contacts`, `sprinkler_types`, `crew_types`,
+`ownership_record`, `property_fertilizing_info`, `work_order` (`wo_time_clock_button`): a no-op,
+the view shows everything regardless. (2) A **date SORT configured as `field: field_x` instead of
+`field: field_x_value`** — Views registers sort/filter/argument on the *column* (`_value`), only
+the field handler on the bare name — so the sort silently never applies: `backflow_compliance`
+(`field_next_due_date`), the three `backflow_test_history_*` EVAs (`field_test_date`), the
+`equipment_*` fuel/defect/inspection/maintenance views. Effect varies and was checked on the
+built SQL: **`backflow_compliance` has no ORDER BY at all**; `equipment_fuel_transactions_admin`
+also has a correctly-configured twin sort, so its SQL still orders. Singletons:
+`estimate_current_customer_info` points at a **misspelled table `estmate_field_data`** (argument
++ relationship both broken); `admin_work_load` argument `created_year`;
+`teammate_manual_related_sops` argument on `sop__field_teammate_manual_pages`;
+`phone_number_changed_calendar` (a leftover `calendar`-module demo view) ×3.
+
+**Fix is per-view config** — rename the sort's `field` to the `_value` column, delete the no-op
+status filters, correct the table name. Re-run the audit after; the count is the verdict. The
+healthy pattern to copy is already in the repo: `admin_billing` sorts on
+`wo_complete_info__field_date_completed.field_date_completed_value`.

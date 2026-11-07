@@ -34,6 +34,8 @@ CloudLinux Manager; smallest ask, nothing for us to touch). **Sunday, right afte
 the step-0a proof** (`-d memory_limit=3G` 1.5 GB `str_repeat`): **OK → Path A**, **Killed → Path B**,
 which stays fully prepared (0b is done). `/proc/lve/list` is not readable as the account user, so
 the proof is the only read we have; cPanel → *Resource Usage* shows the current limits to Todd.
+**Later Saturday night: root is NOT available (Todd checked).** Route (1) is closed; only the
+support-ticket route (2) can still flip the proof to OK. **Working assumption for Sunday: Path B.**
 
 ## Fixed facts used below
 

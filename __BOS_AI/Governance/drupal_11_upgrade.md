@@ -234,6 +234,46 @@ their *sole* requirer are at risk — the roadmap's figure is correct.
 datepicker or slider widget in an exposed filter) **or** promote them to explicit root
 requirements in `composer.json`.
 
+#### 3.2a RESOLVED 2026-11-06 — uninstall them; BEF 7 is what frees them
+
+The "first confirming" above is now done, measured against BEF's tagged source. **The risk runs
+the opposite way to the assumption**: the worry was that upgrading BEF would strand these
+modules, but BEF 7 is precisely what makes them unnecessary.
+
+| | BEF 6.0.6 | BEF 7.2.0 |
+|---|---|---|
+| `composer.json` requires | `jquery_ui`, `jquery_ui_slider`, `jquery_ui_touch_punch`, `jquery_ui_datepicker` (all `*`) | **none of them** — only `drupal/nouislider_js ^15.8.1` |
+| `sliders` library | core/jquery | **`better_exposed_filters/nouislider`** |
+| `datepickers` library | core/drupal, drupalSettings, jquery | identical — **neither declares jQuery UI** |
+| `bef_datepickers.js` | `$('.bef-datepicker').datepicker(opt)` | **no jQuery UI call** — only applies default values |
+| rendered element | `['#type'] = 'date'` | `['#type'] = 'date'` — **unchanged** |
+| filter plugins | DatePickers, Sliders, Links, … | same **plus** a new `DatetimePicker` |
+
+**`bef_datepicker` IS in live use** — three office views, on a `created` filter:
+`admin_billing`, `admin_weed_spray_billing`, `admin_work_order_administration`. **They keep
+working.** Both versions render a native `#type => 'date'` input and submit identical values;
+what disappears is the jQuery UI **calendar overlay** BEF 6 attaches on top of it. `bef_sliders`
+has **zero** usages anywhere.
+
+> ⚠ **Tell the office.** Those are billing screens. The date filter will behave the same and
+> submit the same values, but the calendar pop-up becomes the browser's native one. A visible
+> change on a billing screen should be announced, not discovered.
+
+**Nothing else in BOS needs jQuery UI.** No custom module or theme references a `jquery_ui`
+library at all (grepped across `web/modules/custom` and `web/themes/custom`). The only real
+requirers among enabled modules are `field_group_accordion` → `jquery_ui_accordion` (itself the
+deprecated formatter the status report flags) and `module_filter` → `jquery_ui_autocomplete` →
+`jquery_ui_menu`.
+
+**So step 3 is a sequence, not a judgement call:** upgrade BEF 6.0.6 → 7.2.0 → uninstall
+`jquery_ui_datepicker`, `jquery_ui_slider`, `jquery_ui_touch_punch` (now genuinely unrequired —
+**do not** promote them to root requirements) → leave `jquery_ui`, `jquery_ui_accordion`,
+`jquery_ui_autocomplete`, `jquery_ui_menu` alone → tell the office about the date picker.
+
+*Status: verified from BEF's tagged source (composer.json, libraries.yml, the JS, the rendered
+element type). BEF 7.2.0 has **not** yet been installed in the sandbox, so this is a plan built
+on measurement, not a verified outcome.*
+
 ### 3.3 Pre-existing cleanups to clear before core moves
 
 All pre-existing on dev *and* live, and all small. Clear them while the baseline is
@@ -307,7 +347,7 @@ not to block it. Step 0 is now hygiene rather than a gate:
 | # | Step | Why here |
 |---|---|---|
 | 0 | ✅ **LANDED in the sandbox 2026-11-06** — the cleanups (§3.3), now **three** items not two: pending entity def, schema orphan, and the three D11-removed core modules (§3.3a). See §4c | Cleanups must predate core so they cannot be confused with upgrade fallout. The patch hardening (§3.1) is already applied |
-| 1 | `upgrade_status` across all ~60 custom modules | Already measured: **zero D11 blockers in our own code**. Re-confirm in this env; `upgrade_status` 4.3.10 is installed and enabled |
+| 1 | ✅ **RE-CONFIRMED in the sandbox 2026-11-06** — zero D11 blockers in our own code still holds. See §4d | Already measured once; re-run after step 0 to re-baseline. `upgrade_status` 4.3.10 |
 | 2 | ✅ **LANDED in the sandbox 2026-11-06** (`d85e0441`) — `geofield` 1.67 → **10.3.5**, `geofield_map` 3.0.24 → **11.1.9**. **Verified except the final visual** — see §4a and §4b | **The risky one.** `field_geofield` is on every property; the crew's route and WO maps; Route Editor; winterize carry-forward. A silent regression would take out scheduling tooling mid-season |
 | 3 | Settle the BEF jQuery UI trap (§3.2), then `better_exposed_filters` 6.0.6 → 7.2.0 | Must be deliberate, not a side effect |
 | 4 | `flag` 4.0-beta7 → 5.1.1, coordinated with retiring the legacy WO timer path | Legacy timer still coexists per `wo_clock` Phase A |
@@ -497,6 +537,47 @@ forum is otherwise provably empty. Run the report form on live first and read it
 live matches dev. It deliberately carries **no `exit(0)`**: `drush scr` treats an explicit
 `exit(0)` as abnormal termination and returns non-zero, which would make a clean run look like
 a failure to anything checking the status.
+
+---
+
+### 4d. Step 1 as-built — `upgrade_status` re-confirmed (2026-11-06)
+
+`drush us-a --all` in the sandbox, after step 0. **9 minutes, 91,045 lines.** Drush exits **3**
+when findings exist — that is the report's shape, not a failure.
+
+| Bucket | Baseline (2026-11-01) | Now | |
+|---|---|---|---|
+| **Fix now** | 1 | **1** | unchanged — and still **contrib, not ours** |
+| Check manually | 19,338 | 19,415 | +77, explained by the new geofield / geofield_map code this scan sees for the first time |
+| Ignore | 106 | **106** | unchanged (deprecated for D12, not D11) |
+
+**The headline holds: zero "Fix now" findings anywhere in `web/modules/custom`.** All ~60 custom
+modules remain clean of APIs D11 removes; the "Check manually" volume is overwhelmingly missing
+return type hints.
+
+#### The one "Fix now" — and why it is not a blocker
+
+`web/modules/contrib/block_visibility_groups/block_visibility_groups_admin/src/Plugin/ConditionCreator/RolesConditionCreator.php:39`
+calls `user_role_names()` — deprecated in 10.2.0 and **removed in 11.0.0**.
+
+**`block_visibility_groups_admin` is DISABLED on BOS** (the parent `block_visibility_groups`
+2.0.4 is enabled). That code never runs, so it cannot fatal.
+
+What makes it worth recording is the release picture:
+
+| Release | `core_version_requirement` | `user_role_names()` calls |
+|---|---|---|
+| **2.0.4** (installed) | `^9 \|\| ^10 \|\| ^11` | **3** |
+| 2.0.5 | `^10.3 \|\| ^11` | **3** |
+| 2.1.x (dev branch, **no tagged release**) | `^11 \|\| ^12` | **0 — fixed** |
+
+**The module advertises D11 compatibility while still calling a function D11 removed**, and the
+fix exists only on an untagged dev branch. A `core_version_requirement` is the maintainer's
+claim, not a verification.
+
+> 🚧 **Guardrail: do not enable `block_visibility_groups_admin` on Drupal 11** until 2.1.x has a
+> tagged release. Enabling it post-upgrade turns a dormant deprecation into a fatal. Bumping the
+> parent to 2.0.5 during step 5 is fine and changes nothing about this.
 
 ---
 

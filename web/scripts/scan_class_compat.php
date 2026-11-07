@@ -20,6 +20,7 @@
  * it registers the same PSR-4 roots DrupalKernel would):
  *
  *   ddev exec php web/scripts/scan_class_compat.php            # contrib + custom
+ *   /opt/alt/php83/usr/bin/php web/scripts/scan_class_compat.php   # on live: the site's PHP, never bare `php`
  *   ddev exec php web/scripts/scan_class_compat.php --all      # also core modules
  *   ddev exec php web/scripts/scan_class_compat.php --only=smart_date,imagefield_tokens
  *
@@ -104,12 +105,16 @@ if (($args[0] ?? '') === '--child') {
 $mapfile = sys_get_temp_dir() . '/scan_class_compat_map.json';
 file_put_contents($mapfile, json_encode($roots));
 $targets = array_filter($roots, fn($r, $n) => ($all || $r['kind'] !== 'core') && (!$only || in_array($n, $only, TRUE)), ARRAY_FILTER_USE_BOTH);
-printf("scanning %d module(s) against core on disk (%s)\n\n", count($targets), trim(shell_exec("php -r 'require \"$web/core/lib/Drupal.php\"; echo Drupal::VERSION;'") ?: '?'));
+// Children run the SAME php binary as this process. On cPanel/Alt-PHP hosts a
+// bare `php` on PATH is a different (older) interpreter than the one the site
+// runs on, and the scan would measure the wrong thing.
+$php = escapeshellarg(PHP_BINARY ?: 'php');
+printf("scanning %d module(s) against core on disk (%s) with %s\n\n", count($targets), trim(shell_exec("$php -r 'require \"$web/core/lib/Drupal.php\"; echo Drupal::VERSION;'") ?: '?'), PHP_BINARY);
 
 $fatal = 0;
 $optional = 0;
 foreach ($targets as $name => $r) {
-  $cmd = sprintf('php -d display_errors=1 -d error_reporting=E_ALL %s --child %s %s 2>&1', escapeshellarg(__FILE__), escapeshellarg($name), escapeshellarg($mapfile));
+  $cmd = sprintf('%s -d display_errors=1 -d error_reporting=E_ALL %s --child %s %s 2>&1', $php, escapeshellarg(__FILE__), escapeshellarg($name), escapeshellarg($mapfile));
   $out = shell_exec($cmd) ?? '';
   $json = NULL;
   if (preg_match('/\{"loaded".*\}$/s', trim($out), $m)) {

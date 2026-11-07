@@ -7,8 +7,10 @@ file is the how). Status-of-record stays `ROADMAP.md`.
 
 **Rehearsal numbers (Saturday):** `drush updb` on a fresh live dump — **74/74 updates, 0 errors, wall
 22:00, peak RSS 1,313,976 KB ≈ 1.25 GB** (GNU `time -v`; the largest single child process). Live's
-binding limit is **1 GB PMEM**, so that process would be killed. **Step 6 therefore has two paths;
-pick one before Sunday starts** (see step 6).
+binding limit is **1 GB PMEM** (CloudLinux LVE — `/proc/lve` is present; the box has 15.4 GB RAM,
+~10 GB free), so that process would be killed. **Decided Saturday with Todd: Path A — raise the
+account's PMEM for the window and run `updb` as rehearsed.** Path B (`update.php`) stays written
+below as the fallback.
 
 ## Fixed facts used below
 
@@ -33,6 +35,19 @@ pick one before Sunday starts** (see step 6).
 ## T-0 — Sunday
 
 Every `drush` below means the live invocation in the table. Run from the live shell unless marked LOCAL.
+
+### 0a. WHM — raise the memory ceiling for the window (Path A), and PROVE it took
+WHM → **CloudLinux LVE Manager** (a.k.a. CloudLinux Manager) → **Users** → `brookstoneadmin` → edit
+limits → **PMEM: 3072 MB** (3 GB — the measured need is one 1.25 GB child plus the ~150 MB drush
+parent; 3 GB is 2× headroom and the box has 10 GB free). Leave CPU/EP/IO alone. **Set it back to
+1024 MB after step 9.**
+
+Then prove it from the account shell — `lveinfo` is not visible to this user, so allocate past the
+old ceiling and see the process survive:
+```bash
+/opt/alt/php83/usr/bin/php -d memory_limit=3G -r '$a = str_repeat("x", 1500 * 1024 * 1024); echo "1.5 GB allocated: OK\n";'
+```
+"OK" = the new limit is in effect. "Killed" = it is not; do not go past step 5 until it is.
 
 ### 0. Backups — nothing else starts until both exist and their sizes make sense
 ```bash
@@ -116,9 +131,7 @@ Expected FATAL lines and nothing else: `ai_search` (disabled), `bos_contract_mig
 
 ### 6. The one-way door — pick the path first
 
-**Path A — raise the ceiling, run `updb` as rehearsed (22 min).** Needs WHM root on the VPS
-(it answers on port 2087): CloudLinux LVE Manager → user `brookstoneadmin` → **PMEM ≥ 2 GB** for
-the window (set it back after). Then:
+**Path A — the chosen path: ceiling raised in step 0a, run `updb` as rehearsed (22 min, 74/74).**
 ```bash
 drush updatedb:status                                                         # expect 74 on LIVE: 45 core + 29 contrib (BEF, flag, address, ai, metatag, captcha…) that dev had already absorbed in steps 2–5
 # GNU time is NOT installed on live: sample peak RSS of the php processes in the background instead.
@@ -143,8 +156,8 @@ curl -s -c $JAR -b $JAR -L -o /dev/null "$U"
 curl -s -b $JAR -c $JAR -o /tmp/sel.html "$BASE/update.php/selection"; grep -oE '[0-9]+ pending updates?' /tmp/sel.html   # read: 74
 # In this core the "Apply pending updates" control is a plain link, not a form: GET /update.php/run creates the batch.
 LOC=$(curl -s -b $JAR -c $JAR -o /dev/null -w '%{redirect_url}' "$BASE/update.php/run")   # → …/update.php/start?id=N&op=start
-STEP="$(printf '%s' "$LOC" | sed 's/op=start/op=do_nojs\&op=do/')"; echo "step URL: $STEP"   # built with sed on purpose: in bash 5.2 `${LOC/x/y}` expands `&` in y to the match (rehearsed: it produced do_nojsop=startop=do)                                 # update.php has ITS OWN batch endpoint — not /batch (rehearsed: /batch answers "error, try again later" forever)
-N=0; E=0; while :; do EFF=$(curl -s -b $JAR -c $JAR -L -o /tmp/b.html -w '%{url_effective}' --max-time 600 "$STEP"); N=$((N+1)); if grep -qiE 'error\. Try again later|unrecoverable error|unexpected error' /tmp/b.html; then E=$((E+1)); [ $E -ge 3 ] && { echo "error page x3 at step $N — STOP"; break; }; else E=0; fi; case "$EFF" in *"/update.php/start"*) sleep 1;; *) break;; esac; done
+STEP="$(printf '%s' "$LOC" | sed 's/op=start/op=do_nojs/')"; echo "step URL: $STEP"   # op=do_nojs ALONE. PHP keeps the last `op`, so the Drupal-7-era `op=do_nojs&op=do` drives the JSON (JavaScript) endpoint instead — it still processes updates, but reports JSON and never shows the finish (rehearsed). Built with sed: bash 5.2 expands & in ${x/y/z}.
+N=0; E=0; while :; do EFF=$(curl -s -b $JAR -c $JAR -L -o /tmp/b.html -w '%{url_effective}' --max-time 900 "$STEP"); N=$((N+1)); if grep -qiE 'unrecoverable error|unexpected error|Try again later' /tmp/b.html; then E=$((E+1)); [ $E -ge 3 ] && { echo "error page x3 at request $N — STOP"; break; }; else E=0; fi; case "$EFF" in *"/update.php/results"*) echo "results page at request $N"; break;; esac; grep -qi 'http-equiv="Refresh"' /tmp/b.html || { echo "finished at request $N"; break; }; sleep 1; done
 echo "$N requests → $EFF"; grep -oiE 'updates? (was|were) performed[^<]{0,80}|failed[^<]{0,80}' /tmp/b.html
 ```
 Then on live: `drush updatedb:status` → "No database updates required". (`sleep 1` between steps:
@@ -188,5 +201,6 @@ Then the step-8 loop. The failed tree stays on disk for the post-mortem in the s
 - [ ] LOCAL: `cd /home/todd/code/brookstone && git merge --ff-only feature/drupal-11-upgrade && git push` — `main` is the live reference.
 - [ ] Re-seed Todd's main dev env from a **post-cutover** live dump (`composer install` there first — main is D11 now).
 - [ ] ROADMAP: move the D11 item to Shipped with the hashes and the measured numbers; change_log entry.
+- [ ] WHM: PMEM for `brookstoneadmin` back to **1024 MB**.
 - [ ] Remove `https://brookstone-d11.ddev.site/*` from the Google Maps key's referrer list; delete the sandbox project when the dev env is re-seeded.
 - [ ] Parked decisions resume: `calendar` retirement, `ai_ckeditor`, `phpspreadsheet`, `ban`/`contact` (Drupal 12).

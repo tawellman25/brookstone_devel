@@ -37,7 +37,7 @@ ddev composer require <package>     # Add a Composer dependency
 ddev composer install               # Install all dependencies
 ```
 
-**Stack:** PHP 8.3, MariaDB 10.11 locally (live runs 11.4), nginx-fpm, Drupal 11.4.x (live and dev since 2026-11-07).
+**Stack:** PHP 8.3, MariaDB 11.4 (live and dev — dev re-seeded on 11.4 2026-11-08), nginx-fpm, Drupal 11.4.x (live and dev since 2026-11-07).
 **URL:** `https://brookstone.ddev.site`
 
 ### After DB Import
@@ -612,7 +612,7 @@ The UUID-stripping bug in BOS field-instance configs (CLAUDE.md "Drush cim quirk
 
 - `vendor/` — managed by Composer
 - `web/core/`, `web/modules/contrib/`, `web/themes/contrib/` — managed by Composer
-- **`web/libraries/` IS in git since 2026-11-08** (`829746cc`): `colorbox`, `dropzone`, `nouislider`, `dompurify` — static front-end libraries the enabled modules declare. It used to be gitignored yet rsynced with `--delete`, so a deploy from a fresh clone would have deleted them on live. Add a new library by committing it; nothing installs them on live but the deploy.
+- **`web/libraries/` IS in git since 2026-11-08** (`829746cc`): `colorbox`, `dropzone`, `nouislider`, `dompurify` — static front-end libraries the enabled modules declare. It used to be gitignored yet rsynced with `--delete`, so a deploy from a fresh clone would have deleted them on live. Add a new library by committing it; nothing installs them on live but the deploy. **Two folders there are composer's, not git's:** `fullcalendar_io` and `drupal-superfish` (`type:drupal-library` packages, deps of disabled modules) are gitignored and re-created by every `composer install`.
 - `web/sites/*/settings*.php`, `web/*/services*.yml` — environment secrets
 - `web/sites/*/files/` — user files (on S3)
 - `*.sql.gz`, `*.sql` — database dumps
@@ -635,9 +635,13 @@ obsoleted by upstream releases:
   leftover `?? []` may persist in an environment's copy until the next module update re-extracts
   it — no action needed.)
 
-Declared contrib patches (`drupal/core`, `smart_date`, `page_manager`,
-`views_aggregator`) are managed by **`cweagans/composer-patches`** via `composer.json`
-`extra.patches` and applied automatically on every `composer install`. **`contrib/` is
+Declared contrib patches (`drupal/core`, `page_manager` ×2, `views_aggregator`) are managed by
+**`cweagans/composer-patches`** 1.x via `composer.json` `extra.patches` and applied automatically on
+every `composer install`. **All four patch files live in `patches/` since 2026-11-08** (`26df1f3d`) —
+no remote URLs, so a drupal.org outage cannot stop a deploy. `composer.json` also carries
+`config.audit.ignore` for the three phpspreadsheet 2.4.7 advisories: composer 2.9's `block-insecure`
+otherwise refuses every `update --lock`/`require` while that version is locked; remove the ignores
+with the phpspreadsheet upgrade (ROADMAP). **`contrib/` is
 composer-managed** (installed on each environment by `composer install`, not committed/rsynced),
 so any future contrib patch must be declared in composer-patches — never a one-off manual `sed`,
 which silently vanishes on the next `composer install`/update.

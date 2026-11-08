@@ -869,12 +869,13 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
    `$settings['file_private_path']` at `~/private` and let Drupal write the `.htaccess`) or unset the
    private path if nothing uses `private://` (check field storages with `uri_scheme: private` first).
    Hygiene; 15 minutes.
-2. **Anonymous `access denied` on `/colorado/gunnison-county` — pre-existing, one crawler IP.**
-   Anonymous lacks `view any county entities of bundle county`; the same IP has been refused on the
-   same path since at least 2026-11-06. Decide whether county pages are *meant* to be public (the
-   `/colorado` state page is) and either grant the permission on the public view mode path or add a
-   `noindex`/404 so crawlers stop. `bos_geo`.
-3. ✅ **DONE 2026-11-08 05:14 UTC** — `web/libraries/` is **in git** (`829746cc`: ignore rule dropped, `colorbox` + `dropzone` + `nouislider` committed, **`dompurify` 3.4.17 added** from the npm registry with the tarball's sha512 verified against the registry's integrity field, `drupal-superfish` + `fullcalendar_io` deleted). Deployed `--skip-composer --no-maintenance`, dry run read first (262 library deletions, 5 new files, nothing else but the two `error_log`s and an empty AutoSSL dir), rsync 5 min, `cr` clean; live now serves all four library files (200), the removed folder 404s, DOMPurify md5 identical dev/live, Colorbox requirements both *Installed*, 0 watchdog rows after. The gitignored `docs/*.csv` / `docs/backups/*.json` / `properties_export.csv` / `export_properties.php` question is **still open** (below). *Original item:* **`web/libraries/` is gitignored but rsynced with `--delete`** — a deploy from any fresh clone
+2. ✅ **EXPLAINED 2026-11-08 — not a permissions bug.** The `county` entities: Delta `status=1`, Montrose
+   `status=1`, **Gunnison `status=0` (unpublished)**. Anonymous is refused on `/colorado/gunnison-county`
+   because the page is unpublished; office users see it because they may view unpublished content. Delta
+   and Montrose are public and 200. Todd is still writing Gunnison — publish it when ready and the 403 (8
+   rows / 1 crawler IP in the last 7 days) ends by itself. *Original item:* Anonymous `access denied` on
+   `/colorado/gunnison-county`, one crawler IP since at least 2026-11-06.
+3. ✅ **DONE 2026-11-08 05:14 UTC** — `web/libraries/` is **in git** (`829746cc`: ignore rule dropped, `colorbox` + `dropzone` + `nouislider` committed, **`dompurify` 3.4.17 added** from the npm registry with the tarball's sha512 verified against the registry's integrity field, `drupal-superfish` + `fullcalendar_io` deleted). Deployed `--skip-composer --no-maintenance`, dry run read first (262 library deletions, 5 new files, nothing else but the two `error_log`s and an empty AutoSSL dir), rsync 5 min, `cr` clean; live now serves all four library files (200), the removed folder 404s, DOMPurify md5 identical dev/live, Colorbox requirements both *Installed*, 0 watchdog rows after. The gitignored exports question: **deploy excludes added `c613ffc8` (2026-11-08 15:25 UTC), stray tracked `test.php` removed**; the 15 copies already on live come off with Todd's `~/tmp/cleanup_live_20261108.sh` (section 1, md5-gated). **Correction:** `drupal-superfish` + `fullcalendar_io` are composer-managed (`type:drupal-library`) and came back on the next `composer install` — now gitignored, see #13. *Original item:* **`web/libraries/` is gitignored but rsynced with `--delete`** — a deploy from any fresh clone
    deletes every manually installed library on live (`colorbox` is enabled; the touch-punch library
    went on 2026-11-07 on purpose). Either commit `web/libraries/` (small, rarely changes) or add it
    to the deploy script's exclude list and document that libraries are installed on live by hand.
@@ -908,14 +909,14 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
    Applied by Todd via the self-reverting `~/tmp/apply_trusted_hosts.sh` — the classifier blocks SSH
    writes into the live docroot, `scp` to `~/tmp` works. Status report: no error-level rows left.
    `change_log.md` 2026-11-08.
-6. **Two of the four composer patches are fetched from remote URLs at install time** (re-measured 2026-11-08: `views_aggregator` MR 27 on git.drupalcode.org, `page_manager` 3438993 on drupal.org; core and the second `page_manager` patch are local) — with
+6. ✅ **DONE 2026-11-08 15:25 UTC** (`26df1f3d`, deployed; `installed.json` on live records the local paths). *Original:* **Two of the four composer patches are fetched from remote URLs at install time** (re-measured 2026-11-08: `views_aggregator` MR 27 on git.drupalcode.org, `page_manager` 3438993 on drupal.org; core and the second `page_manager` patch are local) — with
    `composer-exit-on-patch-failure: true` armed, a drupal.org outage is now deploy-stopping.
    Localise them into `patches/` (the core patch already is). T3, 10 minutes.
 7. **Guardrail: do not enable `block_visibility_groups_admin` on Drupal 11** — 2.0.4/2.0.5 still
    call `user_role_names()` (removed in 11.0) despite declaring `^11`; the fix exists only on the
    untagged 2.1.x branch. The parent `block_visibility_groups` 2.0.4 is enabled and fine.
 8. **Drupal 12 deprecations seen along the way** — the D11 status report's full "Deprecated modules found" list on live (2026-11-08): `ai_ckeditor`, core `ban`, `contact`, `field_layout`, `history`, `layout_builder_expose_all_field_blocks`, `migrate_drupal`, `migrate_drupal_ui`, plus Field Group's accordion formatter. Also "DOMPurify library: Not installed" (CKEditor 5 warning, not an error). Nothing to do for 11; the planning input for 12 — each needs a usage check before uninstall (`history` feeds "new/updated" markers; `field_layout` may back entity displays).
-9. **Dev environments:** the primary `brookstone` DDEV project runs **MariaDB 10.11** while live and
+9. ✅ **DONE 2026-11-08 15:31 UTC** — primary dev re-seeded on **MariaDB 11.4.8-MariaDB-ubu2404-log** (`.ddev/config.yaml` `drupal11` / `11.4`; `ddev delete -Oy` → start → import of the 02:30 UTC nightly; no DB updates, 0 pending entity changes, 373 modules, smoke 200). The composer-version pin waits for the `brookstone-d11` deletion (HOLD). *Original:* **Dev environments:** the primary `brookstone` DDEV project runs **MariaDB 10.11** while live and
    the sandbox run **11.4** — the sandbox proved 11.4 is not a variable; moving dev to 11.4 at the next
    re-seed removes the last mismatch (`.ddev/config.yaml` is tracked; it needs a DB delete + import).
    The two DDEV images also carry different composer versions (2.9.2 vs 2.11.1), which rewrites the
@@ -932,14 +933,24 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
    so the live tree is safe. Not in the Google Maps key's Websites list (Todd checked 2026-11-08). Decide `mcp.brookstoneoutdoors.com` too (own docroot with only a
    422 B `.htaccess` from 2026-08-30, `cgi-bin`, 0 hits in both logs). Roadmap row under the D11
    follow-ups. T3. Not in the Google Maps key's Websites list (Todd checked 2026-11-08).
-11. **`web/scripts/` is reachable over HTTP** — surfaced 2026-11-08. 546 files (538 PHP) inside the docroot,
+11. ✅ **DONE 2026-11-08 15:25 UTC** (`5b5c496a`, deployed; live probes `/scripts/service_bodies.json`, a CLI-guarded `.php`, `/scripts/.htaccess` → **403**). *Original:* **`web/scripts/` is reachable over HTTP** — surfaced 2026-11-08. 546 files (538 PHP) inside the docroot,
    no `.htaccess`; `https://brookstoneoutdoors.com/scripts/` → 403 (listing denied by `Options -Indexes`), so
    the directory is served and a `.php` requested by name executes. Core's `web/.htaccess` denies specific
    extensions, not `.php`. 33 scripts guard on `PHP_SAPI`; most others fatal without bootstrap (500, no state
    change); 2 bootstrap Drupal themselves via `autoload.php` (`s3_backup_upload.php`, `scan_class_compat.php`).
    Fix: `web/scripts/.htaccess` → `Require all denied` (+ `<IfModule mod_authz_core.c>` fallback for
    `Deny from all`); deploys with rsync; `drush php:script` unaffected. T2, 10 minutes. Roadmap row.
-12. **Live backup / `~/tmp` hygiene** — surfaced 2026-11-08 (details on the roadmap row): four D10-era one-off
+12. **Live backup / `~/tmp` hygiene** — surfaced 2026-11-08; **staged as `~/tmp/cleanup_live_20261108.sh` for Todd** (classifier blocks remote deletes; md5-gated; copies verified on `/mnt/d/Backups/brookstone-dev/`). Details on the roadmap row: four D10-era one-off
    dumps in `~/backups` (≈600 MB) superseded by nightlies + S3; four `settings.php` copies with secrets in
    `~/tmp` from the Oct 2026 memlog/pathfix work; Sept work CSVs in `~/tmp`; my trusted-host helper files. The
    stray tracked `test.php` at the repo root (`<?php echo 'OK';`, 2026-05-28) is covered by #3's row. T3.
+13. **Live IO rule (learned the hard way 2026-11-08 ≈15:05 UTC):** a `md5sum` over ~1 GB of dumps plus a 470 MB
+   `rsync` pull during the morning gave Todd a **503** on a public page — the account's IO throttle starved
+   the PHP workers (load was 0.6; it is IO, not CPU). Bulk reads on live (`md5sum`, `rsync`, `tar`, `du`
+   over big trees) go **at night**, under `ionice -c3 nice -n19`, with `rsync --bwlimit=2000`. Two traps:
+   the remote process **outlives a dropped ssh session** (it kept reading after the local side was killed),
+   and `pkill -f "<path>"` matches the shell issuing it — use `pgrep -af "^md5sum"`. **Also recorded:**
+   `web/libraries/fullcalendar_io` + `drupal-superfish` are composer-managed (`drupal/fullcalendar_io`,
+   `lobsterr/drupal-superfish`, `type:drupal-library` via `installer-paths`) — yesterday's #3 called them
+   stray; they are composer's and are now gitignored (`c613ffc8`). Removing the packages belongs to the
+   `fullcalendar*`/`superfish` module-retirement decision.

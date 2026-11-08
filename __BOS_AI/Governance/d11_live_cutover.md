@@ -1,5 +1,14 @@
 # Drupal 11 — live cutover checklist
 
+> **✅ EXECUTED — live is Drupal 11.4.12 since Saturday 2026-11-07, 23:51 UTC (4:51 PM MST).**
+> Moved up a day from the Sunday window on Todd's call ("go for it tonight", 1:34 PM MST). Path B as
+> decided, finished by the **one-post-update-per-process runner** when LiteSpeed's ~120 s timeout
+> stopped the `update.php` loop at request 91 (finding 6 below). Smoke green 23:52 UTC; Todd's
+> logged-in click-through (status report, calendar tabs, a WO, dispatch, Route Editor and property
+> maps, QB export list, a contract section saved) green by 01:05 UTC 2026-11-08. Everything below
+> the next heading is the plan as written **before** the window; **"What the ACTUAL run found"** is
+> the record of what happened and the method to start from next time.
+
 **Window:** Sunday 2026-11-08, crew off. **Operator:** Todd + Claude Code, in the foreground, one
 step at a time, each gated on the previous step's exit code. **Rehearsed:** Saturday 2026-11-07 on
 a fresh live dump in `brookstone-d11` (runbook `drupal_11_upgrade.md` §4g carries the why; this
@@ -49,6 +58,95 @@ support-ticket route (2) can still flip the proof to OK. **Working assumption fo
 | Dumps in the sandbox root | excluded from rsync (`*.sql.gz`) — verified |
 | Maintenance | **managed by hand for the whole window** (`--no-maintenance` on the deploy) so `updb` runs inside it too |
 | Cron on live | 02:30 DB backup · 07:00 WEX fetch · 07:15 WEX alert — a daytime window avoids all three |
+
+## What the ACTUAL run found — Saturday 2026-11-07, 1:34 PM MST start (moved up from Sunday)
+Written during the window, each item as it happened. These are the facts the sandbox rehearsal
+**could not** produce, because the sandbox has no LVE ceiling and no slow disk.
+
+1. **Backups:** DB dump 2 m 45 s, 174 MB (`drush sql:dump --gzip` double-suffixes to `.sql.gz.gz`
+   — rename). **The code tar took 50 minutes** for 2.2 GB (LVE IO/CPU throttling), and the SSH
+   session carrying its output went dead at the ~1 h mark while tar finished fine (gzip trailer
+   intact, 97,701 members). → `~/.ssh/config` for `brookstone` now has `ServerAliveInterval 15 /
+   ServerAliveCountMax 4`; anything longer than a few minutes runs **detached** (`nohup setsid …
+   > ~/backups/<log> 2>&1 < /dev/null &`) and is polled read-only.
+2. **Step 3, step-0 apply was OOM-KILLED (exit 137) at the THIRD module uninstall** (`action`,
+   `forum` done; `tour` untouched — the installer logs "X module uninstalled" per module and the
+   kill landed before tour's first write). Each uninstall loads the whole config set for the
+   dependency scan and rebuilds the container, and the config factory's static cache keeps it all,
+   so memory climbs per module inside one process: two fit under 1 GB, three did not. **Rule: one
+   uninstall per drush process** (`drush pmu -y <one>`; let a script's `uninstall([...])` hold a
+   single module). Re-run of the idempotent step 0 then did tour + 5 blocks; jquery_ui_* and the
+   step-5 modules went one per process; the step-5 script handled only `editablefields`. Totals as
+   rehearsed: 10 / 3 / 6 / 4.
+3. **Deploy dry run from the fresh sandbox clone listed 124 deletions**, among them the WHOLE
+   `web/libraries/colorbox/` library (module enabled on live) and gitignored artifacts earlier
+   deploys had carried from the main checkout (`docs/backups/*.json`, `docs/*.csv`,
+   `properties_export.csv`, `web/scripts/export_properties.php`). Fix: copy them from the main
+   checkout into the sandbox (all gitignored → tree stays clean) and re-run the dry run until the
+   deletion list is only what you mean (ended at 14: empty dirs, `web/error_log`, `web/cgi-bin/`,
+   the touch-punch library, one live-only one-off script — all in the code tar). **Deploying from
+   any fresh clone needs this check.**
+4. **Composer on live failed at 88/89: `unzip` of drupal/core exceeded composer's default
+   `process-timeout` of 300 s** → `web/core` had already been removed, autoloader not regenerated,
+   deploy script exited 1 and left maintenance on (correct). Resumed detached with
+   `COMPOSER_PROCESS_TIMEOUT=3600 composer install <same flags>`; composer's accounting had kept
+   the 88 packages ("2 installs, 0 updates" — core + re-patched page_manager). → Put
+   `COMPOSER_PROCESS_TIMEOUT=3600` into the deploy script's remote composer line.
+5. Composer warns "lock file is not up to date with composer.json" — the sandbox's manifest
+   changed after its last lock write (patches/allow-plugins). Installs from the lock regardless;
+   fix afterwards with `composer update --lock` in the sandbox and commit.
+6. **Path B stopped at request 91 of the update.php loop: HTTP 500 "Request Timeout … timed out by
+   the server"** after 121 s — **LiteSpeed's connection timeout (~120 s, server-level, not the
+   account's to change)**, which DDEV/nginx never imposed on the rehearsal's 179 s step. 58/74 were
+   applied (74 → 47 → 43 → 34 pending at requests 25/50/75); the 16 left were all post-updates, the
+   heavy `search_post_update_search_help_dependencies` first. Sampler during the loop: largest
+   single PHP process **580 MB**, up to **7** lsphp workers alive at once (Todd browsing as uid 1 +
+   bots) — "Table definition has changed … cache_menu" watchdog errors are those page loads meeting
+   cache truncations mid-update; **nobody browses live during the window.** Finish = **one
+   post-update per drush process**: `web/scripts/d11_run_one_post_update.php <function>` drives
+   core's own `update_invoke_post_update()` sandbox loop to `#finished ≥ 1` (which registers it
+   invoked); `~/backups/d11_run_post_updates.sh` runs the pending list in registry order, detached,
+   stop on first failure. No web server in the path, no accumulation across updates. **This is the
+   method to reach for first next time** — Path B's web loop only matters for `hook_update_N`
+   schema updates, which this runner deliberately refuses.
+7. **Result, measured after the runner finished (23:49–23:52 UTC):** `drush cr` exit 0;
+   `updatedb:status` → *No database updates required*; **0** pending entity definitions; **0**
+   `system.schema` orphans; **374** enabled modules; `drush status` 11.4.12 / PHP 8.3.36 / DB
+   connected. Maintenance **OFF 23:51:21 UTC** + `cr`; smoke 23:52:26 (≥ 60 s after the `cr`,
+   opcache rule), **sequential**, bodies read not codes: `/` 200 51 KB · `/winterize` 200 38 KB ·
+   `/colorado` 200 54 KB · `/services/sprinkler-system` 200 59 KB — Drupal markers present, **0
+   fatal text**, correct titles; `/jsonapi` **401** (the guard survived the Symfony major);
+   `/user/login` 200. Watchdog from the final rebuild through Todd's click-through (01:05 UTC):
+   **no error from the upgrade.** The two rows are both **pre-existing and provable so**: the
+   `private://` *"Couldn't write .htaccess"* security notice (`web/sites/default/files/private`
+   has never existed; first logged 2026-11-06 19:50 UTC, 14 entries before the window) and an
+   anonymous *access denied* on `/colorado/gunnison-county` from one crawler IP (same IP, same path,
+   same verdict on 11-06 and five times on 11-07 **before** the window — anonymous lacks
+   `view any county entities of bundle county`). Both → `deferred_work.md`. **Timeline:** start
+   20:34 UTC (1:34 PM MST) · backups verified ~21:35 (50 min of that was the code tar) · maintenance
+   on → deploy → updates → maintenance off 23:51 — **≈ 3 h 17 m wall, ≈ 2 h 10 m in maintenance
+   mode**, against the checklist's 1–2 h estimate; the three unplanned stops (OOM at the third
+   uninstall, composer's 300 s unzip timeout, LiteSpeed's 120 s request timeout) cost most of the
+   difference. Backups kept on live at `~/backups/pre_d11_db_20261107_1340.sql.gz` (174 MB) and
+   `~/backups/pre_d11_code_20261107_1340.tgz` (1.16 GB) — **D10 schema + D10 code, the rollback
+   pair; keep until the first post-cutover nightly dump has been restored somewhere once.**
+8. **Rules kept for the next major upgrade** (the shape of the run, not just its facts):
+   - **Nobody browses live during the window — uid 1 included.** Todd's status-report and page
+     loads mid-update ran up to 7 lsphp workers beside the batch steps and produced
+     *"Table definition has changed … cache_menu"* watchdog errors (page loads meeting cache
+     truncations). Check progress through the operator, not the browser.
+   - **Anything over a few minutes runs detached and is polled read-only** (keepalives in
+     `~/.ssh/config` are the seatbelt, not the method).
+   - **One module uninstall per drush process. One post-update per drush process.** The web
+     `update.php` loop is for `hook_update_N` schema updates only — and with LiteSpeed's 120 s
+     limit each step must finish inside that; a per-process CLI runner has no such limit.
+   - **Deploy from a fresh clone only after reading its deletion list** — `web/libraries/` and
+     other gitignored-but-rsynced paths are the ones that bite.
+   - **`COMPOSER_PROCESS_TIMEOUT=3600` on live** (now in the deploy script) — the box's IO is
+     throttled and `unzip` of core alone exceeds composer's default 300 s.
+   - **The 1 GB PMEM ceiling is the planning number for every live process**, not the 2 GB
+     `memory_limit`; measure peaks in the sandbox with GNU `time -v` and assume live is worse.
+   - **Read bodies, not status codes.** A PHP fatal before Drupal's handler is an HTTP 200.
 
 ## T-1 — Saturday, after the rehearsal
 

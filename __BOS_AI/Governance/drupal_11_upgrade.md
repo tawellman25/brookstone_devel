@@ -1,5 +1,14 @@
 # Drupal 11 upgrade — environment and runbook
 
+> **✅ DONE ON LIVE — production is Drupal 11.4.12 since Saturday 2026-11-07, 23:51 UTC.** The record
+> of the live run, including the six things the sandbox could not show (LVE OOM at the third
+> uninstall, composer's 300 s unzip timeout, LiteSpeed's 120 s request timeout and the per-process
+> post-update runner that finished the job) is in
+> [`d11_live_cutover.md`](d11_live_cutover.md) → "What the ACTUAL run found". `feature/drupal-11-upgrade`
+> is merged to `main`. This file stays as the measured history of how the sandbox got there; §1's
+> table describes the environments **as they were during the work** — after the cutover `main` *is*
+> the D11 codebase and the primary dev env is re-seeded from a post-cutover live dump.
+
 **Deadline is external and does not move: core security coverage for 10.6 ends 2026-12-09.**
 10.6 is the final 10.x minor, so after that date a core security release will not exist for this
 site. Status-of-record for the initiative is [`ROADMAP.md`](../ROADMAP.md) → NOW → "Drupal 11

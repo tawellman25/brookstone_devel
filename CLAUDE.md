@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Identity
 
-This is **BOS** (Brookstone Operating System) — the internal operations platform for Brookstone Outdoors LLC, built on Drupal 10 (Drupal 11 compatible). BOS centralizes operational, client, property, and work order data. It is **not** an ERP in user-facing language.
+This is **BOS** (Brookstone Operating System) — the internal operations platform for Brookstone Outdoors LLC, built on **Drupal 11** (11.4.x — live upgraded from 10.6.20 on 2026-11-07; record in `__BOS_AI/Governance/d11_live_cutover.md`). BOS centralizes operational, client, property, and work order data. It is **not** an ERP in user-facing language.
 
 The authoritative system documentation lives in `__BOS_AI/`. Read those files before implementing anything non-trivial. Code must conform to those documents. Do not invent entities, bundles, or rules not defined there.
 
@@ -37,7 +37,7 @@ ddev composer require <package>     # Add a Composer dependency
 ddev composer install               # Install all dependencies
 ```
 
-**Stack:** PHP 8.3, MariaDB 10.11, nginx-fpm, Drupal 10.5.x.
+**Stack:** PHP 8.3, MariaDB 10.11 locally (live runs 11.4), nginx-fpm, Drupal 11.4.x. After the 2026-11-07 cutover the primary dev env needs `ddev composer install` + a fresh post-cutover live DB import before it matches live.
 **URL:** `https://brookstone.ddev.site`
 
 ### After DB Import

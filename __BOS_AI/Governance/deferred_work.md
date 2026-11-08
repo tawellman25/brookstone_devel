@@ -855,3 +855,49 @@ its namespace names, or delete it if the generator was superseded.
 *Note on the "29 Views handlers render as Broken" item above:* the count is now **27** — step 6
 deleted `estimate_current_customer_info` (unloadable: misspelled base table) and the
 `d11_step6_config_fixes.php` script repaired the two entries that were aborting core's post-update.
+
+## Post-D11-cutover follow-ups — surfaced during the live window 2026-11-07
+
+Live has been Drupal 11.4.12 since 2026-11-07 23:51 UTC (record: `d11_live_cutover.md` → "What the
+ACTUAL run found"). None of these blocked the cutover; each was seen and deliberately left.
+
+1. **`private://` has no directory and no `.htaccess` — pre-existing.** The status report's only
+   severity-2 row and a `security` watchdog entry on every status-report view: *"Couldn't write
+   .htaccess file. Create a .htaccess file in your `private://` directory."* `web/sites/default/files/private`
+   has never existed on the new VPS (first logged 2026-11-06 19:50 UTC, before any D11 work). Either
+   create the directory (owner `brookstoneadmin`, outside the docroot is better: point
+   `$settings['file_private_path']` at `~/private` and let Drupal write the `.htaccess`) or unset the
+   private path if nothing uses `private://` (check field storages with `uri_scheme: private` first).
+   Hygiene; 15 minutes.
+2. **Anonymous `access denied` on `/colorado/gunnison-county` — pre-existing, one crawler IP.**
+   Anonymous lacks `view any county entities of bundle county`; the same IP has been refused on the
+   same path since at least 2026-11-06. Decide whether county pages are *meant* to be public (the
+   `/colorado` state page is) and either grant the permission on the public view mode path or add a
+   `noindex`/404 so crawlers stop. `bos_geo`.
+3. **`web/libraries/` is gitignored but rsynced with `--delete`** — a deploy from any fresh clone
+   deletes every manually installed library on live (`colorbox` is enabled; the touch-punch library
+   went on 2026-11-07 on purpose). Either commit `web/libraries/` (small, rarely changes) or add it
+   to the deploy script's exclude list and document that libraries are installed on live by hand.
+   The same hazard applies to the gitignored `docs/backups/*.json`, `docs/*.csv`,
+   `properties_export.csv`, `web/scripts/export_properties.php` — decide per file whether they live
+   in git, on live only (exclude), or nowhere.
+4. **Stale `batch` row 10871** — the `update.php` batch LiteSpeed timed out at request 91. Harmless;
+   cron's batch GC removes rows older than its window. Just know it is there if someone grep's the
+   table.
+5. **Trusted Host Settings not enabled on live** (`$settings['trusted_host_patterns']` unset —
+   flagged by the status report since 2026-11-01). One settings.php edit (`sites/default` is `555`
+   — `chmod u+w`, edit, re-harden). Security hygiene, T2.
+6. **Three of the four composer patches are fetched from drupal.org URLs at install time** — with
+   `composer-exit-on-patch-failure: true` armed, a drupal.org outage is now deploy-stopping.
+   Localise them into `patches/` (the core patch already is). T3, 10 minutes.
+7. **Guardrail: do not enable `block_visibility_groups_admin` on Drupal 11** — 2.0.4/2.0.5 still
+   call `user_role_names()` (removed in 11.0) despite declaring `^11`; the fix exists only on the
+   untagged 2.1.x branch. The parent `block_visibility_groups` 2.0.4 is enabled and fine.
+8. **Drupal 12 deprecations seen along the way:** core `ban` and `contact` (enabled) are deprecated
+   for 12; `ai_ckeditor` flagged deprecated by `ai` 1.5.2. Nothing to do for 11; a 12 planning input.
+9. **Dev environments:** the primary `brookstone` DDEV project runs **MariaDB 10.11** while live and
+   the sandbox run **11.4** — the sandbox proved 11.4 is not a variable; moving dev to 11.4 at the next
+   re-seed removes the last mismatch (`.ddev/config.yaml` is tracked; it needs a DB delete + import).
+   The two DDEV images also carry different composer versions (2.9.2 vs 2.11.1), which rewrites the
+   lock's `plugin-api-version` back and forth — harmless churn, worth pinning when `brookstone-d11`
+   is deleted.

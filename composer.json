@@ -171,6 +171,13 @@
             "cweagans/composer-patches": true,
             "php-http/discovery": true,
             "symfony/runtime": true
+        },
+        "audit": {
+            "ignore": {
+                "PKSA-96jv-mtjg-g2v8": "phpoffice/phpspreadsheet 2.4.7 is pinned by two DISABLED modules (migrate_spreadsheet, xls_views_data_export); the 2->3 upgrade is a ROADMAP item (surfaced 2026-11-07). Acknowledged 2026-11-08 so composer update --lock / require are not blocked; remove these ignores when phpspreadsheet moves to 3.10.8+.",
+                "PKSA-dxd5-wy68-pq29": "phpoffice/phpspreadsheet 2.4.7 is pinned by two DISABLED modules (migrate_spreadsheet, xls_views_data_export); the 2->3 upgrade is a ROADMAP item (surfaced 2026-11-07). Acknowledged 2026-11-08 so composer update --lock / require are not blocked; remove these ignores when phpspreadsheet moves to 3.10.8+.",
+                "PKSA-r15m-kszr-8n8q": "phpoffice/phpspreadsheet 2.4.7 is pinned by two DISABLED modules (migrate_spreadsheet, xls_views_data_export); the 2->3 upgrade is a ROADMAP item (surfaced 2026-11-07). Acknowledged 2026-11-08 so composer update --lock / require are not blocked; remove these ignores when phpspreadsheet moves to 3.10.8+."
+            }
         }
     },
     "extra": {
@@ -180,10 +187,10 @@
                 "strnatcasecmp-Passing-null-to-parameter-2of-type-string-is-deprecated": "patches/3315678-25.patch"
             },
             "drupal/views_aggregator": {
-                "3484017-tablegetcellraw-return-value": "https://git.drupalcode.org/project/views_aggregator/-/merge_requests/27.patch"
+                "3484017-tablegetcellraw-return-value": "patches/views_aggregator-3484017-mr27.patch"
             },
             "drupal/page_manager": {
-                "page-manager-3438993-MR34-24": "https://www.drupal.org/files/issues/2024-08-14/page-manager-3438993-MR34-24.patch",
+                "page-manager-3438993-MR34-24": "patches/page-manager-3438993-MR34-24.patch",
                 "calculateDependencies() must return $this, not the array — core 11.4 search post-update chains ->getDependencies() on it (page_manager 4.0.0; no upstream fix tagged)": "patches/page_manager-calculateDependencies-return-this.patch"
             }
         },

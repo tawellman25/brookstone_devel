@@ -355,6 +355,13 @@ workstation/NAS (the `dev_scripts/brookstone-sync-db-from-live.sh` path), or pus
 dump to S3 from the backup script. Also worth a heartbeat check that the backup actually ran
 (it already emails on failure; a "no backup in 36h" alert would catch a silent cron stall).
 
+**Update 2026-11-08:** the off-server half shipped **2026-08-16** (S3 push from the same script, see
+change_log) — the roadmap row still said otherwise and is corrected. **Open = the heartbeat only**:
+nothing alerts if cron silently stops running (no dump → no failure mail). Two cheap checks: on-box
+`find ~/db_backups -mmin -2160` from a separate cron line, and off-box (independent of the server)
+an S3 bucket age check, since the IAM key is PutObject-only a listing needs a second read-only key or
+an S3 lifecycle/EventBridge rule.
+
 ---
 
 ### 22. Reconcile config/sync ↔ active drift (make full `cim` safe again)

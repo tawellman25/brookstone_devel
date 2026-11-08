@@ -881,6 +881,22 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
    The same hazard applies to the gitignored `docs/backups/*.json`, `docs/*.csv`,
    `properties_export.csv`, `web/scripts/export_properties.php` — decide per file whether they live
    in git, on live only (exclude), or nowhere.
+   **Measured 2026-11-08:** dev and live hold the **same five folders, byte-identical** (343 files,
+   4.4 MB; md5 of every file equal): `colorbox`, `dropzone`, `nouislider`, `drupal-superfish`,
+   `fullcalendar_io`. Not in git (`.gitignore:19`), not composer-managed (`installer-paths` for
+   `drupal-library` exists but no such package is installed; no asset-packagist repository). The
+   deploy excludes only `web/libraries/aws*`. **Used by enabled modules on live: 3** — `colorbox`
+   (→ `colorbox`), `dropzone` (→ `dropzonejs` + `dropzonejs_eb_widget`), `nouislider` (→
+   `better_exposed_filters` 7). **Unused: 2** — `drupal-superfish` (module `superfish` not enabled)
+   and `fullcalendar_io` (nothing in the codebase references the folder; `fullcalendar_view` is not
+   enabled and would want `/libraries/fullcalendar`, `moment`, `rrule`, `JSFrame` instead).
+   **Missing: 1** — `colorbox` also declares `/libraries/dompurify/dist/purify.min.js`, which is why
+   the status report says *"DOMPurify library: Not installed"*; without it Colorbox skips caption
+   sanitisation. **Recommendation:** drop the ignore rule and **commit the three used folders +
+   add `dompurify`** (~2.5 MB) so a fresh clone deploys safely and dev = live by construction;
+   delete the two unused folders in the same deploy (dry-run first). Composer/asset-packagist
+   management is the cleaner long-term shape but needs a package + path mapping per library —
+   not worth it for three static folders.
 4. **Stale `batch` row 10871** — the `update.php` batch LiteSpeed timed out at request 91. Harmless;
    cron's batch GC removes rows older than its window. Just know it is there if someone grep's the
    table.

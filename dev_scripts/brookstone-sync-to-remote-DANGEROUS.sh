@@ -290,7 +290,11 @@ fi
 post_rsync_script="set -e
 cd '${REMOTE_ROOT}'
 "
-[[ "$RUN_COMPOSER" -eq 1 ]] && post_rsync_script+="composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --ignore-platform-req=ext-redis
+# COMPOSER_PROCESS_TIMEOUT: composer kills any child process (unzip, git, patch) after
+# process-timeout seconds, default 300. On live (LVE IO/CPU-throttled) the unzip of
+# drupal/core alone exceeded 300 s on the D11 cutover (2026-11-07) AFTER composer had
+# already removed web/core — the deploy aborted with no core on disk. 3600 is margin.
+[[ "$RUN_COMPOSER" -eq 1 ]] && post_rsync_script+="COMPOSER_PROCESS_TIMEOUT=3600 composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --ignore-platform-req=ext-redis
 "
 [[ "$RUN_CIM" -eq 1 ]] && post_rsync_script+="${REMOTE_DRUSH} cim -y
 "

@@ -861,7 +861,7 @@ deleted `estimate_current_customer_info` (unloadable: misspelled base table) and
 Live has been Drupal 11.4.12 since 2026-11-07 23:51 UTC (record: `d11_live_cutover.md` → "What the
 ACTUAL run found"). None of these blocked the cutover; each was seen and deliberately left.
 
-1. **`private://` has no directory and no `.htaccess` — pre-existing.** The status report's only
+1. ✅ **DONE 2026-11-08 04:53 UTC** — `web/sites/default/files/private` created on live (755, owner `brookstoneadmin`), Drupal wrote its deny-all `.htaccess` via `file.htaccess_writer->ensure()`; both `/sites/default/files/private/` and its `.htaccess` return **403**; the status report has no error-level row left; 0 new `security` watchdog rows after. Nothing uses `private://` yet (0 field storages, 0 files, 0 config mentions, measured first); it stays inside the docroot behind `.htaccess` — move it outside with a `settings.php` change the day sensitive files land there. *Original item:* **`private://` has no directory and no `.htaccess` — pre-existing.** The status report's only
    severity-2 row and a `security` watchdog entry on every status-report view: *"Couldn't write
    .htaccess file. Create a .htaccess file in your `private://` directory."* `web/sites/default/files/private`
    has never existed on the new VPS (first logged 2026-11-06 19:50 UTC, before any D11 work). Either
@@ -893,8 +893,7 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
 7. **Guardrail: do not enable `block_visibility_groups_admin` on Drupal 11** — 2.0.4/2.0.5 still
    call `user_role_names()` (removed in 11.0) despite declaring `^11`; the fix exists only on the
    untagged 2.1.x branch. The parent `block_visibility_groups` 2.0.4 is enabled and fine.
-8. **Drupal 12 deprecations seen along the way:** core `ban` and `contact` (enabled) are deprecated
-   for 12; `ai_ckeditor` flagged deprecated by `ai` 1.5.2. Nothing to do for 11; a 12 planning input.
+8. **Drupal 12 deprecations seen along the way** — the D11 status report's full "Deprecated modules found" list on live (2026-11-08): `ai_ckeditor`, core `ban`, `contact`, `field_layout`, `history`, `layout_builder_expose_all_field_blocks`, `migrate_drupal`, `migrate_drupal_ui`, plus Field Group's accordion formatter. Also "DOMPurify library: Not installed" (CKEditor 5 warning, not an error). Nothing to do for 11; the planning input for 12 — each needs a usage check before uninstall (`history` feeds "new/updated" markers; `field_layout` may back entity displays).
 9. **Dev environments:** the primary `brookstone` DDEV project runs **MariaDB 10.11** while live and
    the sandbox run **11.4** — the sandbox proved 11.4 is not a variable; moving dev to 11.4 at the next
    re-seed removes the last mismatch (`.ddev/config.yaml` is tracked; it needs a DB delete + import).

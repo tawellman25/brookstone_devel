@@ -922,7 +922,7 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
    The two DDEV images also carry different composer versions (2.9.2 vs 2.11.1), which rewrites the
    lock's `plugin-api-version` back and forth — harmless churn, worth pinning when `brookstone-d11`
    is deleted.
-10. **`dev.brookstoneoutdoors.com` is a second hostname for the live site** — surfaced 2026-11-08 in the
+10. ✅ **DONE 2026-11-08 ≈15:50 UTC — removed by Todd in cPanel → Domains** (it was not visible in the Hosting.com portal/WHM, only in the account's own cPanel). Verified read-only right after: `uapi DomainInfo list_domains` → `mcp.` only; `/var/cpanel/userdata/brookstoneadmin/dev.*` gone; zone has no `dev` A record; live `web/index.php` + `settings.php` untouched (md5 unchanged); site 200. `mcp.` kept at Todd's request. *Original:* **`dev.brookstoneoutdoors.com` is a second hostname for the live site** — surfaced 2026-11-08 in the
    trusted-host recon. `uapi DomainInfo domains_data`: the subdomain's document root is
    `/home/brookstoneadmin/brookstone/web` (the live tree; the `~/dev.brookstoneoutdoors.com` folder does
    not exist). Almost certainly the pre-cutover test hostname from the 2026-08-30 server move. Reflectionbot

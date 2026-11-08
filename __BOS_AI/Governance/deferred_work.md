@@ -908,7 +908,7 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
    Applied by Todd via the self-reverting `~/tmp/apply_trusted_hosts.sh` — the classifier blocks SSH
    writes into the live docroot, `scp` to `~/tmp` works. Status report: no error-level rows left.
    `change_log.md` 2026-11-08.
-6. **Three of the four composer patches are fetched from drupal.org URLs at install time** — with
+6. **Two of the four composer patches are fetched from remote URLs at install time** (re-measured 2026-11-08: `views_aggregator` MR 27 on git.drupalcode.org, `page_manager` 3438993 on drupal.org; core and the second `page_manager` patch are local) — with
    `composer-exit-on-patch-failure: true` armed, a drupal.org outage is now deploy-stopping.
    Localise them into `patches/` (the core patch already is). T3, 10 minutes.
 7. **Guardrail: do not enable `block_visibility_groups_admin` on Drupal 11** — 2.0.4/2.0.5 still
@@ -931,4 +931,15 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
    `dev.brookstoneoutdoors.com` — removal leaves the document root untouched by design (cPanel support),
    so the live tree is safe. Not in the Google Maps key's Websites list (Todd checked 2026-11-08). Decide `mcp.brookstoneoutdoors.com` too (own docroot with only a
    422 B `.htaccess` from 2026-08-30, `cgi-bin`, 0 hits in both logs). Roadmap row under the D11
-   follow-ups. T3.
+   follow-ups. T3. Not in the Google Maps key's Websites list (Todd checked 2026-11-08).
+11. **`web/scripts/` is reachable over HTTP** — surfaced 2026-11-08. 546 files (538 PHP) inside the docroot,
+   no `.htaccess`; `https://brookstoneoutdoors.com/scripts/` → 403 (listing denied by `Options -Indexes`), so
+   the directory is served and a `.php` requested by name executes. Core's `web/.htaccess` denies specific
+   extensions, not `.php`. 33 scripts guard on `PHP_SAPI`; most others fatal without bootstrap (500, no state
+   change); 2 bootstrap Drupal themselves via `autoload.php` (`s3_backup_upload.php`, `scan_class_compat.php`).
+   Fix: `web/scripts/.htaccess` → `Require all denied` (+ `<IfModule mod_authz_core.c>` fallback for
+   `Deny from all`); deploys with rsync; `drush php:script` unaffected. T2, 10 minutes. Roadmap row.
+12. **Live backup / `~/tmp` hygiene** — surfaced 2026-11-08 (details on the roadmap row): four D10-era one-off
+   dumps in `~/backups` (≈600 MB) superseded by nightlies + S3; four `settings.php` copies with secrets in
+   `~/tmp` from the Oct 2026 memlog/pathfix work; Sept work CSVs in `~/tmp`; my trusted-host helper files. The
+   stray tracked `test.php` at the repo root (`<?php echo 'OK';`, 2026-05-28) is covered by #3's row. T3.

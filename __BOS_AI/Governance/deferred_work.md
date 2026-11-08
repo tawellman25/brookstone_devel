@@ -928,7 +928,7 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
    crawled material pages through it that morning (200s), and Drupal's page cache held a `dev.` copy of `/`
    from 08:30 UTC. Since #5 Drupal answers it 400, but the DNS record and AutoSSL cert remain and every
    request still costs a LiteSpeed→PHP round-trip. **Todd:** cPanel → Domains → delete
-   `dev.brookstoneoutdoors.com`; remove `https://dev.brookstoneoutdoors.com/*` from the `geofield_map`
-   key's Websites list if present. Decide `mcp.brookstoneoutdoors.com` too (own docroot with only a
+   `dev.brookstoneoutdoors.com` — removal leaves the document root untouched by design (cPanel support),
+   so the live tree is safe. Not in the Google Maps key's Websites list (Todd checked 2026-11-08). Decide `mcp.brookstoneoutdoors.com` too (own docroot with only a
    422 B `.htaccess` from 2026-08-30, `cgi-bin`, 0 hits in both logs). Roadmap row under the D11
    follow-ups. T3.

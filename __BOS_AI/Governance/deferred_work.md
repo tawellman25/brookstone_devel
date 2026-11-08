@@ -874,7 +874,7 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
    same path since at least 2026-11-06. Decide whether county pages are *meant* to be public (the
    `/colorado` state page is) and either grant the permission on the public view mode path or add a
    `noindex`/404 so crawlers stop. `bos_geo`.
-3. **`web/libraries/` is gitignored but rsynced with `--delete`** — a deploy from any fresh clone
+3. ✅ **DONE 2026-11-08 05:14 UTC** — `web/libraries/` is **in git** (`829746cc`: ignore rule dropped, `colorbox` + `dropzone` + `nouislider` committed, **`dompurify` 3.4.17 added** from the npm registry with the tarball's sha512 verified against the registry's integrity field, `drupal-superfish` + `fullcalendar_io` deleted). Deployed `--skip-composer --no-maintenance`, dry run read first (262 library deletions, 5 new files, nothing else but the two `error_log`s and an empty AutoSSL dir), rsync 5 min, `cr` clean; live now serves all four library files (200), the removed folder 404s, DOMPurify md5 identical dev/live, Colorbox requirements both *Installed*, 0 watchdog rows after. The gitignored `docs/*.csv` / `docs/backups/*.json` / `properties_export.csv` / `export_properties.php` question is **still open** (below). *Original item:* **`web/libraries/` is gitignored but rsynced with `--delete`** — a deploy from any fresh clone
    deletes every manually installed library on live (`colorbox` is enabled; the touch-punch library
    went on 2026-11-07 on purpose). Either commit `web/libraries/` (small, rarely changes) or add it
    to the deploy script's exclude list and document that libraries are installed on live by hand.

@@ -611,7 +611,8 @@ The UUID-stripping bug in BOS field-instance configs (CLAUDE.md "Drush cim quirk
 ## What Is Not in Git
 
 - `vendor/` — managed by Composer
-- `web/core/`, `web/modules/contrib/`, `web/themes/contrib/`, `web/libraries/` — managed by Composer
+- `web/core/`, `web/modules/contrib/`, `web/themes/contrib/` — managed by Composer
+- **`web/libraries/` IS in git since 2026-11-08** (`829746cc`): `colorbox`, `dropzone`, `nouislider`, `dompurify` — static front-end libraries the enabled modules declare. It used to be gitignored yet rsynced with `--delete`, so a deploy from a fresh clone would have deleted them on live. Add a new library by committing it; nothing installs them on live but the deploy.
 - `web/sites/*/settings*.php`, `web/*/services*.yml` — environment secrets
 - `web/sites/*/files/` — user files (on S3)
 - `*.sql.gz`, `*.sql` — database dumps

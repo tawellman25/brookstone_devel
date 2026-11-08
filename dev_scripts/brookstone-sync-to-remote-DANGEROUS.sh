@@ -255,6 +255,10 @@ RSYNC_FLAGS=(
   --exclude "web/sites/default/settings.ddev.php"
   --exclude "web/sites/default/.gitignore"
   --exclude "web/s3_uri_verification.txt"
+  # one-off exports / copy-backups that are gitignored locally — never deploy them (2026-11-08)
+  --exclude "docs/"
+  --exclude "properties_export.csv"
+  --exclude "web/scripts/export_properties.php"
 
   # AWS clutter variants
   --exclude "aws/"

@@ -37,7 +37,7 @@ ddev composer require <package>     # Add a Composer dependency
 ddev composer install               # Install all dependencies
 ```
 
-**Stack:** PHP 8.3, MariaDB 10.11 locally (live runs 11.4), nginx-fpm, Drupal 11.4.x. After the 2026-11-07 cutover the primary dev env needs `ddev composer install` + a fresh post-cutover live DB import before it matches live.
+**Stack:** PHP 8.3, MariaDB 10.11 locally (live runs 11.4), nginx-fpm, Drupal 11.4.x (live and dev since 2026-11-07).
 **URL:** `https://brookstone.ddev.site`
 
 ### After DB Import

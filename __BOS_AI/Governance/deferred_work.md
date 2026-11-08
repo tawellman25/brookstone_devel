@@ -900,9 +900,14 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
 4. **Stale `batch` row 10871** — the `update.php` batch LiteSpeed timed out at request 91. Harmless;
    cron's batch GC removes rows older than its window. Just know it is there if someone grep's the
    table.
-5. **Trusted Host Settings not enabled on live** (`$settings['trusted_host_patterns']` unset —
-   flagged by the status report since 2026-11-01). One settings.php edit (`sites/default` is `555`
-   — `chmod u+w`, edit, re-harden). Security hygiene, T2.
+5. ✅ **DONE 2026-11-08 14:24 UTC — Trusted Host Settings enabled on live.** `trusted_host_patterns` =
+   bare domain + `www` only (live `settings.php` lines 882–884, re-hardened 444 / 555; pre-edit copy
+   `~/backups/settings.php.pre_trusted_hosts_20261108_1424`). Measured first: four hostnames reach this
+   docroot (bare, `www` → 301 in `.htaccess`, the `mail.` alias, and the `dev.` subdomain — see #10);
+   LiteSpeed already 404s raw-IP/forged hosts; no HTTP cron; CLI exempt (`DrupalKernel.php:1235`).
+   Applied by Todd via the self-reverting `~/tmp/apply_trusted_hosts.sh` — the classifier blocks SSH
+   writes into the live docroot, `scp` to `~/tmp` works. Status report: no error-level rows left.
+   `change_log.md` 2026-11-08.
 6. **Three of the four composer patches are fetched from drupal.org URLs at install time** — with
    `composer-exit-on-patch-failure: true` armed, a drupal.org outage is now deploy-stopping.
    Localise them into `patches/` (the core patch already is). T3, 10 minutes.
@@ -916,3 +921,14 @@ ACTUAL run found"). None of these blocked the cutover; each was seen and deliber
    The two DDEV images also carry different composer versions (2.9.2 vs 2.11.1), which rewrites the
    lock's `plugin-api-version` back and forth — harmless churn, worth pinning when `brookstone-d11`
    is deleted.
+10. **`dev.brookstoneoutdoors.com` is a second hostname for the live site** — surfaced 2026-11-08 in the
+   trusted-host recon. `uapi DomainInfo domains_data`: the subdomain's document root is
+   `/home/brookstoneadmin/brookstone/web` (the live tree; the `~/dev.brookstoneoutdoors.com` folder does
+   not exist). Almost certainly the pre-cutover test hostname from the 2026-08-30 server move. Reflectionbot
+   crawled material pages through it that morning (200s), and Drupal's page cache held a `dev.` copy of `/`
+   from 08:30 UTC. Since #5 Drupal answers it 400, but the DNS record and AutoSSL cert remain and every
+   request still costs a LiteSpeed→PHP round-trip. **Todd:** cPanel → Domains → delete
+   `dev.brookstoneoutdoors.com`; remove `https://dev.brookstoneoutdoors.com/*` from the `geofield_map`
+   key's Websites list if present. Decide `mcp.brookstoneoutdoors.com` too (own docroot with only a
+   422 B `.htaccess` from 2026-08-30, `cgi-bin`, 0 hits in both logs). Roadmap row under the D11
+   follow-ups. T3.

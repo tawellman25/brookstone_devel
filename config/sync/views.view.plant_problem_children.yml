@@ -1,0 +1,171 @@
+uuid: 2b371ab6-c828-4e87-83fd-b72ba7cd3194
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_short_description
+    - taxonomy.vocabulary.plant_problems
+  module:
+    - eva
+    - taxonomy
+    - text
+    - user
+id: plant_problem_children
+label: 'Plant problem children'
+module: views
+description: 'Plant-problem cards on the Plant Problems category page (material_types). EVA keyed on the category term''s field_child_vocabulary, so it renders only where a category declares plant_problems as its child vocabulary. Same card component as material_children (declares its CSS class); teaser = field_short_description, no fallback.'
+tag: ''
+base_table: taxonomy_term_field_data
+base_field: tid
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: ''
+      css_class: view-material-children
+      fields:
+        name:
+          id: name
+          table: taxonomy_term_field_data
+          field: name
+          relationship: none
+          group_type: group
+          entity_type: taxonomy_term
+          entity_field: name
+          plugin_id: taxonomy_term_name
+          label: ''
+          exclude: false
+          element_label_colon: false
+          settings:
+            link_to_entity: true
+          group_column: value
+          group_rows: true
+        field_short_description:
+          id: field_short_description
+          table: taxonomy_term__field_short_description
+          field: field_short_description
+          relationship: none
+          group_type: group
+          entity_type: taxonomy_term
+          entity_field: field_short_description
+          plugin_id: field
+          label: ''
+          exclude: false
+          alter:
+            alter_text: false
+            max_length: 300
+            word_boundary: true
+            ellipsis: true
+            strip_tags: true
+            trim: true
+            html: false
+          element_default_classes: true
+          type: text_default
+          settings: {  }
+      pager:
+        type: none
+        options:
+          offset: 0
+      access:
+        type: perm
+        options:
+          perm: 'access content'
+      cache:
+        type: tag
+      empty: {  }
+      sorts:
+        name:
+          id: name
+          table: taxonomy_term_field_data
+          field: name
+          relationship: none
+          entity_type: taxonomy_term
+          entity_field: name
+          plugin_id: standard
+          order: ASC
+      arguments:
+        vid:
+          id: vid
+          table: taxonomy_term_field_data
+          field: vid
+          relationship: none
+          entity_type: taxonomy_term
+          entity_field: vid
+          plugin_id: vocabulary_vid
+          default_action: empty
+          exception:
+            value: all
+            title_enable: false
+            title: All
+          default_argument_type: fixed
+          summary:
+            sort_order: asc
+            number_of_records: 0
+            format: default_summary
+          specify_validation: false
+          validate:
+            type: none
+            fail: 'not found'
+      filters:
+        vid:
+          id: vid
+          table: taxonomy_term_field_data
+          field: vid
+          relationship: none
+          entity_type: taxonomy_term
+          entity_field: vid
+          plugin_id: bundle
+          operator: in
+          value:
+            plant_problems: plant_problems
+          group: 1
+        status:
+          id: status
+          table: taxonomy_term_field_data
+          field: status
+          relationship: none
+          entity_type: taxonomy_term
+          entity_field: status
+          plugin_id: boolean
+          operator: '='
+          value: '1'
+          group: 1
+      style:
+        type: default
+        options:
+          row_class: material-card
+          default_row_class: true
+      row:
+        type: fields
+      query:
+        type: views_query
+      relationships: {  }
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          plugin_id: text
+          empty: false
+          content:
+            value: '<h2 class="material-children__title">Problems</h2>'
+            format: full_html
+      footer: {  }
+      display_extenders: {  }
+  entity_view_1:
+    id: entity_view_1
+    display_title: 'Plant problems (EVA)'
+    display_plugin: entity_view
+    position: 1
+    display_options:
+      display_extenders: {  }
+      entity_type: taxonomy_term
+      bundles:
+        - material_types
+      show_title: false
+      argument_mode: token
+      default_argument: '[term:field_child_vocabulary:target_id]'

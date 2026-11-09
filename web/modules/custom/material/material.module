@@ -261,6 +261,20 @@ function material_views_pre_render(ViewExecutable $view): void {
     return;
   }
 
+  // The plant-problem cards on the Plant Problems category page
+  // (plant_problem_children, an EVA on material_types like this one) are the
+  // SAME card component: that view declares the `view-material-children` CSS
+  // class so one stylesheet covers both. It keeps its own static header and
+  // renders field_short_description directly (no body fallback — every plant
+  // problem is authored with its teaser), so only the library is shared.
+  // Attached here rather than from bos_plant_problems because a brand-new hook
+  // on an already-enabled module is not registered by `drush cr`
+  // (drupal_bos_gotchas.md) and this hook already exists.
+  if ($view->id() === 'plant_problem_children') {
+    $view->element['#attached']['library'][] = 'material/material_children';
+    return;
+  }
+
   if ($view->id() !== 'material_children') {
     return;
   }

@@ -95,6 +95,13 @@ class BosTermAliasBreadcrumbBuilder implements BreadcrumbBuilderInterface {
     // became public on 2026-10-11, after this list was written (2026-09-28),
     // which is why it was missed rather than excluded.
     'season',
+    // Plant problems (/material/plants/problems/{name}) — a FLAT public
+    // vocabulary whose parent chain is the material_types tree, not its own
+    // hierarchy, so core's builder gave the leaf page "Home" and nothing else
+    // until 2026-11-09. Each parent segment resolves to a real page (the
+    // Plant Problems category term, Plants, Materials), which is exactly the
+    // alias-walk this builder does.
+    'plant_problems',
 
     'bloom_time',
     'bulk_material_types',

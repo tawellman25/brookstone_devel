@@ -64,7 +64,11 @@
   color: var(--bo-orange, #cb6015);
 }
 
-.view-material-children .views-field-field-public-description {
+/* The blurb. material_children renders field_public_description (swapped for
+   the teaser in a preprocess hook); plant_problem_children renders
+   field_short_description directly. Same card, same rule. */
+.view-material-children .views-field-field-public-description,
+.view-material-children .views-field-field-short-description {
   padding: 0 1rem 0.9rem;
   color: var(--bo-muted, #6b5d4f);
   font-size: 0.9rem;

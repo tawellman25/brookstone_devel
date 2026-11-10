@@ -2130,6 +2130,34 @@ the `error_log` line alone does not say which page or who.
 
 ---
 
+## EVA places its component on every bundle display the moment the view is saved
+
+**Discovered 2026-11-10** (`plant_problem_children`). Saving a view that has an `entity_view`
+(EVA) display runs `eva_view_presave()`, which **adds the extra-field component to every
+enabled view display of the target bundle, at weight 10**. A setup script that then checks
+"is the component present?" finds it already there and skips — leaving it wherever weight 10
+falls on each curated display. On `taxonomy_term.material_types.admin_view` the call-to-action
+sits at 5, so the new grid rendered **below** the CTA while every other display had it above.
+
+**Rule:** after importing an EVA view, *position* the component per display (read the
+neighbours' weights, do not assume), rather than *add* it. `web/scripts/plant_problems_landing_setup.php`
+step 4 is the reference: one above the highest existing EVA, strictly below the CTA; a tie with
+an existing EVA is fine because insertion order breaks ties and the new component is newest.
+
+---
+
+## The deploy rsync does not preserve mtimes — read the itemize flags, not the row count
+
+**Confirmed 2026-11-10.** `dev_scripts/brookstone-sync-to-remote-DANGEROUS.sh` copies without
+`-t`, so every file on live carries the time of the last deploy. The next dry-run therefore lists
+**~19,300 `<f..T......` rows** (timestamp-only) and the count says nothing. What matters is the
+other flags: `<f+++++++++` new, `<f.s`/`<fc` content changed, `*deleting` removed. Grep for
+those before a live run (`grep -E '^<f\+|^<f\.s|^<fc|^\*deleting'`). A targeted
+`rsync --files-from` would avoid the churn but is denied by the auto-mode classifier as a
+production deploy; only the plain deploy-script invocation passes.
+
+---
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

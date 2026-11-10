@@ -399,6 +399,37 @@ that view instead of adding an EVA:
 Reference impl: `bos_spray_types` + `web/scripts/build_spray_location_landing_cards.php`
 (`css/landing-cards.css`), 2026-09-27.
 
+### Variant — a category whose children live in ANOTHER vocabulary (hosted child vocabulary)
+
+Where a catalogue category's child pages are terms of a **different** vocabulary — Plant
+Problems (`material_types` term at `/material/plants/problems`) whose children are
+`plant_problems` terms — the parent-tid argument cannot work (no parent link crosses
+vocabularies) and a path-gated block is the trap `drupal_bos_gotchas.md` warns about. Declare
+the relationship on the category instead:
+- **`field_child_vocabulary` on `material_types`** (entity reference → `taxonomy_vocabulary`,
+  cardinality 1, optional). Set it only on a category that hosts another vocabulary; empty
+  everywhere else.
+- The child view is an **EVA on the host bundle** with `argument_mode: token`,
+  `default_argument: '[term:field_child_vocabulary:target_id]'`, and the contextual filter
+  **Taxonomy term: Vocabulary** (`vocabulary_vid`) with `default_action: empty` and no empty
+  area — so it renders rows on exactly the categories that declare a child vocabulary and an
+  empty wrapper on the rest. No path or tid is hardcoded anywhere.
+- **Reuse the card component, do not restyle it:** set the view's `css_class` to the existing
+  grid class (`view-material-children`) so one stylesheet covers both; attach the library from a
+  hook the owning module **already implements** (`material_views_pre_render`).
+- Teaser = **`field_short_description` rendered directly** (Views strip-tags + trim as the guard),
+  **no body fallback** — a vocabulary authored under the three-field model from day one has no
+  transitional gap to cover.
+- Leave the host term's `field_material_bundle` **empty**: a non-matching bundle makes
+  `material_type_items` print "No materials found for this type." on the page.
+- Add the child vocabulary to the **`bos_breadcrumbs` allowlist** so a leaf walks its alias up
+  through the host term.
+- ⚠ After the view import, **position** the EVA component on each display rather than add it —
+  EVA has already placed it at weight 10 (gotchas).
+
+Reference impl: `web/scripts/plant_problems_landing_setup.php` +
+`config/sync/views.view.plant_problem_children.yml`, 2026-11-10.
+
 ## Status
 
 - Created 2026-06-21 (status-card pattern, from the My Schedule + backflow card work).
@@ -542,4 +573,4 @@ which is exactly why the decision has to come from the data and not from the con
 
 A card with no image is either a dead gutter or a second row shape beside the first; a
 table with no image is just a narrow empty cell. That asymmetry is the whole rule.
-
+- 2026-11-10 — added the **hosted child vocabulary** variant of child-listing cards (`field_child_vocabulary` + EVA keyed on a vocabulary token; Plant Problems).

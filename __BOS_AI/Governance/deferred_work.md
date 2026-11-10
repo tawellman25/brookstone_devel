@@ -644,6 +644,19 @@ properties winterized in 2+ of the last 3 seasons. Small, but real. Plus data-qu
 Re-run for current numbers: `drush php:script web/scripts/analyze_contract_service_distribution.php`
 (read-only; writes a per-contract CSV to `~/tmp/`). Full write-up in the 2026-09-07 session.
 
+
+### 32. Plant Problems landing page — follow-ups from the 2026-11-10 build
+
+Shipped 2026-11-10 (`8f04ba94`, change_log). Left open, each small:
+
+- **`/material/plants` intro contradicts its grid** — marketing rewrites to the list-agnostic rule (on the ROADMAP, Plant catalogue table).
+- **Subtitle has no slot** on a material_types page — decision needed (ROADMAP row).
+- **`field_services_performed` on no plant_problems display** — place with the first treated problem (ROADMAP row).
+- **Grid heading "Problems"** on the landing page is Code's one-word label; marketing may replace it in the Views UI (`plant_problem_children` → header).
+- **`plant_problem_children` renders an empty wrapper `<div>` on every other material_types page** (argument empty → no rows, header hidden) — zero height, harmless, same as `material_children` on a leaf category. Note it so nobody "discovers" it.
+- **`bos_breadcrumbs.info.yml` description still names four vocabularies**; the allowlist is 32. Cosmetic.
+- **Live `~/tmp/inspect_plant_problems_live.php`** (read-only inspection helper) can be deleted by Todd at leisure; writes there are classifier-blocked for Code.
+
 ---
 
 ## Status

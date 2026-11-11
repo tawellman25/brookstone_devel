@@ -136,6 +136,32 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
       '#allowed_tags' => ['div', 'strong', 'a'],
     ];
 
+    // Unbilled hours (job-clock item 6): the foreman's non-billable calls in
+    // this window, by reason and by teammate — "where are we bleeding hours".
+    // Scoped to the teammates shown. Overhead WO hours (item 4) join later.
+    $uids = array_map(fn(UserInterface $u) => (int) $u->id(), $teammates);
+    $nb = $this->compensableHours->getNonBillableBreakdown($start, $end, $uids);
+    if ($nb['hours'] > 0) {
+      $reasonBits = [];
+      foreach ($nb['by_reason'] as $code => $hrs) {
+        $reasonBits[] = htmlspecialchars((string) ($nb['labels'][$code] ?? $code)) . ' <strong>' . $this->formatHours($hrs) . '</strong>';
+      }
+      $userBits = [];
+      $userStorage = \Drupal::entityTypeManager()->getStorage('user');
+      foreach (array_slice($nb['by_user'], 0, 5, TRUE) as $uid => $hrs) {
+        $u = $userStorage->load($uid);
+        $userBits[] = htmlspecialchars($u ? $u->getDisplayName() : "uid $uid") . ' <strong>' . $this->formatHours($hrs) . '</strong>';
+      }
+      $build['unbilled'] = [
+        '#markup' => '<div class="bos-variance-unbilled">'
+          . '<strong>' . $this->t('Unbilled hours: @h hrs across @n entries', ['@h' => $this->formatHours($nb['hours']), '@n' => $nb['entries']])->render() . '</strong>'
+          . ' · ' . $this->t('by reason')->render() . ': ' . implode(' · ', $reasonBits)
+          . ($userBits ? '<br>' . $this->t('most by teammate')->render() . ': ' . implode(' · ', $userBits) : '')
+          . '</div>',
+        '#allowed_tags' => ['div', 'strong', 'br'],
+      ];
+    }
+
     if (empty($rows)) {
       $build['empty'] = [
         '#markup' => '<div class="bos-variance-empty">'
@@ -240,6 +266,7 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
     $totalWo   = 0.0;
     $totalVar  = 0.0;
     $daysActive = 0;
+    $totalNb   = 0.0;
 
     foreach ($this->datesBetween($startDate, $endDate) as $date) {
       $hadActivity = $this->compensableHours->hasWoActivityOnDate($uid, $date);
@@ -252,6 +279,8 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
       $totalComp += $comp;
       $totalWo   += $wo;
       $totalVar  += ($comp - $wo);
+      // Non-billable (item 6): hours inside $wo that earn nothing.
+      $totalNb   += $this->compensableHours->getNonBillableHoursForUserOnDate($uid, $date);
     }
 
     $avgVar = $daysActive > 0 ? round($totalVar / $daysActive, 2) : 0.0;
@@ -261,6 +290,7 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
       'days_active'     => $daysActive,
       'total_comp'      => round($totalComp, 2),
       'total_wo'        => round($totalWo, 2),
+      'total_nb'        => round($totalNb, 2),
       'total_variance'  => round($totalVar, 2),
       'avg_variance'    => $avgVar,
       'productive_pct'  => $productPct,
@@ -306,6 +336,10 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
         ['data' => $hadActivity ? $data['days_active'] : '—', 'class' => ['bos-numeric']],
         ['data' => $hadActivity ? $this->formatHours($data['total_comp']) : '—', 'class' => ['bos-numeric']],
         ['data' => $hadActivity ? $this->formatHours($data['total_wo']) : '—', 'class' => ['bos-numeric']],
+        [
+          'data' => $hadActivity ? ($data['total_nb'] > 0 ? $this->formatHours($data['total_nb']) : '0.00') : '—',
+          'class' => ['bos-numeric', $data['total_nb'] > 0 ? 'bos-nb-hours' : 'bos-variance-na'],
+        ],
         ['data' => $hadActivity ? $this->formatHours($data['total_variance']) : '—', 'class' => ['bos-numeric']],
         [
           'data' => $hadActivity ? $this->formatHours($data['avg_variance']) : '—',
@@ -323,6 +357,7 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
         'Days Active'     => (int) $data['days_active'],
         'Compensable hrs' => (float) $data['total_comp'],
         'WO hrs'          => (float) $data['total_wo'],
+        'Non-billable'    => (float) $data['total_nb'],
         'Total Variance'  => (float) $data['total_variance'],
         'Avg Daily Var'   => (float) $data['avg_variance'],
         'Productive %'    => $data['productive_pct'] === NULL ? -1.0 : (float) $data['productive_pct'],
@@ -352,7 +387,7 @@ final class VarianceDailyController extends ControllerBase implements ContainerI
   protected function buildHeader(string $sortField, string $sortDir): array {
     $headers = [
       'Teammate', 'Department', 'Days Active',
-      'Compensable hrs', 'WO hrs', 'Total Variance',
+      'Compensable hrs', 'WO hrs', 'Non-billable', 'Total Variance',
       'Avg Daily Var', 'Productive %',
     ];
 

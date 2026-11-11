@@ -2,6 +2,10 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Session\AccountInterface;
 
 /**
  * Maps WO bundles to their property_spraying_info bundle equivalent.
@@ -174,20 +178,14 @@ function wo_shared_work_order_presave(EntityInterface $entity) {
     return;
   }
 
-  $tcIds = \Drupal::entityQuery('wo_time_clock')
-    ->accessCheck(FALSE)
-    ->condition('field_work_order', $entity->id())
-    ->condition('field_end_time', NULL, 'IS NOT NULL')
-    ->execute();
-
-  $sum = 0.0;
-  if ($tcIds) {
-    foreach (\Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadMultiple($tcIds) as $tc) {
-      $sum += (float) ($tc->get('field_total_time')->value ?? 0);
-    }
+  // Billable vs non-billable split (item 6, 2026-11-11): Total Time is the
+  // BILLABLE sum — what every wo_* labor formula reads — and the flagged
+  // remainder is stored beside it. Same closed-entries rule as before.
+  $split = wo_shared_clock_hours_split((int) $entity->id());
+  $entity->set('field_total_time', $split['billable']);
+  if ($entity->hasField('field_non_billable_time')) {
+    $entity->set('field_non_billable_time', $split['non_billable'] > 0 ? $split['non_billable'] : NULL);
   }
-
-  $entity->set('field_total_time', round($sum, 2));
 }
 
 /**
@@ -749,4 +747,211 @@ function wo_shared_target_hours_summary(EntityInterface $wo): ?array {
 function wo_shared_hours_label(float $hours): string {
   $s = rtrim(rtrim(number_format($hours, 2, '.', ''), '0'), '.');
   return $s === '' ? '0' : $s;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Non-billable punches (job-clock guardrails item 6, Todd 2026-11-10).
+//
+// One teammate's time on a billable job can be kept as hours worked and
+// left off the invoice. The ENTRY keeps its true field_total_time; the
+// WORK ORDER's field_total_time becomes the billable sum (so the labor
+// formulas in the 36 wo_* modules are untouched) and field_non_billable_time
+// holds the rest. The foreman makes the call at sign-off (wo_sign_off);
+// the office may correct it on the entry form while the WO is Complete.
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Roles allowed to change the non-billable fields on an entry FORM. The
+ * teammates role holds "edit any wo_time_clock entities of bundle entry", so
+ * the form would otherwise expose a billing decision to every crew member.
+ * The sign-off path writes programmatically and is not subject to this.
+ */
+const WO_SHARED_NON_BILLABLE_EDIT_ROLES = ['supervisor', 'administration', 'site_assistant', 'site_admin', 'administrator'];
+
+/**
+ * WO statuses whose billed totals are frozen: Invoiced (1281), Paid (1504).
+ * A non-billable change on an entry under one of these is rejected — move the
+ * WO back to Complete first (the same deliberate path wo_billing_recalc uses).
+ */
+const WO_SHARED_NON_BILLABLE_FROZEN_STATUSES = [1281, 1504];
+
+/**
+ * Whether a clock entry is flagged non-billable.
+ */
+function wo_shared_entry_is_non_billable(EntityInterface $entry): bool {
+  return $entry->hasField('field_non_billable') && (bool) ($entry->get('field_non_billable')->value ?? FALSE);
+}
+
+/**
+ * Closed clock hours on a work order, split billable / non-billable.
+ *
+ * The single sum every billing path now reads — the 34 per-bundle
+ * get_hours_for_*() helpers, wo_sign_off's completion presave and
+ * wo_shared_work_order_presave() all delegate here. Open punches (no
+ * field_end_time) are excluded, as before.
+ *
+ * @return array{billable: float, non_billable: float, all: float, flagged: int}
+ */
+function wo_shared_clock_hours_split(int $wo_id): array {
+  $out = ['billable' => 0.0, 'non_billable' => 0.0, 'all' => 0.0, 'flagged' => 0];
+  if ($wo_id <= 0) {
+    return $out;
+  }
+  $storage = \Drupal::entityTypeManager()->getStorage('wo_time_clock');
+  $ids = $storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $wo_id)
+    ->condition('type', 'entry')
+    ->exists('field_end_time')
+    ->execute();
+  if (!$ids) {
+    return $out;
+  }
+  foreach ($storage->loadMultiple($ids) as $tc) {
+    $h = (float) ($tc->get('field_total_time')->value ?? 0);
+    $out['all'] += $h;
+    if (wo_shared_entry_is_non_billable($tc)) {
+      $out['non_billable'] += $h;
+      $out['flagged']++;
+    }
+    else {
+      $out['billable'] += $h;
+    }
+  }
+  foreach (['billable', 'non_billable', 'all'] as $k) {
+    $out[$k] = round($out[$k], 2);
+  }
+  return $out;
+}
+
+/**
+ * Billable closed man-hours on a work order — what labor is charged on.
+ *
+ * Replaces the identical load-and-sum loop that lived in each wo_* module
+ * (CLAUDE.md: don't let a third copy land — this was the 34th).
+ */
+function wo_shared_billable_hours(int $wo_id): float {
+  return wo_shared_clock_hours_split($wo_id)['billable'];
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for wo_time_clock.
+ *
+ * Integrity of the non-billable call:
+ *   1. A reason is required when the flag is set (programmatic paths too —
+ *      the form has its own inline error).
+ *   2. Stamp field_non_billable_by / _at when the flag turns on; clear the
+ *      reason and stamps when it turns off. Stamps are never user-edited.
+ *   3. Reject a change to the flag or reason while the parent WO is Invoiced
+ *      or Paid — the invoice already went out with the other number. Move
+ *      the WO back to Complete first; wo_total_time then re-saves it and the
+ *      labor recomputes on the billable sum.
+ */
+function wo_shared_wo_time_clock_presave(EntityInterface $entity) {
+  if ($entity->bundle() !== 'entry' || !$entity->hasField('field_non_billable')) {
+    return;
+  }
+  $flag = (bool) ($entity->get('field_non_billable')->value ?? FALSE);
+  $reason = $entity->hasField('field_non_billable_reason') ? (string) ($entity->get('field_non_billable_reason')->value ?? '') : '';
+  // D11.2+ exposes the pre-save copy via getOriginal(); the property is deprecated.
+  $orig = method_exists($entity, 'getOriginal') ? $entity->getOriginal() : ($entity->original ?? NULL);
+  $was = $orig && $orig->hasField('field_non_billable') ? (bool) ($orig->get('field_non_billable')->value ?? FALSE) : FALSE;
+  $was_reason = $orig && $orig->hasField('field_non_billable_reason') ? (string) ($orig->get('field_non_billable_reason')->value ?? '') : '';
+  $changed = ($flag !== $was) || ($flag && $reason !== $was_reason);
+
+  if (!$changed) {
+    return;
+  }
+
+  // 3. Frozen WO guard.
+  $wo = ($entity->hasField('field_work_order') && !$entity->get('field_work_order')->isEmpty())
+    ? $entity->get('field_work_order')->entity : NULL;
+  if ($wo && $wo->hasField('field_status')
+      && in_array((int) ($wo->get('field_status')->target_id ?? 0), WO_SHARED_NON_BILLABLE_FROZEN_STATUSES, TRUE)) {
+    throw new EntityStorageException(sprintf(
+      'Work order %d is Invoiced/Paid — its billed hours are frozen. Move it back to Complete before changing whether entry %s is billable.',
+      $wo->id(), $entity->id() ?? 'new'
+    ));
+  }
+
+  // 1. Reason required.
+  if ($flag && $reason === '') {
+    throw new EntityStorageException(sprintf(
+      'Entry %s marked non-billable without a reason — a reason is required (over_staffed, customer_budget, training, rework, other).',
+      $entity->id() ?? 'new'
+    ));
+  }
+
+  // 2. Stamps.
+  if ($flag) {
+    if ($entity->hasField('field_non_billable_by')) {
+      $by = (int) ($entity->_non_billable_by ?? 0) ?: (int) \Drupal::currentUser()->id();
+      $entity->set('field_non_billable_by', $by ?: NULL);
+    }
+    if ($entity->hasField('field_non_billable_at')) {
+      $entity->set('field_non_billable_at', gmdate('Y-m-d\TH:i:s'));
+    }
+  }
+  else {
+    if ($entity->hasField('field_non_billable_reason')) {
+      $entity->set('field_non_billable_reason', NULL);
+    }
+    if ($entity->hasField('field_non_billable_by')) {
+      $entity->set('field_non_billable_by', NULL);
+    }
+    if ($entity->hasField('field_non_billable_at')) {
+      $entity->set('field_non_billable_at', NULL);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_field_access().
+ *
+ * The non-billable fields on a clock entry are a billing decision. On FORMS
+ * (and REST) only supervisor+ may edit them; everyone who can see the entry
+ * may view them. The sign-off path sets them in code, which this hook does
+ * not gate — that is the foreman's sanctioned route.
+ */
+function wo_shared_entity_field_access($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, ?FieldItemListInterface $items = NULL) {
+  if ($operation !== 'edit' || $field_definition->getTargetEntityTypeId() !== 'wo_time_clock') {
+    return AccessResult::neutral();
+  }
+  if (!in_array($field_definition->getName(), ['field_non_billable', 'field_non_billable_reason', 'field_non_billable_by', 'field_non_billable_at'], TRUE)) {
+    return AccessResult::neutral();
+  }
+  // The stamps are never hand-edited by anyone.
+  if (in_array($field_definition->getName(), ['field_non_billable_by', 'field_non_billable_at'], TRUE)) {
+    return AccessResult::forbidden('Stamped automatically.');
+  }
+  $allowed = (bool) array_intersect(WO_SHARED_NON_BILLABLE_EDIT_ROLES, $account->getRoles());
+  return AccessResult::forbiddenIf(!$allowed)->addCacheContexts(['user.roles']);
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter() for wo_time_clock entity forms
+ * (add + edit, every operation share the base id): the reason only shows, and
+ * is required, when Non-billable is ticked; a tick without a reason is an
+ * inline error rather than the presave exception.
+ */
+function wo_shared_form_wo_time_clock_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state): void {
+  _wo_shared_non_billable_form_alter($form, $form_state);
+}
+
+function _wo_shared_non_billable_form_alter(array &$form, \Drupal\Core\Form\FormStateInterface $form_state): void {
+  if (!isset($form['field_non_billable']) || !isset($form['field_non_billable_reason'])) {
+    return;
+  }
+  $form['field_non_billable_reason']['#states'] = [
+    'visible' => [':input[name="field_non_billable[value]"]' => ['checked' => TRUE]],
+  ];
+  $form['#validate'][] = '_wo_shared_non_billable_form_validate';
+}
+
+function _wo_shared_non_billable_form_validate(array &$form, \Drupal\Core\Form\FormStateInterface $form_state): void {
+  $flag = (bool) ($form_state->getValue(['field_non_billable', 'value']) ?? FALSE);
+  $reason = (string) ($form_state->getValue(['field_non_billable_reason', 0, 'value']) ?? '');
+  if ($flag && $reason === '') {
+    $form_state->setErrorByName('field_non_billable_reason', t('Pick a reason for marking this time non-billable.'));
+  }
 }

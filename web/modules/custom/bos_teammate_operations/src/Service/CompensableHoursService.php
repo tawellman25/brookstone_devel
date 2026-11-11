@@ -190,6 +190,97 @@ final class CompensableHoursService {
   }
 
   /**
+   * Non-billable WO hours for a user on a local date — closed entries the
+   * foreman (or office) marked non-billable (field_non_billable, job-clock
+   * item 6). A subset of getWoHoursForUserOnDate(): those hours were WORKED,
+   * they just earn nothing.
+   */
+  public function getNonBillableHoursForUserOnDate(int $uid, string $date): float {
+    [$startUtc, $endUtc] = $this->dateRangeUtc($date);
+    try {
+      $ids = $this->entityTypeManager->getStorage('wo_time_clock')->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('field_teammate', $uid)
+        ->condition('field_start_time', $startUtc, '>=')
+        ->condition('field_start_time', $endUtc, '<=')
+        ->exists('field_end_time')
+        ->condition('field_non_billable', 1)
+        ->execute();
+    }
+    catch (\Throwable $e) {
+      // Field not installed yet, or a query failure — report nothing rather than fail the page.
+      return 0.0;
+    }
+    if (empty($ids)) {
+      return 0.0;
+    }
+    $total = 0.0;
+    foreach ($this->entityTypeManager->getStorage('wo_time_clock')->loadMultiple($ids) as $entry) {
+      $raw = $entry->get('field_total_time')->value ?? NULL;
+      if (is_numeric($raw)) {
+        $total += (float) $raw;
+      }
+    }
+    return round($total, 2);
+  }
+
+  /**
+   * Unbilled hours in a date window, for the "where are we bleeding hours"
+   * read: total, entry count, and the split by reason and by teammate.
+   * Overhead WO hours (job-clock item 4) will join this once that ships.
+   *
+   * @return array{hours: float, entries: int, by_reason: array<string,float>, by_user: array<int,float>, labels: array<string,string>}
+   */
+  public function getNonBillableBreakdown(string $startDate, string $endDate, ?array $uids = NULL): array {
+    $out = ['hours' => 0.0, 'entries' => 0, 'by_reason' => [], 'by_user' => [], 'labels' => []];
+    [$startUtc] = $this->dateRangeUtc($startDate);
+    [, $endUtc] = $this->dateRangeUtc($endDate);
+    try {
+      $q = $this->entityTypeManager->getStorage('wo_time_clock')->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('field_start_time', $startUtc, '>=')
+        ->condition('field_start_time', $endUtc, '<=')
+        ->exists('field_end_time')
+        ->condition('field_non_billable', 1);
+      if ($uids !== NULL) {
+        if (empty($uids)) {
+          return $out;
+        }
+        $q->condition('field_teammate', $uids, 'IN');
+      }
+      $ids = $q->execute();
+    }
+    catch (\Throwable $e) {
+      return $out;
+    }
+    if (empty($ids)) {
+      return $out;
+    }
+    $entries = $this->entityTypeManager->getStorage('wo_time_clock')->loadMultiple($ids);
+    $labels = [];
+    foreach ($entries as $entry) {
+      $h = (float) ($entry->get('field_total_time')->value ?? 0);
+      $reason = $entry->hasField('field_non_billable_reason') ? (string) ($entry->get('field_non_billable_reason')->value ?? '') : '';
+      $reason = $reason !== '' ? $reason : 'other';
+      if (!$labels) {
+        $labels = $entry->hasField('field_non_billable_reason')
+          ? ($entry->get('field_non_billable_reason')->getFieldDefinition()->getFieldStorageDefinition()->getSetting('allowed_values') ?? [])
+          : [];
+      }
+      $uid = (int) ($entry->get('field_teammate')->target_id ?? 0);
+      $out['hours'] += $h;
+      $out['entries']++;
+      $out['by_reason'][$reason] = ($out['by_reason'][$reason] ?? 0.0) + $h;
+      $out['by_user'][$uid] = ($out['by_user'][$uid] ?? 0.0) + $h;
+    }
+    $out['hours'] = round($out['hours'], 2);
+    arsort($out['by_reason']);
+    arsort($out['by_user']);
+    $out['labels'] = $labels;
+    return $out;
+  }
+
+  /**
    * Variance = compensable - WO. Positive = unaccounted time;
    * negative = overtime / WO entries beyond a normal shift.
    *

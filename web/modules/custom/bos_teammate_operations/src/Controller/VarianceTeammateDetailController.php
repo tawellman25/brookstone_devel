@@ -266,6 +266,7 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
 
       $comp = $hadActivity ? $this->compensableHours->getCompensableHoursForUserOnDate($uid, $date) : 0.0;
       $wo = $hadActivity ? $this->compensableHours->getWoHoursForUserOnDate($uid, $date) : 0.0;
+      $nb = $hadActivity ? $this->compensableHours->getNonBillableHoursForUserOnDate($uid, $date) : 0.0;
       $variance = round($comp - $wo, 2);
       $status = $this->compensableHours->getVarianceStatus($variance, $hadActivity);
       $productPct = $comp > 0 ? round(($wo / $comp) * 100.0, 1) : NULL;
@@ -286,6 +287,7 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
         ['data' => $hadActivity ? '✓' : '', 'class' => ['bos-numeric']],
         ['data' => $hadActivity ? $this->fmtHrs($comp) : '0.00', 'class' => ['bos-numeric']],
         ['data' => $hadActivity ? $this->fmtHrs($wo) : '0.00', 'class' => ['bos-numeric']],
+        ['data' => $hadActivity ? $this->fmtHrs($nb) : '0.00', 'class' => ['bos-numeric', $nb > 0 ? 'bos-nb-hours' : 'bos-variance-na']],
         ['data' => $hadActivity ? $this->fmtHrs($variance) : '—', 'class' => ['bos-numeric', 'bos-variance-' . $status]],
         ['data' => $productPct === NULL ? '—' : $productPct . '%', 'class' => ['bos-numeric', 'bos-variance-' . $status]],
         ['data' => $hadActivity ? (string) $woTouched : '—', 'class' => ['bos-numeric']],
@@ -303,7 +305,7 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
 
     return [
       '#type' => 'table',
-      '#header' => ['Date', 'Activity', 'Comp Hrs', 'WO Hrs', 'Variance', 'Productive %', 'WOs Touched', 'Anomaly'],
+      '#header' => ['Date', 'Activity', 'Comp Hrs', 'WO Hrs', 'Non-billable', 'Variance', 'Productive %', 'WOs Touched', 'Anomaly'],
       '#rows' => $rows,
       '#attributes' => ['class' => ['bos-variance-table']],
     ];
@@ -348,6 +350,18 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
     $total = $entry->hasField('field_total_time') && !$entry->get('field_total_time')->isEmpty()
       ? number_format((float) $entry->get('field_total_time')->value, 2)
       : '—';
+    // Non-billable marker (item 6): the hours are real, the charge is not.
+    if ($entry->hasField('field_non_billable') && !empty($entry->get('field_non_billable')->value)) {
+      $reason = '';
+      if ($entry->hasField('field_non_billable_reason') && !$entry->get('field_non_billable_reason')->isEmpty()) {
+        $allowed = $entry->get('field_non_billable_reason')->getFieldDefinition()->getFieldStorageDefinition()->getSetting('allowed_values') ?? [];
+        $code = (string) $entry->get('field_non_billable_reason')->value;
+        $reason = (string) ($allowed[$code] ?? $code);
+      }
+      $by = $entry->hasField('field_non_billable_by') ? $entry->get('field_non_billable_by')->entity : NULL;
+      $title = trim($reason . ($by ? ' — ' . $by->getDisplayName() : ''));
+      $total .= ' <span class="bos-nb-badge" title="' . htmlspecialchars($title) . '">NB</span>';
+    }
 
     $anomalies = $this->anomalyDetection->detectAnomalies($entry);
     $anomalyText = '';

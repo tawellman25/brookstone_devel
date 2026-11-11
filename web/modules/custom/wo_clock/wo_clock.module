@@ -278,6 +278,7 @@ function wo_clock_preprocess_views_view(array &$variables) {
     return;
   }
   $sum = 0.0;
+  $nonBillable = 0.0;
   $closed = 0;
   $hasOpen = FALSE;
   foreach ($view->result as $row) {
@@ -289,13 +290,20 @@ function wo_clock_preprocess_views_view(array &$variables) {
       $hasOpen = TRUE;
       continue;
     }
-    $sum += (float) $e->get('field_total_time')->value;
+    $h = (float) $e->get('field_total_time')->value;
+    $sum += $h;
+    // Non-billable (item 6): still hours worked, so it stays in the total; the
+    // footer says how much of the total is not being charged.
+    if (function_exists('wo_shared_entry_is_non_billable') && wo_shared_entry_is_non_billable($e)) {
+      $nonBillable += $h;
+    }
     $closed++;
   }
   if ($closed > 0 || $hasOpen) {
-    $label = rtrim(rtrim(number_format($sum, 2), '0'), '.');
+    $fmt = fn(float $v) => rtrim(rtrim(number_format($v, 2), '0'), '.');
     $variables['footer'] = [
-      '#markup' => '<div class="wo-hour-subtotal">Total: <strong>' . $label . ' hrs</strong>'
+      '#markup' => '<div class="wo-hour-subtotal">Total: <strong>' . $fmt($sum) . ' hrs</strong>'
+        . ($nonBillable > 0 ? ' <span class="wo-hour-subtotal__nb">' . $fmt($nonBillable) . ' hrs non-billable</span>' : '')
         . ($hasOpen ? ' <span class="wo-hour-subtotal__open">+ open entry</span>' : '') . '</div>',
       '#allowed_tags' => ['div', 'strong', 'span'],
     ];
@@ -356,8 +364,27 @@ function _wo_clock_entry_card(EntityInterface $entry): array {
     ['query' => $dest !== '' ? ['destination' => $dest] : []]
   )->toString();
 
+  // Non-billable (item 6): badge + reason + who/when, so the card itself says
+  // who chose to give these hours away and why.
+  $nonBillable = function_exists('wo_shared_entry_is_non_billable') && wo_shared_entry_is_non_billable($entry);
+  $nbReason = '';
+  $nbWho = '';
+  if ($nonBillable) {
+    if ($entry->hasField('field_non_billable_reason') && !$entry->get('field_non_billable_reason')->isEmpty()) {
+      $allowed = $entry->get('field_non_billable_reason')->getFieldDefinition()->getFieldStorageDefinition()->getSetting('allowed_values') ?? [];
+      $val = (string) $entry->get('field_non_billable_reason')->value;
+      $nbReason = (string) ($allowed[$val] ?? $val);
+    }
+    $by = $entry->hasField('field_non_billable_by') ? $entry->get('field_non_billable_by')->entity : NULL;
+    $at = $entry->hasField('field_non_billable_at') ? (string) ($entry->get('field_non_billable_at')->value ?? '') : '';
+    $nbWho = trim(($by ? $by->getDisplayName() : '') . ($at ? ' ' . $fmt($at, 'm/d/Y g:i A') : ''));
+  }
+
   return [
     'id' => $id,
+    'non_billable' => $nonBillable,
+    'nb_reason' => $nbReason,
+    'nb_who' => $nbWho,
     'date' => $fmt($startRaw, 'D m/d'),
     'start' => $fmt($startRaw, 'g:i A'),
     'end' => $open ? '' : $fmt($endRaw, 'g:i A'),

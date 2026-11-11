@@ -90,6 +90,8 @@ class WoProfitCalculator {
 
     return [
       'hours' => $hours,
+      // Hours in the cost above that earn nothing (foreman's non-billable call).
+      'non_billable_hours' => $this->nonBillableHours($id),
       'rate' => $rate,
       'labor' => $labor,
       'materials' => $materials,
@@ -163,7 +165,8 @@ class WoProfitCalculator {
     if ($rate <= 0) {
       return 0.0;
     }
-    $hours = $this->laborHours((int) $wo->id());
+    // Billable hours only — see billableHours().
+    $hours = $this->billableHours((int) $wo->id());
     if ($hours <= 0) {
       return 0.0;
     }
@@ -219,6 +222,31 @@ class WoProfitCalculator {
     $q->join('wo_time_clock__field_total_time', 'tt', 'tt.entity_id = wo.entity_id AND tt.deleted = 0');
     $q->addExpression('SUM(tt.field_total_time_value)', 'h');
     return (float) $q->execute()->fetchField();
+  }
+
+  /**
+   * BILLABLE clock hours — the labor the invoice is built on. Entries the
+   * foreman marked non-billable at sign-off (field_non_billable, item 6) still
+   * cost us (laborHours() keeps them) but earn nothing, so the live revenue
+   * projection must leave them out exactly as completion will.
+   */
+  protected function billableHours(int $woId): float {
+    $q = $this->database->select('wo_time_clock__field_work_order', 'wo');
+    $q->condition('wo.field_work_order_target_id', $woId);
+    $q->condition('wo.deleted', 0);
+    $q->join('wo_time_clock__field_total_time', 'tt', 'tt.entity_id = wo.entity_id AND tt.deleted = 0');
+    $q->leftJoin('wo_time_clock__field_non_billable', 'nb', 'nb.entity_id = wo.entity_id AND nb.deleted = 0');
+    $q->where('COALESCE(nb.field_non_billable_value, 0) = 0');
+    $q->addExpression('SUM(tt.field_total_time_value)', 'h');
+    return (float) $q->execute()->fetchField();
+  }
+
+  /**
+   * Non-billable clock hours on a WO (0.0 when none) — shown as the hours
+   * given away in the cost/profit panel.
+   */
+  public function nonBillableHours(int $woId): float {
+    return max(0.0, round($this->laborHours($woId) - $this->billableHours($woId), 2));
   }
 
   /**

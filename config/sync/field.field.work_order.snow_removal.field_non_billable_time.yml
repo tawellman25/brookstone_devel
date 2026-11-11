@@ -1,0 +1,23 @@
+uuid: 0506325e-16a8-4e54-bc5e-5c82f7f16460
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.snow_removal
+    - field.storage.work_order.field_non_billable_time
+id: work_order.snow_removal.field_non_billable_time
+field_name: field_non_billable_time
+entity_type: work_order
+bundle: snow_removal
+label: 'Non-billable Time'
+description: 'Man-hours clocked on this work order that the foreman or office marked non-billable. Computed at completion; Total Time on this work order is the billable remainder.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: 0
+  max: null
+  prefix: ''
+  suffix: ' hrs'
+field_type: decimal

@@ -1,0 +1,23 @@
+uuid: 531f7d6b-e72e-4923-bc05-0bb2b8ceb5e1
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_time_clock.entry
+    - field.storage.wo_time_clock.field_non_billable
+id: wo_time_clock.entry.field_non_billable
+field_name: field_non_billable
+entity_type: wo_time_clock
+bundle: entry
+label: Non-billable
+description: 'This teammate''s time on this job is kept as hours worked but left off the invoice. The foreman makes this call at sign-off; the office may correct it while the work order is still Complete. A reason is required.'
+required: false
+translatable: false
+default_value:
+  -
+    value: 0
+default_value_callback: ''
+settings:
+  on_label: Non-billable
+  off_label: Billable
+field_type: boolean

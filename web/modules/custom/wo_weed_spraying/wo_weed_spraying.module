@@ -340,28 +340,11 @@ function get_largest_gallons_used_for_weed_spraying($workOrderId) {
  * Retrieves the hours clocked in for Weed Spraying.
  */
 function get_hours_for_weed_spraying($workOrderId) {
-  if (!is_numeric($workOrderId) || $workOrderId < 1) {
-    return 0;
-  }
-
-  $query = \Drupal::entityQuery('wo_time_clock')
-    ->accessCheck(FALSE)
-    ->condition('field_work_order', $workOrderId)
-    ->condition('type', 'entry');
-  $ids = $query->execute();
-
-  if (empty($ids)) {
-    return 0;
-  }
-
-  $entities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadMultiple($ids);
-  $hoursSpent = 0;
-
-  foreach ($entities as $entity) {
-    $hoursSpent += $entity->get('field_total_time')->value ?? 0;
-  }
-
-  return $hoursSpent;
+  // Billable closed man-hours — entries the foreman marked non-billable at
+  // sign-off are kept as hours worked but left out of the labor charge.
+  // One shared sum since 2026-11-11 (job-clock item 6); this used to be the
+  // same load-and-sum loop copied into 34 wo_* modules.
+  return wo_shared_billable_hours((int) $workOrderId);
 }
 
 /**

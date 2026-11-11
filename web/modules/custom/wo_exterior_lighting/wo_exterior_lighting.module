@@ -124,17 +124,9 @@ function get_exterior_lighting_total_rental_fees($workOrderId) {
  * Total clocked hours for a Work Order (sum of wo_time_clock entries).
  */
 function get_hours_for_exterior_lighting($workOrderId) {
-    if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
-        return 0;
-    }
-    $hoursSpent = 0;
-    $entries = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
-        'field_work_order' => $workOrderId,
-    ]);
-    foreach ($entries as $entry) {
-        if ($entry->bundle() === 'entry') {
-            $hoursSpent += (float) $entry->get('field_total_time')->value;
-        }
-    }
-    return $hoursSpent;
+  // Billable closed man-hours — entries the foreman marked non-billable at
+  // sign-off are kept as hours worked but left out of the labor charge.
+  // One shared sum since 2026-11-11 (job-clock item 6); this used to be the
+  // same load-and-sum loop copied into 34 wo_* modules.
+  return wo_shared_billable_hours((int) $workOrderId);
 }

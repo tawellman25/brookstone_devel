@@ -1,0 +1,29 @@
+uuid: 743d096f-9577-4af0-8182-81c0f78abac2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_time_clock.entry
+    - field.storage.wo_time_clock.field_non_billable_by
+id: wo_time_clock.entry.field_non_billable_by
+field_name: field_non_billable_by
+entity_type: wo_time_clock
+bundle: entry
+label: 'Non-billable set by'
+description: 'Who made the non-billable call. Stamped automatically; never edited by hand.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    include_anonymous: false
+    filter:
+      type: _none
+    target_bundles: null
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+field_type: entity_reference

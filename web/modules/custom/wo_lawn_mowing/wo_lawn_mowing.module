@@ -477,23 +477,11 @@ function get_mow_rate_for_lawn_mowing($workOrderId) {
  *   The total hours.
  */
 function get_hours_for_lawn_mowing($workOrderId) {
-  if (!is_numeric($workOrderId) || $workOrderId < 1 || !\Drupal::entityTypeManager()->getStorage('work_order')->load($workOrderId)) {
-    return 0;
-  }
-
-  $hoursSpent = 0;
-  $woTimeClockEntities = \Drupal::entityTypeManager()->getStorage('wo_time_clock')->loadByProperties([
-    'field_work_order' => $workOrderId,
-  ]);
-
-  foreach ($woTimeClockEntities as $entity) {
-    if ($entity->bundle() === 'entry') {
-      $hours = $entity->get('field_total_time')->value;
-      $hoursSpent += $hours;
-    }
-  }
-
-  return $hoursSpent;
+  // Billable closed man-hours — entries the foreman marked non-billable at
+  // sign-off are kept as hours worked but left out of the labor charge.
+  // One shared sum since 2026-11-11 (job-clock item 6); this used to be the
+  // same load-and-sum loop copied into 34 wo_* modules.
+  return wo_shared_billable_hours((int) $workOrderId);
 }
 
 /**

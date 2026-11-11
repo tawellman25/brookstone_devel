@@ -181,24 +181,20 @@ function _wo_sign_off_apply_completion_calcs(EntityInterface $work_order, Entity
     'in_house_tasks', 'christmas_decorations', 'misc_services',
   ];
   if (!in_array($work_order->bundle(), $excludedBundles)) {
-    $timeSpent = 0;
-
-    $woTimeClockEntities = \Drupal::entityTypeManager()
-      ->getStorage('wo_time_clock')
-      ->loadByProperties([
-        'field_work_order' => $work_order_id,
-        'type' => 'entry',
-      ]);
-
-    foreach ($woTimeClockEntities as $timeEntity) {
-      $timeSpent += $timeEntity->get('field_total_time')->value ?? 0;
-    }
-
+    // Sum already represents total man-hours: Phase 2c reconciliation
+    // creates one wo_time_clock entry per crew member, so each crew
+    // member's hours are counted exactly once. No crew-count multiplier.
+    //
+    // Since 2026-11-11 (job-clock item 6) the sum is the BILLABLE closed
+    // hours — entries the foreman marked non-billable at sign-off are kept
+    // as hours worked but left out of Total Time, and therefore out of the
+    // labor charge; the remainder lands in field_non_billable_time.
+    $split = wo_shared_clock_hours_split((int) $work_order_id);
     if ($work_order->hasField('field_total_time')) {
-      // Sum already represents total man-hours: Phase 2c reconciliation
-      // creates one wo_time_clock entry per crew member, so each crew
-      // member's hours are counted exactly once. No crew-count multiplier.
-      $work_order->set('field_total_time', $timeSpent);
+      $work_order->set('field_total_time', $split['billable']);
+    }
+    if ($work_order->hasField('field_non_billable_time')) {
+      $work_order->set('field_non_billable_time', $split['non_billable'] > 0 ? $split['non_billable'] : NULL);
     }
   }
 }
@@ -625,6 +621,11 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
     }
   }
 
+  // Billable call (job-clock item 6, Todd's decision 2026-11-10): the foreman
+  // decides at sign-off whose time is charged. One row per person with hours
+  // on this WO (plus the roster), a Non-billable tick and a reason.
+  _wo_sign_off_build_billable_rows($form, $form_state, $entity, $alter_wo_id);
+
   // Append validate + submit handlers. For the lawn_mowing path the
   // hard-validation on field_mowing_who_on_site goes FIRST so an
   // empty roster blocks before any reconciliation work.
@@ -643,11 +644,231 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
   // aren't on the roster). Turns the fatal EntityStorageException into a clean
   // inline error. The presave guard stays as the backstop for non-form paths.
   $form['#validate'][] = '_wo_sign_off_open_clockin_form_guard';
+  $form['#validate'][] = '_wo_sign_off_billable_validate';
+  // Order matters: reconciliation first (it creates/closes the entries), then
+  // the billable call (it flags those entries), then the entity save — whose
+  // presave completes the WO and sums the BILLABLE hours. Both run before
+  // ::save(), so the labor charge is computed on the flags just made.
   if (isset($form['actions']['submit']['#submit'])) {
-    array_unshift($form['actions']['submit']['#submit'], '_wo_sign_off_reconciliation_submit');
+    array_unshift($form['actions']['submit']['#submit'], '_wo_sign_off_reconciliation_submit', '_wo_sign_off_billable_submit');
   }
   else {
-    array_unshift($form['#submit'], '_wo_sign_off_reconciliation_submit');
+    array_unshift($form['#submit'], '_wo_sign_off_reconciliation_submit', '_wo_sign_off_billable_submit');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Job-clock item 6 — the foreman's billable call at sign-off
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Who had time on this WO: teammates with any clock entry ∪ the roster from
+ * the in-flight form state ∪ the roster saved on the entity. Keyed by uid,
+ * each with closed hours, open-entry count, and the current flag/reason
+ * (flagged when ANY of their entries is).
+ */
+function _wo_sign_off_billable_people(int $wo_id, array $roster): array {
+  $tc_storage = \Drupal::entityTypeManager()->getStorage('wo_time_clock');
+  $people = [];
+  foreach ($roster as $uid) {
+    $uid = (int) $uid;
+    if ($uid > 0) {
+      $people[$uid] = ['hours' => 0.0, 'open' => 0, 'flagged' => FALSE, 'reason' => '', 'entries' => 0];
+    }
+  }
+  $ids = $tc_storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $wo_id)
+    ->condition('type', 'entry')
+    ->execute();
+  foreach ($ids ? $tc_storage->loadMultiple($ids) : [] as $tc) {
+    $uid = (int) ($tc->get('field_teammate')->target_id ?? 0);
+    if ($uid <= 0) {
+      continue;
+    }
+    $people[$uid] = $people[$uid] ?? ['hours' => 0.0, 'open' => 0, 'flagged' => FALSE, 'reason' => '', 'entries' => 0];
+    $people[$uid]['entries']++;
+    if ($tc->get('field_end_time')->isEmpty()) {
+      $people[$uid]['open']++;
+    }
+    else {
+      $people[$uid]['hours'] += (float) ($tc->get('field_total_time')->value ?? 0);
+    }
+    if (function_exists('wo_shared_entry_is_non_billable') && wo_shared_entry_is_non_billable($tc)) {
+      $people[$uid]['flagged'] = TRUE;
+      if ($people[$uid]['reason'] === '' && $tc->hasField('field_non_billable_reason')) {
+        $people[$uid]['reason'] = (string) ($tc->get('field_non_billable_reason')->value ?? '');
+      }
+    }
+  }
+  return $people;
+}
+
+/**
+ * Render the per-person billable rows inside the reconciliation wrapper (so the
+ * "Refresh man hours" AJAX rebuilds them with the edited roster).
+ */
+function _wo_sign_off_build_billable_rows(array &$form, FormStateInterface $form_state, EntityInterface $entity, int $wo_id): void {
+  if ($wo_id <= 0 || !isset($form['signoff_reconciliation']) || !function_exists('wo_shared_clock_hours_split')) {
+    return;
+  }
+  $defs = \Drupal::service('entity_field.manager')->getFieldDefinitions('wo_time_clock', 'entry');
+  if (!isset($defs['field_non_billable'], $defs['field_non_billable_reason'])) {
+    return;
+  }
+  /** @var \Drupal\wo_sign_off\Service\WoCrewRosterService $svc */
+  $svc = \Drupal::service('wo_sign_off.crew_roster');
+  $entity_type = $entity->getEntityTypeId();
+  $roster = $svc->normalizeRosterFromFormState($form_state->getValues(), $entity_type, $entity->bundle());
+  $roster_field = _wo_sign_off_roster_field_for($entity_type);
+  if ($entity->hasField($roster_field)) {
+    foreach ($entity->get($roster_field) as $item) {
+      if (!empty($item->target_id)) {
+        $roster[] = (int) $item->target_id;
+      }
+    }
+  }
+  $people = _wo_sign_off_billable_people($wo_id, array_values(array_unique(array_map('intval', $roster))));
+  if (empty($people)) {
+    return;
+  }
+
+  $reasons = $defs['field_non_billable_reason']->getFieldStorageDefinition()->getSetting('allowed_values') ?? [];
+  $user_storage = \Drupal::entityTypeManager()->getStorage('user');
+  $fmt = fn(float $h) => rtrim(rtrim(number_format($h, 2, '.', ''), '0'), '.') ?: '0';
+
+  $form['signoff_reconciliation']['billable'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Who gets billed'),
+    '#description' => t('Untick nobody unless their time should NOT be charged to the customer — extra men on site, a customer on a set budget. Their hours still count as worked and still show on the job; only the invoice leaves them out. You are making this call and it is recorded under your name.'),
+    '#weight' => 50,
+    '#tree' => TRUE,
+    '#attributes' => ['class' => ['signoff-billable']],
+  ];
+  uasort($people, fn($a, $b) => $b['hours'] <=> $a['hours']);
+  foreach ($people as $uid => $info) {
+    $u = $user_storage->load($uid);
+    $name = $u ? $u->getDisplayName() : 'User ID ' . $uid;
+    $hours = $fmt($info['hours']) . ' hrs' . ($info['open'] ? ' + ' . $info['open'] . ' open' : '') . ($info['entries'] === 0 ? ' (no clock entry yet — created on save)' : '');
+    $form['signoff_reconciliation']['billable'][$uid] = [
+      '#type' => 'container',
+      '#attributes' => ['class' => ['signoff-billable__row']],
+      'who' => [
+        '#type' => 'html_tag',
+        '#tag' => 'span',
+        '#attributes' => ['class' => ['signoff-billable__who']],
+        '#value' => '<strong>' . htmlspecialchars($name) . '</strong> <span class="signoff-billable__hours">' . htmlspecialchars($hours) . '</span>',
+      ],
+      'non_billable' => [
+        '#type' => 'checkbox',
+        '#title' => t('Non-billable'),
+        '#default_value' => $info['flagged'] ? 1 : 0,
+      ],
+      'reason' => [
+        '#type' => 'select',
+        '#title' => t('Reason'),
+        '#title_display' => 'invisible',
+        '#options' => $reasons,
+        '#empty_option' => t('- why? -'),
+        '#default_value' => $info['reason'],
+        '#states' => [
+          'visible' => [':input[name="signoff_reconciliation[billable][' . $uid . '][non_billable]"]' => ['checked' => TRUE]],
+        ],
+      ],
+    ];
+  }
+  $form['#attached']['library'][] = 'wo_sign_off/billable_rows';
+}
+
+/**
+ * Validate: a Non-billable tick needs a reason.
+ */
+function _wo_sign_off_billable_validate(array &$form, FormStateInterface $form_state): void {
+  $rows = $form_state->getValue(['signoff_reconciliation', 'billable']) ?? [];
+  if (!is_array($rows)) {
+    return;
+  }
+  foreach ($rows as $uid => $row) {
+    if (!is_array($row) || empty($row['non_billable'])) {
+      continue;
+    }
+    if (empty($row['reason'])) {
+      $form_state->setErrorByName("signoff_reconciliation][billable][$uid][reason", t('Pick a reason for marking this teammate non-billable.'));
+    }
+  }
+}
+
+/**
+ * Submit: apply the foreman's call to every clock entry of each person on this
+ * WO. Runs AFTER the reconciliation submit (so entries it just created/closed
+ * are included) and BEFORE the entity save that completes the WO (so the
+ * labor charge is summed on these flags). Stamped by the signer.
+ */
+function _wo_sign_off_billable_submit(array &$form, FormStateInterface $form_state): void {
+  $rows = $form_state->getValue(['signoff_reconciliation', 'billable']) ?? [];
+  if (!is_array($rows) || empty($rows)) {
+    return;
+  }
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof EntityFormInterface) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  $values = $form_state->getValues();
+  $wo_id = (int) ($values['field_work_order'][0]['target_id'] ?? $entity->get('field_work_order')->target_id ?? 0);
+  if ($wo_id <= 0) {
+    return;
+  }
+  $signer_uid = (int) ($values['field_signed_off_by'][0]['target_id'] ?? 0) ?: (int) \Drupal::currentUser()->id();
+
+  $tc_storage = \Drupal::entityTypeManager()->getStorage('wo_time_clock');
+  $changed = [];
+  foreach ($rows as $uid => $row) {
+    $uid = (int) $uid;
+    if ($uid <= 0 || !is_array($row)) {
+      continue;
+    }
+    $flag = !empty($row['non_billable']);
+    $reason = $flag ? (string) ($row['reason'] ?? '') : '';
+    $ids = $tc_storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_work_order', $wo_id)
+      ->condition('field_teammate', $uid)
+      ->condition('type', 'entry')
+      ->execute();
+    foreach ($ids ? $tc_storage->loadMultiple($ids) : [] as $tc) {
+      if (!$tc->hasField('field_non_billable')) {
+        continue;
+      }
+      $cur = (bool) ($tc->get('field_non_billable')->value ?? FALSE);
+      $cur_reason = (string) ($tc->get('field_non_billable_reason')->value ?? '');
+      if ($cur === $flag && (!$flag || $cur_reason === $reason)) {
+        continue;
+      }
+      $tc->set('field_non_billable', $flag ? 1 : 0);
+      $tc->set('field_non_billable_reason', $flag ? $reason : NULL);
+      $tc->_non_billable_by = $signer_uid;
+      try {
+        $tc->save();
+        $changed[$uid] = ($changed[$uid] ?? 0) + 1;
+      }
+      catch (\Throwable $e) {
+        \Drupal::messenger()->addError(t('Could not update the billable flag on time entry @id: @m', ['@id' => $tc->id(), '@m' => $e->getMessage()]));
+      }
+    }
+  }
+  if ($changed) {
+    $names = [];
+    $user_storage = \Drupal::entityTypeManager()->getStorage('user');
+    foreach ($changed as $uid => $n) {
+      $u = $user_storage->load($uid);
+      $names[] = ($u ? $u->getDisplayName() : "uid $uid") . " ($n)";
+    }
+    \Drupal::logger('wo_sign_off')->notice('Billable call on WO @wo by uid @by: @who', [
+      '@wo' => $wo_id,
+      '@by' => $signer_uid,
+      '@who' => implode(', ', $names),
+    ]);
   }
 }
 

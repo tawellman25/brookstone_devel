@@ -669,6 +669,8 @@ Found in the deploy dry-run and the live `web/error_log`; neither fixed (out of 
 
 Surfaced 2026-11-11 entering the crew sign-off SOP (`WEB-SYS-SGN-001`, bundle `system_procedures`): it returned **403 for every crew lead and for the office**. Measured on live: `teammates` hold `view any sop entities of bundle sprinkler_maintenance` only; `supervisor`/`administration` add `office_administration`; nobody below site_admin can open `system_procedures`, `landscaping`, `spray`, `snow_removal`, `lighting`, `maintenance`, `safety`, `training` or `sop_governance` SOPs. The SOP Directory view (`/admin/operations/training/sop/directory`) is role-open to teammates, so crews see titles they cannot open. Immediate: Todd grants `system_procedures` view to Teammates / Supervisor / Administration (`~/tmp/grant_sop_system_procedures_view.php` staged on live; granted on dev already). Proper fix: a permissions pass over all 11 SOP bundles by audience — crew-facing bundles viewable by `teammates`, office bundles by `administration`+`supervisor`, governance by office — as a committed role-config change with a per-role diff report first (config/sync roles are drifted; never a blind import). Tier 2, S.
 
+**Update 2026-11-11 10:15 MT:** `view any sop entities of bundle system_procedures` granted on live to `teammates`, `supervisor`, `administration` (Todd's request; staged script run via `drush php:script`). Verified read-only: a crew-only account (uid 134) gets 200 on `WEB-SYS-SGN-001`, a supervisor-only account 200 on all three new SOPs. **Still open:** landscaping, spray, snow_removal, safety, training, maintenance and lighting bundles remain invisible to crews — the per-bundle pass below.
+
 ---
 
 ## Status

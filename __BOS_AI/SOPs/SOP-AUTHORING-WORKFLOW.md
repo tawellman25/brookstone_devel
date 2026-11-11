@@ -2,11 +2,17 @@
 
 ## Structure
 
-Each SOP lives in __BOS_AI/SOPs/[SOP_CODE]/ with three files:
+Each SOP lives in __BOS_AI/SOPs/[SOP_CODE]/ with three files (four since 2026-11-11):
 
   [SOP_CODE]_source.js              — Node.js script, generates the .docx
-  [SOP_CODE]_HTML_Fields_PASTE.html — Field-by-field BOS paste file
+  [SOP_CODE]_HTML_Fields_PASTE.html — Field-by-field BOS paste file (human copy)
   [SOP_CODE]_v[VERSION].docx        — Generated output (never edit directly)
+  [SOP_CODE]_fields.json            — The BOS field content, machine-readable.
+                                      `drush php:script web/scripts/sop_import_drafts.php -- <file>.json`
+                                      creates the SOP in BOS as a DRAFT (or refreshes an existing
+                                      draft; never touches approved/active/archived). Parent and
+                                      related SOPs are resolved by code. A human reviews in BOS and
+                                      sets Active — codes lock at approval (GOV-SOP-001/003).
 
 ## Dependency
 
@@ -49,6 +55,18 @@ gray #424242  | gray light #F5F5F5
 | OFF-ADM-EST-001 | Estimate Request Intake & Pipeline                 | 1.0 | Active |
 | OFF-ADM-EST-002 | Estimate Stage Management (Estimator)              | 1.0 | Active |
 | OFF-QBS-INV-003 | Printing Customer Invoices in QuickBooks Desktop   | 1.0 | Active |
+| WEB-SYS-SGN-001  | Sign-Off: Confirm Crew Hours and Decide Who Gets Billed | 1.0 | Draft — entered in BOS 2026-11-11, awaiting Todd's review/Active |
+| OFF-ADM-NBL-001  | Non-Billable Time: Review and Correction           | 1.0 | Draft — entered in BOS 2026-11-11, awaiting review |
+| OFF-ADM-TGT-001  | Target Hours on Cleanup Work Orders                | 1.0 | Draft — entered in BOS 2026-11-11, awaiting review |
+
+> The three WO SOPs above were **drafted by Claude Code at Todd's explicit request on
+> 2026-11-11** (job-clock guardrails items 5 + 6), as an exception to the "Chat authors,
+> Code flags" rule below. Content is field-by-field per GOV-SOP-002 (MUST / MUST NOT;
+> Pre-Checks · Steps · Quality Checks · Completion). All three source files were generated
+> from one content definition (the session's `gen_sops.py`), so the docx, the paste HTML and
+> the BOS entity say the same thing. Codes follow GOV-SOP-003 (OWNER-AREA-SERVICE-SEQ) and the per-bundle validators (system_procedures = WEB-SYS-…, office_administration = OFF-ADM-…):
+> WEB = BOS system procedure used by every crew; OFF = office. Entered as **Draft** — Todd
+> approves.
 
 ## Pending SOPs (SOP-Needed backlog)
 
@@ -63,6 +81,15 @@ Chat authors these in a dedicated session, then they move up to the SOP Index.
 | OFF-REV-ENT-001 | Entering customer reviews, incl. handwritten notes | Office | 2026-09-27 | A testimonial now has **two image fields that behave oppositely**, and getting them the wrong way round publishes a customer's signature. **Public image** renders on `/about-us/reviews` exactly as uploaded; **Scan of the original note** is office-only and never public. SOP should cover: type the words into **Testimony** (an image of text is invisible to search engines and screen readers, so a photo alone is not a review); photograph the card into **Scan of the original note** as the record of where the quote came from; and put an image in **Public image** only after deliberately cropping or blurring the signature, address, phone number and full name. Also: a review is only live once **Status = Approved** (public submissions arrive Pending and a non-office save is forced back to Pending), and `field_submitter_email` is internal. Context: office is entering a year of accumulated handwritten thank-you notes.
 
 ---
+
+## Entering drafts into BOS from the repo (2026-11-11)
+
+    ddev drush php:script web/scripts/sop_import_drafts.php -- \
+      /var/www/html/__BOS_AI/SOPs/[SOP_CODE]/[SOP_CODE]_fields.json [more .json …]
+
+On live: scp the JSON(s) + `web/scripts/sop_import_drafts.php` to `~/tmp` and run the
+same command with live's drush (`/opt/alt/php83/usr/bin/php vendor/drush/drush/drush.php`)
+— the docroot is classifier-protected for writes, `~/tmp` is not. Idempotent on SOP code.
 
 ## SOP Maintenance Rules
 

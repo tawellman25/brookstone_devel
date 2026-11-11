@@ -2084,6 +2084,26 @@ drush php-eval '\Drupal::service("plugin.manager.menu.link")->rebuild();'
 **Order matters** — router first. Menu links resolve against routes, so
 rebuilding links while the new route is still absent can drop the link.
 
+**A code deploy during crew hours (2026-11-11, job-clock item 6) needs four
+calls, not a `cr`** — one per kind of thing the rsync changed, in this order,
+all from one `drush php:script`:
+
+```php
+\Drupal::service('cache_tags.invalidator')->invalidateTags(['library_info']); // a new/changed *.libraries.yml
+\Drupal::service('twig')->invalidate();                                       // a changed .html.twig (prod has no auto_reload)
+\Drupal::service('asset.query_string')->reset();                              // changed CSS/JS — _drupal_flush_css_js() is GONE in D11
+\Drupal::service('asset.css.collection_optimizer')->deleteAll();              // (and the js optimizer) — stale aggregates
+\Drupal::service('kernel')->rebuildContainer();                               // NEW procedural hooks: D11 collects them at container build
+```
+
+5.2 s and **107 MB** on live where a full `cr` is a cold-render storm for every
+crew phone. Two rules: run it **before** any field/display setup script so the
+new hooks are registered the moment the fields exist (hooks that guard on
+`hasField()` are inert until then, so early registration costs nothing), and
+**skip `pkill lsphp` while crews are working** — opcache `revalidate_freq=60`
+picks the new files up within the minute, and a killed worker aborts whoever's
+save was in flight. Check `hasImplementations($hook, $module)` afterwards.
+
 Related: prefer a lower explicit `memory_limit` than the container ceiling
 when running anything heavy on live, so PHP fails with a readable error
 instead of being killed silently. And see the opcache/revalidate gotcha below

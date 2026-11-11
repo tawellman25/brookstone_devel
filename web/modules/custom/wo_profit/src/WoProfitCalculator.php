@@ -231,6 +231,12 @@ class WoProfitCalculator {
    * projection must leave them out exactly as completion will.
    */
   protected function billableHours(int $woId): float {
+    // Until web/scripts/wo_non_billable_setup.php has installed the flag on an
+    // environment, every hour is billable — never fail the panel on a missing
+    // table (the code can sit on a server a minute before the setup runs).
+    if (!$this->database->schema()->tableExists('wo_time_clock__field_non_billable')) {
+      return $this->laborHours($woId);
+    }
     $q = $this->database->select('wo_time_clock__field_work_order', 'wo');
     $q->condition('wo.field_work_order_target_id', $woId);
     $q->condition('wo.deleted', 0);

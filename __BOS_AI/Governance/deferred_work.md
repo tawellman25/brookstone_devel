@@ -657,6 +657,13 @@ Shipped 2026-11-10 (`8f04ba94`, change_log). Left open, each small:
 - **`bos_breadcrumbs.info.yml` description still names four vocabularies**; the allowlist is 32. Cosmetic.
 - **Live `~/tmp/inspect_plant_problems_live.php`** (read-only inspection helper) can be deleted by Todd at leisure; writes there are classifier-blocked for Code.
 
+### 33. Two live findings surfaced 2026-11-10 while preparing the target-hours deploy
+
+Found in the deploy dry-run and the live `web/error_log`; neither fixed (out of scope for the cleanup-hours work).
+
+- **The deploy script's `--delete` removes live `web/error_log` on every run.** PHP writes its error log into the docroot (`web/error_log`, 126 KB / 967 lines today alone), the file is not in git, so rsync `--delete` wipes it — this morning's 12:48 UTC Plant Problems deploy did (and the 11-08 deploy before it), and today's dry-run listed it again. Today's copy is in the session scratchpad (`live_error_log_20261110.txt`). Fix: point `error_log` outside the docroot in live `.user.ini`/`php.ini`, or add the path to the deploy script's protected list beside `.vscode/`, `dev_scripts/`, `__BOS_AI/`. Tier 3, S.
+- **AEL post-insert shutdown TypeError leaves sentinel titles stuck.** `TypeError: SplObjectStorage::offsetSet(): Argument #1 ($object) must be of type object, null given` in `Renderer::setCurrentRenderContext()` ← `renderInIsolation()` ← `token` `TokenTokensHooks::fieldTokens()` ← entity presave ← `_auto_entitylabel_post_insert()` (a shutdown function). **17 occurrences today, 07:39–16:26 MT, all crew hours.** Effect: the entity keeps `%AutoEntityLabel: <uuid>%` as its title — **≥45 `wo_status_updates` on live** (the check stopped at `wo_material_list_item`, which has no title column; later types unchecked). `wo_shared_work_order_insert()` heals work_order only (4 heals 11-09, 1 on 11-10). Reproduced on dev by a drush script that saves then deletes entities after sub-request renders. Suspect the D11 cutover (token's OOP hooks + an empty render-context stack in shutdown). Fix candidates: a generic heal (clear + re-save when the title carries the sentinel, every AEL'd type) in `wo_shared` plus a one-off backfill, and the root cause upstream (token/core issue to find or file). Tier 2, M. **On the ROADMAP** (NEXT) — it is visible in every WO timeline.
+
 ---
 
 ## Status

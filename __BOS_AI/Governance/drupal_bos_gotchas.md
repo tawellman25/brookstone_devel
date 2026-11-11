@@ -2158,6 +2158,17 @@ production deploy; only the plain deploy-script invocation passes.
 
 ---
 
+## The deploy's `--delete` wipes live `web/error_log` — copy it before you deploy
+
+PHP on live writes its error log into the docroot as `web/error_log`. It is not in git, so the
+deploy's rsync `--delete` removes it on every run — the 2026-11-08 and 2026-11-10 morning
+deploys did, and the 11-10 evening dry-run listed `*deleting web/error_log` again with 967
+fresh lines in it. Those lines are the only record of fatals and shutdown-function exceptions
+that never reach watchdog (the AEL `SplObjectStorage::offsetSet(): null` TypeError was found
+there, not in the log UI). Before a deploy: `scp brookstone:~/brookstone/web/error_log
+<scratchpad>/` (read-only, small) and read its distinct messages. Permanent fix is deferred
+#33: log outside the docroot, or protect the path in the deploy script.
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

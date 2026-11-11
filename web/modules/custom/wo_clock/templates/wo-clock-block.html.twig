@@ -8,9 +8,32 @@
  * - wo_id: the current work order id
  * - current_entry: { entry_id, start_us, elapsed } (state b)
  * - open_entries: list of themed wo_clock_alert_entry render arrays (state c)
+ * - target_hours: null, or { target_label, clocked_label, delta_label, pct, over,
+ *   source: null|{ hours_label, date } } — cleanups only (wo_shared).
  */
 #}
 <div class="wo-clock" data-wo-id="{{ wo_id }}">
+
+  {#
+    Target hours (cleanups). Above the buttons on purpose: the crew should see
+    the number BEFORE they start, the same reason the pre-emergent season flag
+    sits up here. "Clocked" counts closed entries only, so it is hours banked,
+    not a guess; the bar caps at 100% and turns red once the target is passed.
+  #}
+  {% if target_hours %}
+    <div class="wo-clock__target{% if target_hours.over %} wo-clock__target--over{% endif %}" role="status">
+      <p class="wo-clock__target-main">
+        <span class="wo-clock__target-label">Target</span> <strong>{{ target_hours.target_label }} hrs</strong>
+        <span class="wo-clock__target-sep">·</span>
+        <span class="wo-clock__target-label">Clocked</span> <strong>{{ target_hours.clocked_label }} hrs</strong>
+        {% if target_hours.over %}<span class="wo-clock__target-delta">{{ target_hours.delta_label }} over</span>{% endif %}
+      </p>
+      <span class="wo-clock__target-bar" aria-hidden="true"><span class="wo-clock__target-fill" style="width: {{ target_hours.pct }}%"></span></span>
+      {% if target_hours.source %}
+        <p class="wo-clock__target-src">Last time: {{ target_hours.source.hours_label }} hrs on {{ target_hours.source.date }}</p>
+      {% endif %}
+    </div>
+  {% endif %}
 
   {% if state == 'c' and open_entries %}
     <div class="wo-clock__alert" role="alert">

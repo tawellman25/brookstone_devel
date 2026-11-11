@@ -9,6 +9,17 @@ use Drupal\views\Views;
  * Implements hook_entity_presave().
  */
 function wo_fall_cleanup_entity_presave(EntityInterface $entity) {
+    // Target hours (job-clock guardrails item 5, Todd 2026-11-10): a NEW
+    // cleanup gets field_target_hours prefilled from the most recent
+    // prior-year billed cleanup at this property. Runs before the Complete
+    // guard below because a new WO is never Complete. Helper + plausibility
+    // rule live in wo_shared (shared by fall and spring); only the call site
+    // is here — one wo_* module per bundle.
+    if ($entity->getEntityTypeId() === 'work_order' && $entity->bundle() === 'fall_cleanup'
+        && $entity->isNew() && function_exists('wo_shared_target_hours_prefill')) {
+        wo_shared_target_hours_prefill($entity);
+    }
+
     // Initialize $grand_total at the start.
     $grand_total = 0;
     $labor_subtotal = 0;

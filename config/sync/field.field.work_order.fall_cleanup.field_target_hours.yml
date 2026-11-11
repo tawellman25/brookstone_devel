@@ -1,0 +1,23 @@
+uuid: 1c6d8ba2-f2d8-4ea6-8a25-f968e10a2d68
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.fall_cleanup
+    - field.storage.work_order.field_target_hours
+id: work_order.fall_cleanup.field_target_hours
+field_name: field_target_hours
+entity_type: work_order
+bundle: fall_cleanup
+label: 'Target Hours'
+description: 'How long this cleanup should take, in man-hours. Prefilled when the work order is created from the most recent prior-year completed cleanup at this property; edit it if the scope changed, or clear it to show no target. Crews see it above the clock buttons and on their schedule.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: 0
+  max: null
+  prefix: ''
+  suffix: ' hrs'
+field_type: decimal

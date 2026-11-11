@@ -593,6 +593,38 @@ function wo_sign_off_form_alter(array &$form, FormStateInterface $form_state, st
 
   _wo_sign_off_build_reconciliation_fieldset($form, $form_state, $entity);
 
+  // Target vs clocked hours (cleanups — job-clock guardrails item 5). One line
+  // at the top of the man-hours block so the foreman sees how the job landed
+  // against the target at the moment he confirms the crew's hours. "Clocked"
+  // is closed entries only — open punches the reconciliation is about to
+  // close are not yet counted, which the wording says.
+  if ($alter_wo_id > 0 && function_exists('wo_shared_target_hours_summary')) {
+    $target_wo = \Drupal::entityTypeManager()->getStorage('work_order')->load($alter_wo_id);
+    $target = $target_wo ? wo_shared_target_hours_summary($target_wo) : NULL;
+    if ($target) {
+      if ($target['delta'] > 0) {
+        $verdict = t('@d hrs over target', ['@d' => $target['delta_label']]);
+      }
+      elseif ($target['delta'] < 0) {
+        $verdict = t('@d hrs under target', ['@d' => $target['delta_label']]);
+      }
+      else {
+        $verdict = t('on target');
+      }
+      $form['signoff_reconciliation']['target_hours'] = [
+        '#type' => 'html_tag',
+        '#tag' => 'p',
+        '#attributes' => ['class' => ['signoff-target-hours', $target['over'] ? 'signoff-target-hours--over' : 'signoff-target-hours--ok']],
+        '#value' => t('<strong>Target @t hrs</strong> · Clocked so far @c hrs (@v, closed entries only).', [
+          '@t' => $target['target_label'],
+          '@c' => $target['clocked_label'],
+          '@v' => $verdict,
+        ]),
+        '#weight' => -90,
+      ];
+    }
+  }
+
   // Append validate + submit handlers. For the lawn_mowing path the
   // hard-validation on field_mowing_who_on_site goes FIRST so an
   // empty roster blocks before any reconciliation work.

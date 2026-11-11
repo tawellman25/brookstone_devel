@@ -65,6 +65,8 @@ function wo_clock_theme($existing, $type, $theme, $path) {
     'wo_clock_block' => [
       'variables' => [
         'state' => 'a',
+        // Target-vs-clocked summary (wo_shared_target_hours_summary) or NULL.
+        'target_hours' => NULL,
         'wo_id' => 0,
         'current_entry' => NULL,
         'open_entries' => [],
@@ -448,10 +450,21 @@ function _wo_clock_build_render(int $wo_id, \Drupal\Core\Session\AccountInterfac
     ];
   }
 
+  // Target hours (cleanups — job-clock guardrails item 5). Rendered INSIDE
+  // the clock block, above the buttons, rather than as a display component:
+  // the crew needs target AND hours-so-far side by side, and only the clock
+  // block is already uncached (max-age 0) so "clocked so far" stays live.
+  $targetHours = NULL;
+  if (function_exists('wo_shared_target_hours_summary')) {
+    $woEntity = \Drupal::entityTypeManager()->getStorage('work_order')->load($wo_id);
+    $targetHours = $woEntity ? wo_shared_target_hours_summary($woEntity) : NULL;
+  }
+
   return [
     '#theme' => 'wo_clock_block',
     '#state' => $state,
     '#wo_id' => $wo_id,
+    '#target_hours' => $targetHours,
     '#current_entry' => $currentData,
     '#open_entries' => $openData,
     '#crew_open' => $crewOpen,

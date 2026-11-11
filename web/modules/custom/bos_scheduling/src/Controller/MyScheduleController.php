@@ -206,6 +206,15 @@ class MyScheduleController extends ControllerBase {
     );
     $query->addField('afh', 'field_aeration_flag_heads_value', 'aeration_flag');
 
+    // Target hours (cleanups — job-clock guardrails item 5). NULL on every
+    // other bundle; the card shows the line only when a target exists.
+    $query->leftJoin(
+      'work_order__field_target_hours',
+      'tgt',
+      'tgt.entity_id = swo.field_work_order_target_id AND tgt.deleted = 0'
+    );
+    $query->addField('tgt', 'field_target_hours_value', 'target_hours');
+
     // Service + SOP code.
     $query->leftJoin(
       'work_order__field_service',
@@ -271,12 +280,25 @@ class MyScheduleController extends ControllerBase {
         'wo_note'         => $row->wo_note ?? '',
         'work_todo'       => html_entity_decode(strip_tags($row->work_todo ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
         'aeration_flag'   => (bool) ($row->aeration_flag ?? FALSE),
+        // "5.25" / "5" — trimmed; '' when there is no (positive) target.
+        'target_hours'    => self::hoursLabel($row->target_hours ?? NULL),
         'service_name'    => $row->service_name ?? '',
         'service_code'    => strtoupper($row->service_code ?? '') ?: ($row->service_name ?? ''),
       ];
     }
 
     return $items;
+  }
+
+  /**
+   * Hours as a trimmed label ("5.25", "5"); '' for NULL / zero / negative.
+   */
+  protected static function hoursLabel($raw): string {
+    if ($raw === NULL || !is_numeric($raw) || (float) $raw <= 0) {
+      return '';
+    }
+    $s = rtrim(rtrim(number_format((float) $raw, 2, '.', ''), '0'), '.');
+    return $s === '' ? '' : $s;
   }
 
   /**

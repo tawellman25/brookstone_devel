@@ -148,6 +148,10 @@ class DispatchController extends ControllerBase {
     );
     $query->addField('afh', 'field_aeration_flag_heads_value', 'aeration_flag');
 
+    // Target hours (cleanups — job-clock guardrails item 5).
+    $query->leftJoin('work_order__field_target_hours', 'tgt', 'tgt.entity_id = swo.field_work_order_target_id AND tgt.deleted = 0');
+    $query->addField('tgt', 'field_target_hours_value', 'target_hours');
+
     $query->leftJoin('work_order__field_service', 'wosvc', 'wosvc.entity_id = swo.field_work_order_target_id AND wosvc.deleted = 0');
     $query->leftJoin('taxonomy_term_field_data', 'svc', 'svc.tid = wosvc.field_service_target_id');
     $query->addField('svc', 'name', 'service_name');
@@ -207,6 +211,8 @@ class DispatchController extends ControllerBase {
         'service_name'     => trim($row->service_name ?? ''),
         'department_color' => trim($row->department_color ?? '') ?: '#888888',
         'aeration_flag'    => (bool) ($row->aeration_flag ?? FALSE),
+        'target_hours'     => (isset($row->target_hours) && is_numeric($row->target_hours) && (float) $row->target_hours > 0)
+          ? rtrim(rtrim(number_format((float) $row->target_hours, 2, '.', ''), '0'), '.') : '',
       ];
 
       if (empty($row->assigned_uid)) {

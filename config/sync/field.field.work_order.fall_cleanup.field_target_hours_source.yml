@@ -1,0 +1,29 @@
+uuid: 9aa04ff5-6c9c-460c-b055-d60ff109960c
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.work_order.fall_cleanup
+    - field.storage.work_order.field_target_hours_source
+id: work_order.fall_cleanup.field_target_hours_source
+field_name: field_target_hours_source
+entity_type: work_order
+bundle: fall_cleanup
+label: 'Target Hours Source'
+description: 'The prior-year work order the target hours were prefilled from. Set automatically; provenance only.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:work_order'
+  handler_settings:
+    target_bundles:
+      fall_cleanup: fall_cleanup
+      spring_cleanup: spring_cleanup
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

@@ -282,3 +282,60 @@ a.wo-clock-entry__property--link:focus {
 .wo-clock__crew-member input { margin-right: .5rem; transform: scale(1.3); }
 .wo-clock__crew-member em { color: #777; font-style: italic; }
 .wo-clock__crew-actions { margin-top: .6rem; }
+
+/* Target hours banner (cleanups) — sits above the buttons. Greys until the
+ * target is passed, then the red of the call-ahead badge: one signal, no
+ * double-coding (the bar and the "over" word say the same thing on purpose —
+ * colour alone fails colour-blind foremen in sunlight). */
+.wo-clock__target {
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: #f4f6f3;
+  border-left: 4px solid #27500A;
+  border-radius: 6px;
+}
+.wo-clock__target--over {
+  background: #fdf1f0;
+  border-left-color: #c0392b;
+}
+.wo-clock__target-main {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+.wo-clock__target-label {
+  color: #555;
+}
+.wo-clock__target-sep {
+  margin: 0 0.35rem;
+  color: #999;
+}
+.wo-clock__target-delta {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 3px;
+  background: #c0392b;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.wo-clock__target-bar {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: #d9ded6;
+  overflow: hidden;
+}
+.wo-clock__target-fill {
+  display: block;
+  height: 100%;
+  background: #27500A;
+}
+.wo-clock__target--over .wo-clock__target-fill {
+  background: #c0392b;
+}
+.wo-clock__target-src {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: #555;
+}

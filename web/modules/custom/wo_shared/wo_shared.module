@@ -491,3 +491,262 @@ function wo_shared_once_per_year_log(Drupal\Core\Entity\EntityInterface $entity)
     \Drupal::logger('wo_shared')->warning('Could not note the duplicate on WO @id: @m', ['@id' => $entity->id(), '@m' => $e->getMessage()]);
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// Target hours on cleanup work orders (job-clock guardrails item 5,
+// Todd 2026-11-10). Shared helpers; the per-bundle call sites live in
+// wo_fall_cleanup / wo_spring_cleanup (one wo_* module per bundle).
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Bundles that carry field_target_hours. A cleanup is the one job where last
+ * year's hours on the same property are a fair forecast of this year's: same
+ * yard, same season, same scope — which is what makes the prefill honest.
+ */
+const WO_SHARED_TARGET_HOURS_BUNDLES = ['fall_cleanup', 'spring_cleanup'];
+
+/**
+ * Statuses whose field_total_time was captured at billing time and has not
+ * moved since: Complete (1097), Invoiced (1281), Paid (1504). Only these are
+ * trustworthy enough to become a target.
+ */
+const WO_SHARED_TARGET_HOURS_BILLED_STATUSES = [1097, 1281, 1504];
+
+/**
+ * Fallback per-person plausibility cap when wo_total_time's long-shift
+ * threshold is unavailable. Normally business_setting.field_long_shift_hours
+ * decides — see wo_shared_target_hours_prefill().
+ */
+const WO_SHARED_TARGET_HOURS_FALLBACK_CAP = 16.0;
+
+/**
+ * Sum of CLOSED wo_time_clock entries on a work order, in man-hours.
+ *
+ * Open punches (no field_end_time) are excluded — the same rule the
+ * teammate-operations variance uses — so an in-progress job reads as
+ * "hours banked so far", never a partial guess.
+ */
+function wo_shared_clocked_hours(int $wo_id): float {
+  if ($wo_id <= 0) {
+    return 0.0;
+  }
+  $storage = \Drupal::entityTypeManager()->getStorage('wo_time_clock');
+  $ids = $storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $wo_id)
+    ->exists('field_end_time')
+    ->execute();
+  $sum = 0.0;
+  if ($ids) {
+    foreach ($storage->loadMultiple($ids) as $tc) {
+      $sum += (float) ($tc->get('field_total_time')->value ?? 0);
+    }
+  }
+  return round($sum, 2);
+}
+
+/**
+ * The most recent prior-year billed cleanup of the same kind on a property.
+ *
+ * "Prior year" = created before $before_ts (the start of the new WO's year
+ * in the SITE timezone — never a SQL date cast, MariaDB runs UTC here).
+ * Same-year siblings are skipped deliberately: a re-do or a cancel-and-
+ * recreate in the current season is not a forecast, it is the same job.
+ */
+function wo_shared_prior_year_cleanup(string $bundle, int $property_id, int $before_ts): ?EntityInterface {
+  if ($property_id <= 0 || !in_array($bundle, WO_SHARED_TARGET_HOURS_BUNDLES, TRUE)) {
+    return NULL;
+  }
+  $storage = \Drupal::entityTypeManager()->getStorage('work_order');
+  $ids = $storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', $bundle)
+    ->condition('field_property', $property_id)
+    ->condition('field_status', WO_SHARED_TARGET_HOURS_BILLED_STATUSES, 'IN')
+    ->condition('field_total_time', 0, '>')
+    ->condition('created', $before_ts, '<')
+    ->sort('created', 'DESC')
+    ->range(0, 1)
+    ->execute();
+  if (!$ids) {
+    return NULL;
+  }
+  return $storage->load(reset($ids));
+}
+
+/**
+ * Prefill field_target_hours (+ field_target_hours_source) on a cleanup WO
+ * from the most recent prior-year billed cleanup at the same property.
+ *
+ * Never overwrites a target that is already set — the office's edit wins —
+ * and never fabricates one: with no usable prior the field stays empty and
+ * the crew sees no target, which is the truth.
+ *
+ * Plausibility guard: the prior WO's hours per person (roster or clocked —
+ * see _wo_shared_people_clocked()) must not exceed
+ * business_setting.field_long_shift_hours, the site's own "a shift this long
+ * is suspicious" threshold. Measured on the 2026-11-08 nightly, the one
+ * prior-year cleanup that fails it is a single 219 h punch from a forgotten
+ * clock-out, Invoiced as-is; handing a crew "Target: 219 hrs" would teach
+ * them the number means nothing. Those are left blank and logged so the
+ * office can set a real target.
+ *
+ * Does NOT save — call from presave, or save afterwards (backfill).
+ *
+ * @return string
+ *   Outcome code for reporting: 'set' | 'kept' (already had a target) |
+ *   'no_field' | 'no_property' | 'no_prior' | 'implausible'.
+ */
+function wo_shared_target_hours_prefill(EntityInterface $wo): string {
+  if ($wo->getEntityTypeId() !== 'work_order' || !$wo->hasField('field_target_hours')) {
+    return 'no_field';
+  }
+  if (!$wo->get('field_target_hours')->isEmpty()) {
+    return 'kept';
+  }
+  $property_id = ($wo->hasField('field_property') && !$wo->get('field_property')->isEmpty())
+    ? (int) $wo->get('field_property')->target_id : 0;
+  if ($property_id <= 0) {
+    return 'no_property';
+  }
+
+  // Start of the WO's year, site timezone. A new entity's created is set by
+  // ECK's base-field default, but fall back to request time for safety.
+  $created = (int) ($wo->get('created')->value ?? 0) ?: \Drupal::time()->getRequestTime();
+  $tz = new \DateTimeZone(date_default_timezone_get());
+  $year_start = (new \DateTime('@' . $created))->setTimezone($tz);
+  $year_start->setDate((int) $year_start->format('Y'), 1, 1)->setTime(0, 0, 0);
+
+  $prior = wo_shared_prior_year_cleanup($wo->bundle(), $property_id, $year_start->getTimestamp());
+  if (!$prior) {
+    return 'no_prior';
+  }
+  $hours = round((float) $prior->get('field_total_time')->value, 2);
+
+  // Plausibility: hours per person on the prior WO vs the long-shift cap.
+  $people = _wo_shared_people_clocked((int) $prior->id());
+  $cap = function_exists('_wo_total_time_get_long_shift_hours')
+    ? _wo_total_time_get_long_shift_hours()
+    : WO_SHARED_TARGET_HOURS_FALLBACK_CAP;
+  if ($hours / max(1, $people) > $cap) {
+    \Drupal::logger('wo_shared')->notice(
+      'Target hours NOT prefilled on @bundle WO @id (property @prop): prior-year WO @prior carries @h h across @n people (cap @cap h/person) — left for the office to set.',
+      ['@bundle' => $wo->bundle(), '@id' => $wo->id() ?? 'new', '@prop' => $property_id, '@prior' => $prior->id(), '@h' => $hours, '@n' => $people, '@cap' => $cap]
+    );
+    return 'implausible';
+  }
+
+  $wo->set('field_target_hours', $hours);
+  if ($wo->hasField('field_target_hours_source')) {
+    $wo->set('field_target_hours_source', $prior->id());
+  }
+  return 'set';
+}
+
+/**
+ * How many people worked a WO, for the per-person plausibility check.
+ *
+ * The LARGEST of: the sign-off roster (wo_complete_info.field_those_on_crew),
+ * distinct teammates with a clock entry, and the entry count. Minimum 1.
+ *
+ * The roster has to be in there: before the 2026 per-member reconciliation,
+ * a cleanup's field_total_time was man-hours for the whole crew while the
+ * clock held ONE entry (the foreman's). Measured 2026-11-10: of the 13
+ * prior-year cleanups the clock-only count rejected, 12 carried a roster of
+ * 4–8 people and sit at 2–12 h per person — ordinary cleanups. Only the
+ * 219 h single punch stays implausible (24 h/person across a roster of 9).
+ */
+function _wo_shared_people_clocked(int $wo_id): int {
+  $etm = \Drupal::entityTypeManager();
+
+  $roster = [];
+  if ($etm->hasDefinition('wo_complete_info')) {
+    $ci_storage = $etm->getStorage('wo_complete_info');
+    $ci_ids = $ci_storage->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_work_order', $wo_id)
+      ->execute();
+    foreach ($ci_ids ? $ci_storage->loadMultiple($ci_ids) : [] as $ci) {
+      if ($ci->hasField('field_those_on_crew')) {
+        foreach ($ci->get('field_those_on_crew') as $item) {
+          if ($item->target_id) {
+            $roster[(int) $item->target_id] = TRUE;
+          }
+        }
+      }
+    }
+  }
+
+  $tc_storage = $etm->getStorage('wo_time_clock');
+  $tc_ids = $tc_storage->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('field_work_order', $wo_id)
+    ->execute();
+  $uids = [];
+  foreach ($tc_ids ? $tc_storage->loadMultiple($tc_ids) : [] as $tc) {
+    $uid = (int) ($tc->get('field_teammate')->target_id ?? 0);
+    if ($uid > 0) {
+      $uids[$uid] = TRUE;
+    }
+  }
+
+  return max(1, count($roster), count($uids), count($tc_ids));
+}
+
+/**
+ * Target-vs-clocked summary for the crew-facing surfaces (clock banner,
+ * sign-off), or NULL when the WO has no (positive) target.
+ *
+ * @return array|null
+ *   target, clocked, delta (clocked − target), pct (0–100, capped), over
+ *   (bool), *_label (trimmed "5.25" / "5" strings), and source
+ *   {id, url, hours, hours_label, date} when the prefill origin is known.
+ */
+function wo_shared_target_hours_summary(EntityInterface $wo): ?array {
+  if (!$wo->hasField('field_target_hours') || $wo->get('field_target_hours')->isEmpty()) {
+    return NULL;
+  }
+  $target = round((float) $wo->get('field_target_hours')->value, 2);
+  if ($target <= 0) {
+    return NULL;
+  }
+  $clocked = wo_shared_clocked_hours((int) $wo->id());
+  $delta = round($clocked - $target, 2);
+
+  $source = NULL;
+  if ($wo->hasField('field_target_hours_source') && !$wo->get('field_target_hours_source')->isEmpty()) {
+    $src = $wo->get('field_target_hours_source')->entity;
+    if ($src) {
+      $src_hours = round((float) ($src->get('field_total_time')->value ?? 0), 2);
+      $src_created = (int) ($src->get('created')->value ?? 0);
+      $source = [
+        'id' => (int) $src->id(),
+        'url' => $src->toUrl()->toString(),
+        'hours' => $src_hours,
+        'hours_label' => wo_shared_hours_label($src_hours),
+        // US date, site timezone — storage is UTC (CLAUDE.md "Date Formatting").
+        'date' => $src_created ? (new \DateTime('@' . $src_created))->setTimezone(new \DateTimeZone(date_default_timezone_get()))->format('m/d/Y') : '',
+      ];
+    }
+  }
+
+  return [
+    'target' => $target,
+    'clocked' => $clocked,
+    'delta' => $delta,
+    'pct' => (int) min(100, round($clocked / $target * 100)),
+    'over' => $delta > 0,
+    'target_label' => wo_shared_hours_label($target),
+    'clocked_label' => wo_shared_hours_label($clocked),
+    'delta_label' => wo_shared_hours_label(abs($delta)),
+    'source' => $source,
+  ];
+}
+
+/**
+ * "5.25" / "5" — two decimals with trailing zeros trimmed, for hour labels.
+ */
+function wo_shared_hours_label(float $hours): string {
+  $s = rtrim(rtrim(number_format($hours, 2, '.', ''), '0'), '.');
+  return $s === '' ? '0' : $s;
+}

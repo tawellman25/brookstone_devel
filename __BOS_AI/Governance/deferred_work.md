@@ -673,6 +673,10 @@ Surfaced 2026-11-11 entering the crew sign-off SOP (`WEB-SYS-SGN-001`, bundle `s
 
 ---
 
+### 35. `sop_governance` bundle label typo "SOP Guidlines" + three SOPs share code GOV-SOP-004
+
+Surfaced 2026-11-11 backfilling SOP aliases. (a) `eck.eck_type.sop.sop_governance` is labelled **"SOP Guidlines"** on dev and live; the alias pattern `teammates/sop/[sop:type]/[sop:field_sop_code]` builds the middle segment from that label, so the nine governance SOPs are split between `/teammates/sop/sop-governance/…` (ids 7, 11–14, aliased under an earlier label) and `/teammates/sop/sop-guidlines/…` (ids 9, 10, 15, 16). Fix = rename the bundle label to "SOP Governance" (one config value, dev + live) and regenerate **only** the four `sop-guidlines` aliases with pathauto keeping the old ones as redirects (`redirect` module is installed) — do not bulk-regenerate, the `sop-governance` ones are already right. (b) **ids 10, 11 and 16 all carry `GOV-SOP-004`** with an empty `field_sop_status`, so `sop_code_validation`'s uniqueness rule never evaluated them; Chat/Todd decide which is canonical and the other two get archived or re-coded (SOP codes are immutable only once approved — these never were). Tier 3, S.
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

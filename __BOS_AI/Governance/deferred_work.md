@@ -677,6 +677,13 @@ Surfaced 2026-11-11 entering the crew sign-off SOP (`WEB-SYS-SGN-001`, bundle `s
 
 Surfaced 2026-11-11 backfilling SOP aliases. (a) `eck.eck_type.sop.sop_governance` is labelled **"SOP Guidlines"** on dev and live; the alias pattern `teammates/sop/[sop:type]/[sop:field_sop_code]` builds the middle segment from that label, so the nine governance SOPs are split between `/teammates/sop/sop-governance/…` (ids 7, 11–14, aliased under an earlier label) and `/teammates/sop/sop-guidlines/…` (ids 9, 10, 15, 16). Fix = rename the bundle label to "SOP Governance" (one config value, dev + live) and regenerate **only** the four `sop-guidlines` aliases with pathauto keeping the old ones as redirects (`redirect` module is installed) — do not bulk-regenerate, the `sop-governance` ones are already right. (b) **ids 10, 11 and 16 all carry `GOV-SOP-004`** with an empty `field_sop_status`, so `sop_code_validation`'s uniqueness rule never evaluated them; Chat/Todd decide which is canonical and the other two get archived or re-coded (SOP codes are immutable only once approved — these never were). Tier 3, S.
 
+### 36. `field_printed` is unset (no stored value) on 45,820 of 50,103 work orders
+
+**Surfaced 2026-11-12** while fixing the Invoiced-flag gap on intake-created WOs (change log 16:24 MT). The Printed checkbox sits on 34 WO form displays, yet 91 % of all WOs have **no row** in `work_order__field_printed` — so the form has evidently not been writing it for years, not just the programmatic creators. No view *filters* on `field_printed_value` today (the views that reference it use it as a field/sort), so there is no user-visible symptom — which is exactly why it was never noticed.
+
+- **Going forward:** closed — `wo_shared_work_order_presave()` stores `0` for an empty `field_printed` on every save (same change as `field_invoiced`).
+- **The 45,820 legacy NULLs:** `drush php:script web/scripts/wo_invoiced_flag_backfill.php -- --printed` backfills them (direct field-table insert, no entity save, one statement). Not run — nothing depends on it and it touches 91 % of the table; run it the day someone adds a "Printed = No" filter, or decide the field is dead and remove it from the forms instead (`field_work_order_id` is already "a migration artifact staged for deletion" — Printed may be the same vintage). **Tier 3 · S.**
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

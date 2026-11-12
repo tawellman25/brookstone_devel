@@ -167,6 +167,22 @@ function wo_shared_work_order_presave(EntityInterface $entity) {
   // the save via EntityStorageException before any totals are touched.
   _wo_shared_assert_invoiced_transition_valid($entity);
 
+  // Invoiced / Printed are never left unset (2026-11-12). The entity form
+  // writes 0 for an unticked checkbox, but every programmatic creator —
+  // bos_wo_intake (My 2nd Brain / service requests), the backflow test
+  // controller, legacy migrations — skipped the flag, so those WOs had NO
+  // row in work_order__field_invoiced. A Views boolean filter is
+  // `field_invoiced_value = 0`, which a missing row can never satisfy, so
+  // the billing views only showed them under "Any". Unset means "No";
+  // store the No. Runs on every save so a legacy NULL heals the next time
+  // the WO is touched. Backfill for the existing gap:
+  // web/scripts/wo_invoiced_flag_backfill.php.
+  foreach (['field_invoiced', 'field_printed'] as $flag) {
+    if ($entity->hasField($flag) && $entity->get($flag)->isEmpty()) {
+      $entity->set($flag, 0);
+    }
+  }
+
   if ($entity->isNew()) {
     return;
   }

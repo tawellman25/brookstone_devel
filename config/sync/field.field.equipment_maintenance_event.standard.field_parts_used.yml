@@ -1,0 +1,29 @@
+uuid: 14094fd2-3411-47d5-9d5f-b190194f05f0
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_maintenance_event.standard
+    - eck.eck_type.equipment_part.standard
+    - field.storage.equipment_maintenance_event.field_parts_used
+id: equipment_maintenance_event.standard.field_parts_used
+field_name: field_parts_used
+entity_type: equipment_maintenance_event
+bundle: standard
+label: 'Parts Used'
+description: 'Shop parts consumed by this service/repair. Stock is not adjusted automatically (yet) — update On Hand on the part.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:equipment_part'
+  handler_settings:
+    target_bundles:
+      standard: standard
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+field_type: entity_reference
+

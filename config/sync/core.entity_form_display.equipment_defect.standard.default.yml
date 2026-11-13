@@ -1,0 +1,156 @@
+uuid: 7bf581b1-b187-4885-9ce0-481773bfa09e
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_defect.standard
+    - field.field.equipment_defect.standard.field_actual_repair_cost
+    - field.field.equipment_defect.standard.field_assigned_to
+    - field.field.equipment_defect.standard.field_defect_category
+    - field.field.equipment_defect.standard.field_defect_date_reported
+    - field.field.equipment_defect.standard.field_defect_severity
+    - field.field.equipment_defect.standard.field_defect_status
+    - field.field.equipment_defect.standard.field_defect_summary
+    - field.field.equipment_defect.standard.field_equipment
+    - field.field.equipment_defect.standard.field_estimated_repair_cost
+    - field.field.equipment_defect.standard.field_out_of_service_required
+    - field.field.equipment_defect.standard.field_parts_needed
+    - field.field.equipment_defect.standard.field_repeat_issue
+    - field.field.equipment_defect.standard.field_resolution_notes
+    - field.field.equipment_defect.standard.field_resolved_on
+    - field.field.equipment_defect.standard.field_source_inspection
+  module:
+    - datetime
+    - field_layout
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: equipment_defect.standard.default
+targetEntityType: equipment_defect
+bundle: standard
+mode: default
+content:
+  field_actual_repair_cost:
+    type: number
+    weight: 11
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_assigned_to:
+    type: entity_reference_autocomplete
+    weight: 12
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_defect_category:
+    type: options_select
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_defect_date_reported:
+    type: datetime_default
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_defect_severity:
+    type: options_select
+    weight: 4
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_defect_status:
+    type: options_select
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_defect_summary:
+    type: string_textfield
+    weight: 5
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_equipment:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_estimated_repair_cost:
+    type: number
+    weight: 10
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_out_of_service_required:
+    type: boolean_checkbox
+    weight: 8
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_parts_needed:
+    type: entity_reference_autocomplete
+    weight: 9
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_repeat_issue:
+    type: boolean_checkbox
+    weight: 7
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_resolution_notes:
+    type: text_textarea
+    weight: 13
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_resolved_on:
+    type: datetime_default
+    weight: 14
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_source_inspection:
+    type: entity_reference_autocomplete
+    weight: 1
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  title: true
+  uid: true
+

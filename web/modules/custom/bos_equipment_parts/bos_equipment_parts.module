@@ -1,0 +1,143 @@
+<?php
+
+/**
+ * @file
+ * Parts & consumables for owned equipment — the equipment_part ECK entity.
+ *
+ * Internal shop stock (plugs, filters, carb kits, line, blades, belts, oil,
+ * hardware) for small engines, mowers, trucks and ATVs. Deliberately its OWN
+ * entity type, not a material bundle: `material` is the billable catalog that
+ * every estimate / work-order picker draws from, and a part must never be
+ * offered there. Design + decisions: __BOS_AI/Entities/equipment_part.md.
+ *
+ * This module holds the behaviour the config can't:
+ *   - part numbers are unique, whitespace- and case-insensitively (own
+ *     constraint, enforced on the form);
+ *   - the Needs Reorder flag is computed on every save (On Hand ≤ Reorder
+ *     Minimum, when a minimum is set) so the parts views can filter and sort on
+ *     a stored boolean — BOS rule 10, logic in code, data in a field;
+ *   - every machine's page gets a "Parts that fit this unit" table — the
+ *     equipment_parts_fit view (office-adjustable in the Views UI), placed here
+ *     the same way equipment_similar places its strip;
+ *   - the parts views' entity-reference exposed filters: core ships the
+ *     `entity_reference` Views filter but leaves reference columns on "numeric"
+ *     (a raw ID box), so the filter id is switched here.
+ */
+
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\views\Views;
+
+/**
+ * Reference columns on equipment_part that get the entity_reference filter.
+ */
+const BOS_EQUIPMENT_PARTS_REFERENCE_FIELDS = ['field_fits', 'field_vendor', 'field_manufacturer'];
+
+/**
+ * Implements hook_entity_bundle_field_info_alter().
+ *
+ * A part number identifies one catalog row. Two rows with the same number
+ * would split stock counts and make "parts used" on a maintenance event
+ * ambiguous, so the form refuses a duplicate. Core's UniqueField compares
+ * the raw string strictly ("cmr6h " passes beside "CMR6H"); the module's own
+ * UniquePartNumber constraint normalises whitespace and ignores case, and
+ * excludes the part being edited.
+ */
+function bos_equipment_parts_entity_bundle_field_info_alter(&$fields, EntityTypeInterface $entity_type, $bundle) {
+  if ($entity_type->id() === 'equipment_part' && isset($fields['field_part_number'])) {
+    $fields['field_part_number']->addConstraint('UniquePartNumber', []);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for equipment_part.
+ */
+function bos_equipment_parts_equipment_part_presave(EntityInterface $entity) {
+  // Part numbers are compared as typed by the vendor; only whitespace is
+  // normalised (trim, single internal spaces) so "4237  120 1800" and
+  // "4237 120 1800 " are the same row.
+  if ($entity->hasField('field_part_number') && !$entity->get('field_part_number')->isEmpty()) {
+    $raw = (string) $entity->get('field_part_number')->value;
+    $clean = preg_replace('/\s+/u', ' ', trim($raw));
+    if ($clean !== $raw) {
+      $entity->set('field_part_number', $clean);
+    }
+  }
+
+  // Needs Reorder = On Hand ≤ Reorder Minimum, only when a minimum is set.
+  // A minimum of 0 means "not tracked" — never flagged, so an untracked part
+  // with nothing on the shelf doesn't clutter the reorder list.
+  if ($entity->hasField('field_needs_reorder') && $entity->hasField('field_on_hand') && $entity->hasField('field_reorder_min')) {
+    $min = (int) ($entity->get('field_reorder_min')->value ?? 0);
+    $on_hand = (int) ($entity->get('field_on_hand')->value ?? 0);
+    $entity->set('field_needs_reorder', ($min > 0 && $on_hand <= $min) ? 1 : 0);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for equipment.
+ *
+ * Places the "Parts that fit this unit" table on the machine's own page. The
+ * list is the equipment_parts_fit view (fields/sort adjustable in the Views
+ * UI); this only feeds it the machine's id and hides the section when there
+ * is nothing to show. IT equipment is skipped — no shop parts.
+ */
+function bos_equipment_parts_equipment_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
+  if ($view_mode !== 'full' || $entity->bundle() === 'it_equipment') {
+    return;
+  }
+  $view = Views::getView('equipment_parts_fit');
+  if (!$view || !$view->access('embed_1')) {
+    return;
+  }
+  $args = [(int) $entity->id()];
+  $view->setDisplay('embed_1');
+  $view->setArguments($args);
+  $view->execute();
+  if (empty($view->result)) {
+    return;
+  }
+
+  $build['equipment_parts'] = [
+    '#type' => 'container',
+    '#attributes' => ['class' => ['equipment-parts']],
+    '#weight' => 95,
+    '#attached' => ['library' => ['bos_equipment_parts/fits']],
+    'heading' => [
+      '#markup' => '<h3 class="equipment-parts__title">' . t('Parts that fit this unit') . '</h3>',
+    ],
+    'list' => $view->buildRenderable('embed_1', $args),
+  ];
+}
+
+/**
+ * Implements hook_views_data_alter().
+ *
+ * Core's Views data gives an entity-reference column a `numeric` filter (a
+ * bare ID box). Core also ships the `entity_reference` filter plugin
+ * (select / autocomplete on the referenced entities) but does not wire it —
+ * that is the site's job. Wired for the parts catalog's reference fields so
+ * the exposed "Fits unit" filter is an autocomplete. (Term references are
+ * not touched — core already gives those its taxonomy select filter.)
+ */
+function bos_equipment_parts_views_data_alter(array &$data) {
+  foreach (BOS_EQUIPMENT_PARTS_REFERENCE_FIELDS as $field) {
+    $table = 'equipment_part__' . $field;
+    $column = $field . '_target_id';
+    if (isset($data[$table][$column]['filter']['id']) && in_array($data[$table][$column]['filter']['id'], ['numeric', 'string'], TRUE)) {
+      $data[$table][$column]['filter']['id'] = 'entity_reference';
+    }
+  }
+}
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * The reorder flag cell styling (shared CSS) on the parts views.
+ */
+function bos_equipment_parts_views_pre_render(\Drupal\views\ViewExecutable $view) {
+  if (in_array($view->id(), ['equipment_parts', 'equipment_parts_fit'], TRUE)) {
+    $view->element['#attached']['library'][] = 'bos_equipment_parts/fits';
+  }
+}

@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-11-11 (job-clock items 5 + 6 LIVE; three WO SOPs drafted + entered as Draft; new AEL-sentinel row; Plant Problems landing page shipped 11-10)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-11-13 (Equipment Parts & Consumables built + verified on dev, live pending; equipment-forms-without-display row; 11-11: job-clock items 5 + 6 LIVE, three WO SOPs drafted)
 
 ---
 
@@ -221,6 +221,8 @@ These are shipped, live systems whose only blocker is human adoption, not engine
 | Fleet Fuel Dashboard | Idea | Per-vehicle MPG, monthly rollups, anomaly flags. |
 | Vehicle 77628 (Webster) odometer human review | Idea (S) | One-time review: stored 81,983 vs the real reading. The 07-03 recon couldn't locate the vehicle record — first confirm it exists, then verify/correct. |
 | SFTP delivery channel | Idea | Superior long-term; awaiting WEX rep. IMAP primary until then. |
+| **Equipment Parts & Consumables — `equipment_part` (Todd / My 2nd Brain brief, 2026-11-13)** | **BUILT + VERIFIED ON DEV 2026-11-13 · live deploy pending Todd's review** (T2, M) | New ECK entity type (not a `material` bundle — never in WO/estimate pickers) + module `bos_equipment_parts`: 15 fields, unique part numbers, computed Needs-Reorder flag, `/admin/operations/equipment/parts` + Reorder list, "Parts that fit this unit" on every equipment page, Parts Used / Parts Needed on maintenance events / defects. 47 config files, idempotent `equipment_parts_setup.php`, verify script. Design + live runbook: `Entities/equipment_part.md`. **Phase 2 (not built):** `part_kit` tune-up groupings; usage lines with quantity → stock decrement + `field_cost_parts` roll-up; receive-stock action; price history; low-stock digest. ⚠ SOP needed. |
+| Equipment forms with no saved display — `equipment_inspection` ×6 bundles | Open (T3, S) · deferred #37 | Add/edit forms render **no field widgets** without a saved form display (D11). Maintenance events + defects got first displays in the parts build; inspection's six checklists still need theirs (`equipment_parts_display_bootstrap.php` pattern). |
 
 ### Notifications (T3)
 | Item | Notes |

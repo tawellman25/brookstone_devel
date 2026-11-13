@@ -1,0 +1,256 @@
+uuid: 747524c3-ca54-455b-b00a-5b17a7ac35e1
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_part.standard
+    - field.field.equipment_part.standard.field_bin_location
+    - field.field.equipment_part.standard.field_date_priced
+    - field.field.equipment_part.standard.field_equipment_types
+    - field.field.equipment_part.standard.field_fits
+    - field.field.equipment_part.standard.field_last_price
+    - field.field.equipment_part.standard.field_manufacturer
+    - field.field.equipment_part.standard.field_needs_reorder
+    - field.field.equipment_part.standard.field_oem_cross
+    - field.field.equipment_part.standard.field_on_hand
+    - field.field.equipment_part.standard.field_part_category
+    - field.field.equipment_part.standard.field_part_notes
+    - field.field.equipment_part.standard.field_part_number
+    - field.field.equipment_part.standard.field_part_photo
+    - field.field.equipment_part.standard.field_reorder_min
+    - field.field.equipment_part.standard.field_vendor
+    - image.style.thumbnail
+  module:
+    - datetime
+    - field_group
+    - field_layout
+    - image
+    - layout_discovery
+    - text
+third_party_settings:
+  field_group:
+    group_identity:
+      children:
+        - title
+        - field_part_number
+        - field_part_category
+        - field_manufacturer
+        - field_oem_cross
+        - field_part_photo
+      label: Part
+      region: content
+      parent_name: ''
+      weight: 0
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+        required_fields: true
+    group_fit:
+      children:
+        - field_equipment_types
+        - field_fits
+      label: 'What it fits'
+      region: content
+      parent_name: ''
+      weight: 1
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+        required_fields: true
+    group_stock:
+      children:
+        - field_bin_location
+        - field_on_hand
+        - field_reorder_min
+      label: Stock
+      region: content
+      parent_name: ''
+      weight: 2
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+        required_fields: true
+    group_purchasing:
+      children:
+        - field_vendor
+        - field_last_price
+        - field_date_priced
+      label: Purchasing
+      region: content
+      parent_name: ''
+      weight: 3
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+        required_fields: true
+    group_notes:
+      children:
+        - field_part_notes
+        - status
+      label: 'Notes & status'
+      region: content
+      parent_name: ''
+      weight: 4
+      format_type: details
+      format_settings:
+        classes: ''
+        show_empty_fields: false
+        id: ''
+        open: true
+        description: ''
+        required_fields: true
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: equipment_part.standard.default
+targetEntityType: equipment_part
+bundle: standard
+mode: default
+content:
+  field_bin_location:
+    type: string_textfield
+    weight: 8
+    region: content
+    settings:
+      size: 32
+      placeholder: ''
+    third_party_settings: {  }
+  field_date_priced:
+    type: datetime_default
+    weight: 13
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_equipment_types:
+    type: options_select
+    weight: 6
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_fits:
+    type: entity_reference_autocomplete
+    weight: 7
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_last_price:
+    type: number
+    weight: 12
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_manufacturer:
+    type: entity_reference_autocomplete
+    weight: 3
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_oem_cross:
+    type: string_textfield
+    weight: 4
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_on_hand:
+    type: number
+    weight: 9
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_part_category:
+    type: options_select
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_part_notes:
+    type: text_textarea
+    weight: 14
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_part_number:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 32
+      placeholder: ''
+    third_party_settings: {  }
+  field_part_photo:
+    type: image_image
+    weight: 5
+    region: content
+    settings:
+      progress_indicator: throbber
+      preview_image_style: thumbnail
+    third_party_settings: {  }
+  field_reorder_min:
+    type: number
+    weight: 10
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_vendor:
+    type: entity_reference_autocomplete
+    weight: 11
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    weight: 15
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  field_needs_reorder: true
+  path: true
+  uid: true
+

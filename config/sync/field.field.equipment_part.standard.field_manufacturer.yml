@@ -1,0 +1,29 @@
+uuid: 7f6c424b-b702-406f-92a6-30aba32a2dfe
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_part.standard
+    - eck.eck_type.manufacturer.manufacturer
+    - field.storage.equipment_part.field_manufacturer
+id: equipment_part.standard.field_manufacturer
+field_name: field_manufacturer
+entity_type: equipment_part
+bundle: standard
+label: 'Brand / Manufacturer'
+description: 'Who makes it (NGK, Stihl, Oregon…). Add the brand under Manufacturers first.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:manufacturer'
+  handler_settings:
+    target_bundles:
+      manufacturer: manufacturer
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+field_type: entity_reference
+

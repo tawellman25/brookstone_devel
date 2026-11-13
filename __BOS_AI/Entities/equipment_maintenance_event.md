@@ -11,7 +11,7 @@ data for repair-vs-replace decisions.
 ## Bundle
 `standard` — Standard maintenance event
 
-## Fields (15)
+## Fields (16)
 
 | Field | Type | Label | Required |
 |---|---|---|---|
@@ -30,6 +30,7 @@ data for repair-vs-replace decisions.
 | `field_next_service_due_date` | datetime (date only) | Next Service Due Date | No |
 | `field_verified_complete` | boolean | Verified Complete | No (default: 0) |
 | `field_verified_by` | entity_reference → user | Verified By | No |
+| `field_parts_used` | entity_reference → equipment_part (unlimited) | Parts Used | No — Shop parts consumed; stock not auto-adjusted (added 2026-11-13, see `equipment_part.md`) |
 
 ### field_event_type values
 preventive_maintenance, repair, major_repair, inspection_service,
@@ -46,6 +47,10 @@ This is the ONLY path to resolve a defect.
 Presave: `field_cost_total` auto-calculated from `field_cost_parts` +
 `field_cost_labor` when parts and/or labor are set but total is empty
 or zero. Handled by `equipment_inspection_workflow` module.
+
+## Displays
+
+First saved form + view display added **2026-11-13** (`web/scripts/equipment_parts_display_bootstrap.php`): before it the add/edit form rendered **no field widgets** (D11 behaviour without a saved display — deferred #37). Default widget/formatter per field; title/author/created hidden (auto-labelled).
 
 ## Views
 - Equipment Maintenance EVA: on all equipment entity pages

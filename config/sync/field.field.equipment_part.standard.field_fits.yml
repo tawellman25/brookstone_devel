@@ -1,0 +1,43 @@
+uuid: da3a603a-9c58-43f5-8fe8-663ff332eb66
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment.attachements
+    - eck.eck_type.equipment.heavy_equipment
+    - eck.eck_type.equipment.power_tools
+    - eck.eck_type.equipment.small_engine
+    - eck.eck_type.equipment.snow_plows
+    - eck.eck_type.equipment.sprayers
+    - eck.eck_type.equipment.trailers
+    - eck.eck_type.equipment.vehicles
+    - eck.eck_type.equipment_part.standard
+    - field.storage.equipment_part.field_fits
+id: equipment_part.standard.field_fits
+field_name: field_fits
+entity_type: equipment_part
+bundle: standard
+label: 'Fits These Units'
+description: 'Specific machines in the fleet this part fits. Each machine lists its parts on its own page.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:equipment'
+  handler_settings:
+    target_bundles:
+      attachements: attachements
+      heavy_equipment: heavy_equipment
+      power_tools: power_tools
+      small_engine: small_engine
+      snow_plows: snow_plows
+      sprayers: sprayers
+      trailers: trailers
+      vehicles: vehicles
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+field_type: entity_reference
+

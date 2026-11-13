@@ -1,0 +1,29 @@
+uuid: e41aa1a8-9442-4ced-865a-7bf5e6a68afb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_defect.standard
+    - eck.eck_type.equipment_part.standard
+    - field.storage.equipment_defect.field_parts_needed
+id: equipment_defect.standard.field_parts_needed
+field_name: field_parts_needed
+entity_type: equipment_defect
+bundle: standard
+label: 'Parts Needed'
+description: 'Shop parts this repair will need — check the parts list for stock before scheduling.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:equipment_part'
+  handler_settings:
+    target_bundles:
+      standard: standard
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+field_type: entity_reference
+

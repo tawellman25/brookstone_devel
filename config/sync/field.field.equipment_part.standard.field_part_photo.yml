@@ -1,0 +1,39 @@
+uuid: 65dd0eba-9fb4-445b-a0bf-3afcc1329571
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_part.standard
+    - field.storage.equipment_part.field_part_photo
+  module:
+    - image
+id: equipment_part.standard.field_part_photo
+field_name: field_part_photo
+entity_type: equipment_part
+bundle: standard
+label: Photo
+description: 'A picture of the part or its packaging — the quickest way to confirm a match on the shelf.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: equipment/parts
+  file_extensions: 'png gif jpg jpeg webp'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: true
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image
+

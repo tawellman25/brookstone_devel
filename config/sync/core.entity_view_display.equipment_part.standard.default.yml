@@ -1,0 +1,189 @@
+uuid: 252e9992-fc3e-4935-9b4c-7511590a4193
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_part.standard
+    - field.field.equipment_part.standard.field_bin_location
+    - field.field.equipment_part.standard.field_date_priced
+    - field.field.equipment_part.standard.field_equipment_types
+    - field.field.equipment_part.standard.field_fits
+    - field.field.equipment_part.standard.field_last_price
+    - field.field.equipment_part.standard.field_manufacturer
+    - field.field.equipment_part.standard.field_needs_reorder
+    - field.field.equipment_part.standard.field_oem_cross
+    - field.field.equipment_part.standard.field_on_hand
+    - field.field.equipment_part.standard.field_part_category
+    - field.field.equipment_part.standard.field_part_notes
+    - field.field.equipment_part.standard.field_part_number
+    - field.field.equipment_part.standard.field_part_photo
+    - field.field.equipment_part.standard.field_reorder_min
+    - field.field.equipment_part.standard.field_vendor
+    - image.style.medium
+  module:
+    - datetime
+    - image
+    - options
+    - text
+id: equipment_part.standard.default
+targetEntityType: equipment_part
+bundle: standard
+mode: default
+content:
+  field_bin_location:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 7
+    region: content
+  field_date_priced:
+    type: datetime_custom
+    label: inline
+    settings:
+      timezone_override: ''
+      date_format: m/d/Y
+    third_party_settings: {  }
+    weight: 13
+    region: content
+  field_equipment_types:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 5
+    region: content
+  field_fits:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 6
+    region: content
+  field_last_price:
+    type: number_decimal
+    label: inline
+    settings:
+      thousand_separator: ','
+      decimal_separator: .
+      scale: 2
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 12
+    region: content
+  field_manufacturer:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_needs_reorder:
+    type: boolean
+    label: inline
+    settings:
+      format: custom
+      format_custom_false: OK
+      format_custom_true: '⚠ Reorder'
+    third_party_settings: {  }
+    weight: 10
+    region: content
+  field_oem_cross:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_on_hand:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ','
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 8
+    region: content
+  field_part_category:
+    type: list_default
+    label: inline
+    settings: {  }
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_part_notes:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 14
+    region: content
+  field_part_number:
+    type: string
+    label: inline
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_part_photo:
+    type: image
+    label: hidden
+    settings:
+      image_link: ''
+      image_style: medium
+      image_loading:
+        attribute: lazy
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_reorder_min:
+    type: number_integer
+    label: inline
+    settings:
+      thousand_separator: ','
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 9
+    region: content
+  field_vendor:
+    type: entity_reference_label
+    label: inline
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 11
+    region: content
+  status:
+    type: boolean
+    label: inline
+    settings:
+      format: custom
+      format_custom_false: Inactive
+      format_custom_true: Active
+    third_party_settings: {  }
+    weight: 15
+    region: content
+  title:
+    type: string
+    label: hidden
+    settings:
+      link_to_entity: false
+      link_rel: canonical
+    third_party_settings: {  }
+    weight: -5
+    region: content
+hidden:
+  changed: true
+  created: true
+  entity_print_view_epub: true
+  entity_print_view_pdf: true
+  entity_print_view_word_docx: true
+  search_api_excerpt: true
+  uid: true
+

@@ -11,7 +11,7 @@ until a verified maintenance event closes it.
 ## Bundle
 `standard` — Standard defect record
 
-## Fields (15)
+## Fields (16)
 
 | Field | Type | Label | Required |
 |---|---|---|---|
@@ -29,6 +29,7 @@ until a verified maintenance event closes it.
 | `field_resolution_notes` | text_long | Resolution Notes | No |
 | `field_resolved_on` | datetime (date only) | Resolved On | No |
 | `field_assigned_to` | entity_reference → user | Assigned To | No |
+| `field_parts_needed` | entity_reference → equipment_part (unlimited) | Parts Needed | No — Shop parts this repair will need (added 2026-11-13, see `equipment_part.md`) |
 
 ### field_defect_category values
 engine, transmission, brakes, steering_front_end, tire_wheel,
@@ -41,6 +42,10 @@ monitor, repair_soon, urgent, out_of_service
 
 ### field_defect_status values
 open, scheduled, in_repair, resolved, deferred, retired_with_equipment
+
+## Displays
+
+First saved form + view display added **2026-11-13** (`web/scripts/equipment_parts_display_bootstrap.php`): before it the add/edit form rendered **no field widgets** (D11 behaviour without a saved display — deferred #37). Default widget/formatter per field; title/author/created hidden (auto-labelled).
 
 ## Views
 - Open Defects Board: `/admin/operations/equipment/open-defects`

@@ -1,0 +1,767 @@
+uuid: 44e04a9f-54a5-4ec6-81d5-4b1dcdc34fd4
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.equipment_part.field_bin_location
+    - field.storage.equipment_part.field_date_priced
+    - field.storage.equipment_part.field_equipment_types
+    - field.storage.equipment_part.field_fits
+    - field.storage.equipment_part.field_last_price
+    - field.storage.equipment_part.field_needs_reorder
+    - field.storage.equipment_part.field_on_hand
+    - field.storage.equipment_part.field_part_category
+    - field.storage.equipment_part.field_part_number
+    - field.storage.equipment_part.field_reorder_min
+    - field.storage.equipment_part.field_vendor
+    - system.menu.admin
+    - taxonomy.vocabulary.equipment_types
+    - user.role.administration
+    - user.role.administrator
+    - user.role.site_admin
+    - user.role.site_assistant
+    - user.role.supervisor
+  module:
+    - datetime
+    - eck
+    - options
+    - taxonomy
+    - user
+id: equipment_parts
+label: 'Equipment Parts & Consumables'
+module: views
+description: 'Shop parts/consumables catalog for owned equipment (equipment_part). Filter by category, equipment type, unit; reorder flag.'
+tag: equipment
+base_table: equipment_part_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'Parts & Consumables'
+      fields:
+        field_part_number:
+          id: field_part_number
+          table: equipment_part__field_part_number
+          field: field_part_number
+          plugin_id: field
+          label: 'Part #'
+          type: string
+          settings:
+            link_to_entity: true
+        title:
+          id: title
+          table: equipment_part_field_data
+          field: title
+          entity_type: equipment_part
+          entity_field: title
+          plugin_id: field
+          label: 'Part Name'
+          type: string
+          settings:
+            link_to_entity: true
+        field_part_category:
+          id: field_part_category
+          table: equipment_part__field_part_category
+          field: field_part_category
+          plugin_id: field
+          label: Category
+          type: list_default
+          settings: {  }
+        field_equipment_types:
+          id: field_equipment_types
+          table: equipment_part__field_equipment_types
+          field: field_equipment_types
+          plugin_id: field
+          label: 'Equipment type'
+          type: entity_reference_label
+          settings:
+            link: false
+          multi_type: separator
+          separator: ', '
+        field_fits:
+          id: field_fits
+          table: equipment_part__field_fits
+          field: field_fits
+          plugin_id: field
+          label: 'Fits units'
+          type: entity_reference_label
+          settings:
+            link: true
+          multi_type: separator
+          separator: ', '
+        field_bin_location:
+          id: field_bin_location
+          table: equipment_part__field_bin_location
+          field: field_bin_location
+          plugin_id: field
+          label: Bin
+          type: string
+          settings:
+            link_to_entity: false
+        field_on_hand:
+          id: field_on_hand
+          table: equipment_part__field_on_hand
+          field: field_on_hand
+          plugin_id: field
+          label: 'On hand'
+          type: number_integer
+          settings:
+            thousand_separator: ','
+            prefix_suffix: false
+        field_reorder_min:
+          id: field_reorder_min
+          table: equipment_part__field_reorder_min
+          field: field_reorder_min
+          plugin_id: field
+          label: Min
+          type: number_integer
+          settings:
+            thousand_separator: ','
+            prefix_suffix: false
+        field_needs_reorder:
+          id: field_needs_reorder
+          table: equipment_part__field_needs_reorder
+          field: field_needs_reorder
+          plugin_id: field
+          label: Reorder
+          element_class: bos-parts-reorder
+          element_default_classes: true
+          type: boolean
+          settings:
+            format: custom
+            format_custom_false: ''
+            format_custom_true: '⚠ Reorder'
+        field_vendor:
+          id: field_vendor
+          table: equipment_part__field_vendor
+          field: field_vendor
+          plugin_id: field
+          label: Vendor
+          type: entity_reference_label
+          settings:
+            link: true
+        field_last_price:
+          id: field_last_price
+          table: equipment_part__field_last_price
+          field: field_last_price
+          plugin_id: field
+          label: 'Last price'
+          type: number_decimal
+          settings:
+            thousand_separator: ','
+            decimal_separator: .
+            scale: 2
+            prefix_suffix: true
+        field_date_priced:
+          id: field_date_priced
+          table: equipment_part__field_date_priced
+          field: field_date_priced
+          plugin_id: field
+          label: Priced
+          type: datetime_custom
+          settings:
+            timezone_override: ''
+            date_format: m/d/Y
+        operations:
+          id: operations
+          table: equipment_part
+          field: operations
+          entity_type: equipment_part
+          plugin_id: entity_operations
+          label: Operations
+          destination: true
+      pager:
+        type: full
+        options:
+          offset: 0
+          pagination_heading_level: h4
+          items_per_page: 50
+          tags:
+            next: 'Next ›'
+            previous: '‹ Previous'
+            first: '« First'
+            last: 'Last »'
+          expose:
+            items_per_page: true
+            items_per_page_label: 'Items per page'
+            items_per_page_options: '25, 50, 100, 200'
+            items_per_page_options_all: true
+            items_per_page_options_all_label: '- All -'
+            offset: false
+            offset_label: Offset
+          quantity: 9
+      exposed_form:
+        type: basic
+        options:
+          submit_button: Filter
+          reset_button: true
+          reset_button_label: Reset
+          exposed_sorts_label: 'Sort by'
+          expose_sort_order: true
+          sort_asc_label: Asc
+          sort_desc_label: Desc
+      access:
+        type: role
+        options:
+          role:
+            administrator: administrator
+            site_admin: site_admin
+            site_assistant: site_assistant
+            administration: administration
+            supervisor: supervisor
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: '<p>No parts match. Clear the filters, or add the first part with the button above.</p>'
+            format: full_html
+      sorts:
+        title:
+          id: title
+          table: equipment_part_field_data
+          field: title
+          entity_type: equipment_part
+          entity_field: title
+          plugin_id: standard
+          order: ASC
+          exposed: false
+      filters:
+        status:
+          id: status
+          table: equipment_part_field_data
+          field: status
+          entity_type: equipment_part
+          entity_field: status
+          plugin_id: boolean
+          operator: '='
+          value: '1'
+          group: 1
+          exposed: true
+          expose:
+            operator_id: status_op
+            label: Active
+            description: ''
+            use_operator: false
+            operator: status_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: status
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+        title:
+          id: title
+          table: equipment_part_field_data
+          field: title
+          entity_type: equipment_part
+          entity_field: title
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: title_op
+            label: 'Part name'
+            description: ''
+            use_operator: false
+            operator: title_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: title
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            placeholder: ''
+        field_part_number_value:
+          id: field_part_number_value
+          table: equipment_part__field_part_number
+          field: field_part_number_value
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_part_number_value_op
+            label: 'Part #'
+            description: ''
+            use_operator: false
+            operator: field_part_number_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_part_number_value
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            placeholder: ''
+        field_part_category_value:
+          id: field_part_category_value
+          table: equipment_part__field_part_category
+          field: field_part_category_value
+          plugin_id: list_field
+          operator: or
+          value: {  }
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_part_category_value_op
+            label: Category
+            description: ''
+            use_operator: false
+            operator: field_part_category_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_part_category_value
+            required: false
+            remember: false
+            multiple: true
+            remember_roles:
+              authenticated: authenticated
+            reduce: false
+        field_equipment_types_target_id:
+          id: field_equipment_types_target_id
+          table: equipment_part__field_equipment_types
+          field: field_equipment_types_target_id
+          plugin_id: taxonomy_index_tid
+          operator: or
+          value: {  }
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_equipment_types_target_id_op
+            label: 'Equipment type'
+            description: ''
+            use_operator: false
+            operator: field_equipment_types_target_id_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_equipment_types_target_id
+            required: false
+            remember: false
+            multiple: true
+            remember_roles:
+              authenticated: authenticated
+            reduce: false
+          reduce_duplicates: false
+          vid: equipment_types
+          type: select
+          hierarchy: false
+          limit: true
+          error_message: true
+        field_fits_target_id:
+          id: field_fits_target_id
+          table: equipment_part__field_fits
+          field: field_fits_target_id
+          plugin_id: entity_reference
+          operator: or
+          value: {  }
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_fits_target_id_op
+            label: 'Fits unit'
+            description: ''
+            use_operator: false
+            operator: field_fits_target_id_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_fits_target_id
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            reduce: false
+          sub_handler: 'default:equipment'
+          widget: autocomplete
+          sub_handler_settings:
+            target_bundles:
+              attachements: attachements
+              heavy_equipment: heavy_equipment
+              power_tools: power_tools
+              small_engine: small_engine
+              snow_plows: snow_plows
+              sprayers: sprayers
+              trailers: trailers
+              vehicles: vehicles
+            sort:
+              field: _none
+              direction: ASC
+            auto_create: false
+        field_needs_reorder_value:
+          id: field_needs_reorder_value
+          table: equipment_part__field_needs_reorder
+          field: field_needs_reorder_value
+          plugin_id: boolean
+          operator: '='
+          value: All
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_needs_reorder_value_op
+            label: 'Needs reorder'
+            description: ''
+            use_operator: false
+            operator: field_needs_reorder_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_needs_reorder_value
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+      filter_groups:
+        operator: AND
+        groups:
+          1: AND
+      style:
+        type: table
+        options:
+          grouping: {  }
+          row_class: ''
+          default_row_class: true
+          columns:
+            field_part_number: field_part_number
+            title: title
+            field_part_category: field_part_category
+            field_equipment_types: field_equipment_types
+            field_fits: field_fits
+            field_bin_location: field_bin_location
+            field_on_hand: field_on_hand
+            field_reorder_min: field_reorder_min
+            field_needs_reorder: field_needs_reorder
+            field_vendor: field_vendor
+            field_last_price: field_last_price
+            field_date_priced: field_date_priced
+            operations: operations
+          default: title
+          info:
+            field_part_number:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            title:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_part_category:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_equipment_types:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_fits:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: true
+              responsive: ''
+            field_bin_location:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_on_hand:
+              sortable: true
+              default_sort_order: asc
+              align: views-align-right
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_reorder_min:
+              sortable: false
+              default_sort_order: asc
+              align: views-align-right
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_needs_reorder:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_vendor:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_last_price:
+              sortable: true
+              default_sort_order: asc
+              align: views-align-right
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_date_priced:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            operations:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          override: true
+          sticky: true
+          summary: ''
+          empty_table: true
+          caption: ''
+          description: ''
+      row:
+        type: fields
+        options:
+          default_field_elements: true
+          inline: {  }
+          separator: ''
+          hide_empty: false
+      query:
+        type: views_query
+        options: {  }
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: false
+          content:
+            value: "<p>Shop parts and consumables for our own equipment (plugs, filters, carb kits, line, blades, belts, oil, hardware). Internal stock only — never offered as a billable material on an estimate or work order. <strong>⚠ Reorder</strong> means On Hand is at or below the part's Reorder Minimum.</p>"
+            format: full_html
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.equipment_part.field_bin_location'
+        - 'config:field.storage.equipment_part.field_date_priced'
+        - 'config:field.storage.equipment_part.field_equipment_types'
+        - 'config:field.storage.equipment_part.field_fits'
+        - 'config:field.storage.equipment_part.field_last_price'
+        - 'config:field.storage.equipment_part.field_needs_reorder'
+        - 'config:field.storage.equipment_part.field_on_hand'
+        - 'config:field.storage.equipment_part.field_part_category'
+        - 'config:field.storage.equipment_part.field_part_number'
+        - 'config:field.storage.equipment_part.field_reorder_min'
+        - 'config:field.storage.equipment_part.field_vendor'
+  page_1:
+    id: page_1
+    display_title: 'All parts'
+    display_plugin: page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/operations/equipment/parts
+      menu:
+        type: normal
+        title: 'Parts & Consumables'
+        description: 'Shop parts and consumables for owned equipment, with reorder flags.'
+        weight: 5
+        expanded: false
+        menu_name: admin
+        parent: 'views_view:views.equipment.page_1'
+        context: '0'
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.equipment_part.field_bin_location'
+        - 'config:field.storage.equipment_part.field_date_priced'
+        - 'config:field.storage.equipment_part.field_equipment_types'
+        - 'config:field.storage.equipment_part.field_fits'
+        - 'config:field.storage.equipment_part.field_last_price'
+        - 'config:field.storage.equipment_part.field_needs_reorder'
+        - 'config:field.storage.equipment_part.field_on_hand'
+        - 'config:field.storage.equipment_part.field_part_category'
+        - 'config:field.storage.equipment_part.field_part_number'
+        - 'config:field.storage.equipment_part.field_reorder_min'
+        - 'config:field.storage.equipment_part.field_vendor'
+  page_2:
+    id: page_2
+    display_title: 'Reorder list'
+    display_plugin: page
+    position: 2
+    display_options:
+      title: 'Parts to reorder'
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: '<p>Nothing to reorder — every tracked part is above its minimum.</p>'
+            format: full_html
+      filters:
+        status:
+          id: status
+          table: equipment_part_field_data
+          field: status
+          entity_type: equipment_part
+          entity_field: status
+          plugin_id: boolean
+          operator: '='
+          value: '1'
+          group: 1
+          exposed: false
+        field_needs_reorder_value:
+          id: field_needs_reorder_value
+          table: equipment_part__field_needs_reorder
+          field: field_needs_reorder_value
+          plugin_id: boolean
+          operator: '='
+          value: '1'
+          group: 1
+          exposed: false
+        field_part_category_value:
+          id: field_part_category_value
+          table: equipment_part__field_part_category
+          field: field_part_category_value
+          plugin_id: list_field
+          operator: or
+          value: {  }
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_part_category_value_op
+            label: Category
+            description: ''
+            use_operator: false
+            operator: field_part_category_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_part_category_value
+            required: false
+            remember: false
+            multiple: true
+            remember_roles:
+              authenticated: authenticated
+            reduce: false
+        field_equipment_types_target_id:
+          id: field_equipment_types_target_id
+          table: equipment_part__field_equipment_types
+          field: field_equipment_types_target_id
+          plugin_id: taxonomy_index_tid
+          operator: or
+          value: {  }
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_equipment_types_target_id_op
+            label: 'Equipment type'
+            description: ''
+            use_operator: false
+            operator: field_equipment_types_target_id_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_equipment_types_target_id
+            required: false
+            remember: false
+            multiple: true
+            remember_roles:
+              authenticated: authenticated
+            reduce: false
+          reduce_duplicates: false
+          vid: equipment_types
+          type: select
+          hierarchy: false
+          limit: true
+          error_message: true
+      filter_groups:
+        operator: AND
+        groups:
+          1: AND
+      defaults:
+        empty: false
+        title: false
+        filters: false
+        filter_groups: false
+        header: false
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: false
+          content:
+            value: '<p>Active parts whose On Hand count is at or below their Reorder Minimum. Receive stock by editing the part and raising On Hand — the flag clears on save.</p>'
+            format: full_html
+      display_extenders: {  }
+      path: admin/operations/equipment/parts/reorder
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'config:field.storage.equipment_part.field_bin_location'
+        - 'config:field.storage.equipment_part.field_date_priced'
+        - 'config:field.storage.equipment_part.field_equipment_types'
+        - 'config:field.storage.equipment_part.field_fits'
+        - 'config:field.storage.equipment_part.field_last_price'
+        - 'config:field.storage.equipment_part.field_needs_reorder'
+        - 'config:field.storage.equipment_part.field_on_hand'
+        - 'config:field.storage.equipment_part.field_part_category'
+        - 'config:field.storage.equipment_part.field_part_number'
+        - 'config:field.storage.equipment_part.field_reorder_min'
+        - 'config:field.storage.equipment_part.field_vendor'
+

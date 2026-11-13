@@ -1,0 +1,29 @@
+uuid: 618bd986-0a88-4e4e-96bf-0a30aacf6f0b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_part.standard
+    - eck.eck_type.supplier.supplier
+    - field.storage.equipment_part.field_vendor
+id: equipment_part.standard.field_vendor
+field_name: field_vendor
+entity_type: equipment_part
+bundle: standard
+label: Vendor
+description: 'Where we buy it. Add a new vendor under Suppliers first.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:supplier'
+  handler_settings:
+    target_bundles:
+      supplier: supplier
+    sort:
+      field: title
+      direction: ASC
+    auto_create: false
+field_type: entity_reference
+

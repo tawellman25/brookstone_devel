@@ -523,6 +523,25 @@ Existing BOS reference: only 3 of the 5+ ECK child entities of `equipment` are p
 
 **Surfaced during equipment_fuel_transaction build, May 2026.** Cost about 30 minutes of debugging because all the diagnostic surfaces lied: pattern was loaded, route was registered, token replacement worked. The plugin manager's silent omission was the giveaway.
 
+### A bundle with NO saved form display renders NO field widgets (D11)
+
+A content-entity bundle that never had a `core.entity_form_display.{type}.{bundle}.default`
+saved — true of `equipment_maintenance_event`, `equipment_defect` and all six
+`equipment_inspection` bundles on dev **and live** — gets a runtime display from
+`EntityDisplayBase::init()` in which every configurable `field_*` lands in `hidden`; only the
+base fields (title, author, created) render. The add/edit form looks "empty" and a field you
+just added appears nowhere. Routed GETs of the three add forms as uid 1 on 2026-11-13: **0 field
+widgets**. View displays behave the same way on the entity page.
+
+Fix: give the bundle a saved display. `web/scripts/equipment_parts_display_bootstrap.php` builds
+one from each field's default widget/formatter in a stated order (`setComponent($name)` with no
+type = default plugin for the field type), saves, and the YAML is exported to sync; a setup
+script creates it on an environment that lacks it (never overwriting one that exists — live
+displays are curated). Check a bundle before adding a field to it:
+`EntityFormDisplay::collectRenderDisplay($entity, 'default')->getComponents()`.
+
+**Surfaced during the Equipment Parts build, 2026-11-13** (deferred #37 for `equipment_inspection`).
+
 ### list_string field storage must use `module: options`, not `module: core`
 
 When generating field storage YAMLs programmatically, easy to default `module: core` for all field types. For `list_string` fields specifically, this breaks Views integration silently:

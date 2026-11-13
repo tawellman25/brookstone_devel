@@ -1,0 +1,29 @@
+uuid: 1938de2b-4c89-4118-bf03-d8185f49d74b
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_part.standard
+    - field.storage.equipment_part.field_equipment_types
+    - taxonomy.vocabulary.equipment_types
+id: equipment_part.standard.field_equipment_types
+field_name: field_equipment_types
+entity_type: equipment_part
+bundle: standard
+label: 'Fits Equipment Type(s)'
+description: 'The kind(s) of machine this part is for — the same Equipment Types the fleet itself is classified by. Pick several for a part that fits more than one type.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      equipment_types: equipment_types
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+field_type: entity_reference
+

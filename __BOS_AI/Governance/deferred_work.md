@@ -684,6 +684,13 @@ Surfaced 2026-11-11 backfilling SOP aliases. (a) `eck.eck_type.sop.sop_governanc
 - **Going forward:** closed — `wo_shared_work_order_presave()` stores `0` for an empty `field_printed` on every save (same change as `field_invoiced`).
 - **The 45,820 legacy NULLs:** `drush php:script web/scripts/wo_invoiced_flag_backfill.php -- --printed` backfills them (direct field-table insert, no entity save, one statement). Not run — nothing depends on it and it touches 91 % of the table; run it the day someone adds a "Printed = No" filter, or decide the field is dead and remove it from the forms instead (`field_work_order_id` is already "a migration artifact staged for deletion" — Printed may be the same vintage). **Tier 3 · S.**
 
+### 37. `equipment_inspection` (6 bundles) has no saved form/view displays — its add/edit forms render no fields
+
+**Surfaced 2026-11-13** while adding Parts Used / Parts Needed to the equipment maintenance machinery. `equipment_maintenance_event`, `equipment_defect` **and** `equipment_inspection` had never had a `core.entity_form_display` / `core.entity_view_display` config — dev and live alike — and Drupal 11 renders a bundle **without** a saved form display with **no configurable-field widgets at all** (title, author, created only; every `field_*` lands in `hidden`). Confirmed with routed GETs of all three add forms as uid 1: 0 field widgets. Defects are created programmatically by `equipment_inspection_workflow`, which is why nobody noticed.
+
+- **Fixed in the parts build:** `equipment_maintenance_event.standard` and `equipment_defect.standard` got a first form + view display (`web/scripts/equipment_parts_display_bootstrap.php`; default widget/formatter per field in a working order; title/author/created hidden because titles are auto-labelled). Ships to live with the parts deploy (the setup script creates them only where none exists).
+- **Still open:** `equipment_inspection` × 6 bundles (`vehicles`, `trailers`, `heavy_equipment`, `mowers`, `sprayers`, `standard`) — bundle-specific checklists, so the display order should come from whoever owns the inspection forms (foremen use them?) rather than a default dump. Same bootstrap script, extended with the six field orders. **Tier 3 · S.** Gotcha recorded in `drupal_bos_gotchas.md`.
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

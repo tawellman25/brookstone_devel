@@ -1,0 +1,166 @@
+uuid: cfdf8432-fb29-49a0-bc7a-024cf78d92fe
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_maintenance_event.standard
+    - field.field.equipment_maintenance_event.standard.field_cost_labor
+    - field.field.equipment_maintenance_event.standard.field_cost_parts
+    - field.field.equipment_maintenance_event.standard.field_cost_total
+    - field.field.equipment_maintenance_event.standard.field_downtime_days
+    - field.field.equipment_maintenance_event.standard.field_equipment
+    - field.field.equipment_maintenance_event.standard.field_event_date
+    - field.field.equipment_maintenance_event.standard.field_event_type
+    - field.field.equipment_maintenance_event.standard.field_next_service_due
+    - field.field.equipment_maintenance_event.standard.field_next_service_due_date
+    - field.field.equipment_maintenance_event.standard.field_parts_used
+    - field.field.equipment_maintenance_event.standard.field_related_defect
+    - field.field.equipment_maintenance_event.standard.field_service_reading
+    - field.field.equipment_maintenance_event.standard.field_vendor_or_mechanic
+    - field.field.equipment_maintenance_event.standard.field_verified_by
+    - field.field.equipment_maintenance_event.standard.field_verified_complete
+    - field.field.equipment_maintenance_event.standard.field_work_performed
+  module:
+    - datetime
+    - field_layout
+    - layout_discovery
+    - text
+third_party_settings:
+  field_layout:
+    id: layout_onecol
+    settings:
+      label: ''
+id: equipment_maintenance_event.standard.default
+targetEntityType: equipment_maintenance_event
+bundle: standard
+mode: default
+content:
+  field_cost_labor:
+    type: number
+    weight: 6
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_cost_parts:
+    type: number
+    weight: 5
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_cost_total:
+    type: number
+    weight: 7
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_downtime_days:
+    type: number
+    weight: 8
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_equipment:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_event_date:
+    type: datetime_default
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_event_type:
+    type: options_select
+    weight: 2
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_next_service_due:
+    type: number
+    weight: 12
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_next_service_due_date:
+    type: datetime_default
+    weight: 13
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_parts_used:
+    type: entity_reference_autocomplete
+    weight: 4
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_related_defect:
+    type: entity_reference_autocomplete
+    weight: 11
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_service_reading:
+    type: number
+    weight: 9
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_vendor_or_mechanic:
+    type: string_textfield
+    weight: 10
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_verified_by:
+    type: entity_reference_autocomplete
+    weight: 15
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_verified_complete:
+    type: boolean_checkbox
+    weight: 14
+    region: content
+    settings:
+      display_label: true
+    third_party_settings: {  }
+  field_work_performed:
+    type: text_textarea
+    weight: 3
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  path: true
+  title: true
+  uid: true
+

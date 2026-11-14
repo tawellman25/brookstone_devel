@@ -2328,6 +2328,51 @@ until a human hit it. 16,396 of the 22,056 routes are JSON:API, which nothing co
 mobile app is LATER); any rebuild on this box is as fragile as its biggest contributor. And the
 commit-on-destruct behaviour is core's — an upstream issue is worth filing.
 
+## `taxonomy_index_tid` is a ManyToOne filter — operator `in` is silently ignored (no WHERE at all)
+
+Found 2026-11-14 building `my_check_ups`: a status filter written as `plugin_id: taxonomy_index_tid,
+operator: in, value: {1089: 1089, …}` produced **no condition** — the view returned every row and
+nothing errored. `TaxonomyIndexTid` extends `ManyToOne`, whose operators are **`or`** (is one of),
+**`and`** (is all of), **`not`**, `empty`, `not empty`; an unknown operator falls through and adds
+nothing. Core's own exports use `operator: or`. **Rule:** for any entity-reference / term filter
+built in PHP, use `or`, and **always probe the built SQL before trusting a row count**:
+`$v = Views::getView($id); $v->setDisplay('page_1'); $v->build(); echo (string) $v->getQuery()->query();`
+— the WHERE clause must name every filter you configured. A paged "50 rows" looked plausible; the
+unpaged count (`setItemsPerPage(0)`) was 26,386.
+
+## The live shell is CageFS-jailed with no `/dev/fd` — no bash process substitution in cron scripts
+
+`mapfile -t x < <(ls …)` and any `<(…)` / `>(…)` dies on live with `/dev/fd/63: No such file or
+directory` (bash 5.1 — the feature exists, the device does not). Use plain pipes into `$(…)`,
+here-strings, or temp files. Found 2026-11-14 by running `bos_backup_heartbeat.sh` **read-only on
+live before wiring its cron line** — do that for every new cron script; dev (WSL) has `/dev/fd`.
+
+## A drush process pins the active theme at its first render — reset it before routed sub-request GETs
+
+`ThemeManager` resolves the active theme once per process. In a drush verify script the first render
+is often a token/mail render with no route (the front theme), so every `http_kernel->handle(…,
+SUB_REQUEST)` afterwards renders in that theme regardless of `_admin_route`, and an "admin theme"
+assertion fails for the wrong reason. Call `\Drupal::theme()->resetActiveTheme()` before each routed
+GET (as `checkup_default_tech_verify.php` does). The direct check is the route option:
+`router.route_provider->getRouteByName('view.x.page_1')->getOption('_admin_route') === TRUE`.
+
+## Crew-hours deploy: `web/scripts/targeted_refresh.php` instead of `drush cr`
+
+A full `cr` during the day empties render/page/entity/discovery caches at once and every crew request
+rebuilds them inside the request (1 GB LVE, 120 s kill). The script refreshes only what a code deploy
+invalidates — container (new services / subscribers / `.module` hooks, which D11 collects into the
+container), plugin definitions, router + menu links, theme registry + Twig, `library_info` +
+`rendered` tags, asset query string + aggregates — and leaves warm entity/render caches to expire
+lazily. Run it **before** a setup script that rebuilds the router if that script depends on a new
+route subscriber. Measured dev 9.6 s / 378 MB (router rebuild is most of it); the 2026-11-11 ad-hoc
+version without the router step was 5.2 s / 107 MB on live.
+**Live, the same afternoon:** container + router in ONE process was **SIGKILLed by LVE at the router
+step** — no PHP error, no watchdog, output simply stopped after "plugin definitions". SIGKILL means
+no destructor ran, so the dumper's transaction rolled back and the router stayed whole (22,062 rows,
+checked before anything else — the opposite of the morning's clean-shutdown commit). Run it as two
+processes on live (`--skip-router`, then `--skip-container`, or let the setup script's own rebuild be
+the second process). Check the router count after any rebuild that printed no "done".
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

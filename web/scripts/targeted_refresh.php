@@ -21,9 +21,22 @@
  *   - the 'rendered' cache tag, so pages that embed changed output re-render
  *     lazily on their next hit instead of all at once.
  * Entity/field definition caches are left alone — a setup script that adds a
- * field clears those itself. Measured on live 2026-11-11: ~5 s, ~107 MB.
+ * field clears those itself.
+ *
+ * ⚠ LIVE LESSON 2026-11-14: container rebuild + router rebuild in ONE drush
+ * process was killed silently at the router step by the 1 GB LVE limit (no
+ * PHP error, no watchdog — SIGKILL, so the dumper's transaction rolled back
+ * and the router stayed intact; dev peak for the same run was 378 MB). On
+ * live run it as TWO processes:
+ *   drush php:script web/scripts/targeted_refresh.php -- --skip-router
+ *   drush php:script web/scripts/targeted_refresh.php -- --skip-container
+ * (or let a setup script that rebuilds the router be the second process).
+ * The 2026-11-11 ad-hoc version without the router step: 5.2 s, 107 MB.
  */
 
+$args = $extra ?? [];
+$skip_container = in_array('--skip-container', $args, TRUE);
+$skip_router = in_array('--skip-router', $args, TRUE);
 $t0 = microtime(TRUE);
 $step = static function (string $label, callable $fn): void {
   $s = microtime(TRUE);
@@ -31,10 +44,14 @@ $step = static function (string $label, callable $fn): void {
   printf("  %-44s %5.2fs\n", $label, microtime(TRUE) - $s);
 };
 
-$step('container rebuild', static fn() => \Drupal::service('kernel')->rebuildContainer());
-$step('plugin definitions', static fn() => \Drupal::service('plugin.cache_clearer')->clearCachedDefinitions());
-$step('router rebuild', static fn() => \Drupal::service('router.builder')->rebuild());
-$step('menu links rebuild', static fn() => \Drupal::service('plugin.manager.menu.link')->rebuild());
+if (!$skip_container) {
+  $step('container rebuild', static fn() => \Drupal::service('kernel')->rebuildContainer());
+  $step('plugin definitions', static fn() => \Drupal::service('plugin.cache_clearer')->clearCachedDefinitions());
+}
+if (!$skip_router) {
+  $step('router rebuild', static fn() => \Drupal::service('router.builder')->rebuild());
+  $step('menu links rebuild', static fn() => \Drupal::service('plugin.manager.menu.link')->rebuild());
+}
 $step('theme registry reset', static fn() => \Drupal::service('theme.registry')->reset());
 $step('twig invalidate', static fn() => \Drupal::service('twig')->invalidate());
 $step('library_info + rendered tags', static fn() => \Drupal::service('cache_tags.invalidator')->invalidateTags(['library_info', 'rendered', 'local_task', 'config:views.view.list']));

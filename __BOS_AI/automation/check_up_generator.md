@@ -90,6 +90,13 @@ governance and auditability.
 
 Missing zipcode route day **blocks generation** by design.
 
+- `field_default_sprinkler_tech` (**since 2026-11-14**) — the teammate every check-up in this
+  zipcode is **assigned to at creation**. Optional: empty → the WO is created unassigned (and the
+  office **Scheduling Gaps** page lists it once its date passes). A default who is blocked or no
+  longer holds the `teammates` role is **refused** with a watchdog warning and the WO is created
+  unassigned — a departed tech never silently collects a season. Set to **Russell Akers on all 13
+  zipcodes** on 2026-11-14 ("until we know who is on the team for next year").
+
 ---
 
 ## Frequency Rules
@@ -110,6 +117,17 @@ Missing zipcode route day **blocks generation** by design.
   - Scheduled date via **Scheduling entity**
 - Scheduling is visible in WO Schedule EVA
 - Generator will not create duplicate Work Orders for the same date
+- **Assignee (since 2026-11-14):** the zipcode's default sprinkler tech is written onto the
+  scheduling record (`field_assigned_to`), so the stop is on that tech's **My Schedule** on its
+  date and on their **My Check-ups** backlog tab (`/teammates/calendar/my-check-ups`, overdue
+  first) until it is done. `field_notify_assigned_teammate` stays **0** — no per-assignment email
+  (hundreds a season; the tab is the notification). The record's `field_scheduling_note` says why
+  (*"Auto-assigned: default sprinkler tech for zip 81401."*); `wo_schedule` still writes
+  *"Assigned to <name> (Scheduled)"* on the WO timeline.
+- **Why assignment, measured on the 2026 season:** 291 check-ups created · 85 ever assigned ·
+  98 done (21 of them never assigned) · **192 cancelled**. Roughly 9 in 10 assigned check-ups
+  were done; of the unassigned, about 1 in 10. The generator dated them onto nobody's list;
+  `My Schedule` and Dispatch are keyed on the assignee.
 
 ---
 
@@ -167,9 +185,14 @@ available for manual one-off use but should not be the primary scheduling method
 - Contracts (Residential)
 - Contract Sections
 - Services taxonomy
-- Zipcodes (routing authority)
+- Zipcodes (routing authority — route day **and** default sprinkler tech)
 - Scheduling entity
 - Work Orders
+- Views: `my_check_ups` (tech backlog tab), `scheduling_gaps` (past-dated stops nobody owns),
+  `wo_never_scheduled` (open 90+ days, no scheduling record) — the last two also as counts on the
+  Scheduling hub (`/admin/office/work-orders/scheduling`, "Falling through")
+- Scripts: `web/scripts/checkup_default_tech_setup.php` (field · displays · views · defaults),
+  `checkup_default_tech_verify.php` (read-only), `test_checkup_default_tech.php` (dev, 25 checks)
 
 ---
 
@@ -203,3 +226,13 @@ Scheduling entities created by the checkup generator now set `all_day: TRUE` on
 ### April 2026 — Season start changed from March 15 to May 1
 March/April check-ups were being created too early, requiring manual deletion.
 Season start moved to May 1 to match actual operational start. Season end remains October 15.
+
+### 2026-11-14 — Auto-assignment by zipcode default tech
+Todd: *"solve the check-ups by making them assigned to a teammate when they are automatically
+created … a sprinkler tech assigned to each zipcode … then it is their responsibility to find time
+to get them done."* Added `zipcodes.field_default_sprinkler_tech`; `createSchedulingRecord()` now
+takes the resolved tech (`resolveDefaultTech()`: active + `teammates` role, else NULL + warning,
+memoised per zip per run). Two conditions shipped with it: the tech's **My Check-ups** tab (a dated
+check-up that is missed drops off My Schedule the next day, so assignment alone would only move
+the problem to yesterday's list) and the office **Scheduling Gaps** backstop. Season window
+unchanged; nothing to backfill (the 2026 season had ended — one open check-up, In Progress).

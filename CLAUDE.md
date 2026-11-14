@@ -382,7 +382,7 @@ Link entity between `material` and `supplier`. Enforced by `material_supplier` m
 - `employment` — bundle: `notes`
 
 #### Geographic reference entities
-- `zipcodes` — bundle: `zipcode` (holds `field_trip_fee` used for trip fee calculation)
+- `zipcodes` — bundle: `zipcode` (holds `field_trip_fee` used for trip fee calculation; `field_check_up_route_day` the check-up generator dates onto; and since 2026-11-14 `field_default_sprinkler_tech` — the teammate every generated check-up in that zip is **assigned to at creation** (active + `teammates` role, else created unassigned with a warning). All 13 → Russell Akers until the 2027 team is known.)
 - `city` — bundle: `city`
 - `county` — bundle: `county`
 - `state` — bundle: `state`
@@ -528,7 +528,7 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 | `eck_bundle_clone` | Drush commands for cloning ECK bundles (definition + fields + base field overrides) |
 | `admin_calendar` | Custom FullCalendar 6 scheduling calendar at /teammates/calendar. Tabs: Dispatch, Calendar, My Schedule. Completed WO overlay, business calendar background events, drag-drop rescheduling for supervisors. |
 | `business_calendar` | ECK entity for company calendar events (holidays, paydays, closures). Background shading on scheduling calendar. Payday auto-generator anchored to 2026-03-16 every 14 days. |
-| `bos_scheduling` | Crew daily schedule (/teammates/calendar/my-schedule), supervisor dispatch board (/teammates/calendar/dispatch), sprinkler bulk scheduling (/admin/office/work-orders/scheduling/sprinkler), map **Route Editor** (/admin/office/work-orders/scheduling/route-editor — Office ▸ Work Orders ▸ Scheduling ▸ Route Editor). Aeration flag heads service. |
+| `bos_scheduling` | Crew daily schedule (/teammates/calendar/my-schedule), supervisor dispatch board (/teammates/calendar/dispatch), sprinkler bulk scheduling (/admin/office/work-orders/scheduling/sprinkler), map **Route Editor** (/admin/office/work-orders/scheduling/route-editor — Office ▸ Work Orders ▸ Scheduling ▸ Route Editor). Aeration flag heads service. **My Check-ups** tab (`views.view.my_check_ups`, /teammates/calendar/my-check-ups — open check-ups assigned to the current user, overdue first, My Schedule cards via `hook_preprocess_views_view_fields` + a `views_view_fields__my_check_ups` template; admin theme via `Routing\RouteSubscriber`). The hub's **Falling through** counts link `views.view.scheduling_gaps` (past-dated stops with no assignee on open WOs) and `views.view.wo_never_scheduled` (open 90+ days, no scheduling record). |
 | `site_landing_page` | Custom functionality for `site_landing_page` ECK entity; admin theme for `office_administration` bundle |
 | `crew_types` | Cross-references Crews and Departments ECK entities |
 | `system_readiness` | System health/readiness checks |

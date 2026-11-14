@@ -739,6 +739,18 @@ Surfaced 2026-11-14 while building the backup heartbeat (#21). The heartbeat pro
 
 ---
 
+### 43. `wo_schedule` writes three timeline entries for one dated + assigned scheduling insert
+
+Seen 2026-11-14 in the auto-assignment test: one scheduling record created with a date and an
+assignee produced *"Scheduled for 11/11/2026 - 07:00 AM"*, *"Assigned to Russell Akers (Scheduled)"*
+and *"Assigned to Russell Akers Scheduled for 11/11/2026 - 07:00 AM"* on the WO timeline — two
+branches of `_wo_schedule_handle_status_update()` fire for the same change. Pre-existing (the
+sprinkler bulk scheduler and the office form do the same); now every generated check-up adds three
+lines a season. Tidy to one entry per fact (date set · assignee set) when `wo_schedule` is next
+opened; the all-day record also prints a fake `07:00 AM`. S.
+
+---
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

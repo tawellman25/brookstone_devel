@@ -68,13 +68,19 @@ foreach ($examples as [$pn, , , $on_hand, $min]) {
 }
 
 echo "== unique part number ==\n";
-$dupe = $storage->create(['type' => 'standard', 'title' => 'dupe test', 'field_part_number' => 'cmr6h ', 'field_part_category' => 'spark_plug']);
-$viol = $dupe->validate();
-$msgs = [];
-foreach ($viol as $v) {
-  $msgs[] = $v->getPropertyPath() . ': ' . strip_tags((string) $v->getMessage());
+$has_cmr6h = (bool) $storage->getQuery()->accessCheck(FALSE)->condition('field_part_number', 'CMR6H')->range(0, 1)->execute();
+if ($has_cmr6h) {
+  $dupe = $storage->create(['type' => 'standard', 'title' => 'dupe test', 'field_part_number' => 'cmr6h ', 'field_part_category' => 'spark_plug']);
+  $viol = $dupe->validate();
+  $msgs = [];
+  foreach ($viol as $v) {
+    $msgs[] = $v->getPropertyPath() . ': ' . strip_tags((string) $v->getMessage());
+  }
+  echo '  duplicate "cmr6h " (case + space variant) rejected: ' . $ok(count(array_filter($msgs, fn($m) => str_starts_with($m, 'field_part_number'))) > 0) . ' — ' . implode(' | ', $msgs) . "\n";
 }
-echo '  duplicate "cmr6h " (case + space variant) rejected: ' . $ok(count(array_filter($msgs, fn($m) => str_starts_with($m, 'field_part_number'))) > 0) . ' — ' . implode(' | ', $msgs) . "\n";
+else {
+  echo "  duplicate check skipped — no CMR6H part present (run without --no-seed, or add a part first)\n";
+}
 $fresh = $storage->create(['type' => 'standard', 'title' => 'fresh', 'field_part_number' => 'ZZ-NEVER-USED', 'field_part_category' => 'other']);
 echo '  fresh number passes: ' . $ok(count($fresh->validate()) === 0) . "\n";
 

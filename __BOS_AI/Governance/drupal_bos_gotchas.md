@@ -634,9 +634,54 @@ Implications:
 - **Sync-dir YAMLs SHOULD include the local UUID** for consistency across `drush cim` cycles. Missing UUID in sync triggers unstable diffs (sync vs active perpetually look "different" because active has a UUID and sync doesn't).
 - **The same field on local vs live will have different UUIDs.** This is fine — UUIDs don't affect functionality. Code references config entities by name (`config_pages.business_setting`), never by UUID.
 - **When a field is created via the cim silent-skip workaround**, Drupal generates a UUID at save time. Patch that UUID back into the sync YAML so future cim cycles produce clean diffs.
-- **Apprentices cloning the repo** will adopt the committed UUIDs when cim runs against their fresh DDEV — that's good for dev consistency. Live retains its own pre-existing UUIDs because cim doesn't modify existing entities' UUIDs.
+- **Apprentices cloning the repo** will adopt the committed UUIDs when cim runs against their fresh DDEV — that's good for dev consistency. **Live does NOT simply "retain" its UUIDs when a sync file with another uuid is imported — see the next section: cim deletes and re-creates the entity.**
 
 The UUID-stripping bug in BOS field-instance configs (above) is the recurring cause of UUID drift. Always verify sync YAMLs have a `uuid:` line before committing field configs.
+
+---
+
+## A UUID mismatch makes `cim` DELETE + CREATE the config entity — a partial import can drop a live field table
+
+**Found 2026-11-13** while deploying `equipment_part`, by reading the core code before running the partial cim instead of trusting the sentence above (which used to say the drift was "benign … cim never modifies an existing config's UUID"). It is not benign.
+
+`Drupal\Core\Config\StorageComparer::addChangelistUpdate()` (core 11.4, lines ~297–320):
+
+```php
+if ($source_data !== $target_data) {
+  if (isset($source_data['uuid']) && $source_data['uuid'] !== ($target_data['uuid'] ?? NULL)) {
+    // The entity has the same file as an existing entity but the UUIDs do
+    // not match. This means that the entity has been recreated so config
+    // synchronization should do the same.
+    $recreates[] = $name;
+  }
+  …
+}
+// Recreates should become deletes and creates.
+$this->addChangeList($collection, 'create', $recreates, …);
+$this->addChangeList($collection, 'delete', $recreates, …);
+```
+
+So when the staged file and active share a **name** but not a **uuid**, the import does not update — it **deletes the active entity, then creates it from sync**:
+
+| Entity | What a delete + create does on live |
+|---|---|
+| `field.storage.*` | the data table is removed (marked deleted, purged on cron) and a **fresh empty one** created — the column's data is gone |
+| `field.field.*` | instance deleted + re-created; data survives only if the storage was untouched |
+| `eck.eck_type.*` | bundle removed → core deletes its field instances; entities of that bundle are orphaned |
+| `taxonomy.vocabulary.*` | **every term deleted** |
+| views / displays / view modes / image styles | re-created from sync — fine functionally, but any live-curated difference is lost |
+
+**Why the old sentence seemed true:** the cases it was written from (2026-05-03 recovery) imported brand-new, *empty* fields — a delete + create of an empty field is invisible. The same operation on a field that has carried live data for months is a data loss.
+
+**Live audit, 2026-11-13 (read-only, `web/scripts/config_uuid_audit.php`):** of **9,835** sync files, **9,226** match live's uuid, **192 differ**, 38 exist only in sync, 379 are simple config. The 192 include **49 field storages** (`contracts.field_salt_rate`/`field_mag_rate`/`field_plow_rate_*`/snow-contract fields, `properties.field_hoa`/`field_hoa_contracted`/`field_boundary`/`field_neighborhood`, `wo_time_clock.field_non_billable*`/`field_clock_in_location`…, `work_order.field_winterize_discount*`/`field_target_hours*`/`field_non_billable_time`, five `config_pages` rate fields), 122 field instances, `eck.eck_type.properties.hoa`, `taxonomy.vocabulary.snow_trigger`, 7 view modes, 7 displays, 4 views, `image.style.og_image`. Every one of them was created on live by a setup script that **stripped the uuid** (`unset($data['uuid'])`) before `::create()`, so live minted its own. Full list in `deferred_work.md` #38.
+
+**Rules (standing):**
+
+1. **Before any partial cim, run** `drush php:script web/scripts/config_uuid_audit.php -- <the staged files>` **on the target environment.** It exits non-zero and names anything that would be recreated. Stage nothing it flags.
+2. **Setup scripts that create config entities from sync YAML must keep the YAML's `uuid`** (strip only `_core`). `equipment_parts_setup.php` does; that is why its 47 files were identical to live, uuid included, and the partial cim had nothing to do. `wo_non_billable_setup.php`, `setup_lighting_crew_signoff.php` and earlier scripts strip it — which is where the 192 came from. When reusing them as templates, remove the `uuid` from the `unset(...)`.
+3. **A mismatched file is still deployable by its content** — the setup-script route (entity API) applies the YAML without touching the existing uuid. Reconciling the 192 so that cim becomes safe for them is #38 (options: patch live's uuid to sync's — same-length string replace in the serialized `config` row, no data touched — or accept them as permanently "setup-script only").
+
+---
 
 ---
 

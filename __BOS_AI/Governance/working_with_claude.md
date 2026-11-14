@@ -392,7 +392,7 @@ The deploy script's failure trap leaves live in maintenance mode when this happe
 5. `drush cr -y && drush sset system.maintenance_mode 0 -y && drush cr -y`
 6. Smoke-test the new infrastructure with a read-only PHP script (verify fields exist, services resolve, controllers build)
 
-The live UUIDs generated during step 2 will differ from the local sync YAMLs' UUIDs. Per [drupal_bos_gotchas.md → UUID drift](drupal_bos_gotchas.md), this is benign — code references configs by name, not UUID, and cim never modifies an existing config's UUID. Don't patch.
+**Keep the YAML's `uuid` when you `::create()` from it** (strip only `_core`). If the script strips the uuid, live mints its own, and from then on a `cim` that includes that file **deletes and re-creates the entity** (`StorageComparer::addChangelistUpdate()` — for a field storage that drops the table). This was believed benign until 2026-11-13; it is not — see [drupal_bos_gotchas.md → A UUID mismatch makes `cim` DELETE + CREATE](drupal_bos_gotchas.md) and run `web/scripts/config_uuid_audit.php -- <files>` before any partial cim. The 2026-05-03 recovery got away with it only because the fields were new and empty.
 
 ### Pre-deploy mitigation (preferred when feasible)
 

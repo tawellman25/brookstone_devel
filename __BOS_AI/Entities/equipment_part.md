@@ -1,7 +1,7 @@
 # BOS Entity — Equipment Part (Parts & Consumables)
 
 Entity Type ID: `equipment_part` · Storage: ECK · Bundle: `standard` · Module: `bos_equipment_parts`
-**Built on dev 2026-11-13** from the My 2nd Brain brief ("Build a Parts & Consumables entity in BOS"). **Live deploy: pending Todd's review** — runbook below.
+**Built on dev and deployed LIVE 2026-11-13** from the My 2nd Brain brief ("Build a Parts & Consumables entity in BOS"). Build commit `e2b16dad`; live run 19:25–19:45 MT (record below). No parts seeded on live — the office adds them with **Add part**.
 
 ## Purpose
 
@@ -112,10 +112,17 @@ and then re-exported from active so `dependencies`/`cache_metadata` are Drupal's
 
 **Dev (done 2026-11-13):** `equipment_parts_setup.php` → partial cim of the 47 files + `pathauto.settings.yml` ("no changes to import" = sync equals active) → `drush cr` → `equipment_parts_verify.php` (seeds the brief's three HS 82 example parts as uid 1; checks flag, alias, uniqueness, both forms, routed GETs as supervisor-only and crew-only accounts, routes, tabs, action).
 
-**Live runbook (not yet run):**
+**Live — RUN 2026-11-13, 19:25–19:45 MT (Friday evening, off crew hours):**
+1. `web/error_log` copied to the session scratchpad; deploy dry-run showed only the 47 config files, the module, the five scripts and the expected size changes; live deploy with the allow-listed string (`--skip-composer --skip-cr --no-maintenance`), foreground, 19:32.
+2. `equipment_parts_setup.php -- --dry-run` (live already had an **ATV** term, tid 1997; Pole Saw to be created). The real run was **killed by the 1 GB per-process memory limit twice** — pass 1 died right after the entity type (`eck_entity_type` saved, tables + installed definitions complete, `needsUpdates()` false); pass 2 created the bundle, both overrides and all 17 fields and died inside the module install (module recorded in `core.extension`, `system.schema` = 8000); pass 3 did displays, two views, pattern, `pathauto.settings`, **Pole Saw tid 1999**, the four role grants, and its verify step reported every item ok. Each pass skipped what existed — this is why the script is idempotent. **Expect this on live: re-run until a pass ends with the verify block.**
+3. **UUID check before the partial cim** (new rule, see gotchas "A UUID mismatch makes cim DELETE + CREATE"): a read-only compare of live active vs the deployed sync files showed all 47 identical **including UUIDs** — the setup script creates every entity *with the sync YAML's uuid*, which is what makes a later partial cim a no-op instead of a delete-and-recreate. Then the 47 files + `pathauto.settings.yml` (never `core.extension.yml`) → `drush cim --partial` → one "update pathauto.settings" (list-order normalisation, same as on dev), nothing else.
+4. `drush cr` (off hours), then `/`, `/winterize`, `/colorado`, `/services/sprinkler-system` warmed sequentially — all 200.
+5. `equipment_parts_verify.php -- --no-seed`: supervisor-only uid 6740 — parts list 200 (Reorder tab present), reorder tab 200, add form 200 ("Part Name"), equipment page 200 (the parts section correctly hidden while no part fits); crew-only uid 77735 — list 403, add 403. Both sibling forms carry the new reference widget. Routes, local tasks, local action registered. Watchdog clean apart from the test 403/404s. Record-level checks (flag, alias, duplicate rejection) need a part and were verified on dev only; the verify script now says so instead of failing when no CMR6H exists.
+
+**Live runbook (as executed, for the next entity built this way):**
 1. Off crew hours. Copy `web/error_log` first. Deploy code with the allow-listed deploy string (dry-run first) — ships the module + scripts.
-2. `scp` nothing extra: the setup script is in `web/scripts/`. Run `drush php:script web/scripts/equipment_parts_setup.php -- --dry-run`, then for real. It creates the entity type, bundle, overrides, fields, displays, views, pattern **from the deployed YAML**, registers pathauto, **enables the module**, adds the two terms, grants the roles. This is the documented silent-skip mitigation: every field instance exists before cim.
-3. Stage the 47 files + `pathauto.settings.yml` (**never `core.extension.yml`** — live's is drifted and a partial import of it uninstalls modules) → `drush cim --partial --source=…` → expect "no changes".
+2. `scp` nothing extra: the setup script is in `web/scripts/`. Run `drush php:script web/scripts/equipment_parts_setup.php -- --dry-run`, then for real — **re-run after each memory kill** until the verify block prints. It creates the entity type, bundle, overrides, fields, displays, views, pattern **from the deployed YAML, keeping each file's uuid**, registers pathauto, **enables the module**, adds the two terms, grants the roles. This is the documented silent-skip mitigation: every field instance exists before cim.
+3. `drush php:script web/scripts/config_uuid_audit.php -- <the staged files>` → must report zero "UUID DIFFERS". Stage the 47 files + `pathauto.settings.yml` (**never `core.extension.yml`** — live's is drifted and a partial import of it uninstalls modules) → `drush cim --partial --source=…` → expect "no changes" (or only the `pathauto.settings` list-order update).
 4. Cache: the module install already rebuilt the container and router. Then the targeted refresh (`library_info`, twig, assets, `rebuildContainer`) or a `cr` if off-hours; warm the four public pages.
 5. `equipment_parts_verify.php -- --no-seed` on live (read-only without seeding), as a supervisor-only and crew-only account.
 

@@ -395,7 +395,7 @@ Link entity between `material` and `supplier`. Enforced by `material_supplier` m
 - `equipment_inspection` — 6 bundles: `vehicles`, `trailers`, `heavy_equipment`, `mowers`, `sprayers`, `standard` (bundle-specific checklists)
 - `equipment_defect` — bundle: `standard` (16 fields — actionable defect tracking, targets all equipment; `field_parts_needed` → `equipment_part`)
 - `equipment_maintenance_event` — bundle: `standard` (16 fields — service/repair records, targets all equipment; `field_parts_used` → `equipment_part`)
-- `equipment_part` — bundle: `standard` (15 fields — **shop parts & consumables** for owned equipment: part number (unique), category, brand → `manufacturer`, fits equipment types → `equipment_types` taxonomy, fits units → `equipment`, bin, on hand, reorder minimum, computed `field_needs_reorder`, vendor → `supplier`, last price/date, photo, notes; ECK `status` relabelled "Active (stocked)". **Not a `material` bundle — never appears in WO/estimate material pickers.** Module `bos_equipment_parts`; design `__BOS_AI/Entities/equipment_part.md`. Built on dev 2026-11-13; live pending.)
+- `equipment_part` — bundle: `standard` (15 fields — **shop parts & consumables** for owned equipment: part number (unique), category, brand → `manufacturer`, fits equipment types → `equipment_types` taxonomy, fits units → `equipment`, bin, on hand, reorder minimum, computed `field_needs_reorder`, vendor → `supplier`, last price/date, photo, notes; ECK `status` relabelled "Active (stocked)". **Not a `material` bundle — never appears in WO/estimate material pickers.** Module `bos_equipment_parts`; design `__BOS_AI/Entities/equipment_part.md`. Built on dev + deployed LIVE 2026-11-13.)
 - `equipment_fuel_transaction` — bundle: `standard` (30 fields — WEX fuel card transaction records; targets vehicles bundle only via field_equipment; idempotent re-imports keyed on field_wex_transaction_id)
 
 #### Time/scheduling entities
@@ -570,6 +570,7 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 > mkdir -p /tmp/cimstage && cp config/sync/<exact files…> /tmp/cimstage/
 > drush cim --partial --source=/tmp/cimstage -y
 > ```
+> **Before staging, run `drush php:script web/scripts/config_uuid_audit.php -- <those files>`** — a staged file whose `uuid` differs from the target's active is DELETED and re-created by the import (field storage → table dropped). Zero mismatches required; see "UUID drift" below.
 > Likewise never run a blind `drush cex` (it dumps the whole drift into sync + mangles ECK
 > exports). Reconciling the drift so `cim` is safe again is a documented future project
 > (`__BOS_AI/Governance/deferred_work.md` #22) — until then, partial-only.
@@ -601,7 +602,8 @@ Implications:
   ddev drush php-eval '$e = \Drupal::entityTypeManager()->getStorage("field_config")->load("ENTITY.BUNDLE.FIELD"); echo $e->uuid();'
   ```
   Then add `uuid: <printed-value>` as the first line of the sync YAML.
-- **Apprentices cloning the repo** will adopt the committed UUIDs when cim runs against their fresh DDEV — that's good for dev consistency. Live retains its own pre-existing UUIDs because cim doesn't modify existing entities' UUIDs.
+- **Apprentices cloning the repo** will adopt the committed UUIDs when cim runs against their fresh DDEV — that's good for dev consistency.
+- ⛔ **A UUID mismatch is NOT benign for `cim`.** Core's `StorageComparer::addChangelistUpdate()` treats a same-name/different-uuid pair as a *recreate*: the import **DELETES** the active entity and **CREATES** it from sync. For a field storage that drops the data table; for an ECK bundle it removes the bundle + its field instances; for a vocabulary it deletes every term. Live audit 2026-11-13: **192 sync files mismatch live** (49 field storages — snow-contract rates, HOA flags, non-billable, winterize discounts…; `eck.eck_type.properties.hoa`; `taxonomy.vocabulary.snow_trigger`) — `deferred_work.md` #38. **Rule:** before any partial cim, run `drush php:script web/scripts/config_uuid_audit.php -- <staged files>` and stage nothing it flags; setup scripts that create config from sync YAML must **keep the YAML's `uuid`** (as `equipment_parts_setup.php` does) so live ends up equal to sync. Gotcha: `drupal_bos_gotchas.md` → "A UUID mismatch makes `cim` DELETE + CREATE".
 
 The UUID-stripping bug in BOS field-instance configs (CLAUDE.md "Drush cim quirk") is the recurring cause of UUID drift. Always verify sync YAMLs have a `uuid:` line before committing field configs.
 

@@ -1,0 +1,34 @@
+{#
+/**
+ * @file
+ * My Check-ups row — one My Schedule-style card per scheduling record.
+ *
+ * Card data is computed in bos_scheduling_preprocess_views_view_fields() and
+ * passed as `cu_card`. The view's own `fields` are intentionally not rendered.
+ */
+#}
+{% if cu_card %}
+  <a href="{{ cu_card.wo_url }}" class="my-schedule-card my-schedule-status-{{ cu_card.status_tid }}">
+    <div class="my-schedule-card-header">
+      <span class="my-schedule-service">{{ cu_card.service_code }}</span>
+      <span class="my-checkups-date">{{ cu_card.date_label }}</span>
+      {% if cu_card.overdue_days %}
+        <span class="my-checkups-overdue">{{ cu_card.overdue_days }} day{{ cu_card.overdue_days == 1 ? '' : 's' }} overdue</span>
+      {% endif %}
+      {% if not cu_card.is_firm %}
+        <span class="my-schedule-tentative">~ Tentative</span>
+      {% endif %}
+      <span class="my-schedule-status">{{ cu_card.status_label }}</span>
+    </div>
+    <div class="my-schedule-property">
+      <strong class="my-schedule-nickname">{{ cu_card.nickname }}</strong>
+      {% if cu_card.address %}
+        <span class="my-schedule-address">{{ cu_card.address }}</span>
+      {% endif %}
+    </div>
+    {% if cu_card.wo_note %}
+      <div class="my-schedule-wonote">📋 {{ cu_card.wo_note }}</div>
+    {% endif %}
+    <div class="my-checkups-wo">{{ cu_card.wo_title }}</div>
+  </a>
+{% endif %}

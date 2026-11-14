@@ -12,3 +12,9 @@ services:
     arguments:
       - '@entity_type.manager'
       - '@database'
+
+  # Puts the My Check-ups Views tab on the admin theme like its siblings.
+  bos_scheduling.route_subscriber:
+    class: Drupal\bos_scheduling\Routing\RouteSubscriber
+    tags:
+      - { name: event_subscriber }

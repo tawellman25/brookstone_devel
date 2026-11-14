@@ -15,6 +15,11 @@
  */
 function bos_scheduling_theme(): array {
   return [
+    // My Check-ups (views.view.my_check_ups) row template — a Views suggestion
+    // in a module is only found when registered with a base hook.
+    'views_view_fields__my_check_ups' => [
+      'base hook' => 'views_view_fields',
+    ],
     'bos_scheduling_route_editor' => [
       'variables' => [
         'start' => NULL,
@@ -75,6 +80,8 @@ function bos_scheduling_theme(): array {
     ],
     'bos_scheduling_hub' => [
       'variables' => [
+        // Falling-through counts + links (getGapCounts()).
+        'gaps' => [],
         'active_tools'  => [],
         'planned_tools' => [],
         'stats'         => [],
@@ -85,4 +92,88 @@ function bos_scheduling_theme(): array {
       'template' => 'bos-scheduling-hub',
     ],
   ];
+}
+
+/**
+ * Implements hook_views_pre_render().
+ *
+ * My Check-ups (views.view.my_check_ups) renders one My Schedule-style card
+ * per scheduling record. Card data: bos_scheduling_preprocess_views_view_fields().
+ */
+function bos_scheduling_views_pre_render($view) {
+  if ($view->id() === 'my_check_ups') {
+    $view->element['#attached']['library'][] = 'bos_scheduling/my_schedule';
+    $view->element['#attached']['library'][] = 'bos_scheduling/my_check_ups';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for views_view_fields.
+ */
+function bos_scheduling_preprocess_views_view_fields(array &$variables) {
+  $view = $variables['view'];
+  if (($view->id() ?? '') !== 'my_check_ups') {
+    return;
+  }
+  $sched = $variables['row']->_entity ?? NULL;
+  if (!$sched instanceof \Drupal\Core\Entity\ContentEntityInterface || $sched->getEntityTypeId() !== 'scheduling') {
+    return;
+  }
+  $variables['cu_card'] = _bos_scheduling_check_up_card($sched);
+}
+
+/**
+ * Card data for one scheduling record of a check-up (My Check-ups tab).
+ *
+ * Same facts as a My Schedule card plus the scheduled date and how many days
+ * past it is. Status colours the left bar (machine tid); overdue is a badge,
+ * never a second colour (ui_patterns: no double signal).
+ */
+function _bos_scheduling_check_up_card(\Drupal\Core\Entity\ContentEntityInterface $sched): array {
+  $wo = $sched->get('field_work_order')->entity;
+  if (!$wo) {
+    return [];
+  }
+  $tz = new \DateTimeZone('America/Denver');
+  $today = new \DateTime('today', $tz);
+  $card = [
+    'wo_url' => $wo->toUrl()->toString(),
+    'wo_title' => $wo->label(),
+    'status_tid' => 0,
+    'status_label' => '',
+    'service_code' => '',
+    'date_label' => '',
+    'overdue_days' => 0,
+    'is_firm' => (bool) ($sched->get('field_scheduled_firm')->value ?? 0),
+    'nickname' => '',
+    'address' => '',
+    'wo_note' => '',
+    'note' => $sched->hasField('field_scheduling_note') ? trim((string) ($sched->get('field_scheduling_note')->value ?? '')) : '',
+  ];
+  if ($wo->hasField('field_status') && ($term = $wo->get('field_status')->entity)) {
+    $card['status_tid'] = (int) $term->id();
+    $card['status_label'] = $term->label();
+  }
+  if ($wo->hasField('field_service') && ($svc = $wo->get('field_service')->entity)) {
+    $code = $svc->hasField('field_sop_code') ? trim((string) $svc->get('field_sop_code')->value) : '';
+    $card['service_code'] = $code !== '' ? strtoupper($code) : $svc->label();
+  }
+  $ts = (int) ($sched->get('field_date')->value ?? 0);
+  if ($ts) {
+    $d = (new \DateTime('@' . $ts))->setTimezone($tz);
+    $card['date_label'] = $d->format('D m/d/Y');
+    $day = new \DateTime($d->format('Y-m-d'), $tz);
+    if ($day < $today) {
+      $card['overdue_days'] = (int) $today->diff($day)->days;
+    }
+  }
+  if ($wo->hasField('field_property') && ($p = $wo->get('field_property')->entity)) {
+    $card['nickname'] = $p->hasField('field_nickname') ? trim((string) $p->get('field_nickname')->value) : '';
+    if ($card['nickname'] === '') {
+      $card['nickname'] = (string) $p->label();
+    }
+    $card['address'] = $p->hasField('field_full_address') ? trim((string) $p->get('field_full_address')->value) : '';
+    $card['wo_note'] = $p->hasField('field_work_order_note') ? trim(strip_tags((string) $p->get('field_work_order_note')->value)) : '';
+  }
+  return $card;
 }

@@ -1,0 +1,26 @@
+uuid: fb802ba1-263a-4b7b-9787-a07ab9980acd
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.zipcodes.zipcode
+    - field.storage.zipcodes.field_default_sprinkler_tech
+    - views.view.teammate_user_reference
+id: zipcodes.zipcode.field_default_sprinkler_tech
+field_name: field_default_sprinkler_tech
+entity_type: zipcodes
+bundle: zipcode
+label: 'Default sprinkler tech'
+description: 'Irrigation check-ups the generator creates for properties in this zipcode are assigned to this teammate at creation, so they land on that person''s My Check-ups list. Leave empty to create them unassigned (they then show on the office Scheduling Gaps page).'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: teammate_user_reference
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

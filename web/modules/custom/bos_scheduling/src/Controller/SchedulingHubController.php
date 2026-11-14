@@ -99,7 +99,54 @@ class SchedulingHubController extends ControllerBase {
       // Route Editor works the other end — arranging what is already scheduled —
       // so it is linked separately rather than shown as a fifth service card.
       '#route_editor_url' => Url::fromRoute('bos_scheduling.route_editor')->toString(),
+      '#gaps' => $this->getGapCounts(),
       '#attached' => ['library' => ['bos_scheduling/scheduling_hub']],
+    ];
+  }
+
+  /**
+   * Work that is falling through, with links to the two Views pages.
+   *
+   * (1) Scheduled stops whose date has passed that name no assignee while the
+   * work order is still open — on nobody's My Schedule yet "scheduled" to the
+   * office; 135 check-ups were lost this way in 2026. Counted per stop, which
+   * is the unit the office fixes. (2) Open work orders created 90+ days ago
+   * with no scheduling record at all.
+   */
+  protected function getGapCounts(): array {
+    $open = MyScheduleController::VISIBLE_STATUSES;
+    $today = (new \DateTime('today', new \DateTimeZone('America/Denver')))->getTimestamp();
+    $q = $this->database->select('scheduling_field_data', 's');
+    $q->join('scheduling__field_work_order', 'sw', 'sw.entity_id = s.id');
+    $q->join('work_order__field_status', 'st', 'st.entity_id = sw.field_work_order_target_id');
+    $q->join('scheduling__field_date', 'sd', 'sd.entity_id = s.id');
+    $q->leftJoin('scheduling__field_assigned_to', 'sa', 'sa.entity_id = s.id');
+    $q->condition('st.field_status_target_id', $open, 'IN')
+      ->condition('sd.field_date_value', $today, '<')
+      ->isNull('sa.field_assigned_to_target_id');
+    $dated = (int) $q->countQuery()->execute()->fetchField();
+
+    $q2 = $this->database->select('work_order_field_data', 'w');
+    $q2->join('work_order__field_status', 'st', 'st.entity_id = w.id');
+    $q2->leftJoin('scheduling__field_work_order', 'sw', 'sw.field_work_order_target_id = w.id');
+    $q2->condition('st.field_status_target_id', $open, 'IN')
+      ->condition('w.created', strtotime('-90 days'), '<')
+      ->isNull('sw.entity_id');
+    $never = (int) $q2->countQuery()->execute()->fetchField();
+
+    $url = static function (string $route, string $fallback): string {
+      try {
+        return Url::fromRoute($route)->toString();
+      }
+      catch (\Exception $e) {
+        return $fallback;
+      }
+    };
+    return [
+      'dated_unassigned' => $dated,
+      'never_scheduled' => $never,
+      'gaps_url' => $url('view.scheduling_gaps.page_1', '/admin/office/work-orders/scheduling/gaps'),
+      'never_url' => $url('view.wo_never_scheduled.page_1', '/admin/office/work-orders/scheduling/never-scheduled'),
     ];
   }
 

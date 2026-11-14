@@ -3,6 +3,7 @@
 namespace Drupal\contract_residential\Plugin\QueueWorker;
 
 use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
@@ -11,6 +12,7 @@ use Drupal\Core\Queue\QueueFactory;
 use Drupal\Core\Queue\QueueWorkerBase;
 use Drupal\Component\Datetime\TimeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\user\UserInterface;
 
 /**
  * Generates contract-obligated irrigation check-up Work Orders on a rolling horizon.
@@ -37,6 +39,9 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
 
   // Rolling planning horizon.
   private const HORIZON_DAYS = 21;
+
+  /** @var array<int, int|null> Zipcode id → validated default tech uid (or NULL), per run. */
+  private array $defaultTechCache = [];
 
   // Monthly interval is operational month (4 weeks).
   private const MONTHLY_INTERVAL_DAYS = 28;
@@ -250,6 +255,13 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
       return;
     }
 
+    // Default sprinkler tech for this zipcode (2026-11-14): check-ups are
+    // assigned at creation so each one lands on somebody's list — in 2026,
+    // 9 of 10 assigned check-ups were done and 9 of 10 unassigned ones were
+    // cancelled. NULL = created unassigned (no default, or a default who can
+    // no longer take work); the office Scheduling Gaps page catches those.
+    $default_tech = $this->resolveDefaultTech($zipcode, $logger);
+
     /** @var \Drupal\taxonomy\TermInterface|null $service_term */
     $service_term = $this->etm->getStorage('taxonomy_term')->load($service_tid);
     if (!$service_term) {
@@ -301,14 +313,15 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
         continue;
       }
 
-      $this->createSchedulingRecord($wo_id, $due_date);
+      $this->createSchedulingRecord($wo_id, $due_date, $default_tech, (string) $zipcode->label());
 
-      $logger->info('Created Check Up WO @wo for contract @c property @p service @s due @d.', [
+      $logger->info('Created Check Up WO @wo for contract @c property @p service @s due @d, assigned to @a.', [
         '@wo' => $wo_id,
         '@c' => $contract_id,
         '@p' => $property_id,
         '@s' => $service_tid,
         '@d' => $due_date->format('Y-m-d'),
+        '@a' => $default_tech ? 'uid ' . $default_tech . ' (zip default)' : 'nobody',
       ]);
     }
   }
@@ -639,11 +652,41 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
     return (int) $wo->id();
   }
 
-  private function createSchedulingRecord(int $work_order_id, DrupalDateTime $due_date) : void {
+  /**
+   * The zipcode's default sprinkler tech, if that account can still take work.
+   *
+   * Returns the uid only when the referenced user exists, is active and holds
+   * the teammates role; otherwise NULL with a warning, so a tech who has left
+   * never silently collects a season of check-ups. Memoised per zipcode for
+   * the run (one user load per zip, not per section).
+   */
+  private function resolveDefaultTech(EntityInterface $zipcode, $logger) : ?int {
+    $zid = (int) $zipcode->id();
+    if (array_key_exists($zid, $this->defaultTechCache)) {
+      return $this->defaultTechCache[$zid];
+    }
+    $uid = NULL;
+    if ($zipcode->hasField('field_default_sprinkler_tech') && !$zipcode->get('field_default_sprinkler_tech')->isEmpty()) {
+      $candidate = (int) $zipcode->get('field_default_sprinkler_tech')->target_id;
+      $user = $this->etm->getStorage('user')->load($candidate);
+      if ($user instanceof UserInterface && $user->isActive() && $user->hasRole('teammates')) {
+        $uid = $candidate;
+      }
+      else {
+        $logger->warning('Zipcode @zip: default sprinkler tech uid @uid is missing, blocked or not a teammate — its check-ups are created UNASSIGNED. Fix the zipcode.', [
+          '@zip' => $zipcode->label(),
+          '@uid' => $candidate,
+        ]);
+      }
+    }
+    return $this->defaultTechCache[$zid] = $uid;
+  }
+
+  private function createSchedulingRecord(int $work_order_id, DrupalDateTime $due_date, ?int $assignee = NULL, string $zip_label = '') : void {
     $sched_storage = $this->etm->getStorage('scheduling');
 
     $date_str = $due_date->format('Y-m-d');
-    $sched = $sched_storage->create([
+    $values = [
       'type' => 'work_order',
       'title' => 'Scheduled',
       'uid' => 1,
@@ -662,7 +705,17 @@ final class ContractResidentialCheckupGeneratorQueueWorker extends QueueWorkerBa
       ],
       'field_scheduled' => 1,
       'field_scheduled_firm' => 0,
-    ]);
+    ];
+    if ($assignee) {
+      $values['field_assigned_to'] = $assignee;
+      // Deliberately no per-assignment email (wo_schedule sends one only when
+      // this flag is 1): ~300 a season is noise, and the tech's My Check-ups
+      // tab is the notification. wo_schedule still writes "Assigned to X
+      // (Scheduled)" on the WO timeline; the note below says why.
+      $values['field_notify_assigned_teammate'] = 0;
+      $values['field_scheduling_note'] = sprintf('Auto-assigned: default sprinkler tech for zip %s.', $zip_label);
+    }
+    $sched = $sched_storage->create($values);
 
     $sched->save();
   }

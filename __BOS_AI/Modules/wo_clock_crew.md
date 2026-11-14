@@ -1,6 +1,6 @@
 # Foreman crew clock — specification
 
-**Status:** BUILT and deployed 2026-11-03 — 21/21 acceptance tests pass on dev and live. **2026-11-13: morning-crew pre-select added** (section below; 30/30 on dev)
+**Status:** BUILT and deployed 2026-11-03 — 21/21 acceptance tests pass on dev and live. **2026-11-13: morning-crew pre-select added — LIVE 21:35 MT** (section below; 30/30 on dev, read-only verify on live)
 **Written:** 2026-11-03
 **For:** Todd, and whoever builds it
 **Module:** extends `wo_clock` (see [`wo_clock.md`](wo_clock.md)); interacts with `wo_sign_off`, `wo_total_time`
@@ -272,7 +272,10 @@ their crew, a different foreman does not, and anyone gets X's morning crew on
 X; submitting the pre-ticked three creates exactly three entries, pressing again
 creates none, open-elsewhere is skipped with the reason; with every entry moved
 to yesterday nothing is proposed. Read-only live check:
-`wo_clock_morning_crew_verify.php`.
+`wo_clock_morning_crew_verify.php` — on live, 2026-11-13 21:35 MT, it showed the rule on
+that day's real data: three crews that moved between properties, each work order
+proposing exactly the people who clocked out there (e.g. WO 54624 → 54146/54147 →
+54174 for the Munoz / Green / Mackenzie crew, out 9:31 AM → 12:05 PM → 2:07 PM).
 
 **Known limits.** Before today's deploy no entry carries `field_clocked_in_by`,
 so on the deploy day only the same-job arm applies. Grouping by `crew_types`

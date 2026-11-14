@@ -148,8 +148,9 @@ nothing is missed:
 
 - [ ] PHP version + **full `php -m` extension list** (CLI *and* FPM).
 - [ ] MariaDB version + `SHOW VARIABLES` for sizing (buffer pool, max_connections).
-- [ ] Full `crontab -l` (DB backup 2:30, WEX fetch 7:00, WEX watcher 7:15) +
-      contents of `~/.wex_imap_env`, `web/scripts/bos_db_backup.sh`,
+- [ ] Full `crontab -l` (DB backup 2:30, backup heartbeat 4:30, WEX fetch 7:00, WEX watcher 7:15 — all UTC) +
+      contents of `~/.wex_imap_env`, `~/.bos_s3_backup.env` (S3 keys + `BOS_HEARTBEAT_URL`),
+      `web/scripts/bos_db_backup.sh`, `web/scripts/bos_backup_heartbeat.sh`,
       `web/scripts/wex_alert_check.sh`.
 - [ ] `settings.php` — the *whole* file (DB creds, `$settings` hash salt,
       trusted_host_patterns, s3fs config, `wex_imap`, `putenv()` lines).

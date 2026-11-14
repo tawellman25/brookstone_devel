@@ -362,6 +362,8 @@ nothing alerts if cron silently stops running (no dump → no failure mail). Two
 an S3 bucket age check, since the IAM key is PutObject-only a listing needs a second read-only key or
 an S3 lifecycle/EventBridge rule.
 
+**Update 2026-11-14 — heartbeat BUILT, two live steps are Todd's.** Todd: *"OK let's get it done."* (1) **On-box watcher** `web/scripts/bos_backup_heartbeat.sh` — bash + find + stat + mail only, no drush/Drupal (the WEX-watcher mould): emails once when the newest `~/db_backups/bos-db-*.sql.gz` is older than 36 h, is empty, or is under 50 % of the previous dump's size; a healthy night prints one OK line. 8/8 cases on dev (missing dir, empty dir, fresh, stale, truncated, empty, single fresh, single stale); env overrides `BOS_BACKUP_DIR` / `BOS_MAX_AGE_MIN` / `BOS_MIN_SIZE_RATIO` / `BOS_HEARTBEAT_DRY=1`. (2) **Off-box dead-man's switch** in `bos_db_backup.sh`: `hc_ping` POSTs to `BOS_HEARTBEAT_URL` (a healthchecks.io check, `https://hc-ping.com/<uuid>`) **only after the S3 upload succeeded** — so a ping means an off-site copy of tonight's dump exists — and to `<url>/fail` from `fail()` and on an S3 failure; the env file is now sourced before the dump so `fail()` can ping. Pings never abort the backup (`-m 10 --retry 5`, curl failure logged, rc 0; 4/4 cases against a local POST server). Conventions checked on healthchecks.io docs 2026-11-14: HEAD/GET/POST all accepted, `/fail` + `/start` exist, body stored up to 100 kB, Hobbyist plan $0 for 20 checks (email-channel-per-plan not stated on the pricing page — confirm on signup). **Remaining, Todd on live:** add `30 4 * * * LANG=C bash /home/brookstoneadmin/brookstone/web/scripts/bos_backup_heartbeat.sh >> $HOME/db_backup_heartbeat.log 2>&1` to the crontab (server is UTC; backup 02:30 UTC); create the healthchecks check (period 1 day, grace ≥ 6 h) and append `BOS_HEARTBEAT_URL=https://hc-ping.com/<uuid>` to `~/.bos_s3_backup.env`. Without the URL the script behaves exactly as before. Restore-testing the dumps is **#42**.
+
 ---
 
 ### 22. Reconcile config/sync ↔ active drift (make full `cim` safe again)
@@ -730,6 +732,12 @@ would close it, in order of value per effort:
    bug to report on drupal.org (a terminated PHP request commits a half-written router).
 
 Also worth a line: `system_readiness` could carry check 1 as a read-only probe.
+
+### 42. Nothing restore-tests the nightly dumps
+
+Surfaced 2026-11-14 while building the backup heartbeat (#21). The heartbeat proves a fresh gzip exists on the box and on S3; nothing proves one **restores**. `dev_scripts/brookstone-sync-db-from-live.sh` dumps live directly over SSH, so the dev re-seeds never touch `~/db_backups` or the S3 objects either. Cheap closure: once a quarter, pull the newest `bos-db-*.sql.gz` from S3 (needs a read key — the backup IAM user is PutObject-only) and `ddev import-db --file=…` into a throwaway DDEV project, then `drush status` + one WO page. Record the date in the change log. Pairs with the `restore-from-s3.sh` idea in `server_migration_playbook.md` §9.
+
+---
 
 ## Status
 

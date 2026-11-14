@@ -21,6 +21,14 @@
 # upload itself uses web/scripts/s3_backup_upload.php against the AWS SDK already
 # in vendor/ (no AWS CLI needed). S3 failure alerts by email but does NOT abort
 # the local backup (local dump stays primary).
+#
+# Dead-man's switch (2026-11-14): if BOS_HEARTBEAT_URL is set in the same env
+# file (a healthchecks.io ping URL, https://hc-ping.com/<uuid>), the script
+# pings it ONLY after the dump is on S3 — so the ping means "an off-site copy
+# of tonight's dump exists" — and pings <url>/fail on any failure. The service
+# emails when a night's ping never arrives, which covers everything this
+# script cannot report on itself: cron dead, box dead, mail dead. The on-box
+# half is web/scripts/bos_backup_heartbeat.sh. Pings never abort the backup.
 
 set -u
 
@@ -33,10 +41,31 @@ S3_ENV="$HOME/.bos_s3_backup.env"
 ALERT_TO="${BOS_BACKUP_ALERT_TO:-todd@brookstoneoutdoors.com}"
 HOST="$(hostname)"
 
+# S3 credentials + bucket + the heartbeat URL live in one off-git env file.
+if [ -f "$S3_ENV" ]; then
+  set -a; . "$S3_ENV"; set +a
+fi
+HEARTBEAT_URL="${BOS_HEARTBEAT_URL:-}"
+
+# hc_ping [fail] "<body>" — dead-man's-switch ping; no-op without a URL, never
+# aborts (an unreachable hc-ping.com just means the switch fires on its own).
+hc_ping() {
+  [ -n "$HEARTBEAT_URL" ] || return 0
+  local url="$HEARTBEAT_URL"
+  [ "${1:-}" = "fail" ] && url="$url/fail"
+  if curl -fsS -m 10 --retry 5 -o /dev/null --data-raw "${2:-}" "$url"; then
+    echo "heartbeat: pinged ${1:-ok}"
+  else
+    echo "$(date '+%F %T') heartbeat ping (${1:-ok}) FAILED — hc-ping unreachable; the switch fires on its own"
+  fi
+  return 0
+}
+
 fail() {
   echo "$(date '+%F %T') BACKUP FAILED: $1"
   printf 'BOS nightly DB backup FAILED on %s: %s\n' "$HOST" "$1" \
     | mail -s "BOS ALERT: nightly DB backup failed on ${HOST}" "$ALERT_TO" 2>/dev/null
+  hc_ping fail "BACKUP FAILED on $HOST: $1"
   exit 1
 }
 
@@ -53,17 +82,19 @@ echo "OK: ${BASE}.gz ($(du -h "${BASE}.gz" | cut -f1))"
 
 # Off-site push to S3 (local backup stays primary; S3 failure alerts, no abort).
 if [ -f "$S3_ENV" ]; then
-  set -a; . "$S3_ENV"; set +a
   if "$PHP_BIN" "$PROJECT/web/scripts/s3_backup_upload.php" "${BASE}.gz" 2>>"$DIR/s3_upload.err"; then
     echo "S3: uploaded $(basename "${BASE}.gz") to ${BOS_S3_BACKUP_BUCKET:-?}"
+    # Off-site copy exists → tonight's heartbeat. Body shows in the check's log.
+    hc_ping ok "OK $(basename "${BASE}.gz") $(du -h "${BASE}.gz" | cut -f1) on S3 ${BOS_S3_BACKUP_BUCKET:-?} from $HOST"
   else
     echo "$(date '+%F %T') S3 UPLOAD FAILED (local backup OK)"
     printf 'BOS S3 off-site upload FAILED on %s (local dump OK: %s). See %s\n' \
       "$HOST" "${BASE}.gz" "$DIR/s3_upload.err" \
       | mail -s "BOS ALERT: S3 backup upload failed on ${HOST}" "$ALERT_TO" 2>/dev/null
+    hc_ping fail "S3 UPLOAD FAILED on $HOST (local dump OK: $(basename "${BASE}.gz"))"
   fi
 else
-  echo "S3: skipped (no $S3_ENV)"
+  echo "S3: skipped (no $S3_ENV) — no heartbeat ping either (the ping means an off-site copy exists)"
 fi
 
 # Rotate: keep the $KEEP newest, prune the rest.

@@ -48,7 +48,11 @@ table.wo-ml-table thead th {
 table.wo-ml-table tbody tr:hover {
   background: #faf7f2;
 }
-/* Column widths: [ ✓ ][ # ][ description (flex) ][ subtotal ][ edit ] */
+/* Column widths: [ ✓ ][ # ][ description (flex) ][ subtotal ][ receipt ][ edit ]
+   The table is table-layout: fixed, so EVERY column except the description
+   needs an explicit width — a column without one splits the leftover width
+   with the description (2026-11-14: the new Receipt column pushed Edit into
+   that slot and the description lost half its width). */
 table.wo-ml-table th:nth-child(1),
 table.wo-ml-table td:nth-child(1) { width: 1.9rem; text-align: center; }
 table.wo-ml-table th:nth-child(2),
@@ -58,7 +62,9 @@ table.wo-ml-table td:nth-child(3) { width: auto; word-break: break-word; }
 table.wo-ml-table th:nth-child(4),
 table.wo-ml-table td:nth-child(4) { width: 4.5rem; text-align: right; white-space: nowrap; }
 table.wo-ml-table th:nth-child(5),
-table.wo-ml-table td:nth-child(5) { width: 3.4rem; text-align: right; }
+table.wo-ml-table td:nth-child(5) { width: 4.6rem; text-align: center; white-space: nowrap; }
+table.wo-ml-table th:nth-child(6),
+table.wo-ml-table td:nth-child(6) { width: 3.4rem; text-align: right; }
 /* Small, quiet Edit button. */
 table.wo-ml-table td .button {
   display: inline-block;
@@ -169,10 +175,18 @@ table.wo-ml-table td input[type="checkbox"] {
 }
 
 /* Receipt column: a small thumbnail (several rows usually share one photo);
-   the link opens the full-size photo in a new tab. */
+   the link opens the full-size photo in a new tab. Height-capped so a portrait
+   receipt does not make its row three times taller than the others. */
+.wo-ml-table .wo-ml-receipt {
+  display: inline-block;
+  line-height: 0;
+}
 .wo-ml-table .wo-ml-receipt img {
   display: block;
-  max-width: 56px;
+  width: auto;
   height: auto;
-  border-radius: 4px;
+  max-width: 56px;
+  max-height: 44px;
+  border-radius: 3px;
+  margin: 2px auto;
 }

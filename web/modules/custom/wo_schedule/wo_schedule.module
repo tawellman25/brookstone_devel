@@ -190,6 +190,10 @@ function _wo_schedule_capture_change_note(EntityInterface $entity): void {
   $oldStart = $old->get('field_scheduled_date_and_time')->value ?? NULL;
   $oldEnd = $old->get('field_scheduled_date_and_time')->end_value ?? NULL;
   $oldAssigned = $old->get('field_assigned_to')->target_id ?? NULL;
+  // Pre-write values for the single timeline entry written post-save by
+  // _wo_schedule_handle_status_update() (same reason as above: presave is
+  // where the old row is reliably readable).
+  $entity->_wo_schedule_prev = ['start' => $oldStart, 'assigned' => $oldAssigned];
   $oldNote = trim((string) ($old->get('field_scheduling_note')->value ?? ''));
 
   if ($oldStart !== $newStart || $oldEnd !== $newEnd) {
@@ -216,9 +220,6 @@ function _wo_schedule_capture_change_note(EntityInterface $entity): void {
  */
 function wo_schedule_entity_insert(EntityInterface $entity) {
   if ($entity->getEntityTypeId() === 'scheduling' && $entity->bundle() === 'work_order') {
-    \Drupal::logger('wo_schedule')->notice('Entity insert: Email factory service exists: @exists', [
-      '@exists' => \Drupal::hasService('email_factory') ? 'Yes' : 'No',
-    ]);
     _wo_schedule_handle_status_update($entity, TRUE);
     _wo_schedule_send_email_on_assignment($entity);
     _wo_schedule_log_schedule_change_note($entity, TRUE);
@@ -230,9 +231,6 @@ function wo_schedule_entity_insert(EntityInterface $entity) {
  */
 function wo_schedule_entity_update(EntityInterface $entity) {
   if ($entity->getEntityTypeId() === 'scheduling' && $entity->bundle() === 'work_order') {
-    \Drupal::logger('wo_schedule')->notice('Entity update: Email factory service exists: @exists', [
-      '@exists' => \Drupal::hasService('email_factory') ? 'Yes' : 'No',
-    ]);
     _wo_schedule_handle_status_update($entity, FALSE);
     _wo_schedule_send_email_on_assignment($entity);
     _wo_schedule_log_schedule_change_note($entity, FALSE);
@@ -293,103 +291,135 @@ function _wo_schedule_log_schedule_change_note(EntityInterface $entity, bool $is
 }
 
 /**
- * Create WO status updates based on Scheduling state.
+ * ONE work-order timeline entry per scheduling change (2026-11-14).
  *
- * RULE YOU ASKED FOR:
- * - If the scheduling record HAS a date, keep Work Order effectively "Scheduled".
- *   * On (re)assignment while a date exists: write an update note that says Assigned/Re-assigned,
- *     but the update uses the SCHEDULED status (1091). Do NOT switch to Assigned.
- * - Only write "Assigned" status (1090) when there is NO date on this scheduling entity.
+ * Before this a dated + assigned insert wrote three entries ("Scheduled for
+ * …", "Assigned to X (Scheduled)", "Assigned to X Scheduled for …"), and the
+ * all-day time printed as "07:00 AM" because the stored UTC datetime was read
+ * as local. Todd: "We only need one entry." Rules kept from the original:
+ * - a record WITH a date keeps the WO at Scheduled (1091), never Assigned;
+ * - Assigned (1090) only when there is no date;
+ * - Complete / Canceled work orders are never touched;
+ * - the WO's scheduled flag is set when a date lands.
+ * New: clearing the assignee or the date is recorded too (it used to vanish),
+ * and the label is the schedule as a person reads it (date only for all-day,
+ * date + time for a timed stop). Old values come from the presave stash
+ * ($entity->_wo_schedule_prev); without it an update stays quiet rather than
+ * guess.
  */
 function _wo_schedule_handle_status_update(EntityInterface $entity, $isNew) {
-  $wo_ref = $entity->get('field_work_order')->getValue();
-  $work_order_id = !empty($wo_ref[0]['target_id']) ? $wo_ref[0]['target_id'] : NULL;
-
-  $ass_ref = $entity->get('field_assigned_to')->getValue();
-  $assigned_id = !empty($ass_ref[0]['target_id']) ? $ass_ref[0]['target_id'] : NULL;
-
-  $date_val = $entity->get('field_scheduled_date_and_time')->getValue();
-  $hasDate = !empty($date_val) && !empty($date_val[0]['value']);
-
-  $uid = \Drupal::currentUser()->id();
-  $assignedUserName = $assigned_id ? User::load($assigned_id)->getAccountName() : '';
-
-  $work_order = \Drupal::entityTypeManager()->getStorage('work_order')->load($work_order_id);
+  $work_order_id = (int) ($entity->get('field_work_order')->target_id ?? 0);
+  $work_order = $work_order_id ? \Drupal::entityTypeManager()->getStorage('work_order')->load($work_order_id) : NULL;
   if (!$work_order) {
     return;
   }
 
-  // Status vocab IDs.
-  $STATUS_ASSIGNED  = 1090;
+  // wo_status vocabulary.
+  $STATUS_ASSIGNED = 1090;
   $STATUS_SCHEDULED = 1091;
-  $STATUS_CANCELLED = 1097;
-  $STATUS_COMPLETED = 1098;
+  $STATUS_COMPLETE = 1097;
+  $STATUS_CANCELED = 1098;
 
-  $currentStatus = (int) $work_order->get('field_status')->target_id;
-  if (in_array($currentStatus, [$STATUS_CANCELLED, $STATUS_COMPLETED], TRUE)) {
+  $current = (int) ($work_order->get('field_status')->target_id ?? 0);
+  if (in_array($current, [$STATUS_COMPLETE, $STATUS_CANCELED], TRUE)) {
     return;
   }
 
-  // If this record has a date, ensure a "Scheduled for ..." update and flip the scheduled flag on WO.
-  if ($hasDate) {
-    $formatted = date('m/d/Y - h:i A', strtotime($date_val[0]['value']));
-    if ($isNew) {
-      wo_schedule_create_wo_status_update($work_order_id, "Scheduled for {$formatted}", $uid, $STATUS_SCHEDULED, 1);
-      $work_order->set('field_scheduled', 1)->save();
+  $assigned_id = (int) ($entity->get('field_assigned_to')->target_id ?? 0);
+  $hasDate = !empty($entity->get('field_scheduled_date_and_time')->value);
+  $when = $hasDate ? _wo_schedule_when_label($entity) : '';
+  $who = $assigned_id ? _wo_schedule_user_name($assigned_id) : '';
+
+  if ($isNew) {
+    if ($hasDate && $who !== '') {
+      $note = "Scheduled for {$when} — assigned to {$who}";
+    }
+    elseif ($hasDate) {
+      $note = "Scheduled for {$when} (unassigned)";
+    }
+    elseif ($who !== '') {
+      $note = "Assigned to {$who} (no date yet)";
     }
     else {
-      $original = property_exists($entity, 'original') ? $entity->original : NULL;
-      $origDate = $original ? $original->get('field_scheduled_date_and_time')->value : NULL;
-      $changedDate = $entity->get('field_scheduled_date_and_time')->value != $origDate;
-
-      if ($changedDate) {
-        wo_schedule_create_wo_status_update($work_order_id, "Scheduled for {$formatted}", $uid, $STATUS_SCHEDULED, 1);
-        $work_order->set('field_scheduled', 1)->save();
-      }
+      return;
     }
+    $dateLanded = $hasDate;
   }
-
-  // ASSIGNMENT NOTES
-  if (!empty($assigned_id)) {
-    if ($hasDate) {
-      // With a DATE present: keep WO effectively Scheduled — use SCHEDULED status for the note.
-      if ($isNew) {
-        wo_schedule_create_wo_status_update($work_order_id, "Assigned to {$assignedUserName} (Scheduled)", $uid, $STATUS_SCHEDULED, 1);
-      }
-      else {
-        $original = property_exists($entity, 'original') ? $entity->original : NULL;
-        $origAssigned = $original ? $original->get('field_assigned_to')->target_id : NULL;
-        if ($assigned_id != $origAssigned) {
-          $name = User::load($assigned_id)->getAccountName();
-          wo_schedule_create_wo_status_update($work_order_id, "Re-assigned to {$name} (Scheduled)", $uid, $STATUS_SCHEDULED, 1);
-        }
-      }
+  else {
+    $prev = $entity->_wo_schedule_prev ?? NULL;
+    if (!is_array($prev)) {
+      return;
+    }
+    $dateChanged = (string) ($prev['start'] ?? '') !== (string) ($entity->get('field_scheduled_date_and_time')->value ?? '');
+    $assigneeChanged = (int) ($prev['assigned'] ?? 0) !== $assigned_id;
+    if (!$dateChanged && !$assigneeChanged) {
+      return;
+    }
+    $oldWho = !empty($prev['assigned']) ? _wo_schedule_user_name((int) $prev['assigned']) : '';
+    if ($dateChanged && !$hasDate) {
+      $note = 'Schedule date removed' . ($who !== '' ? " — still assigned to {$who}" : '');
+    }
+    elseif ($dateChanged && $assigneeChanged) {
+      $note = $who !== ''
+        ? "Rescheduled to {$when} — reassigned to {$who}"
+        : "Rescheduled to {$when} — unassigned" . ($oldWho !== '' ? " (was {$oldWho})" : '');
+    }
+    elseif ($dateChanged) {
+      $note = "Rescheduled to {$when}" . ($who !== '' ? " ({$who})" : ' (unassigned)');
     }
     else {
-      // NO DATE: normal Assigned behavior (uses ASSIGNED status).
-      if ($isNew) {
-        wo_schedule_create_wo_status_update($work_order_id, "Assigned to {$assignedUserName}", $uid, $STATUS_ASSIGNED, 0);
-      }
-      else {
-        $original = property_exists($entity, 'original') ? $entity->original : NULL;
-        $origAssigned = $original ? $original->get('field_assigned_to')->target_id : NULL;
-        if ($assigned_id != $origAssigned) {
-          $name = User::load($assigned_id)->getAccountName();
-          wo_schedule_create_wo_status_update($work_order_id, "Re-assigned to {$name}", $uid, $STATUS_ASSIGNED, 0);
-        }
-      }
+      $note = $who !== ''
+        ? "Reassigned to {$who}" . ($hasDate ? " for {$when}" : '')
+        : 'Unassigned' . ($oldWho !== '' ? " (was {$oldWho})" : '') . ($hasDate ? ", still scheduled for {$when}" : '');
     }
+    $dateLanded = $hasDate && $dateChanged;
   }
 
-  // If both assigned + date on NEW creation, keep single combined Scheduled message as the final entry.
-  if ($isNew && !empty($assigned_id) && $hasDate) {
-    $formatted = date('m/d/Y - h:i A', strtotime($date_val[0]['value']));
-    wo_schedule_create_wo_status_update($work_order_id, "Assigned to {$assignedUserName} Scheduled for {$formatted}", $uid, $STATUS_SCHEDULED, 1);
+  // Dated → Scheduled; undated with an assignee → Assigned; undated and
+  // unassigned → the WO's current status (record the change, move nothing).
+  $status = $hasDate ? $STATUS_SCHEDULED : ($who !== '' ? $STATUS_ASSIGNED : $current);
+  wo_schedule_create_wo_status_update($work_order_id, $note, \Drupal::currentUser()->id(), $status, $hasDate ? 1 : 0);
+  // Not every WO bundle carries field_scheduled; the entry above is the record.
+  if ($dateLanded && $work_order->hasField('field_scheduled') && (int) $work_order->get('field_scheduled')->value !== 1) {
+    $work_order->set('field_scheduled', 1)->save();
   }
+}
 
-  // NOTE: We NEVER set the WO field_status to Assigned here when a date exists.
-  // If any downstream process mirrors WO status from the latest status_update,
-  // the latest update for dated items is always STATUS_SCHEDULED (1091).
+/**
+ * Display name for a uid ("uid N" when the account is gone).
+ */
+function _wo_schedule_user_name(int $uid): string {
+  $u = User::load($uid);
+  return $u ? $u->getDisplayName() : "uid {$uid}";
+}
+
+/**
+ * The schedule as a person reads it, America/Denver: "Wed 11/11/2026" for an
+ * all-day stop, "Wed 11/11/2026 9:30 AM" for a timed one.
+ *
+ * Prefers smart-date field_date (timestamp + duration; 1439 = all day). Falls
+ * back to the daterange, whose stored value is UTC — never read it as local
+ * (that is where the old "07:00 AM" came from: midnight Denver is 07:00 UTC).
+ */
+function _wo_schedule_when_label(EntityInterface $entity): string {
+  $tz = new \DateTimeZone('America/Denver');
+  if ($entity->hasField('field_date') && !$entity->get('field_date')->isEmpty() && !empty($entity->get('field_date')->value)) {
+    $item = $entity->get('field_date')->first();
+    $start = (new \DateTime('@' . (int) $item->value))->setTimezone($tz);
+    // Same convention as the presave sync above: duration 0 or 1439 = all day.
+    $allDay = in_array((int) ($item->duration ?? 0), [0, 1439], TRUE) || (int) ($item->duration ?? 0) > 1439;
+    return $start->format($allDay ? 'D m/d/Y' : 'D m/d/Y g:i A');
+  }
+  $item = $entity->get('field_scheduled_date_and_time')->first();
+  try {
+    $start = new \DateTime((string) $item->value, new \DateTimeZone('UTC'));
+  }
+  catch (\Exception $e) {
+    return (string) $item->value;
+  }
+  $start->setTimezone($tz);
+  $allDay = !empty($item->all_day) || $start->format('H:i:s') === '00:00:00';
+  return $start->format($allDay ? 'D m/d/Y' : 'D m/d/Y g:i A');
 }
 
 /**

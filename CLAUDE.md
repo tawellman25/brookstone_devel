@@ -472,7 +472,7 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 | `wo_dump_fees` | Computed dump fee fields and material dumping tracking |
 | `wo_estimate` | Links WOs to estimates (bidirectional) |
 | `wo_notes` | Manages `wo_notes` ECK entity lifecycle |
-| `wo_schedule` | Creates `wo_status_updates` entries from scheduling entity creation |
+| `wo_schedule` | Creates `wo_status_updates` entries from scheduling records — **one entry per change since 2026-11-14** ("Scheduled for Wed 11/11/2026 — assigned to X", "Reassigned to…", "Rescheduled to…", "Unassigned (was X)…"; all-day = date only, timed = date + time in MT; old values stashed in presave). Also the schedule-change `wo_notes` system note and the opt-in assignment email (`field_notify_assigned_teammate`). |
 | `wo_deletion_manager` | Controls WO deletion based on status (guards against deleting completed WOs) |
 | `wo_actions` | VBO bulk action: re-save `wo_complete_info` to update related WO records |
 | `wo_profit` | Supervisor/admin-only WO **cost & gross-profit**. Blended labor cost/hr in `business_setting` + `field_wo_cost`/`field_wo_profit` on all 35 real WO bundles; `WoProfitCalculator` (labor = hours × blended rate; materials = Σ `field_subtotal` cost basis; chemicals/rentals/dump pass-through; profit = `field_wo_total` − cost). Generic `entity_presave` (weight 100) freezes cost/profit at Complete (1097); role-gated live panel on the WO page (`view wo cost profit` perm). Stage 1 of the cost/profit roadmap item. Docs: `Modules/wo_profit.md`. |

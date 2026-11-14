@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-11-13 (Equipment Parts & Consumables **LIVE** 19:45 MT → Shipped; Phase 2 row; deferred #38 uuid-mismatch hazard on the config-drift row; equipment-forms-without-display row; auto-shop/vendor repair-invoice ingestion idea added to Fleet; 11-11: job-clock items 5 + 6 LIVE, three WO SOPs drafted)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-11-13 (eight SOP drafts in BOS + portal-waitlist lead list view LIVE 22:27 MT; Equipment Parts & Consumables **LIVE** 19:45 MT → Shipped; Phase 2 row; deferred #38 uuid-mismatch hazard on the config-drift row; equipment-forms-without-display row; auto-shop/vendor repair-invoice ingestion idea added to Fleet; 11-11: job-clock items 5 + 6 LIVE, three WO SOPs drafted)
 
 ---
 

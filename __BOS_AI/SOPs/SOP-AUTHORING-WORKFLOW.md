@@ -89,7 +89,8 @@ gray #424242  | gray light #F5F5F5
 > service's own code (BFT). The generator is now committed — `__BOS_AI/SOPs/_gen/gen_sops.py` +
 > `sop_content.py` — so docx, paste HTML and the BOS entity regenerate from one source
 > (`python3 __BOS_AI/SOPs/_gen/gen_sops.py [CODE…]`, then the docx step below). Entered as
-> **Draft**; Todd reviews each in BOS and sets Active.
+> **Draft on dev and on live, 2026-11-13 22:27 MT** (live ids 27–34); Todd reviews each in BOS and
+> sets Active. The waitlist SOP shipped with the lead list it needed (`portal_waitlist_leads`).
 
 ## Pending SOPs (SOP-Needed backlog)
 

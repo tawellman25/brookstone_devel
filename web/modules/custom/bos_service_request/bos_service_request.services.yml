@@ -55,3 +55,14 @@ services:
   bos_service_request.holiday_estimator:
     class: Drupal\bos_service_request\Holiday\HolidayEstimator
     arguments: ['@config_pages.loader']
+
+  # Emails the office on every customer-created service request (insert hook,
+  # owner uid 0). Recipient: settings office_notify_email, else the site mail.
+  bos_service_request.office_notifier:
+    class: Drupal\bos_service_request\Service\OfficeNotifier
+    arguments:
+      - '@entity_field.manager'
+      - '@entity_type.bundle.info'
+      - '@plugin.manager.mail'
+      - '@config.factory'
+      - '@logger.channel.bos_service_request'

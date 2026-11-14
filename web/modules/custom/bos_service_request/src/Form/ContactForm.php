@@ -29,10 +29,8 @@ final class ContactForm extends FormBase {
   protected $flood;
   protected $requestStack;
   protected $srLogger;
-  protected $mailManager;
 
   public const BUNDLE = 'general_inquiry';
-  public const NOTIFY = 'office@brookstoneoutdoors.com';
 
   public static function create(ContainerInterface $container): static {
     $i = new static();
@@ -41,7 +39,6 @@ final class ContactForm extends FormBase {
     $i->flood = $container->get('flood');
     $i->requestStack = $container->get('request_stack');
     $i->srLogger = $container->get('logger.channel.bos_service_request');
-    $i->mailManager = $container->get('plugin.manager.mail');
     return $i;
   }
 
@@ -188,9 +185,9 @@ final class ContactForm extends FormBase {
       $this->applyMarketingOptIn($emailNorm, $first, $last, $req->getClientIp());
     }
 
-    // 4. Email backstop — subject reflects the topic so complaint / commercial
-    // stand out. The record is the system of record; the email is the nudge.
-    $this->sendBackstop($topic, $this->topicOptions(), $fullName, $phone, $email, $address, $message, $ref, (string) $record->id());
+    // 4. Office email: sent by OfficeNotifier from the service_request insert
+    // hook (uid 0 record), the same path as every other public form — the
+    // subject still says ⚠ PROBLEM / COMMERCIAL/HOA / QUOTE by topic.
 
     // 5. Thank-you page (distinct URL → clean conversion fire).
     $form_state->setRedirect('bos_service_request.contact_thankyou', [], ['query' => ['t' => $topic]]);
@@ -257,38 +254,5 @@ final class ContactForm extends FormBase {
     }
   }
 
-  private function sendBackstop(string $topic, array $topicOptions, string $name, string $phone, string $email, string $address, string $message, string $ref, string $id): void {
-    $label = $topicOptions[$topic] ?? $topic;
-    $prefix = $topic === 'problem' ? '⚠ PROBLEM' : ($topic === 'commercial' ? 'COMMERCIAL/HOA' : ($topic === 'quote' ? 'QUOTE' : 'Contact'));
-    // Fixed canonical host: the request host is unreliable outside a browser
-    // request (CLI/cron yield "http://default"), and the office is always on
-    // the live domain.
-    $base = 'https://brookstoneoutdoors.com';
-    $body = [
-      "New contact submission ({$label})",
-      '',
-      "Name:    {$name}",
-      "Phone:   {$phone}",
-      "Email:   {$email}",
-      $address !== '' ? "Address: {$address}" : NULL,
-      '',
-      'Message:',
-      $message,
-      '',
-      "Reference: {$ref}",
-      "Open this request: {$base}/service_request/{$id}",
-      "Office queue:      {$base}/admin/office/service-requests",
-    ];
-    $params = [
-      'subject' => "[{$prefix}] Contact form — {$name}",
-      'body' => implode("\n", array_filter($body, fn($l) => $l !== NULL)),
-    ];
-    try {
-      $this->mailManager->mail('bos_service_request', 'contact_notification', self::NOTIFY, 'en', $params);
-    }
-    catch (\Throwable $e) {
-      $this->srLogger->warning('Contact backstop email failed for @ref: @m', ['@ref' => $ref, '@m' => $e->getMessage()]);
-    }
-  }
 
 }

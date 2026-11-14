@@ -411,3 +411,45 @@ only when not converted AND no property).
 Also this pass: winterize signup forms capture **First + Last name** (matcher
 still keys on surname) and reword the "since last year" note to "Anything we
 should know about your sprinkler system?".
+
+## Office email on every customer-created request (2026-11-14, LIVE)
+
+Todd: *"I need the system to email office@brookstoneoutdoors.com when a service request is
+created from a customer. The email needs to include as much info as possible and a link to the
+service request and/or at least to the report."* Before this only the `/contact` form emailed
+the office (its own `sendBackstop()`); winterize, fall cleanup and holiday lights were silent.
+
+- **One path:** `Service\OfficeNotifier` (`bos_service_request.office_notifier`), called from
+  `bos_service_request_service_request_insert()` **when the record's owner is uid 0** — how every
+  public form saves and no office tool does (convert / create-customer / admin form save as the
+  staff user, so office-entered requests do not email the office). The contact form's own
+  backstop and `hook_mail` key `contact_notification` are retired; the key is now
+  `office_notification`. A failed send is logged (`bos_service_request` channel) and never
+  surfaced to the customer — the record is the system of record, the email is the nudge.
+- **Recipient:** `bos_service_request.settings` → `office_notify_email` (schema `email`,
+  install default `office@brookstoneoutdoors.com`); empty or missing → `system.site` mail, which
+  is the same address on live. Change it with
+  `drush cset bos_service_request.settings office_notify_email someone@… -y`.
+- **Subject:** `[BOS] New <kind> — <name>, <address|ZIP|ref>`; kind = bundle label + "request"
+  (Sprinkler Winterizing / Fall Cleanup), and for `general_inquiry` the topic:
+  `⚠ PROBLEM report` · `COMMERCIAL/HOA inquiry` · `QUOTE request` · `Contact: <topic label>`.
+- **Body (plain text, phone-first):** header (reference · submitted MT · status · channel +
+  campaign · service/year), three **bare-URL lines** (this request `/service_request/{id}`,
+  the office queue, the campaign report — bare because the legacy mail path html-to-texts and
+  wraps at ~77 columns and a wrapped URL is a dead link), then **CUSTOMER (as submitted)**,
+  **MATCH** (matched property as nickname — full address + link, existing contract / WO with
+  links, review flags, match-candidate *count*), **REQUEST DETAILS** = every other populated
+  field with its label, lists resolved to their labels, booleans Yes/No, timestamps in MT,
+  long text indented. Skipped on purpose: notice-version hash, raw match JSON, office-only
+  fields (empty at creation anyway).
+- **Reply-To** = the submitted email when it validates, so the office answers with one click.
+- **Fixed canonical host** `https://brookstoneoutdoors.com` in the links (CLI/cron requests
+  yield `http://default`) — the former backstop's decision, kept.
+- **Tests:** dev `web/scripts/test_sr_office_notify.php` (creates a winterize request, a
+  contact problem report and an office-created request; asserts against DDEV's Mailpit API —
+  To, subject, Reply-To, body facts, no email for uid ≠ 0 — then deletes all three and the
+  messages; 26 checks). Live `web/scripts/sr_office_notify_verify.php` is read-only (wiring,
+  recipient, transport, a full preview for the newest customer request); `--send-test` sends
+  that preview once with a `[TEST] ` prefix.
+- **Known shape:** a fall-cleanup submission that also ticks winterize creates two requests and
+  therefore two emails — each is a real queue row with its own link.

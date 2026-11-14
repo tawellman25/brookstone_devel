@@ -129,6 +129,20 @@ function bos_service_request_service_request_insert(\Drupal\Core\Entity\EntityIn
     $entity->save();
   }
   _bos_service_request_stamp_bearcreek_hoa($entity);
+
+  // Office email for every CUSTOMER-created request (owner uid 0 — how every
+  // public form saves; office tools save as the staff user). One path for
+  // winterize, fall cleanup, holiday lights and contact. The record is the
+  // system of record: a failed send is logged, never surfaced to the customer.
+  $notifier = \Drupal::service('bos_service_request.office_notifier');
+  if ($notifier->isCustomerCreated($entity)) {
+    try {
+      $notifier->notifyNew($entity);
+    }
+    catch (\Throwable $e) {
+      \Drupal::logger('bos_service_request')->warning('Office notification for service request @id failed: @m', ['@id' => $entity->id(), '@m' => $e->getMessage()]);
+    }
+  }
 }
 
 /**
@@ -335,12 +349,19 @@ function bos_service_request_page_attachments(array &$attachments) {
 /**
  * Implements hook_mail().
  *
- * Contact-form backstop notification to the monitored office mailbox.
+ * office_notification — the new-request email to the office (OfficeNotifier).
+ * Replaced the contact-form-only `contact_notification` on 2026-11-14; every
+ * public form now goes through the one path. Reply-To is the customer's
+ * submitted email so the office can answer with one click.
  */
 function bos_service_request_mail($key, &$message, $params) {
-  if ($key === 'contact_notification') {
-    $message['subject'] = $params['subject'] ?? 'New contact submission';
+  if ($key === 'office_notification') {
+    $message['subject'] = $params['subject'] ?? 'New service request';
     $message['body'][] = $params['body'] ?? '';
+    if (!empty($params['reply_to'])) {
+      $message['reply-to'] = $params['reply_to'];
+      $message['headers']['Reply-To'] = $params['reply_to'];
+    }
   }
 }
 

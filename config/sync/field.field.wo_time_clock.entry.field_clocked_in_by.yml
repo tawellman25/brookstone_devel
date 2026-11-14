@@ -1,0 +1,30 @@
+uuid: d1b0e214-fbfd-45b9-bf75-30284a415d77
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.wo_time_clock.entry
+    - field.storage.wo_time_clock.field_clocked_in_by
+id: wo_time_clock.entry.field_clocked_in_by
+field_name: field_clocked_in_by
+entity_type: wo_time_clock
+bundle: entry
+label: 'Clocked in by'
+description: 'Who pressed the clock-in: the teammate themself on the ordinary button, the foreman on a crew clock-in. Stamped by wo_clock; used to pre-select the morning crew when the crew clocks back in after lunch. Not on the entry form.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    target_bundles: null
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    filter:
+      type: _none
+    include_anonymous: false
+field_type: entity_reference
+

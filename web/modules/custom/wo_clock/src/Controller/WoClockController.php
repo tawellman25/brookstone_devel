@@ -300,11 +300,19 @@ final class WoClockController extends ControllerBase {
       $u = $this->entityTypeManager()->getStorage('user')->load($uid);
       $names[] = $u ? $u->getDisplayName() : ('uid ' . $uid);
     }
+    // "Name — reason" per skipped person, for the message the JS shows when
+    // nothing was created (the roster disables them, so this is the race).
+    $skippedNames = [];
+    foreach ($result['skipped'] as $uid => $reason) {
+      $u = $this->entityTypeManager()->getStorage('user')->load($uid);
+      $skippedNames[] = ($u ? $u->getDisplayName() : ('uid ' . $uid)) . ' — ' . $reason;
+    }
     return new JsonResponse([
       'status' => 'clocked_in',
       'created' => $names,
       'created_count' => count($result['created']),
       'skipped' => $result['skipped'],
+      'skipped_names' => $skippedNames,
     ]);
   }
 

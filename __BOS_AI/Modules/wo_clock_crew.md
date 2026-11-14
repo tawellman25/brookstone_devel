@@ -1,6 +1,6 @@
 # Foreman crew clock — specification
 
-**Status:** BUILT and deployed 2026-11-03 — 21/21 acceptance tests pass on dev and live
+**Status:** BUILT and deployed 2026-11-03 — 21/21 acceptance tests pass on dev and live. **2026-11-13: morning-crew pre-select added** (section below; 30/30 on dev)
 **Written:** 2026-11-03
 **For:** Todd, and whoever builds it
 **Module:** extends `wo_clock` (see [`wo_clock.md`](wo_clock.md)); interacts with `wo_sign_off`, `wo_total_time`
@@ -108,9 +108,12 @@ This is why the build is small — most of the model is already right.
 On the work order, beside the existing clock-in button, for a user permitted to
 operate it:
 
-1. Show the crew. Default the list from the work order's `scheduling`
-   records (`field_assigned_to`), all pre-ticked, each row removable, plus a
-   way to add somebody not on the schedule — crews change on the morning.
+1. Show the crew: the crew type's members plus whoever is scheduled
+   (`scheduling.field_assigned_to`) plus anyone already clocked in. **Nobody
+   from those sources is pre-ticked** (as built: scheduling assigns one route
+   driver per WO, and a 19-person crew type ticked by default is one careless
+   press from 19 false entries). **Since 2026-11-13 the morning crew IS
+   pre-ticked** — see "Morning crew pre-select" below.
 2. On submit, create **one `wo_time_clock` entry per ticked person**, all with
    the same `field_start_time` (now), `field_source = wo_clock_crew`.
 3. **Skip anyone who already has an open entry on that work order** rather than
@@ -216,6 +219,65 @@ month-end. The script carries the same warning.
 - Sign-off on that work order finds no missing crew, so reconciliation does not run.
 
 ---
+
+## Morning crew pre-select (2026-11-13)
+
+**Brief (Todd / My 2nd Brain):** after lunch, opening "Clock crew in" should
+already have the morning crew ticked so the foreman just confirms. A smart
+default only, fully editable; from the time-clock records; nobody still clocked
+in; nobody with no entry today; today only; scoped to the crew/foreman group
+where that is tracked.
+
+**What was not tracked:** the entry's owner `uid` is the *teammate* (so "edit
+own" works), and the foreman who pressed the crew button lived only in the note
+text `[Start: Crew clock-in … by Name]`. Parsing names out of notes is not a
+grouping. So one field was added — **`field_clocked_in_by`** (→ user), stamped
+by `createOpenEntry()` on every entry the clock creates: the teammate themself
+on the ordinary button, the foreman on a crew clock-in. Code-only, off the
+form; `web/scripts/wo_clock_morning_crew_setup.php` (idempotent, keeps the
+sync uuid). Nothing is backfilled — the pre-select only reads today.
+
+**The rule** (`WoClockService::getMorningCrewForWo()`, pure read). A teammate
+is pre-ticked when all three hold:
+
+1. They have a time entry that **started today**, site timezone
+   (America/Denver), local midnight to midnight. Resets daily; a snow crew that
+   started at 11 pm yesterday is not "this morning".
+2. The entry is in **this job's group**: on **this work order** (any source:
+   crew button, own button, manual) **or** anywhere today with
+   `field_clocked_in_by` = the **current user** — the foreman's crew follows
+   them from the morning property to the afternoon one. A different foreman
+   opening another job does not inherit them; anyone opening the *same* job
+   does get its morning crew.
+3. They have **no open entry anywhere**. Still clocked in = excluded outright:
+   a second open row double-counts their hours.
+
+**Roster contract** (`getCrewRosterForWo()` → JSON): each row now also carries
+`morning` (pre-tick), `last_out` (e.g. `11:32 AM`, shown as "(out 11:32 AM)"
+so the foreman can tell lunch from went-home) and `open_elsewhere`. Morning
+rows sort first. Rows that are open here **or on another job** are listed but
+**disabled** — the second case used to be selectable and opened a second row;
+`crewClockIn()` now also skips them server-side with the reason *"clocked in on
+another job — clock out there first"*, and the JS shows the reasons instead of
+reloading when nothing was created. The modal says how many are pre-ticked
+("3 people from earlier today are already ticked. Untick anyone who has not
+come back.") so the foreman looks before confirming.
+
+**Acceptance (dev, 30/30, `web/scripts/test_crew_morning_preselect.php`, writes
+and rolls back):** morning crew on X pre-ticked with their clock-out time, a
+self-clocked helper on X included, yesterday's entry excluded, someone still
+open on X disabled and not ticked, someone open on Y listed on X as "another
+job" and not ticked, nobody with no entry today; on job Y the same foreman gets
+their crew, a different foreman does not, and anyone gets X's morning crew on
+X; submitting the pre-ticked three creates exactly three entries, pressing again
+creates none, open-elsewhere is skipped with the reason; with every entry moved
+to yesterday nothing is proposed. Read-only live check:
+`wo_clock_morning_crew_verify.php`.
+
+**Known limits.** Before today's deploy no entry carries `field_clocked_in_by`,
+so on the deploy day only the same-job arm applies. Grouping by `crew_types`
+membership was deliberately *not* used as an arm: it would pre-tick a crew-mate
+who worked a different foreman's job this morning.
 
 ## Related
 

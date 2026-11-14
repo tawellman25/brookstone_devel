@@ -95,6 +95,10 @@ $ok('only the SCHEDULED are pre-ticked, not the whole crew',
   count($preticked) . ' pre-ticked of ' . count($cleanupRoster) . ' offered');
 
 print "\n";
+// Crew rows that exist BEFORE the run (real use since 2026-11-03) — the
+// rollback proof compares against this, not against zero.
+$crewRowsBefore = (int) $db->query("SELECT COUNT(*) FROM {wo_time_clock__field_source}
+  WHERE deleted = 0 AND field_source_value = 'wo_clock_crew'")->fetchField();
 $tx = $db->startTransaction();
 try {
   // --- 1. foreman clocks the crew in ---------------------------------------
@@ -235,6 +239,6 @@ finally {
 // Prove the rollback took rather than trusting it.
 $leftover = (int) $db->query("SELECT COUNT(*) FROM {wo_time_clock__field_source}
   WHERE deleted = 0 AND field_source_value = 'wo_clock_crew'")->fetchField();
-$ok('no crew entries survive the rollback', $leftover === 0, "$leftover found");
+$ok('no crew entries survive the rollback', $leftover === $crewRowsBefore, "$leftover now, $crewRowsBefore before the run");
 
 printf("\n%d passed, %d failed\n", $pass, $fail);

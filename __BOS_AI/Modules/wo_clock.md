@@ -25,6 +25,7 @@ dashboards, only on admin entity inspection.
 | `field_clock_out_location` | geofield | Clock-Out Location |
 | `field_clock_in_distance_ft` | decimal(10,2) | Clock-In Distance from Property (ft) |
 | `field_clock_out_distance_ft` | decimal(10,2) | Clock-Out Distance from Property (ft) |
+| `field_clocked_in_by` (2026-11-13) | entity_reference → user | Clocked in by — **who pressed the button**: the teammate on the ordinary button, the foreman on a crew clock-in. Stamped in `createOpenEntry()`; **not on any display** (code-only). Powers the morning-crew pre-select ([`wo_clock_crew.md`](wo_clock_crew.md)); before it, the foreman was only in note text. Setup `web/scripts/wo_clock_morning_crew_setup.php`. |
 
 > **Deviation:** the spec named the distance fields `field_clock_in/out_distance_from_property`,
 > which exceed Drupal's **32-char** machine-name limit. Shortened to `_distance_ft`

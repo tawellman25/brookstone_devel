@@ -174,6 +174,15 @@ final class WoClockService {
     // Origin attribution: a button clock-in, with a structured start note.
     $entry->set('field_source', 'wo_clock_button');
     $this->appendNote($entry, sprintf(self::NOTE_BUTTON_START, $this->usDisplay($this->time->getRequestTime())));
+    // Who pressed the button — the teammate themself on the ordinary button,
+    // the foreman on a crew clock-in (crewClockIn() calls this as the actor).
+    // Structural, not just the note text, so the crew can be found again:
+    // getMorningCrewForWo() uses it to pre-tick "my crew from this morning"
+    // on the next job. Guarded: the field ships separately from this code.
+    if ($entry->hasField('field_clocked_in_by')) {
+      $me = (int) $this->currentUser->id();
+      $entry->set('field_clocked_in_by', $me > 0 ? $me : NULL);
+    }
     $entry->_wo_clock_write = TRUE;
     return $entry;
   }
@@ -365,11 +374,19 @@ final class WoClockService {
    *
    * ⚠ Crew members are listed but NOT pre-ticked. The Clean-up Crew has 19
    * people; ticking all of them by default would turn one careless press into
-   * 19 false entries. The dispatcher's intent gets the tick; the rest of the
-   * crew are there to be added in one tap when the morning differs.
+   * 19 false entries. (Scheduling is not pre-ticked either — the JS explains:
+   * it assigns one route driver per WO, not a crew.)
+   *
+   *   - **The morning crew** (2026-11-13). The one source that IS pre-ticked,
+   *     because it is evidence rather than intent: people with a time entry
+   *     that started TODAY in this job's group and who are now clocked out —
+   *     the crew at lunch, or between properties. See getMorningCrewForWo()
+   *     for the exact rule. Still a default: the foreman unticks whoever went
+   *     home and ticks a new arrival before confirming.
    *
    * @return array
-   *   [['uid','name','open','scheduled','in_crew'], …] sorted by name.
+   *   [['uid','name','open','scheduled','in_crew','morning','last_out',
+   *     'open_elsewhere'], …] — morning crew first, then scheduled, then by name.
    */
   public function getCrewRosterForWo(int $woId): array {
     $db = \Drupal::database();
@@ -404,7 +421,33 @@ final class WoClockService {
       }
     }
 
-    $all = array_values(array_unique(array_merge($scheduled, $crewMembers, $openUids)));
+    // Today's group belongs on the list however they got onto the job — a
+    // borrowed helper who worked here this morning is not in this crew type
+    // and may not be scheduled, but they are coming back from lunch too. The
+    // ones now clocked out are the morning crew (pre-ticked); the ones still
+    // open on ANOTHER job are listed too, disabled, so the foreman sees the
+    // missed clock-out instead of wondering why Joe is not ticked.
+    $group = $this->todayGroupForWo($woId);
+    $morning = array_filter($group, fn($g) => !$g['open']);
+
+    $all = array_values(array_unique(array_merge($scheduled, $crewMembers, $openUids, array_keys($group))));
+
+    // Clocked in somewhere ELSE right now. Shown, not pre-ticked: a crew
+    // clock-in here would open a second row for them (the single-person path
+    // forces an intervention first; this one does not — pre-existing gap).
+    $openElsewhere = [];
+    if ($all) {
+      $ids = $this->tcStorage()->getQuery()
+        ->accessCheck(FALSE)
+        ->condition('field_teammate', $all, 'IN')
+        ->condition('field_work_order', $woId, '<>')
+        ->notExists('field_end_time')
+        ->execute();
+      foreach ($ids ? $this->tcStorage()->loadMultiple($ids) : [] as $e) {
+        $openElsewhere[] = (int) $e->get('field_teammate')->target_id;
+      }
+    }
+
     $out = [];
     $store = $this->entityTypeManager->getStorage('user');
     foreach ($all as $uid) {
@@ -412,23 +455,148 @@ final class WoClockService {
       if (!$u || !$u->isActive()) {
         continue;
       }
+      $isOpen = in_array($uid, $openUids, TRUE);
       $out[] = [
         'uid' => $uid,
         'name' => $u->getDisplayName(),
-        'open' => in_array($uid, $openUids, TRUE),
+        'open' => $isOpen,
         'scheduled' => in_array($uid, $scheduled, TRUE),
         'in_crew' => in_array($uid, $crewMembers, TRUE),
+        // Never both open and morning: getMorningCrewForWo() already drops
+        // anyone with an open entry, this is belt and braces for the JS.
+        'morning' => isset($morning[$uid]) && !$isOpen,
+        'last_out' => isset($morning[$uid]['last_out']) ? $this->timeDisplay($morning[$uid]['last_out']) : NULL,
+        // Disabled in the JS like 'open': a crew clock-in would open a second
+        // row for them, and crewClockIn() skips them for the same reason.
+        'open_elsewhere' => !$isOpen && in_array($uid, $openElsewhere, TRUE),
       ];
     }
-    // Scheduled first — they are the ones already ticked — then the rest of
+    // Morning crew first (already ticked), then scheduled, then the rest of
     // the crew alphabetically, so the common case is at the top of a phone.
     usort($out, function ($a, $b) {
+      if ($a['morning'] !== $b['morning']) {
+        return $a['morning'] ? -1 : 1;
+      }
       if ($a['scheduled'] !== $b['scheduled']) {
         return $a['scheduled'] ? -1 : 1;
       }
       return strcasecmp($a['name'], $b['name']);
     });
     return $out;
+  }
+
+  /**
+   * The "morning crew" for a crew clock-in on a work order: who to pre-tick.
+   *
+   * Todd, 2026-11-13: after lunch "the foreman just hits submit instead of
+   * re-selecting everyone." A teammate is proposed when ALL of these hold:
+   *
+   *   1. They have a time entry that STARTED today — site timezone
+   *      (America/Denver), local midnight to local midnight, so it resets
+   *      every day and a snow crew that started at 11 pm yesterday is not
+   *      "this morning".
+   *   2. That entry is in this job's GROUP: on THIS work order (any source —
+   *      crew button, their own button, a manual entry), OR anywhere today
+   *      with field_clocked_in_by = the CURRENT user. The second arm is the
+   *      crew-grouping the brief asked for: a foreman's crew follows them from
+   *      the morning property to the afternoon one. A different foreman
+   *      opening another job does not inherit them.
+   *   3. They have NO open entry anywhere — currently clocked out (lunch, or
+   *      between jobs). Anyone still clocked in is excluded outright: a second
+   *      open row would double-count their hours into billing.
+   *
+   * Nobody with no entry today. Nobody from yesterday. Pure read: nothing is
+   * written here, and the pre-tick is only a default on the form.
+   *
+   * @return array
+   *   uid => ['last_out' => int|null (latest end today, UTC ts),
+   *           'via' => ['wo' and/or 'foreman']], empty when nothing qualifies.
+   */
+  public function getMorningCrewForWo(int $woId): array {
+    $out = [];
+    foreach ($this->todayGroupForWo($woId) as $uid => $g) {
+      if (!$g['open']) {
+        $out[$uid] = ['last_out' => $g['last_out'], 'via' => $g['via']];
+      }
+    }
+    return $out;
+  }
+
+  /**
+   * Everyone in this job's group TODAY (rules 1 + 2 above), with whether they
+   * are currently clocked in anywhere (rule 3 is applied by the callers).
+   *
+   * @return array
+   *   uid => ['last_out' => int|null, 'via' => [...], 'open' => bool]
+   */
+  private function todayGroupForWo(int $woId): array {
+    if ($woId <= 0) {
+      return [];
+    }
+    $tz = new \DateTimeZone(date_default_timezone_get());
+    $now = (new \DateTime('@' . $this->time->getRequestTime()))->setTimezone($tz);
+    $dayStart = (clone $now)->setTime(0, 0, 0);
+    $dayEnd = (clone $dayStart)->modify('+1 day');
+    $from = $this->tsUtc($dayStart->getTimestamp());
+    $to = $this->tsUtc($dayEnd->getTimestamp());
+    $me = (int) $this->currentUser->id();
+    // The field ships separately from this code (setup script); without it the
+    // group is just "this work order".
+    $defs = \Drupal::service('entity_field.manager')->getFieldStorageDefinitions('wo_time_clock');
+    $hasBy = isset($defs['field_clocked_in_by']);
+
+    $q = $this->tcStorage()->getQuery()
+      ->accessCheck(FALSE)
+      ->exists('field_teammate')
+      ->condition('field_start_time', $from, '>=')
+      ->condition('field_start_time', $to, '<');
+    $group = $q->orConditionGroup()->condition('field_work_order', $woId);
+    if ($hasBy && $me > 0) {
+      $group->condition('field_clocked_in_by', $me);
+    }
+    $q->condition($group);
+    $ids = $q->execute();
+    if (!$ids) {
+      return [];
+    }
+
+    $crew = [];
+    foreach ($this->tcStorage()->loadMultiple($ids) as $e) {
+      $uid = (int) $e->get('field_teammate')->target_id;
+      if (!$uid) {
+        continue;
+      }
+      $via = ((int) $e->get('field_work_order')->target_id === $woId) ? 'wo' : 'foreman';
+      $end = (string) ($e->get('field_end_time')->value ?? '');
+      $endTs = $end !== '' ? (int) (new \DateTime($end, new \DateTimeZone('UTC')))->getTimestamp() : NULL;
+      $crew[$uid] = $crew[$uid] ?? ['last_out' => NULL, 'via' => []];
+      if (!in_array($via, $crew[$uid]['via'], TRUE)) {
+        $crew[$uid]['via'][] = $via;
+      }
+      if ($endTs !== NULL && ($crew[$uid]['last_out'] === NULL || $endTs > $crew[$uid]['last_out'])) {
+        $crew[$uid]['last_out'] = $endTs;
+      }
+    }
+    if (!$crew) {
+      return [];
+    }
+
+    // Rule 3: still clocked in ANYWHERE (today or a forgotten older entry).
+    foreach ($crew as $uid => $g) {
+      $crew[$uid]['open'] = FALSE;
+    }
+    $openIds = $this->tcStorage()->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('field_teammate', array_keys($crew), 'IN')
+      ->notExists('field_end_time')
+      ->execute();
+    foreach ($openIds ? $this->tcStorage()->loadMultiple($openIds) : [] as $e) {
+      $uid = (int) $e->get('field_teammate')->target_id;
+      if (isset($crew[$uid])) {
+        $crew[$uid]['open'] = TRUE;
+      }
+    }
+    return $crew;
   }
 
   /**
@@ -553,6 +721,14 @@ final class WoClockService {
       foreach ($uids as $uid) {
         if ($this->getCurrentEntryOnWo($uid, $woId)) {
           $skipped[$uid] = 'already clocked in';
+          continue;
+        }
+        // Open on ANOTHER job (2026-11-13): the single-person button forces an
+        // intervention first; the crew path used to open a second row, which
+        // bills the same hour on two work orders. Skip with the reason, so the
+        // foreman clocks them out there (or fixes the forgotten entry) first.
+        if ($this->getOpenEntriesForUser($uid, $woId)) {
+          $skipped[$uid] = 'clocked in on another job — clock out there first';
           continue;
         }
         $entry = $this->createOpenEntry($uid, $woId);
@@ -723,6 +899,15 @@ final class WoClockService {
     $dt = new \DateTime('@' . $timestamp);
     $dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
     return $dt->format('m/d/Y g:i A');
+  }
+
+  /**
+   * Time-only, site timezone — for a value the reader already knows is today.
+   */
+  private function timeDisplay(int $timestamp): string {
+    $dt = new \DateTime('@' . $timestamp);
+    $dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+    return $dt->format('g:i A');
   }
 
   /**

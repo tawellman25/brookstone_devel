@@ -314,27 +314,51 @@
         showError(root, 'Nobody is assigned to this work order yet. Clock in individually, or assign the crew first.');
         return;
       }
+      var pre = 0;
       list.innerHTML = res.crew.map(function (p) {
         // Someone already clocked in is shown but NOT selectable — the
         // foreman should see why they are not in the list rather than
         // wonder, and re-adding them would double-count their hours.
         //
-        // ⚠ NOBODY is pre-ticked, deliberately. Scheduling assigns ONE person
-        // per work order — the route driver, not the crew — so pre-ticking it
-        // implied a crew that was never recorded. Pre-ticking the whole crew
-        // is worse: 19 people on a cleanup, so one careless press would create
-        // 19 false entries. The foreman ticks who is actually there.
-        var dis = p.open ? ' disabled' : '';
+        // ⚠ Only the MORNING CREW is pre-ticked (2026-11-13): people with a
+        // time entry today in this job's group who are now clocked out — the
+        // crew coming back from lunch, or arriving from the morning property.
+        // That is evidence, so it earns a default tick. Scheduling and crew
+        // membership still do NOT: scheduling assigns ONE route driver per
+        // work order, not a crew, and ticking a 19-person crew type would
+        // turn one careless press into 19 false entries. The server decides
+        // who is "morning" (WoClockService::getMorningCrewForWo); it never
+        // flags anyone who is still clocked in anywhere. The foreman unticks
+        // whoever went home and ticks a new arrival — it is only a default.
+        // Open HERE or on ANOTHER job: shown, not selectable — either way a
+        // crew clock-in would open a second row for them.
+        var dis = (p.open || p.open_elsewhere) ? ' disabled' : '';
+        var chk = (p.morning && !p.open) ? ' checked' : '';
+        if (chk) { pre++; }
         var note = '';
         if (p.open) {
           note = ' <em>(already clocked in)</em>';
+        } else if (p.morning) {
+          note = ' <em>(out ' + (p.last_out ? Drupal.checkPlain(p.last_out) : 'earlier today') + ')</em>';
+        } else if (p.open_elsewhere) {
+          note = ' <em>(clocked in on another job)</em>';
         } else if (p.scheduled) {
           note = ' <em>(assigned)</em>';
         }
-        return '<label class="wo-clock__crew-member">' +
-          '<input type="checkbox" value="' + p.uid + '"' + dis + '> ' +
+        return '<label class="wo-clock__crew-member' + (chk ? ' wo-clock__crew-member--morning' : '') + '">' +
+          '<input type="checkbox" value="' + p.uid + '"' + dis + chk + '> ' +
           Drupal.checkPlain(p.name) + note + '</label>';
       }).join('');
+      var hint = root.querySelector('[data-wo-clock-crew-preselect]');
+      if (hint) {
+        if (pre) {
+          hint.textContent = pre + (pre === 1 ? ' person' : ' people') + ' from earlier today ' +
+            (pre === 1 ? 'is' : 'are') + ' already ticked. Untick anyone who has not come back.';
+          hint.hidden = false;
+        } else {
+          hint.hidden = true;
+        }
+      }
       panel.hidden = false;
     });
   }
@@ -357,6 +381,12 @@
     }).then(function (res) {
       setBusy(root, false);
       if (res.status !== 'clocked_in') { showError(root, res.message || 'Could not clock the crew in.'); return; }
+      // Everyone selected was skipped (already clocked in here or on another
+      // job): nothing changed, so a reload would just look broken. Say why.
+      if (!res.created_count && res.skipped_names && res.skipped_names.length) {
+        showError(root, 'Nobody was clocked in: ' + res.skipped_names.join('; ') + '.');
+        return;
+      }
       reloadWo();
     });
   }

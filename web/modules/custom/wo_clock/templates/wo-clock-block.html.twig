@@ -84,17 +84,22 @@
     beats a panel that pushes the page around and can scroll out of view
     mid-selection.
 
-    Nobody is pre-ticked. Scheduling assigns ONE person per work order (the
-    route driver, not the crew), so pre-ticking it implied a crew that was
-    never recorded — and pre-ticking a whole 19-person crew would turn one
-    careless press into 19 false entries. The foreman taps who is actually
-    there, which is the only thing anyone actually knows.
+    Only the MORNING CREW is pre-ticked (2026-11-13): people with a time entry
+    today in this job's group who are now clocked out — back from lunch, or
+    arriving from the morning property. Evidence, not intent. Scheduling is
+    not pre-ticked (it assigns ONE route driver per work order, not a crew) and
+    neither is the crew type (19 people on a cleanup — one careless press would
+    make 19 false entries). The server decides who counts as morning crew
+    (WoClockService::getMorningCrewForWo) and never flags anyone still clocked
+    in; the line under the heading says how many are ticked so the foreman
+    looks before confirming.
   #}
   <div class="wo-clock__modal" data-wo-clock-crew-panel hidden>
     <div class="wo-clock__modal-backdrop" data-wo-clock-action="crew-cancel"></div>
     <div class="wo-clock__modal-box" role="dialog" aria-modal="true" aria-label="Who is on site?">
       <h3 class="wo-clock__modal-title">Who is on site?</h3>
       <p class="wo-clock__crew-help">Tick everyone here now. You are confirming these people are on the job.</p>
+      <p class="wo-clock__crew-preselect" data-wo-clock-crew-preselect hidden></p>
       <div class="wo-clock__crew-list" data-wo-clock-crew-list></div>
       {#
         Sits BELOW the list and ABOVE the buttons on purpose. The list scrolls

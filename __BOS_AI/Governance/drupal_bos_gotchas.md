@@ -640,6 +640,12 @@ The UUID-stripping bug in BOS field-instance configs (above) is the recurring ca
 
 ---
 
+## `$entity->validate()` in a drush script runs as anonymous — a formatted-text `format` fails "not a valid choice"
+
+**Found 2026-11-13** verifying `field_defect_notes`. The `format` property of every `text_long`/`text_with_summary` item carries an `AllowedValues` constraint whose choices are **the formats the *current* account may use** (`TextItemBase::propertyDefinitions()` → `FilterFormat` access for the account). Under drush the current account is **anonymous**, who may use nothing but the fallback format, so `validate()` on an entity with `format => 'basic_html'` reports `field_x.0.format: The value you selected is not a valid choice` even though a plain `save()` stores it fine and the real form never hits it. In verify/setup scripts, **`account_switcher->switchTo(uid 1)` around validate()** (and switch back). The same mechanism is why a programmatic writer that omits `format` gets a value rendered through the fallback format — always set `format` explicitly.
+
+---
+
 ## A UUID mismatch makes `cim` DELETE + CREATE the config entity — a partial import can drop a live field table
 
 **Found 2026-11-13** while deploying `equipment_part`, by reading the core code before running the partial cim instead of trusting the sentence above (which used to say the drift was "benign … cim never modifies an existing config's UUID"). It is not benign.

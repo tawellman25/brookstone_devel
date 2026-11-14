@@ -58,6 +58,43 @@ on 2026-11-14), (3) `files[file]` CSV → 2 rows, (4) a `.csv` as the photo → 
 error, (5) pasted rows → 1 row. `web/scripts/make_test_receipt.php` draws a synthetic copy
 of the receipt with GD.
 
+## Receipt photo on every imported row (2026-11-14)
+
+Todd: *"Can we include a copy of the Receipt picture in the imported row for each item? Is it
+possible to reference the same pic across several different item rows?"* Yes to both, and the
+field already existed: **`wo_material_list_item.items.field_reciept_pic`** (spelling permanent;
+image, cardinality 1, `public://`, help text "May use one pic for several Items"), on the item
+forms since the paper-list days. The import now fills it:
+
+- `previewSubmit()` keeps the photo's File id as `receipt_fid` when extraction succeeds; the
+  preview names it ("📷 Receipt photo *name* — attached to every row you import").
+- `MaterialListImportService::import(…, ?int $receiptFid)` → `prepareReceipt()` moves the
+  temporary upload into the field's own upload location (scheme + dated folder from the field
+  settings) and makes it **permanent**; every row the import creates references that one File
+  (`field_reciept_pic.target_id`), and a row that **merges** into an existing line takes it only
+  if that line has none. Nothing is copied: one file, N references; the image field registers one
+  file-usage per row, so the file lives as long as any row points at it.
+- **`filefield_paths` governs this field** (`third_party_settings` on the instance: path
+  `[wo_material_list_item:url:path]/receipts`, name
+  `<WO title>_<materials for>_receipt.<ext>`), so after each row saves the file is moved again
+  into that row's own folder — the final URI carries the *last* row's id (e.g.
+  `public://wo-material-list-item/18864/receipts/wo54579-repair-backflow-receipt.jpg`). References
+  are by File id, so every row still resolves; on live (S3) each move is a copy+delete, N per
+  import — fine for a receipt.
+- The material-list page's items table has a **Receipt** column: a `thumbnail` image-style
+  rendition linking to the full photo in a new tab (`.wo-ml-receipt`, `css/actions.css`). The
+  item edit form still lets the office add or replace a photo by hand.
+- Messages after import: "Receipt photo attached to N row(s)"; if the photo could not be
+  prepared the import still runs and says so (reason in the log, channel
+  `wo_material_list_management`).
+- Status column wording on the preview (Todd, same day): **In catalog · Possible match ·
+  Not in catalog → Purchased**; the summary says outright that unmatched rows import as
+  Purchased lines and that the import never creates catalog materials.
+
+Test (dev, writes then rolls back): `web/scripts/test_receipt_attach.php` — 15 checks:
+2 rows created with the same fid, file permanent and under `public://`, usage 2, merge keeps an
+existing pic, merge onto a pic-less line attaches it (usage stays 1 per row), rollback clean.
+
 ## Invoice-photo import (AI vision)
 
 A third intake alongside file/paste: **snap or upload a photo of a supplier

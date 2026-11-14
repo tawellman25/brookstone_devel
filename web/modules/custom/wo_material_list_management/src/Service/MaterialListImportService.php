@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\wo_material_list_management\Service;
 
+use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\File\FileExists;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\file\FileInterface;
 use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
@@ -322,13 +324,23 @@ final class MaterialListImportService {
    *   Each: material_id, quantity, unit_cost, supplier_id, supplier_item_number,
    *   description, identifier, include (bool).
    *
+   * @param int|null $receiptFid
+   *   The receipt photo (a temporary File from the import form), or NULL. It is
+   *   moved into field_reciept_pic's own folder, made permanent, and referenced
+   *   from EVERY row this import creates — one photo, shared by all its rows
+   *   (the field's own help text: "May use one pic for several Items"). A row
+   *   that merges into an existing line gets it only if that line has none.
+   *
    * @return array
-   *   created, merged, skipped counts.
+   *   created, merged, skipped counts (+ receipt_attached).
    */
-  public function import(int $listId, array $rows, ?int $supplierId = NULL, bool $learn = FALSE): array {
+  public function import(int $listId, array $rows, ?int $supplierId = NULL, bool $learn = FALSE, ?int $receiptFid = NULL): array {
     $storage = $this->etm->getStorage('wo_material_list_item');
     $created = $merged = $skipped = 0;
     $links_created = $links_updated = 0;
+    $receipt = $receiptFid ? $this->prepareReceipt($receiptFid) : NULL;
+    $receipt_attached = 0;
+    $receipt_value = $receipt ? ['field_reciept_pic' => ['target_id' => (int) $receipt->id()]] : [];
 
     foreach ($rows as $r) {
       if (empty($r['include'])) {
@@ -377,8 +389,9 @@ final class MaterialListImportService {
         if ($sku !== '') {
           $values['field_supplier_item_number'] = $sku;
         }
-        $storage->create($values)->save();
+        $storage->create($values + $receipt_value)->save();
         $created++;
+        $receipt_attached += $receipt ? 1 : 0;
         continue;
       }
 
@@ -390,7 +403,12 @@ final class MaterialListImportService {
       if ($existing) {
         $item = $storage->load(reset($existing));
         $item->set('field_quantity', (int) $item->get('field_quantity')->value + $qty);
-        // Keep the existing cost snapshot; only merging quantity.
+        // Keep the existing cost snapshot; only merging quantity. A line that
+        // has no receipt yet takes this one; an existing receipt is kept.
+        if ($receipt && $item->hasField('field_reciept_pic') && $item->get('field_reciept_pic')->isEmpty()) {
+          $item->set('field_reciept_pic', ['target_id' => (int) $receipt->id()]);
+          $receipt_attached++;
+        }
         $item->save();
         $merged++;
       }
@@ -415,8 +433,9 @@ final class MaterialListImportService {
         if ($sku !== '') {
           $values['field_supplier_item_number'] = $sku;
         }
-        $storage->create($values)->save();
+        $storage->create($values + $receipt_value)->save();
         $created++;
+        $receipt_attached += $receipt ? 1 : 0;
       }
 
       // Learn: remember the SKU + update the supplier's unit cost on the
@@ -436,7 +455,54 @@ final class MaterialListImportService {
     return [
       'created' => $created, 'merged' => $merged, 'skipped' => $skipped,
       'links_created' => $links_created, 'links_updated' => $links_updated,
+      'receipt_attached' => $receipt_attached,
     ];
+  }
+
+  /**
+   * Move the import form's temporary receipt photo home and make it permanent.
+   *
+   * Destination = field_reciept_pic's own upload location (scheme + dated
+   * folder from the field settings — the same place the item form's widget
+   * saves to). File usage is registered by the image field items as each row
+   * saves, so the file lives as long as any row still points at it.
+   *
+   * @return \Drupal\file\FileInterface|null
+   *   The (moved, permanent) file, or NULL when it cannot be prepared — the
+   *   import then proceeds without a receipt and the reason is logged.
+   */
+  private function prepareReceipt(int $fid): ?FileInterface {
+    $file = $this->etm->getStorage('file')->load($fid);
+    if (!$file instanceof FileInterface) {
+      return NULL;
+    }
+    try {
+      $defs = \Drupal::service('entity_field.manager')->getFieldDefinitions('wo_material_list_item', 'items');
+      $def = $defs['field_reciept_pic'] ?? NULL;
+      if (!$def) {
+        throw new \RuntimeException('field_reciept_pic is not defined on wo_material_list_item.items');
+      }
+      $dir = rtrim((string) $def->getSetting('uri_scheme'), ':/') . '://'
+        . trim(PlainTextOutput::renderFromHtml(\Drupal::token()->replace((string) $def->getSetting('file_directory'))), '/');
+      if (!$this->fileSystem->prepareDirectory($dir, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS)) {
+        throw new \RuntimeException("Receipt folder $dir is not writable");
+      }
+      // Already home (an import re-run with the same file): just make sure it is permanent.
+      if (!str_starts_with($file->getFileUri(), $dir . '/')) {
+        // Static service lookup on purpose: a constructor argument would mean a
+        // services.yml change and a container rebuild on live to deploy.
+        $file = \Drupal::service('file.repository')->move($file, $dir . '/' . $file->getFilename(), FileExists::Rename);
+      }
+      if ($file->isTemporary()) {
+        $file->setPermanent();
+        $file->save();
+      }
+      return $file;
+    }
+    catch (\Throwable $e) {
+      \Drupal::logger('wo_material_list_management')->error('Receipt photo @fid could not be attached: @m', ['@fid' => $fid, '@m' => $e->getMessage()]);
+      return NULL;
+    }
   }
 
   /**

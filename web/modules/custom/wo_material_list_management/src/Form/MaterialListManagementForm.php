@@ -70,6 +70,7 @@ class MaterialListManagementForm extends FormBase {
         $this->t('#'),
         $this->t('Parts Used/Description'),
         $this->t('Subtotal'),
+        $this->t('Receipt'),
         $this->t(''),
       ],
       '#empty' => $this->t('No items found'),
@@ -105,6 +106,22 @@ class MaterialListManagementForm extends FormBase {
         && $item->get('field_freight')->value !== '') {
         $parts_label .= ' <span class="wo-ml-freight-note">(incl. $' . number_format((float) $item->get('field_freight')->value, 2) . ' freight)</span>';
       }
+      // Receipt photo: a thumbnail that opens the full photo. Several rows
+      // usually share one photo (one receipt, many lines).
+      $receipt_cell = ['#markup' => ''];
+      if ($item->hasField('field_reciept_pic') && !$item->get('field_reciept_pic')->isEmpty() && ($rf = $item->get('field_reciept_pic')->entity)) {
+        $receipt_cell = [
+          '#type' => 'link',
+          '#title' => [
+            '#theme' => 'image_style',
+            '#style_name' => 'thumbnail',
+            '#uri' => $rf->getFileUri(),
+            '#alt' => $this->t('Receipt'),
+          ],
+          '#url' => Url::fromUri(\Drupal::service('file_url_generator')->generateAbsoluteString($rf->getFileUri())),
+          '#attributes' => ['class' => ['wo-ml-receipt'], 'target' => '_blank', 'rel' => 'noopener', 'title' => $this->t('Open the receipt photo')],
+        ];
+      }
       $form['items'][$item->id()] = [
         'select' => [
           '#type' => 'checkbox',
@@ -121,6 +138,7 @@ class MaterialListManagementForm extends FormBase {
         'subtotal_with_markup' => [
           '#markup' => $item->get('field_subtotal_w_markup')->value,
         ],
+        'receipt' => $receipt_cell,
         'edit' => [
           '#type' => 'link',
           '#title' => $this->t('Edit'),

@@ -256,12 +256,22 @@ final class ImportItemsModalForm extends FormBase {
     $unmatched = count(array_filter($rows, fn($r) => ($r['status'] ?? '') === 'unmatched'));
 
     $form['summary'] = [
-      '#markup' => "<p><strong>" . count($rows) . "</strong> rows — {$matched} exact match, {$ambiguous} possible match, {$unmatched} not in the catalog. "
-        . "<strong>Only exact matches are pre-checked.</strong> Check any other row you want to bring in. "
-        . "For a possible match, confirm or fix the Material; for anything not in the catalog, "
-        . "<strong>leave the Material box empty</strong> and it imports as a purchased item — a plain line with the receipt's name, "
-        . "quantity and cost, not tied to a catalog material.</p>",
+      '#markup' => "<p><strong>" . count($rows) . "</strong> rows — {$matched} in the catalog, {$ambiguous} possible match, {$unmatched} not in the catalog. "
+        . "<strong>Only catalog matches are pre-checked.</strong> Tick any other row you want to bring in. "
+        . "For a possible match, confirm or fix the Material. Anything <strong>not in the catalog imports as a Purchased line</strong> — "
+        . "the receipt's name, quantity and cost, not tied to a catalog material — as long as the Material box stays empty. "
+        . "The import never creates catalog materials.</p>",
     ];
+
+    if ($rid = (int) ($form_state->get('receipt_fid') ?? 0)) {
+      $rf = \Drupal::entityTypeManager()->getStorage('file')->load($rid);
+      if ($rf) {
+        $form['receipt_note'] = [
+          '#markup' => '<p class="wo-import-receipt-note">📷 <strong>' . $this->t('Receipt photo') . '</strong> <em>' . htmlspecialchars($rf->getFilename())
+            . '</em> — ' . $this->t('attached to every row you import (one photo, shared by all of its rows).') . '</p>',
+        ];
+      }
+    }
 
     // Vision-extraction context: vendor guess + case/return warnings.
     $vendor = $form_state->get('extract_vendor');
@@ -300,7 +310,12 @@ final class ImportItemsModalForm extends FormBase {
       ];
       $form['rows'][$i]['identifier'] = ['#markup' => '<code>' . htmlspecialchars($r['identifier']) . '</code>'];
       $form['rows'][$i]['description'] = ['#markup' => '<span class="wo-import-desc">' . htmlspecialchars($r['description'] ?? '') . '</span>'];
-      $form['rows'][$i]['status'] = ['#markup' => '<span class="wo-import-status wo-import-status--' . $status . '">' . ucfirst($status) . '</span>'];
+      $status_label = match ($status) {
+        'matched' => $this->t('In catalog'),
+        'ambiguous' => $this->t('Possible match'),
+        default => $this->t('Not in catalog → Purchased'),
+      };
+      $form['rows'][$i]['status'] = ['#markup' => '<span class="wo-import-status wo-import-status--' . $status . '">' . $status_label . '</span>'];
       $default_material = !empty($r['material_id'])
         ? \Drupal::entityTypeManager()->getStorage('material')->load($r['material_id'])
         : NULL;
@@ -347,6 +362,7 @@ final class ImportItemsModalForm extends FormBase {
     $raw = [];
     $form_state->set('extract_warnings', NULL);
     $form_state->set('extract_vendor', NULL);
+    $form_state->set('receipt_fid', NULL);
     $pid = (int) ($form_state->get('upload_photo') ?? 0);
     $fid = (int) ($form_state->get('upload_file') ?? 0);
     if ($pid && ($img = \Drupal::entityTypeManager()->getStorage('file')->load($pid))) {
@@ -364,6 +380,8 @@ final class ImportItemsModalForm extends FormBase {
       $raw = $ex['rows'];
       $form_state->set('extract_vendor', $ex['vendor']);
       $form_state->set('extract_warnings', $ex['warnings']);
+      // The photo travels with the rows: attached to every imported line.
+      $form_state->set('receipt_fid', $pid);
     }
     elseif ($fid && ($file = \Drupal::entityTypeManager()->getStorage('file')->load($fid))) {
       $raw = $this->importer->parseFile($file);
@@ -388,6 +406,7 @@ final class ImportItemsModalForm extends FormBase {
   public function restartSubmit(array &$form, FormStateInterface $form_state): void {
     $form_state->set('step', 'input');
     $form_state->set('rows', NULL);
+    $form_state->set('receipt_fid', NULL);
     $form_state->setRebuild(TRUE);
   }
 
@@ -412,10 +431,20 @@ final class ImportItemsModalForm extends FormBase {
     }
     $supplierId = $form_state->get('supplier_id');
     $learn = (bool) $form_state->get('learn');
-    $result = $this->importer->import($listId, $rows, $supplierId, $learn);
+    $receiptFid = (int) ($form_state->get('receipt_fid') ?? 0) ?: NULL;
+    $result = $this->importer->import($listId, $rows, $supplierId, $learn, $receiptFid);
     $this->messenger()->addStatus($this->t('Imported @c new, merged @m, skipped @s.', [
       '@c' => $result['created'], '@m' => $result['merged'], '@s' => $result['skipped'],
     ]));
+    if ($receiptFid) {
+      $n = (int) ($result['receipt_attached'] ?? 0);
+      if ($n > 0) {
+        $this->messenger()->addStatus($this->t('Receipt photo attached to @n row(s).', ['@n' => $n]));
+      }
+      else {
+        $this->messenger()->addWarning($this->t("The receipt photo could not be attached to the rows — the office can add it from each item's edit form."));
+      }
+    }
     if (!empty($result['links_created']) || !empty($result['links_updated'])) {
       $this->messenger()->addStatus($this->t('Catalog updated: @lc item number(s) remembered, @lu price(s) updated for the supplier.', [
         '@lc' => $result['links_created'], '@lu' => $result['links_updated'],

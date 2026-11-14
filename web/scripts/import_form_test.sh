@@ -5,7 +5,10 @@
 # Stops at the Preview step — nothing is imported; only temporary File entities are created (cron sweeps them).
 # Case 2 needs a valid ANTHROPIC_API_KEY in .ddev/config.local.yaml (the one there was rejected on 2026-11-14).
 set -u
-URL=https://brookstone.ddev.site; LIST=${LIST:-6137}; SP=$(mktemp -d); JAR=$SP/jar.txt; rm -f $JAR
+URL=https://brookstone.ddev.site; LIST=${LIST:-6137}; SP=${SP_DIR:-$(mktemp -d)}; mkdir -p "$SP"; JAR=$SP/jar.txt; rm -f $JAR
+RECEIPT=${RECEIPT:-tmp_test/receipt.jpg}; [ -f "$RECEIPT" ] || ddev exec php web/scripts/make_test_receipt.php "/var/www/html/$RECEIPT" >/dev/null
+CSV=$SP/rows.csv; printf 'item,qty,cost\n3539541,2,6.59\n3182557,1,1.59\n' > "$CSV"
+echo "artifacts in $SP"
 LINK=$(ddev drush user:login --name="Todd Wellman" --uri=$URL --no-browser 2>/dev/null | tail -1)
 curl -sk -c $JAR -b $JAR -L "$LINK" -o /dev/null
 form() { curl -sk -b $JAR "$URL/wo_material_list/$LIST/import" -o $SP/form.html; 
@@ -21,18 +24,18 @@ post $SP/t1.html -F "supplier=" -F "paste="
 grep -o -E 'Add a photo of the receipt[^<]{0,80}|No rows found[^<]{0,40}|rows — [0-9]+ exact' $SP/t1.html | head -2
 form
 echo "== 2. receipt PHOTO as the Preview submit (vision extraction) =="
-post $SP/t2.html -F "supplier=Delta Hardware (12)" -F "learn=1" -F "paste=" -F "files[photo]=@tmp_test/receipt.jpg;type=image/jpeg"
+post $SP/t2.html -F "supplier=Delta Hardware (12)" -F "learn=1" -F "paste=" -F "files[photo]=@$RECEIPT;type=image/jpeg"
 grep -o -E '<strong>[0-9]+</strong> rows — [^<]*|Read from a <strong>photo</strong>[^<]*<strong>[^<]*|Could not read the invoice photo[^<]{0,120}|No line items could be read[^<]{0,60}|Add a photo of the receipt[^<]{0,30}' $SP/t2.html | head -4
 echo "   identifiers on the preview: $(grep -o -E '<code>[^<]+</code>' $SP/t2.html | tr '\n' ' ' | head -c 200)"
 echo "   descriptions: $(grep -o -E 'wo-import-desc">[^<]+' $SP/t2.html | sed 's/.*">//' | tr '\n' '|' | head -c 200)"
 echo "   qty/cost inputs: $(grep -o -E 'name="rows\[[0-9]+\]\[(quantity|unit_cost)\]"[^>]*value="[^"]*"' $SP/t2.html | sed 's/.*\[\(quantity\|unit_cost\)\].*value="\([^"]*\)"/\1=\2/' | tr '\n' ' ')"
 form
 echo "== 3. CSV file as the Preview submit =="
-post $SP/t3.html -F "supplier=Delta Hardware (12)" -F "learn=1" -F "paste=" -F "files[file]=@tmp_test/rows.csv;type=text/csv"
+post $SP/t3.html -F "supplier=Delta Hardware (12)" -F "learn=1" -F "paste=" -F "files[file]=@$CSV;type=text/csv"
 grep -o -E '<strong>[0-9]+</strong> rows — [^<]*' $SP/t3.html | head -1; echo "   identifiers: $(grep -o -E '<code>[^<]+</code>' $SP/t3.html | tr '\n' ' ')"
 form
 echo "== 4. wrong extension for the photo (expect an extension error) =="
-post $SP/t4.html -F "supplier=" -F "paste=" -F "files[photo]=@tmp_test/rows.csv;type=text/csv"
+post $SP/t4.html -F "supplier=" -F "paste=" -F "files[photo]=@$CSV;type=text/csv"
 grep -o -E 'Only files with the following extensions[^<]{0,60}|extension[^<]{0,80}' $SP/t4.html | head -1
 form
 echo "== 5. pasted rows (the third path) =="

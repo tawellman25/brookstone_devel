@@ -2259,6 +2259,75 @@ there, not in the log UI). Before a deploy: `scp brookstone:~/brookstone/web/err
 <scratchpad>/` (read-only, small) and read its distinct messages. Permanent fix is deferred
 #33: log outside the docroot, or protect the path in the deploy script.
 
+## `/core/install.php` on an installed site rebuilds the whole router inside the web request — and a rebuild that is terminated commits a HALF-WRITTEN router table
+
+**Incident 2026-11-14, live down 03:35–06:40 MT.** Every work-order, property, material and
+services page, `/user/login`, every View page and search returned 404; every 404 then became a
+500 because the 404 page's search block asked for `search.view_node_search`, which no longer
+existed (`RouteNotFoundException` in `SearchBlockForm::buildForm`). Anonymous pages still came
+out of the LiteSpeed edge cache until they expired, which is why the site looked half alive.
+
+**What the router table looked like.** `SELECT COUNT(*) FROM router` → **14,300** on live against
+**22,056** on dev. `GROUP BY SUBSTRING_INDEX(name, '.', 1)` showed the cut: everything a module
+adds in **module order** up to `jsonapi` was present (`jsonapi.*` had 13,453 of 16,396 rows) and
+nothing after it — no `search.*`, `system.*`, `user.*`, `view.*`, and only the static `entity.*`
+routes (298 of 2,449), none of the dynamic ones. `information_schema.TABLES.UPDATE_TIME` for
+`router` gave the moment of the write: **10:35:09 UTC**.
+
+**The trigger (access log, same second).** A vulnerability scanner (34.222.49.168) requested
+`GET /core/install.php` at 10:34:55 UTC; the request hung, the client gave up after **15 s**, and
+LiteSpeed logged it as `200` with **0 bytes** at 10:35:10. On an installed site `install.php` does
+*not* just print "Drupal already installed". `install_begin_request()` boots an **installer
+kernel** with `NormalInstallerServiceProvider` (`core/includes/install.core.inc`): caches become
+`MemoryBackendFactory` (every discovery is rebuilt cold, in RAM), the lock becomes
+`NullLockBackend` (no `router_rebuild` lock), and `router.route_provider` is decorated by
+`InstallerRouteProviderLazyBuilder`, which **rebuilds the entire router on the first route lookup
+that is not `<front>`/`<none>`**. Rendering the "already installed" page does such a lookup.
+**Proved on dev:** one anonymous `curl /core/install.php` → HTTP 200, 9.8 s, and
+`router.UPDATE_TIME` jumped — all 22,056 rows rewritten. On live, with 1 GB for the whole account
+and a throttled disk, 15 s was not enough.
+
+**Why a terminated rebuild leaves a half table instead of rolling back.** `MatcherDumper::dump()`
+wraps DELETE + chunked INSERTs in `$this->connection->startTransaction()`, and a thrown exception
+does roll back. But a request that is *terminated* never throws: lsphp's SIGTERM handler
+(`lsapi_sigterm` → `lsapi_clean_shutdown`, on by default via `LSAPI_CLEAN_SHUTDOWN`) runs
+`php_request_shutdown()` — object destructors included — and sets `error_reporting` to 0, so
+nothing is logged. Drupal's `Transaction::__destruct()` → `TransactionManagerBase::purge()`
+(`core/lib/Drupal/Core/Database/Transaction/TransactionManagerBase.php`, "When we get here, the
+transaction … is still active … `$this->commit($name, $id)`") **commits whatever was inserted**.
+Result: the first 14,300 routes committed, the rest gone, no error anywhere — not watchdog, not
+`web/error_log`, not `web/core/error_log`. (A SIGKILL — the LVE "Killed" we see on big drush
+scripts — would have rolled back; that is the irony.)
+
+**Repair.** `drush cr` from the CLI (2 GB `memory_limit`, warm persistent caches): 15 s, 22,062
+rows, then warm `/winterize` (spends the edge purge) → `/` → `/colorado` →
+`/services/sprinkler-system`, then check a bogus URL returns **404 not 500** and `/user/login` 200.
+`drush router:rebuild` alone would rebuild the table but leave menus/toolbars that were rendered
+with half the links hidden in render caches — do the full `cr`.
+
+**Prevention shipped 2026-11-14.** `web/.htaccess` (in git, scaffold-excluded) now has a
+`<FilesMatch "^(install|authorize)\.php$"> Require all denied` block directly under core's own
+"prying eyes" block. Nothing legitimate needs those files over HTTP on an installed site that
+moves code by composer + drush. `update.php` is left alone (login-gated, normal kernel).
+**Verify without touching install.php:** `curl -s -o /dev/null -w '%{size_download}' …/core/authorize.php`
+— **1,242 bytes** is LiteSpeed's own 403 (blocked at the server), **8,952** was Drupal's "You are
+not allowed to access this page" (PHP ran). Dev cannot test this (DDEV is nginx; `.htaccess` is ignored).
+
+**Diagnosis recipe when links start throwing `RouteNotFoundException`:**
+1. `SELECT COUNT(*) FROM router` on live vs dev (both ~22k; dev `ddev drush sql:query`).
+2. `SELECT SUBSTRING_INDEX(name,'.',1) p, COUNT(*) FROM router GROUP BY p` — a cut in module
+   order (everything after some module missing) = a rebuild that died mid-dump.
+3. `SELECT UPDATE_TIME FROM information_schema.TABLES WHERE TABLE_NAME='router'` = when it died
+   (UTC on live; MariaDB's in-memory value, reset on a DB restart).
+4. The access log for that second: `zcat ~/logs/<domain>-ssl_log-<Mon>-<YYYY>.gz | awk` on the
+   month archive (updated daily 12:16 UTC) — a 5 MB read, not the 60 MB live domlog.
+5. `drush cr`, verify, then find and close the trigger.
+
+**Still open (deferred #41):** nothing *detects* a truncated router — it stood for three hours
+until a human hit it. 16,396 of the 22,056 routes are JSON:API, which nothing consumes yet (the
+mobile app is LATER); any rebuild on this box is as fragile as its biggest contributor. And the
+commit-on-destruct behaviour is core's — an upstream issue is worth filing.
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

@@ -12,6 +12,25 @@
   </IfModule>
 </FilesMatch>
 
+# BOS 2026-11-14: deny the installer and authorize entry points on this installed
+# site. GET /core/install.php on an installed site boots the installer kernel,
+# which rebuilds the ENTIRE router table inside the web request before it can say
+# "Drupal already installed" (dev: 22,056 rows rewritten in ~10 s, HTTP 200 to
+# anyone). On live a scanner did that at 03:34 MT, gave up after 15 s, LiteSpeed
+# terminated the worker mid-write and the half-written table was committed: every
+# route after the cut-off (work orders, properties, services pages, login, views,
+# search) was a 404 until a drush cr at 06:40 MT. Nothing needs these files over
+# HTTP here (installed site; code moves by composer + drush). update.php is left
+# alone (login-gated, normal kernel). See Governance/drupal_bos_gotchas.md.
+<FilesMatch "^(install|authorize)\.php$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+  </IfModule>
+</FilesMatch>
+
 # Don't show directory listings for URLs which map to a directory.
 Options -Indexes
 

@@ -618,6 +618,7 @@ The UUID-stripping bug in BOS field-instance configs (CLAUDE.md "Drush cim quirk
 - `web/core/`, `web/modules/contrib/`, `web/themes/contrib/` — managed by Composer
 - **`web/libraries/` IS in git since 2026-11-08** (`829746cc`): `colorbox`, `dropzone`, `nouislider`, `dompurify` — static front-end libraries the enabled modules declare. It used to be gitignored yet rsynced with `--delete`, so a deploy from a fresh clone would have deleted them on live. Add a new library by committing it; nothing installs them on live but the deploy. **Two folders there are composer's, not git's:** `fullcalendar_io` and `drupal-superfish` (`type:drupal-library` packages, deps of disabled modules) are gitignored and re-created by every `composer install`.
 - `web/sites/*/settings*.php`, `web/*/services*.yml` — environment secrets
+- **`web/.htaccess` IS in git and scaffold-excluded** (`composer.json` `[web-root]/.htaccess: false`): it carries the LiteSpeed `CacheLookup on` block (`bos_edge_cache`) and, since 2026-11-14, a `<FilesMatch "^(install|authorize)\.php$">` deny — `GET /core/install.php` on an installed site rebuilds the whole router inside the web request, and a terminated rebuild commits a half-written router table (live down 03:35–06:40 MT that day; gotcha in `Governance/drupal_bos_gotchas.md`). Never replace it from core's scaffold copy.
 - `web/sites/*/files/` — user files (on S3)
 - `*.sql.gz`, `*.sql` — database dumps
 

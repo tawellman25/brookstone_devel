@@ -2,7 +2,7 @@
 
 Status-of-record for unfinished BOS initiatives. Reconciled against live production on 2026-07-03 (read-only recon: SSH to Hosting.com checkout + drush against live DB). Verified-done items removed; survivors only.
 
-**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-11-13 (eight SOP drafts in BOS + portal-waitlist lead list view LIVE 22:27 MT; Equipment Parts & Consumables **LIVE** 19:45 MT → Shipped; Phase 2 row; deferred #38 uuid-mismatch hazard on the config-drift row; equipment-forms-without-display row; auto-shop/vendor repair-invoice ingestion idea added to Fleet; 11-11: job-clock items 5 + 6 LIVE, three WO SOPs drafted)
+**Owner:** Todd · **Repo path:** `__BOS_AI/ROADMAP.md` · **Last reconciled:** 2026-07-03 · **Last updated:** 2026-11-14 (install.php router incident: live down 03:35–06:40 MT, repaired by `cr`, trigger blocked in `.htaccess`, deferred #41 + NOW row; previous: 2026-11-13 eight SOP drafts in BOS + portal-waitlist lead list view LIVE 22:27 MT; Equipment Parts & Consumables **LIVE** 19:45 MT → Shipped; Phase 2 row; deferred #38 uuid-mismatch hazard on the config-drift row; equipment-forms-without-display row; auto-shop/vendor repair-invoice ingestion idea added to Fleet; 11-11: job-clock items 5 + 6 LIVE, three WO SOPs drafted)
 
 ---
 
@@ -22,6 +22,9 @@ Every item carries three dimensions so priority resolves honestly instead of a f
 ---
 
 ## NOW — revenue-blocking or in-season
+
+### ⚠ A terminated router rebuild takes the whole site down and nothing notices (T1 live-production risk, Effort S)
+**Happened 2026-11-14, 03:35–06:40 MT** — a scanner's `GET /core/install.php` forced a full router rebuild inside a web request (the installer kernel does that on any installed site), the client gave up after 15 s, LiteSpeed terminated the worker, and Drupal **committed the half-written router table**: 14,300 of 22,056 routes, cut in module order inside `jsonapi.*`. Work orders, properties, services pages, login, every View and search were 404 until Todd hit it and a `drush cr` repaired it. Nothing logged the death (lsphp's clean shutdown silences errors), nothing detected the state. Gotcha + recipe: [`Governance/drupal_bos_gotchas.md`](Governance/drupal_bos_gotchas.md) → "`/core/install.php` on an installed site…". **Shipped the same morning:** `web/.htaccess` denies `install.php` + `authorize.php` at the server (the trigger). **Open — deferred #41, Todd's call on 2:** (1) `bos_router_guard` — detect a short router, rebuild under lock, alert (S); (2) **uninstall `jsonapi` until the mobile app starts** — 16,396 of the 22,056 routes, 74% of every rebuild's work and the exposure surface `bos_jsonapi_guard` exists for (S, decision); (3) atomic dumper + upstream core issue (M). Season: any — this is a cheap winter item that removes a whole class of outage.
 
 ### ⚠ Dated-but-unassigned work is invisible — 135 check-ups lost a season to it (T1, Effort S/M)
 **Measured 2026-11-02, and the cost is already paid once.** Of **291** `sprinkler_check_up` WOs created in 2026, **135** sat at *Scheduled* with a scheduling date that came and went and **no assignee** — April through October — and were cancelled as undoable. **Nothing in BOS surfaced them.** `My Schedule` and Dispatch are keyed on `scheduling.field_assigned_to`, so a WO that is dated but unassigned appears on **nobody's** list while still looking scheduled to the office. The check-up generator (`bos:checkups:generate`) dates but does not assign, by design — the gap is that no surface catches what dispatch then misses.

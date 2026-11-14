@@ -707,6 +707,30 @@ Surfaced 2026-11-11 backfilling SOP aliases. (a) `eck.eck_type.sop.sop_governanc
 
 **Surfaced 2026-11-13** while drafting OFF-ADM-SVR-001. The dropbutton shows Approve on every request not yet linked to a work order, including `general_inquiry` (contact-form) requests that have no service term; the converter then fails with "Request has no service term." Hide the action when `field_service` is empty, or route general inquiries to the estimate/intake path. (S) Related: nothing emails the customer on approve/reject — the SOP says so; a confirmation email is a separate decision.
 
+### 41. The router can be left half-written by any terminated rebuild — nothing detects it, and 74% of it is JSON:API nobody uses yet
+
+**Surfaced 2026-11-14** by the install.php incident (live down 03:35–06:40 MT; gotcha
+"`/core/install.php` on an installed site rebuilds the whole router…", change log 2026-11-14).
+The trigger is blocked in `web/.htaccess`, but the fragility is structural and three things
+would close it, in order of value per effort:
+
+1. **Router integrity guard (S).** A tiny module (`bos_router_guard`) that, on a
+   `RouteNotFoundException` for a core route (or on cron), compares `SELECT COUNT(*) FROM router`
+   with the count recorded on the last `RoutingEvents::FINISHED`; if it is short by more than a
+   few percent, rebuild under the `router_rebuild` lock (once per 10 min), log, and email Todd.
+   Turns a 3-hour outage into a self-healed blip with a trace (BOS rule 6).
+2. **Shrink the router (S, Todd's decision).** 16,396 of 22,056 routes are `jsonapi.*` — the
+   mobile app that will consume them is LATER on the roadmap, and `bos_jsonapi_guard` already
+   denies anonymous access. Uninstalling `jsonapi` until the app starts removes 74% of every
+   rebuild's work *and* the data-exposure surface the guard exists for; re-enable with the app.
+   Alternative if the API must stay: `jsonapi_extras` to disable the resource types nobody needs.
+3. **Make the dump atomic (M) and file it upstream.** Decorate `router.dumper` to write into
+   `router_new` and `RENAME TABLE` (atomic in MariaDB) so a dying rebuild can never leave a
+   partial `router`; core's `MatcherDumper` + `Transaction::__destruct` commit-on-destruct is the
+   bug to report on drupal.org (a terminated PHP request commits a half-written router).
+
+Also worth a line: `system_readiness` could carry check 1 as a read-only probe.
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

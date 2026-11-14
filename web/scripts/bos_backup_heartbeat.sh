@@ -65,16 +65,19 @@ if [ ! -d "$DIR" ]; then
   finish ""
 fi
 
-# Newest two dumps by mtime.
-mapfile -t dumps < <(ls -1t "$DIR"/bos-db-*.sql.gz 2>/dev/null)
-if [ "${#dumps[@]}" -eq 0 ]; then
+# Newest two dumps by mtime. Plain pipes on purpose: the live shell is CageFS-
+# jailed with no /dev/fd, so process substitution (`< <(...)`) fails there.
+# Dump names are fixed-pattern (no spaces), so line-based ls is safe.
+dump_count="$(ls -1 "$DIR"/bos-db-*.sql.gz 2>/dev/null | wc -l)"
+if [ "$dump_count" -eq 0 ]; then
   problems+=("no bos-db-*.sql.gz dump at all in $DIR")
   finish ""
 fi
-newest="${dumps[0]}"
+newest="$(ls -1t "$DIR"/bos-db-*.sql.gz 2>/dev/null | head -n 1)"
+prev="$(ls -1t "$DIR"/bos-db-*.sql.gz 2>/dev/null | sed -n '2p')"
 newest_size="$(stat -c %s "$newest")"
 newest_age_min=$(( ( $(date +%s) - $(stat -c %Y "$newest") ) / 60 ))
-summary="newest $(basename "$newest") is $(( newest_age_min / 60 ))h $(( newest_age_min % 60 ))m old, $(( newest_size / 1048576 )) MB; ${#dumps[@]} dump(s) kept"
+summary="newest $(basename "$newest") is $(( newest_age_min / 60 ))h $(( newest_age_min % 60 ))m old, $(( newest_size / 1048576 )) MB; $dump_count dump(s) kept"
 
 # 1. Freshness — the stall case this watcher exists for.
 fresh_count="$(find "$DIR" -maxdepth 1 -name 'bos-db-*.sql.gz' -mmin "-$MAX_AGE_MIN" 2>/dev/null | wc -l)"
@@ -88,8 +91,7 @@ if [ "$newest_size" -eq 0 ]; then
 fi
 
 # 3. Size ratio vs the previous dump — catches a truncated dump.
-if [ "${#dumps[@]}" -ge 2 ] && [ "$newest_size" -gt 0 ]; then
-  prev="${dumps[1]}"
+if [ -n "$prev" ] && [ "$newest_size" -gt 0 ]; then
   prev_size="$(stat -c %s "$prev")"
   if [ "$prev_size" -gt 0 ] && [ $(( newest_size * 100 / prev_size )) -lt "$MIN_RATIO" ]; then
     problems+=("newest dump is $(( newest_size * 100 / prev_size ))% of the previous one ($(( newest_size / 1048576 )) MB vs $(( prev_size / 1048576 )) MB $(basename "$prev")) — below the $MIN_RATIO% floor; likely truncated")

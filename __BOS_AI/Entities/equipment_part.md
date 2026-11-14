@@ -139,6 +139,6 @@ Flag: on_hand 4/min 2 → OK; 1/2 → **⚠ Reorder**; 0/0 → OK (no minimum). 
 - **Low-stock digest** email to the shop (reuses the notifications pattern).
 - Bin labels / QR (entity_print, as backflow does).
 
-## ⚠ SOP NEEDED
+## SOP
 
-New human-facing workflow: adding a part, receiving stock, the reorder review, retiring a part. Flagged for Claude Chat to author (SOP-AUTHORING-WORKFLOW).
+**MNT-PRT-001 — Shop Parts and Consumables: Add, Receive, Reorder, Retire** — drafted by Code at Todd's request 2026-11-13 (adding a part, receiving stock, using a part on a repair, the reorder review, retiring a part); entered in BOS as a Draft for Todd's review. Source: `__BOS_AI/SOPs/MNT-PRT-001/`.

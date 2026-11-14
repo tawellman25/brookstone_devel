@@ -73,7 +73,7 @@ Additive only — no DB migration, no cim.
 
 ## Owed / follow-ups
 
-- **⚠ SOP** — office workflow for handling waitlist leads when the portal ships.
+- **⚠ SOP** — office workflow for handling waitlist leads when the portal ships. **→ Drafted 2026-11-13: `OFF-ADM-WTL-001` (Draft in BOS), together with the lead list it needed — view `portal_waitlist_leads` at `/admin/office/portal-waitlist` (Office menu; administration / supervisor / site_admin), `web/scripts/portal_waitlist_view_setup.php`.**
 - **Analytics** — none in BOS; the login-button→submit funnel is unmeasured.
   Add before any paid campaign.
 - **Send-time consent check** — the future "accounts are open" email MUST filter

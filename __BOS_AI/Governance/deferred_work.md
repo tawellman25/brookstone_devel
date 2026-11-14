@@ -699,6 +699,14 @@ Surfaced 2026-11-11 backfilling SOP aliases. (a) `eck.eck_type.sop.sop_governanc
 - **Reconcile (the actual fix, S–M):** make live's uuid equal sync's for each of the 192 — a same-length string replace of the uuid inside the serialized `config.data` blob (`s:4:"uuid";s:36:"…"`), no entity save, then `cr`. Do the same on dev (139) or just re-seed dev from live afterwards; the sync files stay as they are — the committed uuid becomes the one both environments carry. Alternatively re-export live's uuids into sync, but then every dev clone recreates on its first cim. Do the DB patch, off-hours, after a backup, with the audit script as the before/after proof.
 - **Prevent:** setup-script template rule — keep `uuid`, strip only `_core` (`working_with_claude.md`, gotchas).
 
+### 39. Testimonial "Scan of the original note" files sit on the PUBLIC file store
+
+**Surfaced 2026-11-13** while drafting OFF-ADM-REV-001. `field_testimonial_scan` has no `uri_scheme` setting, so it inherits the site default `public` (`system.file.yml`): scans land under `public://testimonials/scans/YYYY`. `bos_testimonial_entity_field_access()` hides the field from everyone outside the office roles, so BOS never renders the link — but the file itself is a plain public URL, and a handwritten card carries a signature and often an address or phone. **Fix:** switch the field storage to `private://` (the private scheme must be configured on live — check `file_private_path`), move the existing files, and re-check the Read-the-note blur flow still loads them. Until then the SOP tells the office never to copy or send the scan's link. (S)
+
+### 40. "Approve & Create WO" is offered on general-inquiry service requests, where it can only fail
+
+**Surfaced 2026-11-13** while drafting OFF-ADM-SVR-001. The dropbutton shows Approve on every request not yet linked to a work order, including `general_inquiry` (contact-form) requests that have no service term; the converter then fails with "Request has no service term." Hide the action when `field_service` is empty, or route general inquiries to the estimate/intake path. (S) Related: nothing emails the customer on approve/reject — the SOP says so; a confirmation email is a separate decision.
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

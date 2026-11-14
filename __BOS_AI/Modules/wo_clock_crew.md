@@ -277,6 +277,8 @@ that day's real data: three crews that moved between properties, each work order
 proposing exactly the people who clocked out there (e.g. WO 54624 → 54146/54147 →
 54174 for the Munoz / Green / Mackenzie crew, out 9:31 AM → 12:05 PM → 2:07 PM).
 
+**SOP.** `WEB-SYS-CLK-001` — Clock In and Out on a Work Order: Yourself and Your Crew — drafted 2026-11-13 (Draft in BOS); covers the single button, the crew clock, lunch / next property with the pre-ticked morning crew, and the open-elsewhere rule.
+
 **Known limits.** Before today's deploy no entry carries `field_clocked_in_by`,
 so on the deploy day only the same-job arm applies. Grouping by `crew_types`
 membership was deliberately *not* used as an arm: it would pre-tick a crew-mate

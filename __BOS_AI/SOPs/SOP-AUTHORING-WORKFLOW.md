@@ -58,6 +58,14 @@ gray #424242  | gray light #F5F5F5
 | WEB-SYS-SGN-001  | Sign-Off: Confirm Crew Hours and Decide Who Gets Billed | 1.0 | Draft — entered in BOS 2026-11-11, awaiting Todd's review/Active |
 | OFF-ADM-NBL-001  | Non-Billable Time: Review and Correction           | 1.0 | Draft — entered in BOS 2026-11-11, awaiting review |
 | OFF-ADM-TGT-001  | Target Hours on Cleanup Work Orders                | 1.0 | Draft — entered in BOS 2026-11-11, awaiting review |
+| WEB-SYS-CLK-001  | Clock In and Out on a Work Order: Yourself and Your Crew | 1.0 | Draft — entered in BOS 2026-11-13, awaiting review |
+| MNT-PRT-001      | Shop Parts and Consumables: Add, Receive, Reorder, Retire | 1.0 | Draft — entered in BOS 2026-11-13, awaiting review |
+| OFF-ADM-WTL-001  | Customer-Portal Waitlist: Finding and Working the Leads | 1.0 | Draft — entered in BOS 2026-11-13 (lead list view shipped with it) |
+| OFF-ADM-SVR-001  | Service Requests: Review the Queue and Approve into a Work Order | 1.0 | Draft — entered in BOS 2026-11-13 |
+| OFF-ADM-REV-001  | Customer Reviews: Entering, Approving and Handwritten Notes | 1.0 | Draft — entered in BOS 2026-11-13 |
+| TRN-SVC-001      | Service Pages as the Crew Training Reference       | 1.0 | Draft — entered in BOS 2026-11-13 |
+| IRR-MNT-BFT-001  | Backflow Device Field Test: Enter the Test, Sign Off, Tag the Device | 1.0 | Draft — entered in BOS 2026-11-13 |
+| OFF-ADM-PRC-001  | Supplier Price Import: Review a Batch, Approve, and Clear the Queues | 1.0 | Draft — entered in BOS 2026-11-13; the workflow itself has not had a full production run yet |
 
 > The three WO SOPs above were **drafted by Claude Code at Todd's explicit request on
 > 2026-11-11** (job-clock guardrails items 5 + 6), as an exception to the "Chat authors,
@@ -67,18 +75,35 @@ gray #424242  | gray light #F5F5F5
 > the BOS entity say the same thing. Codes follow GOV-SOP-003 (OWNER-AREA-SERVICE-SEQ) and the per-bundle validators (system_procedures = WEB-SYS-…, office_administration = OFF-ADM-…):
 > WEB = BOS system procedure used by every crew; OFF = office. Entered as **Draft** — Todd
 > approves.
+>
+> **Second exception, 2026-11-13.** Todd: *"Please go ahead and create whatever SOPs that need
+> created when it comes to BOS operations."* Code drafted the eight SOPs dated 2026-11-13 above —
+> the two from that day's builds (crew clock morning pre-select, Equipment Parts) and the six that
+> had sat on the SOP-Needed backlog since August–September. Every fact in them was extracted from
+> the module docs and code the same evening (six parallel read-only passes; several corrected the
+> backlog's own assumptions — e.g. the backflow button is "Enter Test Results", not "New Test";
+> services use `field_service_crew_desc`, not the generic teammate field). **Codes differ from the
+> backlog's suggestions because the per-bundle validators would have rejected them:** office SOPs
+> must be `OFF-ADM-<SVC>-NNN`, `maintenance` and `training` allow exactly three segments
+> (`MNT-PRT-001`, `TRN-SVC-001`), sprinkler maintenance is `IRR-MNT-<SVC>-NNN` and takes the
+> service's own code (BFT). The generator is now committed — `__BOS_AI/SOPs/_gen/gen_sops.py` +
+> `sop_content.py` — so docx, paste HTML and the BOS entity regenerate from one source
+> (`python3 __BOS_AI/SOPs/_gen/gen_sops.py [CODE…]`, then the docx step below). Entered as
+> **Draft**; Todd reviews each in BOS and sets Active.
 
 ## Pending SOPs (SOP-Needed backlog)
 
 Flagged by Code when a human-facing workflow ships without an SOP. Claude
 Chat authors these in a dedicated session, then they move up to the SOP Index.
 
+_Cleared 2026-11-13 — the four items that sat here since August–September (service-page training,
+service-request approval, portal waitlist, review entry) are now drafts in the SOP Index above, plus
+the backflow field test (flagged in `Architecture/backflow_device_system.md`) and the supplier price
+review (flagged in `Modules/supplier_price_ingest.md`). New flags go here as before._
+
 | Suggested code  | Workflow                                           | Role  | Flagged     | Why |
 |-----------------|----------------------------------------------------|-------|-------------|-----|
-| CRW-SVC-TRN-001 | Per-service training on the Services page          | Crew  | 2026-08-22  | Each `/services/{name}` page now shows crew a "how we do it" training body (teammate_view) that the public never sees — crews need to know the service pages double as their training reference and how to read/use them. |
-| OFF-SVC-REQ-001 | Approving a public service request into a Work Order | Office | 2026-09-04 | The office must use the **"Approve & Create Work Order"** button on `/admin/office/service-requests` (dropbutton on each request) to turn a request into a WO — it creates the WO, links it back to the request (`field_work_order`), and marks the request **Converted** in one step. Creating the WO manually (Add Work Order) leaves the request unlinked and stuck in Needs Review, so the queue can't show what's been handled (this happened 2026-09-02 — 4 requests were WO'd by hand and had to be reconciled). SOP should show the button, the resulting status change, and warn against manual WO creation for requests. |
-| OFF-POR-WTL-001 | Managing the customer-portal waitlist | Office | 2026-09-06 | The login page (`/user/login`) now carries a public **"Coming for customers"** waitlist panel (`bos_portal_waitlist`). Each submission creates/updates a **Contact** with `field_portal_interest` = Interested + opt-in flags; lead details (mobile, service address, already-a-customer, campaign) are in `field_portal_interest_note`. SOP should cover: where the office finds waitlist Contacts (filter on `field_portal_interest`), how to read the note, that submitting grants **service-email** consent (they asked to be told when accounts open) while seasonal-email/scheduling-SMS are only on the ticks, and the hard rule that **no customer-facing email may be sent until the send-time consent check exists** (nothing emails customers today) — including the eventual "accounts are open" notice, which must filter on the opt-in flags **and** a real external address. Also: portal interest is a product signal, not consent, so it is never in the consent log. |
-| OFF-REV-ENT-001 | Entering customer reviews, incl. handwritten notes | Office | 2026-09-27 | A testimonial now has **two image fields that behave oppositely**, and getting them the wrong way round publishes a customer's signature. **Public image** renders on `/about-us/reviews` exactly as uploaded; **Scan of the original note** is office-only and never public. SOP should cover: type the words into **Testimony** (an image of text is invisible to search engines and screen readers, so a photo alone is not a review); photograph the card into **Scan of the original note** as the record of where the quote came from; and put an image in **Public image** only after deliberately cropping or blurring the signature, address, phone number and full name. Also: a review is only live once **Status = Approved** (public submissions arrive Pending and a non-office save is forced back to Pending), and `field_submitter_email` is internal. Context: office is entering a year of accumulated handwritten thank-you notes.
+| _(none open)_   |                                                    |       |             |     |
 
 ---
 

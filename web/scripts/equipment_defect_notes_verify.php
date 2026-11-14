@@ -9,9 +9,9 @@
  *
  * Read-only part: field definition, both displays, the add form (routed GET
  * as uid 1 — defects have no role grants beyond site_admin's bypass) showing
- * the textarea + a format selector defaulting to basic_html, which roles may
- * edit defects and which text formats each may use.
- * Write part (dev only): saves a defect with ~2 KB of basic_html, reloads it,
+ * the textarea in full_html (the only allowed format, so no selector), which
+ * roles may edit defects and which text formats each may use.
+ * Write part (dev only): saves a defect with ~2 KB of full_html, reloads it,
  * checks value length / format / rendered markup, deletes it.
  */
 
@@ -33,7 +33,7 @@ echo '  field_defect_notes present: ' . $ok((bool) $d) . "\n";
 if ($d) {
   printf("  type=%s (%s)  cardinality=%d (%s)  required=%s (%s)  max length: none (text_long = longtext column)\n", $d->getType(), $ok($d->getType() === 'text_long'), $d->getFieldStorageDefinition()->getCardinality(), $ok($d->getFieldStorageDefinition()->getCardinality() === 1), $d->isRequired() ? 'yes' : 'no', $ok(!$d->isRequired()));
   $af = array_values($d->getSetting('allowed_formats') ?? []);
-  printf("  label=\"%s\"  allowed_formats=%s (%s)\n", $d->getLabel(), json_encode($af), $ok($af === ['basic_html', 'full_html']));
+  printf("  label=\"%s\"  allowed_formats=%s (%s)\n", $d->getLabel(), json_encode($af), $ok($af === ['full_html']));
   echo '  help text: ' . $d->getDescription() . "\n";
 }
 $schema = \Drupal::database()->query("SHOW COLUMNS FROM {equipment_defect__field_defect_notes}")->fetchAllKeyed(0, 1);
@@ -55,7 +55,7 @@ foreach ($etm->getStorage('user_role')->loadMultiple() as $r) {
   $p = $r->getPermissions();
   $edit = $r->isAdmin() || in_array('bypass eck entity access', $p, TRUE) || in_array('edit any equipment_defect entities', $p, TRUE) || in_array('edit any equipment_defect entities of bundle standard', $p, TRUE);
   $fmts = $r->isAdmin() ? ['(all)'] : array_map(static fn($x) => substr($x, 16), array_filter($p, static fn($x) => str_starts_with($x, 'use text format ')));
-  $default = $r->isAdmin() ? 'basic_html' : (in_array('basic_html', $fmts, TRUE) ? 'basic_html' : (in_array('full_html', $fmts, TRUE) ? 'full_html' : 'NONE — field disabled'));
+  $default = ($r->isAdmin() || in_array('full_html', $fmts, TRUE)) ? 'full_html' : 'NONE — field disabled (no full_html)';
   printf("  %-16s edit defects: %-3s  formats: %-45s → default on this field: %s\n", $r->id(), $edit ? 'yes' : 'no', implode(', ', $fmts), $default);
 }
 
@@ -70,8 +70,8 @@ try {
   $html = (string) $res->getContent();
   $has_textarea = (bool) preg_match('/<textarea[^>]*name="field_defect_notes\[0\]\[value\]"/', $html);
   $default_fmt = preg_match('/<select[^>]*name="field_defect_notes\[0\]\[format\]".*?<option value="([^"]+)" selected/s', $html, $m) ? $m[1] : (preg_match('/name="field_defect_notes\[0\]\[format\]"[^>]*value="([^"]+)"/', $html, $m2) ? $m2[1] . ' (single, hidden)' : 'no selector found');
-  $opts = preg_match_all('/name="field_defect_notes\[0\]\[format\]".*?<\/select>/s', $html, $mm) ? (preg_match_all('/<option value="([^"]+)"/', $mm[0][0], $oo) ? $oo[1] : []) : [];
-  printf("  status %d %s  textarea: %s  format default: %s %s  options: %s\n", $res->getStatusCode(), $ok($res->getStatusCode() === 200), $ok($has_textarea), $default_fmt, $ok($default_fmt === 'basic_html'), implode(',', $opts));
+  $opts = preg_match('/<select[^>]*name="field_defect_notes\[0\]\[format\]".*?<\/select>/s', $html, $mm) ? (preg_match_all('/<option value="([^"]+)"/', $mm[0], $oo) ? $oo[1] : []) : ['(none — single allowed format, no selector)'];
+  printf("  status %d %s  textarea: %s  format default: %s %s  options: %s\n", $res->getStatusCode(), $ok($res->getStatusCode() === 200), $ok($has_textarea), $default_fmt, $ok(str_starts_with($default_fmt, 'full_html')), implode(',', $opts));
   echo '  label on form: ' . $ok(str_contains($html, 'Defect Notes / Repair Detail')) . '  help text on form: ' . $ok(str_contains($html, 'repair-strategy decisions')) . "\n";
 }
 finally {
@@ -83,7 +83,7 @@ if (!$write) {
   return;
 }
 
-echo "== round-trip (dev): save ~2 KB basic_html, reload, render, delete ==\n";
+echo "== round-trip (dev): save ~2 KB full_html, reload, render, delete ==\n";
 // Validate as uid 1: the format property's allowed values are the CURRENT
 // account's usable formats, and drush runs as anonymous.
 $switch->switchTo($etm->getStorage('user')->load(1));
@@ -100,7 +100,7 @@ $e = $storage->create([
   'field_defect_category' => $first('field_defect_category'),
   'field_defect_severity' => $first('field_defect_severity'),
   'field_defect_date_reported' => date('Y-m-d'),
-  'field_defect_notes' => ['value' => $body, 'format' => 'basic_html'],
+  'field_defect_notes' => ['value' => $body, 'format' => 'full_html'],
 ]);
 $viol = $e->validate();
 echo '  validation: ' . $ok(count($viol) === 0) . (count($viol) ? ' — ' . implode(' | ', array_map(static fn($v) => $v->getPropertyPath() . ': ' . strip_tags((string) $v->getMessage()), iterator_to_array($viol))) : '') . "\n";
@@ -109,7 +109,7 @@ $id = $e->id();
 $storage->resetCache([$id]);
 $r = $storage->load($id);
 $v = $r->get('field_defect_notes');
-printf("  saved id %d: stored length %d (sent %d) %s  format=%s %s\n", $id, strlen($v->value), strlen($body), $ok(strlen($v->value) === strlen($body)), $v->format, $ok($v->format === 'basic_html'));
+printf("  saved id %d: stored length %d (sent %d) %s  format=%s %s\n", $id, strlen($v->value), strlen($body), $ok(strlen($v->value) === strlen($body)), $v->format, $ok($v->format === 'full_html'));
 $build = $etm->getViewBuilder('equipment_defect')->view($r, 'default');
 $rendered = (string) \Drupal::service('renderer')->renderInIsolation($build);
 echo '  rendered keeps <strong> and <li>: ' . $ok(str_contains($rendered, '<strong>Repair strategy') && substr_count($rendered, '<li>') === 20) . "  label shown: " . $ok(str_contains($rendered, 'Defect Notes / Repair Detail')) . "\n";

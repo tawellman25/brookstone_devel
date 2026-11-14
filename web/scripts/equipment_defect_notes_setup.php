@@ -9,6 +9,7 @@
  *
  * Steps (each checks before it writes):
  *   1. Field storage + instance from config/sync, created through the entity
+ *      API (an existing instance has its allowed_formats converged to the YAML),
  *      API with the YAML's uuid KEPT (strip only _core) — so active ends up
  *      identical to sync and a later partial cim has nothing to do (gotchas:
  *      "A UUID mismatch makes cim DELETE + CREATE"). This is also the BOS
@@ -57,8 +58,21 @@ else {
   }
   $out('   storage ' . DN_ET . '.' . DN_FIELD . ' CREATED (uuid ' . $data['uuid'] . ' kept from sync)');
 }
-if (FieldConfig::loadByName(DN_ET, DN_BUNDLE, DN_FIELD)) {
-  $out('   instance ' . DN_ET . '.' . DN_BUNDLE . '.' . DN_FIELD . ' exists');
+if ($inst = FieldConfig::loadByName(DN_ET, DN_BUNDLE, DN_FIELD)) {
+  // Converge the one setting that has changed since the first build (2026-11-13:
+  // basic_html + full_html → full_html only, Todd's call) from the sync YAML.
+  $want = array_values(Yaml::parseFile("$sync/field.field." . DN_ET . '.' . DN_BUNDLE . '.' . DN_FIELD . '.yml')['settings']['allowed_formats'] ?? []);
+  $have = array_values($inst->getSetting('allowed_formats') ?? []);
+  if ($want !== $have) {
+    $inst->setSetting('allowed_formats', $want);
+    if (!$dry) {
+      $inst->save();
+    }
+    $out('   instance ' . DN_ET . '.' . DN_BUNDLE . '.' . DN_FIELD . ' exists — allowed_formats UPDATED ' . json_encode($have) . ' → ' . json_encode($want));
+  }
+  else {
+    $out('   instance ' . DN_ET . '.' . DN_BUNDLE . '.' . DN_FIELD . ' exists (allowed_formats ' . json_encode($have) . ')');
+  }
 }
 else {
   $data = Yaml::parseFile("$sync/field.field." . DN_ET . '.' . DN_BUNDLE . '.' . DN_FIELD . '.yml');

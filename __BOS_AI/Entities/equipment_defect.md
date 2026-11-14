@@ -11,7 +11,7 @@ until a verified maintenance event closes it.
 ## Bundle
 `standard` — Standard defect record
 
-## Fields (16)
+## Fields (17)
 
 | Field | Type | Label | Required |
 |---|---|---|---|
@@ -21,6 +21,7 @@ until a verified maintenance event closes it.
 | `field_defect_category` | list_string | Defect Category | Yes |
 | `field_defect_severity` | list_string | Defect Severity | Yes |
 | `field_defect_summary` | string | Defect Summary | Yes |
+| `field_defect_notes` | text_long (formatted; allowed formats `basic_html` + `full_html`, default `basic_html`) | Defect Notes / Repair Detail | No — longer repair notes, part numbers, repair-strategy decisions; the Summary stays the one-line description (added 2026-11-13 at Todd's request: the 255-char summary could not hold them, so detail was landing on the parent equipment record). Single value, no length cap (`longtext`). **Programmatic writers must set `format` (e.g. `basic_html`)** — a value saved without one renders through the fallback format, which is what the inspection-workflow-written `field_resolution_notes` rows do today. |
 | `field_defect_status` | list_string | Defect Status | Yes (default: open) |
 | `field_repeat_issue` | boolean | Repeat Issue | No (default: 0) |
 | `field_out_of_service_required` | boolean | Out of Service Required | No (default: 0) |
@@ -45,7 +46,7 @@ open, scheduled, in_repair, resolved, deferred, retired_with_equipment
 
 ## Displays
 
-First saved form + view display added **2026-11-13** (`web/scripts/equipment_parts_display_bootstrap.php`): before it the add/edit form rendered **no field widgets** (D11 behaviour without a saved display — deferred #37). Default widget/formatter per field; title/author/created hidden (auto-labelled).
+First saved form + view display added **2026-11-13** (`web/scripts/equipment_parts_display_bootstrap.php`): before it the add/edit form rendered **no field widgets** (D11 behaviour without a saved display — deferred #37). Default widget/formatter per field; title/author/created hidden (auto-labelled). **2026-11-13 (later):** `field_defect_notes` placed directly below `field_defect_summary` on both displays (`text_textarea` 8 rows / `text_default` inline label; later fields shifted one weight) by `web/scripts/equipment_defect_notes_setup.php` (idempotent, keeps the sync uuids); verify: `equipment_defect_notes_verify.php` (`--no-write` on live).
 
 ## Views
 - Open Defects Board: `/admin/operations/equipment/open-defects`

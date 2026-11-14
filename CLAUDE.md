@@ -393,7 +393,7 @@ Link entity between `material` and `supplier`. Enforced by `material_supplier` m
 
 #### Equipment inspection/defect/maintenance/fuel entities
 - `equipment_inspection` — 6 bundles: `vehicles`, `trailers`, `heavy_equipment`, `mowers`, `sprayers`, `standard` (bundle-specific checklists)
-- `equipment_defect` — bundle: `standard` (16 fields — actionable defect tracking, targets all equipment; `field_parts_needed` → `equipment_part`)
+- `equipment_defect` — bundle: `standard` (17 fields — actionable defect tracking, targets all equipment; `field_parts_needed` → `equipment_part`; `field_defect_notes` formatted long text for repair detail, added 2026-11-13)
 - `equipment_maintenance_event` — bundle: `standard` (16 fields — service/repair records, targets all equipment; `field_parts_used` → `equipment_part`)
 - `equipment_part` — bundle: `standard` (15 fields — **shop parts & consumables** for owned equipment: part number (unique), category, brand → `manufacturer`, fits equipment types → `equipment_types` taxonomy, fits units → `equipment`, bin, on hand, reorder minimum, computed `field_needs_reorder`, vendor → `supplier`, last price/date, photo, notes; ECK `status` relabelled "Active (stocked)". **Not a `material` bundle — never appears in WO/estimate material pickers.** Module `bos_equipment_parts`; design `__BOS_AI/Entities/equipment_part.md`. Built on dev + deployed LIVE 2026-11-13.)
 - `equipment_fuel_transaction` — bundle: `standard` (30 fields — WEX fuel card transaction records; targets vehicles bundle only via field_equipment; idempotent re-imports keyed on field_wex_transaction_id)

@@ -8,6 +8,7 @@ dependencies:
     - field.field.equipment_defect.standard.field_assigned_to
     - field.field.equipment_defect.standard.field_defect_category
     - field.field.equipment_defect.standard.field_defect_date_reported
+    - field.field.equipment_defect.standard.field_defect_notes
     - field.field.equipment_defect.standard.field_defect_severity
     - field.field.equipment_defect.standard.field_defect_status
     - field.field.equipment_defect.standard.field_defect_summary
@@ -36,14 +37,14 @@ mode: default
 content:
   field_actual_repair_cost:
     type: number
-    weight: 11
+    weight: 12
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_assigned_to:
     type: entity_reference_autocomplete
-    weight: 12
+    weight: 13
     region: content
     settings:
       match_operator: CONTAINS
@@ -63,6 +64,14 @@ content:
     region: content
     settings: {  }
     third_party_settings: {  }
+  field_defect_notes:
+    type: text_textarea
+    weight: 6
+    region: content
+    settings:
+      rows: 8
+      placeholder: ''
+    third_party_settings: {  }
   field_defect_severity:
     type: options_select
     weight: 4
@@ -71,7 +80,7 @@ content:
     third_party_settings: {  }
   field_defect_status:
     type: options_select
-    weight: 6
+    weight: 7
     region: content
     settings: {  }
     third_party_settings: {  }
@@ -95,21 +104,21 @@ content:
     third_party_settings: {  }
   field_estimated_repair_cost:
     type: number
-    weight: 10
+    weight: 11
     region: content
     settings:
       placeholder: ''
     third_party_settings: {  }
   field_out_of_service_required:
     type: boolean_checkbox
-    weight: 8
+    weight: 9
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
   field_parts_needed:
     type: entity_reference_autocomplete
-    weight: 9
+    weight: 10
     region: content
     settings:
       match_operator: CONTAINS
@@ -119,14 +128,14 @@ content:
     third_party_settings: {  }
   field_repeat_issue:
     type: boolean_checkbox
-    weight: 7
+    weight: 8
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
   field_resolution_notes:
     type: text_textarea
-    weight: 13
+    weight: 14
     region: content
     settings:
       rows: 5
@@ -134,7 +143,7 @@ content:
     third_party_settings: {  }
   field_resolved_on:
     type: datetime_default
-    weight: 14
+    weight: 15
     region: content
     settings: {  }
     third_party_settings: {  }

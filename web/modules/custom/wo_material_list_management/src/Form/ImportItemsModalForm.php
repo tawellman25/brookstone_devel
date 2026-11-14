@@ -4,22 +4,43 @@ declare(strict_types=1);
 
 namespace Drupal\wo_material_list_management\Form;
 
+use Drupal\Core\File\FileExists;
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\eck\Entity\EckEntity;
+use Drupal\file\FileInterface;
+use Drupal\file\Upload\FileUploadHandlerInterface;
+use Drupal\file\Upload\FormUploadedFile;
 use Drupal\wo_material_list_management\Service\MaterialListImportService;
 use Drupal\wo_material_list_management\Service\InvoiceVisionExtractor;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
- * Two-step modal: upload/paste/photograph a material list → preview → import.
+ * Two-step form: photograph (or upload/paste) a material list → preview → import.
+ *
+ * Photo first. The receipt photo is the primary path for a crew member on a
+ * phone; the spreadsheet / pasted rows are the office's secondary path and sit
+ * in a collapsed section.
+ *
+ * The uploads are plain `file` elements ON PURPOSE, not `managed_file`. A
+ * managed_file pre-uploads by AJAX the moment a file is picked, and core's
+ * file.js (`Drupal.file.disableFields`, bound to `mousedown` on every submit
+ * button) DISABLES every managed-file input that does not belong to the button
+ * pressed — a disabled input is not sent with the form. So a crew member who
+ * taps Preview while a phone photo is still pre-uploading over cellular posts a
+ * form with no photo in it and gets "No rows found" (Todd, 2026-11-13, Delta
+ * Hardware receipt on WO 54616). A plain file input rides along with the
+ * Preview submit itself: one tap, one POST, and validateForm() saves it through
+ * the file.upload_handler service with the same extension rules.
  */
 final class ImportItemsModalForm extends FormBase {
 
   /**
    * Declared (not constructor-promoted) so DependencySerializationTrait can
-   * re-inject when the cacheable form is serialized (managed_file).
+   * re-inject when the cacheable multi-step form is serialized.
    *
    * @var \Drupal\wo_material_list_management\Service\MaterialListImportService
    */
@@ -30,15 +51,34 @@ final class ImportItemsModalForm extends FormBase {
    */
   protected $vision;
 
-  public function __construct(MaterialListImportService $importer, InvoiceVisionExtractor $vision) {
+  /**
+   * @var \Drupal\file\Upload\FileUploadHandlerInterface
+   */
+  protected $uploadHandler;
+
+  /**
+   * @var \Drupal\Core\File\FileSystemInterface
+   */
+  protected $fileSystem;
+
+  /**
+   * Where both uploads land (temporary files; cron sweeps them).
+   */
+  private const UPLOAD_DIR = 'temporary://wo_material_import';
+
+  public function __construct(MaterialListImportService $importer, InvoiceVisionExtractor $vision, FileUploadHandlerInterface $upload_handler, FileSystemInterface $file_system) {
     $this->importer = $importer;
     $this->vision = $vision;
+    $this->uploadHandler = $upload_handler;
+    $this->fileSystem = $file_system;
   }
 
   public static function create(ContainerInterface $container): static {
     return new static(
       $container->get('wo_material_list_management.import'),
       $container->get('wo_material_list_management.invoice_vision'),
+      $container->get('file.upload_handler'),
+      $container->get('file_system'),
     );
   }
 
@@ -60,39 +100,35 @@ final class ImportItemsModalForm extends FormBase {
   }
 
   private function buildInputStep(array $form, FormStateInterface $form_state): array {
-    $form['help'] = [
-      '#markup' => '<p>Upload a <strong>.csv</strong> / <strong>.xlsx</strong> or paste rows. Columns: '
-        . '<em>identifier</em> (material ID or supplier item #), <em>quantity</em>, optional <em>unit cost</em>, optional <em>supplier</em>. '
-        . 'A header row is auto-detected.</p>',
-    ];
-    $form['file'] = [
-      '#type' => 'managed_file',
-      '#title' => $this->t('Spreadsheet file'),
-      '#upload_location' => 'temporary://wo_material_import',
-      '#upload_validators' => ['file_validate_extensions' => ['csv txt xls xlsx']],
-    ];
-    $form['paste'] = [
-      '#type' => 'textarea',
-      '#title' => $this->t('…or paste rows'),
-      '#rows' => 6,
-      '#placeholder' => "12345, 4\nSKU-778, 2, 19.50",
-    ];
-    // Photo intake — only when a vision provider (Claude/gpt-4o) is configured.
-    if ($this->vision->isAvailable()) {
-      $form['photo'] = [
-        '#type' => 'managed_file',
-        '#title' => $this->t('…or snap a photo of a supplier invoice'),
-        '#description' => $this->t('Upload/take a photo of a supplier invoice or ticket (JPG/PNG). AI reads the line items — item #, description, quantity, price — and you confirm every row in the next step. Photos can be angled or a little blurry.'),
-        '#upload_location' => 'temporary://wo_material_import',
-        '#upload_validators' => ['file_validate_extensions' => ['jpg jpeg png webp']],
+    $vision = $this->vision->isAvailable();
+
+    // ── Primary: a photo of the receipt / invoice ─────────────────────────
+    if ($vision) {
+      $form['photo_wrap'] = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['wo-import-photo']],
+      ];
+      $form['photo_wrap']['intro'] = [
+        '#markup' => '<p><strong>' . $this->t('Snap a photo of the receipt or invoice.') . '</strong> '
+          . $this->t('BOS reads the item numbers, descriptions, quantities and prices, and you confirm every row before anything is added to the list.') . '</p>',
+      ];
+      $form['photo_wrap']['photo'] = [
+        '#type' => 'file',
+        '#title' => $this->t('Receipt / invoice photo'),
+        '#description' => $this->t('Take a photo now or pick one from your photos (JPG, PNG or WebP). Angled or a little blurry is fine — just make sure the item lines are readable.'),
+        // image/* lets a phone offer Camera and Photos; no `capture`, which
+        // would force the camera and hide an already-taken photo.
+        '#attributes' => ['accept' => 'image/*'],
+        '#parents' => ['photo'],
       ];
     }
+
     $form['supplier'] = [
       '#type' => 'entity_autocomplete',
       '#target_type' => 'supplier',
       '#selection_handler' => 'default:supplier',
-      '#title' => $this->t('Supplier (vendor this file is from)'),
-      '#description' => $this->t('Optional — e.g. SiteOne. Lets BOS remember item numbers and update prices for that supplier.'),
+      '#title' => $this->t('Supplier (who the receipt or file is from)'),
+      '#description' => $this->t('Optional — e.g. Delta Hardware, SiteOne. Lets BOS remember item numbers and update prices for that supplier.'),
     ];
     $form['learn'] = [
       '#type' => 'checkbox',
@@ -100,10 +136,37 @@ final class ImportItemsModalForm extends FormBase {
       '#default_value' => TRUE,
       '#states' => ['visible' => [':input[name="supplier"]' => ['filled' => TRUE]]],
     ];
+
+    // ── Secondary: spreadsheet file or pasted rows ────────────────────────
+    $form['other'] = [
+      '#type' => 'details',
+      '#title' => $vision
+        ? $this->t('Or import a spreadsheet / paste rows instead')
+        : $this->t('Spreadsheet file or pasted rows'),
+      '#open' => !$vision,
+    ];
+    $form['other']['help'] = [
+      '#markup' => '<p>' . $this->t('Upload a <strong>.csv</strong> / <strong>.xlsx</strong> or paste rows. Columns: <em>identifier</em> (material ID or supplier item #), <em>quantity</em>, optional <em>unit cost</em>, optional <em>supplier</em>. A header row is auto-detected.') . '</p>',
+    ];
+    $form['other']['file'] = [
+      '#type' => 'file',
+      '#title' => $this->t('Spreadsheet file'),
+      '#attributes' => ['accept' => '.csv,.txt,.xls,.xlsx'],
+      '#parents' => ['file'],
+    ];
+    $form['other']['paste'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('…or paste rows'),
+      '#rows' => 6,
+      '#placeholder' => "12345, 4\nSKU-778, 2, 19.50",
+      '#parents' => ['paste'],
+    ];
+
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['preview'] = [
       '#type' => 'submit',
       '#value' => $this->t('Preview'),
+      '#button_type' => 'primary',
       '#submit' => ['::previewSubmit'],
     ];
     $form['actions']['cancel'] = [
@@ -113,6 +176,77 @@ final class ImportItemsModalForm extends FormBase {
       '#attributes' => ['class' => ['button']],
     ];
     return $form;
+  }
+
+  /**
+   * Input step only: save the plain-file uploads and insist on some input.
+   *
+   * Runs in the same request as the Preview submit, so the browser's file is
+   * still in the request. The saved temporary File ids are stashed on the form
+   * state for previewSubmit().
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state): void {
+    if (($form_state->get('step') ?? 'input') !== 'input') {
+      return;
+    }
+    $trigger = $form_state->getTriggeringElement();
+    if (($trigger['#parents'][0] ?? '') !== 'preview') {
+      return;
+    }
+    $form_state->set('upload_photo', NULL);
+    $form_state->set('upload_file', NULL);
+    $vision = $this->vision->isAvailable();
+    if ($vision && ($photo = $this->saveUpload('photo', 'jpg jpeg png webp', $form_state))) {
+      $form_state->set('upload_photo', (int) $photo->id());
+    }
+    if ($sheet = $this->saveUpload('file', 'csv txt xls xlsx', $form_state)) {
+      $form_state->set('upload_file', (int) $sheet->id());
+    }
+    if ($form_state->getErrors()) {
+      return;
+    }
+    if (!$form_state->get('upload_photo') && !$form_state->get('upload_file') && trim((string) $form_state->getValue('paste')) === '') {
+      $form_state->setErrorByName($vision ? 'photo' : 'file', $vision
+        ? $this->t('Add a photo of the receipt — or open the spreadsheet section and upload a file or paste rows — then tap Preview.')
+        : $this->t('Upload a spreadsheet or paste some rows, then press Preview.'));
+    }
+  }
+
+  /**
+   * Save one plain `file` upload as a temporary managed file, or NULL.
+   *
+   * Extension violations and write failures become form errors on $key.
+   */
+  private function saveUpload(string $key, string $extensions, FormStateInterface $form_state): ?FileInterface {
+    $uploaded = $this->getRequest()->files->get('files', [])[$key] ?? NULL;
+    // Symfony hands NULL for an untouched file input (UPLOAD_ERR_NO_FILE).
+    if (!$uploaded instanceof UploadedFile) {
+      return NULL;
+    }
+    $dir = self::UPLOAD_DIR;
+    if (!$this->fileSystem->prepareDirectory($dir, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS)) {
+      $form_state->setErrorByName($key, $this->t('The upload folder is not writable — tell the office.'));
+      return NULL;
+    }
+    try {
+      $result = $this->uploadHandler->handleFileUpload(
+        new FormUploadedFile($uploaded),
+        ['FileExtension' => ['extensions' => $extensions]],
+        $dir,
+        FileExists::Rename,
+      );
+    }
+    catch (\Throwable $e) {
+      $form_state->setErrorByName($key, $this->t('The upload could not be saved: @m', ['@m' => $e->getMessage()]));
+      return NULL;
+    }
+    if ($result->hasViolations()) {
+      foreach ($result->getViolations() as $violation) {
+        $form_state->setErrorByName($key, (string) $violation->getMessage());
+      }
+      return NULL;
+    }
+    return $result->getFile();
   }
 
   private function buildPreviewStep(array $form, FormStateInterface $form_state): array {
@@ -213,9 +347,9 @@ final class ImportItemsModalForm extends FormBase {
     $raw = [];
     $form_state->set('extract_warnings', NULL);
     $form_state->set('extract_vendor', NULL);
-    $pids = $form_state->getValue('photo');
-    $fids = $form_state->getValue('file');
-    if (!empty($pids[0]) && ($img = \Drupal::entityTypeManager()->getStorage('file')->load($pids[0]))) {
+    $pid = (int) ($form_state->get('upload_photo') ?? 0);
+    $fid = (int) ($form_state->get('upload_file') ?? 0);
+    if ($pid && ($img = \Drupal::entityTypeManager()->getStorage('file')->load($pid))) {
       // Photo → vision extraction → rows (identifier/description/quantity/unit_cost).
       $path = \Drupal::service('file_system')->realpath($img->getFileUri());
       $binary = $path ? (string) file_get_contents($path) : '';
@@ -231,14 +365,16 @@ final class ImportItemsModalForm extends FormBase {
       $form_state->set('extract_vendor', $ex['vendor']);
       $form_state->set('extract_warnings', $ex['warnings']);
     }
-    elseif (!empty($fids[0]) && ($file = \Drupal::entityTypeManager()->getStorage('file')->load($fids[0]))) {
+    elseif ($fid && ($file = \Drupal::entityTypeManager()->getStorage('file')->load($fid))) {
       $raw = $this->importer->parseFile($file);
     }
     elseif (trim((string) $form_state->getValue('paste')) !== '') {
       $raw = $this->importer->parsePaste((string) $form_state->getValue('paste'));
     }
     if (!$raw) {
-      $this->messenger()->addWarning($this->t('No rows found — upload a file or paste some rows.'));
+      $this->messenger()->addWarning($pid
+        ? $this->t('No line items could be read from that photo. Try a closer, straighter shot of the item lines — or open the spreadsheet section and paste the rows.')
+        : $this->t('No rows found in that file or text — check the columns (identifier, quantity, unit cost) and try again.'));
       $form_state->setRebuild(TRUE);
       return;
     }

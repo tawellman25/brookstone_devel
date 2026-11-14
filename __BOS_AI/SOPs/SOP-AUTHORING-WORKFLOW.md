@@ -104,7 +104,7 @@ review (flagged in `Modules/supplier_price_ingest.md`). New flags go here as bef
 
 | Suggested code  | Workflow                                           | Role  | Flagged     | Why |
 |-----------------|----------------------------------------------------|-------|-------------|-----|
-| _(none open)_   |                                                    |       |             |     |
+| **Receipt-photo import into a WO material list** (crew, phone): open the list → Import Items → snap/pick the receipt photo → Preview → tick rows → Import; what to do when the model cannot read it; supplier + "remember" semantics | Flagged 2026-11-14 — the form was rebuilt photo-first with a plain file input after the 2026-11-13 Delta Hardware receipt was silently dropped (core file.js disables un-uploaded managed files on Preview). Facts: `Modules/wo_material_list_import.md`. Suggested code `WEB-SYS-RCT-001` (system_procedures) or `OFF-ADM-RCT-001` if the office owns it. |  |  |  |
 
 ---
 

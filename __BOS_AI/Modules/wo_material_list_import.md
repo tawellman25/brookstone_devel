@@ -19,9 +19,44 @@ library `wo_material_list_management/actions`): **Add Item** (primary) ·
 
 **Import Items** button on the material-list management page → full page at
 **`/wo_material_list/{wo_material_list}/import`** (permission `access content`).
-A full page (not a modal) — the preview table is wide and the multi-step is plain
-form submits. Also **Export Items** (`/…/export-items`, re-importable CSV) and
+The button opens it in a modal; Preview is a plain form submit, so the preview
+step continues as a full page (the preview table is wide). Also **Export Items** (`/…/export-items`, re-importable CSV) and
 **Import Template** (`/wo_material_list/import-template`).
+
+## Layout since 2026-11-14 — photo first, plain file inputs
+
+The input step is **photo-first**: an intro line ("Snap a photo of the receipt or
+invoice…"), the **Receipt / invoice photo** input (`accept="image/*"`, so a phone
+offers Camera *and* Photos; no `capture`, which would hide an already-taken photo),
+then Supplier + "remember", then a **collapsed `details` "Or import a spreadsheet /
+paste rows instead"** holding the columns help, the spreadsheet input and the paste
+box. Without a vision provider the details opens by default and the photo block is
+absent. Preview is the primary button.
+
+**Both uploads are plain `#type => 'file'`, not `managed_file` — deliberately.**
+A managed_file pre-uploads by AJAX the moment a file is picked, and core's
+`file.js` (`Drupal.file.disableFields`, bound to `mousedown` on every submit
+button) **disables every managed-file input that does not belong to the button
+pressed** — and a disabled input is not sent with the form. So a crew member who
+tapped Preview while a phone photo was still pre-uploading over cellular posted a
+form with no photo in it and got *"No rows found"* with the photo box back to "No
+file selected" (Todd, 2026-11-13, Delta Hardware receipt on WO 54616). A plain file
+input rides along with the Preview POST itself: one tap, one request.
+`validateForm()` (input step, Preview only) saves each upload through
+`file.upload_handler` into `temporary://wo_material_import` with the same
+extension rules (`jpg jpeg png webp` / `csv txt xls xlsx`), stashes the File ids on
+the form state for `previewSubmit()`, and **insists on some input** — an empty
+Preview is a validation error ("Add a photo of the receipt — or open the
+spreadsheet section…"), not a post-submit warning. A photo the model cannot read
+says so and suggests a closer, straighter shot or pasting the rows.
+
+Test (dev, no browser — the plain-file path *is* the no-JS path):
+`web/scripts/import_form_test.sh` logs in with `drush uli`, GETs the form, then posts
+Preview with (1) nothing → validation error, (2) `files[photo]` → extraction (dev
+needs a valid `ANTHROPIC_API_KEY`; the one in `.ddev/config.local.yaml` was rejected
+on 2026-11-14), (3) `files[file]` CSV → 2 rows, (4) a `.csv` as the photo → extension
+error, (5) pasted rows → 1 row. `web/scripts/make_test_receipt.php` draws a synthetic copy
+of the receipt with GD.
 
 ## Invoice-photo import (AI vision)
 

@@ -641,9 +641,9 @@ obsoleted by upstream releases:
   leftover `?? []` may persist in an environment's copy until the next module update re-extracts
   it — no action needed.)
 
-Declared contrib patches (`drupal/core`, `page_manager` ×2, `views_aggregator`) are managed by
+Declared contrib patches (`drupal/core`, `page_manager` ×1, `views_aggregator`) are managed by
 **`cweagans/composer-patches`** 1.x via `composer.json` `extra.patches` and applied automatically on
-every `composer install`. **All four patch files live in `patches/` since 2026-11-08** (`26df1f3d`) —
+every `composer install`. **All three patch files live in `patches/` since 2026-11-08** (`26df1f3d`; the page_manager devel-link patch 3438993 was dropped 2026-11-15 — upstream in 8.x-4.1; the `calculateDependencies() return $this` patch is still needed on 4.1) —
 no remote URLs, so a drupal.org outage cannot stop a deploy. `composer.json` also carries
 `config.audit.ignore` for the three phpspreadsheet 2.4.7 advisories: composer 2.9's `block-insecure`
 otherwise refuses every `update --lock`/`require` while that version is locked; remove the ignores

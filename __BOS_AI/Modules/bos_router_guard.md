@@ -57,8 +57,8 @@ path collapses spaces and wraps at ~77 columns).
 - `BOS: router table repaired on <host> — 5,663 routes` — only when an alert went out for that
   incident.
 
-**Recipient:** `bos_router_guard.settings:alert_email`, empty = the site mail
-(`office@brookstoneoutdoors.com` on live). Set it with
+**Recipient:** `bos_router_guard.settings:alert_email`, empty = the site mail. **Live is set to
+`todd@brookstoneoutdoors.com`** (2026-11-15; dev falls back to the site mail → Mailpit). Change it with
 `drush cset bos_router_guard.settings alert_email you@example.com`.
 
 ## Settings (`config/install/bos_router_guard.settings.yml`, schema in `config/schema/`)

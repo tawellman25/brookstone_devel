@@ -54,7 +54,7 @@ Test (dev, no browser — the plain-file path *is* the no-JS path):
 `web/scripts/import_form_test.sh` logs in with `drush uli`, GETs the form, then posts
 Preview with (1) nothing → validation error, (2) `files[photo]` → extraction (dev
 needs a valid `ANTHROPIC_API_KEY`; the one in `.ddev/config.local.yaml` was rejected
-on 2026-11-14), (3) `files[file]` CSV → 2 rows, (4) a `.csv` as the photo → extension
+on 2026-11-14 and **replaced by Todd 2026-11-15** — `test_note_vision.php` reads a note in 5.9 s), (3) `files[file]` CSV → 2 rows, (4) a `.csv` as the photo → extension
 error, (5) pasted rows → 1 row. `web/scripts/make_test_receipt.php` draws a synthetic copy
 of the receipt with GD.
 

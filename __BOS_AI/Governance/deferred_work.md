@@ -709,7 +709,9 @@ Surfaced 2026-11-11 backfilling SOP aliases. (a) `eck.eck_type.sop.sop_governanc
 
 **Surfaced 2026-11-13** while drafting OFF-ADM-SVR-001. The dropbutton shows Approve on every request not yet linked to a work order, including `general_inquiry` (contact-form) requests that have no service term; the converter then fails with "Request has no service term." Hide the action when `field_service` is empty, or route general inquiries to the estimate/intake path. (S) Related: nothing emails the customer on approve/reject — the SOP says so; a confirmation email is a separate decision.
 
-### 41. The router can be left half-written by any terminated rebuild — nothing detects it, and 74% of it is JSON:API nobody uses yet
+### 41. ✅ CLOSED 2026-11-15 (items 1 + 2; item 3 → ROADMAP LATER) — The router can be left half-written by any terminated rebuild — nothing detects it, and 74% of it is JSON:API nobody uses yet
+
+**Closed 2026-11-15:** (1) `bos_router_guard` shipped — count recorded at `RoutingEvents::FINISHED`, checked on 404s (throttled) and cron, rebuild under the router lock ≤ 1/10 min, alert email ≤ 1/h + all-clear, Status report row; dev test 42/42, live verify 23/23 (`Modules/bos_router_guard.md`). (2) Todd: `jsonapi` + `bos_jsonapi_guard` **uninstalled** on dev and live — router 22,070 → ~5,660 rows; re-enable both with the mobile app. (3) the atomic `RENAME TABLE` dumper + upstream issue is a ROADMAP LATER row ("Atomic router dump"). Original text kept below for the reasoning.
 
 **Surfaced 2026-11-14** by the install.php incident (live down 03:35–06:40 MT; gotcha
 "`/core/install.php` on an installed site rebuilds the whole router…", change log 2026-11-14).

@@ -1,0 +1,23 @@
+services:
+  logger.channel.bos_router_guard:
+    parent: logger.channel_base
+    arguments: ['bos_router_guard']
+
+  bos_router_guard.guard:
+    class: Drupal\bos_router_guard\RouterGuard
+    arguments:
+      - '@database'
+      - '@state'
+      - '@config.factory'
+      - '@router.builder'
+      - '@plugin.manager.mail'
+      - '@cache.default'
+      - '@datetime.time'
+      - '@request_stack'
+      - '@logger.channel.bos_router_guard'
+
+  bos_router_guard.subscriber:
+    class: Drupal\bos_router_guard\EventSubscriber\RouterGuardSubscriber
+    arguments: ['@bos_router_guard.guard', '@logger.channel.bos_router_guard']
+    tags:
+      - { name: event_subscriber }

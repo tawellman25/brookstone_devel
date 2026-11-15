@@ -1,0 +1,169 @@
+<?php
+
+/**
+ * @file
+ * BOS Router Guard — detect a half-written router table, repair it, alert.
+ *
+ * The logic is in \Drupal\bos_router_guard\RouterGuard and its event
+ * subscriber. This file carries the hooks: cron (check + repair in-process),
+ * the Status report row, and the two emails.
+ */
+
+use Drupal\Core\Extension\Requirement\RequirementSeverity;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_cron().
+ *
+ * Cron is the path that repairs without waiting for a visitor's 404 — and the
+ * one that catches a table left short by a dump that died in a drush process.
+ */
+function bos_router_guard_cron(): void {
+  try {
+    \Drupal::service('bos_router_guard.guard')->check('cron', TRUE);
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('bos_router_guard')->error('Router guard cron check failed: @message', ['@message' => $e->getMessage()]);
+  }
+}
+
+/**
+ * Implements hook_runtime_requirements().
+ *
+ * One row on /admin/reports/status — the read-only probe.
+ */
+function bos_router_guard_runtime_requirements(): array {
+  /** @var \Drupal\bos_router_guard\RouterGuard $guard */
+  $guard = \Drupal::service('bos_router_guard.guard');
+  $row = ['title' => t('Router integrity (BOS)')];
+  try {
+    $facts = $guard->inspect();
+  }
+  catch (\Throwable $e) {
+    $row += [
+      'value' => t('Could not read the router table'),
+      'description' => $e->getMessage(),
+      'severity' => RequirementSeverity::Error,
+    ];
+    return ['bos_router_guard' => $row];
+  }
+
+  $to = $guard->recipient();
+  if ($facts['short']) {
+    $row += [
+      'value' => t('@count of @expected routes — a router rebuild was terminated mid-write', [
+        '@count' => number_format($facts['count']),
+        '@expected' => $facts['expected'] === NULL ? '?' : number_format($facts['expected']),
+      ]),
+      'description' => t('Core routes missing: @missing. The guard has requested a rebuild (one per @rebuild min) and emailed @to (one per @alert h). If it stays short, run <code>drush cr</code> from the CLI. Incident open since @since.', [
+        '@missing' => $facts['missing'] ? implode(', ', $facts['missing']) : t('none'),
+        '@rebuild' => (int) (\Drupal::config('bos_router_guard.settings')->get('rebuild_interval') / 60),
+        '@alert' => (int) (\Drupal::config('bos_router_guard.settings')->get('alert_interval') / 3600),
+        '@to' => $to,
+        '@since' => !empty($facts['incident']['opened']) ? _bos_router_guard_date((int) $facts['incident']['opened']) : t('now'),
+      ]),
+      'severity' => RequirementSeverity::Error,
+    ];
+  }
+  elseif ($facts['expected'] === NULL) {
+    $row += [
+      'value' => t('@count routes — no complete rebuild recorded yet', ['@count' => number_format($facts['count'])]),
+      'description' => t('The count is recorded at the next router rebuild (<code>drush cr</code>, a module install, a config import). Until then only the four sentinel routes are checked.'),
+      'severity' => RequirementSeverity::Warning,
+    ];
+  }
+  else {
+    $row += [
+      'value' => t('@count routes, matching the last complete rebuild (@when)', [
+        '@count' => number_format($facts['count']),
+        '@when' => $facts['expected_at'] ? _bos_router_guard_date((int) $facts['expected_at']) : '—',
+      ]),
+      'description' => t('Checked on every 404 (at most once a minute) and on cron. A short table is rebuilt automatically and @to is emailed.', ['@to' => $to]),
+      'severity' => RequirementSeverity::OK,
+    ];
+  }
+  return ['bos_router_guard' => $row];
+}
+
+/**
+ * Implements hook_mail().
+ *
+ * Plain text. The legacy mail path collapses runs of spaces and wraps at ~77
+ * columns, so URLs sit alone on their own line and nothing is indented.
+ */
+function bos_router_guard_mail(string $key, array &$message, array $params): void {
+  $facts = $params['facts'] ?? [];
+  $host = $params['host'] ?? 'BOS';
+  $status = Url::fromRoute('system.status', [], ['absolute' => TRUE])->toString();
+  $message['headers']['X-BOS-Mail'] = 'router-guard';
+
+  switch ($key) {
+    case 'short':
+      $state = match ($facts['rebuild'] ?? 'none') {
+        'now' => 'self-repair running',
+        'at_terminate' => 'self-repair requested',
+        'throttled' => 'self-repair already requested in the last 10 min',
+        default => 'no repair requested',
+      };
+      $message['subject'] = "BOS ALERT: router table short on $host — $state";
+      $lines = [
+        "Router guard on $host",
+        '',
+        sprintf('The route table is SHORT: %s of %s routes.', number_format($facts['count'] ?? 0), isset($facts['expected']) ? number_format($facts['expected']) : '?'),
+        'Core routes missing: ' . (!empty($facts['missing']) ? implode(', ', $facts['missing']) : 'none'),
+        sprintf('Seen: %s at %s (incident opened %s).', $facts['trigger'] ?? '?', _bos_router_guard_date(\Drupal::time()->getRequestTime()), !empty($facts['incident_opened']) ? _bos_router_guard_date((int) $facts['incident_opened']) : 'now'),
+        '',
+        'This is the signature of a router rebuild that was terminated mid-write (the 2026-11-14 install.php outage): pages 404, and the 404 page itself may 500.',
+        '',
+        'What the guard did: ' . match ($facts['rebuild'] ?? 'none') {
+          'now' => 'rebuilt the router in this process, under the router lock.',
+          'at_terminate' => 'requested a rebuild at the end of this request, under the router lock.',
+          'throttled' => 'nothing new — a rebuild was already requested within the last 10 minutes.',
+          default => 'nothing — see the log.',
+        },
+        'Rebuilds are limited to one per 10 minutes and this email to one per hour; you get one more when the table is whole again.',
+        '',
+        'If the site is still broken in 10 minutes, repair by hand with a CLI cache rebuild:',
+        'drush cr',
+        '(live: ssh brookstone, cd ~/brookstone, /opt/alt/php83/usr/bin/php vendor/drush/drush/drush.php cr)',
+        '',
+        'Status report:',
+        $status,
+      ];
+      break;
+
+    case 'repaired':
+      $incident = $facts['incident'] ?? [];
+      $message['subject'] = sprintf('BOS: router table repaired on %s — %s routes', $host, number_format($facts['count'] ?? 0));
+      $lines = [
+        "Router guard on $host",
+        '',
+        sprintf('The route table is whole again: %s routes.', number_format($facts['count'] ?? 0)),
+        sprintf('The incident opened %s (%s, %s of %s routes) and took %d rebuild request(s) and %d alert(s).',
+          !empty($incident['opened']) ? _bos_router_guard_date((int) $incident['opened']) : '?',
+          $incident['trigger'] ?? '?',
+          isset($incident['count']) ? number_format($incident['count']) : '?',
+          isset($incident['expected']) ? number_format($incident['expected']) : '?',
+          (int) ($incident['rebuilds'] ?? 0),
+          (int) ($incident['alerts'] ?? 0)),
+        '',
+        'Nothing to do. If this keeps happening, something is terminating rebuilds — check the access log for the minute the table was written (gotcha recipe in drupal_bos_gotchas.md).',
+        '',
+        'Status report:',
+        $status,
+      ];
+      break;
+
+    default:
+      return;
+  }
+  $message['body'][] = implode("\n", $lines);
+}
+
+/**
+ * US date-time in the site's timezone (CLAUDE.md "Date Formatting").
+ */
+function _bos_router_guard_date(int $timestamp): string {
+  $tz = \Drupal::config('system.date')->get('timezone.default') ?: 'America/Denver';
+  return \Drupal::service('date.formatter')->format($timestamp, 'custom', 'm/d/Y g:i A T', $tz);
+}

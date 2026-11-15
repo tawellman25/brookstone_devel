@@ -2323,10 +2323,7 @@ not allowed to access this page" (PHP ran). Dev cannot test this (DDEV is nginx;
    month archive (updated daily 12:16 UTC) — a 5 MB read, not the 60 MB live domlog.
 5. `drush cr`, verify, then find and close the trigger.
 
-**Still open (deferred #41):** nothing *detects* a truncated router — it stood for three hours
-until a human hit it. 16,396 of the 22,056 routes are JSON:API, which nothing consumes yet (the
-mobile app is LATER); any rebuild on this box is as fragile as its biggest contributor. And the
-commit-on-destruct behaviour is core's — an upstream issue is worth filing.
+**Closed 2026-11-15 — `bos_router_guard` + JSON:API removed.** The guard records the row count at `RoutingEvents::FINISHED` (the dumper is the table's only writer, every complete dump ends there), checks it on 404s / `RouteNotFoundException` (once a minute at most) and on cron, and on a short table or a missing sentinel route (`user.login`, `system.404`, `system.admin`, `entity.user.canonical`) opens an incident, logs, emails the alert address (≤ 1/h), rebuilds under the router lock (≤ 1/10 min — at `kernel.terminate` for web, in-process for cron) and emails the all-clear when FINISHED fires. One Status-report row, **Router integrity (BOS)**. Design note: inside the rebuild PHP's memory limit is lifted because a PHP fatal is a shutdown and a shutdown *commits*, while the LVE kill is a SIGKILL and rolls back — prefer the kernel's limit. And the 16,396 `jsonapi.*` routes are gone: Todd uninstalled `jsonapi` + `bos_jsonapi_guard` the same day (nothing consumed them; `drush en` both with the mobile app), so a rebuild writes ~5,660 rows (dev 4.2–4.6 s) instead of 22k (6.6 s, 272 MB). Still open, LATER: make the dump atomic (`router_new` + `RENAME TABLE`) and file the commit-on-destruct behaviour upstream. Docs: `Modules/bos_router_guard.md`.
 
 ## `taxonomy_index_tid` is a ManyToOne filter — operator `in` is silently ignored (no WHERE at all)
 

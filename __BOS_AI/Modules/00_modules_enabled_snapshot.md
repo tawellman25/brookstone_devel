@@ -124,7 +124,6 @@ No policy, tiering, or approval is implied.
 [jquery_ui_menu]
 [jquery_ui_slider]
 [jquery_ui_touch_punch]
-[jsonapi]
 [key]
 [layout_builder]
 [layout_discovery]

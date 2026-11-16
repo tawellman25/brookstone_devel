@@ -5,11 +5,13 @@
  * BOS Router Guard — detect a half-written router table, repair it, alert.
  *
  * The logic is in \Drupal\bos_router_guard\RouterGuard and its event
- * subscriber. This file carries the hooks: cron (check + repair in-process),
- * the Status report row, and the two emails.
+ * subscriber. This file carries the hooks: cron (check + repair in-process,
+ * then the menu-link pass), the Status report row, and the two emails.
  */
 
+use Drupal\bos_router_guard\RouterGuard;
 use Drupal\Core\Extension\Requirement\RequirementSeverity;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Url;
 
 /**
@@ -24,6 +26,15 @@ function bos_router_guard_cron(): void {
   }
   catch (\Throwable $e) {
     \Drupal::logger('bos_router_guard')->error('Router guard cron check failed: @message', ['@message' => $e->getMessage()]);
+  }
+  // Menu links stored without their route (2026-11-16). FINISHED already ran
+  // this in the process that rebuilt the menu; cron is a different process,
+  // so a cause local to that one is caught here. A no-op when nothing is off.
+  try {
+    \Drupal::service('bos_router_guard.guard')->repairMenuLinks('cron');
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('bos_router_guard')->error('Router guard cron menu-link pass failed: @message', ['@message' => $e->getMessage()]);
   }
 }
 
@@ -82,7 +93,84 @@ function bos_router_guard_runtime_requirements(): array {
       'severity' => RequirementSeverity::OK,
     ];
   }
+  _bos_router_guard_menu_links_row($guard, $row);
   return ['bos_router_guard' => $row];
+}
+
+/**
+ * Appends the menu-link picture to the Status report row (2026-11-16).
+ *
+ * A link stored without a route whose path resolves today is a stale row the
+ * guard re-routes at the next cron run or router rebuild → Warning (unless the
+ * row is already an Error). A link pinned to one variant of a role-gated Page
+ * Manager page → Warning + the drush rebuild that restores the plain URL. A
+ * link whose path no route serves is listed with the severity unchanged: a
+ * role-gated Page Manager page is named as such — nothing to fix; anything
+ * else is a dead link or a redirect.
+ */
+function _bos_router_guard_menu_links_row(RouterGuard $guard, array &$row): void {
+  try {
+    $menu = $guard->probeMenuLinks();
+  }
+  catch (\Throwable $e) {
+    $row['description'] = Markup::create((string) $row['description'] . ' ' . t('Menu-link check failed: @message', ['@message' => $e->getMessage()]));
+    return;
+  }
+  $label = static fn(array $r): string => sprintf('%s (%s, menu %s)', $r['title'], $r['uri'], $r['menu']);
+  $notes = [];
+  if ($menu['repairable']) {
+    $notes[] = t('@n menu link(s) are stored WITHOUT their route although the path resolves today — re-routed at the next cron run or router rebuild; browsers see the toolbar arrows again on their next page load after that. @list. Now: <code>drush php:eval \'\\Drupal::service("bos_router_guard.guard")->repairMenuLinks("manual");\'</code>', [
+      '@n' => count($menu['repairable']),
+      '@list' => implode(' · ', array_map(static fn(array $r): string => $label($r) . ' → ' . $r['route_name'], $menu['repairable'])),
+    ]);
+    if ($row['severity'] !== RequirementSeverity::Error) {
+      $row['severity'] = RequirementSeverity::Warning;
+    }
+  }
+  if ($menu['failed']) {
+    $notes[] = t('@n menu link(s) could not be re-derived: @list.', [
+      '@n' => count($menu['failed']),
+      '@list' => implode(' · ', array_map(static fn(array $r): string => $label($r) . ': ' . $r['error'], $menu['failed'])),
+    ]);
+    if ($row['severity'] !== RequirementSeverity::Error) {
+      $row['severity'] = RequirementSeverity::Warning;
+    }
+  }
+  if ($menu['pinned']) {
+    $notes[] = t('@n menu link(s) are stored pinned to ONE variant of a role-gated Page Manager page and are hidden from every other role — a menu rebuild run from a web request does this; restore the plain URL from drush: <code>drush php:eval \'\\Drupal::service("plugin.manager.menu.link")->rebuild();\'</code>. @list.', [
+      '@n' => count($menu['pinned']),
+      '@list' => implode(' · ', array_map(static fn(array $r): string => $label($r) . ' → ' . $r['route_name'], $menu['pinned'])),
+    ]);
+    if ($row['severity'] !== RequirementSeverity::Error) {
+      $row['severity'] = RequirementSeverity::Warning;
+    }
+  }
+  if ($menu['role_gated']) {
+    $notes[] = t('@n menu link(s) point at a Page Manager page whose variants are role-gated and are stored as a plain URL so every role reaches its own variant — nothing to fix: @list.', [
+      '@n' => count($menu['role_gated']),
+      '@list' => implode(' · ', array_map(static fn(array $r): string => $label($r) . sprintf(' (page %s, %d variants)', $r['page'], $r['variants']), $menu['role_gated'])),
+    ]);
+  }
+  if ($menu['unrouted']) {
+    $notes[] = t('@n menu link(s) point at a path with no route — a dead link or a redirect; if it is dead, fix or remove it under Structure ▸ Menus: @list.', [
+      '@n' => count($menu['unrouted']),
+      '@list' => implode(' · ', array_map($label, $menu['unrouted'])),
+    ]);
+  }
+  $last = \Drupal::state()->get(RouterGuard::STATE_MENU_LINKS);
+  if (!empty($last['at'])) {
+    $notes[] = t('Last menu-link pass @when (@trigger): @checked stored-unrouted link(s) checked, @repaired re-routed.', [
+      '@when' => _bos_router_guard_date((int) $last['at']),
+      '@trigger' => $last['trigger'] ?? '?',
+      '@checked' => (int) ($last['checked'] ?? 0),
+      '@repaired' => count($last['repaired'] ?? []),
+    ]);
+  }
+  if ($notes) {
+    // Every part is t() output (placeholders escaped) — joining them stays
+    // safe markup; a plain string would be re-escaped by the template.
+    $row['description'] = Markup::create(implode(' ', array_map('strval', array_merge([$row['description']], $notes))));
+  }
 }
 
 /**

@@ -8,7 +8,9 @@ use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Mail\MailManagerInterface;
+use Drupal\Core\Menu\MenuLinkManagerInterface;
 use Drupal\Core\Routing\RouteBuilderInterface;
 use Drupal\Core\State\StateInterface;
 use Psr\Log\LoggerInterface;
@@ -37,6 +39,17 @@ use Symfony\Component\HttpFoundation\RequestStack;
  * for cron/CLI, at kernel.terminate for a web request so the visitor gets the
  * 404 page first. FINISHED then records the new count, closes the incident,
  * logs the repair and, if an alert went out, emails the all-clear.
+ *
+ * Router fallout the guard also owns (2026-11-16): menu_link_content links
+ * stored WITHOUT their route. Every `internal:` link is resolved through the
+ * path validator when the menu tree is rebuilt; a path that cannot be matched
+ * at that moment is written as `url = base:…` and nothing revisits it until
+ * the next menu rebuild. Such a link skips its route's access check, loses
+ * the active trail, and one directly under system.admin breaks core's
+ * vertical toolbar for everyone (the lost expand arrows, gotcha "A menu-link
+ * rebuild while the router is broken bakes `base:` into `menu_tree`…"). So
+ * after every FINISHED and on cron the guard re-derives those rows and
+ * re-routes the ones that resolve today; the Status row lists what is left.
  */
 final class RouterGuard {
 
@@ -46,6 +59,9 @@ final class RouterGuard {
   public const STATE_LAST_REBUILD = 'bos_router_guard.last_rebuild_request';
   public const STATE_LAST_ALERT = 'bos_router_guard.last_alert';
   public const CACHE_CHECKED = 'bos_router_guard.checked';
+  public const STATE_MENU_LINKS = 'bos_router_guard.menu_links';
+
+  private const MENU_LINK_PREFIX = 'menu_link_content:';
 
   /**
    * Routes every installed Drupal site has.
@@ -59,6 +75,10 @@ final class RouterGuard {
 
   private bool $checkedThisRequest = FALSE;
 
+  private readonly MenuLinkManagerInterface $menuLinkManager;
+
+  private readonly EntityTypeManagerInterface $entityTypeManager;
+
   public function __construct(
     private readonly Connection $database,
     private readonly StateInterface $state,
@@ -69,7 +89,15 @@ final class RouterGuard {
     private readonly TimeInterface $time,
     private readonly RequestStack $requestStack,
     private readonly LoggerInterface $logger,
-  ) {}
+    ?MenuLinkManagerInterface $menuLinkManager = NULL,
+    ?EntityTypeManagerInterface $entityTypeManager = NULL,
+  ) {
+    // The last two are optional so a container compiled before they were
+    // added (live's, until its next rebuild) still constructs the service
+    // with nine arguments — code-only deploys stay crew-hours safe.
+    $this->menuLinkManager = $menuLinkManager ?? \Drupal::service('plugin.manager.menu.link');
+    $this->entityTypeManager = $entityTypeManager ?? \Drupal::entityTypeManager();
+  }
 
   /**
    * Rows in the router table right now.
@@ -294,6 +322,198 @@ final class RouterGuard {
     if (!empty($incident['alerts'])) {
       $this->mail('repaired', ['count' => $count, 'incident' => $incident]);
     }
+  }
+
+  /**
+   * menu_link_content links whose stored routedness is wrong or fragile.
+   *
+   * Read-only. Rows stored WITHOUT a route (`url = base:…`) are re-derived
+   * now, exactly as a menu rebuild would (MenuLinkContent::getPluginDefinition()
+   * → path validator), and classified:
+   * - 'repairable' — the path resolves to an ordinary route: the row is stale.
+   * - 'role_gated' — the path is a Page Manager page with selection conditions
+   *   (or several variants). Whether, and to WHICH variant, such a path
+   *   resolves depends on the user running the derivation — page_manager's
+   *   VariantRouteFilter evaluates the variants' conditions against the
+   *   current user, and the context repository caches that user for the rest
+   *   of the process — so the row must stay a plain URL, which every role
+   *   follows to its own variant. Never repaired (/teammates is one: admin /
+   *   teammates / supervisor variants).
+   * - 'unrouted' — nothing serves the path: a dead link, or a redirect.
+   * - 'failed' — could not derive; 'error' says why.
+   * Rows stored ROUTED to a variant of such a page are reported as 'pinned':
+   * derived in an administrator's web request, the link carries the admin
+   * variant's access check and disappears for every other role; a menu
+   * rebuild from drush (no user) restores the plain URL. Reported, not changed.
+   *
+   * @return array{repairable: array<int, array>, role_gated: array<int, array>, unrouted: array<int, array>, failed: array<int, array>, pinned: array<int, array>}
+   *   Entries carry plugin_id, entity_id, menu, title, uri, url, route_name;
+   *   repairable ones the re-derived route_name + definition; role_gated and
+   *   pinned ones page (id) + variants (count).
+   */
+  public function probeMenuLinks(): array {
+    $result = ['repairable' => [], 'role_gated' => [], 'unrouted' => [], 'failed' => [], 'pinned' => []];
+    if (!$this->entityTypeManager->hasDefinition('menu_link_content')) {
+      return $result;
+    }
+    $select = 'SELECT t.id AS plugin_id, t.menu_name AS menu, t.url, t.route_name, b.id AS entity_id, m.title, m.link__uri AS uri
+       FROM {menu_tree} t
+       INNER JOIN {menu_link_content} b ON t.id = CONCAT(:prefix, b.uuid)
+       INNER JOIN {menu_link_content_data} m ON m.id = b.id AND m.default_langcode = 1
+       WHERE m.link__uri LIKE :internal AND ';
+    $args = [':prefix' => self::MENU_LINK_PREFIX, ':internal' => 'internal:%'];
+    $stored_unrouted = $this->database->query($select . 't.url LIKE :base ORDER BY t.menu_name, m.title', $args + [':base' => 'base:%'])->fetchAll(\PDO::FETCH_ASSOC);
+    $stored_pm = $this->database->query($select . 't.route_name LIKE :pm ORDER BY t.menu_name, m.title', $args + [':pm' => 'page_manager.page_view_%'])->fetchAll(\PDO::FETCH_ASSOC);
+
+    foreach ($stored_pm as $row) {
+      $page = $this->pageManagerPage($row['uri']);
+      if ($page && $page['role_gated']) {
+        $result['pinned'][] = $row + $page;
+      }
+    }
+    if (!$stored_unrouted) {
+      return $result;
+    }
+    $entities = $this->entityTypeManager->getStorage('menu_link_content')->loadMultiple(array_column($stored_unrouted, 'entity_id'));
+    foreach ($stored_unrouted as $row) {
+      $page = $this->pageManagerPage($row['uri']);
+      if ($page && $page['role_gated']) {
+        $result['role_gated'][] = $row + $page;
+        continue;
+      }
+      $entity = $entities[$row['entity_id']] ?? NULL;
+      if (!$entity) {
+        $row['error'] = 'menu_link_content entity not loadable';
+        $result['failed'][] = $row;
+        continue;
+      }
+      try {
+        $definition = $entity->getPluginDefinition();
+      }
+      catch (\Throwable $e) {
+        $row['error'] = get_class($e) . ': ' . $e->getMessage();
+        $result['failed'][] = $row;
+        continue;
+      }
+      if (!empty($definition['route_name'])) {
+        $row['route_name'] = (string) $definition['route_name'];
+        $row['definition'] = $definition;
+        $result['repairable'][] = $row;
+      }
+      else {
+        $result['unrouted'][] = $row;
+      }
+    }
+    return $result;
+  }
+
+  /**
+   * The Page Manager page at a menu link's internal: path, if there is one.
+   *
+   * @return array{page: string, variants: int, role_gated: bool}|null
+   *   role_gated: more than one variant, or any variant with selection
+   *   conditions — i.e. which variant answers depends on the user.
+   */
+  private function pageManagerPage(string $uri): ?array {
+    if (!$this->entityTypeManager->hasDefinition('page')) {
+      return NULL;
+    }
+    $path = '/' . ltrim((string) parse_url(substr($uri, strlen('internal:')), PHP_URL_PATH), '/');
+    $candidates = [$path];
+    if ($this->entityTypeManager->hasDefinition('path_alias')) {
+      foreach ($this->entityTypeManager->getStorage('path_alias')->loadByProperties(['alias' => $path, 'status' => 1]) as $alias) {
+        $candidates[] = $alias->getPath();
+      }
+    }
+    foreach ($this->entityTypeManager->getStorage('page')->loadByProperties(['path' => $candidates]) as $page) {
+      $variants = method_exists($page, 'getVariants') ? $page->getVariants() : [];
+      $conditioned = FALSE;
+      foreach ($variants as $variant) {
+        if (method_exists($variant, 'getSelectionConditions') && count($variant->getSelectionConditions()) > 0) {
+          $conditioned = TRUE;
+        }
+      }
+      return ['page' => (string) $page->id(), 'variants' => count($variants), 'role_gated' => $conditioned || count($variants) > 1];
+    }
+    return NULL;
+  }
+
+  /**
+   * Re-routes every stored-unrouted menu link whose path resolves today.
+   *
+   * Runs at RoutingEvents::FINISHED — after core's MenuRouterRebuildSubscriber
+   * (priority 100) has rebuilt the tree — and on cron, which is a separate
+   * process, so a cause local to the process that rebuilt the menu is caught
+   * at the next cron run. Writes through MenuLinkManager::updateDefinition(),
+   * the path MenuLinkContent::postSave() takes, which invalidates
+   * config:system.menu.<menu> so the toolbar hash changes and browsers
+   * re-fetch their subtrees. Nothing is written when there is nothing to fix;
+   * role-gated and pinned Page Manager links are never touched (see
+   * probeMenuLinks()).
+   *
+   * @param string $trigger
+   *   'router rebuild', 'cron', 'manual', 'test'.
+   *
+   * @return array{checked: int, repaired: array, role_gated: array, unrouted: array, failed: array, pinned: array, trigger: string}
+   *   Rows as probeMenuLinks() returns them, without the definition.
+   */
+  public function repairMenuLinks(string $trigger): array {
+    $probe = $this->probeMenuLinks();
+    $summary = [
+      'checked' => count($probe['repairable']) + count($probe['role_gated']) + count($probe['unrouted']) + count($probe['failed']),
+      'repaired' => [],
+      'role_gated' => $probe['role_gated'],
+      'unrouted' => $probe['unrouted'],
+      'failed' => $probe['failed'],
+      'pinned' => $probe['pinned'],
+      'trigger' => $trigger,
+    ];
+    foreach ($probe['repairable'] as $row) {
+      $definition = $row['definition'];
+      unset($row['definition']);
+      try {
+        $this->menuLinkManager->updateDefinition($row['plugin_id'], $definition, FALSE);
+        $summary['repaired'][] = $row;
+      }
+      catch (\Throwable $e) {
+        $row['error'] = get_class($e) . ': ' . $e->getMessage();
+        $summary['failed'][] = $row;
+      }
+    }
+    $label = static fn(array $r): string => sprintf('%s (%s, menu %s)', $r['title'], $r['uri'], $r['menu']);
+    $previous = $this->state->get(self::STATE_MENU_LINKS) ?: [];
+    $this->state->set(self::STATE_MENU_LINKS, [
+      'at' => $this->time->getRequestTime(),
+      'trigger' => $trigger,
+      'checked' => $summary['checked'],
+      'repaired' => array_map(static fn(array $r): string => $label($r) . ' → ' . $r['route_name'], $summary['repaired']),
+      // Keyed by plugin id so a later pass can tell new from known.
+      'role_gated' => array_combine(array_column($summary['role_gated'], 'plugin_id'), array_map(static fn(array $r): string => $label($r) . sprintf(' — page %s, %d variants', $r['page'], $r['variants']), $summary['role_gated'])),
+      'unrouted' => array_combine(array_column($summary['unrouted'], 'plugin_id'), array_map($label, $summary['unrouted'])),
+      'pinned' => array_combine(array_column($summary['pinned'], 'plugin_id'), array_map(static fn(array $r): string => $label($r) . ' → ' . $r['route_name'], $summary['pinned'])),
+      'failed' => array_map(static fn(array $r): string => $label($r) . ': ' . $r['error'], $summary['failed']),
+    ]);
+    if ($summary['repaired']) {
+      $this->logger->notice('Router guard re-routed @n menu link(s) that had been stored without a route (@trigger): @list', [
+        '@n' => count($summary['repaired']),
+        '@trigger' => $trigger,
+        '@list' => implode(' · ', array_map(static fn(array $r): string => $label($r) . ' → ' . $r['route_name'], $summary['repaired'])),
+      ]);
+    }
+    $newly_pinned = array_filter($summary['pinned'], static fn(array $r): bool => !isset($previous['pinned'][$r['plugin_id']]));
+    if ($newly_pinned) {
+      $this->logger->warning('Router guard: @n menu link(s) are stored pinned to ONE variant of a role-gated Page Manager page and will be hidden from the other roles (a menu rebuild from a web request does this; a rebuild from drush restores the plain URL): @list', [
+        '@n' => count($newly_pinned),
+        '@list' => implode(' · ', array_map(static fn(array $r): string => $label($r) . ' → ' . $r['route_name'], $newly_pinned)),
+      ]);
+    }
+    foreach ($summary['failed'] as $row) {
+      $this->logger->error('Router guard could not re-derive menu link @link: @error', [
+        '@link' => $label($row),
+        '@error' => $row['error'],
+      ]);
+    }
+    return $summary;
   }
 
   /**

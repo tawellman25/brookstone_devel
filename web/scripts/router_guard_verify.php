@@ -9,8 +9,9 @@
  * Reads config, state and the router table; renders three anonymous GETs through
  * the kernel (/jsonapi, /user/login, a bogus path). The bogus GET exercises the
  * guard's 404 path, which on a whole table only sets a 60-second cache item.
- * Nothing is created, saved or rebuilt. Write-and-rollback testing is
- * test_router_guard.php (dev only).
+ * The menu-link section re-derives the stored-unrouted links in memory
+ * (probeMenuLinks()) and writes nothing. Nothing is created, saved or rebuilt.
+ * Write-and-rollback testing is test_router_guard.php (dev only).
  */
 
 use Drupal\bos_router_guard\RouterGuard;
@@ -50,6 +51,7 @@ foreach ([KernelEvents::EXCEPTION => 'onException', KernelEvents::TERMINATE => '
 $ok($mh->hasImplementations('cron', 'bos_router_guard'), 'hook_cron');
 $ok($mh->hasImplementations('runtime_requirements', 'bos_router_guard'), 'hook_runtime_requirements');
 $ok($mh->hasImplementations('mail', 'bos_router_guard'), 'hook_mail');
+$ok(method_exists($guard, 'probeMenuLinks') && method_exists($guard, 'repairMenuLinks'), 'guard has the menu-link probe + repair (2026-11-16)');
 $settings = \Drupal::config('bos_router_guard.settings');
 $to = $guard->recipient();
 $ok(filter_var($to, FILTER_VALIDATE_EMAIL) !== FALSE, "alert recipient: $to" . ($settings->get('alert_email') ? ' (settings)' : ' (site mail fallback)'));
@@ -89,6 +91,23 @@ $ok(empty(\Drupal::state()->get(RouterGuard::STATE_INCIDENT)), 'and opened no in
 $ok($code === 200, "/user/login → $code");
 [$code] = $get('/bos-router-guard-verify-' . mt_rand());
 $ok($code === 404, "bogus path → $code (404, not 500)");
+
+echo "== menu links stored without a route (2026-11-16) ==\n";
+$menu = $guard->probeMenuLinks();
+$label = static fn(array $r): string => "[{$r['menu']}] {$r['title']} {$r['uri']}";
+$ok($menu['repairable'] === [], 'no menu_link_content link stored unrouted whose path resolves today' . ($menu['repairable'] ? ' — STALE: ' . implode(' · ', array_map(static fn(array $r): string => $label($r) . ' → ' . $r['route_name'], $menu['repairable'])) . ' (the next cron run or router rebuild re-routes them)' : ''));
+$ok($menu['failed'] === [], 'every stored-unrouted link could be re-derived' . ($menu['failed'] ? ' — ' . implode(' · ', array_map(static fn(array $r): string => $label($r) . ': ' . $r['error'], $menu['failed'])) : ''));
+$ok($menu['pinned'] === [], 'no link pinned to one variant of a role-gated Page Manager page' . ($menu['pinned'] ? ' — PINNED (hidden from the other roles; a drush menu rebuild restores the plain URL): ' . implode(' · ', array_map(static fn(array $r): string => $label($r) . ' → ' . $r['route_name'], $menu['pinned'])) : ''));
+echo '  role-gated Page Manager pages, correctly stored as plain URLs: ' . (count($menu['role_gated']) ?: 'none') . "\n";
+foreach ($menu['role_gated'] as $r) {
+  echo '    ' . $label($r) . sprintf(' — page %s, %d variants', $r['page'], $r['variants']) . "\n";
+}
+echo '  links with no route (a dead link or a redirect): ' . (count($menu['unrouted']) ?: 'none') . "\n";
+foreach ($menu['unrouted'] as $r) {
+  echo '    ' . $label($r) . "\n";
+}
+$last = \Drupal::state()->get(RouterGuard::STATE_MENU_LINKS);
+echo '  last pass: ' . (!empty($last['at']) ? date('Y-m-d H:i:s T', (int) $last['at']) . ' (' . ($last['trigger'] ?? '?') . ') — ' . (int) ($last['checked'] ?? 0) . ' checked, ' . count($last['repaired'] ?? []) . ' re-routed' : 'none yet (runs at the first router rebuild or cron after the deploy)') . "\n";
 
 echo "== recent log ==\n";
 if ($mh->moduleExists('dblog')) {

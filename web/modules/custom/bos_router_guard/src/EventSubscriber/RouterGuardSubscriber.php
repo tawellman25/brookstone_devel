@@ -22,7 +22,9 @@ use Symfony\Component\Routing\Exception\RouteNotFoundException;
  *   2026-11-14), triggers one throttled table check. Never throws.
  * - kernel.terminate: if the check asked for a rebuild, run it now that the
  *   visitor has their response.
- * - RoutingEvents::FINISHED: a complete dump just committed — record the count.
+ * - RoutingEvents::FINISHED: a complete dump just committed — record the count,
+ *   then re-route any menu_link_content link core's menu rebuild (priority
+ *   100, just before us) stored without its route (2026-11-16).
  */
 final class RouterGuardSubscriber implements EventSubscriberInterface {
 
@@ -78,6 +80,12 @@ final class RouterGuardSubscriber implements EventSubscriberInterface {
     }
     catch (\Throwable $e) {
       $this->logger->error('Router guard could not record the rebuild: @message', ['@message' => $e->getMessage()]);
+    }
+    try {
+      $this->guard->repairMenuLinks('router rebuild');
+    }
+    catch (\Throwable $e) {
+      $this->logger->error('Router guard menu-link pass after the rebuild failed: @message', ['@message' => $e->getMessage()]);
     }
   }
 

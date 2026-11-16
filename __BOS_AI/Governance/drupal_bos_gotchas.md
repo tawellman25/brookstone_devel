@@ -2413,7 +2413,9 @@ device, every browser). Two facts chain:
    path 404 cached as `routes => FALSE` under `route_match` — bakes `base:` for every alias-based
    link, and the row stays wrong until the next rebuild. Live had **22 of 55** internal links baked
    (the Operations tree, the footer service pages, About, Privacy, Careers, two teammate links); dev
-   had 2 (the two genuinely unrouted paths). The exact baking process was not pinned down (the last
+   had 2 (`Office → /teammates` and `Handbook → /teammates/handbook`; live has the same 2 — and
+   **neither is dead**: the first is a role-gated Page Manager page, the second a 301 redirect, see
+   the third way below). The exact baking process was not pinned down (the last
    FINISHED on live was 2026-11-15 11:10 MT; re-deriving on 11-16 resolved every one). A baked link
    also skips the route's access check and loses active-trail.
 2. **Core's toolbar cannot survive an unrouted link directly under `system.admin`.**
@@ -2443,8 +2445,21 @@ link and invalidates `config:system.menu.*`, so the toolbar hash changes and bro
 daytime `drush cr`. **Trap while diagnosing:** a bare `GET /toolbar/subtrees/<hash>` from curl 403s
 because the theme for that route is negotiated from the POSTed `ajax_page_state` (front theme ≠ admin
 theme ⇒ different hash) — replay the browser's POST with `ajax_page_state[theme]` + `theme_token`
-before concluding the page hash is stale. Follow-up: deferred #44 (post-rebuild menu-link integrity
-check in `bos_router_guard`).
+before concluding the page hash is stale. **A third way a link derives `base:`, found while
+building the guard:** page_manager's `VariantRouteFilter` is a route *filter* that keeps only the
+variant whose selection conditions the **current user** meets (`$variant->access('view')`), so a
+role-gated page (`/teammates`: admin / teammates / supervisor variants) has no route for anonymous.
+Derived in drush (no user) it is `base:` — the right state, every role follows the plain URL to its
+own variant; derived in an **admin's web request** (any rebuild a web request triggers) it is stored
+routed to the admin variant, and the link's access check then hides it from everyone else. An
+account switch does not help — `LazyContextRepository` caches the current-user context for the whole
+process, so whoever resolved it first wins — which is why the guard's rule is **structural**: a path
+that is a `page` entity with conditioned or several variants is never re-routed, and one found stored
+routed to a variant is reported as **pinned** (a menu rebuild from drush restores the plain URL).
+**Guarded since 2026-11-16:** `bos_router_guard` re-derives
+every stored-unrouted `internal:` link after each router FINISHED and on cron (`probeMenuLinks()` /
+`repairMenuLinks()`, `Modules/bos_router_guard.md` → "Menu links stored without a route") and the
+Status report row names what is stale (Warning) or dead; deferred #44 closed.
 
 ## Status
 

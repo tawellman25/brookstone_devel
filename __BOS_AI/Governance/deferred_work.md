@@ -757,6 +757,19 @@ opened; the all-day record also prints a fake `07:00 AM`. S.
 
 ### 44. `bos_router_guard` should re-derive `menu_link_content` links after every router FINISHED
 
+**Closed 2026-11-16:** shipped in `bos_router_guard` — `probeMenuLinks()` (read-only classification:
+repairable / dead / failed) + `repairMenuLinks($trigger)` (`MenuLinkManager::updateDefinition()`,
+State summary, notice log) at FINISHED (the existing priority-0 listener, after core's menu rebuild at
+100 — a listener below 0 was not needed: path matching reads the `router` table directly and
+`route_match` is cleared at 200) and on cron (fresh process), Status-row notes (stale → Warning, dead
+links listed, last pass), verify 27 / dev test 65; crew-hours deploy (method bodies only, optional
+constructor args). Page Manager pages with conditioned/multiple variants are handled structurally:
+never re-routed (page_manager's `VariantRouteFilter` picks the variant by the current user, which the
+context repository then caches per process, so an admin's web rebuild would bake the admin variant
+and hide the link from other roles) and reported as **pinned** when found stored routed. Residue =
+`/teammates` (role-gated Page Manager page — correctly `base:`) and `/teammates/handbook` (a 301 to
+`/teammates/training/handbook`); neither dead. Original text kept below.
+
 Surfaced 2026-11-16 (the lost toolbar arrows — change log 2026-11-16, gotcha "A menu-link rebuild
 while the router is broken bakes `base:`…"). A menu rebuild that runs while routes cannot be matched
 bakes `url = base:…` into `menu_tree` for alias-based `internal:` links; nothing re-derives them

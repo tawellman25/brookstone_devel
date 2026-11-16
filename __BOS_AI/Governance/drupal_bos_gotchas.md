@@ -2400,6 +2400,52 @@ process wrote. Not a bug in the code under test; the web process sees fresh Stat
 `$storage->resetCache()` (the reference `$call()` wrapper does both). Same trap for anything a cron
 or queue worker in another process writes while a drush script watches.
 
+## A menu-link rebuild while the router is broken bakes `base:` into `menu_tree` — and one unrouted top-level admin link kills every vertical toolbar
+
+**Discovered 2026-11-16** on live (Todd: *"On the admin menu we lost the drop down arrows"* — every
+device, every browser). Two facts chain:
+
+1. **`menu_link_content` links store their routedness, not just their path.**
+   `MenuLinkContent::getPluginDefinition()` resolves `internal:/admin/operations` through the path
+   validator **at discovery time** and writes either `route_name` or, when nothing matched,
+   `url = base:admin/operations` into `menu_tree`. A menu rebuild that runs while routes (or their
+   aliases) cannot be matched — a half-written `router` table (the 2026-11-14 incident type), or a
+   path 404 cached as `routes => FALSE` under `route_match` — bakes `base:` for every alias-based
+   link, and the row stays wrong until the next rebuild. Live had **22 of 55** internal links baked
+   (the Operations tree, the footer service pages, About, Privacy, Careers, two teammate links); dev
+   had 2 (the two genuinely unrouted paths). The exact baking process was not pinned down (the last
+   FINISHED on live was 2026-11-15 11:10 MT; re-deriving on 11-16 resolved every one). A baked link
+   also skips the route's access check and loses active-trail.
+2. **Core's toolbar cannot survive an unrouted link directly under `system.admin`.**
+   `ToolbarController::preRenderGetRenderedSubtrees()` keys each top-level subtree by route name, or
+   by the raw URI when unrouted; `MenuVisualView.renderVertical()` then runs
+   `this.$el.find('#toolbar-link-' + id)` — `#toolbar-link-base:admin/operations` is an invalid
+   selector, jQuery throws, and the throw lands **before** `drupalToolbarMenu()` builds the expand
+   handles and before the browser stores the subtrees in `localStorage`. Symptoms: no arrows in the
+   vertical tray; the console says `Syntax error, unrecognized expression:
+   #toolbar-link-base:admin/operations`; the access log shows `POST /toolbar/subtrees/<hash>` → 200
+   on **every** page load (a healthy browser fetches once per hash). Core issues
+   [#3137154](https://www.drupal.org/project/drupal/issues/3137154) /
+   [#3016031](https://www.drupal.org/project/drupal/issues/3016031), open against 11.x.
+
+**Diagnose (read-only):**
+```sql
+SELECT t.menu_name, m.id, m.title, m.link__uri, t.url
+FROM menu_tree t
+JOIN menu_link_content b ON t.id = CONCAT('menu_link_content:', b.uuid)
+JOIN menu_link_content_data m ON m.id = b.id
+WHERE t.url LIKE 'base:%' AND m.link__uri LIKE 'internal:%';
+```
+(the `uuid` is on `menu_link_content`, not `menu_link_content_data`). Anything whose path resolves
+today is baked. **Fix:** `drush php:eval '\Drupal::service("plugin.manager.menu.link")->rebuild();'`
+— 3 s on live, no container or router rebuild, crew-hours safe; it re-derives every `rediscover = 1`
+link and invalidates `config:system.menu.*`, so the toolbar hash changes and browsers re-fetch. Not a
+daytime `drush cr`. **Trap while diagnosing:** a bare `GET /toolbar/subtrees/<hash>` from curl 403s
+because the theme for that route is negotiated from the POSTed `ajax_page_state` (front theme ≠ admin
+theme ⇒ different hash) — replay the browser's POST with `ajax_page_state[theme]` + `theme_token`
+before concluding the page hash is stale. Follow-up: deferred #44 (post-rebuild menu-link integrity
+check in `bos_router_guard`).
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

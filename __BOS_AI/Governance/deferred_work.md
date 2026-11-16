@@ -755,6 +755,22 @@ opened; the all-day record also prints a fake `07:00 AM`. S.
 
 ---
 
+### 44. `bos_router_guard` should re-derive `menu_link_content` links after every router FINISHED
+
+Surfaced 2026-11-16 (the lost toolbar arrows — change log 2026-11-16, gotcha "A menu-link rebuild
+while the router is broken bakes `base:`…"). A menu rebuild that runs while routes cannot be matched
+bakes `url = base:…` into `menu_tree` for alias-based `internal:` links; nothing re-derives them
+until the next rebuild, a baked link skips its route access check, and one such link directly under
+`system.admin` breaks core's vertical toolbar for everyone. The guard already owns half-written-router
+fallout: add a `RoutingEvents::FINISHED` subscriber at priority **below 0** (after
+`RouteProvider::reset()` at 0 and the menu rebuild at 100) that walks `menu_tree` rows
+`menu_link_content:*` with `url LIKE 'base:%'` whose entity URI is `internal:`, re-derives each with
+`$entity->getPluginDefinition()`, calls `plugin.manager.menu.link->updateDefinition()` when it now
+routes, logs the count, and surfaces a non-zero residue on the Status report row. One-line check for
+`router_guard_verify.php` too. S, T2.
+
+---
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

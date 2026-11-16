@@ -782,6 +782,23 @@ fallout: add a `RoutingEvents::FINISHED` subscriber at priority **below 0** (aft
 routes, logs the count, and surfaces a non-zero residue on the Status report row. One-line check for
 `router_guard_verify.php` too. S, T2.
 
+### 45. Live `error_log`: `TypeError` in token's field tokens during `auto_entitylabel`'s shutdown-function save
+
+Surfaced 2026-11-16 while preserving `web/error_log` before a deploy (PHP recreates the file, and
+every deploy deletes it, so older history is gone). Five entries that morning — 09:06, 09:08, 09:16,
+09:23, 09:24 MT, all before or unrelated to the 09:20 deploy:
+`TypeError: SplObjectStorage::offsetSet(): Argument #1 ($object) must be of type object, null given in
+core/lib/Drupal/Core/Render/Renderer.php:710` — `Renderer::setCurrentRenderContext()` ←
+`executeInRenderContext()` ← `renderInIsolation()` ← token `TokenTokensHooks::fieldTokens()`
+(`TokenTokensHooks.php:1133`) ← `Token::generate()` ← `AutoEntityLabelManager` (`:185`, `:315`) ←
+`auto_entitylabel_entity_presave()` / `_auto_entitylabel_post_insert()` (`auto_entitylabel.module:242` /
+`:339`) ← `_drupal_shutdown_function()`. An entity whose auto-label pattern uses a **field token** is
+being labelled in the post-insert *shutdown* phase, when the render context is already gone. Open:
+which entity type / bundle (the trace does not say — read the `auto_entitylabel.settings.*` patterns
+for field tokens with post-insert labelling, or log `getEntityTypeId()/bundle()` once), whether the
+entity is left without a label (likely — the label is set after the response), and the fix (presave
+labelling for those bundles, or guarding the render call). S, T2.
+
 ---
 
 ## Status

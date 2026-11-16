@@ -1,6 +1,6 @@
 # bos_router_guard — router integrity guard
 
-**Package:** BOS Infrastructure · **Shipped:** dev 2026-11-15, live 2026-11-15 · **Menu-link pass added** 2026-11-16 (see below) · **Rollback:** `drush pmu bos_router_guard` (nothing else references it).
+**Package:** BOS Infrastructure · **Shipped:** dev 2026-11-15, live 2026-11-15 · **Menu-link pass** added 2026-11-16, live 09:25 MT (`62fb2b1a`; see below) · **Rollback:** `drush pmu bos_router_guard` (nothing else references it).
 
 ## Why it exists
 
@@ -96,8 +96,8 @@ half-written router or a cached negative `route_match` lookup both produce it.
   **cron**. Honest caveat: core's own rebuild at FINISHED already re-derives every `internal:`
   link, so a baked row survives a rebuild only when *that process* could not match the path — the
   guard's retry in the same process will usually find the same thing and **record** it (Status row
-  → Warning), and the **cron pass from a fresh process** is the one that actually re-routes it, within
-  the hour. Manual: `drush php:eval '\Drupal::service("bos_router_guard.guard")->repairMenuLinks("manual");'`.
+  → Warning), and the **cron pass from a fresh process** is the one that actually re-routes it. Live
+  cron is `automated_cron` every 3 h (`interval: 10800`), so within 3 h at the latest. Manual: `drush php:eval '\Drupal::service("bos_router_guard.guard")->repairMenuLinks("manual");'`.
 - **Residue on dev and live (2026-11-16): two stored-unrouted links — neither dead.** `Office →
   internal:/teammates` (menu `teammate-navigation`) is the role-gated Page Manager page above
   (correctly a plain URL; the Status row says "nothing to fix"); `Handbook →

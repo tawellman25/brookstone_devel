@@ -2376,6 +2376,30 @@ checked before anything else — the opposite of the morning's clean-shutdown co
 processes on live (`--skip-router`, then `--skip-container`, or let the setup script's own rebuild be
 the second process). Check the router count after any rebuild that printed no "done".
 
+## `SoapServer::handle()` inside a Drupal controller → nginx 502 "duplicate header line: Content-Length"
+
+**Discovered 2026-11-15** (`bos_quickbooks`, the Web Connector endpoint). PHP's `SoapServer::handle()`
+writes the SOAP reply to the output buffer AND queues its own `Content-Type` and `Content-Length`
+with `header()`. Returning that buffer as a Symfony `Response` sends a second `Content-Length`, and
+nginx refuses the upstream reply: `upstream sent duplicate header line: "Content-Length: 341"` →
+**502 Bad Gateway** for every SOAP POST, with nothing in the Drupal log (the controller ran fine).
+
+**Fix:** capture with `ob_start()` … `ob_get_clean()`, then drop PHP's copies before building the
+Response — `if (!headers_sent()) { header_remove('Content-Length'); header_remove('Content-Type'); }`.
+Reference: `QbwcController::endpoint()`. Diagnose with `ddev logs -s web | grep duplicate`.
+
+## A drush test that drives the web endpoint reads stale State and stale entities
+
+**Discovered 2026-11-15** (`test_bos_quickbooks.php`). The test POSTs SOAP calls to the real
+endpoint (a separate PHP-FPM process) and then asserts what they wrote. Thirteen assertions failed
+although the data was correct: `\Drupal::state()->get()` keeps a per-process cache (first read wins
+for the life of the process) and entity storage keeps a static cache — both filled BEFORE the web
+process wrote. Not a bug in the code under test; the web process sees fresh State on every request.
+
+**Fix in the harness:** after every cross-process call, `\Drupal::state()->resetCache()` and
+`$storage->resetCache()` (the reference `$call()` wrapper does both). Same trap for anything a cron
+or queue worker in another process writes while a drush script watches.
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

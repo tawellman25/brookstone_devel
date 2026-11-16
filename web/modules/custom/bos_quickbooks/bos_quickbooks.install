@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * @file
+ * Install / uninstall for BOS QuickBooks.
+ */
+
+use Drupal\bos_quickbooks\QbMonitor;
+use Drupal\bos_quickbooks\QbSyncRunner;
+use Drupal\bos_quickbooks\QbwcSession;
+
+/**
+ * Implements hook_install().
+ *
+ * Mints the two .qwc GUIDs so the file is stable from the first download.
+ */
+function bos_quickbooks_install(): void {
+  $session = \Drupal::service('bos_quickbooks.session');
+  \Drupal::logger('bos_quickbooks')->notice('BOS QuickBooks installed. OwnerID @o, FileID @f. Set the connector password on /admin/office/quickbooks/settings.', [
+    '@o' => $session->ownerId(),
+    '@f' => $session->fileId(),
+  ]);
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Clears the module's State. The qb_list mirror entities are config +
+ * content of their own and are left alone (BOS never deletes history).
+ */
+function bos_quickbooks_uninstall(): void {
+  $state = \Drupal::state();
+  foreach ([
+    QbwcSession::STATE_SESSION, QbwcSession::STATE_PASSWORD, QbwcSession::STATE_OWNER_ID, QbwcSession::STATE_FILE_ID,
+    QbwcSession::STATE_LAST_CONTACT, QbwcSession::STATE_LAST_COMPANY,
+    QbSyncRunner::STATE_LAST_FULL_SYNC, QbSyncRunner::STATE_LAST_RUN, QbSyncRunner::STATE_LAST_ERROR, QbSyncRunner::STATE_LAST_LIST_SYNC,
+    QbMonitor::STATE_LAST_ALERT, QbMonitor::STATE_ALERT_OPEN, QbMonitor::STATE_CONNECTOR_VERSION,
+  ] as $key) {
+    $state->delete($key);
+  }
+}

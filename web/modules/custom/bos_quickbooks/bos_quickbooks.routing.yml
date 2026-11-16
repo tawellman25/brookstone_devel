@@ -1,0 +1,66 @@
+# The Web Connector endpoint. Anonymous at the route level: authentication is
+# the SOAP authenticate() call (username + password, flood-controlled). GET
+# returns the WSDL (?wsdl) or a one-line description; POST is SOAP.
+bos_quickbooks.soap:
+  path: '/qbwc/soap'
+  defaults:
+    _controller: '\Drupal\bos_quickbooks\Controller\QbwcController::endpoint'
+  methods: [GET, POST]
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE
+    _maintenance_access: TRUE
+
+# The AppSupport URL the .qwc file carries — the Web Connector shows it to the
+# user as the "support" link for this application.
+bos_quickbooks.support:
+  path: '/qbwc/support'
+  defaults:
+    _controller: '\Drupal\bos_quickbooks\Controller\QbwcController::support'
+    _title: 'BOS QuickBooks sync'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE
+
+bos_quickbooks.status:
+  path: '/admin/office/quickbooks'
+  defaults:
+    _controller: '\Drupal\bos_quickbooks\Controller\AdminController::status'
+    _title: 'QuickBooks'
+  requirements:
+    _permission: 'view quickbooks lists'
+  options:
+    _admin_route: TRUE
+
+bos_quickbooks.settings:
+  path: '/admin/office/quickbooks/settings'
+  defaults:
+    _form: '\Drupal\bos_quickbooks\Form\SettingsForm'
+    _title: 'QuickBooks settings'
+  requirements:
+    _permission: 'administer quickbooks integration'
+  options:
+    _admin_route: TRUE
+
+bos_quickbooks.qwc:
+  path: '/admin/office/quickbooks/bos-quickbooks.qwc'
+  defaults:
+    _controller: '\Drupal\bos_quickbooks\Controller\AdminController::qwc'
+  requirements:
+    _permission: 'administer quickbooks integration'
+  options:
+    _admin_route: TRUE
+    no_cache: TRUE
+
+bos_quickbooks.match:
+  path: '/admin/office/quickbooks/match'
+  defaults:
+    _form: '\Drupal\bos_quickbooks\Form\RunMatcherForm'
+    _title: 'Run the customer matching pass'
+  requirements:
+    _permission: 'administer quickbooks integration'
+  options:
+    _admin_route: TRUE

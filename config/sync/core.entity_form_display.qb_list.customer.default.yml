@@ -1,0 +1,76 @@
+uuid: 07652815-31f8-424a-95c8-72df986d51eb
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.qb_list.customer
+    - field.field.qb_list.customer.field_bill_address
+    - field.field.qb_list.customer.field_bos_client
+    - field.field.qb_list.customer.field_company_name
+    - field.field.qb_list.customer.field_customer_type
+    - field.field.qb_list.customer.field_edit_sequence
+    - field.field.qb_list.customer.field_first_name
+    - field.field.qb_list.customer.field_last_name
+    - field.field.qb_list.customer.field_last_seen
+    - field.field.qb_list.customer.field_list_id
+    - field.field.qb_list.customer.field_match_note
+    - field.field.qb_list.customer.field_match_status
+    - field.field.qb_list.customer.field_missing
+    - field.field.qb_list.customer.field_name
+    - field.field.qb_list.customer.field_parent_list_id
+    - field.field.qb_list.customer.field_sublevel
+    - field.field.qb_list.customer.field_terms
+    - field.field.qb_list.customer.field_time_created
+    - field.field.qb_list.customer.field_time_modified
+  module:
+    - options
+    - user
+id: qb_list.customer.default
+targetEntityType: qb_list
+bundle: customer
+mode: default
+content:
+  field_bos_client:
+    type: entity_reference_autocomplete
+    weight: 0
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: 'Type a client name…'
+    third_party_settings: {  }
+  field_match_status:
+    type: options_select
+    weight: 1
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_match_note:
+    type: string_textarea
+    weight: 2
+    region: content
+    settings:
+      rows: 3
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  title: true
+  status: true
+  created: true
+  changed: true
+  field_first_name: true
+  field_last_name: true
+  field_company_name: true
+  field_customer_type: true
+  field_terms: true
+  field_bill_address: true
+  field_list_id: true
+  field_name: true
+  field_sublevel: true
+  field_parent_list_id: true
+  field_edit_sequence: true
+  field_time_created: true
+  field_time_modified: true
+  field_last_seen: true
+  field_missing: true

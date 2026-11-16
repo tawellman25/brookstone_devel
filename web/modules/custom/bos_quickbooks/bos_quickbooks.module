@@ -1,0 +1,251 @@
+<?php
+
+/**
+ * @file
+ * BOS QuickBooks — Web Connector sync of QuickBooks Desktop lists into BOS.
+ *
+ * The protocol, the sync and the matching live in src/. This file carries the
+ * hooks: cron (stale alert), the Status report row, the two emails, the
+ * customer-link presave (ListID → customer profile) and the form tweaks.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Extension\Requirement\RequirementSeverity;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_cron().
+ */
+function bos_quickbooks_cron(): void {
+  try {
+    \Drupal::service('bos_quickbooks.monitor')->cron();
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('bos_quickbooks')->error('QuickBooks monitor cron failed: @m', ['@m' => $e->getMessage()]);
+  }
+}
+
+/**
+ * Implements hook_runtime_requirements().
+ *
+ * One row on /admin/reports/status: QuickBooks connector (BOS).
+ */
+function bos_quickbooks_runtime_requirements(): array {
+  $row = ['title' => t('QuickBooks connector (BOS)')];
+  try {
+    $f = \Drupal::service('bos_quickbooks.monitor')->inspect();
+  }
+  catch (\Throwable $e) {
+    $row += ['value' => t('Could not read the sync state'), 'description' => $e->getMessage(), 'severity' => RequirementSeverity::Error];
+    return ['bos_quickbooks' => $row];
+  }
+  $status_url = Url::fromRoute('bos_quickbooks.status')->toString();
+  if (!$f['password_set']) {
+    $row += [
+      'value' => t('Not configured — no Web Connector password set'),
+      'description' => t('Set one on the <a href=":url">QuickBooks page</a>; until then the connector cannot authenticate.', [':url' => $status_url]),
+      'severity' => RequirementSeverity::Warning,
+    ];
+  }
+  elseif ($f['never']) {
+    $row += [
+      'value' => t('Never synced'),
+      'description' => t('The Web Connector on the shop PC has not completed a run yet. Setup steps are on the <a href=":url">QuickBooks page</a>.', [':url' => $status_url]),
+      'severity' => RequirementSeverity::Warning,
+    ];
+  }
+  elseif ($f['stale']) {
+    $row += [
+      'value' => t('STALE — last complete sync @when', ['@when' => _bos_quickbooks_date((int) $f['last_full_sync']['at'])]),
+      'description' => t('Older than @h hours. The connector on the shop PC is not running, the PC is off, or QuickBooks refused a query (last error: @e). Invoicing refuses to run until a clean sync lands. @to is emailed every @i h.', [
+        '@h' => $f['stale_hours'],
+        '@e' => $f['last_error']['message'] ?? t('none'),
+        '@to' => $f['recipient'],
+        '@i' => (int) round((\Drupal::config('bos_quickbooks.settings')->get('alert_interval') ?: 86400) / 3600),
+      ]),
+      'severity' => RequirementSeverity::Error,
+    ];
+  }
+  else {
+    $c = $f['counts'];
+    $row += [
+      'value' => t('Current — synced @when (@cust customers, @items items, @classes classes)', [
+        '@when' => _bos_quickbooks_date((int) $f['last_full_sync']['at']),
+        '@cust' => number_format($c['customer']['active']),
+        '@items' => number_format($c['item']['active']),
+        '@classes' => number_format($c['class']['active']),
+      ]),
+      'description' => t('Company file: @company. Stale after @h hours without a complete sync.', ['@company' => $f['company']['name'] ?? '?', '@h' => $f['stale_hours']]),
+      'severity' => RequirementSeverity::OK,
+    ];
+  }
+  return ['bos_quickbooks' => $row];
+}
+
+/**
+ * Implements hook_mail().
+ *
+ * Plain text; URLs alone on their line (the legacy mail path wraps at ~77).
+ */
+function bos_quickbooks_mail(string $key, array &$message, array $params): void {
+  $f = $params['facts'] ?? [];
+  $host = $params['host'] ?? 'BOS';
+  $status = Url::fromRoute('bos_quickbooks.status', [], ['absolute' => TRUE])->toString();
+  $message['headers']['X-BOS-Mail'] = 'quickbooks';
+  switch ($key) {
+    case 'stale':
+      $last = $f['last_full_sync'] ?? NULL;
+      $message['subject'] = "BOS ALERT: QuickBooks mirror is stale on $host";
+      $lines = [
+        "QuickBooks sync on $host",
+        '',
+        sprintf('No complete sync for more than %d hours. The last one finished %s.', $f['stale_hours'] ?? 24, $last ? _bos_quickbooks_date((int) $last['at']) : 'never'),
+        'Last contact from the Web Connector: ' . (!empty($f['last_contact']) ? _bos_quickbooks_date((int) $f['last_contact']) : 'never') . '.',
+        'Last error: ' . ($f['last_error']['message'] ?? 'none') . '.',
+        '',
+        'What this means: BOS does not have a current copy of the QuickBooks customer / item / class lists, so invoicing refuses to run until a clean sync lands.',
+        '',
+        'Usual causes, in order: the shop PC is off or asleep; nobody is logged in on it; the QuickBooks Web Connector is not running (tray icon); QuickBooks is open on a dialog; the company file was moved or renamed; the connector password was changed here but not there.',
+        '',
+        'To fix: on the shop PC open the QuickBooks Web Connector, tick BOS QuickBooks Sync, press Update Selected, and read its status line. This email repeats once per alert interval and you get an all-clear when a sync completes.',
+        '',
+        'Status page:',
+        $status,
+      ];
+      break;
+
+    case 'recovered':
+      $s = $f['summary'] ?? [];
+      $message['subject'] = "BOS: QuickBooks mirror is current again on $host";
+      $lines = [
+        "QuickBooks sync on $host",
+        '',
+        sprintf('A complete sync finished %s: %s.', isset($s['at']) ? _bos_quickbooks_date((int) $s['at']) : 'just now', $s['text'] ?? ''),
+        'Nothing to do.',
+        '',
+        'Status page:',
+        $status,
+      ];
+      break;
+
+    default:
+      return;
+  }
+  $message['body'][] = implode("\n", $lines);
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for qb_list.
+ *
+ * A customer's BOS client link is the source of truth for "which QuickBooks
+ * customer is this client". When it changes, the ListID is written onto the
+ * client's customer profile (and cleared from the previous client's), and a
+ * change made by a person is marked "Matched by the office".
+ */
+function bos_quickbooks_qb_list_presave(EntityInterface $entity): void {
+  if ($entity->bundle() !== 'customer' || !empty($entity->_bos_qb_sync) || !$entity->hasField('field_bos_client')) {
+    return;
+  }
+  $new_uid = $entity->get('field_bos_client')->isEmpty() ? NULL : (int) $entity->get('field_bos_client')->target_id;
+  $old_uid = NULL;
+  if (!$entity->isNew()) {
+    // $entity->original is not reliable on this build — read the stored row.
+    $stored = \Drupal::entityTypeManager()->getStorage('qb_list')->loadUnchanged($entity->id());
+    if ($stored && !$stored->get('field_bos_client')->isEmpty()) {
+      $old_uid = (int) $stored->get('field_bos_client')->target_id;
+    }
+  }
+  if ($new_uid === $old_uid) {
+    return;
+  }
+  if (empty($entity->_bos_qb_matcher)) {
+    $status = (string) $entity->get('field_match_status')->value;
+    if ($new_uid) {
+      $entity->set('field_match_status', 'manual');
+      $others = \Drupal::service('bos_quickbooks.mirror')->otherCustomersLinkedTo($new_uid, $entity->isNew() ? NULL : (int) $entity->id());
+      if ($others) {
+        \Drupal::messenger()->addWarning(t('Heads up: @n other QuickBooks customer(s) already point at this client — @list. Two QuickBooks customers for one client usually means a merge is needed in QuickBooks.', [
+          '@n' => count($others),
+          '@list' => implode(', ', array_map(static fn($o) => '"' . $o->label() . '"', $others)),
+        ]));
+      }
+    }
+    elseif (in_array($status, ['auto', 'manual'], TRUE)) {
+      $entity->set('field_match_status', 'unmatched');
+    }
+  }
+  try {
+    \Drupal::service('bos_quickbooks.mirror')->syncClientProfile($entity, $old_uid);
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('bos_quickbooks')->error('Could not write the ListID onto the customer profile for "@name": @m', ['@name' => $entity->label(), '@m' => $e->getMessage()]);
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * - customer_profile forms: the QuickBooks List ID is managed by the sync —
+ *   read-only here, with a pointer to where it is set.
+ * - qb_list customer forms: a read-only summary of the QuickBooks record above
+ *   the two fields a person may edit.
+ * - qb_list item / class forms: everything is synced; say so.
+ */
+function bos_quickbooks_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  if (str_starts_with($form_id, 'profile_customer_profile_') && isset($form['field_qb_list_id'])) {
+    $form['field_qb_list_id']['#disabled'] = TRUE;
+    $form['field_qb_list_id']['widget'][0]['value']['#description'] = t('Managed by the QuickBooks sync: set by linking this client on the <a href=":url">QuickBooks customer list</a>, never typed.', [':url' => Url::fromRoute('view.qb_customers.page_1')->toString()]);
+    return;
+  }
+  if (!str_starts_with($form_id, 'qb_list_')) {
+    return;
+  }
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof \Drupal\Core\Entity\EntityFormInterface) {
+    return;
+  }
+  $entity = $form_object->getEntity();
+  if ($entity->getEntityTypeId() !== 'qb_list') {
+    return;
+  }
+  $rows = [];
+  $fields = ['title' => t('QuickBooks name'), 'field_list_id' => t('ListID'), 'field_first_name' => t('First'), 'field_last_name' => t('Last'), 'field_company_name' => t('Company'), 'field_customer_type' => t('Type'), 'field_terms' => t('Terms'), 'field_bill_address' => t('Bill To'), 'field_item_type' => t('Item type'), 'field_income_account' => t('Income account'), 'field_price' => t('Price'), 'field_description' => t('Description'), 'field_time_modified' => t('Modified in QuickBooks'), 'field_last_seen' => t('Last seen by sync')];
+  foreach ($fields as $name => $label) {
+    if (!$entity->hasField($name) || $entity->get($name)->isEmpty()) {
+      continue;
+    }
+    $value = (string) $entity->get($name)->value;
+    if (in_array($name, ['field_time_modified', 'field_last_seen'], TRUE)) {
+      $value = _bos_quickbooks_date((int) strtotime($value . ' UTC'));
+    }
+    $rows[] = [$label, ['data' => ['#markup' => nl2br(htmlspecialchars($value))]]];
+  }
+  $rows[] = [t('Active in QuickBooks'), $entity->get('status')->value ? t('Yes') : t('No')];
+  if ($entity->hasField('field_missing') && $entity->get('field_missing')->value) {
+    $rows[] = [t('Missing'), t('⚠ A complete sync no longer returned this record (deleted or merged in QuickBooks).')];
+  }
+  $form['bos_qb_summary'] = [
+    '#type' => 'details',
+    '#title' => t('The QuickBooks record (read-only — synced from QuickBooks)'),
+    '#open' => TRUE,
+    '#weight' => -50,
+    'table' => ['#type' => 'table', '#rows' => $rows],
+  ];
+  if ($entity->bundle() !== 'customer') {
+    $form['bos_qb_summary']['note'] = ['#markup' => '<p>' . t('Nothing on a QuickBooks @b is edited in BOS — change it in QuickBooks and the next sync brings it over.', ['@b' => $entity->bundle()]) . '</p>'];
+  }
+  elseif (isset($form['field_bos_client'])) {
+    $form['field_bos_client']['#weight'] = -40;
+    $form['field_match_status']['#weight'] = -30;
+    $form['field_match_note']['#weight'] = -20;
+  }
+}
+
+/**
+ * US date-time in the site's timezone (CLAUDE.md "Date Formatting").
+ */
+function _bos_quickbooks_date(int $timestamp): string {
+  $tz = \Drupal::config('system.date')->get('timezone.default') ?: 'America/Denver';
+  return \Drupal::service('date.formatter')->format($timestamp, 'custom', 'm/d/Y g:i A T', $tz);
+}

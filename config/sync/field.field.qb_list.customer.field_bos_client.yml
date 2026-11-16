@@ -1,0 +1,32 @@
+uuid: 5e1c576e-8047-4313-84d6-8667c7419069
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.qb_list.customer
+    - field.storage.qb_list.field_bos_client
+    - user.role.client
+id: qb_list.customer.field_bos_client
+field_name: field_bos_client
+entity_type: qb_list
+bundle: customer
+label: 'BOS Client'
+description: "The BOS client this QuickBooks customer is billed as. Picking one here is the ONLY way a QuickBooks identity is attached to a client — it writes the ListID onto the client's customer profile. Leave empty if this QuickBooks customer has no BOS client (and set the status to Ignored)."
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:user'
+  handler_settings:
+    include_anonymous: false
+    filter:
+      type: role
+      role:
+        client: client
+    target_bundles: null
+    sort:
+      field: name
+      direction: ASC
+    auto_create: false
+field_type: entity_reference

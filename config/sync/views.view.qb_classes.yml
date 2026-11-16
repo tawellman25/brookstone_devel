@@ -1,0 +1,316 @@
+uuid: 5ba07987-179b-4ecd-8487-30a5604169d2
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.qb_list.class
+    - field.storage.qb_list.field_last_seen
+    - field.storage.qb_list.field_missing
+  module:
+    - datetime
+    - eck
+id: qb_classes
+label: 'QuickBooks Classes'
+module: views
+description: 'Class (department) list mirrored from QuickBooks Desktop by the Web Connector sync.'
+tag: quickbooks
+base_table: qb_list_field_data
+base_field: id
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'QuickBooks Classes'
+      fields:
+        title:
+          id: title
+          table: qb_list_field_data
+          field: title
+          entity_type: qb_list
+          entity_field: title
+          plugin_id: field
+          label: 'QuickBooks class'
+          type: string
+          settings:
+            link_to_entity: true
+        status:
+          id: status
+          table: qb_list_field_data
+          field: status
+          entity_type: qb_list
+          entity_field: status
+          plugin_id: field
+          label: Active
+          type: boolean
+          settings:
+            format: custom
+            format_custom_true: Active
+            format_custom_false: Inactive
+        field_last_seen:
+          id: field_last_seen
+          table: qb_list__field_last_seen
+          field: field_last_seen
+          plugin_id: field
+          label: 'Last seen'
+          type: datetime_custom
+          settings:
+            timezone_override: ''
+            date_format: 'm/d/Y g:i A'
+        field_missing:
+          id: field_missing
+          table: qb_list__field_missing
+          field: field_missing
+          plugin_id: field
+          label: Missing
+          type: boolean
+          settings:
+            format: custom
+            format_custom_true: '⚠ Missing'
+            format_custom_false: ''
+          element_class: bos-qb-missing
+          element_default_classes: true
+      pager:
+        type: full
+        options:
+          pagination_heading_level: h4
+          items_per_page: 50
+          offset: 0
+          tags:
+            previous: '‹ Previous'
+            next: 'Next ›'
+            first: '« First'
+            last: 'Last »'
+          expose:
+            items_per_page: true
+            items_per_page_label: 'Items per page'
+            items_per_page_options: '25, 50, 100, 200'
+            items_per_page_options_all: true
+            items_per_page_options_all_label: '- All -'
+            offset: false
+            offset_label: Offset
+          quantity: 9
+      access:
+        type: perm
+        options:
+          perm: 'view quickbooks lists'
+      cache:
+        type: tag
+        options: {  }
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: false
+          content:
+            value: '<p>The classes QuickBooks Desktop tracks (one per department, used on every invoice line), as of the last Web Connector sync. Read-only.</p>'
+            format: full_html
+      empty:
+        area:
+          id: area
+          table: views
+          field: area
+          plugin_id: text
+          empty: true
+          content:
+            value: '<p>No QuickBooks classes yet — the Web Connector has not completed a sync. See the QuickBooks status page.</p>'
+            format: full_html
+      sorts:
+        title:
+          id: title
+          table: qb_list_field_data
+          field: title
+          entity_type: qb_list
+          entity_field: title
+          plugin_id: standard
+          order: ASC
+          exposed: false
+      filters:
+        type:
+          id: type
+          table: qb_list_field_data
+          field: type
+          entity_type: qb_list
+          entity_field: type
+          plugin_id: bundle
+          operator: in
+          value:
+            class: class
+          group: 1
+          exposed: false
+        title:
+          id: title
+          table: qb_list_field_data
+          field: title
+          entity_type: qb_list
+          entity_field: title
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: title_op
+            label: 'QuickBooks name'
+            description: ''
+            use_operator: false
+            operator: title_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: title
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+            placeholder: ''
+        status:
+          id: status
+          table: qb_list_field_data
+          field: status
+          entity_type: qb_list
+          entity_field: status
+          plugin_id: boolean
+          operator: '='
+          value: All
+          group: 1
+          exposed: true
+          expose:
+            operator_id: status_op
+            label: 'Active in QuickBooks'
+            description: ''
+            use_operator: false
+            operator: status_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: status
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+        field_missing_value:
+          id: field_missing_value
+          table: qb_list__field_missing
+          field: field_missing_value
+          plugin_id: boolean
+          operator: '='
+          value: All
+          group: 1
+          exposed: true
+          expose:
+            operator_id: field_missing_value_op
+            label: 'Missing from QuickBooks'
+            description: ''
+            use_operator: false
+            operator: field_missing_value_op
+            operator_limit_selection: false
+            operator_list: {  }
+            identifier: field_missing_value
+            required: false
+            remember: false
+            multiple: false
+            remember_roles:
+              authenticated: authenticated
+      filter_groups:
+        operator: AND
+        groups:
+          1: AND
+      style:
+        type: table
+        options:
+          grouping: {  }
+          row_class: ''
+          default_row_class: true
+          columns:
+            title: title
+            status: status
+            field_last_seen: field_last_seen
+            field_missing: field_missing
+          default: title
+          info:
+            title:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            status:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_last_seen:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            field_missing:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+          override: true
+          sticky: true
+          summary: ''
+          empty_table: true
+          caption: ''
+          description: ''
+      row:
+        type: fields
+        options:
+          default_field_elements: true
+          inline: {  }
+          separator: ''
+          hide_empty: false
+      query:
+        type: views_query
+        options: {  }
+      exposed_form:
+        type: basic
+        options:
+          submit_button: Filter
+          reset_button: true
+          reset_button_label: Reset
+          exposed_sorts_label: 'Sort by'
+          expose_sort_order: true
+          sort_asc_label: Asc
+          sort_desc_label: Desc
+      display_extenders: {  }
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.permissions
+      tags: {  }
+  page_1:
+    id: page_1
+    display_title: Classes
+    display_plugin: page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/office/quickbooks/classes
+    cache_metadata:
+      max-age: -1
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.permissions
+      tags: {  }

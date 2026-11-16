@@ -1,0 +1,9 @@
+services:
+  bos_quickbooks.commands:
+    class: Drupal\bos_quickbooks\Commands\QuickBooksCommands
+    arguments:
+      - '@bos_quickbooks.session'
+      - '@bos_quickbooks.monitor'
+      - '@bos_quickbooks.matcher'
+    tags:
+      - { name: drush.command }

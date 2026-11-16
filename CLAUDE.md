@@ -173,6 +173,12 @@ ddev drush bos:checkups:generate [--force]
                              # Enqueue the irrigation check-up generator dispatcher
                              # Shares guard logic with cron (skips if already dispatched today)
                              # Use --force to override the daily guard
+
+ddev drush bos:qb:status     # QuickBooks Web Connector sync status (mirror freshness, counts, last run/error)
+ddev drush bos:qb:match [--dry-run] [--rematch]
+                             # Name → ListID matching pass over the mirrored QuickBooks customers
+ddev drush bos:qb:set-password <password>
+                             # Web Connector password (hashed into State; the settings form does the same)
 ```
 
 ## Architecture Overview
@@ -354,6 +360,9 @@ Link entity between `material` and `supplier`. Enforced by `material_supplier` m
 #### `contract_action_log` — 1 bundle: `log`
 #### `contract_notes` — 1 bundle: `note`
 
+#### `qb_list` — 3 bundles: `customer`, `item`, `class` (QuickBooks mirror, added 2026-11-15)
+Mirror of QuickBooks Desktop lists kept current by `bos_quickbooks` through the Web Connector. **QuickBooks owns every field except three** on `customer`: `field_bos_client` (→ user, role client — the identity invoicing uses), `field_match_status`, `field_match_note`. `title` = QuickBooks FullName, `status` = IsActive, `field_list_id` = the stable ListID (upsert key), `field_missing` = no longer returned by a complete sync (kept, never deleted). Spec: `__BOS_AI/Entities/qb_list.md`.
+
 #### Pricing/rate reference entities
 - `sq_ft_break_points` — 4 bundles: `aeration`, `dethatching`, `overseeding_labor`, `overseeding_seed_markup` (referenced from `business_setting` config page for area-based pricing)
 
@@ -521,6 +530,11 @@ One module per WO service bundle. Each implements `hook_entity_presave` to calcu
 | Module | Purpose |
 |---|---|
 | `bos_teammate_operations` | Teammate Operations Hub at `/admin/office/operations/teammates`. Variance dashboards (compensable hrs vs WO hrs per teammate), per-teammate detail drill-down, time-clock data hygiene check, Active Now operational snapshot, Weekly Trends 8-week productivity table. Provides `CompensableHoursService` (8.5-hour assumption now, swappable to real `time_clock_entry` data when TimeTrax integration completes — see `__BOS_AI/Strategy/timetrax_strategy.md`) and `AnomalyDetectionService`. Phases 2A–2F delivered (2A=`8d98ba2a`, 2B=`dcb6c67f`, 2B.1=`1e72a804`, 2C=`6b1714b1`, 2D=`dd17e77f`, 2E=`a375a8ea`, 2F shipped 2026-05-30). Tier 2 surfaces (Team Roster, Today's Schedule) remain planned. |
+
+### Billing modules
+| Module | Purpose |
+|---|---|
+| `bos_quickbooks` | **QuickBooks Desktop integration through the QuickBooks Web Connector** (Phase 0 on dev 2026-11-15, not live until the P1 shop visit). The connector on the office PC polls `/qbwc/soap` (PHP `SoapServer`, QBWC WSDL) on a timer; BOS answers `authenticate` (password hashed in State, flood 10/h/IP), then walks three list queries — class → customer → item, `ActiveStatus All`, iterator pages of 500 — into the **`qb_list` mirror** (ECK, bundles `customer`/`item`/`class`; upsert writes only on change; rows a complete sync no longer returns are flagged `field_missing`, never deleted). Each QuickBooks customer is **linked to one BOS client by ListID** (`qb_list:customer.field_bos_client`, source of truth; presave writes the ListID onto `customer_profile.field_qb_list_id`, which is disabled on the profile form) — seeded by `CustomerMatcher` (name with status suffixes stripped + QB first/last/company vs BOS user name / profile first/last/spouse/company; real list: 1,569 of 1,734 auto, 54 ambiguous, 9 duplicate, 102 unmatched) and finished by the office on the **Review** list. `QbMonitor`: mirror stale after 24 h without a clean run → Status report row Error + email (router-guard pattern, nothing before the first sync); Phase 2's invoice run is gated on it. Office ▸ QuickBooks (`/admin/office/quickbooks`: Status · Review · Customers · Items · Classes · Settings; `.qwc` download). **Design rule (Todd):** every office-manager-dependent step disappears or fails loudly. Scripts `web/scripts/bos_quickbooks_{config_gen,setup,verify}.php`, dev test `test_bos_quickbooks.php` (74). Docs `Modules/bos_quickbooks.md`, `Entities/qb_list.md`. Phase 2 = `InvoiceAdd`. Rollback `pmu`. |
 
 ### Utility/infrastructure modules
 | Module | Purpose |

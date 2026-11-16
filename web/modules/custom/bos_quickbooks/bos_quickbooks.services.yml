@@ -1,0 +1,77 @@
+services:
+  logger.channel.bos_quickbooks:
+    parent: logger.channel_base
+    arguments: ['bos_quickbooks']
+
+  # Web Connector sessions: password check, tickets, the one-at-a-time rule,
+  # OwnerID / FileID for the .qwc file.
+  bos_quickbooks.session:
+    class: Drupal\bos_quickbooks\QbwcSession
+    arguments:
+      - '@state'
+      - '@config.factory'
+      - '@flood'
+      - '@datetime.time'
+      - '@password'
+      - '@uuid'
+      - '@logger.channel.bos_quickbooks'
+
+  # qbXML request builder + response parser (list queries only in phase 0).
+  bos_quickbooks.qbxml:
+    class: Drupal\bos_quickbooks\QbXml
+
+  # Upserts qb_list mirror entities from parsed QuickBooks records; links a
+  # customer to its BOS client (writes the ListID onto the customer profile).
+  bos_quickbooks.mirror:
+    class: Drupal\bos_quickbooks\QbListMirror
+    arguments:
+      - '@entity_type.manager'
+      - '@datetime.time'
+      - '@logger.channel.bos_quickbooks'
+
+  # Staleness: last complete sync vs the configured window; Status report row;
+  # the stale / recovered emails on cron.
+  bos_quickbooks.monitor:
+    class: Drupal\bos_quickbooks\QbMonitor
+    arguments:
+      - '@state'
+      - '@config.factory'
+      - '@datetime.time'
+      - '@plugin.manager.mail'
+      - '@request_stack'
+      - '@bos_quickbooks.mirror'
+      - '@logger.channel.bos_quickbooks'
+
+  # The per-session job queue (class → customer → item) that sendRequestXML /
+  # receiveResponseXML walk.
+  bos_quickbooks.sync:
+    class: Drupal\bos_quickbooks\QbSyncRunner
+    arguments:
+      - '@bos_quickbooks.qbxml'
+      - '@bos_quickbooks.mirror'
+      - '@bos_quickbooks.monitor'
+      - '@state'
+      - '@config.factory'
+      - '@datetime.time'
+      - '@logger.channel.bos_quickbooks'
+
+  # The eight SOAP operations the Web Connector calls, as one object for
+  # SoapServer::setObject().
+  bos_quickbooks.soap_handler:
+    class: Drupal\bos_quickbooks\Soap\QbwcSoapHandler
+    arguments:
+      - '@bos_quickbooks.session'
+      - '@bos_quickbooks.sync'
+      - '@bos_quickbooks.qbxml'
+      - '@config.factory'
+      - '@request_stack'
+      - '@logger.channel.bos_quickbooks'
+
+  # Name → ListID matching pass over the mirrored customers.
+  bos_quickbooks.matcher:
+    class: Drupal\bos_quickbooks\CustomerMatcher
+    arguments:
+      - '@entity_type.manager'
+      - '@database'
+      - '@datetime.time'
+      - '@logger.channel.bos_quickbooks'

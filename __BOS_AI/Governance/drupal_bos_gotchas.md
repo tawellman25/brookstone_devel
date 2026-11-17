@@ -2461,6 +2461,24 @@ every stored-unrouted `internal:` link after each router FINISHED and on cron (`
 `repairMenuLinks()`, `Modules/bos_router_guard.md` → "Menu links stored without a route") and the
 Status report row names what is stale (Warning) or dead; deferred #44 closed.
 
+## `form_mode_control` picks the form mode by the user's HEAVIEST role — on BOS that is always `teammates`
+
+**Found 2026-11-17** while opening equipment defects to crews (`1139fdd7`), when a "crew" default form
+mode looked like the right guard. `form_mode_control_entity_form_display_alter()` reads
+`form_mode_control.settings` → `defaults[entity][bundle][create|update][ROLE]` for **one** role, chosen by
+`form_mode_control_get_role_id_with_max_weight()`: the user's role with the **largest weight**. BOS role
+weights are administrator −8, site_admin −7, site_assistant −6, administration −5, supervisor −4,
+**teammates −3**, client −2, user −1 — and every internal user holds `teammates` ("all admin and
+supervisors are teammates first"). So the chosen role is `teammates` for the office manager and the
+superuser alike: a crew form mode keyed on `teammates` would be served to everyone, and one keyed on
+`supervisor` would never be chosen by a supervisor. Two more facts worth knowing: BOS does not use the
+`defaults` key at all (`form_mode_control.settings` holds only `form_modes`), and the hundreds of
+"use  The form mode X linked to  Y entity( Z )" permissions only gate the explicit `?display=X` query
+switch (what `contract_sections_ui` uses for its `admin` mode). **Rule:** role-tiered forms on BOS are
+explicit `?display=` links, or a `hook_entity_field_access` / form alter keyed on a permission — never a
+form_mode_control default. Reordering role weights to make the module work would change which role wins
+for every entity type at once; don't.
+
 ## Status
 
 - Created: 2026-05-02 (Phase 2 retrospective documentation pass)

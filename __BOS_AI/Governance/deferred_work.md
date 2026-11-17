@@ -807,6 +807,23 @@ ROADMAP as NEXT — treat that as the item of record and this one as its error_l
 
 ---
 
+### 46. Equipment defect form: a crew-side read-only guard on status / assigned / costs / resolution
+
+Surfaced 2026-11-17 (`1139fdd7`) when every teammate was given create + edit-any on `equipment_defect`.
+The invariant "a defect is closed only by a verified maintenance event" is a convention: the form lets
+anyone with edit access set `field_defect_status`, `field_assigned_to`, `field_estimated_repair_cost`,
+`field_actual_repair_cost`, `field_resolution_notes`, `field_resolved_on` — now every crew member.
+The obvious tool, a `form_mode_control` default form mode per role, **cannot work on BOS**: the module
+picks the user's heaviest role and `teammates` outranks every office role (gotcha
+"`form_mode_control` picks the form mode by the user's HEAVIEST role"). The workable shape is a small
+module with `hook_entity_field_access` (or a form alter) that makes those six fields read-only unless
+the user holds a permission the office roles get (e.g. `manage equipment defect resolution`), plus the
+`equipment_inspection_workflow` writes, which must keep working programmatically. New hook = cache
+rebuild = **after-hours deploy**. Todd decides whether the guard is wanted at all ("all admin and
+supervisors are teammates first" may mean the flat form is the intent). T3.
+
+---
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

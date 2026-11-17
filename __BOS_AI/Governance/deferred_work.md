@@ -798,6 +798,12 @@ which entity type / bundle (the trace does not say — read the `auto_entitylabe
 for field tokens with post-insert labelling, or log `getEntityTypeId()/bundle()` once), whether the
 entity is left without a label (likely — the label is set after the response), and the fix (presave
 labelling for those bundles, or guarding the render call). S, T2.
+**2026-11-17:** the next preserved copy (`~/tmp/error_log.pre-deploy-20261117-162634`, 163 KB) holds
+**24 top-level entries, all this TypeError, 16-Nov 09:23 → 17-Nov 09:25 MT** — about one an hour,
+crew hours and overnight alike. It is the **same fault** as the earlier bullet "AEL post-insert shutdown
+TypeError leaves sentinel titles stuck" (above, in the D11 follow-ups), which already identifies the
+victims (`wo_status_updates` keeping `%AutoEntityLabel: <uuid>%` titles, ≥45 on live) and sits on the
+ROADMAP as NEXT — treat that as the item of record and this one as its error_log evidence trail.
 
 ---
 

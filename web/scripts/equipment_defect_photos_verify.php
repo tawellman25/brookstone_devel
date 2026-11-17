@@ -118,7 +118,12 @@ finally {
 if (!$write) {
   echo "== round-trip skipped (--no-write) ==\n";
   echo "\n$pass ok, $fail failed\n";
-  exit($fail ? 1 : 0);
+  // exit(0) makes drush report "terminated abnormally" on a clean pass; only
+  // a failure needs the non-zero exit.
+  if ($fail) {
+    exit(1);
+  }
+  return;
 }
 
 echo "== round-trip (dev): PNG → file entity → defect → page render → delete ==\n";
@@ -184,4 +189,6 @@ finally {
   $switch->switchBack();
 }
 echo "\n$pass ok, $fail failed\n";
-exit($fail ? 1 : 0);
+if ($fail) {
+  exit(1);
+}

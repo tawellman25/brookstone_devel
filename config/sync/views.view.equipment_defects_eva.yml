@@ -12,6 +12,7 @@ dependencies:
     - user.role.administrator
     - user.role.site_admin
     - user.role.supervisor
+    - user.role.teammates
   module:
     - datetime
     - eck
@@ -101,6 +102,7 @@ display:
             site_admin: site_admin
             administration: administration
             supervisor: supervisor
+            teammates: teammates
       cache:
         type: tag
         options: {  }
@@ -170,11 +172,26 @@ display:
               separator: ''
               empty_column: false
               responsive: ''
+          class: ''
       row:
         type: fields
       query:
         type: views_query
         options: {  }
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: 'Report a problem button'
+          plugin_id: text
+          empty: true
+          content:
+            value: '<p class="bos-defect-report"><a class="button button--primary" href="/admin/content/equipment_defect/add/standard?edit[field_equipment][widget][0][target_id]={{ raw_arguments.field_equipment_target_id }}&amp;destination=/equipment/{{ raw_arguments.field_equipment_target_id }}">Report a problem with this machine</a></p>'
+            format: full_html
+          tokenize: true
       display_extenders: {  }
     cache_metadata:
       max-age: -1

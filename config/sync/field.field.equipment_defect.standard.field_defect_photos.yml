@@ -1,0 +1,38 @@
+uuid: cae04305-8861-455a-b5fa-1640386c574a
+langcode: en
+status: true
+dependencies:
+  config:
+    - eck.eck_type.equipment_defect.standard
+    - field.storage.equipment_defect.field_defect_photos
+  module:
+    - image
+id: equipment_defect.standard.field_defect_photos
+field_name: field_defect_photos
+entity_type: equipment_defect
+bundle: standard
+label: 'Defect Photos'
+description: 'Evidence photos of this defect — the broken part, the leak, the damage. General pictures of the machine belong on the equipment record, not here.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:file'
+  handler_settings: {  }
+  file_directory: equipment/defects
+  file_extensions: 'png gif jpg jpeg webp'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: true
+  alt_field_required: false
+  title_field: false
+  title_field_required: false
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+field_type: image

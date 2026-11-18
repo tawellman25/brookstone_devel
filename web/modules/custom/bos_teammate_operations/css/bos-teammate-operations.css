@@ -665,3 +665,35 @@ a.bos-stat-link:hover {
   font-weight: 700;
   vertical-align: middle;
 }
+
+/* ── Clock status: "Currently clocked into" (user page, teammate detail) ──
+   Status-card tokens (My Schedule pattern): white, 2px #ddd, 6px radius,
+   5px left accent coloured by state — green open, grey none, red stale. */
+.bos-clock-status {
+  margin: 1rem 0 1.5rem;
+  padding: .75rem 1rem;
+  background: #fff;
+  border: 2px solid #ddd;
+  border-left: 5px solid #2e7d32;
+  border-radius: 6px;
+}
+.bos-clock-status--none  { border-left-color: #9e9e9e; }
+.bos-clock-status--stale { border-left-color: #b71c1c; }
+.bos-clock-status h3 { margin: 0 0 .5rem; font-size: 1rem; }
+.bos-clock-status ul { margin: 0; padding-left: 1.2rem; line-height: 1.7; }
+.bos-clock-status li.bos-clock-stale { color: #5d4037; }
+.bos-clock-status p { margin: 0; color: #616161; }
+.bos-clock-stale-flag {
+  display: inline-block;
+  margin-left: .4rem;
+  padding: .1rem .45rem;
+  border-radius: 3px;
+  background: #ffebee;
+  color: #b71c1c;
+  font-weight: 700;
+  font-size: .85rem;
+}
+/* Active Now — summary line + stale rows (oldest first, so stale sits on top). */
+.bos-active-summary { margin: .25rem 0 .75rem; }
+.bos-active-summary .bos-active-summary-stale { color: #b71c1c; font-weight: 700; }
+.bos-active-now-table tr.bos-row-stale td { background: #fff8e1; }

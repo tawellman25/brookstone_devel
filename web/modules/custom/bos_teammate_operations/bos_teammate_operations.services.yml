@@ -13,3 +13,12 @@ services:
       - '@bos_teammate_operations.compensable_hours'
       - '@logger.factory'
       - '@config_pages.loader'
+
+  bos_teammate_operations.open_punches:
+    class: Drupal\bos_teammate_operations\Service\OpenPunchService
+    arguments:
+      - '@entity_type.manager'
+      - '@wo_clock.clock_service'
+      - '@date.formatter'
+      - '@datetime.time'
+      - '@config.factory'

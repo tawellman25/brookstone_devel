@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\bos_teammate_operations\Controller;
 
 use Drupal\bos_teammate_operations\Service\AnomalyDetectionService;
+use Drupal\bos_teammate_operations\Service\OpenPunchService;
 use Drupal\bos_teammate_operations\Service\CompensableHoursService;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateFormatterInterface;
@@ -34,6 +35,7 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
     private readonly EntityTypeManagerInterface $em,
     private readonly FormBuilderInterface $forms,
     private readonly DateFormatterInterface $dateFmt,
+    private readonly OpenPunchService $openPunches,
   ) {}
 
   public static function create(ContainerInterface $container): self {
@@ -43,6 +45,7 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
       $container->get('entity_type.manager'),
       $container->get('form_builder'),
       $container->get('date.formatter'),
+      $container->get('bos_teammate_operations.open_punches'),
     );
   }
 
@@ -90,6 +93,8 @@ final class VarianceTeammateDetailController extends ControllerBase implements C
     $build['#attached']['library'][] = 'bos_teammate_operations/variance_dashboard';
 
     $build['header'] = $this->buildHeader($user, $start, $end);
+    // Live clock status — the same card as the teammate's user page.
+    $build['clock_status'] = $this->openPunches->buildStatusSection((int) $user->id());
     $build['filters'] = $form;
 
     if ($preBoundary) {

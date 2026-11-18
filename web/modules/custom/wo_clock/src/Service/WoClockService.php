@@ -115,6 +115,52 @@ final class WoClockService {
   }
 
   /**
+   * Every OPEN wo_time_clock entry — field_start_time set, field_end_time
+   * empty — oldest first. The one query behind "who is clocked in right now"
+   * (Active Now board, the teammate page's "Currently clocked into").
+   *
+   * UNBOUNDED on purpose: no range(), no date floor, no status filter. A
+   * forgotten clock-in can be weeks old, and any "most recent N rows" limit
+   * turns it into a false "not clocked in" (hit by hand on an entry open since
+   * 2026-10-20). Callers that want a subset filter the returned array.
+   *
+   * @param int|null $uid
+   *   NULL = everyone. A uid restricts to that teammate: field_teammate = uid
+   *   OR (legacy rows that never had field_teammate synced) owner uid = uid,
+   *   merged — the same two-field convention as getOpenEntriesForUser().
+   *
+   * @return \Drupal\Core\Entity\EntityInterface[]
+   *   Oldest-first by field_start_time.
+   */
+  public function getOpenEntries(?int $uid = NULL): array {
+    if ($uid !== NULL && $uid <= 0) {
+      return [];
+    }
+    $ids = [];
+    foreach ($uid === NULL ? [NULL] : ['field_teammate', 'uid'] as $field) {
+      $q = $this->tcStorage()->getQuery()
+        ->accessCheck(FALSE)
+        ->exists('field_start_time')
+        ->notExists('field_end_time')
+        ->sort('field_start_time', 'ASC');
+      if ($field !== NULL) {
+        $q->condition($field, $uid);
+      }
+      foreach ($q->execute() as $id) {
+        $ids[$id] = TRUE;
+      }
+    }
+    if (!$ids) {
+      return [];
+    }
+    $entries = $this->tcStorage()->loadMultiple(array_keys($ids));
+    uasort($entries, function (EntityInterface $a, EntityInterface $b) {
+      return strcmp((string) ($a->get('field_start_time')->value ?? ''), (string) ($b->get('field_start_time')->value ?? ''));
+    });
+    return array_values($entries);
+  }
+
+  /**
    * The user's current open entry on a specific WO, or NULL.
    */
   public function getCurrentEntryOnWo(int $uid, int $woId): ?EntityInterface {

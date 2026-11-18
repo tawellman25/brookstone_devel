@@ -40,6 +40,8 @@ Transport-agnostic domain service. Datetime storage is UTC `Y-m-d\TH:i:s`.
 | Method | Behavior |
 |---|---|
 | `getOpenEntriesForUser(int $uid, ?int $excludeWoId = null): array` | Open entries (NULL `field_end_time`) by `field_teammate` or owner uid; oldest-first; optional WO exclusion. |
+
+> **`getOpenEntries(?int $uid = NULL)` (2026-11-17)** — every OPEN entry (start set, end empty), oldest first, **unbounded** (no range, no date floor); NULL = everyone, a uid = `field_teammate` OR owner, merged. The shared query behind `bos_teammate_operations`' `OpenPunchService` (Active Now board + the "Currently clocked into" card on teammate pages). `getOpenEntriesForUser()` — the crew clock's guard — is untouched.
 | `getCurrentEntryOnWo(int $uid, int $woId): ?entity` | The user's open entry on a WO, or null. |
 | `createOpenEntry(int $uid, int $woId, array $extra = []): entity` | Builds an **unsaved** open entry with **`field_end_time` guaranteed cleared**. The single place that owns the open-entry guarantee — any code creating an intended-open entry should use this (see the `field_end_time` default-of-"now" gotcha in `drupal_bos_gotchas.md`). |
 | `clockIn(int $uid, int $woId, ?float $lat, ?float $lon, ?string $noteContext): entity` | **Refuses (throws) if the WO is billed — `woIsLocked()` true (Invoiced 1281 / Paid 1504)** — a billed WO is closed to time entry; corrections are an office action. Otherwise creates an **open** entry via `createOpenEntry()`, then stores GPS / prepends a note if given, and saves. |

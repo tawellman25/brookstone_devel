@@ -11,6 +11,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Url;
+use Drupal\bos_teammate_operations\Service\OpenPunchService;
 use Drupal\user\UserInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,13 +26,15 @@ use Symfony\Component\HttpFoundation\Request;
  * activity (Section 2). Read-only against existing wo_time_clock data;
  * no service swaps, no auto-refresh, no caching.
  *
+ * Section 1 rows come from OpenPunchService (2026-11-17): the same unbounded
+ * open-entry query that feeds the "Currently clocked into" card on a
+ * teammate's page. Oldest first, a summary line on top, and every entry open
+ * since a prior day or longer than OpenPunchService::STALE_HOURS flagged as
+ * a possible missed clock-out — flagged, never hidden.
+ *
  * Same role gate as the rest of the variance suite.
  */
 final class ActiveNowController extends ControllerBase implements ContainerInjectionInterface {
-
-  /** Status indicator thresholds in seconds. */
-  private const GREEN_MAX  = 8 * 3600;       // < 8 hours
-  private const YELLOW_MAX = 16 * 3600;      // 8-16 hours
 
   /**
    * Per-request memoization of resolved departments (keyed by uid).
@@ -48,6 +51,7 @@ final class ActiveNowController extends ControllerBase implements ContainerInjec
     private readonly EntityTypeManagerInterface $em,
     private readonly DateFormatterInterface $dateFmt,
     private readonly FormBuilderInterface $forms,
+    private readonly OpenPunchService $openPunches,
   ) {}
 
   public static function create(ContainerInterface $container): self {
@@ -55,6 +59,7 @@ final class ActiveNowController extends ControllerBase implements ContainerInjec
       $container->get('entity_type.manager'),
       $container->get('date.formatter'),
       $container->get('form_builder'),
+      $container->get('bos_teammate_operations.open_punches'),
     );
   }
 
@@ -109,8 +114,18 @@ final class ActiveNowController extends ControllerBase implements ContainerInjec
       return ['#markup' => $html, '#allowed_tags' => ['h2', 'p']];
     }
 
-    // Sort by clock-in time DESC (most recently clocked in first).
-    usort($rows, fn($a, $b) => strcmp($b['start_iso'], $a['start_iso']));
+    // Summary: "N teammates clocked in (M open entries) · A active · S stale".
+    $sum = $this->openPunches->summary($rows);
+    $html .= '<p class="bos-active-summary"><strong>' . $sum['teammates'] . ' teammate' . ($sum['teammates'] === 1 ? '' : 's') . ' clocked in</strong>'
+      . ' (' . $sum['entries'] . ' open ' . ($sum['entries'] === 1 ? 'entry' : 'entries') . ')'
+      . ' · ' . $sum['active'] . ' active'
+      . ' · <span class="' . ($sum['stale'] > 0 ? 'bos-active-summary-stale' : '') . '">' . $sum['stale'] . ' stale'
+      . ($sum['stale'] > 0 ? ' ⚠ possible missed clock-out' . ($sum['stale'] === 1 ? '' : 's') : '') . '</span>'
+      . ($sum['multi'] > 0 ? ' · ' . $sum['multi'] . ' with more than one open entry' : '')
+      . '</p>';
+
+    // Oldest first: a forgotten clock-in sits at the top, not the bottom.
+    usort($rows, fn($a, $b) => strcmp($a['start_iso'], $b['start_iso']));
 
     $headers = ['Teammate', 'Work Order', 'Clocked In At', 'Duration', 'Status'];
     if ($groupBy) {
@@ -122,55 +137,40 @@ final class ActiveNowController extends ControllerBase implements ContainerInjec
 
     return [
       '#markup' => $html,
-      '#allowed_tags' => ['h2', 'h3', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'a', 'span', 'p', 'div'],
+      '#allowed_tags' => ['h2', 'h3', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'a', 'span', 'p', 'div', 'strong', 'em'],
     ];
   }
 
   /**
-   * Find every open punch and assemble a row data array.
+   * Every open punch as a row — OpenPunchService::rows() (unbounded) plus the
+   * department label/filter this board adds.
    *
    * @return array<int, array<string, mixed>>
    *   One entry per open wo_time_clock row.
    */
   protected function getCurrentlyClockedInRows(string $deptFilter): array {
     try {
-      $ids = $this->em->getStorage('wo_time_clock')->getQuery()
-        ->accessCheck(FALSE)
-        ->exists('field_start_time')
-        ->notExists('field_end_time')
-        ->execute();
+      $open = $this->openPunches->rows();
     }
     catch (\Throwable $e) {
       return [];
     }
-    if (empty($ids)) return [];
-
-    $entries = $this->em->getStorage('wo_time_clock')->loadMultiple($ids);
-    $now = time();
     $deptId = ($deptFilter !== 'all' && $deptFilter !== '' && ctype_digit($deptFilter)) ? (int) $deptFilter : 0;
     $rows = [];
-    foreach ($entries as $entry) {
-      $teammate = $this->resolveTeammate($entry);
-      if (!$teammate) continue;
+    foreach ($open as $r) {
+      $teammate = $this->em->getStorage('user')->load($r['uid']);
+      if (!$teammate instanceof UserInterface) continue;
       [$deptLabel, $deptIds] = $this->resolveDepartment($teammate);
       if ($deptId > 0 && !in_array($deptId, $deptIds, TRUE)) {
         continue;
       }
-
-      $startIso = (string) ($entry->get('field_start_time')->value ?? '');
-      $startTs = $startIso ? strtotime($startIso . 'Z') : 0;
-      $duration = $startTs > 0 ? max(0, $now - $startTs) : 0;
-
-      $woInfo = $this->resolveWorkOrder($entry);
-
-      $rows[] = [
-        'uid' => (int) $teammate->id(),
-        'teammate_label' => $teammate->getDisplayName(),
+      $woHtml = $r['wo_url']
+        ? '<a href="' . htmlspecialchars($r['wo_url']) . '">' . $r['wo_id'] . '</a> <span class="bos-wo-title">' . htmlspecialchars($r['wo_label']) . '</span>'
+        : '—';
+      $rows[] = $r + [
         'dept_label' => $deptLabel,
-        'wo_html' => $woInfo['html'],
-        'start_iso' => $startIso,
-        'start_ts' => $startTs,
-        'duration_seconds' => $duration,
+        'wo_html' => $woHtml,
+        'duration_seconds' => $r['elapsed'],
       ];
     }
     return $rows;
@@ -180,15 +180,21 @@ final class ActiveNowController extends ControllerBase implements ContainerInjec
     $detailUrl = Url::fromRoute('bos_teammate_operations.variance_teammate_detail', ['user' => $row['uid']])->toString();
     $teammateLink = '<a href="' . htmlspecialchars($detailUrl) . '">' . htmlspecialchars($row['teammate_label']) . '</a>';
     $clockedAt = $row['start_ts'] > 0 ? $this->formatDateTimeUs($row['start_ts']) : '—';
-    $duration = $row['duration_seconds'] > 0 ? $this->formatDuration($row['duration_seconds']) : '—';
-    $status = $this->getStatusIndicator($row['duration_seconds']);
-    $statusDot = '<span class="bos-status-dot bos-status-' . $status . '" aria-label="' . htmlspecialchars($status) . '"></span>';
-    return '<tr>'
+    $duration = $row['start_ts'] > 0 ? $this->openPunches->formatElapsed((int) $row['duration_seconds']) : '—';
+    if (!empty($row['stale'])) {
+      $status = '<span class="bos-clock-stale-flag">⚠ possible missed clock-out — open since ' . htmlspecialchars($row['since_date']) . '</span>';
+      $tr = '<tr class="bos-row-stale">';
+    }
+    else {
+      $status = '<span class="bos-status-dot bos-status-green" aria-label="active"></span> Active';
+      $tr = '<tr>';
+    }
+    return $tr
       . '<td>' . $teammateLink . '</td>'
       . '<td>' . $row['wo_html'] . '</td>'
       . '<td>' . htmlspecialchars($clockedAt) . '</td>'
-      . '<td>' . $statusDot . htmlspecialchars($duration) . '</td>'
-      . '<td class="bos-status-cell">' . $statusDot . '</td>'
+      . '<td>' . htmlspecialchars($duration) . '</td>'
+      . '<td class="bos-status-cell">' . $status . '</td>'
       . '</tr>';
   }
 
@@ -445,24 +451,6 @@ final class ActiveNowController extends ControllerBase implements ContainerInjec
   // ──────────────────────────────────────────────────────────────────────
   // FORMATTERS
   // ──────────────────────────────────────────────────────────────────────
-
-  /** "X hr Y min" — omits the hr part when under an hour. */
-  protected function formatDuration(int $seconds): string {
-    $hrs = intdiv($seconds, 3600);
-    $mins = intdiv($seconds % 3600, 60);
-    if ($hrs === 0) {
-      return $mins . ' min';
-    }
-    return $hrs . ' hr ' . $mins . ' min';
-  }
-
-  /** Status: green (<8h) | yellow (8-16h) | red (>16h) | na (no duration). */
-  protected function getStatusIndicator(int $durationSeconds): string {
-    if ($durationSeconds <= 0) return 'na';
-    if ($durationSeconds < self::GREEN_MAX) return 'green';
-    if ($durationSeconds <= self::YELLOW_MAX) return 'yellow';
-    return 'red';
-  }
 
   /** MM/DD/YYYY h:i AM/PM in site default timezone. */
   protected function formatDateTimeUs(int $timestamp): string {

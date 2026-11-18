@@ -302,21 +302,13 @@ Read-only against existing `wo_time_clock` data. No service swaps, no auto-refre
 
 ### Two stacked sections
 
-**Section 1 — Currently Clocked In (primary).** Every open punch in the system: `field_start_time IS NOT NULL` AND `field_end_time IS NULL`, regardless of how long ago it started. Columns: Teammate (linked to per-teammate detail), Department, Work Order (linked to admin edit), Clocked In At (MM/DD/YYYY h:i AM/PM), Duration ("X hr Y min"), Status indicator. Default sort: clock-in time DESC. Empty state: "✓ No teammates currently clocked into a WO."
+**Section 1 — Currently Clocked In (primary).** Every open punch in the system: `field_start_time IS NOT NULL` AND `field_end_time IS NULL`, regardless of how long ago it started — **since 2026-11-17 the rows come from `OpenPunchService::rows()`** (below), the same unbounded query behind the teammate-page card. A **summary line** on top: *"N teammates clocked in (M open entries) · A active · S stale ⚠ possible missed clock-outs · K with more than one open entry"*. Columns: Teammate (linked to per-teammate detail), Department, Work Order (linked), Clocked In At (MM/DD/YYYY h:i AM/PM), Duration ("X hr Y min", "D d X hr" from two days), Status (**Active** with a green dot, or **⚠ possible missed clock-out — open since MM/DD/YYYY** on a highlighted row). Default sort: clock-in time **ASC — oldest first, so a forgotten clock-in sits at the top** (was DESC). A teammate with two open entries shows twice; the summary counts them. Empty state: "✓ No teammates currently clocked into a WO."
 
 **Section 2 — Today's Activity (secondary).** Every teammate who has had ANY `wo_time_clock` activity today (closed entries that started today plus currently-open entries from any time). Columns: Teammate, Department, WOs Touched Today (distinct count), Total Closed Hrs (sum of `field_total_time` for entries closed-today), Currently On (linked WO if open, else "—"), Last Activity (h:i AM/PM — date implied by section context). Default sort: last activity DESC. Empty state: "No teammate activity recorded today yet."
 
-### Status indicators (Section 1)
+### Status (Section 1) — active or stale
 
-Visual cue based on duration since clock-in:
-
-| Color | Range | Meaning |
-|---|---|---|
-| 🟢 Green | < 8 hours | Likely currently working |
-| 🟡 Yellow | 8 – 16 hours | Long shift in progress, or possibly stale |
-| 🔴 Red | > 16 hours | Almost certainly stale / forgotten clock-out |
-
-Thresholds are hardcoded constants on the controller (`GREEN_MAX = 8 * 3600`, `YELLOW_MAX = 16 * 3600`). They are operational visual cues, not business rules — distinct from the Phase 1 `field_long_shift_hours` threshold (which gates form-layer save validation). Keeping them out of business_setting avoids confusion with the per-day variance bands.
+Two states since 2026-11-17 (the 8 / 16-hour green-yellow-red dots are gone — one signal, not two): **Active**, or **stale = a possible missed clock-out** when the entry started on a **prior calendar day in the site timezone** (`system.date` `timezone.default`, America/Denver) **or more than `OpenPunchService::STALE_HOURS` = 14 hours ago**. Todd's rule (2026-11-17): *"open more than ~14 hours, or started on a prior calendar day"*. Operational cue on the controller/service, not a business_setting — distinct from `field_long_shift_hours` (form-layer save validation) and from `AnomalyDetectionService`'s `open_stale` (7 days, data-check page).
 
 ### Filters
 
@@ -325,9 +317,23 @@ Thresholds are hardcoded constants on the controller (`GREEN_MAX = 8 * 3600`, `Y
 
 GET-submission so filters live in the URL — bookmarkable, shareable.
 
-### Stale punches — accepted, not filtered
+### Stale punches — flagged, never filtered
 
-Some "currently clocked in" rows on live are forgotten clock-outs from days or weeks ago. Phase 2E does NOT filter or bucket them away. The page shows reality as the data presents it — the Status column's red dot makes the staleness visible, and the AnomalyDetectionService `open_stale` category surfaces them on the data-check page for cleanup. Filtering them off would hide the data hygiene problem the variance suite is built to expose.
+Some "currently clocked in" rows on live are forgotten clock-outs from days or weeks ago (one sat open from 2026-10-20 until Todd found it by hand on 2026-11-17 — a newest-first/limited query had hidden it). The page shows reality as the data presents it: the query has **no row limit and no date floor**, the stale rows are highlighted and labelled, the summary counts them, and the AnomalyDetectionService `open_stale` category surfaces them on the data-check page for cleanup. Filtering them off would hide the data hygiene problem the variance suite is built to expose.
+
+## Clock status card — "Currently clocked into" (2026-11-17)
+
+`Service/OpenPunchService.php` (`bos_teammate_operations.open_punches`) is the one place that answers "who is clocked in right now": `rows(?int $uid)` → one row per OPEN `wo_time_clock` entry (teammate, WO id/label/url, since, elapsed, `stale` + `stale_reason` `prior_day` | `long`), `summary()`, `staleReason()`, `formatElapsed()`, and `buildStatusSection(int $uid)` — the render array for the card. The query itself is **`WoClockService::getOpenEntries(?int $uid)`** in `wo_clock` (new dependency of this module), beside the crew clock's own `getOpenEntriesForUser()`: `exists(field_start_time)`, `notExists(field_end_time)`, sorted ASC, **unbounded**; a uid restricts to `field_teammate = uid` OR owner `uid` (legacy rows), merged.
+
+Where the card renders (read-only, `max-age 0` because elapsed time moves, tagged `wo_time_clock_list`):
+- **Every teammate's user page** `/user/{uid}` — `hook_user_view()` in the `.module` adds `bos_clock_status` at weight 3 (right under the teammate profile) for accounts holding `teammates`, full/default view mode only. Not a Manage Display component on purpose (the live user display is curated; nothing to enable). Who can open a user page is unchanged by this work.
+- **The per-teammate variance detail page** (`/admin/office/operations/teammates/variance/{user}`), right under the header — the page every hub link lands on.
+
+Card content: heading *Currently clocked into*; then either **"Not clocked in."** or one line per open entry — *Clocked in: **WO 54615 — title** (linked) — since 11/17/2026 9:42 PM, elapsed 10 min* — with stale entries carrying *⚠ open since MM/DD/YYYY — possible missed clock-out*. Status-card tokens: white, 2px `#ddd`, 6px radius, 5px left accent green (open) / grey (none) / red (stale). CSS in `bos-teammate-operations.css`.
+
+Not built: an open **shift** punch (`time_clock_entry`, `field_team_member`) on the card — Todd's brief made it optional; the card is WO clock only. A "close this entry" action stays a manual office correction.
+
+Verify: `web/scripts/clock_status_verify.php` (`--no-write` on live; dev adds a two-entry round-trip, one 10 minutes old and one 20 hours old, rendered as uid 1 and as another crew member, then deleted — 41 checks).
 
 ### Teammate resolution priority
 

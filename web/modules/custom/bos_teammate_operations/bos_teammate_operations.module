@@ -4,9 +4,10 @@
  * @file
  * BOS Teammate Operations — module file.
  *
- * Phase 2A is foundation only — this file is intentionally empty of hooks.
- * The CompensableHoursService at src/Service/ is the entire surface of this
- * module for now. UI views, routes, and menu links arrive in Phase 2B-2F.
+ * Phase 2A was foundation only (no hooks). Since 2026-11-17 the one hook here
+ * puts the live clock status — OpenPunchService::buildStatusSection() — on
+ * every teammate's user page; the same section sits on the per-teammate
+ * variance detail page and the same rows feed the Active Now board.
  *
  * The install hook (in .install) ensures the three business_setting fields
  * exist with sensible defaults (8.5 / 1.5 / 3.0) on first enable, so the
@@ -15,3 +16,25 @@
  */
 
 declare(strict_types=1);
+
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\user\UserInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for user.
+ *
+ * "Currently clocked into" on a teammate's page (/user/{uid}): every OPEN
+ * wo_time_clock entry for them — WO linked, since, elapsed, stale ones flagged
+ * as a possible missed clock-out — or "Not clocked in." Read-only. Rendered
+ * for accounts holding the teammates role (every internal user does) on the
+ * full page only; weight 3 puts it right under the teammate profile (2).
+ * Uncached (max-age 0): elapsed time moves every minute.
+ */
+function bos_teammate_operations_user_view(array &$build, UserInterface $account, EntityViewDisplayInterface $display, $view_mode): void {
+  if (!in_array($view_mode, ['full', 'default'], TRUE) || !$account->hasRole('teammates')) {
+    return;
+  }
+  $build['bos_clock_status'] = \Drupal::service('bos_teammate_operations.open_punches')
+    ->buildStatusSection((int) $account->id());
+  $build['bos_clock_status']['#weight'] = 3;
+}

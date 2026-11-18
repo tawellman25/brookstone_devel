@@ -64,7 +64,7 @@ def tools_html(s):
     return ul(map(E, s['tools']))
 
 NAMES = {s['code']: s['name'] for s in SOPS}
-NAMES.update({'GOV-SOP-001': 'SOP Creation & Management', 'WEB-SYS-SGN-001': 'Sign-Off: Confirm Crew Hours and Decide Who Gets Billed', 'OFF-ADM-NBL-001': 'Non-Billable Time: Review and Correction', 'OFF-ADM-TGT-001': 'Target Hours on Cleanup Work Orders', 'OFF-ADM-EST-001': 'Estimate Request Intake & Pipeline', 'OFF-ADM-EST-002': 'Estimate Stage Management (Estimator)', 'MNT-FLT-001': 'Fleet maintenance', 'TRN-SYS-GOV-001': 'Training System Governance', 'SAF-GOV-SAF-001': 'Safety governance', 'SOP-WEB-002': 'Services URL Structure – Public Website'})
+NAMES.update({'GOV-SOP-001': 'SOP Creation & Management', 'WEB-SYS-SGN-001': 'Sign-Off: Confirm Crew Hours and Decide Who Gets Billed', 'OFF-ADM-NBL-001': 'Non-Billable Time: Review and Correction', 'OFF-ADM-TGT-001': 'Target Hours on Cleanup Work Orders', 'OFF-ADM-EST-001': 'Estimate Request Intake & Pipeline', 'OFF-ADM-EST-002': 'Estimate Stage Management (Estimator)', 'MNT-FLT-001': 'Logging Vehicle & Equipment Repairs in BOS', 'TRN-SYS-GOV-001': 'Training System Governance', 'SAF-GOV-SAF-001': 'Safety governance', 'SOP-WEB-002': 'Services URL Structure – Public Website'})
 
 def paste_file(s, fields):
     blocks = []
@@ -133,7 +133,7 @@ def source_js(s):
     hdr = f"{s['code']}  |  {s['name']}"
     return PRELUDE + f'''
 // ─────────────────────────────────────────────────────────────────────────────
-// DOCUMENT — {s['code']} ({s['name']}) · generated {GENERATED} by Code at Todd's
+// DOCUMENT — {s['code']} ({s['name']}) · generated {s.get('generated', GENERATED)} by Code at Todd's
 // request; the entity content lives in {s['code']}_fields.json (same source).
 // ─────────────────────────────────────────────────────────────────────────────
 const doc = new Document({{

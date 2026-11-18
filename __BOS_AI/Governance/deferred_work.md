@@ -824,6 +824,14 @@ supervisors are teammates first" may mean the flat form is the intent). T3.
 
 ---
 
+### 47. Equipment defects — two small gaps the `MNT-DEF-001` SOP works around in words (surfaced 2026-11-17)
+
+**(a) Out of Service Required on a brand-new defect does not take the machine out of service.** `equipment_inspection_workflow_entity_update()` sets `equipment.field_status` to Needing Repairs (tid from `equipment_inspection_workflow.settings`) only when the box flips FALSE → TRUE on an existing defect; there is no insert handler, so a defect saved with the box already ticked — a crew report, or one the inspection rules create with severity `out_of_service` — leaves the machine Active. Fix = the same block in `hook_entity_insert` (one function, guarded), after-hours deploy (new hook → `cr`). Until then the SOP has the reporter press **Change Equipment Status → Needing Repairs** as well, which is the better audit record anyway — keep that step even after the fix.
+
+**(b) Crews have no list of machines to click through.** Teammates ▸ Equipment (`/teammates/equipment`, view `teammates_equipment`) lists the equipment *types*; a type's page in `teammate_view` shows icon + description only, and the per-type unit list (`equipment_type_current_list`, teammates-readable at `/taxonomy/term/%/list`, 20 trucks for tid 72 on dev) is linked from nowhere. The office finds units on `/admin/operations/equipment` (office roles only). Fix = place `views_block:equipment_type_current_list-block_1` in `brookstone_olivero` `content_below` with visibility vocabulary `equipment_types` + role `teammates` (config only, no `cr`; export the block yml with its uuid and partial-cim it on live) — or add it to the `teammate_view` display. Decide the shape with Todd; the SOP says "bookmark the units your crew runs" until then. Also noticed: SOP pages render no `<h1>`/page title for any SOP (the name appears only in the directory) — pre-existing, not from this work.
+
+---
+
 ## Status
 
 - **2026-07-11 — reconciled against [`ROADMAP.md`](../ROADMAP.md).** Fixed the duplicate "#16" (dual-field-drift renumbered → #24); moved resolved #17 + #23 to the new "Resolved — archive next cycle" section; added `↔ ROADMAP:` cross-refs on the items also on the roadmap (#7, #8, #9, #10, #18, #20); flagged #20's 3-vs-2 stranded-id discrepancy for live verification. ROADMAP is the tie-breaker.

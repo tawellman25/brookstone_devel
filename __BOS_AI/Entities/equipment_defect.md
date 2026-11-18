@@ -67,6 +67,8 @@ Type-level + bundle-level (`standard`) permission pair (ECK + `eck_bundle_permis
 
 Scripts: `web/scripts/equipment_defect_teammate_access_setup.php` (idempotent, `--dry-run`, fails loudly; role config is never staged for cim — run per environment) and `equipment_defect_teammate_access_verify.php` (`--no-write` on live: 44 checks as a real crew-only teammate; dev 50 incl. a teammate-owned round-trip). Both environments: partial cim of the view had nothing to import.
 
+**SOP:** `MNT-DEF-001` *Equipment Defects: Report a Problem with a Machine, Triage, Repair, Close* (bundle `maintenance`, Draft in BOS dev + live since 2026-11-17 21:15 MT, id 35; source `__BOS_AI/SOPs/MNT-DEF-001/`). Crew reports from the machine page; supervisor/shop triage; office closes through the verified maintenance event (MNT-FLT-001). It tells the reporter to press Change Equipment Status as well as ticking Out of Service Required, because the status sync fires only on an edit (deferred #47).
+
 ## Views
 - Open Defects Board: `/admin/operations/equipment/open-defects` (office roles)
 - Equipment Defects EVA: on all equipment entity pages — open to `teammates` since 2026-11-17, with the "Report a problem with this machine" header button

@@ -66,6 +66,7 @@ gray #424242  | gray light #F5F5F5
 | TRN-SVC-001      | Service Pages as the Crew Training Reference       | 1.0 | Draft — entered in BOS 2026-11-13 |
 | IRR-MNT-BFT-001  | Backflow Device Field Test: Enter the Test, Sign Off, Tag the Device | 1.0 | Draft — entered in BOS 2026-11-13 |
 | OFF-ADM-PRC-001  | Supplier Price Import: Review a Batch, Approve, and Clear the Queues | 1.0 | Draft — entered in BOS 2026-11-13; the workflow itself has not had a full production run yet |
+| MNT-DEF-001      | Equipment Defects: Report a Problem with a Machine, Triage, Repair, Close | 1.0 | Draft — entered in BOS dev + live 2026-11-17 21:15 MT (id 35), the day every teammate got create/edit on defects |
 
 > The three WO SOPs above were **drafted by Claude Code at Todd's explicit request on
 > 2026-11-11** (job-clock guardrails items 5 + 6), as an exception to the "Chat authors,
@@ -91,6 +92,11 @@ gray #424242  | gray light #F5F5F5
 > (`python3 __BOS_AI/SOPs/_gen/gen_sops.py [CODE…]`, then the docx step below). Entered as
 > **Draft on dev and on live, 2026-11-13 22:27 MT** (live ids 27–34); Todd reviews each in BOS and
 > sets Active. The waitlist SOP shipped with the lead list it needed (`portal_waitlist_leads`).
+>
+> **Third exception, 2026-11-17.** Todd: *"Can you please create one for it?"* — the ⚠ SOP NEEDED flagged
+> when every teammate was granted create/edit on equipment defects that morning. `MNT-DEF-001` (bundle
+> `maintenance`, readable by crews) was drafted from the same generator (`'generated': '2026-11-17'` per SOP
+> now) and entered as Draft on dev + live 21:15 MT. Two gaps it works around in words are deferred #47.
 
 ## Pending SOPs (SOP-Needed backlog)
 
